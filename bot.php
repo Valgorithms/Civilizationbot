@@ -159,6 +159,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					*/
 					return;
 			}
+			return;
 		}
 		if (str_starts_with($message_content_lower, 'asay ') {
 			case (strtolower($message->channel->name)) {
@@ -180,6 +181,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					*/
 					return;
 			}
+			return;
 		}
 		if (str_starts_with($message_content_lower, 'dm ') {
 			case (strtolower($message->channel->name)) {
@@ -202,6 +204,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					*/
 					return;
 			}
+			return;
 		}
 		if (str_starts_with($message_content_lower, 'pm ') {
 			case (strtolower($message->channel->name)) {
@@ -224,6 +227,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					*/
 					return;
 			}
+			return;
 		}
 		if (str_starts_with($message_content_lower, 'ban ') {
 			$message_content = substr($message->content, 4);
@@ -240,6 +244,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			$result = '**' . $message->user->username . '#' . $message->user->discriminator . '**banned **' . split_message[0] . '** for **' . split_message[1] . '** with the reason **' . split_message[2] . '**.';
 			$message->channel->sendMessage($result);
+			return;
 		}
 		if (str_starts_with($message_content_lower, 'unban ') {
 			$message_content = substr($message->content, 6);
@@ -277,6 +282,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			f2.close()
 			*/
 			$message->channel->sendMessage($result);
+			return;
 		}
 		/*					
 		elif message.content.startswith('cpu'):
@@ -285,6 +291,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		*/
 		if (str_starts_with($message_content_lower, 'help') {
 			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
+			return;
 		}
 		/*
 		# whitelist
