@@ -127,112 +127,166 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	
 	if str_starts_with($message->content, $command_symbol . ' ') { //Add these as slash commands?
 		$message_content = substr($message->content, strlen($command_symbol)+1);
-		/*
-		if message.content.lower().startswith('insult'):
-			split_message = message.content.split("insult ")
-			if len(split_message) > 1 and len(split_message[1]) > 0:
-				ckey = split_message[1]
+		$message_content_lower = strtolower($message_content);
+		if (str_starts_with($message_content_lower, 'insult') {
+			$split_message = explode(' ', $message_content); //$split_target[1] is the target
+			if ((count($split_message > 1)) && strlen($split_message[1] > 0) ){
+				$ckey = $split_message[1];
+				/*
 				insults = open('insult.txt').read().splitlines()
 				insult = random.choice(insults)
-				yield from message.channel.send("{}, {}".format(ckey,insult))
-		elif message.content.lower().startswith('ooc '):
-			if message.channel.name.lower() == "ooc-nomads":
+				*/
+				//$message->channel->sendMessage("$ckey, $insult");
+			}
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'ooc ') {
+			case (strtolower($message->channel->name)) {
+				switch 'ooc-nomads':
+					/*
 					message.content = remove_prefix(message.content, 'ooc ')
 					with open("/home/1713/civ13-rp/SQL/discord2ooc.txt", "a") as myfile:
 						myfile.write(str(message.author)+":::"+str(message.content))
 						myfile.write("\n")
-			if message.channel.name.lower() == "ooc-tdm":
+						*/
+					return;
+				switch 'ooc-tdm':
+					/*
 					message.content = remove_prefix(message.content, 'ooc ')
 					with open("/home/1713/civ13-tdm/SQL/discord2ooc.txt", "a") as myfile:
 						myfile.write(str(message.author)+":::"+str(message.content))
 						myfile.write("\n")
-		elif message.content.lower().startswith('asay '):
-			if message.channel.name.lower() == "ahelp-nomads":
+					*/
+					return;
+			}
+		}
+		if (str_starts_with($message_content_lower, 'asay ') {
+			case (strtolower($message->channel->name)) {
+				switch 'ahelp-nomads':
+					/*
+					message.channel.name.lower() == "ahelp-nomads":
 					message.content = remove_prefix(message.content, 'asay ')
 					with open("/home/1713/civ13-rp/SQL/discord2admin.txt", "a") as myfile:
 						myfile.write(str(message.author)+":::"+str(message.content))
 						myfile.write("\n")
-			if message.channel.name.lower() == "ahelp-tdm":
+					*/
+					return;
+				switch 'ahelp-tdm':
+					/*
 					message.content = remove_prefix(message.content, 'asay ')
 					with open("/home/1713/civ13-tdm/SQL/discord2admin.txt", "a") as myfile:
 						myfile.write(str(message.author)+":::"+str(message.content))
 						myfile.write("\n")
-		elif message.content.lower().startswith('dm '):
-			if message.channel.name.lower() == "ahelp-nomads":
+					*/
+					return;
+			}
+		}
+		if (str_starts_with($message_content_lower, 'dm ') {
+			case (strtolower($message->channel->name)) {
+				switch 'ahelp-nomads':
+					/*
 					message.content = remove_prefix(message.content, 'dm ')
 					split_message = message.content.split(": ")
 					with open("/home/1713/civ13-rp/SQL/discord2dm.txt", "a") as myfile:
 						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1]))
 						myfile.write("\n")
-			if message.channel.name.lower() == "ahelp-tdm":
+					*/
+					return;
+				switch 'ahelp-tdm':
+					/*
 					message.content = remove_prefix(message.content, 'dm ')
 					split_message = message.content.split(": ")
 					with open("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a") as myfile:
 						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1]))
 						myfile.write("\n")
-		elif message.content.lower().startswith('pm '):
-			if message.channel.name.lower() == "ahelp-nomads":
+					*/
+					return;
+			}
+		}
+		if (str_starts_with($message_content_lower, 'pm ') {
+			case (strtolower($message->channel->name)) {
+				switch 'ahelp-nomads':
+					/*
 					message.content = remove_prefix(message.content, 'pm ')
 					split_message = message.content.split(": ")
 					with open("/home/1713/civ13-rp/SQL/discord2dm.txt", "a") as myfile:
 						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1]))
 						myfile.write("\n")
-			if message.channel.name.lower() == "ahelp-tdm":
+					*/
+					return;
+				switch 'ahelp-tdm':
+					/*
 					message.content = remove_prefix(message.content, 'pm ')
 					split_message = message.content.split(": ")
 					with open("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a") as myfile:
 						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1]))
 						myfile.write("\n")
-		elif message.content.lower().startswith('ban '):
-					message.content = remove_prefix(message.content, 'ban ')
-					split_message = message.content.split("; ")
-					if message.content.find('Byond account too new, appeal on our discord') == -1:
-						with open("/home/1713/civ13-rp/SQL/discord2ban.txt", "a") as myfile:
-							myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1])+":::"+str(split_message[2]))
-							myfile.write("\n")
-						with open("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a") as myfile:
-							myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1])+":::"+str(split_message[2]))
-							myfile.write("\n")
-					result = "**{}** banned **{}** for **{}** with the reason **{}**.".format(message.author,str(split_message[0]),str(split_message[1]),str(split_message[2]))
-					yield from message.channel.send(result)
-		elif message.content.lower().startswith('unban '):
-					message.content = remove_prefix(message.content, 'unban ')
-					split_message = message.content.split("; ")
-					with open("/home/1713/civ13-rp/SQL/discord2unban.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(split_message[0]))
+					*/
+					return;
+			}
+		}
+		if (str_starts_with($message_content_lower, 'ban ') {
+			$message_content = substr($message->content, 4);
+			$split_message = explode('; ', $message_content); //$split_target[1] is the target
+			if (!str_contains($message->content, 'Byond account too new, appeal on our discord')) {
+				/*
+				with open("/home/1713/civ13-rp/SQL/discord2ban.txt", "a") as myfile:
+						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1])+":::"+str(split_message[2]))
 						myfile.write("\n")
-					with open("/home/1713/civ13-tdm/SQL/discord2unban.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(split_message[0]))
-						myfile.write("\n")
-					result = "**{}** unbanned **{}**.".format(message.author,str(split_message[0]))
-
-					list1 = "/home/1713/civ13-rp/SQL/bans.txt"
-					open(list1, "a").close()
-					f = open(list1, "r")
-					lines = f.readlines()
-					f.close()
-					f = open(list1, "w")
-					for line in lines:
-						if not str(split_message[0]) in line:
-							f.write(line)
-					f.close()
-					
-					list2 = "/home/1713/civ13-tdm/SQL/bans.txt"
-					open(list2, "a").close()
-					f2 = open(list2, "r")
-					lines2 = f2.readlines()
-					f2.close()
-					f2 = open(list2, "w")
-					for line2 in lines2:
-						if not str(split_message[0]) in line2:
-							f2.write(line2)
-					f2.close()
-					yield from message.channel.send(result)
+				with open("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a") as myfile:
+					myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1])+":::"+str(split_message[2]))
+					myfile.write("\n")
+				*/
+			}
+			$result = '**' . $message->user->username . '#' . $message->user->discriminator . '**banned **' . split_message[0] . '** for **' . split_message[1] . '** with the reason **' . split_message[2] . '**.';
+			$message->channel->sendMessage($result);
+		}
+		if (str_starts_with($message_content_lower, 'unban ') {
+			$message_content = substr($message->content, 6);
+			$split_message = explode('; ', $message_content);
+			/*
+			with open("/home/1713/civ13-rp/SQL/discord2unban.txt", "a") as myfile:
+				myfile.write(str(message.author)+":::"+str(split_message[0]))
+				myfile.write("\n")
+			with open("/home/1713/civ13-tdm/SQL/discord2unban.txt", "a") as myfile:
+				myfile.write(str(message.author)+":::"+str(split_message[0]))
+				myfile.write("\n")
+			*/
+			$result = '**' . $message->user->username . '** unbanned **' . str(split_message[0] . '**.';
+			/*
+			list1 = "/home/1713/civ13-rp/SQL/bans.txt"
+			open(list1, "a").close()
+			f = open(list1, "r")
+			lines = f.readlines()
+			f.close()
+			f = open(list1, "w")
+			for line in lines:
+				if not str(split_message[0]) in line:
+					f.write(line)
+			f.close()
+			
+			list2 = "/home/1713/civ13-tdm/SQL/bans.txt"
+			open(list2, "a").close()
+			f2 = open(list2, "r")
+			lines2 = f2.readlines()
+			f2.close()
+			f2 = open(list2, "w")
+			for line2 in lines2:
+				if not str(split_message[0]) in line2:
+					f2.write(line2)
+			f2.close()
+			*/
+			$message->channel->sendMessage($result);
+		}
+		/*					
 		elif message.content.startswith('cpu'):
 			CPU_Pct= str(psutil.cpu_percent())
 			yield from message.channel.send('CPU Usage: ' + CPU_Pct +"%")
-		elif message.content.startswith('help'):
-			yield from message.channel.send('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap')
+		*/
+		if (str_starts_with($message_content_lower, 'help') {
+			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
+		}
+		/*
 		# whitelist
 		elif message.content.startswith('whitelistme'):
 			split_message = message.content.split("whitelistme ")
