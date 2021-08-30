@@ -1,3 +1,14 @@
+<?php
+$command_symbol = '!s'; //Command prefix
+
+
+ini_set('max_execution_time', 0);
+ini_set('memory_limit', '-1'); //Unlimited memory usage
+define('MAIN_INCLUDED', 1); //Token and SQL credential files may be protected locally and require this to be defined to access
+require getcwd(). '/token.php'; //$token
+include getcwd() . '/vendor/autoload.php';
+
+/*
 from __future__ import print_function
 #from googletrans import Translator
 
@@ -12,11 +23,24 @@ import subprocess
 from operator import itemgetter
 from pathlib import Path
 from datetime import datetime
+*/
 
-import discord
-
-client = discord.Client()
-
+$logger = new Monolog\Logger('New logger');
+$logger->pushHandler(new Monolog\Handler\StreamHandler('php://stdout'));
+$loop = React\EventLoop\Factory::create();
+use Discord\WebSockets\Intents;
+$discord = new \Discord\Discord([
+	'token' => "$token",
+	/*'socket_options' => [
+        'dns' => '8.8.8.8', // can change dns
+	],*/
+    'loadAllMembers' => true,
+    'storeMessages' => true,
+	'logger' => $logger,
+	'loop' => $loop,
+	'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS, // default intents as well as guild members
+]);
+/*
 def portIsAvailable(port):
 
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,77 +61,81 @@ def portIsAvailable(port):
 
 	s.close()
 	return False
+*/
 
-def remove_prefix(text, prefix):
-		if text.startswith(prefix): # only modify the text if it starts with the prefix
-				text = text.replace(prefix, "", 1) # remove one instance of prefix
-		return text
+function remove_prefix(string $text = '', string $prefix = ''): string
+{
+	if (str_starts_with($text, $prefix) # only modify the text if it starts with the prefix
+		$text = str_replace($prefix, '', $text);# remove one instance of prefix
+	return $text;
+}
 
-def my_message(msg):
-		return msg.author == client.user
+function my_message($msg): bool
+{
+		return ($message->author->user->id == $discord->user->id);
+}
 
-def search_players(ckey):
-	if ckey in open('/home/1713/civ13-rp/SQL/playerlogs.txt').read():
-		return ckey
-	else:
-		return "None"
+function search_players(string $ckey): string
+{
+	if ($playerlogs = fopen('/home/1713/civ13-rp/SQL/playerlogs.txt', "r")) {
+		while (($fp = fgets($playerlogs, 4096)) !== false) {
+			if (trim(strtolower($fp)) == trim(strtolower($ckey)))
+				return $ckey;
+		}
+		return 'None';
+	} else return 'Unable to access playerlogs.txt!';
+}
 
-@client.event
-@asyncio.coroutine
-def on_ready():
-	print('Logged in as')
-	print(client.user.name)
-	print(client.user.id)
-	print('------')
+function on_ready($discord) {
+	echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL;
+	echo('------' . PHP_EOL);
 	#client.loop.create_task(counting(client))
+}
 
-
-@client.event
-@asyncio.coroutine
-def on_message(message):
-	channelname = ""
-	for channel in client.get_all_channels():
-		if channel.name.lower() == "ooc-nomads":
-			channelname = channel
-			filepath = '/home/1713/civ13-rp/ooc.log'
-			with open(filepath, 'r+', encoding='utf-8') as fp:
-				lines = fp.readlines()
-				fp.truncate(0)
-				for line in lines:
-					line = line.strip('\n')
-					yield from channelname.send(line)
-					
-		if channel.name.lower() == "ahelp-nomads":
-			channelname = channel
-			filepath = '/home/1713/civ13-rp/admin.log'
-			with open(filepath, 'r+', encoding='utf-8') as fp:
-				lines = fp.readlines()
-				fp.truncate(0)
-				for line in lines:
-					line = line.strip('\n')
-					yield from channelname.send(line)
-
-		if channel.name.lower() == "ooc-tdm":
-			channelname = channel
-			filepath = '/home/1713/civ13-tdm/ooc.log'
-			with open(filepath, 'r+', encoding='utf-8') as fp:
-				lines = fp.readlines()
-				fp.truncate(0)
-				for line in lines:
-					line = line.strip('\n')
-					yield from channelname.send(line)
-		if channel.name.lower() == "ahelp-tdm":
-			channelname = channel
-			filepath = '/home/1713/civ13-tdm/admin.log'
-			with open(filepath, 'r+', encoding='utf-8') as fp:
-				lines = fp.readlines()
-				fp.truncate(0)
-				for line in lines:
-					line = line.strip('\n')
-					yield from channelname.send(line)
-
-	if message.content.startswith('!s '):
-		message.content = remove_prefix(message.content, '!s ')
+function on_message($message, $discord, $loop, $command_symbol = '!s') {
+	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
+	if ($message->guild->owner_id != '196253985072611328') return; //Only allow this in a guild that Taislin owns
+		if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
+			while (($fp = fgets($ooc, 4096)) !== false) {
+				$fp = str_replace('\n', "", $fp);
+				$discord->getChannel('636644156923445269') //ooc-nomads
+					->sendMessage($fp);
+			}
+			ftruncate($ooc, 0); //clear the file
+			fclose($ooc);
+		}
+		if ($ahelp = fopen('/home/1713/civ13-rp/admin.log', "r+")) {
+			while (($fp = fgets($ahelp, 4096)) !== false) {
+				$fp = str_replace('\n', "", $fp);
+				$discord->getChannel('637046890030170126)' //ahelp-nomads
+					->sendMessage($fp);
+			}
+			ftruncate($ahelp, 0); //clear the file
+			fclose($ahelp);
+		}
+		if ($ooctdm = fopen('/home/1713/civ13-tdm/ooc.log', "r+")) {
+			while (($fp = fgets($ooctdm, 4096)) !== false) {
+				$fp = str_replace('\n', "", $fp);
+				$discord->getChannel('636644391095631872') //ooc-tdm
+					->sendMessage($fp);
+			}
+			ftruncate($ooctdm, 0); //clear the file
+			fclose($ooctdm);
+		}
+		if ($ahelptdm = fopen('/home/1713/civ13-tdm/admin.log', "r+")) {
+			while (($fp = fgets($ahelptdm, 4096)) !== false) {
+				$fp = str_replace('\n', "", $fp);
+				$discord->getChannel('637046904575885322') //ahelp-tdm
+					->sendMessage($fp);
+			}
+			ftruncate($ahelptdm, 0); //clear the file
+			fclose($ahelptdm);
+		}
+	}
+	
+	if str_starts_with($message->content, $command_symbol . ' ') { //Add these as slash commands?
+		$message_content = substr($message->content, strlen($command_symbol)+1);
+		/*
 		if message.content.lower().startswith('insult'):
 			split_message = message.content.split("insult ")
 			if len(split_message) > 1 and len(split_message[1]) > 0:
@@ -568,5 +596,16 @@ def on_message(message):
 
 
 				yield from message.channel.send(embed=embed)
+		*/
+	}
+}
 
-client.run('NDcxNDAwMTY4OTczOTI2NDMw.Xr76Ew.5h-Z7OHnpZDJzgktSitCQmhMYHc')
+$discord->once('ready', function ($discord) use ($loop, $command_symbol) {
+	on_ready($discord);
+	
+	$discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
+		on_message($message, $discord, $loop, $command_symbol);
+	});
+}
+
+$discord->run();
