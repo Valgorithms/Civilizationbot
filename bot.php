@@ -395,43 +395,52 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				} else $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
-			/*
-			
-			*/
+		}
+		if (str_starts_with($message_content_lower, 'hostciv') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+						switch 'Lieutenant':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					$message->channel->send("Please wait, updating the code...");
+					//os.system('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py')
+					//$message->channel->sendMessage("Updated the code.");
+					//os.system('sudo rm -f /home/1713/civ13-rp/serverdata.txt')
+					//os.system('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &')
+					//$message->channel->send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
+					//time.sleep(10) # ditto
+					//os.system('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
+				} else $message->channel->sendMessage("Denied!");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'killciv') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+						switch 'Lieutenant':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					//os.system('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py')
+					$message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
+				} else $message->channel->sendMessage("Denied!");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
 		}
 		/*
-		elif message.content.startswith("hostciv"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain" or role.name == "Lieutenant":
-					accepted = True
-					break
-			if accepted:
-				yield from message.channel.send("Please wait, updating the code...")
-				os.system('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py')
-				yield from message.channel.send("Updated the code.")
-				os.system('sudo rm -f /home/1713/civ13-rp/serverdata.txt')
-				os.system('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &')
-				yield from message.channel.send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>")
-				time.sleep(10) # ditto
-				os.system('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
-			else:
-				yield from message.channel.send("Denied!")
-
-		elif message.content.startswith("killciv"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain" or role.name == "Lieutenant":
-					accepted = True
-					break
-
-			if accepted:
-				os.system('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py')
-				yield from message.channel.send("Attempted to kill Civilization 13 Server.")
-			else:
-				yield from message.channel.send("Denied!")
 		elif message.content.startswith("restartciv"):
 
 			accepted = False
