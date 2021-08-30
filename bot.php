@@ -293,95 +293,113 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
 			return;
 		}
+		#whitelist
+		if (str_starts_with($message_content_lower, 'whitelistme') {
+			$split_message = trim(substr($message->content, 11));
+			if (strlen(split_message) > 0){ // if len(split_message) > 1 and len(split_message[1]) > 0:
+				$ckey = split_message;
+				$accepted = false;
+				if ($author_member = $message->member) {
+					foreach ($author_member->roles as $role) {
+						case ($role->name) {
+							switch 'Admiral':
+							switch 'Captain':
+							switch 'Lieutenant':
+							switch 'Brother At Arms':
+							switch 'Knight':
+								$accepted = true;
+								break;
+						}
+					}
+					if ($accepted) {
+						$whitelist_path = '/home/1713/civ13-rp/SQL/whitelist.txt';
+						/*
+						open(whitelist, "a").close()
+
+						with open(whitelist, "r") as search:
+							for line in search:
+								line = line.rstrip()	# remove '\n' at end of line
+								if line == ckey+"="+str(message.author):
+									yield from message.channel.send("{} is already in the whitelist!".format(ckey))
+
+								elif str(message.author) in line:
+									yield from message.channel.send("Woah there, {}, you already whitelisted one key! Remove the old one first.".format(str(message.author).split("#")[0]))
+
+							search.close()
+
+						somefile = open(whitelist, "a")
+						somefile.write(ckey+"="+str(message.author))
+						somefile.write("\n")
+						somefile.close()
+						somefile2 = open("/home/1713/civ13-tdm/SQL/whitelist.txt", "a")
+						somefile2.write(ckey+"="+str(message.author))
+						somefile2.write("\n")
+						somefile2.close()
+						*/
+						$message->channel->sendMessage("$ckey has been added to the whitelist.");
+					} else $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
+				} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			} else $message->channel->sendMessage("Wrong format. Please try '!s whitelistme [ckey].'");
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'unwhitelistme') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+						switch 'Lieutenant':
+						switch 'Footman':
+						switch 'Brother At Arms':
+						switch 'Knight':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					$removed = "N/A"
+					/*
+					wlist = "/home/1713/civ13-rp/SQL/whitelist.txt"
+
+					open(wlist, "a").close()
+
+					f = open(wlist, "r")
+					lines = f.readlines()
+					f.close()
+					f = open(list, "w")
+					for line in lines:
+						if not str(message.author) in line:
+							f.write(line)
+						else:
+							removed = line.split("=")[0]
+
+					f.close()
+					list2 = "/home/1713/civ13-tdm/SQL/whitelist.txt"
+
+					open(list2, "a").close()
+
+					f2 = open(list2, "r")
+					lines2 = f2.readlines()
+					f2.close()
+					f2 = open(list2, "w")
+					for line2 in lines2:
+						if not str(message.author) in line2:
+							f2.write(line2)
+						else:
+							removed = line2.split("=")[0]
+
+					f2.close()
+					*/
+					$message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
+				} else $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
+			/*
+			
+			*/
+		}
 		/*
-		# whitelist
-		elif message.content.startswith('whitelistme'):
-			split_message = message.content.split("whitelistme ")
-			if len(split_message) > 1 and len(split_message[1]) > 0:
-				ckey = split_message[1]
-				accepted = False
-				for role in message.author.roles:
-					if role.name == "Admiral" or role.name == "Captain" or role.name == "Lieutenant" or role.name == "Brother At Arms" or role.name == "Knight":
-						accepted = True
-				if accepted:
-
-					whitelist = "/home/1713/civ13-rp/SQL/whitelist.txt"
-
-					open(whitelist, "a").close()
-
-					with open(whitelist, "r") as search:
-						for line in search:
-							line = line.rstrip()	# remove '\n' at end of line
-							if line == ckey+"="+str(message.author):
-								yield from message.channel.send("{} is already in the whitelist!".format(ckey))
-
-							elif str(message.author) in line:
-								yield from message.channel.send("Woah there, {}, you already whitelisted one key! Remove the old one first.".format(str(message.author).split("#")[0]))
-
-						search.close()
-
-					somefile = open(whitelist, "a")
-					somefile.write(ckey+"="+str(message.author))
-					somefile.write("\n")
-					somefile.close()
-					somefile2 = open("/home/1713/civ13-tdm/SQL/whitelist.txt", "a")
-					somefile2.write(ckey+"="+str(message.author))
-					somefile2.write("\n")
-					somefile2.close()
-
-					yield from message.channel.send("{} has been added to the whitelist.".format(ckey))
-				else:
-					yield from message.channel.send("Rejected! You need to have at least the [Brother At Arms] rank.")
-			else:
-				yield from message.channel.send("Wrong format. Please try '!s whitelistme [ckey].'")
-
-		elif message.content.startswith("unwhitelistme"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain" or role.name == "Lieutenant" or role.name == "Footman" or role.name == "Brother At Arms" or role.name == "Knight":
-					accepted = True
-					break
-			if accepted:
-
-				removed = "N/A"
-
-				wlist = "/home/1713/civ13-rp/SQL/whitelist.txt"
-
-				open(wlist, "a").close()
-
-				f = open(wlist, "r")
-				lines = f.readlines()
-				f.close()
-				f = open(list, "w")
-				for line in lines:
-					if not str(message.author) in line:
-						f.write(line)
-					else:
-						removed = line.split("=")[0]
-
-				f.close()
-				list2 = "/home/1713/civ13-tdm/SQL/whitelist.txt"
-
-				open(list2, "a").close()
-
-				f2 = open(list2, "r")
-				lines2 = f2.readlines()
-				f2.close()
-				f2 = open(list2, "w")
-				for line2 in lines2:
-					if not str(message.author) in line2:
-						f2.write(line2)
-					else:
-						removed = line2.split("=")[0]
-
-				f2.close()
-
-				yield from message.channel.send("Ckey {} has been removed from the whitelist.".format(removed))
-			else:
-				yield from message.channel.send("Rejected! You need to have at least the [Brother At Arms] rank.")
-
-
 		elif message.content.startswith("hostciv"):
 
 			accepted = False
