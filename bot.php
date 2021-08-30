@@ -90,8 +90,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
 			while (($fp = fgets($ooc, 4096)) !== false) {
 				$fp = str_replace('\n', "", $fp);
-				$discord->getChannel('636644156923445269') //ooc-nomads
-					->sendMessage($fp);
+				if($target_channel = $message->guild->channels->get('name', 'ooc-nomads'))
+					$target_channel->sendMessage($fp);
 			}
 			ftruncate($ooc, 0); //clear the file
 			fclose($ooc);
@@ -99,8 +99,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($ahelp = fopen('/home/1713/civ13-rp/admin.log', "r+")) {
 			while (($fp = fgets($ahelp, 4096)) !== false) {
 				$fp = str_replace('\n', "", $fp);
-				$discord->getChannel('637046890030170126)' //ahelp-nomads
-					->sendMessage($fp);
+				if($target_channel = $message->guild->channels->get('name', 'ahelp-nomads'))
+					$target_channel->sendMessage($fp);
 			}
 			ftruncate($ahelp, 0); //clear the file
 			fclose($ahelp);
@@ -108,8 +108,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($ooctdm = fopen('/home/1713/civ13-tdm/ooc.log', "r+")) {
 			while (($fp = fgets($ooctdm, 4096)) !== false) {
 				$fp = str_replace('\n', "", $fp);
-				$discord->getChannel('636644391095631872') //ooc-tdm
-					->sendMessage($fp);
+				if($target_channel = $message->guild->channels->get('name', 'ooc-tdm'))
+					$target_channel->sendMessage($fp);
 			}
 			ftruncate($ooctdm, 0); //clear the file
 			fclose($ooctdm);
@@ -117,8 +117,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($ahelptdm = fopen('/home/1713/civ13-tdm/admin.log', "r+")) {
 			while (($fp = fgets($ahelptdm, 4096)) !== false) {
 				$fp = str_replace('\n', "", $fp);
-				$discord->getChannel('637046904575885322') //ahelp-tdm
-					->sendMessage($fp);
+				if($target_channel = $message->guild->channels->get('name', 'ahelp-tdm'))
+					$target_channel->sendMessage($fp);
 			}
 			ftruncate($ahelptdm, 0); //clear the file
 			fclose($ahelptdm);
