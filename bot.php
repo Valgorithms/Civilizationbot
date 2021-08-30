@@ -40,28 +40,18 @@ $discord = new \Discord\Discord([
 	'loop' => $loop,
 	'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS, // default intents as well as guild members
 ]);
-/*
-def portIsAvailable(port):
 
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+function portIsAvailable(int $port = 1714): bool
+{
+	$s = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
-	try:
-		s.bind(("127.0.0.1", port))
-	except socket.error as e:
-		#if e.errno == 98:
-			#print("Port is already in use")
-		#else:
-			# something else raised the socket.error exception
-			#print("Error: " + e)
-		s.close()
-		return False
-	else:
-		s.close()
-		return True
-
-	s.close()
-	return False
-*/
+	if (socket_bind($s, "127.0.0.1", $port)) {
+		socket_close($s);
+		return true;
+	}
+	socket_close($s);
+	return false;
+}
 
 function remove_prefix(string $text = '', string $prefix = ''): string
 {
@@ -72,7 +62,7 @@ function remove_prefix(string $text = '', string $prefix = ''): string
 
 function my_message($msg): bool
 {
-		return ($message->author->user->id == $discord->user->id);
+	return ($message->author->user->id == $discord->user->id);
 }
 
 function search_players(string $ckey): string
@@ -86,13 +76,15 @@ function search_players(string $ckey): string
 	} else return 'Unable to access playerlogs.txt!';
 }
 
-function on_ready($discord) {
+function on_ready($discord)
+{
 	echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL;
 	echo('------' . PHP_EOL);
 	#client.loop.create_task(counting(client))
 }
 
-function on_message($message, $discord, $loop, $command_symbol = '!s') {
+function on_message($message, $discord, $loop, $command_symbol = '!s')
+{
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
 	if ($message->guild->owner_id != '196253985072611328') return; //Only allow this in a guild that Taislin owns
 		if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
@@ -600,7 +592,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s') {
 	}
 }
 
-$discord->once('ready', function ($discord) use ($loop, $command_symbol) {
+$discord->once('ready', function ($discord) use ($loop, $command_symbol)
+{
 	on_ready($discord);
 	
 	$discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
