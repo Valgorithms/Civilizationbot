@@ -743,9 +743,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$embed->setColor(0x00ff00);
 				$embed->addFieldValues("Nomads Server Status", "Online");
 				if (isset($data[1])) $embed->addFieldValues("Address", '<'.$data[1].'>');
-				if (isset($data[2)) $embed->addFieldValues("Map", $data[2]);
-				if (isset($data[3)) $embed->addFieldValues("Gamemode", $data[3]);
-				if (isset($data[4)) $embed->addFieldValues("Players", $data[4]);
+				if (isset($data[2])) $embed->addFieldValues("Map", $data[2]);
+				if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
+				if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
 
 				$message->channel->sendEmbed($embed);
 			}
