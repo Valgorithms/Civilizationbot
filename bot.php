@@ -8,6 +8,12 @@ define('MAIN_INCLUDED', 1); //Token and SQL credential files may be protected lo
 require getcwd(). '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
+function execInBackground($cmd) {
+    if (substr(php_uname(), 0, 7) == "Windows") {
+        pclose(popen("start ". $cmd, "r")); //pclose(popen("start /B ". $cmd, "r"));
+    } else exec($cmd . " > /dev/null &");
+}
+
 /*
 from __future__ import print_function
 #from googletrans import Translator
@@ -287,7 +293,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		/*					
 		elif message.content.startswith('cpu'):
 			CPU_Pct= str(psutil.cpu_percent())
-			yield from message.channel.send('CPU Usage: ' + CPU_Pct +"%")
+			$message->channel->sendMessage('CPU Usage: ' + CPU_Pct +"%")
 		*/
 		if (str_starts_with($message_content_lower, 'help') {
 			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
@@ -320,10 +326,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 							for line in search:
 								line = line.rstrip()	# remove '\n' at end of line
 								if line == ckey+"="+str(message.author):
-									yield from message.channel.send("{} is already in the whitelist!".format(ckey))
+									$message->channel->sendMessage("{} is already in the whitelist!".format(ckey))
 
 								elif str(message.author) in line:
-									yield from message.channel.send("Woah there, {}, you already whitelisted one key! Remove the old one first.".format(str(message.author).split("#")[0]))
+									$message->channel->sendMessage("Woah there, {}, you already whitelisted one key! Remove the old one first.".format(str(message.author).split("#")[0]))
 
 							search.close()
 
@@ -455,12 +461,12 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if ($accepted) {
 					/*
 					os.system('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py')
-					yield from message.channel.send("Attempted to kill Civilization 13 Server.")
+					$message->channel->sendMessage("Attempted to kill Civilization 13 Server.")
 					os.system('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py')
-					yield from message.channel.send("Updated the code.")
+					$message->channel->sendMessage("Updated the code.")
 					os.system('sudo rm -f /home/1713/civ13-rp/serverdata.txt')
 					os.system('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &')
-					yield from message.channel.send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>")
+					$message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>")
 					time.sleep(10) # ditto
 					os.system('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
 					*/
@@ -483,12 +489,12 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if ($accepted) {
 					/*
 					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py')
-					yield from message.channel.send("Attempted to kill Civilization 13 TDM Server.")
+					$message->channel->sendMessage("Attempted to kill Civilization 13 TDM Server.")
 					os.system('sudo python3 /home/1713/civ13-tdmp/scripts/updateserverabspaths.py')
-					yield from message.channel.send("Updated the code.")
+					$message->channel->sendMessage("Updated the code.")
 					os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
 					os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
-					yield from message.channel.send("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>")
+					$message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>")
 					time.sleep(10) # ditto
 					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
 					*/
@@ -518,9 +524,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					if len(split_message) > 1 and len(split_message[1]) > 0:
 						mapto = split_message[1]
 						mapto = mapto.upper()
-						yield from message.channel.send("Changing map to {}...".format(mapto))
+						$message->channel->sendMessage("Changing map to {}...".format(mapto))
 						os.system('sudo python3 /home/1713/civ13-rp/scripts/mapswap.py {}'.format(mapto))
-						yield from message.channel.send("Sucessfully changed map to {}.".format(mapto))
+						$message->channel->sendMessage("Sucessfully changed map to {}.".format(mapto))
 					*/
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -538,16 +544,14 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					/*
-					yield from message.channel.send("Please wait, updating the code...")
-					os.system('sudo python3 /home/1713/civ13-tdm/scripts/updateserverabspaths.py')
-					yield from message.channel.send("Updated the code.")
-					os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
-					os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
-					yield from message.channel.send("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>")
-					time.sleep(10) # ditto
-					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
-					*/
+					$message->channel->sendMessage("Please wait, updating the code...")
+					//os.system('sudo python3 /home/1713/civ13-tdm/scripts/updateserverabspaths.py')
+					$message->channel->sendMessage("Updated the code.");
+					//os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
+					//os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
+					$message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>");
+					//time.sleep(10) # ditto
+					//os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
@@ -566,7 +570,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if ($accepted) {
 					/*
 					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py')
-					yield from message.channel.send("Attempted to kill Civilization 13 (TDM Server).")
+					$message->channel->sendMessage("Attempted to kill Civilization 13 (TDM Server).")
 					*/
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -590,9 +594,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					if len(split_message) > 1 and len(split_message[1]) > 0:
 						mapto = split_message[1]
 						mapto = mapto.upper()
-						yield from message.channel.send("Changing map to {}...".format(mapto))
+						$message->channel->sendMessage("Changing map to {}...".format(mapto))
 						os.system('sudo python3 /home/1713/civ13-tdm/scripts/mapswap.py {}'.format(mapto))
-						yield from message.channel.send("Sucessfully changed map to {}.".format(mapto))
+						$message->channel->sendMessage("Sucessfully changed map to {}.".format(mapto))
 					*/
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -625,7 +629,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 								banner = linesplit[4]
 								exp_date = (round(int(linesplit[6])/10))+946684800
 								exp_date = datetime.utcfromtimestamp(exp_date).strftime("%Y-%m-%d %H:%M:%S")
-								yield from message.channel.send("**{}** has been banned from *Nomads* on **{}** for **{}** by {}. Expires on {}.".format(ckey,bandate,banreason,banner,exp_date))
+								$message->channel->sendMessage("**{}** has been banned from *Nomads* on **{}** for **{}** by {}. Expires on {}.".format(ckey,bandate,banreason,banner,exp_date))
 						search.close()
 				if (filecheck2.is_file()):
 					open(filecheck2, "a").close()
@@ -641,12 +645,12 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 								banner = linesplit[4]
 								exp_date = (round(int(linesplit[6])/10))+946684800
 								exp_date = datetime.utcfromtimestamp(exp_date).strftime("%Y-%m-%d %H:%M:%S")
-								yield from message.channel.send("**{}** has been banned from *TDM* on **{}** for **{}** by {}. Expires on {}.".format(ckey,bandate,banreason,banner,exp_date))
+								$message->channel->sendMessage("**{}** has been banned from *TDM* on **{}** for **{}** by {}. Expires on {}.".format(ckey,bandate,banreason,banner,exp_date))
 						search.close()
 				if (found == 0):
-					yield from message.channel.send("No bans were found for **{}**.".format(ckey))
+					$message->channel->sendMessage("No bans were found for **{}**.".format(ckey))
 			else:
-				yield from message.channel.send("Wrong format. Please try '!s bancheck [ckey].'")
+				$message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'")
 
 
 		elif message.content.startswith('serverstatus'):
@@ -665,7 +669,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				else:
 					embed = discord.Embed(color=0x00ff00)
 					embed.add_field(name="TDM Server Status",value="Offline", inline=False)
-					yield from message.channel.send(embed=embed)
+					$message->channel->sendMessage(embed=embed)
 					return
 
 				data = data.replace('<b>Address</b>: ', '')
@@ -684,13 +688,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				embed.add_field(name="Players", value=data[4], inline=False)
 
 
-				yield from message.channel.send(embed=embed)
+				$message->channel->sendMessage(embed=embed)
 			_1715 = not portIsAvailable(1715)
 			server_is_up = (_1715)
 			if not server_is_up:
 				embed = discord.Embed(color=0x00ff00)
 				embed.add_field(name="Nomads Server Status",value="Offline", inline=False)
-				yield from message.channel.send(embed=embed)
+				$message->channel->sendMessage(embed=embed)
 				return
 			else:
 				data = None;
@@ -700,7 +704,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				else:
 					embed = discord.Embed(color=0x00ff00)
 					embed.add_field(name="Nomads Server Status",value="Offline", inline=False)
-					yield from message.channel.send(embed=embed)
+					$message->channel->sendMessage(embed=embed)
 					return
 
 				data = data.replace('<b>Address</b>: ', '')
@@ -719,7 +723,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				embed.add_field(name="Players", value=data[4], inline=False)
 
 
-				yield from message.channel.send(embed=embed)
+				$message->channel->sendMessage(embed=embed)
 		*/
 	}
 }
