@@ -387,39 +387,46 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				}
 				if ($accepted) {
 					$removed = "N/A";
-					/*
-					wlist = "/home/1713/civ13-rp/SQL/whitelist.txt"
-
-					open(wlist, "a").close()
-
-					f = open(wlist, "r")
-					lines = f.readlines()
-					f.close()
-					f = open(list, "w")
-					for line in lines:
-						if not str(message.author) in line:
-							f.write(line)
-						else:
-							removed = line.split("=")[0]
-
-					f.close()
-					list2 = "/home/1713/civ13-tdm/SQL/whitelist.txt"
-
-					open(list2, "a").close()
-
-					f2 = open(list2, "r")
-					lines2 = f2.readlines()
-					f2.close()
-					f2 = open(list2, "w")
-					for line2 in lines2:
-						if not str(message.author) in line2:
-							f2.write(line2)
-						else:
-							removed = line2.split("=")[0]
-
-					f2.close()
+					$lines_array = array();
+					if ($wlist = fopen("/home/1713/civ13-rp/SQL/whitelist.txt", "r")) {
+						while (($fp = fgets($playerlogs, 4096)) !== false) {
+							$lines_array[] = $fp;
+						}
+						fclose($wlist);
+					} else return $message->channel->sendMessage('Unable to access whitelist.txt!');
+					if ($count($lines_array) > 0) {
+						if ($wlist = fopen("/home/1713/civ13-rp/SQL/whitelist.txt", "w")) {
+							foreach ($lines_array as $line)
+								if (!str_contains($line, $message->author->username)) {
+									fwrite($wlist, $line);
+								} else {
+									$removed = explode('=', $line);
+									$removed = $removed[0];
+								}
+							fclose($wlist);
+						} else return $message->channel->sendMessage('Unable to access Nomads whitelist.txt!');
+					}
+					
+					$lines_array = array();
+					if ($wlist = fopen("/home/1713/civ13-tdm/SQL/whitelist.txt", "r")) {
+						while (($fp = fgets($playerlogs, 4096)) !== false) {
+							$lines_array[] = $fp;
+						}
+						fclose($wlist);
+					} else return $message->channel->sendMessage('Unable to access TDM whitelist.txt!');
+					if ($count($lines_array) > 0) {
+						if ($wlist = fopen("/home/1713/civ13-tdm/SQL/whitelist.txt", "w")) {
+							foreach ($lines_array as $line)
+								if (!str_contains($line, $message->author->username)) {
+									fwrite($wlist, $line);
+								} else {
+									$removed = explode('=', $line);
+									$removed = $removed[0];
+								}
+							fclose($wlist);
+						} else return $message->channel->sendMessage('Unable to access whitelist.txt!');
+					}
 					$message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
-					*/
 				} else $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
