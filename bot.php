@@ -294,8 +294,11 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		#whitelist
 		if (str_starts_with($message_content_lower, 'whitelistme')) {
 			$split_message = trim(substr($message->content, 11));
-			if (strlen(split_message) > 0) { // if len(split_message) > 1 and len(split_message[1]) > 0:
-				$ckey = split_message;
+			if (strlen($split_message) > 0) { // if len($split_message) > 1 and len($split_message[1]) > 0:
+				$ckey = $split_message;
+				$ckey = strtolower($ckey);
+				$ckey = str_replace('_', '', $ckey);
+				$ckey = str_replace(' ', '', $ckey);
 				$accepted = false;
 				if ($author_member = $message->member) {
 					foreach ($author_member->roles as $role) {
@@ -310,30 +313,57 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						}
 					}
 					if ($accepted) {
-						$whitelist_path = '/home/1713/civ13-rp/SQL/whitelist.txt';
-						/*
-						open(whitelist, "a").close()
-
-						with open(whitelist, "r") as search:
-							for line in search:
-								line = line.rstrip()	# remove '\n' at end of line
-								if line == ckey+"="+str(message.author):
-									$message->channel->sendMessage("{} is already in the whitelist!".format(ckey))
-
-								elif str(message.author) in line:
-									$message->channel->sendMessage("Woah there, {}, you already whitelisted one key! Remove the old one first.".format(str(message.author).split("#")[0]))
-
-							search.close()
-
-						somefile = open(whitelist, "a")
-						somefile.write(ckey+"="+str(message.author))
-						somefile.write("\n")
-						somefile.close()
-						somefile2 = open("/home/1713/civ13-tdm/SQL/whitelist.txt", "a")
-						somefile2.write(ckey+"="+str(message.author))
-						somefile2.write("\n")
-						somefile2.close()
-						*/
+						$found = false;
+						$whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "r") ?? NULL;
+						if ($whitelist1) {
+							while (($fp = fgets($whitelist1, 4096)) !== false) {
+								$line = trim(str_replace("\n", "", $fp));
+								$linesplit = explode(";", $line);
+								foreach ($linesplit as $split) {
+									if ($split == $ckey)
+										$found = true;
+									
+								}
+							}
+							fclose($whitelist1);
+						}
+						$whitelist2 = fopen('/home/1713/civ13-tdm/SQL/whitelist.txt', "r") ?? NULL;
+						if ($whitelist2) {
+							while (($fp = fgets($whitelist2, 4096)) !== false) {
+								$line = trim(str_replace("\n", "", $fp));
+								$linesplit = explode(";", $line);
+								foreach ($linesplit as $split)
+									if ($split == $ckey)
+										$found = true;
+							}
+							fclose($whitelist2);
+						}
+						
+						if (!found) {
+							$found2 = false;
+							$whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "r") ?? NULL;
+							if ($whitelist1) {
+								while (($fp = fgets($whitelist1, 4096)) !== false) {
+									$line = trim(str_replace("\n", "", $fp));
+									$linesplit = explode(";", $line);
+									foreach ($linesplit as $split) {
+										if ($split == $message->author->username)
+											$found2 = true;
+									}
+								}
+							fclose($whitelist1);
+							}
+						}else $message->channel->sendMessage("$ckey is already in the whitelist!");
+						
+						$txt = $ckey."=".$message->author->username.'\n';
+						if ($whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "a")) {
+							fwrite($whitelist1, $txt);
+							fclose($whitelist1);
+						}
+						if ($whitelist2 = fopen('/home/1713/civ13-tdm/SQL/whitelist.txt', "a")) {
+							fwrite($whitelist2, $txt);
+							fclose($whitelist2);
+						}
 						$message->channel->sendMessage("$ckey has been added to the whitelist.");
 					} else $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
 				} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -591,7 +621,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if (str_starts_with($message_content_lower, "bancheck")) {
 			$split_message = explode('bancheck ', $message_content);
 			if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
-				$ckey = trim(split_message[1]);
+				$ckey = trim($split_message[1]);
 				$ckey = strtolower($ckey);
 				$ckey = str_replace('_', '', $ckey);
 				$ckey = str_replace(' ', '', $ckey);
