@@ -42,9 +42,14 @@ function portIsAvailable(int $port = 1714): bool
 {
 	$s = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
-	if (socket_bind($s, "127.0.0.1", $port)) {
+	try {
+		if (socket_bind($s, "127.0.0.1", $port)) {
+			socket_close($s);
+			return true;
+		}
+	} catch (Throwable $e) { //This will probably crash the bot
 		socket_close($s);
-		return true;
+		return false;
 	}
 	socket_close($s);
 	return false;
