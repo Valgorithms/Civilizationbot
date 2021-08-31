@@ -32,7 +32,7 @@ $discord = new \Discord\Discord([
         'dns' => '8.8.8.8', // can change dns
 	],*/
     'loadAllMembers' => true,
-    'storeMessages' => true,
+    'storeMessages' => false, //Not needed yet
 	'logger' => $logger,
 	'loop' => $loop,
 	'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS, // default intents as well as guild members
