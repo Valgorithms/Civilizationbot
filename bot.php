@@ -177,7 +177,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$cpu_load = '-1';
 				if ($cpu_load_array = sys_getloadavg())
 					$cpu_load = array_sum($cpu_load_array) / count($cpu_load_array);
-				$message->channel->sendMessage('CPU Usage: ' . $cpu_load . "%")
+				$message->channel->sendMessage('CPU Usage: ' . $cpu_load . "%");
 			}
 			return;
 		}
@@ -195,8 +195,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'ooc ')) {
-			case (strtolower($message->channel->name)) {
-				switch 'ooc-nomads':
+			switch (strtolower($message->channel->name)) {
+				case 'ooc-nomads':
 					/*
 					message.content = remove_prefix(message.content, 'ooc ')
 					with open("/home/1713/civ13-rp/SQL/discord2ooc.txt", "a") as myfile:
@@ -204,7 +204,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						myfile.write("\n")
 						*/
 					return;
-				switch 'ooc-tdm':
+				case 'ooc-tdm':
 					/*
 					message.content = remove_prefix(message.content, 'ooc ')
 					with open("/home/1713/civ13-tdm/SQL/discord2ooc.txt", "a") as myfile:
@@ -216,8 +216,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'asay ')) {
-			case (strtolower($message->channel->name)) {
-				switch 'ahelp-nomads':
+			switch (strtolower($message->channel->name)) {
+				case 'ahelp-nomads':
 					/*
 					message.channel.name.lower() == "ahelp-nomads":
 					message.content = remove_prefix(message.content, 'asay ')
@@ -226,7 +226,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						myfile.write("\n")
 					*/
 					return;
-				switch 'ahelp-tdm':
+				case 'ahelp-tdm':
 					/*
 					message.content = remove_prefix(message.content, 'asay ')
 					with open("/home/1713/civ13-tdm/SQL/discord2admin.txt", "a") as myfile:
@@ -238,8 +238,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'dm ')) {
-			case (strtolower($message->channel->name)) {
-				switch 'ahelp-nomads':
+			switch (strtolower($message->channel->name)) {
+				case 'ahelp-nomads':
 					/*
 					message.content = remove_prefix(message.content, 'dm ')
 					split_message = message.content.split(": ")
@@ -248,7 +248,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						myfile.write("\n")
 					*/
 					return;
-				switch 'ahelp-tdm':
+				case 'ahelp-tdm':
 					/*
 					message.content = remove_prefix(message.content, 'dm ')
 					split_message = message.content.split(": ")
@@ -261,8 +261,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'pm ')) {
-			case (strtolower($message->channel->name)) {
-				switch 'ahelp-nomads':
+			switch (strtolower($message->channel->name)) {
+				case 'ahelp-nomads':
 					/*
 					message.content = remove_prefix(message.content, 'pm ')
 					split_message = message.content.split(": ")
@@ -271,7 +271,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						myfile.write("\n")
 					*/
 					return;
-				switch 'ahelp-tdm':
+				case 'ahelp-tdm':
 					/*
 					message.content = remove_prefix(message.content, 'pm ')
 					split_message = message.content.split(": ")
@@ -311,7 +311,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				myfile.write(str(message.author)+":::"+str(split_message[0]))
 				myfile.write("\n")
 			*/
-			$result = '**' . $message->user->username . '** unbanned **' . str(split_message[0] . '**.';
+			$result = '**' . $message->user->username . '** unbanned **' . $split_message[0] . '**.';
 			/*
 			list1 = "/home/1713/civ13-rp/SQL/bans.txt"
 			open(list1, "a").close()
@@ -346,12 +346,12 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$accepted = false;
 				if ($author_member = $message->member) {
 					foreach ($author_member->roles as $role) {
-						case ($role->name) {
-							switch 'Admiral':
-							switch 'Captain':
-							switch 'Lieutenant':
-							switch 'Brother At Arms':
-							switch 'Knight':
+						switch ($role->name) {
+							case 'Admiral':
+							case 'Captain':
+							case 'Lieutenant':
+							case 'Brother At Arms':
+							case 'Knight':
 								$accepted = true;
 								break;
 						}
@@ -391,19 +391,19 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
-						switch 'Lieutenant':
-						switch 'Footman':
-						switch 'Brother At Arms':
-						switch 'Knight':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
+						case 'Lieutenant':
+						case 'Footman':
+						case 'Brother At Arms':
+						case 'Knight':
 							$accepted = true;
 							break;
 					}
 				}
 				if ($accepted) {
-					$removed = "N/A"
+					$removed = "N/A";
 					/*
 					wlist = "/home/1713/civ13-rp/SQL/whitelist.txt"
 
@@ -445,10 +445,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
-						switch 'Lieutenant':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
+						case 'Lieutenant':
 							$accepted = true;
 							break;
 					}
@@ -470,10 +470,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
-						switch 'Lieutenant':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
+						case 'Lieutenant':
 							$accepted = true;
 							break;
 					}
@@ -489,10 +489,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
-						switch 'Lieutenant':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
+						case 'Lieutenant':
 							$accepted = true;
 							break;
 					}
@@ -516,10 +516,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
-						switch 'Lieutenant':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
+						case 'Lieutenant':
 							$accepted = true;
 							break;
 					}
@@ -542,17 +542,17 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
-						switch 'Lieutenant':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
+						case 'Lieutenant':
 							$accepted = true;
 							break;
 					}
 				}
 				if ($accepted) {
 					$split_message = explode("mapswap ", $message_content);
-					if ((count($split_message) > 1) && (strlen($split_message[1]) > 0) {
+					if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
 						$mapto = split_message[1];
 						$mapto = strtoupper($mapto);
 						$message->channel->sendMessage("Changing map to $mapto...");
@@ -567,15 +567,15 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
 							$accepted = true;
 							break;
 					}
 				}
 				if ($accepted) {
-					$message->channel->sendMessage("Please wait, updating the code...")
+					$message->channel->sendMessage("Please wait, updating the code...");
 					execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/updateserverabspaths.py');
 					$message->channel->sendMessage("Updated the code.");
 					execInBackgroundLinux('sudo rm -f /home/1713/civ13-tdm/serverdata.txt');
@@ -591,9 +591,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
 							$accepted = true;
 							break;
 					}
@@ -609,10 +609,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
-					case ($role->name) {
-						switch 'Admiral':
-						switch 'Captain':
-						switch 'Knight':
+					switch ($role->name) {
+						case 'Admiral':
+						case 'Captain':
+						case 'Knight':
 							$accepted = true;
 							break;
 					}
@@ -632,7 +632,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		
 		/*			
-		if str_starts_with($message_content_lower,"bancheck"):
+		if (str_starts_with($message_content_lower,"bancheck")):
 			split_message = message.content.split("bancheck ")
 			if len(split_message) > 1 and len(split_message[1]) > 0:
 				ckey = split_message[1]
@@ -681,7 +681,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'")
 
 
-		if (str_starts_with($message_content_lower,'serverstatus'):
+		if (str_starts_with($message_content_lower,'serverstatus')):
 			_1714 = not portIsAvailable(1714)
 			server_is_up = (_1714)
 			if not server_is_up:
