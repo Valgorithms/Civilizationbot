@@ -715,7 +715,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			$_1715 = !portIsAvailable(1715);
 			$server_is_up = ($_1715);
-			if (!server_is_up) {
+			if (!$server_is_up) {
 				$embed->setColor(0x00ff00);
 				$embed->addFieldValues("Nomads Server Status", "Offline");
 				$message->channel->sendEmbed($embed);
