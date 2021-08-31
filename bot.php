@@ -678,8 +678,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		if (str_starts_with($message_content_lower,'serverstatus')) {
 			$embed = $discord->factory(\Discord\Parts\Embed\Embed::class);
-			$_1714 = portIsAvailable(1714);
-			$server_is_up = ($_1714);
+			$_1714 = !portIsAvailable(1714);
+			$server_is_up = $_1714;
 			if (!$server_is_up) {
 				$embed->setColor(0x00ff00);
 				$embed->addFieldValues("TDM Server Status", "Offline");
