@@ -22,23 +22,6 @@ function execInBackgroundLinux($cmd) {
     exec($cmd . " > /dev/null &");
 }
 
-/*
-from __future__ import print_function
-#from googletrans import Translator
-
-import asyncio
-import codecs
-import random
-import os
-import psutil
-import time
-import socket
-import subprocess
-from operator import itemgetter
-from pathlib import Path
-from datetime import datetime
-*/
-
 $logger = new Monolog\Logger('New logger');
 $logger->pushHandler(new Monolog\Handler\StreamHandler('php://stdout'));
 $loop = React\EventLoop\Factory::create();
@@ -305,29 +288,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			fclose($file);
 
 			$result = '**' . $message->user->username . '** unbanned **' . $split_message[0] . '**.';
-			/*
-			list1 = "/home/1713/civ13-rp/SQL/bans.txt"
-			open(list1, "a").close()
-			f = open(list1, "r")
-			lines = f.readlines()
-			f.close()
-			f = open(list1, "w")
-			for line in lines:
-				if not str(split_message[0]) in line:
-					f.write(line)
-			f.close()
-			
-			list2 = "/home/1713/civ13-tdm/SQL/bans.txt"
-			open(list2, "a").close()
-			f2 = open(list2, "r")
-			lines2 = f2.readlines()
-			f2.close()
-			f2 = open(list2, "w")
-			for line2 in lines2:
-				if not str(split_message[0]) in line2:
-					f2.write(line2)
-			f2.close()
-			*/
 			$message->channel->sendMessage($result);
 			return;
 		}
