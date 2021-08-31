@@ -199,91 +199,76 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'ooc ')) {
+			$message_filtered = substr($message_content, 4);
 			switch (strtolower($message->channel->name)) {
-				case 'ooc-nomads':
-					/*
-					message.content = remove_prefix(message.content, 'ooc ')
-					with open("/home/1713/civ13-rp/SQL/discord2ooc.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(message.content))
-						myfile.write("\n")
-						*/
-					return;
+				case 'ooc-nomads':					
+					$file = fopen("/home/1713/civ13-rp/SQL/discord2ooc.txt", "a");
+					$txt = $message->user->username . ":::$message_filtered\n";
+					fwrite($file, $txt);
+					fclose($file);
+					break;
 				case 'ooc-tdm':
-					/*
-					message.content = remove_prefix(message.content, 'ooc ')
-					with open("/home/1713/civ13-tdm/SQL/discord2ooc.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(message.content))
-						myfile.write("\n")
-					*/
-					return;
+					$file = fopen("/home/1713/civ13-tdm/SQL/discord2ooc.txt", "a");
+					$txt = $message->user->username . ":::$message_filtered\n";
+					fwrite($file, $txt);
+					fclose($file);
+					break;
 			}
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'asay ')) {
+			$message_filtered = substr($message_content, 5);
 			switch (strtolower($message->channel->name)) {
 				case 'ahelp-nomads':
-					/*
-					message.channel.name.lower() == "ahelp-nomads":
-					message.content = remove_prefix(message.content, 'asay ')
-					with open("/home/1713/civ13-rp/SQL/discord2admin.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(message.content))
-						myfile.write("\n")
-					*/
-					return;
+					$file = fopen("/home/1713/civ13-rp/SQL/discord2admin.txt", "a");
+					$txt = $message->user->username . ":::$message_filtered\n";
+					fwrite($file, $txt);
+					fclose($file);
+					break;
 				case 'ahelp-tdm':
-					/*
-					message.content = remove_prefix(message.content, 'asay ')
-					with open("/home/1713/civ13-tdm/SQL/discord2admin.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(message.content))
-						myfile.write("\n")
-					*/
-					return;
+					$file = fopen("/home/1713/civ13-tdm/SQL/discord2admin.txt", "a");
+					$txt = $message->user->username . ":::$message_filtered\n";
+					fwrite($file, $txt);
+					fclose($file);
+					break;
 			}
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'dm ')) {
+			$message_content = substr($message_content, 3);
+			$split_message = explode(": ", $value);
 			switch (strtolower($message->channel->name)) {
 				case 'ahelp-nomads':
-					/*
-					message.content = remove_prefix(message.content, 'dm ')
-					split_message = message.content.split(": ")
-					with open("/home/1713/civ13-rp/SQL/discord2dm.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1]))
-						myfile.write("\n")
-					*/
-					return;
+					$file = fopen("/home/1713/civ13-rp/SQL/discord2dm.txt", "a");
+					$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
+					fwrite($file, $txt);
+					fclose($file);
+					break;
 				case 'ahelp-tdm':
-					/*
-					message.content = remove_prefix(message.content, 'dm ')
-					split_message = message.content.split(": ")
-					with open("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1]))
-						myfile.write("\n")
-					*/
-					return;
+					$file = fopen("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a");
+					$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
+					fwrite($file, $txt);
+					fclose($file);
+					break;
 			}
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'pm ')) {
+			$message_content = substr($message_content, 3);
+			$split_message = explode(": ", $value);
 			switch (strtolower($message->channel->name)) {
 				case 'ahelp-nomads':
-					/*
-					message.content = remove_prefix(message.content, 'pm ')
-					split_message = message.content.split(": ")
-					with open("/home/1713/civ13-rp/SQL/discord2dm.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1]))
-						myfile.write("\n")
-					*/
-					return;
+					$file = fopen("/home/1713/civ13-rp/SQL/discord2dm.txt", "a");
+					$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
+					fwrite($file, $txt);
+					fclose($file);
+					break;
 				case 'ahelp-tdm':
-					/*
-					message.content = remove_prefix(message.content, 'pm ')
-					split_message = message.content.split(": ")
-					with open("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1]))
-						myfile.write("\n")
-					*/
-					return;
+					$file = fopen("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a");
+					$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
+					fwrite($file, $txt);
+					fclose($file);
+					break;
 			}
 			return;
 		}
@@ -291,14 +276,15 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message_content = substr($message->content, 4);
 			$split_message = explode('; ', $message_content); //$split_target[1] is the target
 			if (!str_contains($message->content, 'Byond account too new, appeal on our discord')) {
-				/*
-				with open("/home/1713/civ13-rp/SQL/discord2ban.txt", "a") as myfile:
-						myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1])+":::"+str(split_message[2]))
-						myfile.write("\n")
-				with open("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a") as myfile:
-					myfile.write(str(message.author)+":::"+str(split_message[0])+":::"+str(split_message[1])+":::"+str(split_message[2]))
-					myfile.write("\n")
-				*/
+				$file = fopen("/home/1713/civ13-rp/SQL/discord2ban.txt", "a")
+				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
+				fwrite($file, $txt);
+				fclose($file);
+				
+				$file = fopen("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a")
+				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
+				fwrite($file, $txt);
+				fclose($file);
 			}
 			$result = '**' . $message->user->username . '#' . $message->user->discriminator . '**banned **' . split_message[0] . '** for **' . split_message[1] . '** with the reason **' . split_message[2] . '**.';
 			$message->channel->sendMessage($result);
@@ -307,14 +293,17 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if (str_starts_with($message_content_lower, 'unban ')) {
 			$message_content = substr($message->content, 6);
 			$split_message = explode('; ', $message_content);
-			/*
-			with open("/home/1713/civ13-rp/SQL/discord2unban.txt", "a") as myfile:
-				myfile.write(str(message.author)+":::"+str(split_message[0]))
-				myfile.write("\n")
-			with open("/home/1713/civ13-tdm/SQL/discord2unban.txt", "a") as myfile:
-				myfile.write(str(message.author)+":::"+str(split_message[0]))
-				myfile.write("\n")
-			*/
+			
+			$file = fopen("/home/1713/civ13-rp/SQL/discord2unban.txt", "a");
+			$txt = $message->user->username . "#" . $message->user->discriminator . ":::".$split_message[0];
+			fwrite($file, $txt);
+			fclose($file);
+			
+			$file = fopen("/home/1713/civ13-tdm/SQL/discord2unban.txt", "a");
+			$txt = $message->user->username . "#" . $message->user->discriminator . ":::".$split_message[0];
+			fwrite($file, $txt);
+			fclose($file);
+
 			$result = '**' . $message->user->username . '** unbanned **' . $split_message[0] . '**.';
 			/*
 			list1 = "/home/1713/civ13-rp/SQL/bans.txt"
