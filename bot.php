@@ -185,12 +185,16 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if (str_starts_with($message_content_lower, 'insult')) {
 			$split_message = explode(' ', $message_content); //$split_target[1] is the target
 			if ((count($split_message > 1)) && strlen($split_message[1] > 0) ) {
-				$ckey = $split_message[1];
-				/*
-				insults = open('insult.txt').read().splitlines()
-				insult = random.choice(insults)
-				*/
-				//$message->channel->sendMessage("$ckey, $insult");
+				$incel = $split_message[1];
+				$insults_array = array();
+				while (($fp = fgets('insult.txt', 4096)) !== false) {
+					if (trim(strtolower($fp)) == trim(strtolower($incel)))
+						$insults_array[] = $insult;
+				}
+				if (count($insults_array > 0) {
+					$insult = $insults_array[rand(0, count($insults_array)-1)];
+					$message->channel->sendMessage("$incel, $insult");
+				}
 			}
 			return;
 		}
