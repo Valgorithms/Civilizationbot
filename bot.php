@@ -605,7 +605,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				}
 				if ($accepted) {
 					$split_message = explode("mapswap ", $message_content);
-					if ( (count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
+					if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
 						$mapto = split_message[1];
 						$mapto = strtoupper($mapto);
 						$message->channel->sendMessage("Changing map to $mapto...");
@@ -633,7 +633,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						$filter = "|||";
 						$line = trim(str_replace($filter, "", $fp));
 						$linesplit = explode(";", $line); //$split_ckey[0] is the ckey
-						if ( (count($linesplit)>=8) && ($linesplit[8] == $ckey) ){
+						if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
 							$found = true;
 							$banreason = $linesplit[3];
 							$bandate = $linesplit[5];
@@ -650,7 +650,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						$filter = "|||";
 						$line = trim(str_replace($filter, "", $fp));
 						$linesplit = explode(";", $line); //$split_ckey[0] is the ckey
-						if ( (count($linesplit)>=8) && ($linesplit[8] == $ckey) ){
+						if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
 							$found = true;
 							$banreason = $linesplit[3];
 							$bandate = $linesplit[5];
@@ -664,79 +664,81 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else $message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'");
 			return;
 		}
-		/*
-		if (str_starts_with($message_content_lower,'serverstatus')):
-			_1714 = not portIsAvailable(1714)
-			server_is_up = (_1714)
-			if not server_is_up:
-				embed = discord.Embed(color=0x00ff00)
-				embed.add_field(name="TDM Server Status",value="Offline", inline=False)
-				yield from client.message.channel.send(embed=embed)
-				return
-			else:
-				data = None;
-				if _1714:
-					if os.path.isfile('/home/1713/civ13-tdm/serverdata.txt') == True:
-						data = codecs.open('/home/1713/civ13-tdm/serverdata.txt', encoding='utf-8').read()
-				else:
-					embed = discord.Embed(color=0x00ff00)
-					embed.add_field(name="TDM Server Status",value="Offline", inline=False)
-					$message->channel->sendMessage(embed=embed)
-					return
-
-				data = data.replace('<b>Address</b>: ', '')
-				data = data.replace('<b>Map</b>: ', '')
-				data = data.replace('<b>Gamemode</b>: ', '')
-				data = data.replace('<b>Players</b>:','')
-				data = data.replace('</b>','')
-				data = data.replace('<b>','')
-				data = data.split(";")
+		if (str_starts_with($message_content_lower,'serverstatus')) {
+			$embed = $discord->factory(\Discord\Parts\Embed\Embed::class);
+			$_1714 = portIsAvailable(1714);
+			$server_is_up = ($_1714);
+			if (!$server_is_up) {
+				$embed->setColor(0x00ff00);
+				$embed->addFieldValues("TDM Server Status", "Offline");
+				$message->channel->sendEmbed($embed);
+				return;
+			} else {
+				$data = "None";
+				if ($_1714) {
+					if (!$data = file_get_contents('/home/1713/civ13-tdn/serverdata.txt'))
+						$message->channel->sendMessage('Unable to access serverdata.txt!');
+				} else {
+					$embed->setColor(0x00ff00);
+					$embed->addFieldValues("TDM Server Status", "Offline");
+					$message->channel->sendEmbed($embed);
+					return;
+				}
+				$data = str_replace('<b>Address</b>: ', '', $data);
+				$data = str_replace('<b>Map</b>: ', '', $data);
+				$data = str_replace('<b>Gamemode</b>: ', '', $data);
+				$data = str_replace('<b>Players</b>: ', '', $data);
+				$data = str_replace('</b>', '', $data);
+				$data = str_replace('<b>', '', $data);
+				$data = explode(';', $data);
 				#embed = discord.Embed(title="**Civ13 Bot**", color=0x00ff00)
-				embed = discord.Embed(color=0x00ff00)
-				embed.add_field(name="TDM Server Status",value="Online", inline=False)
-				embed.add_field(name="Address", value='<'+data[1]+'>', inline=False)
-				embed.add_field(name="Map", value=data[2], inline=False)
-				embed.add_field(name="Gamemode", value=data[3], inline=False)
-				embed.add_field(name="Players", value=data[4], inline=False)
+				$embed->setColor(0x00ff00);
+				$embed->addFieldValues("TDM Server Status", "Online");
+				$embed->addFieldValues("Address", '<'.$data[1].'>');
+				$embed->addFieldValues("Map", $data[2]);
+				$embed->addFieldValues("Gamemode", $data[3]);
+				$embed->addFieldValues("Players", $data[4]);
 
+				$message->channel->sendEmbed($embed);
+			}
+			$_1715 = !portIsAvailable(1715);
+			$server_is_up = ($_1715);
+			if (!server_is_up) {
+				$embed->setColor(0x00ff00);
+				$embed->addFieldValues("Nomads Server Status", "Offline");
+				$message->channel->sendEmbed($embed);
+				return;
+			} else {
+				$data = "None";
+				if ($_1714) {
+					if (!$data = file_get_contents('/home/1713/civ13-rp/serverdata.txt'))
+						$message->channel->sendMessage('Unable to access serverdata.txt!');
+				} else {
+					$embed->setColor(0x00ff00);
+					$embed->addFieldValues("Nomads Server Status", "Offline");
+					$message->channel->sendEmbed($embed);
+					return;
+				}
 
-				$message->channel->sendMessage(embed=embed)
-			_1715 = not portIsAvailable(1715)
-			server_is_up = (_1715)
-			if not server_is_up:
-				embed = discord.Embed(color=0x00ff00)
-				embed.add_field(name="Nomads Server Status",value="Offline", inline=False)
-				$message->channel->sendMessage(embed=embed)
-				return
-			else:
-				data = None;
-				if _1714:
-					if os.path.isfile('/home/1713/civ13-rp/serverdata.txt') == True:
-						data = codecs.open('/home/1713/civ13-rp/serverdata.txt', encoding='utf-8').read()
-				else:
-					embed = discord.Embed(color=0x00ff00)
-					embed.add_field(name="Nomads Server Status",value="Offline", inline=False)
-					$message->channel->sendMessage(embed=embed)
-					return
-
-				data = data.replace('<b>Address</b>: ', '')
-				data = data.replace('<b>Map</b>: ', '')
-				data = data.replace('<b>Gamemode</b>: ', '')
-				data = data.replace('<b>Players</b>:','')
-				data = data.replace('</b>','')
-				data = data.replace('<b>','')
-				data = data.split(";")
+				$data = str_replace('<b>Address</b>: ', '', $data);
+				$data = str_replace('<b>Map</b>: ', '', $data);
+				$data = str_replace('<b>Gamemode</b>: ', '', $data);
+				$data = str_replace('<b>Players</b>: ', '', $data);
+				$data = str_replace('</b>', '', $data);
+				$data = str_replace('<b>', '', $data);
+				$data = explode(';', $data);
 				#embed = discord.Embed(title="**Civ13 Bot**", color=0x00ff00)
-				embed = discord.Embed(color=0x00ff00)
-				embed.add_field(name="Nomads Server Status",value="Online", inline=False)
-				embed.add_field(name="Address", value='<'+data[1]+'>', inline=False)
-				embed.add_field(name="Map", value=data[2], inline=False)
-				embed.add_field(name="Gamemode", value=data[3], inline=False)
-				embed.add_field(name="Players", value=data[4], inline=False)
+				$embed->setColor(0x00ff00);
+				$embed->addFieldValues("Nomads Server Status", "Online");
+				$embed->addFieldValues("Address", '<'.$data[1].'>');
+				$embed->addFieldValues("Map", $data[2]);
+				$embed->addFieldValues("Gamemode", $data[3]);
+				$embed->addFieldValues("Players", $data[4]);
 
-
-				$message->channel->sendMessage(embed=embed)
-		*/
+				$message->channel->sendEmbed($embed);
+			}
+			return;
+		}
 	}
 }
 
