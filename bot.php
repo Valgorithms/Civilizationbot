@@ -683,8 +683,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			if (!$server_is_up) {
 				$embed->setColor(0x00ff00);
 				$embed->addFieldValues("TDM Server Status", "Offline");
-				$message->channel->sendEmbed($embed);
-				return;
+				#$message->channel->sendEmbed($embed);
+				#return;
 			} else {
 				$data = "None";
 				if ($_1714) {
@@ -693,8 +693,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				} else {
 					$embed->setColor(0x00ff00);
 					$embed->addFieldValues("TDM Server Status", "Offline");
-					$message->channel->sendEmbed($embed);
-					return;
+					#$message->channel->sendEmbed($embed);
+					#return;
 				}
 				$data = str_replace('<b>Address</b>: ', '', $data);
 				$data = str_replace('<b>Map</b>: ', '', $data);
@@ -711,15 +711,15 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
 				if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
 
-				$message->channel->sendEmbed($embed);
+				$running = false; $message->channel->sendEmbed($embed);
 			}
 			$_1715 = !portIsAvailable(1715);
 			$server_is_up = ($_1715);
 			if (!$server_is_up) {
 				$embed->setColor(0x00ff00);
 				$embed->addFieldValues("Nomads Server Status", "Offline");
-				$message->channel->sendEmbed($embed);
-				return;
+				#$message->channel->sendEmbed($embed);
+				#return;
 			} else {
 				$data = "None";
 				if ($_1714) {
@@ -728,8 +728,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				} else {
 					$embed->setColor(0x00ff00);
 					$embed->addFieldValues("Nomads Server Status", "Offline");
-					$message->channel->sendEmbed($embed);
-					return;
+					#$message->channel->sendEmbed($embed);
+					#return;
 				}
 
 				$data = str_replace('<b>Address</b>: ', '', $data);
@@ -747,8 +747,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
 				if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
 
-				$message->channel->sendEmbed($embed);
 			}
+			$message->channel->sendEmbed($embed);
 			return;
 		}
 	}
