@@ -418,8 +418,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 							removed = line2.split("=")[0]
 
 					f2.close()
-					*/
 					$message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
+					*/
 				} else $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
@@ -482,7 +482,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					
 					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py');
 					$message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
 					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py');
