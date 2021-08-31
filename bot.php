@@ -134,6 +134,21 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	if str_starts_with($message->content, $command_symbol . ' ') { //Add these as slash commands?
 		$message_content = substr($message->content, strlen($command_symbol)+1);
 		$message_content_lower = strtolower($message_content);
+		if (str_starts_with($message_content_lower, 'ping') {
+			$message->channel->sendMessage('Pong!');
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'help') {
+			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
+			return;
+		}
+		/*
+		if (str_starts_with($message_content_lower,'cpu')) {
+			CPU_Pct= str(psutil.cpu_percent())
+			$message->channel->sendMessage('CPU Usage: ' + CPU_Pct +"%")
+			return;
+		}
+		*/
 		if (str_starts_with($message_content_lower, 'insult') {
 			$split_message = explode(' ', $message_content); //$split_target[1] is the target
 			if ((count($split_message > 1)) && strlen($split_message[1] > 0) ){
@@ -288,15 +303,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			f2.close()
 			*/
 			$message->channel->sendMessage($result);
-			return;
-		}
-		/*					
-		elif message.content.startswith('cpu'):
-			CPU_Pct= str(psutil.cpu_percent())
-			$message->channel->sendMessage('CPU Usage: ' + CPU_Pct +"%")
-		*/
-		if (str_starts_with($message_content_lower, 'help') {
-			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
 			return;
 		}
 		#whitelist
@@ -502,10 +508,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'ping') {
-			$message->channel->sendMessage('Pong!');
-			return;
-		}
 		if (str_starts_with($message_content_lower, 'mapswap') {
 			$accepted = false;
 			if ($author_member = $message->member) {
@@ -604,7 +606,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		
 		/*			
-		elif message.content.startswith("bancheck"):
+		if str_starts_with($message_content_lower,"bancheck"):
 			split_message = message.content.split("bancheck ")
 			if len(split_message) > 1 and len(split_message[1]) > 0:
 				ckey = split_message[1]
@@ -653,7 +655,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'")
 
 
-		elif message.content.startswith('serverstatus'):
+		if str_starts_with($message_content_lower,'serverstatus'):
 			_1714 = not portIsAvailable(1714)
 			server_is_up = (_1714)
 			if not server_is_up:
