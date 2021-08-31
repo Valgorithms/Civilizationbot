@@ -688,7 +688,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else {
 				$data = "None";
 				if ($_1714) {
-					if (!$data = file_get_contents('/home/1713/civ13-tdn/serverdata.txt'))
+					if (!$data = file_get_contents('/home/1713/civ13-tdm/serverdata.txt'))
 						$message->channel->sendMessage('Unable to access serverdata.txt!');
 				} else {
 					$embed->setColor(0x00ff00);
