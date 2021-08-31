@@ -460,8 +460,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					execInBackgroundLinux('sudo rm -f /home/1713/civ13-rp/serverdata.txt');
 					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &');
 					$message->channel->send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
-					//time.sleep(10) # ditto
-					//execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
+					$discord->getLoop()->addTimer(10, function() { # ditto
+						execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py');
+					});
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
@@ -506,8 +507,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					execInBackgroundLinux('sudo rm -f /home/1713/civ13-rp/serverdata.txt');
 					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &');
 					$message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
-					//time.sleep(10) # ditto
-					//execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
+					$discord->getLoop()->addTimer(10, function() { # ditto
+						execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py');
+					});
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
@@ -532,8 +534,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					execInBackgroundLinux('sudo rm -f /home/1713/civ13-tdm/serverdata.txt');
 					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &');
 					$message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>");
-					//time.sleep(10) # ditto
-					//execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
+					$discord->getLoop()->addTimer(10, function() { # ditto
+						execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py');
+					});
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
@@ -581,8 +584,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					execInBackgroundLinux('sudo rm -f /home/1713/civ13-tdm/serverdata.txt');
 					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &');
 					$message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>");
-					//time.sleep(10) # ditto
-					//execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
+					$discord->getLoop()->addTimer(10, function() { # ditto
+						execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py');
+					});
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
