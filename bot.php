@@ -47,7 +47,7 @@ function portIsAvailable(int $port = 1714): bool
 			socket_close($s);
 			return true;
 		}
-	} catch (Throwable $e) { //This will probably crash the bot
+	} catch (Exception $e) {
 		socket_close($s);
 		return false;
 	}
