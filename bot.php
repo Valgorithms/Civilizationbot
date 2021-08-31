@@ -130,11 +130,11 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		$message_content = substr($message->content, strlen($command_symbol)+1);
 		$message_content_lower = strtolower($message_content);
 		if (str_starts_with($message_content_lower, 'ping')) {
-			$message->channel->sendMessage('Pong!');
+			$message->reply('Pong!');
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'help')) {
-			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
+			$message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
 			return;
 		}
 		
