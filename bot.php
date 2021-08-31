@@ -14,6 +14,14 @@ function execInBackground($cmd) {
     } else exec($cmd . " > /dev/null &");
 }
 
+function execInBackgroundWindows($cmd) {
+    pclose(popen("start ". $cmd, "r")); //pclose(popen("start /B ". $cmd, "r"));
+}
+
+function execInBackgroundLinux($cmd) {
+    exec($cmd . " > /dev/null &");
+}
+
 /*
 from __future__ import print_function
 #from googletrans import Translator
@@ -61,7 +69,7 @@ function portIsAvailable(int $port = 1714): bool
 
 function remove_prefix(string $text = '', string $prefix = ''): string
 {
-	if (str_starts_with($text, $prefix) # only modify the text if it starts with the prefix
+	if (str_starts_with($text, $prefix)) # only modify the text if it starts with the prefix
 		$text = str_replace($prefix, '', $text);# remove one instance of prefix
 	return $text;
 }
@@ -90,54 +98,54 @@ function on_ready($discord)
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
 {
-	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
 	if ($message->guild->owner_id != '196253985072611328') return; //Only allow this in a guild that Taislin owns
-		if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
-			while (($fp = fgets($ooc, 4096)) !== false) {
-				$fp = str_replace('\n', "", $fp);
-				if($target_channel = $message->guild->channels->get('name', 'ooc-nomads'))
-					$target_channel->sendMessage($fp);
-			}
-			ftruncate($ooc, 0); //clear the file
-			fclose($ooc);
+	
+	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
+	if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
+		while (($fp = fgets($ooc, 4096)) !== false) {
+			$fp = str_replace('\n', "", $fp);
+			if($target_channel = $message->guild->channels->get('name', 'ooc-nomads'))
+				$target_channel->sendMessage($fp);
 		}
-		if ($ahelp = fopen('/home/1713/civ13-rp/admin.log', "r+")) {
-			while (($fp = fgets($ahelp, 4096)) !== false) {
-				$fp = str_replace('\n', "", $fp);
-				if($target_channel = $message->guild->channels->get('name', 'ahelp-nomads'))
-					$target_channel->sendMessage($fp);
-			}
-			ftruncate($ahelp, 0); //clear the file
-			fclose($ahelp);
+		ftruncate($ooc, 0); //clear the file
+		fclose($ooc);
+	}
+	if ($ahelp = fopen('/home/1713/civ13-rp/admin.log', "r+")) {
+		while (($fp = fgets($ahelp, 4096)) !== false) {
+			$fp = str_replace('\n', "", $fp);
+			if($target_channel = $message->guild->channels->get('name', 'ahelp-nomads'))
+				$target_channel->sendMessage($fp);
 		}
-		if ($ooctdm = fopen('/home/1713/civ13-tdm/ooc.log', "r+")) {
-			while (($fp = fgets($ooctdm, 4096)) !== false) {
-				$fp = str_replace('\n', "", $fp);
-				if($target_channel = $message->guild->channels->get('name', 'ooc-tdm'))
-					$target_channel->sendMessage($fp);
-			}
-			ftruncate($ooctdm, 0); //clear the file
-			fclose($ooctdm);
+		ftruncate($ahelp, 0); //clear the file
+		fclose($ahelp);
+	}
+	if ($ooctdm = fopen('/home/1713/civ13-tdm/ooc.log', "r+")) {
+		while (($fp = fgets($ooctdm, 4096)) !== false) {
+			$fp = str_replace('\n', "", $fp);
+			if($target_channel = $message->guild->channels->get('name', 'ooc-tdm'))
+				$target_channel->sendMessage($fp);
 		}
-		if ($ahelptdm = fopen('/home/1713/civ13-tdm/admin.log', "r+")) {
-			while (($fp = fgets($ahelptdm, 4096)) !== false) {
-				$fp = str_replace('\n', "", $fp);
-				if($target_channel = $message->guild->channels->get('name', 'ahelp-tdm'))
-					$target_channel->sendMessage($fp);
-			}
-			ftruncate($ahelptdm, 0); //clear the file
-			fclose($ahelptdm);
+		ftruncate($ooctdm, 0); //clear the file
+		fclose($ooctdm);
+	}
+	if ($ahelptdm = fopen('/home/1713/civ13-tdm/admin.log', "r+")) {
+		while (($fp = fgets($ahelptdm, 4096)) !== false) {
+			$fp = str_replace('\n', "", $fp);
+			if($target_channel = $message->guild->channels->get('name', 'ahelp-tdm'))
+				$target_channel->sendMessage($fp);
 		}
+		ftruncate($ahelptdm, 0); //clear the file
+		fclose($ahelptdm);
 	}
 	
-	if str_starts_with($message->content, $command_symbol . ' ') { //Add these as slash commands?
+	if (str_starts_with($message->content, $command_symbol . ' ')) { //Add these as slash commands?
 		$message_content = substr($message->content, strlen($command_symbol)+1);
 		$message_content_lower = strtolower($message_content);
-		if (str_starts_with($message_content_lower, 'ping') {
+		if (str_starts_with($message_content_lower, 'ping')) {
 			$message->channel->sendMessage('Pong!');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'help') {
+		if (str_starts_with($message_content_lower, 'help')) {
 			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
 			return;
 		}
@@ -152,13 +160,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$load_array = explode(" ", $p);
 
 				$x=0;
-				foreach ($load_array as $line){
-					if ($line != " " && $line != ""){
-						if ($x==0){
+				foreach ($load_array as $line) {
+					if ($line != " " && $line != "") {
+						if ($x==0) {
 							$load = "CPU Usage: $line%\n";
 							break;
 						}
-						if ($x!=0){
+						if ($x!=0) {
 							//$load = $load . "Core $x: $line%\n"; //No need to report individual cores right now
 						}
 						$x++;
@@ -174,9 +182,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		
-		if (str_starts_with($message_content_lower, 'insult') {
+		if (str_starts_with($message_content_lower, 'insult')) {
 			$split_message = explode(' ', $message_content); //$split_target[1] is the target
-			if ((count($split_message > 1)) && strlen($split_message[1] > 0) ){
+			if ((count($split_message > 1)) && strlen($split_message[1] > 0) ) {
 				$ckey = $split_message[1];
 				/*
 				insults = open('insult.txt').read().splitlines()
@@ -186,7 +194,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'ooc ') {
+		if (str_starts_with($message_content_lower, 'ooc ')) {
 			case (strtolower($message->channel->name)) {
 				switch 'ooc-nomads':
 					/*
@@ -207,7 +215,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'asay ') {
+		if (str_starts_with($message_content_lower, 'asay ')) {
 			case (strtolower($message->channel->name)) {
 				switch 'ahelp-nomads':
 					/*
@@ -229,7 +237,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'dm ') {
+		if (str_starts_with($message_content_lower, 'dm ')) {
 			case (strtolower($message->channel->name)) {
 				switch 'ahelp-nomads':
 					/*
@@ -252,7 +260,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'pm ') {
+		if (str_starts_with($message_content_lower, 'pm ')) {
 			case (strtolower($message->channel->name)) {
 				switch 'ahelp-nomads':
 					/*
@@ -275,7 +283,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'ban ') {
+		if (str_starts_with($message_content_lower, 'ban ')) {
 			$message_content = substr($message->content, 4);
 			$split_message = explode('; ', $message_content); //$split_target[1] is the target
 			if (!str_contains($message->content, 'Byond account too new, appeal on our discord')) {
@@ -292,7 +300,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message->channel->sendMessage($result);
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'unban ') {
+		if (str_starts_with($message_content_lower, 'unban ')) {
 			$message_content = substr($message->content, 6);
 			$split_message = explode('; ', $message_content);
 			/*
@@ -331,9 +339,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		#whitelist
-		if (str_starts_with($message_content_lower, 'whitelistme') {
+		if (str_starts_with($message_content_lower, 'whitelistme')) {
 			$split_message = trim(substr($message->content, 11));
-			if (strlen(split_message) > 0){ // if len(split_message) > 1 and len(split_message[1]) > 0:
+			if (strlen(split_message) > 0) { // if len(split_message) > 1 and len(split_message[1]) > 0:
 				$ckey = split_message;
 				$accepted = false;
 				if ($author_member = $message->member) {
@@ -379,7 +387,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else $message->channel->sendMessage("Wrong format. Please try '!s whitelistme [ckey].'");
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'unwhitelistme') {
+		if (str_starts_with($message_content_lower, 'unwhitelistme')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -433,7 +441,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'hostciv') {
+		if (str_starts_with($message_content_lower, 'hostciv')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -447,18 +455,18 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				}
 				if ($accepted) {
 					$message->channel->send("Please wait, updating the code...");
-					//os.system('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py')
-					//$message->channel->sendMessage("Updated the code.");
-					//os.system('sudo rm -f /home/1713/civ13-rp/serverdata.txt')
-					//os.system('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &')
-					//$message->channel->send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
+					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py');
+					$message->channel->sendMessage("Updated the code.");
+					execInBackgroundLinux('sudo rm -f /home/1713/civ13-rp/serverdata.txt');
+					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &');
+					$message->channel->send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
 					//time.sleep(10) # ditto
-					//os.system('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
+					//execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'killciv') {
+		if (str_starts_with($message_content_lower, 'killciv')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -471,13 +479,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					//os.system('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py')
+					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py');
 					$message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'restartciv') {
+		if (str_starts_with($message_content_lower, 'restartciv')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -490,22 +498,21 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					/*
-					os.system('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py')
-					$message->channel->sendMessage("Attempted to kill Civilization 13 Server.")
-					os.system('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py')
-					$message->channel->sendMessage("Updated the code.")
-					os.system('sudo rm -f /home/1713/civ13-rp/serverdata.txt')
-					os.system('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &')
-					$message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>")
-					time.sleep(10) # ditto
-					os.system('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
-					*/
+					
+					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py');
+					$message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
+					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py');
+					$message->channel->sendMessage("Updated the code.");
+					execInBackgroundLinux('sudo rm -f /home/1713/civ13-rp/serverdata.txt');
+					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &');
+					$message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
+					//time.sleep(10) # ditto
+					//execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'restarttdm') {
+		if (str_starts_with($message_content_lower, 'restarttdm')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -518,22 +525,20 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					/*
-					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py')
-					$message->channel->sendMessage("Attempted to kill Civilization 13 TDM Server.")
-					os.system('sudo python3 /home/1713/civ13-tdmp/scripts/updateserverabspaths.py')
-					$message->channel->sendMessage("Updated the code.")
-					os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
-					os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
-					$message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>")
-					time.sleep(10) # ditto
-					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
-					*/
+					execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py');
+					$message->channel->sendMessage("Attempted to kill Civilization 13 TDM Server.");
+					execInBackgroundLinux('sudo python3 /home/1713/civ13-tdmp/scripts/updateserverabspaths.py');
+					$message->channel->sendMessage("Updated the code.");
+					execInBackgroundLinux('sudo rm -f /home/1713/civ13-tdm/serverdata.txt');
+					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &');
+					$message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>");
+					//time.sleep(10) # ditto
+					//execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'mapswap') {
+		if (str_starts_with($message_content_lower, 'mapswap')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -546,20 +551,19 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					/*
-					split_message = message.content.split("mapswap ")
-					if len(split_message) > 1 and len(split_message[1]) > 0:
-						mapto = split_message[1]
-						mapto = mapto.upper()
-						$message->channel->sendMessage("Changing map to {}...".format(mapto))
-						os.system('sudo python3 /home/1713/civ13-rp/scripts/mapswap.py {}'.format(mapto))
-						$message->channel->sendMessage("Sucessfully changed map to {}.".format(mapto))
-					*/
+					$split_message = explode("mapswap ", $message_content);
+					if ((count($split_message) > 1) && (strlen($split_message[1]) > 0) {
+						$mapto = split_message[1];
+						$mapto = strtoupper($mapto);
+						$message->channel->sendMessage("Changing map to $mapto...");
+						execInBackgroundLinux("sudo python3 /home/1713/civ13-rp/scripts/mapswap.py $mapto");
+						$message->channel->sendMessage("Sucessfully changed map to $mapto.");
+					}
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'hosttdm') {
+		if (str_starts_with($message_content_lower, 'hosttdm')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -572,18 +576,18 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				}
 				if ($accepted) {
 					$message->channel->sendMessage("Please wait, updating the code...")
-					//os.system('sudo python3 /home/1713/civ13-tdm/scripts/updateserverabspaths.py')
+					execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/updateserverabspaths.py');
 					$message->channel->sendMessage("Updated the code.");
-					//os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
-					//os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
+					execInBackgroundLinux('sudo rm -f /home/1713/civ13-tdm/serverdata.txt');
+					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &');
 					$message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>");
 					//time.sleep(10) # ditto
-					//os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
+					//execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'killtdm') {
+		if (str_starts_with($message_content_lower, 'killtdm')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -595,15 +599,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					/*
-					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py')
-					$message->channel->sendMessage("Attempted to kill Civilization 13 (TDM Server).")
-					*/
+					execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py');
+					$message->channel->sendMessage("Attempted to kill Civilization 13 (TDM Server).");
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		if (str_starts_with($message_content_lower, 'tdmmapswap') {
+		if (str_starts_with($message_content_lower, 'tdmmapswap')) {
 			$accepted = false;
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
@@ -616,15 +618,14 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					/*
-					split_message = message.content.split("mapswap ")
-					if len(split_message) > 1 and len(split_message[1]) > 0:
-						mapto = split_message[1]
-						mapto = mapto.upper()
-						$message->channel->sendMessage("Changing map to {}...".format(mapto))
-						os.system('sudo python3 /home/1713/civ13-tdm/scripts/mapswap.py {}'.format(mapto))
-						$message->channel->sendMessage("Sucessfully changed map to {}.".format(mapto))
-					*/
+					$split_message = explode("mapswap ", $message_content);
+					if ( (count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
+						$mapto = split_message[1];
+						$mapto = strtoupper($mapto);
+						$message->channel->sendMessage("Changing map to $mapto...");
+						execInBackgroundLinux("sudo python3 /home/1713/civ13-tdm/scripts/mapswap.py $mapto");
+						$message->channel->sendMessage("Sucessfully changed map to $mapto.");
+					}
 				} else $message->channel->sendMessage("Denied!");
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
@@ -680,7 +681,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'")
 
 
-		if str_starts_with($message_content_lower,'serverstatus'):
+		if (str_starts_with($message_content_lower,'serverstatus'):
 			_1714 = not portIsAvailable(1714)
 			server_is_up = (_1714)
 			if not server_is_up:
@@ -762,6 +763,6 @@ $discord->once('ready', function ($discord) use ($loop, $command_symbol)
 	$discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
 		on_message($message, $discord, $loop, $command_symbol);
 	});
-}
+});
 
 $discord->run();
