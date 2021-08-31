@@ -440,122 +440,166 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		/*
-		elif message.content.startswith("restartciv"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain" or role.name == "Lieutenant":
-					accepted = True
-					break
-
-			if accepted:
-				os.system('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py')
-				yield from message.channel.send("Attempted to kill Civilization 13 Server.")
-				os.system('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py')
-				yield from message.channel.send("Updated the code.")
-				os.system('sudo rm -f /home/1713/civ13-rp/serverdata.txt')
-				os.system('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &')
-				yield from message.channel.send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>")
-				time.sleep(10) # ditto
-				os.system('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
-			else:
-				yield from message.channel.send("Denied!")
-		elif message.content.startswith("restarttdm"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain" or role.name == "Lieutenant":
-					accepted = True
-					break
-
-			if accepted:
-				os.system('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py')
-				yield from message.channel.send("Attempted to kill Civilization 13 TDM Server.")
-				os.system('sudo python3 /home/1713/civ13-tdmp/scripts/updateserverabspaths.py')
-				yield from message.channel.send("Updated the code.")
-				os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
-				os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
-				yield from message.channel.send("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>")
-				time.sleep(10) # ditto
-				os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
-			else:
-				yield from message.channel.send("Denied!")
-		elif message.content.startswith("ping"):
-			yield from message.channel.send("pong!")
-			
-		elif message.content.startswith("mapswap"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain" or role.name == "Knight":
-					accepted = True
-					break
-
-			if accepted:
-				split_message = message.content.split("mapswap ")
-				if len(split_message) > 1 and len(split_message[1]) > 0:
-					mapto = split_message[1]
-					mapto = mapto.upper()
-					yield from message.channel.send("Changing map to {}...".format(mapto))
-					os.system('sudo python3 /home/1713/civ13-rp/scripts/mapswap.py {}'.format(mapto))
-					yield from message.channel.send("Sucessfully changed map to {}.".format(mapto))
-
-			else:
-				yield from message.channel.send("Denied!")
-
-
-		elif message.content.startswith("hosttdm"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain":
-					accepted = True
-					break
-			if accepted:
-				yield from message.channel.send("Please wait, updating the code...")
-				os.system('sudo python3 /home/1713/civ13-tdm/scripts/updateserverabspaths.py')
-				yield from message.channel.send("Updated the code.")
-				os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
-				os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
-				yield from message.channel.send("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>")
-				time.sleep(10) # ditto
-				os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
-			else:
-				yield from message.channel.send("Denied!")
-
-		elif message.content.startswith("killtdm"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain":
-					accepted = True
-					break
-
-			if accepted:
-				os.system('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py')
-				yield from message.channel.send("Attempted to kill Civilization 13 (TDM Server).")
-			else:
-				yield from message.channel.send("Denied!")
-
-		elif message.content.startswith("tdmmapswap"):
-
-			accepted = False
-			for role in message.author.roles:
-				if role.name == "Admiral" or role.name == "Captain" or role.name == "Knight":
-					accepted = True
-					break
-			if accepted:
-				split_message = message.content.split("mapswap ")
-				if len(split_message) > 1 and len(split_message[1]) > 0:
-					mapto = split_message[1]
-					mapto = mapto.upper()
-					yield from message.channel.send("Changing map to {}...".format(mapto))
-					os.system('sudo python3 /home/1713/civ13-tdm/scripts/mapswap.py {}'.format(mapto))
-					yield from message.channel.send("Sucessfully changed map to {}.".format(mapto))
-			else:
-				yield from message.channel.send("Denied!")
-
+		if (str_starts_with($message_content_lower, 'restartciv') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+						switch 'Lieutenant':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					/*
+					os.system('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py')
+					yield from message.channel.send("Attempted to kill Civilization 13 Server.")
+					os.system('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py')
+					yield from message.channel.send("Updated the code.")
+					os.system('sudo rm -f /home/1713/civ13-rp/serverdata.txt')
+					os.system('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &')
+					yield from message.channel.send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>")
+					time.sleep(10) # ditto
+					os.system('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py')
+					*/
+				} else $message->channel->sendMessage("Denied!");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'restarttdm') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+						switch 'Lieutenant':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					/*
+					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py')
+					yield from message.channel.send("Attempted to kill Civilization 13 TDM Server.")
+					os.system('sudo python3 /home/1713/civ13-tdmp/scripts/updateserverabspaths.py')
+					yield from message.channel.send("Updated the code.")
+					os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
+					os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
+					yield from message.channel.send("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>")
+					time.sleep(10) # ditto
+					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
+					*/
+				} else $message->channel->sendMessage("Denied!");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'ping') {
+			$message->channel->sendMessage('Pong!');
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'mapswap') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+						switch 'Lieutenant':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					/*
+					split_message = message.content.split("mapswap ")
+					if len(split_message) > 1 and len(split_message[1]) > 0:
+						mapto = split_message[1]
+						mapto = mapto.upper()
+						yield from message.channel.send("Changing map to {}...".format(mapto))
+						os.system('sudo python3 /home/1713/civ13-rp/scripts/mapswap.py {}'.format(mapto))
+						yield from message.channel.send("Sucessfully changed map to {}.".format(mapto))
+					*/
+				} else $message->channel->sendMessage("Denied!");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'hosttdm') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					/*
+					yield from message.channel.send("Please wait, updating the code...")
+					os.system('sudo python3 /home/1713/civ13-tdm/scripts/updateserverabspaths.py')
+					yield from message.channel.send("Updated the code.")
+					os.system('sudo rm -f /home/1713/civ13-tdm/serverdata.txt')
+					os.system('sudo DreamDaemon /home/1713/civ13-tdm/civ13.dmb 1714 -trusted -webclient -logself &')
+					yield from message.channel.send("Attempted to bring up Civilization 13 (TDM Server) <byond://51.254.161.128:1714>")
+					time.sleep(10) # ditto
+					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py')
+					*/
+				} else $message->channel->sendMessage("Denied!");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'killtdm') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					/*
+					os.system('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py')
+					yield from message.channel.send("Attempted to kill Civilization 13 (TDM Server).")
+					*/
+				} else $message->channel->sendMessage("Denied!");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
+		}
+		if (str_starts_with($message_content_lower, 'tdmmapswap') {
+			$accepted = false;
+			if ($author_member = $message->member) {
+				foreach ($author_member->roles as $role) {
+					case ($role->name) {
+						switch 'Admiral':
+						switch 'Captain':
+						switch 'Knight':
+							$accepted = true;
+							break;
+					}
+				}
+				if ($accepted) {
+					/*
+					split_message = message.content.split("mapswap ")
+					if len(split_message) > 1 and len(split_message[1]) > 0:
+						mapto = split_message[1]
+						mapto = mapto.upper()
+						yield from message.channel.send("Changing map to {}...".format(mapto))
+						os.system('sudo python3 /home/1713/civ13-tdm/scripts/mapswap.py {}'.format(mapto))
+						yield from message.channel.send("Sucessfully changed map to {}.".format(mapto))
+					*/
+				} else $message->channel->sendMessage("Denied!");
+			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			return;
+		}
+		
+		/*			
 		elif message.content.startswith("bancheck"):
 			split_message = message.content.split("bancheck ")
 			if len(split_message) > 1 and len(split_message[1]) > 0:
