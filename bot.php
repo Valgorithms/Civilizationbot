@@ -86,7 +86,6 @@ function on_ready($discord)
 {
 	echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL;
 	echo('------' . PHP_EOL);
-	#client.loop.create_task(counting(client))
 }
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
