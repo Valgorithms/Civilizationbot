@@ -142,13 +142,39 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message->channel->sendMessage('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
 			return;
 		}
-		/*
+		
 		if (str_starts_with($message_content_lower,'cpu')) {
-			CPU_Pct= str(psutil.cpu_percent())
-			$message->channel->sendMessage('CPU Usage: ' + CPU_Pct +"%")
+			if (substr(php_uname(), 0, 7) == "Windows") {
+				$p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
+				$p = preg_replace('/\s+/', ' ', $p); //reduce spaces
+				$p = str_replace("PercentProcessorTime", "", $p);
+				$p = str_replace("--------------------", "", $p);
+				$p = preg_replace('/\s+/', ' ', $p); //reduce spaces
+				$load_array = explode(" ", $p);
+
+				$x=0;
+				foreach ($load_array as $line){
+					if ($line != " " && $line != ""){
+						if ($x==0){
+							$load = "CPU Usage: $line%\n";
+							break;
+						}
+						if ($x!=0){
+							//$load = $load . "Core $x: $line%\n"; //No need to report individual cores right now
+						}
+						$x++;
+					}
+				}
+				$message->channel->sendMessage($load);
+			} else { //Linux
+				$cpu_load = '-1';
+				if ($cpu_load_array = sys_getloadavg())
+					$cpu_load = array_sum($cpu_load_array)/3;
+				$message->channel->sendMessage('CPU Usage: ' . $cpu_load . "%")
+			}
 			return;
 		}
-		*/
+		
 		if (str_starts_with($message_content_lower, 'insult') {
 			$split_message = explode(' ', $message_content); //$split_target[1] is the target
 			if ((count($split_message > 1)) && strlen($split_message[1] > 0) ){
