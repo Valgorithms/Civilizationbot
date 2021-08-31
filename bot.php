@@ -167,14 +167,14 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		
 		if (str_starts_with($message_content_lower, 'insult')) {
 			$split_message = explode(' ', $message_content); //$split_target[1] is the target
-			if ((count($split_message > 1)) && strlen($split_message[1] > 0) ) {
+			if ((count($split_message > 1)) && strlen($split_message[1] > 0)) {
 				$incel = $split_message[1];
 				$insults_array = array();
 				while (($fp = fgets('insult.txt', 4096)) !== false) {
 					if (trim(strtolower($fp)) == trim(strtolower($incel)))
 						$insults_array[] = $insult;
 				}
-				if (count($insults_array > 0) {
+				if (count($insults_array > 0)) {
 					$insult = $insults_array[rand(0, count($insults_array)-1)];
 					$message->channel->sendMessage("$incel, $insult");
 				}
@@ -259,12 +259,12 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message_content = substr($message->content, 4);
 			$split_message = explode('; ', $message_content); //$split_target[1] is the target
 			if (!str_contains($message->content, 'Byond account too new, appeal on our discord')) {
-				$file = fopen("/home/1713/civ13-rp/SQL/discord2ban.txt", "a")
+				$file = fopen("/home/1713/civ13-rp/SQL/discord2ban.txt", "a");
 				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
 				fwrite($file, $txt);
 				fclose($file);
 				
-				$file = fopen("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a")
+				$file = fopen("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a");
 				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
 				fwrite($file, $txt);
 				fclose($file);
@@ -587,57 +587,55 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-		
-		/*			
-		if (str_starts_with($message_content_lower,"bancheck")):
-			split_message = message.content.split("bancheck ")
-			if len(split_message) > 1 and len(split_message[1]) > 0:
-				ckey = split_message[1]
-				ckey = ckey.lower()
-				ckey = ckey.replace('_','')
-				ckey = ckey.replace(' ','')
-				banreason = "unknown"
-				found = 0
-				filecheck1 = Path("/home/1713/civ13-rp/SQL/bans.txt")
-				filecheck2 = Path("/home/1713/civ13-tdm/SQL/bans.txt")
-				if (filecheck1.is_file()):
-					open(filecheck1, "a").close()
-					with open(filecheck1, "r") as search:
-						for line in search:
-							line = line.rstrip()	# remove '\n' at end of line
-							line.replace("|||","")
-							linesplit = line.split(";")
-							if len(linesplit)>=8 and linesplit[8] == ckey:
-								found = 1
-								banreason = linesplit[3]
-								bandate = linesplit[5]
-								banner = linesplit[4]
-								exp_date = (round(int(linesplit[6])/10))+946684800
-								exp_date = datetime.utcfromtimestamp(exp_date).strftime("%Y-%m-%d %H:%M:%S")
-								$message->channel->sendMessage("**{}** has been banned from *Nomads* on **{}** for **{}** by {}. Expires on {}.".format(ckey,bandate,banreason,banner,exp_date))
-						search.close()
-				if (filecheck2.is_file()):
-					open(filecheck2, "a").close()
-					with open(filecheck2, "r") as search:
-						for line in search:
-							line = line.rstrip()	# remove '\n' at end of line
-							line.replace("|||","")
-							linesplit = line.split(";")
-							if len(linesplit)>=8 and linesplit[8] == ckey:
-								found = 1
-								banreason = linesplit[3]
-								bandate = linesplit[5]
-								banner = linesplit[4]
-								exp_date = (round(int(linesplit[6])/10))+946684800
-								exp_date = datetime.utcfromtimestamp(exp_date).strftime("%Y-%m-%d %H:%M:%S")
-								$message->channel->sendMessage("**{}** has been banned from *TDM* on **{}** for **{}** by {}. Expires on {}.".format(ckey,bandate,banreason,banner,exp_date))
-						search.close()
-				if (found == 0):
-					$message->channel->sendMessage("No bans were found for **{}**.".format(ckey))
-			else:
-				$message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'")
-
-
+				
+		if (str_starts_with($message_content_lower, "bancheck")) {
+			$split_message = explode('bancheck ', $message_content);
+			if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
+				$ckey = trim(split_message[1]);
+				$ckey = strtolower($ckey);
+				$ckey = str_replace('_', '', $ckey);
+				$ckey = str_replace(' ', '', $ckey);
+				$banreason = "unknown";
+				$found = false;
+				$filecheck1 = fopen("/home/1713/civ13-rp/SQL/bans.txt", "r") ?? NULL;
+				if ($filecheck1) {
+					while (($fp = fgets($filecheck1, 4096)) !== false) {
+						str_replace("\n", "", $fp);
+						$filter = "|||";
+						$line = trim(str_replace($filter, "", $fp));
+						$linesplit = explode(";", $line); //$split_ckey[0] is the ckey
+						if ( (count($linesplit)>=8) && ($linesplit[8] == $ckey) ){
+							$found = true;
+							$banreason = $linesplit[3];
+							$bandate = $linesplit[5];
+							$banner = $linesplit[4];
+							$message->channel->sendMessage("**$ckey** has been banned from **Nomads** on **$bandate** for **$banreason** by $banner.");
+						}
+					}
+					fclose($filecheck1);
+				}
+				$filecheck2 = fopen("/home/1713/civ13-tdm/SQL/bans.txt", "r") ?? NULL;
+				if ($filecheck2) {
+					while (($fp = fgets($filecheck2, 4096)) !== false) {
+						str_replace("\n", "", $fp);
+						$filter = "|||";
+						$line = trim(str_replace($filter, "", $fp));
+						$linesplit = explode(";", $line); //$split_ckey[0] is the ckey
+						if ( (count($linesplit)>=8) && ($linesplit[8] == $ckey) ){
+							$found = true;
+							$banreason = $linesplit[3];
+							$bandate = $linesplit[5];
+							$banner = $linesplit[4];
+							$message->channel->sendMessage("**$ckey** has been banned from **Nomads** on **$bandate** for **$banreason** by $banner.");
+						}
+					}
+					fclose($filecheck2);
+				}
+				if (!$found) $message->channel->sendMessage("No bans were found for **$ckey**.");
+			} else $message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'");
+			return;
+		}
+		/*
 		if (str_starts_with($message_content_lower,'serverstatus')):
 			_1714 = not portIsAvailable(1714)
 			server_is_up = (_1714)
