@@ -168,7 +168,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else { //Linux
 				$cpu_load = '-1';
 				if ($cpu_load_array = sys_getloadavg())
-					$cpu_load = array_sum($cpu_load_array)/3;
+					$cpu_load = array_sum($cpu_load_array) / count($cpu_load_array);
 				$message->channel->sendMessage('CPU Usage: ' . $cpu_load . "%")
 			}
 			return;
