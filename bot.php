@@ -711,7 +711,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
 				if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
 
-				$running = false; $message->channel->sendEmbed($embed);
+				#$message->channel->sendEmbed($embed);
+				#return;
 			}
 			$_1715 = !portIsAvailable(1715);
 			$server_is_up = ($_1715);
@@ -731,7 +732,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					#$message->channel->sendEmbed($embed);
 					#return;
 				}
-
 				$data = str_replace('<b>Address</b>: ', '', $data);
 				$data = str_replace('<b>Map</b>: ', '', $data);
 				$data = str_replace('<b>Gamemode</b>: ', '', $data);
@@ -746,7 +746,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if (isset($data[2])) $embed->addFieldValues("Map", $data[2]);
 				if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
 				if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
-
 			}
 			$message->channel->sendEmbed($embed);
 			return;
