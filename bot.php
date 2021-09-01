@@ -175,14 +175,17 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			if ((count($split_message > 1)) && strlen($split_message[1] > 0)) {
 				$incel = $split_message[1];
 				$insults_array = array();
-				while (($fp = fgets('insult.txt', 4096)) !== false) {
-					if (trim(strtolower($fp)) == trim(strtolower($incel)))
-						$insults_array[] = $insult;
-				}
-				if (count($insults_array > 0)) {
-					$insult = $insults_array[rand(0, count($insults_array)-1)];
-					$message->channel->sendMessage("$incel, $insult");
-				}
+				
+				if ($file = fopen('insults.txt', 'r')) {
+					while (($fp = fgets($file, 4096)) !== false) {
+						if (trim(strtolower($fp)) == trim(strtolower($incel)))
+							$insults_array[] = $insult;
+					}
+					if (count($insults_array > 0)) {
+						$insult = $insults_array[rand(0, count($insults_array)-1)];
+						$message->channel->sendMessage("$incel, $insult");
+					}
+				} else $message->channel->sendMessage('Unable to access insults.txt!');
 			}
 			return;
 		}
