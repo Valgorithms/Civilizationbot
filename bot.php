@@ -766,7 +766,7 @@ function recalculate_ranking() {
 		while (($fp = fgets($search, 4096)) !== false) {
 			$line .= $fp;
 		}
-	} else else $message->channel->sendMessage('Unable to access awards.txt!');
+	} else $message->channel->sendMessage('Unable to access awards.txt!');
 	$line = trim(str_replace('\n', "", $line)); # remove '\n' at end of line
 	$medal_s = 0;
 	$duser = explode(';', $line);
