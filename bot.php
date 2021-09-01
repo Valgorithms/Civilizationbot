@@ -798,7 +798,7 @@ function recalculate_ranking() {
 	}
 	asort($ranking, SORT_NATURAL);
 	$sorted_list = $ranking;
-	if ($search = fopen('ranking.txt', 'w'))
+	if ($search = fopen('ranking.txt', 'a'))
 		foreach ($sorted_list as $i)
 			fwrite($search, $i[0] . ";" . $i[1] . "\n");
 	fclose ($search);
