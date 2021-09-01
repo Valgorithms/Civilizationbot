@@ -92,7 +92,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
 		while (($fp = fgets($ooc, 4096)) !== false) {
 			$fp = str_replace('\n', "", $fp);
-			if($target_channel = $message->guild->channels->get('name', 'ooc-nomads'))
+			if ($target_channel = $message->guild->channels->get('name', 'ooc-nomads'))
 				$target_channel->sendMessage($fp);
 		}
 		ftruncate($ooc, 0); //clear the file
@@ -101,7 +101,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	if ($ahelp = fopen('/home/1713/civ13-rp/admin.log', "r+")) {
 		while (($fp = fgets($ahelp, 4096)) !== false) {
 			$fp = str_replace('\n', "", $fp);
-			if($target_channel = $message->guild->channels->get('name', 'ahelp-nomads'))
+			if ($target_channel = $message->guild->channels->get('name', 'ahelp-nomads'))
 				$target_channel->sendMessage($fp);
 		}
 		ftruncate($ahelp, 0); //clear the file
@@ -110,7 +110,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	if ($ooctdm = fopen('/home/1713/civ13-tdm/ooc.log', "r+")) {
 		while (($fp = fgets($ooctdm, 4096)) !== false) {
 			$fp = str_replace('\n', "", $fp);
-			if($target_channel = $message->guild->channels->get('name', 'ooc-tdm'))
+			if ($target_channel = $message->guild->channels->get('name', 'ooc-tdm'))
 				$target_channel->sendMessage($fp);
 		}
 		ftruncate($ooctdm, 0); //clear the file
@@ -119,7 +119,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	if ($ahelptdm = fopen('/home/1713/civ13-tdm/admin.log', "r+")) {
 		while (($fp = fgets($ahelptdm, 4096)) !== false) {
 			$fp = str_replace('\n', "", $fp);
-			if($target_channel = $message->guild->channels->get('name', 'ahelp-tdm'))
+			if ($target_channel = $message->guild->channels->get('name', 'ahelp-tdm'))
 				$target_channel->sendMessage($fp);
 		}
 		ftruncate($ahelptdm, 0); //clear the file
@@ -330,7 +330,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 								foreach ($linesplit as $split) {
 									if ($split == $ckey)
 										$found = true;
-									
 								}
 							}
 							fclose($whitelist1);
@@ -938,7 +937,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					}
 				}else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 
-				if ($accepted){
+				if ($accepted) {
 					if ($state == "on") {
 						execInBackgroundLinux('cd /home/1713/civ13-typespess');
 						execInBackgroundLinux('sudo git pull');
