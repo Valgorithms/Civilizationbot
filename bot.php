@@ -758,8 +758,12 @@ function recalculate_ranking() {
 	$ckeylist = array();
 	$result = array();
 	
-	if (!$line = file_get_contents('/home/1713/civ13-tdm/SQL/awards.txt'))
-		$message->channel->sendMessage('Unable to access serverdata.txt!');
+	$line = '';
+	if ($search = fopen(/home/1713/civ13-tdm/SQL/awards.txt, "r")) {
+		while (($fp = fgets($search, 4096)) !== false) {
+			$line .= $fp;
+		}
+	} else else $message->channel->sendMessage('Unable to access awards.txt!');
 	$line = trim(str_replace('\n', "", $line)); # remove '\n' at end of line
 	$medal_s = 0;
 	$duser = explode(';', $line);
