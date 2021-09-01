@@ -792,7 +792,7 @@ function recalculate_ranking() {
 		foreach ($result as $j) {
 			$sj = explode(';', $j);
 			if ($sj[1] == $i)
-				$sumc += float($sj[0]);
+				$sumc += (float) $sj[0];
 		}
 		$ranking[] = [$sumc, $i];
 	}
@@ -825,7 +825,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 			$ckey = "";
 			$medal_s = 0;
 			$result = "";
-			if ((count(split_message) > 1) && (strlen(split_message[1]) > 0)) {
+			if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
 				$ckey = $split_message[1];
 				$ckey = strtolower($ckey);
 				$ckey = str_replace('_', '', $ckey);
@@ -837,7 +837,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 
 			if (str_contains($line, $ckey)) {
 				$found = true;
-				$duser = line.split(";");
+				$duser = explode(";", $line);
 				if ($duser[0] == $ckey) {
 					if ($duser[2] == "long service medal")
 						$medal_s += 0.75;
@@ -861,7 +861,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 						$medal_s += 5;
 				}
 			}
-			$result = "**" . $ckey . ");**" . " has a total rank of " . $medal_s . ".";
+			$result = "**" . $ckey . "**" . " has a total rank of " . $medal_s . ".";
 			if (!$found) $message->channel->sendMessage("No medals found for this ckey.");
 			else $message->channel->sendMessage($result);
 		}
@@ -946,6 +946,7 @@ $discord->once('ready', function ($discord) use ($loop, $command_symbol)
 	
 	$discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
 		on_message($message, $discord, $loop, $command_symbol);
+		on_message2($message, $discord, $loop, $command_symbol);
 	});
 });
 
