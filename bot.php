@@ -789,16 +789,16 @@ function recalculate_ranking() {
 		$medal_s += 3;
 	if ($duser[2] == "iron cross 2nd class")
 		$medal_s += 5;
-	$result[] = "$medal_s" . ';' . $duser[0];
-	if (!in_array($duser[0], $ckeylist))
-		$ckeylist[] = $duser[0];
+	$result[] = "$medal_s" . ';' . $duser[1];
+	if (!in_array($duser[1], $ckeylist))
+		$ckeylist[] = $duser[1];
 	
 	foreach ($ckeylist as $i) {
 		$sumc = 0;
 		foreach ($result as $j) {
 			$sj = explode(';', $j);
 			if ($sj[1] == $i)
-				$sumc += (float) $sj[0];
+				$sumc += (float) $sj[1];
 		}
 		$ranking[] = [$sumc, $i];
 	}
@@ -818,12 +818,12 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 		if (str_starts_with($message_content_lower, 'ranking')) {
 			recalculate_ranking();
 			$line_array = array();
-			if ($search = fopen('/home/1713/civ13-tdm/SQL/awards.txt', "r")) {
+			if ($search = fopen('ranking.txt', "r")) {
 				while (($fp = fgets($search, 4096)) !== false) {
 					$line_array[] = $fp;
 				}
 				fclose($search);
-			} else $message->channel->sendMessage('Unable to access awards.txt!');
+			} else $message->channel->sendMessage('Unable to access ranking.txt!');
 			$topsum = 1;
 			for ($x=0;$x<count($line_array);$x++) {
 				$line = $line_array[$x];
