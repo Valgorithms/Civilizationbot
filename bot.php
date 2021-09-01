@@ -760,38 +760,37 @@ function recalculate_ranking() {
 	$ckeylist = array();
 	$result = array();
 	
-	$line = '';
 	if ($search = fopen('/home/1713/civ13-tdm/SQL/awards.txt', "r")) {
-		while (($fp = fgets($search, 4096)) !== false) {
-			$fp = trim(str_replace('\n', "", $fp)); # remove '\n' at end of line
-			$line .= $fp;
+		$medal_s = 0;
+		while(! feof($search)) {
+			$line = fgets($search);
+			$line = trim(str_replace('\n', "", $line)); # remove '\n' at end of line
+			$duser = explode(';', $line);
+			if ($duser[2] == "long service medal")
+				$medal_s += 0.75;
+			if ($duser[2] == "combat medical badge")
+				$medal_s += 2;
+			if ($duser[2] == "tank destroyer silver badge")
+				$medal_s += 1;
+			if ($duser[2] == "tank destroyer gold badge")
+				$medal_s += 2;
+			if ($duser[2] == "assault badge")
+				$medal_s += 1.5;
+			if ($duser[2] == "wounded badge")
+				$medal_s += 0.5;
+			if ($duser[2] == "wounded silver badge")
+				$medal_s += 0.75;
+			if ($duser[2] == "wounded gold badge")
+				$medal_s += 1;
+			if ($duser[2] == "iron cross 1st class")
+				$medal_s += 3;
+			if ($duser[2] == "iron cross 2nd class")
+				$medal_s += 5;
+			$result[] = "$medal_s" . ';' . $duser[0];
+			if (!in_array($duser[0], $ckeylist))
+				$ckeylist[] = $duser[0];
 		}
 	} else $message->channel->sendMessage('Unable to access awards.txt!');
-	$medal_s = 0;
-	$duser = explode(';', $line);
-	if ($duser[2] == "long service medal")
-		$medal_s += 0.75;
-	if ($duser[2] == "combat medical badge")
-		$medal_s += 2;
-	if ($duser[2] == "tank destroyer silver badge")
-		$medal_s += 1;
-	if ($duser[2] == "tank destroyer gold badge")
-		$medal_s += 2;
-	if ($duser[2] == "assault badge")
-		$medal_s += 1.5;
-	if ($duser[2] == "wounded badge")
-		$medal_s += 0.5;
-	if ($duser[2] == "wounded silver badge")
-		$medal_s += 0.75;
-	if ($duser[2] == "wounded gold badge")
-		$medal_s += 1;
-	if ($duser[2] == "iron cross 1st class")
-		$medal_s += 3;
-	if ($duser[2] == "iron cross 2nd class")
-		$medal_s += 5;
-	$result[] = "$medal_s" . ';' . $duser[1];
-	if (!in_array($duser[1], $ckeylist))
-		$ckeylist[] = $duser[1];
 	
 	foreach ($ckeylist as $i) {
 		$sumc = 0;
@@ -853,7 +852,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 			if (str_contains($line, $ckey)) {
 				$found = true;
 				$duser = explode(";", $line);
-				if ($duser[0] == $ckey) {
+				if ($duser[1] == $ckey) {
 					if ($duser[2] == "long service medal")
 						$medal_s += 0.75;
 					if ($duser[2] == "combat medical badge")
