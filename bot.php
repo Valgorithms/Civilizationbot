@@ -796,10 +796,12 @@ function recalculate_ranking() {
 		}
 		$ranking[] = [$sumc, $i];
 	}
-	$sorted_list = rsort($ranking);
-	if ($search = fopen("ranking.txt", "w")) #with open("ranking.txt", "w") as search:
+	rsort($ranking);
+	$sorted_list = $ranking;
+	if ($search = fopen('ranking.txt', 'w'))
 		foreach ($sorted_list as $i)
 			fwrite($search, $i[0] . ";" . $i[1] . "\n");
+	fclose ($search);
 	return;
 }
 
