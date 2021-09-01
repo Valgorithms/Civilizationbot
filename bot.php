@@ -931,17 +931,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 						execInBackgroundLinux('sudo sh launch_server.sh &');
 						$message->channel->sendMessage("Put **TypeSpess Civ13** test server on: http://civ13.com/ts");
 					} elseif ($state == "off") {
-						/*
-						pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
-
-						for pid in pids:
-							try:
-								name = open(os.path.join('/proc', pid, 'cmdline'), 'r').read()
-								if "index.js" in name:
-									os.kill(int(pid), signal.SIGKILL)
-							except IOError:
-								continue
-						*/
+						execInBackgroundLinux('sudo killall index.js');
 						$message->channel->sendMessage("**TypeSpess Civ13** test server down.");
 					}
 				}
