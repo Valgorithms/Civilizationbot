@@ -763,10 +763,10 @@ function recalculate_ranking() {
 	$line = '';
 	if ($search = fopen('/home/1713/civ13-tdm/SQL/awards.txt', "r")) {
 		while (($fp = fgets($search, 4096)) !== false) {
+			$fp = trim(str_replace('\n', "", $fp)); # remove '\n' at end of line
 			$line .= $fp;
 		}
 	} else $message->channel->sendMessage('Unable to access awards.txt!');
-	$line = trim(str_replace('\n', "", $line)); # remove '\n' at end of line
 	$medal_s = 0;
 	$duser = explode(';', $line);
 	if ($duser[2] == "long service medal")
