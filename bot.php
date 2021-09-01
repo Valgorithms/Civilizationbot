@@ -824,9 +824,9 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 				}
 				fclose($search);
 			} else $message->channel->sendMessage('Unable to access awards.txt!');
+			$topsum = 1;
 			for ($x=0;$x<count($line_array);$x++) {
 				$line = $line_array[$x];
-				$topsum = 1;
 				if ($topsum <= 10) {
 					$line = trim(str_replace('\n', "", $line));
 					$topsum += 1;
