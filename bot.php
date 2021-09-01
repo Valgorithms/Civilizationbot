@@ -759,7 +759,7 @@ function recalculate_ranking() {
 	$result = array();
 	
 	$line = '';
-	if ($search = fopen(/home/1713/civ13-tdm/SQL/awards.txt, "r")) {
+	if ($search = fopen('/home/1713/civ13-tdm/SQL/awards.txt', "r")) {
 		while (($fp = fgets($search, 4096)) !== false) {
 			$line .= $fp;
 		}
@@ -815,7 +815,13 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 		$message_content_lower = strtolower($message_content);
 		if (str_starts_with($message_content_lower, 'ranking')) {
 			recalculate_ranking();
-			if($line = file_get_contents('ranking.txt')) {
+			$line = '';
+			if ($search = fopen('/home/1713/civ13-tdm/SQL/awards.txt', "r")) {
+				while (($fp = fgets($search, 4096)) !== false) {
+					$line .= $fp;
+				}
+			} else $message->channel->sendMessage('Unable to access awards.txt!');
+			if ($line) {
 				$topsum = 1;
 				if ($topsum <= 10) {
 					$line = trim(str_replace('\n', "", $line));
@@ -823,8 +829,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					$sline = explode(';', $line);
 					$message->channel->sendMessage("(". ($topsum - 1) ."):** ".$sline[1]."** with **".$sline[0]."** points.");
 				}
-					
-			}
+			} else $message->channel->sendMessage('awards.txt is empty!');
 		}
 		if (str_starts_with($message_content_lower, 'rankme')) {
 			$split_message = explode('rankme ', $message_content);
