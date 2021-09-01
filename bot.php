@@ -172,7 +172,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		
 		if (str_starts_with($message_content_lower, 'insult')) {
 			$split_message = explode(' ', $message_content); //$split_target[1] is the target
-			if ((count($split_message > 1)) && strlen($split_message[1] > 0)) {
+			if ((count($split_message) > 1 ) && strlen($split_message[1] > 0)) {
 				$incel = $split_message[1];
 				$insults_array = array();
 				
