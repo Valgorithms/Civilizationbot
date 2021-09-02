@@ -451,12 +451,12 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 				}
 				if ($accepted) {
-					$message->channel->send("Please wait, updating the code...");
+					$message->channel->sendMessage("Please wait, updating the code...");
 					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/updateserverabspaths.py');
 					$message->channel->sendMessage("Updated the code.");
 					execInBackgroundLinux('sudo rm -f /home/1713/civ13-rp/serverdata.txt');
 					execInBackgroundLinux('sudo DreamDaemon /home/1713/civ13-rp/civ13.dmb 1715 -trusted -webclient -logself &');
-					$message->channel->send("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
+					$message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
 					$discord->getLoop()->addTimer(10, function() { # ditto
 						execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py');
 					});
