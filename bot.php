@@ -761,8 +761,8 @@ function recalculate_ranking() {
 	$result = array();
 	
 	if ($search = fopen('/home/1713/civ13-tdm/SQL/awards.txt', "r")) {
-		$medal_s = 0;
 		while(! feof($search)) {
+			$medal_s = 0;
 			$line = fgets($search);
 			$line = trim(str_replace('\n', "", $line)); # remove '\n' at end of line
 			$duser = explode(';', $line);
@@ -824,15 +824,17 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 				fclose($search);
 			} else $message->channel->sendMessage('Unable to access ranking.txt!');
 			$topsum = 1;
+			$msg = '';
 			for ($x=0;$x<count($line_array);$x++) {
 				$line = $line_array[$x];
 				if ($topsum <= 10) {
 					$line = trim(str_replace('\n', "", $line));
 					$topsum += 1;
 					$sline = explode(';', $line);
-					$message->channel->sendMessage("(". ($topsum - 1) ."):** ".$sline[1]."** with **".$sline[0]."** points.");
+					$msg .= "(". ($topsum - 1) ."):** ".$sline[1]."** with **".$sline[0]."** points.\n";
 				} else break;
 			}
+			if ($msg != '') $message->channel->sendMessage($msg);
 		}
 		if (str_starts_with($message_content_lower, 'rankme')) {
 			$split_message = explode('rankme ', $message_content);
@@ -861,7 +863,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 				$sline = explode(';', $line);
 				if ($sline[1] == $ckey) {
 					$found = 1;
-					$result = "**" . $sline[1] . "**" . " has a total rank of **" . $sline[0] . "**.";
+					$result .= "**" . $sline[1] . "**" . " has a total rank of **" . $sline[0] . "**.";
 				};
 			}
 			if (!$found) $message->channel->sendMessage("No medals found for this ckey.");
@@ -876,39 +878,43 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 				$ckey = str_replace('_', '', $ckey);
 				$ckey = str_replace(' ', '', $ckey);
 			}
-			$line = file_get_contents('/home/1713/civ13-tdm/SQL/awards.txt');
+			$result = '';
+			$search = fopen('/home/1713/civ13-tdm/SQL/awards.txt', 'r');
 			$found = false;
-			$line = trim(str_replace('\n', "", $line));	# remove '\n' at end of line
-			if (str_contains($line, $ckey)) {
-				$found = true;
-				$duser = explode(';', $line);
-				if ($duser[0] == $ckey) {
-					$medal_s = "<:long_service:705786458874707978>";
-					if ($duser[2] == "long service medal")
+			while(! feof($search)) {
+				$line = fgets($search);
+				$line = trim(str_replace('\n', "", $line)); # remove '\n' at end of line
+				if (str_contains($line, $ckey)) {
+					$found = true;
+					$duser = explode(';', $line);
+					if ($duser[0] == $ckey) {
 						$medal_s = "<:long_service:705786458874707978>";
-					if ($duser[2] == "combat medical badge")
-						$medal_s = "<:combat_medical_badge:706583430141444126>";
-					if ($duser[2] == "tank destroyer silver badge")
-						$medal_s = "<:tank_silver:705786458882965504>";
-					if ($duser[2] == "tank destroyer gold badge")
-						$medal_s = "<:tank_gold:705787308926042112>";
-					if ($duser[2] == "assault badge")
-						$medal_s = "<:assault:705786458581106772>";
-					if ($duser[2] == "wounded badge")
-						$medal_s = "<:wounded:705786458677706904>";
-					if ($duser[2] == "wounded silver badge")
-						$medal_s = "<:wounded_silver:705786458916651068>";
-					if ($duser[2] == "wounded gold badge")
-						$medal_s = "<:wounded_gold:705786458845216848>";
-					if ($duser[2] == "iron cross 1st class")
-						$medal_s = "<:iron_cross1:705786458572587109>";
-					if ($duser[2] == "iron cross 2nd class")
-						$medal_s = "<:iron_cross2:705786458849673267>";
-					$result = "**" . $duser[1] . ":**" . " received " . $medal_s . " **" . $duser[2] . "** in *" . $duser[4] . "*, " . $duser[5];
-					$message->channel->sendMessage($result);
+						if ($duser[2] == "long service medal")
+							$medal_s = "<:long_service:705786458874707978>";
+						if ($duser[2] == "combat medical badge")
+							$medal_s = "<:combat_medical_badge:706583430141444126>";
+						if ($duser[2] == "tank destroyer silver badge")
+							$medal_s = "<:tank_silver:705786458882965504>";
+						if ($duser[2] == "tank destroyer gold badge")
+							$medal_s = "<:tank_gold:705787308926042112>";
+						if ($duser[2] == "assault badge")
+							$medal_s = "<:assault:705786458581106772>";
+						if ($duser[2] == "wounded badge")
+							$medal_s = "<:wounded:705786458677706904>";
+						if ($duser[2] == "wounded silver badge")
+							$medal_s = "<:wounded_silver:705786458916651068>";
+						if ($duser[2] == "wounded gold badge")
+							$medal_s = "<:wounded_gold:705786458845216848>";
+						if ($duser[2] == "iron cross 1st class")
+							$medal_s = "<:iron_cross1:705786458572587109>";
+						if ($duser[2] == "iron cross 2nd class")
+							$medal_s = "<:iron_cross2:705786458849673267>";
+						$result .= "**" . $duser[1] . ":**" . " received " . $medal_s . " **" . $duser[2] . "** in *" . $duser[4] . "*, " . $duser[5] . "\n";
+					}
 				}
 			}
-			if (!$found) $message->channel->sendMessage("No medals found for this ckey.");
+			if ($result != '') $message->channel->sendMessage($result);
+			if (!$found && result == '') $message->channel->sendMessage("No medals found for this ckey.");
 		}
 		if (str_starts_with($message_content_lower, 'ts')) {
 			$split_message = explode('ts ', $message_content);
