@@ -786,7 +786,7 @@ function recalculate_ranking() {
 				$medal_s += 3;
 			if ($duser[2] == "iron cross 2nd class")
 				$medal_s += 5;
-			$result[] = "$medal_s" . ';' . $duser[0];
+			$result[] = $medal_s . ';' . $duser[0];
 			if (!in_array($duser[0], $ckeylist))
 				$ckeylist[] = $duser[0];
 		}
@@ -797,7 +797,7 @@ function recalculate_ranking() {
 		foreach ($result as $j) {
 			$sj = explode(';', $j);
 			if ($sj[1] == $i)
-				$sumc += (float) $sj[1];
+				$sumc += (float) $sj[0];
 		}
 		$ranking[] = [$sumc, $i];
 	}
@@ -845,37 +845,25 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 				$ckey = str_replace('_', '', $ckey);
 				$ckey = str_replace(' ', '', $ckey);
 			}
-			$line = file_get_contents('/home/1713/civ13-tdm/SQL/awards.txt');
-			$found = false;
-			$line = trim(str_replace('\n', "", $line));	# remove '\n' at end of line
-
-			if (str_contains($line, $ckey)) {
-				$found = true;
-				$duser = explode(";", $line);
-				if ($duser[1] == $ckey) {
-					if ($duser[2] == "long service medal")
-						$medal_s += 0.75;
-					if ($duser[2] == "combat medical badge")
-						$medal_s += 2;
-					if ($duser[2] == "tank destruction silver badge")
-						$medal_s += 1;
-					if ($duser[2] == "tank destoyer gold badge")
-						$medal_s += 2;
-					if ($duser[2] == "assault badge")
-						$medal_s += 1.5;
-					if ($duser[2] == "wounded badge")
-						$medal_s += 0.5;
-					if ($duser[2] == "wounded silver badge")
-						$medal_s += 0.75;
-					if ($duser[2] == "wounded gold badge")
-						$medal_s += 1;
-					if ($duser[2] == "iron cross 1st class")
-						$medal_s += 3;
-					if ($duser[2] == "iron cross 2nd class")
-						$medal_s += 5;
+			recalculate_ranking();
+			$line_array = array();
+			if ($search = fopen('ranking.txt', "r")) {
+				while (($fp = fgets($search, 4096)) !== false) {
+					$line_array[] = $fp;
 				}
+				fclose($search);
+			} else $message->channel->sendMessage('Unable to access ranking.txt!');
+			$found = 0;
+			$result = '';
+			for ($x=0;$x<count($line_array);$x++) {
+				$line = $line_array[$x];
+				$line = trim(str_replace('\n', "", $line));
+				$sline = explode(';', $line);
+				if ($sline[1] == $ckey) {
+					$found = 1;
+					$result = "**" . $sline[1] . "**" . " has a total rank of **" . $sline[0] . "**.";
+				};
 			}
-			$result = "**" . $ckey . "**" . " has a total rank of " . $medal_s . ".";
 			if (!$found) $message->channel->sendMessage("No medals found for this ckey.");
 			else $message->channel->sendMessage($result);
 		}
