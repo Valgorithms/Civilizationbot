@@ -552,7 +552,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if ($accepted) {
 					$split_message = explode("mapswap ", $message_content);
 					if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
-						$mapto = split_message[1];
+						$mapto = $split_message[1];
 						$mapto = strtoupper($mapto);
 						$message->channel->sendMessage("Changing map to $mapto...");
 						execInBackgroundLinux("sudo python3 /home/1713/civ13-rp/scripts/mapswap.py $mapto");
