@@ -799,10 +799,12 @@ function recalculate_ranking() {
 			if ($sj[1] == $i)
 				$sumc += (float) $sj[0];
 		}
-		$ranking[] = [$sumc, $i];
+		$ranking[] = [$sumc,$i];
 	}
-	asort($ranking, SORT_NATURAL);
-	$sorted_list = $ranking;
+	usort($ranking, function($a, $b) {
+		return $a[0] <=> $b[0];
+	});
+	$sorted_list = array_reverse($ranking);
 	if ($search = fopen('ranking.txt', 'w'))
 		foreach ($sorted_list as $i)
 			fwrite($search, $i[0] . ";" . $i[1] . "\n");
@@ -831,7 +833,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					$line = trim(str_replace('\n', "", $line));
 					$topsum += 1;
 					$sline = explode(';', $line);
-					$msg .= "(". ($topsum - 1) ."):** ".$sline[1]."** with **".$sline[0]."** points.\n";
+					$msg .= "(". ($topsum - 1) ."): **".$sline[1]."** with **".$sline[0]."** points.\n";
 				} else break;
 			}
 			if ($msg != '') $message->channel->sendMessage($msg);
