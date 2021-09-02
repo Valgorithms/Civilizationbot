@@ -227,7 +227,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		if (str_starts_with($message_content_lower, 'dm ')) {
 			$message_content = substr($message_content, 3);
-			$split_message = explode(": ", $value);
+			$split_message = explode(": ", $message_content);
 			switch (strtolower($message->channel->name)) {
 				case 'ahelp-nomads':
 					$file = fopen("/home/1713/civ13-rp/SQL/discord2dm.txt", "a");
@@ -246,7 +246,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		if (str_starts_with($message_content_lower, 'pm ')) {
 			$message_content = substr($message_content, 3);
-			$split_message = explode(": ", $value);
+			$split_message = explode(": ", $message_content);
 			switch (strtolower($message->channel->name)) {
 				case 'ahelp-nomads':
 					$file = fopen("/home/1713/civ13-rp/SQL/discord2dm.txt", "a");
@@ -266,18 +266,16 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if (str_starts_with($message_content_lower, 'ban ')) {
 			$message_content = substr($message->content, 4);
 			$split_message = explode('; ', $message_content); //$split_target[1] is the target
-			if (!str_contains($message->content, 'Byond account too new, appeal on our discord')) {
-				$file = fopen("/home/1713/civ13-rp/SQL/discord2ban.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
-				fwrite($file, $txt);
-				fclose($file);
-				
-				$file = fopen("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
-				fwrite($file, $txt);
-				fclose($file);
-			}
-			$result = '**' . $message->user->username . '#' . $message->user->discriminator . '**banned **' . split_message[0] . '** for **' . split_message[1] . '** with the reason **' . split_message[2] . '**.';
+			$file = fopen("/home/1713/civ13-rp/SQL/discord2ban.txt", "a");
+			$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
+			fwrite($file, $txt);
+			fclose($file);
+			
+			$file = fopen("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a");
+			$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
+			fwrite($file, $txt);
+			fclose($file);
+			$result = '**' . $message->user->username . '#' . $message->user->discriminator . '**banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
 			$message->channel->sendMessage($result);
 			return;
 		}
@@ -317,7 +315,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 							case 'Brother At Arms':
 							case 'Knight':
 								$accepted = true;
-								break;
 						}
 					}
 					if ($accepted) {
@@ -346,7 +343,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 							fclose($whitelist2);
 						}
 						
-						if (!found) {
+						if (!$found) {
 							$found2 = false;
 							$whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "r") ?? NULL;
 							if ($whitelist1) {
@@ -389,7 +386,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Brother At Arms':
 						case 'Knight':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
@@ -447,7 +443,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Captain':
 						case 'Lieutenant':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
@@ -473,7 +468,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Captain':
 						case 'Lieutenant':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
@@ -492,7 +486,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Captain':
 						case 'Lieutenant':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
@@ -519,7 +512,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Captain':
 						case 'Lieutenant':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
@@ -546,7 +538,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Captain':
 						case 'Lieutenant':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
@@ -570,7 +561,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Admiral':
 						case 'Captain':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
@@ -595,7 +585,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Admiral':
 						case 'Captain':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
@@ -614,13 +603,12 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						case 'Captain':
 						case 'Knight':
 							$accepted = true;
-							break;
 					}
 				}
 				if ($accepted) {
 					$split_message = explode("mapswap ", $message_content);
 					if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
-						$mapto = split_message[1];
+						$mapto = $split_message[1];
 						$mapto = strtoupper($mapto);
 						$message->channel->sendMessage("Changing map to $mapto...");
 						execInBackgroundLinux("sudo python3 /home/1713/civ13-tdm/scripts/mapswap.py $mapto");
@@ -916,12 +904,12 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 				}
 			}
 			if ($result != '') $message->channel->sendMessage($result);
-			if (!$found && $result == '') $message->channel->sendMessage("No medals found for this ckey.");
+			if (!$found && ($result == '')) $message->channel->sendMessage("No medals found for this ckey.");
 		}
 		if (str_starts_with($message_content_lower, 'ts')) {
 			$split_message = explode('ts ', $message_content);
 			if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
-				$state = split_message[1];
+				$state = $split_message[1];
 				$accepted = false;
 				
 				if ($author_member = $message->member) {
@@ -929,7 +917,6 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 						switch ($role->name) {
 							case 'Admiral':
 								$accepted = true;
-								break;
 						}
 					}
 				}else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
