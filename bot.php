@@ -911,12 +911,12 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 							$medal_s = "<:iron_cross1:705786458572587109>";
 						if ($duser[2] == "iron cross 2nd class")
 							$medal_s = "<:iron_cross2:705786458849673267>";
-						$result .= "**" . $duser[1] . ":**" . " received " . $medal_s . " **" . $duser[2] . "** in *" . $duser[4] . "*, " . $duser[5] . "\n";
+						$result .= "**" . $duser[1] . ":**" . " " . $medal_s . " **" . $duser[2] . "**, *" . $duser[4] . "*, " . $duser[5] . "\n";
 					}
 				}
 			}
 			if ($result != '') $message->channel->sendMessage($result);
-			if (!$found && result == '') $message->channel->sendMessage("No medals found for this ckey.");
+			if (!$found && $result == '') $message->channel->sendMessage("No medals found for this ckey.");
 		}
 		if (str_starts_with($message_content_lower, 'ts')) {
 			$split_message = explode('ts ', $message_content);
