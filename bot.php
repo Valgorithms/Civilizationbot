@@ -276,7 +276,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
 			fwrite($file, $txt);
 			fclose($file);
-			$result = '**' . $message->user->username . '#' . $message->user->discriminator . '**banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
+			$result = '**' . $message->user->username . '#' . $message->user->discriminator . '** banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
 			$message->channel->sendMessage($result);
 			return;
 		}
