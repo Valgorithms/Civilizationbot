@@ -86,6 +86,7 @@ function on_ready($discord)
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
 {
+	
 	if ($message->guild->owner_id != '196253985072611328') return; //Only allow this in a guild that Taislin owns
 	
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
@@ -264,7 +265,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'ban ')) {
-			$message_content = substr($message->content, 4);
+			$message_content = substr($message_content, 4);
 			$split_message = explode('; ', $message_content); //$split_target[1] is the target
 			$file = fopen("/home/1713/civ13-rp/SQL/discord2ban.txt", "a");
 			$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
@@ -280,7 +281,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			return;
 		}
 		if (str_starts_with($message_content_lower, 'unban ')) {
-			$message_content = substr($message->content, 6);
+			$message_content = substr($message_content, 6);
 			$split_message = explode('; ', $message_content);
 			
 			$file = fopen("/home/1713/civ13-rp/SQL/discord2unban.txt", "a");
@@ -299,7 +300,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		#whitelist
 		if (str_starts_with($message_content_lower, 'whitelistme')) {
-			$split_message = trim(substr($message->content, 11));
+			$split_message = trim(substr($message_content, 11));
 			if (strlen($split_message) > 0) { // if len($split_message) > 1 and len($split_message[1]) > 0:
 				$ckey = $split_message;
 				$ckey = strtolower($ckey);
