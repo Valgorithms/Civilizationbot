@@ -69,7 +69,7 @@ function my_message($msg): bool
 
 function search_players(string $ckey): string
 {
-	if ($playerlogs = fopen('C:/civ13/SQL/playerlogs.txt', "r")) {
+	if ($playerlogs = fopen('C:/Civ13/SQL/playerlogs.txt', "r")) {
 		while (($fp = fgets($playerlogs, 4096)) !== false) {
 			if (trim(strtolower($fp)) == trim(strtolower($ckey)))
 				return $ckey;
@@ -87,19 +87,19 @@ function on_ready($discord)
 function on_message($message, $discord, $loop, $command_symbol = '!s')
 {	
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
-	if ($ooc = fopen('C:/civ13/ooc.log', "r+")) {
+	if ($ooc = fopen('C:/Civ13/ooc.log', "r+")) {
 		while (($fp = fgets($ooc, 4096)) !== false) {
 			$fp = str_replace('\n', "", $fp);
-			if ($target_channel = $message->guild->channels->get('name', 'ooc-persistent'))
+			if ($target_channel = $message->channel->guild->channels->get('name', 'ooc-persistent'))
 				$target_channel->sendMessage($fp);
 		}
 		ftruncate($ooc, 0); //clear the file
 		fclose($ooc);
 	}
-	if ($ahelp = fopen('C:/civ13/admin.log', "r+")) {
+	if ($ahelp = fopen('C:/Civ13/admin.log', "r+")) {
 		while (($fp = fgets($ahelp, 4096)) !== false) {
 			$fp = str_replace('\n', "", $fp);
-			if ($target_channel = $message->guild->channels->get('name', 'ahelp-persistent'))
+			if ($target_channel = $message->channel->guild->channels->get('name', 'ahelp-persistent'))
 				$target_channel->sendMessage($fp);
 		}
 		ftruncate($ahelp, 0); //clear the file
@@ -109,6 +109,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	if (str_starts_with($message->content, $command_symbol . ' ')) { //Add these as slash commands?
 		$message_content = substr($message->content, strlen($command_symbol)+1);
 		$message_content_lower = strtolower($message_content);
+		echo 'message_content_lower: `' . $message_content_lower . '`';
 		if (str_starts_with($message_content_lower, 'ping')) {
 			$message->reply('Pong!');
 			return;
@@ -151,17 +152,18 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		
 		if (str_starts_with($message_content_lower, 'insult')) {
-			$split_message = explode(' ', $message_content); //$split_target[1] is the target
-			if ((count($split_message) > 1 ) && strlen($split_message[1] > 0)) {
-				$incel = $split_message[1];
+			$split_message = trim(substr($message_content, 6));
+			echo 'split_message: `' . $split_message . '`';
+			if ($split_message) {
+				$incel = $split_message;
+				$insult = '';
 				$insults_array = array();
 				
 				if ($file = fopen('insults.txt', 'r')) {
 					while (($fp = fgets($file, 4096)) !== false) {
-						if (trim(strtolower($fp)) == trim(strtolower($incel)))
-							$insults_array[] = $insult;
+						$insults_array[] = $fp;
 					}
-					if (count($insults_array > 0)) {
+					if (count($insults_array) > 0) {
 						$insult = $insults_array[rand(0, count($insults_array)-1)];
 						$message->channel->sendMessage("$incel, $insult");
 					}
@@ -173,7 +175,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message_filtered = substr($message_content, 4);
 			switch (strtolower($message->channel->name)) {
 				case 'ooc-persistent':					
-					$file = fopen("C:/civ13/SQL/discord2ooc.txt", "a");
+					$file = fopen("C:/Civ13/SQL/discord2ooc.txt", "a");
 					$txt = $message->user->username . ":::$message_filtered\n";
 					fwrite($file, $txt);
 					fclose($file);
@@ -185,7 +187,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message_filtered = substr($message_content, 5);
 			switch (strtolower($message->channel->name)) {
 				case 'ahelp-persistent':
-					$file = fopen("C:/civ13/SQL/discord2admin.txt", "a");
+					$file = fopen("C:/Civ13/SQL/discord2admin.txt", "a");
 					$txt = $message->user->username . ":::$message_filtered\n";
 					fwrite($file, $txt);
 					fclose($file);
@@ -198,7 +200,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$split_message = explode(": ", $message_content);
 			switch (strtolower($message->channel->name)) {
 				case 'ahelp-persistent':
-					$file = fopen("C:/civ13/SQL/discord2dm.txt", "a");
+					$file = fopen("C:/Civ13/SQL/discord2dm.txt", "a");
 					$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
 					fwrite($file, $txt);
 					fclose($file);
@@ -211,7 +213,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$split_message = explode(": ", $message_content);
 			switch (strtolower($message->channel->name)) {
 				case 'ahelp-persistent':
-					$file = fopen("C:/civ13/SQL/discord2dm.txt", "a");
+					$file = fopen("C:/Civ13/SQL/discord2dm.txt", "a");
 					$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
 					fwrite($file, $txt);
 					fclose($file);
@@ -222,7 +224,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if (str_starts_with($message_content_lower, 'ban ')) {
 			$message_content = substr($message_content, 4);
 			$split_message = explode('; ', $message_content); //$split_target[1] is the target
-			$file = fopen("C:/civ13/SQL/discord2ban.txt", "a");
+			$file = fopen("C:/Civ13/SQL/discord2ban.txt", "a");
 			$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
 			fwrite($file, $txt);
 			fclose($file);
@@ -234,7 +236,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message_content = substr($message_content, 6);
 			$split_message = explode('; ', $message_content);
 			
-			$file = fopen("C:/civ13/SQL/discord2unban.txt", "a");
+			$file = fopen("C:/Civ13/SQL/discord2unban.txt", "a");
 			$txt = $message->user->username . "#" . $message->user->discriminator . ":::".$split_message[0];
 			fwrite($file, $txt);
 			fclose($file);
@@ -265,7 +267,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					}
 					if ($accepted) {
 						$found = false;
-						$whitelist1 = fopen('C:/civ13/SQL/whitelist.txt', "r") ?? NULL;
+						$whitelist1 = fopen('C:/Civ13/SQL/whitelist.txt', "r") ?? NULL;
 						if ($whitelist1) {
 							while (($fp = fgets($whitelist1, 4096)) !== false) {
 								$line = trim(str_replace("\n", "", $fp));
@@ -280,7 +282,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						
 						if (!$found) {
 							$found2 = false;
-							$whitelist1 = fopen('C:/civ13/SQL/whitelist.txt', "r") ?? NULL;
+							$whitelist1 = fopen('C:/Civ13/SQL/whitelist.txt', "r") ?? NULL;
 							if ($whitelist1) {
 								while (($fp = fgets($whitelist1, 4096)) !== false) {
 									$line = trim(str_replace("\n", "", $fp));
@@ -295,7 +297,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						}else $message->channel->sendMessage("$ckey is already in the whitelist!");
 						
 						$txt = $ckey."=".$message->author->username.'\n';
-						if ($whitelist1 = fopen('C:/civ13/SQL/whitelist.txt', "a")) {
+						if ($whitelist1 = fopen('C:/Civ13/SQL/whitelist.txt', "a")) {
 							fwrite($whitelist1, $txt);
 							fclose($whitelist1);
 						}
@@ -322,14 +324,14 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if ($accepted) {
 					$removed = "N/A";
 					$lines_array = array();
-					if ($wlist = fopen("C:/civ13/SQL/whitelist.txt", "r")) {
-						while (($fp = fgets($playerlogs, 4096)) !== false) {
+					if ($wlist = fopen("C:/Civ13/SQL/whitelist.txt", "r")) {
+						while (($fp = fgets($wlist, 4096)) !== false) {
 							$lines_array[] = $fp;
 						}
 						fclose($wlist);
 					} else return $message->channel->sendMessage('Unable to access whitelist.txt!');
-					if ($count($lines_array) > 0) {
-						if ($wlist = fopen("C:/civ13/SQL/whitelist.txt", "w")) {
+					if (count($lines_array) > 0) {
+						if ($wlist = fopen("C:/Civ13/SQL/whitelist.txt", "w")) {
 							foreach ($lines_array as $line)
 								if (!str_contains($line, $message->author->username)) {
 									fwrite($wlist, $line);
@@ -361,13 +363,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						//
 					} else { 
 						$message->channel->sendMessage("Please wait, updating the code...");
-						execInBackgroundLinux('sudo python3 C:/civ13/scripts/updateserverabspaths.py');
+						execInBackgroundLinux('sudo python3 C:/Civ13/scripts/updateserverabspaths.py');
 						$message->channel->sendMessage("Updated the code.");
-						execInBackgroundLinux('sudo rm -f C:/civ13/serverdata.txt');
-						execInBackgroundLinux('sudo DreamDaemon C:/civ13/civ13.dmb 1715 -trusted -webclient -logself &');
+						execInBackgroundLinux('sudo rm -f C:/Civ13/serverdata.txt');
+						execInBackgroundLinux('sudo DreamDaemon C:/Civ13/civ13.dmb 1715 -trusted -webclient -logself &');
 						$message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
 						$discord->getLoop()->addTimer(10, function() { # ditto
-							execInBackgroundLinux('sudo python3 C:/civ13/scripts/killsudos.py');
+							execInBackgroundLinux('sudo python3 C:/Civ13/scripts/killsudos.py');
 						});
 					}
 				} else $message->channel->sendMessage("Denied!");
@@ -389,7 +391,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					if (substr(php_uname(), 0, 7) == "Windows") {
 						//
 					} else { 
-						execInBackgroundLinux('sudo python3 C:/civ13/scripts/killciv13.py');
+						execInBackgroundLinux('sudo python3 C:/Civ13/scripts/killciv13.py');
 					}
 					$message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
 				} else $message->channel->sendMessage("Denied!");
@@ -411,15 +413,15 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					if (substr(php_uname(), 0, 7) == "Windows") {
 						//
 					} else { 
-						execInBackgroundLinux('sudo python3 C:/civ13/scripts/killciv13.py');
+						execInBackgroundLinux('sudo python3 C:/Civ13/scripts/killciv13.py');
 						$message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
-						execInBackgroundLinux('sudo python3 C:/civ13/scripts/updateserverabspaths.py');
+						execInBackgroundLinux('sudo python3 C:/Civ13/scripts/updateserverabspaths.py');
 						$message->channel->sendMessage("Updated the code.");
-						execInBackgroundLinux('sudo rm -f C:/civ13/serverdata.txt');
-						execInBackgroundLinux('sudo DreamDaemon C:/civ13/civ13.dmb 1715 -trusted -webclient -logself &');
+						execInBackgroundLinux('sudo rm -f C:/Civ13/serverdata.txt');
+						execInBackgroundLinux('sudo DreamDaemon C:/Civ13/civ13.dmb 1715 -trusted -webclient -logself &');
 						$message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://51.254.161.128:1715>");
 						$discord->getLoop()->addTimer(10, function() { # ditto
-							execInBackgroundLinux('sudo python3 C:/civ13/scripts/killsudos.py');
+							execInBackgroundLinux('sudo python3 C:/Civ13/scripts/killsudos.py');
 						});
 					}
 				} else $message->channel->sendMessage("Denied!");
@@ -446,7 +448,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						if (substr(php_uname(), 0, 7) == "Windows") {
 						//
 						} else { 
-							execInBackgroundLinux("sudo python3 C:/civ13/scripts/mapswap.py $mapto");
+							execInBackgroundLinux("sudo python3 C:/Civ13/scripts/mapswap.py $mapto");
 						}
 						$message->channel->sendMessage("Sucessfully changed map to $mapto.");
 					}
@@ -464,7 +466,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$ckey = str_replace(' ', '', $ckey);
 				$banreason = "unknown";
 				$found = false;
-				$filecheck1 = fopen("C:/civ13/SQL/bans.txt", "r") ?? NULL;
+				$filecheck1 = fopen("C:/Civ13/SQL/bans.txt", "r") ?? NULL;
 				if ($filecheck1) {
 					while (($fp = fgets($filecheck1, 4096)) !== false) {
 						str_replace("\n", "", $fp);
@@ -497,7 +499,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else {
 				$data = "None";
 				if ($_1717) {
-					if (!$data = file_get_contents('C:/civ13/serverdata.txt'))
+					if (!$data = file_get_contents('C:/Civ13/serverdata.txt'))
 						$message->channel->sendMessage('Unable to access serverdata.txt!');
 				} else {
 					$embed->setColor(0x00ff00);
@@ -731,7 +733,7 @@ $discord->once('ready', function ($discord) use ($loop, $command_symbol)
 	on_ready($discord);
 	
 	$discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
-		if ($message->guild->id != '883464817288040478') return; //Only allow this in the Persistence server
+		if ($message->channel->guild->id != '883464817288040478') return; //Only allow this in the Persistence server
 		on_message($message, $discord, $loop, $command_symbol);
 		//on_message2($message, $discord, $loop, $command_symbol);
 	});
