@@ -109,7 +109,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	if (str_starts_with($message->content, $command_symbol . ' ')) { //Add these as slash commands?
 		$message_content = substr($message->content, strlen($command_symbol)+1);
 		$message_content_lower = strtolower($message_content);
-		echo 'message_content_lower: `' . $message_content_lower . '`';
 		if (str_starts_with($message_content_lower, 'ping')) {
 			$message->reply('Pong!');
 			return;
@@ -153,7 +152,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		
 		if (str_starts_with($message_content_lower, 'insult')) {
 			$split_message = trim(substr($message_content, 6));
-			echo 'split_message: `' . $split_message . '`';
 			if ($split_message) {
 				$incel = $split_message;
 				$insult = '';
