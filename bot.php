@@ -87,32 +87,27 @@ function on_ready($discord)
 function setup_relay($discord, $duration)
 {
 	$discord->getLoop()->addTimer($duration, function () use ($discord) {
-		relay($discord);
-	});
-}
-
-function relay($discord)
-{
-	$guild = $discord->guilds->offsetGet(883464817288040478);
+		$guild = $discord->guilds->offsetGet(883464817288040478);
 	
-	if ($ooc = fopen('C:/Civ13/ooc.log', "r+")) {
-		while (($fp = fgets($ooc, 4096)) !== false) {
-			$fp = str_replace('\n', "", $fp);
-			if ($target_channel = $guild->channels->get('name', 'ooc-persistent'))
-				$target_channel->sendMessage($fp);
+		if ($ooc = fopen('C:/Civ13/ooc.log', "r+")) {
+			while (($fp = fgets($ooc, 4096)) !== false) {
+				$fp = str_replace('\n', "", $fp);
+				if ($target_channel = $guild->channels->get('name', 'ooc-persistent'))
+					$target_channel->sendMessage($fp);
+			}
+			ftruncate($ooc, 0); //clear the file
+			fclose($ooc);
 		}
-		ftruncate($ooc, 0); //clear the file
-		fclose($ooc);
-	}
-	if ($ahelp = fopen('C:/Civ13/admin.log', "r+")) {
-		while (($fp = fgets($ahelp, 4096)) !== false) {
-			$fp = str_replace('\n', "", $fp);
-			if ($target_channel = $guild->channels->get('name', 'ahelp-persistent'))
-				$target_channel->sendMessage($fp);
+		if ($ahelp = fopen('C:/Civ13/admin.log', "r+")) {
+			while (($fp = fgets($ahelp, 4096)) !== false) {
+				$fp = str_replace('\n', "", $fp);
+				if ($target_channel = $guild->channels->get('name', 'ahelp-persistent'))
+					$target_channel->sendMessage($fp);
+			}
+			ftruncate($ahelp, 0); //clear the file
+			fclose($ahelp);
 		}
-		ftruncate($ahelp, 0); //clear the file
-		fclose($ahelp);
-	}
+	});
 }
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
