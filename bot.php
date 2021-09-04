@@ -86,7 +86,7 @@ function on_ready($discord)
 
 function setup_relay($discord, $duration)
 {
-	$discord->getLoop()->addTimer($duration, function () use ($discord) {
+	$discord->getLoop()->addPeriodicTimer($duration, function () use ($discord) {
 		$guild = $discord->guilds->offsetGet(883464817288040478);
 	
 		if ($ooc = fopen('C:/Civ13/ooc.log', "r+")) {
