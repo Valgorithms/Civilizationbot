@@ -43,7 +43,7 @@ function portIsAvailable(int $port = 1717): bool
 	$s = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
 	try {
-		if (socket_bind($s, "127.0.0.1", $port)) {
+		if (socket_bind($s, "0.0.0.0", $port)) {
 			socket_close($s);
 			return true;
 		}
@@ -117,7 +117,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap');
 			return;
 		}
-		
 		if (str_starts_with($message_content_lower, 'cpu')) {
 			if (substr(php_uname(), 0, 7) == "Windows") {
 				$p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
@@ -149,7 +148,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			return;
 		}
-		
 		if (str_starts_with($message_content_lower, 'insult')) {
 			$split_message = trim(substr($message_content, 6));
 			if ($split_message) {
@@ -454,7 +452,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 			return;
 		}
-				
 		if (str_starts_with($message_content_lower, "bancheck")) {
 			$split_message = explode('bancheck ', $message_content);
 			if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
