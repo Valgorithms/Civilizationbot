@@ -84,7 +84,7 @@ function on_ready($discord)
 	echo('------' . PHP_EOL);
 }
 
-function setup_relay($discord, $duration)
+function relayTimer($discord, $duration)
 {
 	$discord->getLoop()->addPeriodicTimer($duration, function () use ($discord) {
 		$guild = $discord->guilds->offsetGet(883464817288040478);
@@ -731,7 +731,8 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s')
 
 $discord->once('ready', function ($discord) use ($loop, $command_symbol)
 {
-	on_ready($discord, 10);
+	on_ready($discord);
+	relayTimer($discord, 10);
 	$discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
 		if ($message->channel->guild->id != '883464817288040478') return; //Only allow this in the Persistence server
 		on_message($message, $discord, $loop, $command_symbol);
