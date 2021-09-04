@@ -84,13 +84,21 @@ function on_ready($discord)
 	echo('------' . PHP_EOL);
 }
 
-function on_message($message, $discord, $loop, $command_symbol = '!s')
-{	
-	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
+function setup_relay($discord, $duration)
+{
+	$discord->getLoop()->addTimer($duration, function () use ($discord) {
+		relay($discord);
+	});
+}
+
+function relay($discord)
+{
+	$guild = $discord->guilds->offsetGet(883464817288040478);
+	
 	if ($ooc = fopen('C:/Civ13/ooc.log', "r+")) {
 		while (($fp = fgets($ooc, 4096)) !== false) {
 			$fp = str_replace('\n', "", $fp);
-			if ($target_channel = $message->channel->guild->channels->get('name', 'ooc-persistent'))
+			if ($target_channel = $guild->channels->get('name', 'ooc-persistent'))
 				$target_channel->sendMessage($fp);
 		}
 		ftruncate($ooc, 0); //clear the file
@@ -99,13 +107,16 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	if ($ahelp = fopen('C:/Civ13/admin.log', "r+")) {
 		while (($fp = fgets($ahelp, 4096)) !== false) {
 			$fp = str_replace('\n', "", $fp);
-			if ($target_channel = $message->channel->guild->channels->get('name', 'ahelp-persistent'))
+			if ($target_channel = $guild->channels->get('name', 'ahelp-persistent'))
 				$target_channel->sendMessage($fp);
 		}
 		ftruncate($ahelp, 0); //clear the file
 		fclose($ahelp);
 	}
-	
+}
+
+function on_message($message, $discord, $loop, $command_symbol = '!s')
+{
 	if (str_starts_with($message->content, $command_symbol . ' ')) { //Add these as slash commands?
 		$message_content = substr($message->content, strlen($command_symbol)+1);
 		$message_content_lower = strtolower($message_content);
@@ -725,8 +736,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s')
 
 $discord->once('ready', function ($discord) use ($loop, $command_symbol)
 {
-	on_ready($discord);
-	
+	on_ready($discord, 10);
 	$discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
 		if ($message->channel->guild->id != '883464817288040478') return; //Only allow this in the Persistence server
 		on_message($message, $discord, $loop, $command_symbol);
