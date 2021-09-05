@@ -271,7 +271,6 @@ function vmware($message)
 				return;
 		}
 	}
-	*/
 	
 }
 
@@ -413,7 +412,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if (str_starts_with($message_content_lower, 'ban ')) {
 			$message_content = substr($message_content, 4);
 			$split_message = explode('; ', $message_content); //$split_target[1] is the target
-			if (!isset($split_message[2])) return $message->channel->sendMessage('Invalid format! Please use `ckey; duration; reason`);
+			if (!isset($split_message[2])) return $message->channel->sendMessage('Invalid format! Please use `ckey; duration; reason');
 			$file = fopen("C:/Civ13/SQL/discord2ban.txt", "a");
 			$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
 			fwrite($file, $txt);
@@ -425,7 +424,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if (str_starts_with($message_content_lower, 'persban ')) {
 			$message_content = substr($message_content, 8);
 			$split_message = explode('; ', $message_content); //$split_target[1] is the target
-			if (!isset($split_message[2])) return $message->channel->sendMessage('Invalid format! Please use `ckey; duration; reason`);
+			if (!isset($split_message[2])) return $message->channel->sendMessage('Invalid format! Please use `ckey; duration; reason');
 			$file = fopen("C:/Civ13/SQL/discord2ban.txt", "a");
 			$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
 			fwrite($file, $txt);
