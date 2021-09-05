@@ -84,6 +84,197 @@ function on_ready($discord)
 	echo('------' . PHP_EOL);
 }
 
+function vmware($message)
+{
+	$message_content = $message->content;
+	if (!$message_content) return;
+	$message_id = $message->id;
+	$message_content_lower = strtolower($message_content);
+	
+	if ($creator || $owner || $dev || $tech || $assistant) {
+		switch ($message_content_lower) {
+			case 'resume': //;resume
+				if($GLOBALS['debug_echo']) echo "[RESUME] $author_check" .  PHP_EOL;
+				//Trigger the php script remotely
+				execInBackgroundWindows('php resume.php');
+				//$message->reply(curl_exec($ch));
+				return;
+			case 'save 1': //;save 1
+				if($GLOBALS['debug_echo']) echo "[SAVE SLOT 1] $author_check" .  PHP_EOL;
+				$manual_saving = VarLoad(null, "manual_saving.php");
+				if ($manual_saving) {
+					if ($react) {
+						$message->react("👎");
+					}
+					$message->reply("A manual save is already in progress!");
+				} else {
+					if ($react) {
+						$message->react("👍");
+					}
+					VarSave(null, "manual_saving.php", true);
+					$message->react("⏰")->done(function ($author_channel) use ($message) {	//Promise
+						execInBackgroundWindows('php savemanual1.php');
+						//$message->reply(curl_exec($ch));
+						
+						$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+						$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+						$message->reply("$time EST");
+						VarSave(null, "manual_saving.php", false);
+						return;
+					});
+				}
+				return;
+			case 'save 2': //;save 2
+				if($GLOBALS['debug_echo']) echo "[SAVE SLOT 2] $author_check" .  PHP_EOL;
+				$manual_saving = VarLoad(null, "manual_saving.php");
+				if ($manual_saving) {
+					if ($react) $message->react("👎");
+					$message->reply("A manual save is already in progress!");
+				} else {
+					if ($react) $message->react("👍");
+					VarSave(null, "manual_saving.php", true);
+					//$message->react("⏰")->done(function($author_channel) use ($message) {	//Promise
+					execInBackgroundWindows('php savemanual2.php');
+						
+					$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+					$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+					$message->reply("$time EST");
+					VarSave(null, "manual_saving.php", false);
+					//});
+				}
+				return;
+			case 'save 3': //;save 3
+				if($GLOBALS['debug_echo']) echo "[SAVE SLOT 3] $author_check" .  PHP_EOL;
+				$manual_saving = VarLoad(null, "manual_saving.php");
+				if ($manual_saving) {
+					if ($react) $message->react("👎");
+					$message->reply("A manual save is already in progress!");
+				} else {
+					if ($react) $message->react("👍");
+					execInBackgroundWindows('php savemanual3.php');
+					VarSave(null, "manual_saving.php", true);
+					
+					$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+						$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+						$message->reply("$time EST");
+					VarSave(null, "manual_saving.php", false);
+				}
+				return;
+			case 'delete 1': //;delete 1
+				if (!($creator || $owner || $dev)) return;
+				if($GLOBALS['debug_echo']) echo "[DELETE SLOT 1] $author_check" . PHP_EOL;
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php deletemanual1.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+		}
+	}
+	if ($creator || $owner || $dev || $tech) {
+		switch ($message_content_lower) {
+			case 'load 1': //;load 1
+				if($GLOBALS['debug_echo']) echo "[LOAD SLOT 1] $author_check" . PHP_EOL;
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php loadmanual1.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+			case 'load 2': //;load 2
+				if($GLOBALS['debug_echo']) echo "[LOAD SLOT 2] $author_check" . PHP_EOL;
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php loadmanual2.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+			case 'load 3': //;load 3
+				if($GLOBALS['debug_echo']) echo "[LOAD SLOT 3] $author_check" . PHP_EOL;
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php loadmanual3.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+			case 'load1h': //;load1h
+				if($GLOBALS['debug_echo']) echo "[LOAD 1H] $author_check" . PHP_EOL;
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php load1h.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+			case 'load2h': //;load2h
+				if($GLOBALS['debug_echo']) echo "[LOAD 2H] $author_check" . PHP_EOL;
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php load2h.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+			case 'host persistence':
+			case 'host pers':
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php host.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+			case 'kill persistence':
+			case 'kill pers':
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php kill.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+			case 'update persistence':
+			case 'update pers':
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php update.php');
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				return;
+		}
+	}
+	if ($creator || $owner || $dev) {
+		switch ($message_content_lower) {
+			case '?status': //;?status
+				include "../servers/getserverdata.php";
+				$debug = var_export($serverinfo, true);
+				if ($debug) $author_channel->sendMessage(urldecode($debug));
+				else $author_channel->sendMessage("No debug info found!");
+				return;
+			case 'pause': //;pause
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php pause.php');
+				return;
+			case 'loadnew': //;loadnew
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php loadnew.php');
+				return;
+			case 'VM_restart': //;VM_restart
+				if (!($creator || $dev)) return;
+				if ($react) $message->react("👍");
+				execInBackgroundWindows('php VM_restart.php');
+				return;
+		}
+	}
+	*/
+	
+}
+
 function relayTimer($discord, $duration)
 {
 	$discord->getLoop()->addPeriodicTimer($duration, function () use ($discord) {
@@ -181,7 +372,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					$txt = $message->user->username . ":::$message_filtered\n";
 					fwrite($file, $txt);
 					fclose($file);
-					break;
 			}
 			return;
 		}
@@ -193,7 +383,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					$txt = $message->user->username . ":::$message_filtered\n";
 					fwrite($file, $txt);
 					fclose($file);
-					break;
 			}
 			return;
 		}
@@ -206,7 +395,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
 					fwrite($file, $txt);
 					fclose($file);
-					break;
 			}
 			return;
 		}
@@ -219,7 +407,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
 					fwrite($file, $txt);
 					fclose($file);
-					break;
 			}
 			return;
 		}
