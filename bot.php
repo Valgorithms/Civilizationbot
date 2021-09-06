@@ -7,6 +7,10 @@ ini_set('memory_limit', '-1'); //Unlimited memory usage
 define('MAIN_INCLUDED', 1); //Token and SQL credential files may be protected locally and require this to be defined to access
 require getcwd(). '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
+include_once('custom_functions.php'); //VarLoad, VarSave
+include_once('constants.php'); //VarLoad,
+
+$GLOBALS['debug_echo'] = false;
 
 function execInBackground($cmd) {
     if (substr(php_uname(), 0, 7) == "Windows") {
@@ -16,6 +20,11 @@ function execInBackground($cmd) {
 
 function execInBackgroundWindows($cmd) {
     pclose(popen("start ". $cmd, "r")); //pclose(popen("start /B ". $cmd, "r"));
+}
+
+function execInBackgroundWindowsCOM($path) { //Requires extension=com_dotnet
+	$WshShell = new COM("WScript.Shell");
+	$oExec = $WshShell->Run('cmd /C "'.$path.'"', 3, false);
 }
 
 function execInBackgroundLinux($cmd) {
@@ -84,194 +93,202 @@ function on_ready($discord)
 	echo('------' . PHP_EOL);
 }
 
-function vmware($message)
+function vmware($message, $command_symbol = '!s')
 {
-	$message_content = $message->content;
+	$message_content = substr($message->content, strlen($command_symbol)+1);
 	if (!$message_content) return;
 	$message_id = $message->id;
 	$message_content_lower = strtolower($message_content);
-	
-	if ($creator || $owner || $dev || $tech || $assistant) {
-		switch ($message_content_lower) {
-			case 'resume': //;resume
-				if($GLOBALS['debug_echo']) echo "[RESUME] $author_check" .  PHP_EOL;
-				//Trigger the php script remotely
-				execInBackgroundWindows('php resume.php');
-				//$message->reply(curl_exec($ch));
-				return;
-			case 'save 1': //;save 1
-				if($GLOBALS['debug_echo']) echo "[SAVE SLOT 1] $author_check" .  PHP_EOL;
-				$manual_saving = VarLoad(null, "manual_saving.php");
-				if ($manual_saving) {
-					if ($react) {
-						$message->react("👎");
-					}
-					$message->reply("A manual save is already in progress!");
-				} else {
-					if ($react) {
-						$message->react("👍");
-					}
-					VarSave(null, "manual_saving.php", true);
-					$message->react("⏰")->done(function ($author_channel) use ($message) {	//Promise
-						execInBackgroundWindows('php savemanual1.php');
-						//$message->reply(curl_exec($ch));
-						
-						$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-						$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-						$message->reply("$time EST");
-						VarSave(null, "manual_saving.php", false);
-						return;
-					});
-				}
-				return;
-			case 'save 2': //;save 2
-				if($GLOBALS['debug_echo']) echo "[SAVE SLOT 2] $author_check" .  PHP_EOL;
-				$manual_saving = VarLoad(null, "manual_saving.php");
-				if ($manual_saving) {
-					if ($react) $message->react("👎");
-					$message->reply("A manual save is already in progress!");
-				} else {
-					if ($react) $message->react("👍");
-					VarSave(null, "manual_saving.php", true);
-					//$message->react("⏰")->done(function($author_channel) use ($message) {	//Promise
-					execInBackgroundWindows('php savemanual2.php');
-						
-					$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+
+	switch ($message_content_lower) {
+		case 'resume': //;resume
+			if($GLOBALS['debug_echo']) echo "[RESUME] $author_check" .  PHP_EOL;
+			//Trigger the php script remotely
+			execInBackgroundWindows('php resume.php');
+			//$message->reply(curl_exec($ch));
+			return;
+		case 'save 1': //;save 1
+			if($GLOBALS['debug_echo']) echo "[SAVE SLOT 1] $author_check" .  PHP_EOL;
+			$manual_saving = VarLoad(null, "manual_saving.php");
+			if ($manual_saving) {
+				$message->react("👎");
+				$message->reply("A manual save is already in progress!");
+			} else {
+				$message->react("👍");
+				VarSave(null, "manual_saving.php", true);
+				execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\savemanual1.bat");
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				VarSave(null, "manual_saving.php", false);
+			}
+			return;
+		case 'save 2': //;save 2
+			if($GLOBALS['debug_echo']) echo "[SAVE SLOT 2] $author_check" .  PHP_EOL;
+			$manual_saving = VarLoad(null, "manual_saving.php");
+			if ($manual_saving) {
+				$message->react("👎");
+				$message->reply("A manual save is already in progress!");
+			} else {
+				$message->react("👍");
+				VarSave(null, "manual_saving.php", true);
+				//$message->react("⏰")->done(function($author_channel) use ($message) {	//Promise
+				execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\savemanual2.bat");
+					
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+				$message->reply("$time EST");
+				VarSave(null, "manual_saving.php", false);
+				//});
+			}
+			return;
+		case 'save 3': //;save 3
+			if($GLOBALS['debug_echo']) echo "[SAVE SLOT 3] $author_check" .  PHP_EOL;
+			$manual_saving = VarLoad(null, "manual_saving.php");
+			if ($manual_saving) {
+				$message->react("👎");
+				$message->reply("A manual save is already in progress!");
+			} else {
+				$message->react("👍");
+				execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\savemanual3.bat");
+				VarSave(null, "manual_saving.php", true);
+				
+				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
 					$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
 					$message->reply("$time EST");
-					VarSave(null, "manual_saving.php", false);
-					//});
-				}
-				return;
-			case 'save 3': //;save 3
-				if($GLOBALS['debug_echo']) echo "[SAVE SLOT 3] $author_check" .  PHP_EOL;
-				$manual_saving = VarLoad(null, "manual_saving.php");
-				if ($manual_saving) {
-					if ($react) $message->react("👎");
-					$message->reply("A manual save is already in progress!");
-				} else {
-					if ($react) $message->react("👍");
-					execInBackgroundWindows('php savemanual3.php');
-					VarSave(null, "manual_saving.php", true);
-					
-					$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-						$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-						$message->reply("$time EST");
-					VarSave(null, "manual_saving.php", false);
-				}
-				return;
-			case 'delete 1': //;delete 1
-				if (!($creator || $owner || $dev)) return;
-				if($GLOBALS['debug_echo']) echo "[DELETE SLOT 1] $author_check" . PHP_EOL;
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php deletemanual1.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-		}
+				VarSave(null, "manual_saving.php", false);
+			}
+			return;
+		case 'delete 1': //;delete 1
+			if (!($creator || $owner || $dev)) return;
+			if($GLOBALS['debug_echo']) echo "[DELETE SLOT 1] $author_check" . PHP_EOL;
+			$message->react("👍");
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\deletemanual1.bat");
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'delete 2': //;delete 2
+			if (!($creator || $owner || $dev)) return;
+			if($GLOBALS['debug_echo']) echo "[DELETE SLOT 1] $author_check" . PHP_EOL;
+			$message->react("👍");
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\deletemanual2.bat");
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'delete 3': //;delete 2
+			if (!($creator || $owner || $dev)) return;
+			if($GLOBALS['debug_echo']) echo "[DELETE SLOT 1] $author_check" . PHP_EOL;
+			$message->react("👍");
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\deletemanual3.bat");
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		
 	}
-	if ($creator || $owner || $dev || $tech) {
-		switch ($message_content_lower) {
-			case 'load 1': //;load 1
-				if($GLOBALS['debug_echo']) echo "[LOAD SLOT 1] $author_check" . PHP_EOL;
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php loadmanual1.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-			case 'load 2': //;load 2
-				if($GLOBALS['debug_echo']) echo "[LOAD SLOT 2] $author_check" . PHP_EOL;
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php loadmanual2.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-			case 'load 3': //;load 3
-				if($GLOBALS['debug_echo']) echo "[LOAD SLOT 3] $author_check" . PHP_EOL;
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php loadmanual3.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-			case 'load1h': //;load1h
-				if($GLOBALS['debug_echo']) echo "[LOAD 1H] $author_check" . PHP_EOL;
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php load1h.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-			case 'load2h': //;load2h
-				if($GLOBALS['debug_echo']) echo "[LOAD 2H] $author_check" . PHP_EOL;
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php load2h.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-			case 'host persistence':
-			case 'host pers':
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php host.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-			case 'kill persistence':
-			case 'kill pers':
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php kill.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-			case 'update persistence':
-			case 'update pers':
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php update.php');
-				
-				$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
-				$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
-				$message->reply("$time EST");
-				return;
-		}
-	}
-	if ($creator || $owner || $dev) {
-		switch ($message_content_lower) {
-			case '?status': //;?status
-				include "../servers/getserverdata.php";
-				$debug = var_export($serverinfo, true);
-				if ($debug) $author_channel->sendMessage(urldecode($debug));
-				else $author_channel->sendMessage("No debug info found!");
-				return;
-			case 'pause': //;pause
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php pause.php');
-				return;
-			case 'loadnew': //;loadnew
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php loadnew.php');
-				return;
-			case 'VM_restart': //;VM_restart
-				if (!($creator || $dev)) return;
-				if ($react) $message->react("👍");
-				execInBackgroundWindows('php VM_restart.php');
-				return;
-		}
+
+	switch ($message_content_lower) {
+		case 'load 1': //;load 1
+			if($GLOBALS['debug_echo']) echo "[LOAD SLOT 1] $author_check" . PHP_EOL;
+			$message->react("👍");
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\loadmanual1.bat");
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'load 2': //;load 2
+			if($GLOBALS['debug_echo']) echo "[LOAD SLOT 2] $author_check" . PHP_EOL;
+			$message->react("👍");
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\loadmanual2.bat");
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'load 3': //;load 3
+			if($GLOBALS['debug_echo']) echo "[LOAD SLOT 3] $author_check" . PHP_EOL;
+			$message->react("👍");
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\loadmanual3.bat");
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'load1h': //;load1h
+			if($GLOBALS['debug_echo']) echo "[LOAD 1H] $author_check" . PHP_EOL;
+			$message->react("👍");
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\load1h.bat");
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'load2h': //;load2h
+			if($GLOBALS['debug_echo']) echo "[LOAD 2H] $author_check" . PHP_EOL;
+			$message->react("👍");
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\load2h.bat");
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'host persistence':
+		case 'host pers':
+			$message->react("👍");
+			execInBackgroundWindows('php host.php');
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'kill persistence':
+		case 'kill pers':
+			$message->react("👍");
+			execInBackgroundWindows('php kill.php');
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
+		case 'update persistence':
+		case 'update pers':
+			$message->react("👍");
+			execInBackgroundWindows('php update.php');
+			
+			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
+			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
+			$message->reply("$time EST");
+			return;
 	}
 	
+	switch ($message_content_lower) {
+		case '?status': //;?status
+			include "../servers/getserverdata.php";
+			$debug = var_export($serverinfo, true);
+			if ($debug) $author_channel->sendMessage(urldecode($debug));
+			else $author_channel->sendMessage("No debug info found!");
+			return;
+		case 'pause': //;pause
+			$message->react("👍");
+			execInBackgroundWindows('php pause.php');
+			return;
+		case 'loadnew': //;loadnew
+			$message->react("👍");
+			execInBackgroundWindows('php loadnew.php');
+			return;
+		case 'VM_restart': //;VM_restart
+			if (!($creator || $dev)) return;
+			$message->react("👍");
+			execInBackgroundWindows('php VM_restart.php');
+			return;
+	}
 }
 
 function relayTimer($discord, $duration)
@@ -942,6 +959,9 @@ $discord->once('ready', function ($discord) use ($loop, $command_symbol)
 	relayTimer($discord, 10);
 	$discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
 		if ($message->channel->guild->id != '883464817288040478') return; //Only allow this in the Persistence server
+		if ($message->author->id == 116927250145869826) {
+			vmware($message, $command_symbol);
+		}
 		on_message($message, $discord, $loop, $command_symbol);
 		//on_message2($message, $discord, $loop, $command_symbol);
 	});
