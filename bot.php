@@ -271,7 +271,6 @@ function vmware($message)
 				return;
 		}
 	}
-	*/
 	
 }
 
