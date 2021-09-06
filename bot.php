@@ -103,8 +103,7 @@ function vmware($message, $command_symbol = '!s')
 	switch ($message_content_lower) {
 		case 'resume': //;resume
 			if($GLOBALS['debug_echo']) echo "[RESUME] $author_check" .  PHP_EOL;
-			//Trigger the php script remotely
-			execInBackgroundWindows('php resume.php');
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\resume.bat");
 			//$message->reply(curl_exec($ch));
 			return;
 		case 'save 1': //;save 1
@@ -241,52 +240,52 @@ function vmware($message, $command_symbol = '!s')
 			return;
 		case 'host persistence':
 		case 'host pers':
+			/*
 			$message->react("👍");
 			execInBackgroundWindows('php host.php');
 			
 			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
 			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
 			$message->reply("$time EST");
+			*/
 			return;
 		case 'kill persistence':
 		case 'kill pers':
+			/*
 			$message->react("👍");
 			execInBackgroundWindows('php kill.php');
 			
 			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
 			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
 			$message->reply("$time EST");
+			*/
 			return;
 		case 'update persistence':
 		case 'update pers':
+			/*
 			$message->react("👍");
 			execInBackgroundWindows('php update.php');
 			
 			$dt = new DateTime("now", new DateTimeZone('America/New_York'));  // convert UNIX timestamp to PHP DateTime
 			$time = $dt->format('d-m-Y H:i:s'); // output = 2017-01-01 00:00:00
 			$message->reply("$time EST");
+			*/
 			return;
 	}
 	
 	switch ($message_content_lower) {
-		case '?status': //;?status
-			include "../servers/getserverdata.php";
-			$debug = var_export($serverinfo, true);
-			if ($debug) $author_channel->sendMessage(urldecode($debug));
-			else $author_channel->sendMessage("No debug info found!");
-			return;
 		case 'pause': //;pause
 			$message->react("👍");
-			execInBackgroundWindows('php pause.php');
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\pause.bat");
 			return;
 		case 'loadnew': //;loadnew
-			$message->react("👍");
-			execInBackgroundWindows('php loadnew.php');
+			//$message->react("👍");
+			//execInBackgroundWindows('php loadnew.php');
 			return;
 		case 'VM_restart': //;VM_restart
-			if (!($creator || $dev)) return;
+			//if (!($creator || $dev)) return;
 			$message->react("👍");
-			execInBackgroundWindows('php VM_restart.php');
+			execInBackgroundWindowsCOM("C:\Civ13 Task Scheduler\VM_restart.bat");
 			return;
 	}
 }
