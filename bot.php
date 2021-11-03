@@ -40,10 +40,10 @@ $discord = new \Discord\Discord([
 
 function portIsAvailable(int $port = 1714): bool
 {
-	$s = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+	$s = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
 	try {
-		if (socket_bind($s, "127.0.0.1", $port)) {
+		if (var_dump(socket_bind($s, "127.0.0.1", $port))) {
 			socket_close($s);
 			return true;
 		}
