@@ -680,7 +680,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		} else $message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'");
 		return;
 	}
-	if (str_starts_with($message_content_lower,'serverstatus')) {
+	/*if (str_starts_with($message_content_lower,'serverstatus')) { //See GitHub Issue #1
 		$embed = $discord->factory(\Discord\Parts\Embed\Embed::class);
 		$_1714 = !portIsAvailable(1714);
 		$server_is_up = $_1714;
@@ -753,7 +753,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		$message->channel->sendEmbed($embed);
 		return;
-	}
+	}*/
 }
 
 function recalculate_ranking() {
