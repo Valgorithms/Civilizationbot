@@ -92,7 +92,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
 	if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
 		while (($fp = fgets($ooc, 4096)) !== false) {
-			$fp = str_replace('\n', "", $fp);
+			$fp = str_replace(PHP_EOL, "", $fp);
 			if ($target_channel = $message->guild->channels->get('name', 'ooc-nomads'))
 				$target_channel->sendMessage($fp);
 		}
@@ -101,7 +101,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	}
 	if ($ahelp = fopen('/home/1713/civ13-rp/admin.log', "r+")) {
 		while (($fp = fgets($ahelp, 4096)) !== false) {
-			$fp = str_replace('\n', "", $fp);
+			$fp = str_replace(PHP_EOL, "", $fp);
 			if ($target_channel = $message->guild->channels->get('name', 'ahelp-nomads'))
 				$target_channel->sendMessage($fp);
 		}
@@ -110,7 +110,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	}
 	if ($ooctdm = fopen('/home/1713/civ13-tdm/ooc.log', "r+")) {
 		while (($fp = fgets($ooctdm, 4096)) !== false) {
-			$fp = str_replace('\n', "", $fp);
+			$fp = str_replace(PHP_EOL, "", $fp);
 			if ($target_channel = $message->guild->channels->get('name', 'ooc-tdm'))
 				$target_channel->sendMessage($fp);
 		}
@@ -119,7 +119,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	}
 	if ($ahelptdm = fopen('/home/1713/civ13-tdm/admin.log', "r+")) {
 		while (($fp = fgets($ahelptdm, 4096)) !== false) {
-			$fp = str_replace('\n', "", $fp);
+			$fp = str_replace(PHP_EOL, "", $fp);
 			if ($target_channel = $message->guild->channels->get('name', 'ahelp-tdm'))
 				$target_channel->sendMessage($fp);
 		}
@@ -165,11 +165,11 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			foreach ($load_array as $line) {
 				if ($line != " " && $line != "") {
 					if ($x==0) {
-						$load = "CPU Usage: $line%\n";
+						$load = "CPU Usage: $line%" . PHP_EOL;
 						break;
 					}
 					if ($x!=0) {
-						//$load = $load . "Core $x: $line%\n"; //No need to report individual cores right now
+						//$load = $load . "Core $x: $line%" . PHP_EOL; //No need to report individual cores right now
 					}
 					$x++;
 				}
@@ -208,13 +208,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		switch (strtolower($message->channel->name)) {
 			case 'ooc-nomads':					
 				$file = fopen("/home/1713/civ13-rp/SQL/discord2ooc.txt", "a");
-				$txt = $message->user->username . ":::$message_filtered\n";
+				$txt = $message->user->username . ":::$message_filtered" . PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
 			case 'ooc-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2ooc.txt", "a");
-				$txt = $message->user->username . ":::$message_filtered\n";
+				$txt = $message->user->username . ":::$message_filtered" . PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
@@ -226,13 +226,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		switch (strtolower($message->channel->name)) {
 			case 'ahelp-nomads':
 				$file = fopen("/home/1713/civ13-rp/SQL/discord2admin.txt", "a");
-				$txt = $message->user->username . ":::$message_filtered\n";
+				$txt = $message->user->username . ":::$message_filtered" . PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
 			case 'ahelp-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2admin.txt", "a");
-				$txt = $message->user->username . ":::$message_filtered\n";
+				$txt = $message->user->username . ":::$message_filtered" . PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
@@ -245,14 +245,14 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		switch (strtolower($message->channel->name)) {
 			case 'ahelp-nomads':
 				$file = fopen("/home/1713/civ13-rp/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
+				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
 			case 'ahelp-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
-				fwrite($file, $txt);
+				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOPL;
+				fwrite($file, $txt)
 				fclose($file);
 				break;
 		}
@@ -264,13 +264,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		switch (strtolower($message->channel->name)) {
 			case 'ahelp-nomads':
 				$file = fopen("/home/1713/civ13-rp/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
+				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
 			case 'ahelp-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1]."\n";
+				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
@@ -281,12 +281,12 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		$message_content = substr($message_content, 4);
 		$split_message = explode('; ', $message_content); //$split_target[1] is the target
 		$file = fopen("/home/1713/civ13-rp/SQL/discord2ban.txt", "a");
-		$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
+		$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
 		fwrite($file, $txt);
 		fclose($file);
 		
 		$file = fopen("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a");
-		$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2]."\n";
+		$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
 		fwrite($file, $txt);
 		fclose($file);
 		$result = '**' . $message->user->username . '#' . $message->user->discriminator . '** banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
@@ -336,7 +336,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					$whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "r") ?? NULL;
 					if ($whitelist1) {
 						while (($fp = fgets($whitelist1, 4096)) !== false) {
-							$line = trim(str_replace("\n", "", $fp));
+							$line = trim(str_replace(PHP_EOL, "", $fp));
 							$linesplit = explode(";", $line);
 							foreach ($linesplit as $split) {
 								if ($split == $ckey)
@@ -348,7 +348,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					$whitelist2 = fopen('/home/1713/civ13-tdm/SQL/whitelist.txt', "r") ?? NULL;
 					if ($whitelist2) {
 						while (($fp = fgets($whitelist2, 4096)) !== false) {
-							$line = trim(str_replace("\n", "", $fp));
+							$line = trim(str_replace(PHP_EOL, "", $fp));
 							$linesplit = explode(";", $line);
 							foreach ($linesplit as $split)
 								if ($split == $ckey)
@@ -362,7 +362,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						$whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "r") ?? NULL;
 						if ($whitelist1) {
 							while (($fp = fgets($whitelist1, 4096)) !== false) {
-								$line = trim(str_replace("\n", "", $fp));
+								$line = trim(str_replace(PHP_EOL, "", $fp));
 								$linesplit = explode(";", $line);
 								foreach ($linesplit as $split) {
 									if ($split == $message->author->username)
@@ -373,7 +373,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						}
 					}else $message->channel->sendMessage("$ckey is already in the whitelist!");
 					
-					$txt = $ckey."=".$message->author->username.'\n';
+					$txt = $ckey."=".$message->author->username.PHP_EOL;
 					if ($whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "a")) {
 						fwrite($whitelist1, $txt);
 						fclose($whitelist1);
@@ -645,7 +645,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$filecheck1 = fopen("/home/1713/civ13-rp/SQL/bans.txt", "r") ?? NULL;
 			if ($filecheck1) {
 				while (($fp = fgets($filecheck1, 4096)) !== false) {
-					str_replace("\n", "", $fp);
+					str_replace(PHP_EOL, "", $fp);
 					$filter = "|||";
 					$line = trim(str_replace($filter, "", $fp));
 					$linesplit = explode(";", $line); //$split_ckey[0] is the ckey
@@ -662,7 +662,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$filecheck2 = fopen("/home/1713/civ13-tdm/SQL/bans.txt", "r") ?? NULL;
 			if ($filecheck2) {
 				while (($fp = fgets($filecheck2, 4096)) !== false) {
-					str_replace("\n", "", $fp);
+					str_replace(PHP_EOL, "", $fp);
 					$filter = "|||";
 					$line = trim(str_replace($filter, "", $fp));
 					$linesplit = explode(";", $line); //$split_ckey[0] is the ckey
@@ -765,7 +765,7 @@ function recalculate_ranking() {
 		while(! feof($search)) {
 			$medal_s = 0;
 			$line = fgets($search);
-			$line = trim(str_replace('\n', "", $line)); # remove '\n' at end of line
+			$line = trim(str_replace(PHP_EOL, "", $line)); # remove '\n' at end of line
 			$duser = explode(';', $line);
 			if ($duser[2] == "long service medal")
 				$medal_s += 0.75;
@@ -808,7 +808,7 @@ function recalculate_ranking() {
 	$sorted_list = array_reverse($ranking);
 	if ($search = fopen('ranking.txt', 'w'))
 		foreach ($sorted_list as $i)
-			fwrite($search, $i[0] . ";" . $i[1] . "\n");
+			fwrite($search, $i[0] . ";" . $i[1] . PHP_EOL);
 	fclose ($search);
 	return;
 }
@@ -831,10 +831,10 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 			for ($x=0;$x<count($line_array);$x++) {
 				$line = $line_array[$x];
 				if ($topsum <= 10) {
-					$line = trim(str_replace('\n', "", $line));
+					$line = trim(str_replace(PHP_EOL, "", $line));
 					$topsum += 1;
 					$sline = explode(';', $line);
-					$msg .= "(". ($topsum - 1) ."): **".$sline[1]."** with **".$sline[0]."** points.\n";
+					$msg .= "(". ($topsum - 1) ."): **".$sline[1]."** with **".$sline[0]."** points." . PHP_EOL;
 				} else break;
 			}
 			if ($msg != '') $message->channel->sendMessage($msg);
@@ -862,7 +862,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 			$result = '';
 			for ($x=0;$x<count($line_array);$x++) {
 				$line = $line_array[$x];
-				$line = trim(str_replace('\n', "", $line));
+				$line = trim(str_replace(PHP_EOL, "", $line));
 				$sline = explode(';', $line);
 				if ($sline[1] == $ckey) {
 					$found = 1;
@@ -886,7 +886,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 			$found = false;
 			while(! feof($search)) {
 				$line = fgets($search);
-				$line = trim(str_replace('\n', "", $line)); # remove '\n' at end of line
+				$line = trim(str_replace(PHP_EOL, "", $line)); # remove '\n' at end of line
 				if (str_contains($line, $ckey)) {
 					$found = true;
 					$duser = explode(';', $line);
@@ -912,7 +912,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 							$medal_s = "<:iron_cross1:705786458572587109>";
 						if ($duser[2] == "iron cross 2nd class")
 							$medal_s = "<:iron_cross2:705786458849673267>";
-						$result .= "**" . $duser[1] . ":**" . " " . $medal_s . " **" . $duser[2] . "**, *" . $duser[4] . "*, " . $duser[5] . "\n";
+						$result .= "**" . $duser[1] . ":**" . " " . $medal_s . " **" . $duser[2] . "**, *" . $duser[4] . "*, " . $duser[5] . PHP_EOL;
 					}
 				}
 			}
