@@ -251,7 +251,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				break;
 			case 'ahelp-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOPL;
+				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
 				fwrite($file, $txt)
 				fclose($file);
 				break;
