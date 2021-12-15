@@ -768,13 +768,13 @@ function recalculate_ranking() {
 			$line = trim(str_replace(PHP_EOL, "", $line)); # remove '\n' at end of line
 			$duser = explode(';', $line);
 			if ($duser[2] == "long service medal")
-				$medal_s += 0.75;
+				$medal_s += 0.5;
 			if ($duser[2] == "combat medical badge")
 				$medal_s += 2;
 			if ($duser[2] == "tank destroyer silver badge")
-				$medal_s += 1;
+				$medal_s += 0.75;
 			if ($duser[2] == "tank destroyer gold badge")
-				$medal_s += 2;
+				$medal_s += 1.5;
 			if ($duser[2] == "assault badge")
 				$medal_s += 1.5;
 			if ($duser[2] == "wounded badge")
