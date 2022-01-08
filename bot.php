@@ -680,7 +680,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		} else $message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'");
 		return;
 	}
-	/*if (str_starts_with($message_content_lower,'serverstatus')) { //See GitHub Issue #1
+	if (str_starts_with($message_content_lower,'serverstatus')) { //See GitHub Issue #1
 		$embed = $discord->factory(\Discord\Parts\Embed\Embed::class);
 		$_1714 = !portIsAvailable(1714);
 		$server_is_up = $_1714;
@@ -753,7 +753,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		$message->channel->sendEmbed($embed);
 		return;
-	}*/
+	}
 }
 
 function recalculate_ranking() {
@@ -919,6 +919,32 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 			if ($result != '') $message->channel->sendMessage($result);
 			if (!$found && ($result == '')) $message->channel->sendMessage("No medals found for this ckey.");
 		}
+		if (str_starts_with($message_content_lower, 'brmedals')) {
+			$split_message = explode('brmedals ', $message_content);
+			$ckey = "";
+			if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
+				$ckey = $split_message[1];
+				$ckey = strtolower($ckey);
+				$ckey = str_replace('_', '', $ckey);
+				$ckey = str_replace(' ', '', $ckey);
+			}
+			$result = '';
+			$search = fopen('/home/1713/civ13-tdm/SQL/awards_br.txt', 'r');
+			$found = false;
+			while(! feof($search)) {
+				$line = fgets($search);
+				$line = trim(str_replace(PHP_EOL, "", $line)); # remove '\n' at end of line
+				if (str_contains($line, $ckey)) {
+					$found = true;
+					$duser = explode(';', $line);
+					if ($duser[0] == $ckey) {
+						$result .= "**" . $duser[1] . ":** placed *" . $duser[2] . " of  ". $duser[5] . ",* on " . $duser[4] . " (" . $duser[3] . ")" . PHP_EOL;
+					}
+				}
+			}
+			if ($result != '') $message->channel->sendMessage($result);
+			if (!$found && ($result == '')) $message->channel->sendMessage("No medals found for this ckey.");
+		}
 		if (str_starts_with($message_content_lower, 'ts')) {
 			$split_message = explode('ts ', $message_content);
 			if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
@@ -938,7 +964,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					if ($state == "on") {
 						execInBackgroundLinux('cd /home/1713/civ13-typespess');
 						execInBackgroundLinux('sudo git pull');
-						execInBackgroundLinux('sudo sh launch_server.sh &');
+						execInBackgroundLinux('sudo sh scripts/launch_server.sh &');
 						$message->channel->sendMessage("Put **TypeSpess Civ13** test server on: http://civ13.com/ts");
 					} elseif ($state == "off") {
 						execInBackgroundLinux('sudo killall index.js');
