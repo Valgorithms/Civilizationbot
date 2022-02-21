@@ -86,7 +86,7 @@ function on_ready($discord)
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
 {
-	
+	if ($message->channel->type != 1) return; //Only process commands from a server
 	if ($message->guild->owner_id != '196253985072611328') return; //Only allow this in a guild that Taislin owns
 	
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
