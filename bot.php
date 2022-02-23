@@ -171,14 +171,14 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					$x++;
 				}
 			}
-			$message->channel->sendMessage($load);
+			return $message->channel->sendMessage($load);
 		} else { //Linux
 			$cpu_load = '-1';
 			if ($cpu_load_array = sys_getloadavg())
 				$cpu_load = array_sum($cpu_load_array) / count($cpu_load_array);
-			$message->channel->sendMessage('CPU Usage: ' . $cpu_load . "%");
+			return $message->channel->sendMessage('CPU Usage: ' . $cpu_load . "%");
 		}
-		return;
+		return $message->channel->sendMessage('Unrecognized operating system!');
 	}
 	
 	if (str_starts_with($message_content_lower, 'insult')) {
@@ -194,9 +194,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				}
 				if (count($insults_array > 0)) {
 					$insult = $insults_array[rand(0, count($insults_array)-1)];
-					$message->channel->sendMessage("$incel, $insult");
+					return $message->channel->sendMessage("$incel, $insult");
 				}
-			} else $message->channel->sendMessage('Unable to access insults.txt!');
+			} else return $message->channel->sendMessage('Unable to access insults.txt!');
 		}
 		return;
 	}
@@ -287,8 +287,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		fwrite($file, $txt);
 		fclose($file);
 		$result = '**' . $message->member->username . '#' . $message->member->discriminator . '** banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
-		$message->channel->sendMessage($result);
-		return;
+		return $message->channel->sendMessage($result);
 	}
 	if (str_starts_with($message_content_lower, 'unban ')) {
 		$message_content = substr($message_content, 6);
@@ -305,8 +304,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		fclose($file);
 
 		$result = '**' . $message->author->username . '** unbanned **' . $split_message[0] . '**.';
-		$message->channel->sendMessage($result);
-		return;
+		return $message->channel->sendMessage($result);
 	}
 	#whitelist
 	if (str_starts_with($message_content_lower, 'whitelistme')) {
@@ -368,7 +366,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 							}
 						fclose($whitelist1);
 						}
-					}else $message->channel->sendMessage("$ckey is already in the whitelist!");
+					} else return $message->channel->sendMessage("$ckey is already in the whitelist!");
 					
 					$txt = $ckey."=".$message->member->username.PHP_EOL;
 					if ($whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "a")) {
@@ -379,10 +377,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						fwrite($whitelist2, $txt);
 						fclose($whitelist2);
 					}
-					$message->channel->sendMessage("$ckey has been added to the whitelist.");
-				} else $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
-			} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-		} else $message->channel->sendMessage("Wrong format. Please try '!s whitelistme [ckey].'");
+					return $message->channel->sendMessage("$ckey has been added to the whitelist.");
+				} else return $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
+			} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+		} else return $message->channel->sendMessage("Wrong format. Please try '!s whitelistme [ckey].'");
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'unwhitelistme')) {
@@ -440,9 +438,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						fclose($wlist);
 					} else return $message->channel->sendMessage('Unable to access whitelist.txt!');
 				}
-				$message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
-			} else $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+				return $message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
+			} else return $message->channel->sendMessage("Rejected! You need to have at least the [Brother At Arms] rank.");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'hostciv')) {
@@ -466,8 +464,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$discord->getLoop()->addTimer(10, function() { # ditto
 					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py');
 				});
-			} else $message->channel->sendMessage("Denied!");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			} else return $message->channel->sendMessage("Denied!");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'killciv')) {
@@ -483,9 +481,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			if ($accepted) {
 				execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killciv13.py');
-				$message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
-			} else $message->channel->sendMessage("Denied!");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+				return $message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
+			} else return $message->channel->sendMessage("Denied!");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'restartciv')) {
@@ -510,8 +508,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$discord->getLoop()->addTimer(10, function() { # ditto
 					execInBackgroundLinux('sudo python3 /home/1713/civ13-rp/scripts/killsudos.py');
 				});
-			} else $message->channel->sendMessage("Denied!");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			} else return $message->channel->sendMessage("Denied!");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'restarttdm')) {
@@ -536,8 +534,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$discord->getLoop()->addTimer(10, function() { # ditto
 					execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py');
 				});
-			} else $message->channel->sendMessage("Denied!");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			} else return $message->channel->sendMessage("Denied!");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'mapswap')) {
@@ -560,8 +558,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					execInBackgroundLinux("sudo python3 /home/1713/civ13-rp/scripts/mapswap.py $mapto");
 					$message->channel->sendMessage("Sucessfully changed map to $mapto.");
 				}
-			} else $message->channel->sendMessage("Denied!");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			} else return $message->channel->sendMessage("Denied!");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'hosttdm')) {
@@ -584,8 +582,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				$discord->getLoop()->addTimer(10, function() { # ditto
 					execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killsudos.py');
 				});
-			} else $message->channel->sendMessage("Denied!");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			} else return $message->channel->sendMessage("Denied!");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'killtdm')) {
@@ -600,9 +598,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			}
 			if ($accepted) {
 				execInBackgroundLinux('sudo python3 /home/1713/civ13-tdm/scripts/killciv13.py');
-				$message->channel->sendMessage("Attempted to kill Civilization 13 (TDM Server).");
-			} else $message->channel->sendMessage("Denied!");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+				return $message->channel->sendMessage("Attempted to kill Civilization 13 (TDM Server).");
+			} else return $message->channel->sendMessage("Denied!");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	if (str_starts_with($message_content_lower, 'tdmmapswap')) {
@@ -623,10 +621,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 					$mapto = strtoupper($mapto);
 					$message->channel->sendMessage("Changing map to $mapto...");
 					execInBackgroundLinux("sudo python3 /home/1713/civ13-tdm/scripts/mapswap.py $mapto");
-					$message->channel->sendMessage("Sucessfully changed map to $mapto.");
+					return $message->channel->sendMessage("Sucessfully changed map to $mapto.");
 				}
-			} else $message->channel->sendMessage("Denied!");
-		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+			} else return $message->channel->sendMessage("Denied!");
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
 	
@@ -687,13 +685,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						$banreason = $linesplit[3];
 						$bandate = $linesplit[5];
 						$banner = $linesplit[4];
-						$message->channel->sendMessage("**$ckey** has been banned from **Nomads** on **$bandate** for **$banreason** by $banner.");
+						$message->channel->sendMessage("**$ckey** has been banned from **TDM** on **$bandate** for **$banreason** by $banner.");
 					}
 				}
 				fclose($filecheck2);
 			}
-			if (!$found) $message->channel->sendMessage("No bans were found for **$ckey**.");
-		} else $message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'");
+			if (!$found) return $message->channel->sendMessage("No bans were found for **$ckey**.");
+		} else return  $message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'");
 		return;
 	}
 	if (str_starts_with($message_content_lower,'serverstatus')) { //See GitHub Issue #1
@@ -709,7 +707,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$data = "None";
 			if ($_1714) {
 				if (!$data = file_get_contents('/home/1713/civ13-tdm/serverdata.txt'))
-					$message->channel->sendMessage('Unable to access serverdata.txt!');
+					return $message->channel->sendMessage('Unable to access serverdata.txt!');
 			} else {
 				$embed->setColor(0x00ff00);
 				$embed->addFieldValues("TDM Server Status", "Offline");
@@ -745,7 +743,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			$data = "None";
 			if ($_1714) {
 				if (!$data = file_get_contents('/home/1713/civ13-rp/serverdata.txt'))
-					$message->channel->sendMessage('Unable to access serverdata.txt!');
+					return $message->channel->sendMessage('Unable to access serverdata.txt!');
 			} else {
 				$embed->setColor(0x00ff00);
 				$embed->addFieldValues("Nomads Server Status", "Offline");
@@ -807,7 +805,7 @@ function recalculate_ranking() {
 			if (!in_array($duser[0], $ckeylist))
 				$ckeylist[] = $duser[0];
 		}
-	} else $message->channel->sendMessage('Unable to access awards.txt!');
+	} else return $message->channel->sendMessage('Unable to access awards.txt!');
 	
 	foreach ($ckeylist as $i) {
 		$sumc = 0;
@@ -841,7 +839,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					$line_array[] = $fp;
 				}
 				fclose($search);
-			} else $message->channel->sendMessage('Unable to access ranking.txt!');
+			} else return $message->channel->sendMessage('Unable to access ranking.txt!');
 			$topsum = 1;
 			$msg = '';
 			for ($x=0;$x<count($line_array);$x++) {
@@ -853,7 +851,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					$msg .= "(". ($topsum - 1) ."): **".$sline[1]."** with **".$sline[0]."** points." . PHP_EOL;
 				} else break;
 			}
-			if ($msg != '') $message->channel->sendMessage($msg);
+			if ($msg != '') return $message->channel->sendMessage($msg);
 		}
 		if (str_starts_with($message_content_lower, 'rankme')) {
 			$split_message = explode('rankme ', $message_content);
@@ -873,7 +871,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					$line_array[] = $fp;
 				}
 				fclose($search);
-			} else $message->channel->sendMessage('Unable to access ranking.txt!');
+			} else return $message->channel->sendMessage('Unable to access ranking.txt!');
 			$found = 0;
 			$result = '';
 			for ($x=0;$x<count($line_array);$x++) {
@@ -885,8 +883,8 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					$result .= "**" . $sline[1] . "**" . " has a total rank of **" . $sline[0] . "**.";
 				};
 			}
-			if (!$found) $message->channel->sendMessage("No medals found for this ckey.");
-			else $message->channel->sendMessage($result);
+			if (!$found) return $message->channel->sendMessage("No medals found for this ckey.");
+			return $message->channel->sendMessage($result);
 		}
 		if (str_starts_with($message_content_lower, 'medals')) {
 			$split_message = explode('medals ', $message_content);
@@ -932,8 +930,8 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					}
 				}
 			}
-			if ($result != '') $message->channel->sendMessage($result);
-			if (!$found && ($result == '')) $message->channel->sendMessage("No medals found for this ckey.");
+			if ($result != '') return $message->channel->sendMessage($result);
+			if (!$found && ($result == '')) return $message->channel->sendMessage("No medals found for this ckey.");
 		}
 		if (str_starts_with($message_content_lower, 'brmedals')) {
 			$split_message = explode('brmedals ', $message_content);
@@ -958,8 +956,8 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 					}
 				}
 			}
-			if ($result != '') $message->channel->sendMessage($result);
-			if (!$found && ($result == '')) $message->channel->sendMessage("No medals found for this ckey.");
+			if ($result != '') return $message->channel->sendMessage($result);
+			if (!$found && ($result == '')) return $message->channel->sendMessage("No medals found for this ckey.");
 		}
 		if (str_starts_with($message_content_lower, 'ts')) {
 			$split_message = explode('ts ', $message_content);
@@ -974,17 +972,17 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 								$accepted = true;
 						}
 					}
-				}else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+				} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 
 				if ($accepted) {
 					if ($state == "on") {
 						execInBackgroundLinux('cd /home/1713/civ13-typespess');
 						execInBackgroundLinux('sudo git pull');
 						execInBackgroundLinux('sudo sh scripts/launch_server.sh &');
-						$message->channel->sendMessage("Put **TypeSpess Civ13** test server on: http://civ13.com/ts");
+						return $message->channel->sendMessage("Put **TypeSpess Civ13** test server on: http://civ13.com/ts");
 					} elseif ($state == "off") {
 						execInBackgroundLinux('sudo killall index.js');
-						$message->channel->sendMessage("**TypeSpess Civ13** test server down.");
+						return $message->channel->sendMessage("**TypeSpess Civ13** test server down.");
 					}
 				}
 			}
