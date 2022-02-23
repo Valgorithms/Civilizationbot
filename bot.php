@@ -62,7 +62,7 @@ function remove_prefix(string $text = '', string $prefix = ''): string
 	return $text;
 }
 
-function my_message($msg): bool
+function my_message($message, $discord): bool
 {
 	return ($message->author->id == $discord->id);
 }
