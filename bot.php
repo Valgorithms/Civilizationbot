@@ -629,7 +629,26 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		} else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
 		return;
 	}
-			
+	
+	if (str_starts_with($message_content_lower, "banlist")) {
+		if ($author_member = $message->member) {
+			foreach ($author_member->roles as $role) {
+				switch ($role->name) {
+					case 'Admiral':
+					case 'Captain':
+					case 'Lieutenant':
+					case 'Knight':
+						$accepted = true;
+				}
+			}
+		}
+		if ($accepted) {
+			$builder = Discord\Builders\MessageBuilder::new();
+			$builder->addFile('/home/1713/civ13-tdm/SQL/bans.txt', 'bans.txt');
+			return $message->channel->sendMessage($builder);
+		} return $message->channel->sendMessage("Rejected! You need to have at least the [Knight] rank.");
+	}
+	
 	if (str_starts_with($message_content_lower, "bancheck")) {
 		$split_message = explode('bancheck ', $message_content);
 		if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
