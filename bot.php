@@ -64,7 +64,7 @@ function remove_prefix(string $text = '', string $prefix = ''): string
 
 function my_message($msg): bool
 {
-	return ($message->author->user->id == $discord->user->id);
+	return ($message->author->id == $discord->id);
 }
 
 function search_players(string $ckey): string
@@ -205,13 +205,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		switch (strtolower($message->channel->name)) {
 			case 'ooc-nomads':					
 				$file = fopen("/home/1713/civ13-rp/SQL/discord2ooc.txt", "a");
-				$txt = $message->user->username . ":::$message_filtered" . PHP_EOL;
+				$txt = $message->author->username . ":::$message_filtered" . PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
 			case 'ooc-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2ooc.txt", "a");
-				$txt = $message->user->username . ":::$message_filtered" . PHP_EOL;
+				$txt = $message->author->username . ":::$message_filtered" . PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
@@ -223,13 +223,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		switch (strtolower($message->channel->name)) {
 			case 'ahelp-nomads':
 				$file = fopen("/home/1713/civ13-rp/SQL/discord2admin.txt", "a");
-				$txt = $message->user->username . ":::$message_filtered" . PHP_EOL;
+				$txt = $message->author->username . ":::$message_filtered" . PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
 			case 'ahelp-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2admin.txt", "a");
-				$txt = $message->user->username . ":::$message_filtered" . PHP_EOL;
+				$txt = $message->author->username . ":::$message_filtered" . PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
@@ -242,13 +242,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		switch (strtolower($message->channel->name)) {
 			case 'ahelp-nomads':
 				$file = fopen("/home/1713/civ13-rp/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
+				$txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
 			case 'ahelp-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
+				$txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
@@ -261,13 +261,13 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		switch (strtolower($message->channel->name)) {
 			case 'ahelp-nomads':
 				$file = fopen("/home/1713/civ13-rp/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
+				$txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
 			case 'ahelp-tdm':
 				$file = fopen("/home/1713/civ13-tdm/SQL/discord2dm.txt", "a");
-				$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
+				$txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].PHP_EOL;
 				fwrite($file, $txt);
 				fclose($file);
 				break;
@@ -278,15 +278,15 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		$message_content = substr($message_content, 4);
 		$split_message = explode('; ', $message_content); //$split_target[1] is the target
 		$file = fopen("/home/1713/civ13-rp/SQL/discord2ban.txt", "a");
-		$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
+		$txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
 		fwrite($file, $txt);
 		fclose($file);
 		
 		$file = fopen("/home/1713/civ13-tdm/SQL/discord2ban.txt", "a");
-		$txt = $message->user->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
+		$txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
 		fwrite($file, $txt);
 		fclose($file);
-		$result = '**' . $message->user->username . '#' . $message->user->discriminator . '** banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
+		$result = '**' . $message->member->username . '#' . $message->member->discriminator . '** banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
 		$message->channel->sendMessage($result);
 		return;
 	}
@@ -295,16 +295,16 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		$split_message = explode('; ', $message_content);
 		
 		$file = fopen("/home/1713/civ13-rp/SQL/discord2unban.txt", "a");
-		$txt = $message->user->username . "#" . $message->user->discriminator . ":::".$split_message[0];
+		$txt = $message->author->username . "#" . $message->author->discriminator . ":::".$split_message[0];
 		fwrite($file, $txt);
 		fclose($file);
 		
 		$file = fopen("/home/1713/civ13-tdm/SQL/discord2unban.txt", "a");
-		$txt = $message->user->username . "#" . $message->user->discriminator . ":::".$split_message[0];
+		$txt = $message->author->username . "#" . $message->author->discriminator . ":::".$split_message[0];
 		fwrite($file, $txt);
 		fclose($file);
 
-		$result = '**' . $message->user->username . '** unbanned **' . $split_message[0] . '**.';
+		$result = '**' . $message->author->username . '** unbanned **' . $split_message[0] . '**.';
 		$message->channel->sendMessage($result);
 		return;
 	}
@@ -362,7 +362,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 								$line = trim(str_replace(PHP_EOL, "", $fp));
 								$linesplit = explode(";", $line);
 								foreach ($linesplit as $split) {
-									if ($split == $message->author->username)
+									if ($split == $message->member->username)
 										$found2 = true;
 								}
 							}
@@ -370,7 +370,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 						}
 					}else $message->channel->sendMessage("$ckey is already in the whitelist!");
 					
-					$txt = $ckey."=".$message->author->username.PHP_EOL;
+					$txt = $ckey."=".$message->member->username.PHP_EOL;
 					if ($whitelist1 = fopen('/home/1713/civ13-rp/SQL/whitelist.txt', "a")) {
 						fwrite($whitelist1, $txt);
 						fclose($whitelist1);
@@ -411,7 +411,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if ($count($lines_array) > 0) {
 					if ($wlist = fopen("/home/1713/civ13-rp/SQL/whitelist.txt", "w")) {
 						foreach ($lines_array as $line)
-							if (!str_contains($line, $message->author->username)) {
+							if (!str_contains($line, $message->member->username)) {
 								fwrite($wlist, $line);
 							} else {
 								$removed = explode('=', $line);
@@ -431,7 +431,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 				if ($count($lines_array) > 0) {
 					if ($wlist = fopen("/home/1713/civ13-tdm/SQL/whitelist.txt", "w")) {
 						foreach ($lines_array as $line)
-							if (!str_contains($line, $message->author->username)) {
+							if (!str_contains($line, $message->member->username)) {
 								fwrite($wlist, $line);
 							} else {
 								$removed = explode('=', $line);
