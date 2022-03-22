@@ -769,7 +769,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		return;
 	}
 	if (str_starts_with($message_content_lower,'/joinevent')) {
-		$random_role_array = ['', '']; //Stringed role ids
+		$random_role_array = ['955869414622904320', '955869567035527208']; //Stringed role ids
 		if ($author_member = $message->member) {
 			if (! $author_member->roles->has($random_role_array)) {
 				return $author_member->addRole(array_rand($random_role_array, 1), '/joinevent');
