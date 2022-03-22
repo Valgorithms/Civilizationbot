@@ -774,7 +774,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 	    if ($message_content_lower == 'joinevent') {
 		if (! $author_member->roles->has('955869414622904320', '955869567035527208')) {
 		    $random_role_array = ['955869414622904320', '955869567035527208']; //Stringed role ids
-		    $author_member->addRole(array_rand($random_role_array, 1), 'joinevent');
+		    $author_member->addRole(random_role_array[array_rand($random_role_array, 1)], 'joinevent');
 		    return $message->reply('Event role added!');
 		} return $message->reply('You already have an event role!');
 	    }
