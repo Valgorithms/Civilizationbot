@@ -85,7 +85,9 @@ function on_ready($discord)
 }
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
-{	
+{
+	$author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
+	if ($author_member = $message->member) $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
 	if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
 		while (($fp = fgets($ooc, 4096)) !== false) {
@@ -768,11 +770,18 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		$message->channel->sendEmbed($embed);
 		return;
 	}
-	if (str_starts_with($message_content_lower,'/joinevent')) {
+	if (str_starts_with($message_content_lower, 'joinevent')) {
+		echo '[JOINEVENT]' . PHP_EOL;
 		if ($author_member = $message->member) {
 			$random_role_array = ['955869414622904320', '955869567035527208']; //Stringed role ids
 			if (! $author_member->roles->has($random_role_array)) {
-		    		$author_member->addRole(array_rand($random_role_array, 1), 'joinevent');
+		    		$author_member->addRole(array_rand($random_role_array, 1), 'joinevent')->done(
+					function ($result) {
+						//
+					} function ($error) {
+						var_dump($error); echo PHP_EOL;				}
+					}
+				);
 		    		return $message->reply('Event role added!');
 			} return $message->reply('You already have an event role!');
 		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
