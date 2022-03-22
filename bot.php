@@ -768,6 +768,14 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		$message->channel->sendEmbed($embed);
 		return;
 	}
+	if (str_starts_with($message_content_lower,'/joinevent')) {
+		$random_role_array = ['', '']; //Stringed role ids
+		if ($author_member = $message->member) {
+			if (! $author_member->roles->has($random_role_array)) {
+				return $author_member->addRole(array_rand($random_role_array, 1), '/joinevent');
+			} return $message->reply('You already have an event role!');
+		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+        }
 }
 
 function recalculate_ranking() {
