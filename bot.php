@@ -775,7 +775,7 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		$random_role_array = ['955869414622904320', '955869567035527208']; //Stringed role ids
 		$found = false;
 		foreach ($author_member->roles as $role) {  
-			if (! in_array($role->id, $random_role_array)) {
+			if (in_array($role->id, $random_role_array)) {
         			$found = true;
     			}
 		}
