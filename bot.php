@@ -770,21 +770,14 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		$message->channel->sendEmbed($embed);
 		return;
 	}
-	if (str_starts_with($message_content_lower, 'joinevent')) {
-		echo '[JOINEVENT]' . PHP_EOL;
-		if ($author_member = $message->member) {
-			$random_role_array = ['955869414622904320', '955869567035527208']; //Stringed role ids
-			if (! $author_member->roles->has($random_role_array)) {
-		    		$author_member->addRole(array_rand($random_role_array, 1), 'joinevent')->done(
-					function ($result) {
-						//
-					} function ($error) {
-						var_dump($error); echo PHP_EOL;				}
-					}
-				);
-		    		return $message->reply('Event role added!');
-			} return $message->reply('You already have an event role!');
-		} else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+	if ($author_guild_id == '468979034571931648') {
+	    if ($message_content_lower == 'joinevent') {
+		if (! $author_member->roles->has('955869414622904320', '955869567035527208')) {
+		    $random_role_array = ['955869414622904320', '955869567035527208']; //Stringed role ids
+		    $author_member->addRole(array_rand($random_role_array, 1), 'joinevent');
+		    return $message->reply('Event role added!');
+		} return $message->reply('You already have an event role!');
+	    }
 	}
 }
 
