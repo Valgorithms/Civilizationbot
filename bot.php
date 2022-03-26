@@ -85,7 +85,9 @@ function on_ready($discord)
 }
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
-{	
+{
+	$author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
+	if ($author_member = $message->member) $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
 	if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
 		while (($fp = fgets($ooc, 4096)) !== false) {
