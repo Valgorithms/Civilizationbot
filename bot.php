@@ -85,9 +85,7 @@ function on_ready($discord)
 }
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
-{
-	$author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
-	if ($author_member = $message->member) $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
+{	
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
 	if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
 		while (($fp = fgets($ooc, 4096)) !== false) {
@@ -769,21 +767,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		}
 		$message->channel->sendEmbed($embed);
 		return;
-	}
-	if ($author_guild_id == '468979034571931648') {
-	    if ($message_content_lower == 'joinevent') {
-		$random_role_array = ['955869414622904320', '955869567035527208']; //Stringed role ids
-		$found = false;
-		foreach ($author_member->roles as $role) {  
-			if (in_array($role->id, $random_role_array)) {
-        			$found = true;
-    			}
-		}
-		if (! $found) {
-		    $author_member->addRole(random_role_array[array_rand($random_role_array, 1)], 'joinevent');
-		    return $message->reply('Event role added!');
-		} return $message->reply('You already have an event role!');
-	    }
 	}
 }
 
