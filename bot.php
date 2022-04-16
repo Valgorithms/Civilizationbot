@@ -126,21 +126,19 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		fclose($ahelptdm);
 	}
 	
-	$called = false;
+	$message_content = '';
+	$message_content_lower = '';
 	if (str_starts_with($message->content, $command_symbol . ' ')) { //Add these as slash commands?
 		$message_content = substr($message->content, strlen($command_symbol)+1);
 		$message_content_lower = strtolower($message_content);
-		$called = true;
 	} elseif (str_starts_with($message->content, '<@!' . $discord->id . '>')) { //Add these as slash commands?
 		$message_content = trim(substr($message->content, strlen($discord->id)+4));
 		$message_content_lower = strtolower($message_content);
-		$called = true;
 	} elseif (str_starts_with($message->content, '<@' . $discord->id . '>')) { //Add these as slash commands?
 		$message_content = trim(substr($message->content, strlen($discord->id)+3));
 		$message_content_lower = strtolower($message_content);
-		$called = true;
 	}
-	if (! $called) return;
+	if (! $message_content) return;
 
 	if (str_starts_with($message_content_lower, 'ping')) {
 		$message->reply('Pong!');
