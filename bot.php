@@ -78,9 +78,10 @@ function search_players(string $ckey): string
     } else return 'Unable to access playerlogs.txt!';
 }
 
-function ooc_relay($guild, string $file_path, string $channel_id)
+function ooc_relay(\React\Filesystem\Filesystem $filesystem, $guild, string $file_path, string $channel_id)
 {
-     if ($file = fopen($file_path, "r+")) {
+    /*
+    if ($file = fopen($file_path, "r+")) {
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, "", $fp);
             if ($target_channel = $guild->channels->offsetGet($channel_id))
@@ -89,26 +90,29 @@ function ooc_relay($guild, string $file_path, string $channel_id)
         ftruncate($file, 0); //clear the file
         fclose($file);
     }
+    */
+    $file = $filesystem->file($file_path);
 }
 
-function timer_function($discord)
+function timer_function(\Discord\Discord $discord, \React\Filesystem\Filesystem $filesystem)
 {
     if ($guild = $discord->guilds->offsetGet('468979034571931648')) {
-        ooc_relay($guild, '/home/1713/civ13-rp/ooc.log', '468979034571931648');  // #ooc-nomads
-        ooc_relay($guild, '/home/1713/civ13-rp/admin.log', '637046890030170126');  // #ahelp-nomads
-        ooc_relay($guild, '/home/1713/civ13-tdm/ooc.log', '636644391095631872');  // #ooc-tdm
-        ooc_relay($guild, '/home/1713/civ13-tdm/admin.log', '637046904575885322');  // #ahelp-tdm
+        ooc_relay($filesystem, $guild, '/home/1713/civ13-rp/ooc.log', '468979034571931648');  // #ooc-nomads
+        ooc_relay($filesystem, $guild, '/home/1713/civ13-rp/admin.log', '637046890030170126');  // #ahelp-nomads
+        ooc_relay($filesystem, $guild, '/home/1713/civ13-tdm/ooc.log', '636644391095631872');  // #ooc-tdm
+        ooc_relay($filesystem, $guild, '/home/1713/civ13-tdm/admin.log', '637046904575885322');  // #ahelp-tdm
     }
 }
 
-function on_ready($discord)
+function on_ready(\Discord\Discord $discord)
 {
     echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL;
     echo('------' . PHP_EOL);
     
     if (! isset($GLOBALS['relay_timer']) || (! $GLOBALS['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
-        $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($discord) {
-            timer_function($discord);
+        $filesystem = \React\Filesystem\Filesystem::create($discord->getLoop());
+        $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($discord, $filesystem) {
+            timer_function($discord, $filesystem);
         });
     }
 }
