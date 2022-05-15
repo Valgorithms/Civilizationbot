@@ -78,10 +78,39 @@ function search_players(string $ckey): string
     } else return 'Unable to access playerlogs.txt!';
 }
 
+function ooc_relay($guild, string $file_path, string $channel_id)
+{
+     if ($file = fopen($file_path, "r+")) {
+        while (($fp = fgets($file, 4096)) !== false) {
+            $fp = str_replace(PHP_EOL, "", $fp);
+            if ($target_channel = $guild->channels->offsetGet($channel_id))
+                $target_channel->sendMessage($fp);
+        }
+        ftruncate($file, 0); //clear the file
+        fclose($file);
+    }
+}
+
+function timer_function($discord)
+{
+    if ($guild = $discord->guilds->offsetGet('468979034571931648')) {
+        ooc_relay($guild, '/home/1713/civ13-rp/ooc.log', '468979034571931648');  // #ooc-nomads
+        ooc_relay($guild, '/home/1713/civ13-rp/admin.log', '637046890030170126');  // #ahelp-nomads
+        ooc_relay($guild, '/home/1713/civ13-tdm/ooc.log', '636644391095631872');  // #ooc-tdm
+        ooc_relay($guild, '/home/1713/civ13-tdm/admin.log', '637046904575885322');  // #ahelp-tdm
+    }
+}
+
 function on_ready($discord)
 {
     echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL;
     echo('------' . PHP_EOL);
+    
+    if (! isset($GLOBALS['relay_timer']) || (! $GLOBALS['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
+        $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($discord) {
+            timer_function($discord);
+        });
+    }
 }
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
@@ -95,42 +124,6 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
     $author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
     if ($author_member = $message->member) $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
     //Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
-    if ($ooc = fopen('/home/1713/civ13-rp/ooc.log', "r+")) {
-        while (($fp = fgets($ooc, 4096)) !== false) {
-            $fp = str_replace(PHP_EOL, "", $fp);
-            if ($target_channel = $message->guild->channels->get('name', 'ooc-nomads'))
-                $target_channel->sendMessage($fp);
-        }
-        ftruncate($ooc, 0); //clear the file
-        fclose($ooc);
-    }
-    if ($ahelp = fopen('/home/1713/civ13-rp/admin.log', "r+")) {
-        while (($fp = fgets($ahelp, 4096)) !== false) {
-            $fp = str_replace(PHP_EOL, "", $fp);
-            if ($target_channel = $message->guild->channels->get('name', 'ahelp-nomads'))
-                $target_channel->sendMessage($fp);
-        }
-        ftruncate($ahelp, 0); //clear the file
-        fclose($ahelp);
-    }
-    if ($ooctdm = fopen('/home/1713/civ13-tdm/ooc.log', "r+")) {
-        while (($fp = fgets($ooctdm, 4096)) !== false) {
-            $fp = str_replace(PHP_EOL, "", $fp);
-            if ($target_channel = $message->guild->channels->get('name', 'ooc-tdm'))
-                $target_channel->sendMessage($fp);
-        }
-        ftruncate($ooctdm, 0); //clear the file
-        fclose($ooctdm);
-    }
-    if ($ahelptdm = fopen('/home/1713/civ13-tdm/admin.log', "r+")) {
-        while (($fp = fgets($ahelptdm, 4096)) !== false) {
-            $fp = str_replace(PHP_EOL, "", $fp);
-            if ($target_channel = $message->guild->channels->get('name', 'ahelp-tdm'))
-                $target_channel->sendMessage($fp);
-        }
-        ftruncate($ahelptdm, 0); //clear the file
-        fclose($ahelptdm);
-    }
     
     $message_content = '';
     $message_content_lower = '';
