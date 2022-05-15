@@ -86,6 +86,13 @@ function on_ready($discord)
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
 {
+	
+	$admiral = '468980650914086913';
+	$captain = '792826030796308503';
+	$knight = '468982360659066912';
+	$veteran = '468983261708681216';
+	$infantry = '468982790772228127';
+	
 	$author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
 	if ($author_member = $message->member) $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
 	//Move this into a loop->timer so this isn't being called on every single message to reduce read/write overhead
@@ -318,10 +325,10 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 			if ($author_member = $message->member) {
 				foreach ($author_member->roles as $role) {
 					switch ($role->id) {
-						case '468980650914086913': // Admiral
-						case '792826030796308503': // Captain
-						case '468982360659066912': // Knight
-						case '468983261708681216': // Veterans At Arms
+						case $admiral:
+						case $captain:
+						case $knight:
+						case $veteran:
 							$accepted = true;
 					}
 				}
@@ -387,11 +394,11 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
-					case '468982360659066912': // Knight
-					case '468982790772228127': // Foot Infantry
-					case '468983261708681216': // Veterans At Arms
+					case $admiral:
+					case $captain:
+					case $knight:
+					case $veteran:
+					case $infantry:
 						$accepted = true;
 				}
 			}
@@ -446,8 +453,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
+					case $admiral:
+					case $captain:
 						$accepted = true;
 				}
 			}
@@ -470,8 +477,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
+					case $admiral:
+					case $captain:
 						$accepted = true;
 				}
 			}
@@ -487,8 +494,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
+					case $admiral:
+					case $captain:
 						$accepted = true;
 				}
 			}
@@ -512,8 +519,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
+					case $admiral:
+					case $captain:
 						$accepted = true;
 				}
 			}
@@ -537,8 +544,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
+					case $admiral:
+					case $captain:
 						$accepted = true;
 				}
 			}
@@ -560,8 +567,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
+					case $admiral:
+					case $captain:
 						$accepted = true;
 				}
 			}
@@ -584,8 +591,8 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
+					case $admiral:
+					case $captain:
 						$accepted = true;
 				}
 			}
@@ -601,9 +608,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
-					case '468982360659066912': // Knight
+					case $admiral:
+					case $captain:
+					case $knight:
 						$accepted = true;
 				}
 			}
@@ -625,9 +632,9 @@ function on_message($message, $discord, $loop, $command_symbol = '!s')
 		if ($author_member = $message->member) {
 			foreach ($author_member->roles as $role) {
 				switch ($role->id) {
-					case '468980650914086913': // Admiral
-					case '792826030796308503': // Captain
-					case '468982360659066912': // Knight
+					case $admiral:
+					case $captain:
+					case $knight:
 						$accepted = true;
 				}
 			}
@@ -960,7 +967,7 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
 				if ($author_member = $message->member) {
 					foreach ($author_member->roles as $role) {
 						switch ($role->id) {
-							case '468980650914086913': // Admiral
+							case $admiral:
 								$accepted = true;
 						}
 					}
