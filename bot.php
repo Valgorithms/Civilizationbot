@@ -79,19 +79,18 @@ function search_players(string $ckey): string
 }
 
 function ooc_relay(\React\Filesystem\Filesystem $filesystem, $guild, string $file_path, string $channel_id)
-{
-    /*
-    if ($file = fopen($file_path, "r+")) {
-        while (($fp = fgets($file, 4096)) !== false) {
-            $fp = str_replace(PHP_EOL, "", $fp);
-            if ($target_channel = $guild->channels->offsetGet($channel_id))
-                $target_channel->sendMessage($fp);
-        }
-        ftruncate($file, 0); //clear the file
-        fclose($file);
+{    
+    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
+        \React\Filesystem\Factory::create()->detect($file_path)->then(function (\React\Filesystem\Node\FileInterface $file) {
+            return $file->getContents();
+        })->then(static function (string $contents) use ($file, $target_channel) {
+            $contents = explode('\n', $contents());
+            foreach ($contents as $line) {
+                $target_channel->sendMessage($line);
+            }
+            $file->putContents('');
+        })->done();
     }
-    */
-    $file = $filesystem->file($file_path);
 }
 
 function timer_function(\Discord\Discord $discord, \React\Filesystem\Filesystem $filesystem)
@@ -106,8 +105,7 @@ function timer_function(\Discord\Discord $discord, \React\Filesystem\Filesystem 
 
 function on_ready(\Discord\Discord $discord)
 {
-    echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL;
-    echo('------' . PHP_EOL);
+    echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL . '------' . PHP_EOL;
     
     if (! isset($GLOBALS['relay_timer']) || (! $GLOBALS['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
         $filesystem = \React\Filesystem\Filesystem::create($discord->getLoop());
