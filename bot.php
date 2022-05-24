@@ -83,7 +83,7 @@ function ooc_relay($filesystem, $guild, string $file_path, string $channel_id)
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
             $file = $filesystem->file($file_path);
             $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
-                $contents = explode("\n", $contents);
+                $contents = explode(PHP_EOL, $contents);
                 foreach ($contents as $line) {
                     $target_channel->sendMessage($line);
                 }
