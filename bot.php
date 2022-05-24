@@ -82,11 +82,12 @@ function ooc_relay($filesystem, $guild, string $file_path, string $channel_id)
 {    
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
         $filesystem->detect($file_path)->done(function (\React\Filesystem\Node\FileInterface $file) {
-            $file->getContents()->done(static function (string $contents) use ($file, $target_channel) {
+            $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
                 $contents = explode('\n', $contents);
                 foreach ($contents as $line) {
                     $target_channel->sendMessage($line);
                 }
+            })->done(function () use ($file) {
                 $file->putContents('');
             });
         });
