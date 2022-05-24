@@ -78,22 +78,22 @@ function search_players(string $ckey): string
     } else return 'Unable to access playerlogs.txt!';
 }
 
-function ooc_relay(\React\Filesystem\Filesystem $filesystem, $guild, string $file_path, string $channel_id)
+function ooc_relay($filesystem, $guild, string $file_path, string $channel_id)
 {    
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
-        \React\Filesystem\Factory::create()->detect($file_path)->then(function (\React\Filesystem\Node\FileInterface $file) {
-            return $file->getContents();
-        })->then(static function (string $contents) use ($file, $target_channel) {
-            $contents = explode('\n', $contents());
-            foreach ($contents as $line) {
-                $target_channel->sendMessage($line);
-            }
-            $file->putContents('');
-        })->done();
+        $filesystem->detect($file_path)->done(function (\React\Filesystem\Node\FileInterface $file) {
+            $file->getContents()->done(static function (string $contents) use ($file, $target_channel) {
+                $contents = explode('\n', $contents);
+                foreach ($contents as $line) {
+                    $target_channel->sendMessage($line);
+                }
+                $file->putContents('');
+            });
+        });
     }
 }
 
-function timer_function(\Discord\Discord $discord, \React\Filesystem\Filesystem $filesystem)
+function timer_function(\Discord\Discord $discord, $filesystem)
 {
     if ($guild = $discord->guilds->offsetGet('468979034571931648')) {
         ooc_relay($filesystem, $guild, '/home/1713/civ13-rp/ooc.log', '468979034571931648');  // #ooc-nomads
@@ -108,7 +108,7 @@ function on_ready(\Discord\Discord $discord)
     echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL . '------' . PHP_EOL;
     
     if (! isset($GLOBALS['relay_timer']) || (! $GLOBALS['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
-        $filesystem = \React\Filesystem\Filesystem::create($discord->getLoop());
+        $filesystem = \React\Filesystem\Factory::create($discord->getLoop());
         $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($discord, $filesystem) {
             timer_function($discord, $filesystem);
         });
