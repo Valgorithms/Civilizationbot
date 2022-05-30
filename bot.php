@@ -37,6 +37,7 @@ $discord = new \Discord\Discord([
     'loop' => $loop,
     'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS, // default intents as well as guild members
 ]);
+$filesystem = \React\Filesystem\Factory::create($loop);
 
 function portIsAvailable(int $port = 1714): bool
 {
@@ -103,12 +104,11 @@ function timer_function(\Discord\Discord $discord, $filesystem)
     }
 }
 
-function on_ready(\Discord\Discord $discord)
+function on_ready(\Discord\Discord $discord) use ($filesystem)
 {
     echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL . '------' . PHP_EOL;
     
     if (! isset($GLOBALS['relay_timer']) || (! $GLOBALS['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
-        $filesystem = \React\Filesystem\Factory::create($discord->getLoop());
         $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($discord, $filesystem) {
             timer_function($discord, $filesystem);
         });
