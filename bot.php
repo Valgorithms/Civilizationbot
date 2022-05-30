@@ -94,7 +94,7 @@ function ooc_relay($guild, string $file_path, string $channel_id)
 function timer_function($discord)
 {
     if ($guild = $discord->guilds->offsetGet('468979034571931648')) {
-        ooc_relay($guild, '/home/1713/civ13-rp/ooc.log', '468979034571931648');  // #ooc-nomads
+        ooc_relay($guild, '/home/1713/civ13-rp/ooc.log', '636644156923445269');  // #ooc-nomads
         ooc_relay($guild, '/home/1713/civ13-rp/admin.log', '637046890030170126');  // #ahelp-nomads
         ooc_relay($guild, '/home/1713/civ13-tdm/ooc.log', '636644391095631872');  // #ooc-tdm
         ooc_relay($guild, '/home/1713/civ13-tdm/admin.log', '637046904575885322');  // #ahelp-tdm
