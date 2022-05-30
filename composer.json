@@ -10,7 +10,8 @@
     "require": {
         "php": "^8.0.0",
         "team-reflex/discord-php": "dev-master",
-        "react/filesystem": "^0.2@dev"
+        "react/filesystem": "^0.2@dev",
+        "react/async": "^4@dev"
     },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
