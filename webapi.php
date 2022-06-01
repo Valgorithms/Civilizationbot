@@ -18,6 +18,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 	
 	if ($ip) echo '[REQUESTING IP] ' . $ip . PHP_EOL ;
     $whitelist = [
+        '127.0.0.1', //local host
         '73.87.27.193', //valzargaming.com
         '51.254.161.128' //civ13.com
     ];
@@ -89,15 +90,23 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			if (!$id || !$return = $discord->users->get('name', $id))
 				return webapiFail('user_name', $id);
 			break;
-
+        
+        case 'update':
+            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
+			}
+            execInBackgroundLinux('sudo git pull');
+            $return = 'updating';
+            break;
+        
 		case 'restart':
-			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0') { //Restricted for obvious reasons
+			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
 			$return = 'restarting';
-			//execInBackground('cmd /c "'. __DIR__  . '\run.bat"');
-			//exec('/home/outsider/bin/stfc restart');
+			execInBackgroundLinux("sudo nohup php8.1 bot.php > /dev/null &");
 			break;
 
 		case 'lookup':
