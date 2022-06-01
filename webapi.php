@@ -27,6 +27,14 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     }
 
 	switch ($sub) {
+        case 'messagetest':
+            if ($channel = $discord->getChannel('712685552155230278')) {
+                echo "I'm alive!" . PHP_EOL;
+                $return = "I'm alive!";
+                $channel->sendMessage("I'm alive!");
+            }
+            break;    
+        
 		case 'channel':
 			if (!$id || !webapiSnow($id) || !$return = $discord->getChannel($id))
 				return webapiFail('channel_id', $id);
