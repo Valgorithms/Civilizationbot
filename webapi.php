@@ -107,6 +107,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			}
 			$return = 'restarting';
 			execInBackgroundLinux("sudo nohup php8.1 bot.php > /dev/null &");
+            die();
 			break;
 
 		case 'lookup':
