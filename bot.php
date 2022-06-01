@@ -1049,4 +1049,27 @@ $discord->once('ready', function ($discord) use ($loop, $command_symbol, $owner_
     });
 });
 
+set_error_handler(function (int $number, string $message, string $filename, int $fileline) {
+    $warn = true;
+    
+    if ($message != "Undefined variable: suggestion_pending_channel") //Expected to be null
+    if ($message != "Trying to access array offset on value of type null") //Expected to be null, part of ;validate*/
+    $warn = false;
+    
+    $skip_array = array();
+    $skip_array[] = "Undefined variable";
+    $skip_array[] = "Trying to access array offset on value of type null"; //Expected to be null, part of ;validate
+    foreach ($skip_array as $value) {
+        if (strpos($value, $message) === false) {
+            $warn = false;
+        }
+    }
+    if ($warn) {
+        ob_flush();
+		ob_start();
+		echo PHP_EOL . "Handler captured error $number: '$message' at `$filename:$fileline`" . PHP_EOL;
+		file_put_contents("error_main.txt", ob_get_flush());
+    }
+});
+
 $discord->run();
