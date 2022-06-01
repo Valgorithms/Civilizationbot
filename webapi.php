@@ -22,7 +22,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         '73.87.27.193', //valzargaming.com
         '51.254.161.128' //civ13.com
     ];
-	if (! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) && substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && substr($request->getServerParams()['REMOTE_ADDR'], 0, 7) != '127.0.0') {
+	if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
         echo '[WEBAPI] REMOTE_ADDR: ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
     }
 
@@ -110,7 +110,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			break;
 
 		case 'lookup':
-			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0') {
+			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
@@ -119,7 +119,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			break;
 
 		case 'owner':
-			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0') {
+			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
@@ -137,7 +137,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			break;
 
 		case 'whitelist':
-			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0') {
+			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
