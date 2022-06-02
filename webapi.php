@@ -113,7 +113,12 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
-			$return = 'restarting';
+            if ($channel = $discord->getChannel('712685552155230278')) {
+                echo '[RESTART]' . PHP_EOL;
+                $channel->sendMessage("Restarting...");
+            }
+            $return = 'restarting';
+            $discord->destroy();
 			execInBackgroundLinux("sudo nohup php8.1 bot.php > /dev/null &");
             die();
 			break;
