@@ -8,7 +8,8 @@ function webapiSnow($string) {
 	return preg_match('/^[0-9]{16,18}$/', $string);
 }
 
-$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($discord) {
+$socket = new \React\Socket\Server(sprintf('%s:%s', '0.0.0.0', '55555'), $loop);
+$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($discord, $loop, $socket) {
 	$path = explode('/', $request->getUri()->getPath());
 	$sub = (isset($path[1]) ? (string) $path[1] : false);
 	$id = (isset($path[2]) ? (string) $path[2] : false);
@@ -118,9 +119,9 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 $channel->sendMessage("Restarting...");
             }
             $return = 'restarting';
-            $discord->destroy();
-			execInBackgroundLinux("sudo nohup php8.1 bot.php");
-            die();
+			execInBackgroundLinux('sudo nohup php8.1 bot.php');
+            $discord->close();
+            $socket->close();
 			break;
 
 		case 'lookup':
@@ -197,7 +198,6 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 	}
 	return new \React\Http\Message\Response(200, ['Content-Type' => 'text/json'], json_encode($return));
 });
-$socket = new \React\Socket\Server(sprintf('%s:%s', '0.0.0.0', '55555'), $loop);
 $webapi->listen($socket);
 $webapi->on('error', function ($e) {
 	echo('[webapi] ' . $e->getMessage());
