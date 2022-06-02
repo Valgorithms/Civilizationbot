@@ -114,7 +114,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
 			$return = 'restarting';
-			execInBackgroundLinux("sudo nohup php8.1 " . __DIR__ . "/bot.php > /dev/null &");
+			execInBackgroundLinux("sudo nohup php8.1 bot.php > /dev/null &");
             die();
 			break;
 
