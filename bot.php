@@ -160,12 +160,12 @@ function ooc_relay($guild, string $file_path, string $channel_id)
      if ($file = fopen($file_path, "r+")) {
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, "", $fp);
-            if ($target_channel = $guild->channels->offsetGet($channel_id))
-                $target_channel->sendMessage($fp);
+            if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
+            else echo "[RELAY] Unable to find channel $target_channel" . PHP_EOL;
         }
         ftruncate($file, 0); //clear the file
         fclose($file);
-    }
+    } else echo "[RELAY] Unable to open $file_path" . PHP_EOL;
 }
 
 function timer_function ($discord)
@@ -175,7 +175,7 @@ function timer_function ($discord)
         ooc_relay($guild, $nomads_admin_path, $nomads_admin_channel);  // #ahelp-nomads
         ooc_relay($guild, $tdm_ooc_path, $tdm_ooc_channel);  // #ooc-tdm
         ooc_relay($guild, $tdm_admin_path, $tdm_admin_channel);  // #ahelp-tdm
-    }
+    } else echo "[TIMER] Unable to get guild $civ13_guild_id" . PHP_EOL;
 }
 
 function on_ready($discord, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel)
@@ -183,8 +183,10 @@ function on_ready($discord, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_pat
     echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' (' . $discord->id . ')' .  PHP_EOL;
     echo('------' . PHP_EOL);
     
-    if (! isset($GLOBALS['relay_timer']) || (! $GLOBALS['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
+    if (! isset($GLOBALS['relay_timer']) && (! $GLOBALS['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
+        echo '[READY] Relay timer started!' . PHP_EOL;
         $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($discord) {
+            echo '[READY] Calling timer function...' . PHP_EOL;
             timer_function($discord, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel);
         });
     }
