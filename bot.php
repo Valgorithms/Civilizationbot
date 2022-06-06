@@ -16,6 +16,9 @@ $nomads_discord2unban = '/home/1713/civ13-rp/SQL/discord2unban.txt';
 $nomads_whitelist = '/home/1713/civ13-rp/SQL/whitelist.txt';
 $nomads_bans = '/home/1713/civ13-rp/SQL/bans.txt';
 
+//Unused
+$nomads_playerlogs = '/home/1713/civ13-rp/SQL/playerlogs.txt';
+
 $tdm_ooc_path = '/home/1713/civ13-rp/ooc.log';
 $tdm_admin_path = '/home/1713/civ13-rp/ooc.log';
 $tdm_discord2ooc = '/home/1713/civ13-tdm/SQL/discord2ooc.txt';
@@ -141,9 +144,9 @@ function my_message($message, $discord): bool
     return ($message->author->id == $discord->id);
 }
 
-function search_players(string $ckey): string
+function search_players(string $ckey, string $nomads_playerlogs): string
 {
-    if ($playerlogs = fopen('/home/1713/civ13-rp/SQL/playerlogs.txt', "r")) {
+    if ($playerlogs = fopen($nomads_playerlogs, "r")) {
         while (($fp = fgets($playerlogs, 4096)) !== false) {
             if (trim(strtolower($fp)) == trim(strtolower($ckey)))
                 return $ckey;
