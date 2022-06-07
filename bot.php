@@ -183,7 +183,7 @@ $on_ready = function () use ($discord, $timer_function)
     
     if (! isset($GLOBALS['relay_timer']) && (! $GLOBALS['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
         echo '[READY] Relay timer started!' . PHP_EOL;
-        $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($discord) {
+        $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($timer_function) {
             echo '[READY] Calling timer function...' . PHP_EOL;
             $timer_function();
         });
