@@ -97,7 +97,6 @@ if (substr(php_uname(), 0, 7) == "Windows") {
 $logger = new Monolog\Logger('New logger');
 $logger->pushHandler(new Monolog\Handler\StreamHandler('php://stdout'));
 $loop = React\EventLoop\Factory::create();
-use Discord\WebSockets\Intents;
 $discord = new \Discord\Discord([
     'token' => "$token",
     /*'socket_options' => [
@@ -107,7 +106,7 @@ $discord = new \Discord\Discord([
     'storeMessages' => false, //Not needed yet
     'logger' => $logger,
     'loop' => $loop,
-    'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS, // default intents as well as guild members
+    'intents' => Discord\WebSockets\Intents::getDefaultIntents() | Discord\WebSockets\Intents::GUILD_MEMBERS, // default intents as well as guild members
 ]);
 include 'webapi.php';
 
