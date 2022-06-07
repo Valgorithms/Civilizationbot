@@ -9,7 +9,7 @@ function webapiSnow($string) {
 }
 
 $socket = new \React\Socket\Server(sprintf('%s:%s', '0.0.0.0', '55555'), $loop);
-$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($discord, $loop, $socket) {
+$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($discord, $loop, $socket, $nomads_bans, $tdm_bans) {
 	$path = explode('/', $request->getUri()->getPath());
 	$sub = (isset($path[1]) ? (string) $path[1] : false);
 	$id = (isset($path[2]) ? (string) $path[2] : false);
@@ -36,7 +36,17 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 $return = "I'm alive!";
                 $channel->sendMessage("I'm alive!");
             }
-            break;    
+            break;
+        
+        case 'nomads_bans':
+            if ($return = file_get_contents($nomads_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
+            else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`".PHP_EOL);
+            break;
+        
+        case 'tdm_bans':
+            if ($return = file_get_contents($tdm_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
+            else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`".PHP_EOL);
+            break;
         
 		case 'channel':
 			if (!$id || !webapiSnow($id) || !$return = $discord->getChannel($id))
