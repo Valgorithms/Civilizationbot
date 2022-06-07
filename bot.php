@@ -84,7 +84,7 @@ define('MAIN_INCLUDED', 1); //Token and SQL credential files may be protected lo
 require getcwd(). '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
-if (substr(php_uname(), 0, 7) == "Windows") {
+if (PHP_OS_FAMILY == "Windows") {
     $execInBackground = function ($cmd) {
         pclose(popen("start ". $cmd, "r")); //pclose(popen("start /B ". $cmd, "r"));;
     };
