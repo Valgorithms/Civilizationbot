@@ -82,24 +82,24 @@ function search_players(string $ckey): string
 function ooc_relay($filesystem, $guild, string $file_path, string $channel_id)
 {    
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
-            $file = $filesystem->file($file_path);
-            $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
-                $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
-                    $lines = explode(PHP_EOL, $contents);
-                    $response = React\Async\await(
-                        foreach ($lines as $line) {
-                            if ($line) $target_channel->sendMessage($line);
-                            else echo '[RELAY - EMPTY LINE] ' . PHP_EOL;
-                        }
-                    );
-                });
-                $promise->then(function () use ($file) {
-                    echo '[RELAY] ' . PHP_EOL;
-                    $file->putContents('');
-                }, function (Exception $e) {
-                    echo '[ERROR] ' . $e->getMessage() . PHP_EOL;
-                });
-            })->done();
+        $file = $filesystem->file($file_path);
+        $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
+            $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
+                $lines = explode(PHP_EOL, $contents);
+                $response = React\Async\await(
+                    foreach ($lines as $line) {
+                        if ($line) $target_channel->sendMessage($line);
+                        else echo '[RELAY - EMPTY LINE] ' . PHP_EOL;
+                    }
+                );
+            });
+            $promise->then(function () use ($file) {
+                echo '[RELAY] ' . PHP_EOL;
+                $file->putContents('');
+            }, function (Exception $e) {
+                echo '[ERROR] ' . $e->getMessage() . PHP_EOL;
+            });
+        })->done();
     }
 }
 
