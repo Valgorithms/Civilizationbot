@@ -86,12 +86,13 @@ function ooc_relay($filesystem, $guild, string $file_path, string $channel_id)
         $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
             $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
                 $lines = explode(PHP_EOL, $contents);
-                $response = React\Async\await(
+                $fn = function ($lines, $target_channel) {
                     foreach ($lines as $line) {
                         if ($line) $target_channel->sendMessage($line);
                         else echo '[RELAY - EMPTY LINE] ' . PHP_EOL;
                     }
-                );
+                };
+                $response = React\Async\await($fn($lines, $target_channel));
             });
             $promise->then(function () use ($file) {
                 echo '[RELAY] ' . PHP_EOL;
