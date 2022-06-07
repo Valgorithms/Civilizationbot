@@ -20,7 +20,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 	if ($ip) echo '[REQUESTING IP] ' . $ip . PHP_EOL ;
     $whitelist = [
         '127.0.0.1', //local host
-        '73.87.27.193', //valzargaming.com
+        '76.111.78.31', //valzargaming.com
         '51.254.161.128' //civ13.com
     ];
 	if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
