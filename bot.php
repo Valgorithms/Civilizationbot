@@ -85,11 +85,11 @@ require getcwd(). '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
 if (PHP_OS_FAMILY == "Windows") {
-    $execInBackground = function ($cmd) {
+    function execInBackground($cmd) {
         pclose(popen("start ". $cmd, "r")); //pclose(popen("start /B ". $cmd, "r"));;
     };
 } else {
-    $execInBackground = function ($cmd) {
+    function execInBackground($cmd) {
         exec($cmd . " > /dev/null &");
     };
 }
@@ -166,7 +166,7 @@ function ooc_relay($guild, string $file_path, string $channel_id)
     } else echo "[RELAY] Unable to open $file_path" . PHP_EOL;
 }
 
-$timer_function = function ($discord) use ($civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel)
+$timer_function = function () use ($discord, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel)
 {
     if ($guild = $discord->guilds->offsetGet($civ13_guild_id)) {
         ooc_relay($guild, $nomads_ooc_path, $nomads_ooc_channel);  // #ooc-nomads
@@ -176,7 +176,7 @@ $timer_function = function ($discord) use ($civ13_guild_id, $nomads_ooc_path, $n
     } else echo "[TIMER] Unable to get guild $civ13_guild_id" . PHP_EOL;
 };
 
-$on_ready = function ($discord) use ($timer_function)
+$on_ready = function () use ($discord, $timer_function)
 {
     echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' (' . $discord->id . ')' .  PHP_EOL;
     echo('------' . PHP_EOL);
@@ -185,12 +185,12 @@ $on_ready = function ($discord) use ($timer_function)
         echo '[READY] Relay timer started!' . PHP_EOL;
         $GLOBALS['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($discord) {
             echo '[READY] Calling timer function...' . PHP_EOL;
-            $timer_function($discord);
+            $timer_function();
         });
     }
 };
 
-$on_message = function ($message) use  ($discord, $loop, $execInBackground, $admiral, $captain, $knight, $veteran, $infantry, $insults_path, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm, $nomads_discord2ban, $tdm_discord2ban, $nomads_discord2unban, $tdm_discord2unban, $nomads_whitelist, $tdm_whitelist, $nomads_bans, $tdm_bans, $nomads_updateserverabspaths, $nomads_serverdata, $nomads_dmb, $nomads_killsudos, $nomads_killciv13, $nomads_mapswap, $tdm_mapswap, $tdm_updateserverabspaths, $tdm_serverdata, $tdm_dmb, $tdm_killsudos, $tdm_killciv13, $nomads_ip, $nomads_port, $tdm_ip, $tdm_port, $command_symbol)
+$on_message = function ($message) use ($discord, $loop, $execInBackground, $admiral, $captain, $knight, $veteran, $infantry, $insults_path, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm, $nomads_discord2ban, $tdm_discord2ban, $nomads_discord2unban, $tdm_discord2unban, $nomads_whitelist, $tdm_whitelist, $nomads_bans, $tdm_bans, $nomads_updateserverabspaths, $nomads_serverdata, $nomads_dmb, $nomads_killsudos, $nomads_killciv13, $nomads_mapswap, $tdm_mapswap, $tdm_updateserverabspaths, $tdm_serverdata, $tdm_dmb, $tdm_killsudos, $tdm_killciv13, $nomads_ip, $nomads_port, $tdm_ip, $tdm_port, $command_symbol)
 {
     if (!$command_symbol) $command_symbol = '!s';
     
@@ -1049,7 +1049,7 @@ $on_message2 = function ($message) use ($discord, $loop, $execInBackground, $ran
 
 $discord->once('ready', function ($discord) use ($loop, $on_ready, $on_message, $on_message2, $owner_id)
 {
-    $on_ready($discord);
+    $on_ready();
     
     $discord->on('message', function ($message) use ($owner_id)
     {   //Handling of a message
