@@ -149,7 +149,7 @@ $search_players = function (string $ckey) use ($nomads_playerlogs): string
                 return $ckey;
         }
         return 'None';
-    } else return 'Unable to access playerlogs.txt!';
+    } else return 'Unable to access `$nomads_playerlogs`';
 };
 */
 
@@ -464,7 +464,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                         $lines_array[] = $fp;
                     }
                     fclose($wlist);
-                } else return $message->channel->sendMessage("Unable to access $nomads_whitelist!");
+                } else return $message->channel->sendMessage("Unable to access `$nomads_whitelist`");
                 if ($count($lines_array) > 0) {
                     if ($wlist = fopen($nomads_whitelist, "w")) {
                         foreach ($lines_array as $line)
@@ -475,7 +475,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                                 $removed = $removed[0];
                             }
                         fclose($wlist);
-                    } else return $message->channel->sendMessage("Unable to access $nomads_whitelist.txt!");
+                    } else return $message->channel->sendMessage("Unable to access `$nomads_whitelist.txt`");
                 }
                 
                 $lines_array = array();
@@ -484,7 +484,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                         $lines_array[] = $fp;
                     }
                     fclose($wlist);
-                } else return $message->channel->sendMessage("Unable to access $tdm_whitelist!");
+                } else return $message->channel->sendMessage("Unable to access `$tdm_whitelist`");
                 if ($count($lines_array) > 0) {
                     if ($wlist = fopen($tdm_whitelist, "w")) {
                         foreach ($lines_array as $line)
@@ -495,7 +495,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                                 $removed = $removed[0];
                             }
                         fclose($wlist);
-                    } else return $message->channel->sendMessage("Unable to access $tdm_whitelist!");
+                    } else return $message->channel->sendMessage("Unable to access `$tdm_whitelist`");
                 }
                 return $message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
             } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$veteran")->name . '] rank.');
@@ -760,7 +760,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
             $data = "None";
             if ($_1714) {
                 if (!$data = file_get_contents($tdm_serverdata))
-                    return $message->channel->sendMessage("Unable to access $tdm_serverdata");
+                    return $message->channel->sendMessage("Unable to access `$tdm_serverdata`");
             } else {
                 $embed->setColor(0x00ff00);
                 $embed->addFieldValues("TDM Server Status", "Offline");
@@ -796,7 +796,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
             $data = "None";
             if ($_1714) {
                 if (!$data = file_get_contents($nomads_serverdata))
-                    return $message->channel->sendMessage("Unable to access $nomads_serverdata!");
+                    return $message->channel->sendMessage("Unable to access `$nomads_serverdata`");
             } else {
                 $embed->setColor(0x00ff00);
                 $embed->addFieldValues("Nomads Server Status", "Offline");
@@ -859,7 +859,7 @@ function recalculate_ranking($tdm_awards_path, $ranking_path)
             if (!in_array($duser[0], $ckeylist))
                 $ckeylist[] = $duser[0];
         }
-    } else return $message->channel->sendMessage("Unable to access $tdm_awards_path!");
+    } else return $message->channel->sendMessage("Unable to access `$tdm_awards_path`");
     
     foreach ($ckeylist as $i) {
         $sumc = 0;
@@ -896,7 +896,7 @@ $on_message2 = function ($message) use ($discord, $loop, $execInBackground, $ran
                     $line_array[] = $fp;
                 }
                 fclose($search);
-            } else return $message->channel->sendMessage("Unable to access $ranking_path!");
+            } else return $message->channel->sendMessage("Unable to access `$ranking_path`");
             $topsum = 1;
             $msg = '';
             for ($x=0;$x<count($line_array);$x++) {
@@ -928,7 +928,7 @@ $on_message2 = function ($message) use ($discord, $loop, $execInBackground, $ran
                     $line_array[] = $fp;
                 }
                 fclose($search);
-            } else return $message->channel->sendMessage("Unable to access $ranking_path!");
+            } else return $message->channel->sendMessage("Unable to access `$ranking_path`");
             $found = 0;
             $result = '';
             for ($x=0;$x<count($line_array);$x++) {
