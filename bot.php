@@ -68,8 +68,8 @@ $captain = '792826030796308503';
 $knight = '468982360659066912';
 $veteran = '468983261708681216';
 $infantry = '468982790772228127';
-        
-        
+
+
 /*
 /////////////////////
 /////////////////////
@@ -108,6 +108,7 @@ $discord = new \Discord\Discord([
     'loop' => $loop,
     'intents' => Discord\WebSockets\Intents::getDefaultIntents() | Discord\WebSockets\Intents::GUILD_MEMBERS, // default intents as well as guild members
 ]);
+$filesystem = \React\Filesystem\Factory::create($loop);
 include 'webapi.php';
 
 function portIsAvailable(int $port = 1714): bool
@@ -153,9 +154,10 @@ $search_players = function (string $ckey) use ($nomads_playerlogs): string
 };
 */
 
-function ooc_relay($guild, string $file_path, string $channel_id)
+$ooc_relay = function ($guild, string $file_path, string $channel_id) use ($filesystem)
 {
-     if ($file = fopen($file_path, "r+")) {
+    /*
+    if ($file = fopen($file_path, "r+")) {
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, "", $fp);
             if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
@@ -164,15 +166,38 @@ function ooc_relay($guild, string $file_path, string $channel_id)
         ftruncate($file, 0); //clear the file
         fclose($file);
     } else echo "[RELAY] Unable to open $file_path" . PHP_EOL;
-}
+    */
+    
+    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
+        $file = $filesystem->file($file_path);
+        $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
+            $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
+                $lines = explode(PHP_EOL, $contents);
+                $fn = function ($lines, $target_channel) {
+                    foreach ($lines as $line) {
+                        if ($line) $target_channel->sendMessage($line);
+                    }
+                    return;
+                };
+                return React\Async\await($fn($lines, $target_channel));
+            })();
+            $promise->then(function () use ($file) {
+                echo '[RELAY] ' . PHP_EOL;
+                $file->putContents('');
+            }, function (Exception $e) {
+                echo '[ERROR] ' . $e->getMessage() . PHP_EOL;
+            });
+        })->done();
+    }
+};
 
-$timer_function = function () use ($discord, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel)
+$timer_function = function () use ($discord, $ooc_relay, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel)
 {
     if ($guild = $discord->guilds->offsetGet($civ13_guild_id)) {
-        ooc_relay($guild, $nomads_ooc_path, $nomads_ooc_channel);  // #ooc-nomads
-        ooc_relay($guild, $nomads_admin_path, $nomads_admin_channel);  // #ahelp-nomads
-        ooc_relay($guild, $tdm_ooc_path, $tdm_ooc_channel);  // #ooc-tdm
-        ooc_relay($guild, $tdm_admin_path, $tdm_admin_channel);  // #ahelp-tdm
+        $ooc_relay($guild, $nomads_ooc_path, $nomads_ooc_channel);  // #ooc-nomads
+        $ooc_relay($guild, $nomads_admin_path, $nomads_admin_channel);  // #ahelp-nomads
+        $ooc_relay($guild, $tdm_ooc_path, $tdm_ooc_channel);  // #ooc-tdm
+        $ooc_relay($guild, $tdm_admin_path, $tdm_admin_channel);  // #ahelp-tdm
     } else echo "[TIMER] Unable to get guild $civ13_guild_id" . PHP_EOL;
 };
 
@@ -190,7 +215,7 @@ $on_ready = function () use ($discord, $timer_function)
     }
 };
 
-$on_message = function ($message) use ($discord, $loop, $execInBackground, $admiral, $captain, $knight, $veteran, $infantry, $insults_path, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm, $nomads_discord2ban, $tdm_discord2ban, $nomads_discord2unban, $tdm_discord2unban, $nomads_whitelist, $tdm_whitelist, $nomads_bans, $tdm_bans, $nomads_updateserverabspaths, $nomads_serverdata, $nomads_dmb, $nomads_killsudos, $nomads_killciv13, $nomads_mapswap, $tdm_mapswap, $tdm_updateserverabspaths, $tdm_serverdata, $tdm_dmb, $tdm_killsudos, $tdm_killciv13, $nomads_ip, $nomads_port, $tdm_ip, $tdm_port, $command_symbol)
+$on_message = function ($message) use ($discord, $loop, $admiral, $captain, $knight, $veteran, $infantry, $insults_path, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm, $nomads_discord2ban, $tdm_discord2ban, $nomads_discord2unban, $tdm_discord2unban, $nomads_whitelist, $tdm_whitelist, $nomads_bans, $tdm_bans, $nomads_updateserverabspaths, $nomads_serverdata, $nomads_dmb, $nomads_killsudos, $nomads_killciv13, $nomads_mapswap, $tdm_mapswap, $tdm_updateserverabspaths, $tdm_serverdata, $tdm_dmb, $tdm_killsudos, $tdm_killciv13, $nomads_ip, $nomads_port, $tdm_ip, $tdm_port, $command_symbol)
 {
     if (!$command_symbol) $command_symbol = '!s';
     
@@ -514,13 +539,13 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
             }
             if ($accepted) {
                 $message->channel->sendMessage("Please wait, updating the code...");
-                $execInBackground("sudo python3 $nomads_updateserverabspaths");
+                execInBackground("sudo python3 $nomads_updateserverabspaths");
                 $message->channel->sendMessage("Updated the code.");
-                $execInBackground("sudo rm -f $nomads_serverdata");
-                $execInBackground("sudo DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
+                execInBackground("sudo rm -f $nomads_serverdata");
+                execInBackground("sudo DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://$nomads_ip:$nomads_port>");
-                $discord->getLoop()->addTimer(10, function() use ($execInBackground, $nomads_killsudos) { # ditto
-                    $execInBackground("sudo python3 $nomads_killsudos");
+                $discord->getLoop()->addTimer(10, function() use ($nomads_killsudos) { # ditto
+                    execInBackground("sudo python3 $nomads_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -537,7 +562,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                 }
             }
             if ($accepted) {
-                $execInBackground("sudo python3 $nomads_killciv13");
+                execInBackground("sudo python3 $nomads_killciv13");
                 return $message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -554,15 +579,15 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                 }
             }
             if ($accepted) {
-                $execInBackground("sudo python3 $nomads_killciv13");
+                execInBackground("sudo python3 $nomads_killciv13");
                 $message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
-                $execInBackground("sudo python3 $nomads_updateserverabspaths");
+                execInBackground("sudo python3 $nomads_updateserverabspaths");
                 $message->channel->sendMessage("Updated the code.");
-                $execInBackground("sudo rm -f $nomads_serverdata");
-                $execInBackground("sudo DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
+                execInBackground("sudo rm -f $nomads_serverdata");
+                execInBackground("sudo DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://$nomads_ip:$nomads_port>");
-                $discord->getLoop()->addTimer(10, function() use ($execInBackground, $nomads_killsudos) { # ditto
-                    $execInBackground("sudo python3 $nomads_killsudos");
+                $discord->getLoop()->addTimer(10, function() use ($nomads_killsudos) { # ditto
+                    execInBackground("sudo python3 $nomads_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -579,15 +604,15 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                 }
             }
             if ($accepted) {
-                $execInBackground("sudo python3 $tdm_killciv13");
+                execInBackground("sudo python3 $tdm_killciv13");
                 $message->channel->sendMessage("Attempted to kill Civilization 13 TDM Server.");
-                $execInBackground("sudo python3 $tdm_updateserverabspaths");
+                execInBackground("sudo python3 $tdm_updateserverabspaths");
                 $message->channel->sendMessage("Updated the code.");
-                $execInBackground("sudo rm -f $tdm_serverdata");
-                $execInBackground("sudo DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
-                $discord->getLoop()->addTimer(10, function() use ($execInBackground, $message, $tdm_ip, $tdm_port, $tdm_killsudos) { # ditto
+                execInBackground("sudo rm -f $tdm_serverdata");
+                execInBackground("sudo DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
+                $discord->getLoop()->addTimer(10, function() use ($message, $tdm_ip, $tdm_port, $tdm_killsudos) { # ditto
                     $message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://$tdm_ip:$tdm_port>");
-                    $execInBackground("sudo python3 $tdm_killsudos");
+                    execInBackground("sudo python3 $tdm_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -609,7 +634,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
                     $message->channel->sendMessage("Changing map to $mapto...");
-                    $execInBackground("sudo python3 $nomads_mapswap $mapto");
+                    execInBackground("sudo python3 $nomads_mapswap $mapto");
                     $message->channel->sendMessage("Sucessfully changed map to $mapto.");
                 }
             } else return $message->channel->sendMessage("Denied!");
@@ -628,13 +653,13 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
             }
             if ($accepted) {
                 $message->channel->sendMessage("Please wait, updating the code...");
-                $execInBackground("sudo python3 $tdm_updateserverabspaths");
+                execInBackground("sudo python3 $tdm_updateserverabspaths");
                 $message->channel->sendMessage("Updated the code.");
-                $execInBackground("sudo rm -f $tdm_serverdata");
-                $execInBackground("sudo DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
+                execInBackground("sudo rm -f $tdm_serverdata");
+                execInBackground("sudo DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://$tdm_ip:$tdm_port>");
-                $discord->getLoop()->addTimer(10, function() use ($execInBackground, $tdm_killsudos) { # ditto
-                    $execInBackground("sudo python3 $tdm_killsudos");
+                $discord->getLoop()->addTimer(10, function() use ($tdm_killsudos) { # ditto
+                    execInBackground("sudo python3 $tdm_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -651,7 +676,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                 }
             }
             if ($accepted) {
-                $execInBackground("sudo python3 $tdm_killciv13");
+                execInBackground("sudo python3 $tdm_killciv13");
                 return $message->channel->sendMessage("Attempted to kill Civilization 13 (TDM Server).");
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -674,7 +699,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
                     $message->channel->sendMessage("Changing map to $mapto...");
-                    $execInBackground("sudo python3 $tdm_mapswap $mapto");
+                    execInBackground("sudo python3 $tdm_mapswap $mapto");
                     return $message->channel->sendMessage("Sucessfully changed map to $mapto.");
                 }
             } else return $message->channel->sendMessage("Denied!");
@@ -881,7 +906,7 @@ function recalculate_ranking($tdm_awards_path, $ranking_path)
     return;
 }
 
-$on_message2 = function ($message) use ($discord, $loop, $execInBackground, $ranking_path, $tdm_awards_path, $tdm_awards_br_path, $typespess_path, $typespess_launch_server_path, $command_symbol)
+$on_message2 = function ($message) use ($discord, $loop, $ranking_path, $tdm_awards_path, $tdm_awards_br_path, $typespess_path, $typespess_launch_server_path, $command_symbol)
 {
     if (!$command_symbol) $command_symbol = '!s';
     
@@ -1033,12 +1058,12 @@ $on_message2 = function ($message) use ($discord, $loop, $execInBackground, $ran
 
                 if ($accepted) {
                     if ($state == "on") {
-                        $execInBackground("cd $typespess_path");
-                        $execInBackground('sudo git pull');
-                        $execInBackground("sudo sh $typespess_launch_server_path &");
+                        execInBackground("cd $typespess_path");
+                        execInBackground('sudo git pull');
+                        execInBackground("sudo sh $typespess_launch_server_path &");
                         return $message->channel->sendMessage("Put **TypeSpess Civ13** test server on: http://civ13.com/ts");
                     } elseif ($state == "off") {
-                        $execInBackground('sudo killall index.js');
+                        execInBackground('sudo killall index.js');
                         return $message->channel->sendMessage("**TypeSpess Civ13** test server down.");
                     }
                 }
@@ -1051,7 +1076,7 @@ $discord->once('ready', function ($discord) use ($loop, $on_ready, $on_message, 
 {
     $on_ready();
     
-    $discord->on('message', function ($message) use ($owner_id)
+    $discord->on('message', function ($message) use ($owner_id, $on_message, $on_message2)
     {   //Handling of a message
         if ($message->channel->type == 1) return; //Only process commands from a guild
         if ($message->guild->owner_id != $owner_id) return; //Only process commands from a guild that Taislin owns
