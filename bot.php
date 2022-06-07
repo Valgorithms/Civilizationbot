@@ -127,6 +127,8 @@ function portIsAvailable(int $port = 1714): bool
     return false;
 }
 
+/* Unused functions
+
 function remove_prefix(string $text = '', string $prefix = ''): string
 {
     if (str_starts_with($text, $prefix)) # only modify the text if it starts with the prefix
@@ -139,7 +141,7 @@ function my_message($message, $discord): bool
     return ($message->author->id == $discord->id);
 }
 
-function search_players(string $ckey, string $nomads_playerlogs): string
+$search_players = function (string $ckey) use ($nomads_playerlogs): string
 {
     if ($playerlogs = fopen($nomads_playerlogs, "r")) {
         while (($fp = fgets($playerlogs, 4096)) !== false) {
@@ -148,7 +150,8 @@ function search_players(string $ckey, string $nomads_playerlogs): string
         }
         return 'None';
     } else return 'Unable to access playerlogs.txt!';
-}
+};
+*/
 
 function ooc_relay($guild, string $file_path, string $channel_id)
 {
@@ -820,7 +823,8 @@ $on_message = function ($message) use  ($discord, $loop, $execInBackground, $adm
     }
 };
 
-function recalculate_ranking($tdm_awards_path, $ranking_path){
+function recalculate_ranking($tdm_awards_path, $ranking_path)
+{
     $ranking = array();
     $ckeylist = array();
     $result = array();
@@ -877,7 +881,8 @@ function recalculate_ranking($tdm_awards_path, $ranking_path){
     return;
 }
 
-$on_message2 = function ($message) use ($discord, $loop, $execInBackground, $ranking_path, $tdm_awards_path, $tdm_awards_br_path, $typespess_path, $typespess_launch_server_path, $command_symbol) {
+$on_message2 = function ($message) use ($discord, $loop, $execInBackground, $ranking_path, $tdm_awards_path, $tdm_awards_br_path, $typespess_path, $typespess_launch_server_path, $command_symbol)
+{
     if (!$command_symbol) $command_symbol = '!s';
     
     if (str_starts_with($message->content, $command_symbol . ' ')) { //Add these as slash commands?
@@ -1055,12 +1060,12 @@ $discord->once('ready', function ($discord) use ($loop, $on_ready, $on_message, 
     });
 });
 
-set_error_handler(function (int $number, string $message, string $filename, int $fileline) {
+set_error_handler(function (int $number, string $message, string $filename, int $fileline)
+{
     $warn = true;
     
-    if ($message != "Undefined variable: suggestion_pending_channel") //Expected to be null
-    if ($message != "Trying to access array offset on value of type null") //Expected to be null, part of ;validate*/
-    $warn = false;
+    if ($message != "Undefined variable: suggestion_pending_channel") $warn = false; //Expected to be null
+    if ($message != "Trying to access array offset on value of type null") $warn = false; //Expected to be null, part of ;validate*/
     
     $skip_array = array();
     $skip_array[] = "Undefined variable";
