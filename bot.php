@@ -519,7 +519,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                 $execInBackground("sudo rm -f $nomads_serverdata");
                 $execInBackground("sudo DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://$nomads_ip:$nomads_port>");
-                $discord->getLoop()->addTimer(10, function() { # ditto
+                $discord->getLoop()->addTimer(10, function() use ($execInBackground, $nomads_killsudos) { # ditto
                     $execInBackground("sudo python3 $nomads_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
@@ -561,7 +561,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                 $execInBackground("sudo rm -f $nomads_serverdata");
                 $execInBackground("sudo DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://$nomads_ip:$nomads_port>");
-                $discord->getLoop()->addTimer(10, function() { # ditto
+                $discord->getLoop()->addTimer(10, function() use ($execInBackground, $nomads_killsudos) { # ditto
                     $execInBackground("sudo python3 $nomads_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
@@ -585,8 +585,8 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                 $message->channel->sendMessage("Updated the code.");
                 $execInBackground("sudo rm -f $tdm_serverdata");
                 $execInBackground("sudo DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
-                $discord->getLoop()->addTimer(10, function() { # ditto
-                $message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://$tdm_ip:$tdm_port>");
+                $discord->getLoop()->addTimer(10, function() use ($execInBackground, $message, $tdm_ip, $tdm_port, $tdm_killsudos) { # ditto
+                    $message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://$tdm_ip:$tdm_port>");
                     $execInBackground("sudo python3 $tdm_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
@@ -633,7 +633,7 @@ $on_message = function ($message) use ($discord, $loop, $execInBackground, $admi
                 $execInBackground("sudo rm -f $tdm_serverdata");
                 $execInBackground("sudo DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://$tdm_ip:$tdm_port>");
-                $discord->getLoop()->addTimer(10, function() { # ditto
+                $discord->getLoop()->addTimer(10, function() use ($execInBackground, $tdm_killsudos) { # ditto
                     $execInBackground("sudo python3 $tdm_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
