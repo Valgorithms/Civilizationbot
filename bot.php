@@ -114,7 +114,7 @@ function timer_function(\Discord\Discord $discord, $filesystem)
     }
 }
 
-function on_ready(\Discord\Discord $discord) use ($filesystem)
+$on_ready = function (\Discord\Discord $discord) use ($filesystem)
 {
     echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' ' . $discord->id . PHP_EOL . '------' . PHP_EOL;
     
@@ -123,7 +123,7 @@ function on_ready(\Discord\Discord $discord) use ($filesystem)
             timer_function($discord, $filesystem);
         });
     }
-}
+};
 
 function on_message($message, $discord, $loop, $command_symbol = '!s')
 {
@@ -993,9 +993,9 @@ function on_message2($message, $discord, $loop, $command_symbol = '!s') {
     }
 }
 
-$discord->once('ready', function ($discord) use ($loop, $command_symbol)
+$discord->once('ready', function ($discord) use ($loop, $command_symbol, $on_ready)
 {
-    on_ready($discord);
+    $on_ready($discord);
     
     $discord->on('message', function ($message) use ($discord, $loop, $command_symbol) { //Handling of a message
         if ($message->channel->type == 1) return; //Only process commands from a guild
