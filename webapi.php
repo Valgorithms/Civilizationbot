@@ -120,13 +120,22 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				return webapiFail('user_name', $id);
 			break;
         
-        case 'update':
+        case 'pull':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
             execInBackgroundLinux('sudo git pull');
-            $return = 'updating';
+            $return = 'updating civilizationbot';
+            break;
+        
+        case 'update':
+            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
+			}
+            execInBackgroundLinux('sudo composer update');
+            $return = 'updating dependencies';
             break;
         
 		case 'restart':
