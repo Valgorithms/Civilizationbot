@@ -168,6 +168,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
     } else echo "[RELAY] Unable to open $file_path" . PHP_EOL;
     */
     
+    echo '[RELAY - PATH] ' . $file_path . PHP_EOL;
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
         if ($file = $filesystem->file($file_path)) {
             $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
