@@ -125,7 +125,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
-            execInBackgroundLinux('sudo git pull');
+            execInBackground('sudo git pull');
             $return = 'updating civilizationbot';
             break;
         
@@ -134,7 +134,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
-            execInBackgroundLinux('sudo composer update');
+            execInBackground('sudo composer update');
             $return = 'updating dependencies';
             break;
         
@@ -148,7 +148,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 $channel->sendMessage("Restarting...");
             }
             $return = 'restarting';
-			execInBackgroundLinux('sudo nohup php8.1 bot.php');
+			execInBackground('sudo nohup php8.1 bot.php');
             $discord->close();
             $socket->close();
 			break;
