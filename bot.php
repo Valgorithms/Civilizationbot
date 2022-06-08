@@ -172,6 +172,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
         if ($file = $filesystem->file($file_path)) {
             $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
                 $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
+                    if ($contents) echo '[RELAY - CONTENTS] ' $contents . PHP_EOL;
                     $lines = explode(PHP_EOL, $contents);
                     $fn = function ($lines, $target_channel) {
                         foreach ($lines as $line) {
