@@ -879,7 +879,7 @@ $on_message = function ($message) use ($discord, $loop, $admiral, $captain, $kni
     }
 };
 
-function recalculate_ranking($tdm_awards_path, $ranking_path)
+$recalculate_ranking = function () use ($tdm_awards_path, $ranking_path)
 {
     $ranking = array();
     $ckeylist = array();
@@ -937,7 +937,7 @@ function recalculate_ranking($tdm_awards_path, $ranking_path)
     return;
 }
 
-$on_message2 = function ($message) use ($discord, $loop, $ranking_path, $tdm_awards_path, $tdm_awards_br_path, $typespess_path, $typespess_launch_server_path, $command_symbol)
+$on_message2 = function ($message) use ($discord, $loop, $recalculate_ranking, $ranking_path, $tdm_awards_path, $tdm_awards_br_path, $typespess_path, $typespess_launch_server_path, $command_symbol)
 {
     if (!$command_symbol) $command_symbol = '!s';
     
@@ -945,7 +945,7 @@ $on_message2 = function ($message) use ($discord, $loop, $ranking_path, $tdm_awa
         $message_content = substr($message->content, strlen($command_symbol)+1);
         $message_content_lower = strtolower($message_content);
         if (str_starts_with($message_content_lower, 'ranking')) {
-            recalculate_ranking($tdm_awards_path, $ranking_path);
+            $recalculate_ranking();
             $line_array = array();
             if ($search = fopen($ranking_path, "r")) {
                 while (($fp = fgets($search, 4096)) !== false) {
@@ -977,7 +977,7 @@ $on_message2 = function ($message) use ($discord, $loop, $ranking_path, $tdm_awa
                 $ckey = str_replace('_', '', $ckey);
                 $ckey = str_replace(' ', '', $ckey);
             }
-            recalculate_ranking();
+            $recalculate_ranking();
             $line_array = array();
             if ($search = fopen($ranking_path, "r")) {
                 while (($fp = fgets($search, 4096)) !== false) {
