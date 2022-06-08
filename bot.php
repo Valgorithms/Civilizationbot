@@ -175,7 +175,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
                 $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
                     if ($contents) echo '[RELAY - CONTENTS] ' . $contents . PHP_EOL;
                     $lines = explode(PHP_EOL, $contents);
-                    $fn = function ($lines, $target_channel) {
+                    $fn = function () use ($lines, $target_channel) {
                         foreach ($lines as $line) {
                             if ($line) {
                                 echo '[RELAY - LINE] ' . $line . PHP_EOL;
@@ -184,7 +184,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
                         }
                         return;
                     };
-                    return React\Async\await($fn($lines, $target_channel));
+                    return React\Async\await($fn());
                 })();
                 $promise->then(function () use ($file) {
                     echo '[RELAY - TRUNCATE]' . PHP_EOL;
