@@ -184,11 +184,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
                         }
                         return;
                     })();
-<<<<<<< HEAD
                     return React\Async\await($promise2);
-=======
-                    React\Async\await($promise2);
->>>>>>> 7e523b2ab55fa62477cd1a527d5154c7fdce1e1f
                 })();
                 $promise->then(function () use ($file) {
                     echo '[RELAY - TRUNCATE]' . PHP_EOL;
