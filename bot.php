@@ -7,7 +7,7 @@ $insults_path = 'insults.txt';
 $ranking_path = 'ranking.txt';
 
 $nomads_ooc_path = '/home/1713/civ13-rp/ooc.log';
-$nomads_admin_path = '/home/1713/civ13-rp/ooc.log';
+$nomads_admin_path = '/home/1713/civ13-rp/admin.log';
 $nomads_discord2ooc = '/home/1713/civ13-rp/SQL/discord2ooc.txt';
 $nomads_discord2admin = '/home/1713/civ13-rp/SQL/discord2admin.txt';
 $nomads_discord2dm = '/home/1713/civ13-rp/SQL/discord2dm.txt';
@@ -19,15 +19,15 @@ $nomads_bans = '/home/1713/civ13-rp/SQL/bans.txt';
 //Unused
 $nomads_playerlogs = '/home/1713/civ13-rp/SQL/playerlogs.txt';
 
-$tdm_ooc_path = '/home/1713/civ13-rp/ooc.log';
-$tdm_admin_path = '/home/1713/civ13-rp/ooc.log';
+$tdm_ooc_path = '/home/1713/civ13-tdm/ooc.log';
+$tdm_admin_path = '/home/1713/civ13-tdm/admin.log';
 $tdm_discord2ooc = '/home/1713/civ13-tdm/SQL/discord2ooc.txt';
 $tdm_discord2admin = '/home/1713/civ13-tdm/SQL/discord2admin.txt';
 $tdm_discord2dm = '/home/1713/civ13-tdm/SQL/discord2dm.txt';
 $tdm_discord2ban = '/home/1713/civ13-tdm/SQL/discord2ban.txt';
 $tdm_discord2unban = '/home/1713/civ13-tdm/SQL/discord2unban.txt';
 $tdm_discord2ban = '/home/1713/civ13-tdm/SQL/discord2ban.txt';
-$tdm_whitelist = '/home/1713/civ13-rp/SQL/whitelist.txt';
+$tdm_whitelist = '/home/1713/civ13-tdm/SQL/whitelist.txt';
 $tdm_bans = '/home/1713/civ13-tdm/SQL/bans.txt';
 $tdm_awards_path = '/home/1713/civ13-tdm/SQL/awards.txt';
 $tdm_awards_br_path = '/home/1713/civ13-tdm/SQL/awards_br.txt';
