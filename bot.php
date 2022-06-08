@@ -169,25 +169,29 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
     */
     
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
-        $file = $filesystem->file($file_path);
-        $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
-            $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
-                $lines = explode(PHP_EOL, $contents);
-                $fn = function ($lines, $target_channel) {
-                    foreach ($lines as $line) {
-                        if ($line) $target_channel->sendMessage($line);
-                    }
-                    return;
-                };
-                return React\Async\await($fn($lines, $target_channel));
-            })();
-            $promise->then(function () use ($file) {
-                echo '[RELAY] ' . PHP_EOL;
-                $file->putContents('');
-            }, function (Exception $e) {
-                echo '[ERROR] ' . $e->getMessage() . PHP_EOL;
-            });
-        })->done();
+        if ($file = $filesystem->file($file_path)) {
+            $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
+                $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
+                    $lines = explode(PHP_EOL, $contents);
+                    $fn = function ($lines, $target_channel) {
+                        foreach ($lines as $line) {
+                            if ($line) {
+                                echo '[LINE] ' . $line . PHP_EOL;
+                                $target_channel->sendMessage($line);
+                            }
+                        }
+                        return;
+                    };
+                    return React\Async\await($fn($lines, $target_channel));
+                })();
+                $promise->then(function () use ($file) {
+                    echo '[RELAY] ' . PHP_EOL;
+                    $file->putContents('');
+                }, function (Exception $e) {
+                    echo '[ERROR] ' . $e->getMessage() . PHP_EOL;
+                });
+            })->done();
+        } else echo "[RELAY] Unable to open $file_path" . PHP_EOL;
     }
 };
 
