@@ -176,7 +176,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
                     $fn = function ($lines, $target_channel) {
                         foreach ($lines as $line) {
                             if ($line) {
-                                echo '[LINE] ' . $line . PHP_EOL;
+                                echo '[RELAY - LINE] ' . $line . PHP_EOL;
                                 $target_channel->sendMessage($line);
                             }
                         }
@@ -185,14 +185,14 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
                     return React\Async\await($fn($lines, $target_channel));
                 })();
                 $promise->then(function () use ($file) {
-                    echo '[RELAY] ' . PHP_EOL;
+                    echo '[RELAY - TRUNCATE]' . PHP_EOL;
                     $file->putContents('');
                 }, function (Exception $e) {
-                    echo '[ERROR] ' . $e->getMessage() . PHP_EOL;
+                    echo '[RELAY - ERROR] ' . $e->getMessage() . PHP_EOL;
                 });
             })->done();
-        } else echo "[RELAY] Unable to open $file_path" . PHP_EOL;
-    }
+        } else echo "[RELAY - ERROR] Unable to open $file_path" . PHP_EOL;
+    } else echo "[RELAY - ERROR] Unable to get channel $channel_id" . PHP_EOL;
 };
 
 $timer_function = function () use ($discord, $ooc_relay, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel)
