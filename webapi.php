@@ -158,9 +158,9 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 $channel->sendMessage("Restarting...");
             }
             $return = 'restarting';
-			execInBackground('sudo nohup php8.1 bot.php');
-            $discord->close();
+			execInBackground('sudo nohup php8.1 bot.php > botlog.txt &');
             $socket->close();
+            $discord->close();
 			break;
 
 		case 'lookup':
