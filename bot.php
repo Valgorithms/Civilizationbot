@@ -935,7 +935,7 @@ $recalculate_ranking = function () use ($tdm_awards_path, $ranking_path)
             fwrite($search, $i[0] . ";" . $i[1] . PHP_EOL);
     fclose ($search);
     return;
-}
+};
 
 $on_message2 = function ($message) use ($discord, $loop, $recalculate_ranking, $ranking_path, $tdm_awards_path, $tdm_awards_br_path, $typespess_path, $typespess_launch_server_path, $command_symbol)
 {
