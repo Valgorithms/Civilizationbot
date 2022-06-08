@@ -201,6 +201,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
     
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
         if ($file = $filesystem->file($file_path)) {
+            var_dump($file);
             $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
                 var_dump($contents);
                 $contents = explode(PHP_EOL, $contents);
