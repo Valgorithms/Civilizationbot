@@ -168,43 +168,42 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
     } else echo "[RELAY] Unable to open $file_path" . PHP_EOL;
     */
 
+    /*
     echo '[RELAY - PATH] ' . $file_path . PHP_EOL;
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
         if ($file = $filesystem->file($file_path)) {
             $file->getContents()->then(
-                function (string $contents) use ($file, $target_channel)
-                {
-                    $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
-                        if ($contents) echo '[RELAY - CONTENTS] ' . $contents . PHP_EOL;
-                        $lines = explode(PHP_EOL, $contents);
-                        $promise2 = React\Async\async(function () use ($lines, $target_channel) {
-                            foreach ($lines as $line) {
-                                if ($line) {
-                                    echo '[RELAY - LINE] ' . $line . PHP_EOL;
-                                    $target_channel->sendMessage($line);
-                                }
+            function (string $contents) use ($file, $target_channel) {
+                $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
+                    if ($contents) echo '[RELAY - CONTENTS] ' . $contents . PHP_EOL;
+                    $lines = explode(PHP_EOL, $contents);
+                    $promise2 = React\Async\async(function () use ($lines, $target_channel) {
+                        foreach ($lines as $line) {
+                            if ($line) {
+                                echo '[RELAY - LINE] ' . $line . PHP_EOL;
+                                $target_channel->sendMessage($line);
                             }
-                            return;
-                        })();
-                        React\Async\await($promise2);
+                        }
+                        return;
                     })();
-                    $promise->then(function () use ($file) {
-                        echo '[RELAY - TRUNCATE]' . PHP_EOL;
-                        $file->putContents('');
-                    }, function (Exception $e) {
-                        echo '[RELAY - ERROR] ' . $e->getMessage() . PHP_EOL;
-                    });
-                    React\Async\await($promise);
-                }
-            )->then(function () use ($file) {
+                    React\Async\await($promise2);
+                })();
+                $promise->then(function () use ($file) {
+                    echo '[RELAY - TRUNCATE]' . PHP_EOL;
+                    $file->putContents('');
+                }, function (Exception $e) {
+                    echo '[RELAY - ERROR] ' . $e->getMessage() . PHP_EOL;
+                });
+                React\Async\await($promise);
+            })->then(function () use ($file) {
                 echo '[RELAY - getContents]' . PHP_EOL;
             }, function (Exception $e) {
                 echo '[RELAY - ERROR] ' . $e->getMessage() . PHP_EOL;
-            })->done();
+            });
         } else echo "[RELAY - ERROR] Unable to open $file_path" . PHP_EOL;
     } else echo "[RELAY - ERROR] Unable to get channel $channel_id" . PHP_EOL;
+    */
     
-    /*
     if ($target_channel = $guild->channels->offsetGet($channel_id)) {
         if ($file = $filesystem->file($file_path)) {
             var_dump($file);
@@ -214,12 +213,15 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
                 foreach ($contents as $line) {
                     $target_channel->sendMessage($line);
                 }
-            })->then(function () use ($file) {
-                $file->putContents('');
-            })->done();
+            })->then(
+                function () use ($file) {
+                    $file->putContents('');
+                }, function (Exception $e) {
+                    echo '[RELAY - getContents Error] ' . $e->getMessage() . PHP_EOL;
+                }
+            )->done();
         } else echo "[RELAY - ERROR] Unable to open $file_path" . PHP_EOL;
     } else echo "[RELAY - ERROR] Unable to get channel $channel_id" . PHP_EOL;
-    */
 };
 
 $timer_function = function () use ($discord, $ooc_relay, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel)
