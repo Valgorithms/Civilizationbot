@@ -359,6 +359,9 @@ $on_message = function ($civ13, $message)
     if (str_starts_with($message_content_lower, 'ban ')) {
         $message_content = substr($message_content, 4);
         $split_message = explode('; ', $message_content); //$split_target[1] is the target
+        if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+        if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
+        if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         $file = fopen($nomads_discord2ban, "a");
         $txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
         fwrite($file, $txt);

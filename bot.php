@@ -45,8 +45,8 @@ $options = array(
     'owner_id' => '196253985072611328', //Taislin
     'civ13_guild_id' => '468979034571931648', //Civ13
     'ips' => array(
-        'nomads_ip' => '51.254.161.128',
-        'tdm_ip' => '51.254.161.128',
+        'nomads_ip' => gethostbyname('www.civ13.com'),
+        'tdm_ip' => gethostbyname('www.civ13.com'),
     ),
     'ports' => array(
         'nomads_port' => '1715',
