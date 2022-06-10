@@ -9,7 +9,13 @@ function webapiSnow($string) {
 }
 
 $socket = new \React\Socket\Server(sprintf('%s:%s', '0.0.0.0', '55555'), $loop);
-$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($discord, $loop, $socket, $nomads_bans, $tdm_bans) {
+$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($civ13, $socket)
+{
+    $discord = $civ13->discord;
+    $loop = $civ13->loop;
+    $nomads_bans = $civ13->files['nomads_bans'];
+    $tdm_bans = $civ13->files['tdm_bans'];
+    
 	$path = explode('/', $request->getUri()->getPath());
 	$sub = (isset($path[1]) ? (string) $path[1] : false);
 	$id = (isset($path[2]) ? (string) $path[2] : false);
