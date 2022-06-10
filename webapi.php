@@ -49,6 +49,13 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     }
 
 	switch ($sub) {
+        case 'favicon.ico':
+            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
+			}
+            $favicon = file_get_contents('favicon.ico');
+            return new \React\Http\Message\Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
         case 'messagetest':
             if ($channel = $discord->getChannel('712685552155230278')) {
                 echo "I'm alive!" . PHP_EOL;
