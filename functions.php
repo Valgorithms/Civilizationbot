@@ -9,10 +9,30 @@ if (PHP_OS_FAMILY == "Windows") {
     
 } else {
     function execInBackground($cmd) {
-        exec("sudo $cmd > /dev/null &");
+        //exec("sudo $cmd > /dev/null &"); //Executes within the same shell
+        $descriptorspec = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w']
+        ];
+        $output = "sudo $cmd > /dev/null &";
+        $proc = proc_open($output, $descriptorspec, $pipes);
+        $proc_details = proc_get_status($proc);
+        $pid = $proc_details['pid'];
+        echo "[execInBackground] Executing shell command `$output` with PID $pid" . PHP_EOL;
     };
     function restart() {
-        exec("sudo nohup php8.1 bot.php > botlog.txt &");
+        //exec("sudo nohup php8.1 bot.php > botlog.txt &");
+        $descriptorspec = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w']
+        ];
+        $output = 'sudo nohup php8.1 bot.php > botlog.txt &';
+        $proc = proc_open('sudo nohup php8.1 bot.php > botlog.txt &', $descriptorspec, $pipes);
+        $proc_details = proc_get_status($proc);
+        $pid = $proc_details['pid'];
+        echo "[RESTART] Executing shell command `$output` with PID $pid" . PHP_EOL;
     };
 }
 
