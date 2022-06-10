@@ -25,18 +25,18 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 	$idarray = array(); //get from post data (NYI)
     */
     
-    echo '[API] ';
+    $echo = 'API ';
     $path = explode('/', $request->getUri()->getPath());
-    $repository = $sub = (isset($path[1]) ? (string) strtolower($path[1]) : false); if ($repository) echo "$repository";
-    $method = $id = (isset($path[2]) ? (string) strtolower($path[2]) : false); if ($method) echo "/$method";
-    $id2 = $repository2 = (isset($path[3]) ? (string) strtolower($path[3]) : false); if ($id2) echo "/$id2";
-    $ip = $partial = $method2 = (isset($path[4]) ? (string) strtolower($path[4]) : false); if ($partial) echo "/$partial";
-    $id3 = (isset($path[5]) ? (string) strtolower($path[5]) : false); if ($id3) echo "/$id3";
-    $id4 = (isset($path[6]) ? (string) strtolower($path[6]) : false); if ($id4) echo "/$id4";
-    echo PHP_EOL;
+    $repository = $sub = (isset($path[1]) ? (string) strtolower($path[1]) : false); if ($repository) $echo .= "$repository";
+    $method = $id = (isset($path[2]) ? (string) strtolower($path[2]) : false); if ($method) $echo .= "/$method";
+    $id2 = $repository2 = (isset($path[3]) ? (string) strtolower($path[3]) : false); if ($id2) $echo .= "/$id2";
+    $ip = $partial = $method2 = (isset($path[4]) ? (string) strtolower($path[4]) : false); if ($partial) $echo .= "/$partial";
+    $id3 = (isset($path[5]) ? (string) strtolower($path[5]) : false); if ($id3) $echo .= "/$id3";
+    $id4 = (isset($path[6]) ? (string) strtolower($path[6]) : false); if ($id4) $echo .= "/$id4";
     $idarray = array(); //get from post data (NYI)
+    $civ13->logger->info($echo);
 	
-	if ($ip) echo '[REQUESTING IP] ' . $ip . PHP_EOL ;
+	if ($ip) $civ13->logger->info('API IP ' . $ip);
     $whitelist = [
         '127.0.0.1', //local host
         gethostbyname('www.civ13.com'),
@@ -45,20 +45,20 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         '76.111.78.31', //valzargaming.com
     ];
 	if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
-        echo '[WEBAPI] REMOTE_ADDR: ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+        $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
     }
 
 	switch ($sub) {
         case 'favicon.ico':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				$civ13->logger->info('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
             $favicon = file_get_contents('favicon.ico');
             return new \React\Http\Message\Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
         case 'messagetest':
             if ($channel = $discord->getChannel('712685552155230278')) {
-                echo "I'm alive!" . PHP_EOL;
+                $civ13->logger->info("I'm alive!");
                 $return = "I'm alive!";
                 $channel->sendMessage("I'm alive!");
             }
@@ -66,7 +66,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         
         case 'botlog':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
             if ($return = file_get_contents('botlog.txt')) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
@@ -139,7 +139,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         
         case 'reset':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
             execInBackground('git reset --hard origin/main');
@@ -148,7 +148,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         
         case 'pull':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
             execInBackground('git pull');
@@ -157,7 +157,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         
         case 'update':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
             execInBackground('composer update');
@@ -166,11 +166,11 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         
 		case 'restart':
 			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
             if ($channel = $discord->getChannel('712685552155230278')) {
-                echo '[RESTART]' . PHP_EOL;
+                $civ13->logger->info('[RESTART]');
                 $channel->sendMessage("Restarting...");
             }
             $return = 'restarting';
@@ -184,7 +184,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 
 		case 'lookup':
 			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
 			if (!$id || !webapiSnow($id) || !$return = $discord->users->offsetGet($id))
@@ -193,7 +193,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 
 		case 'owner':
 			if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
 			if (!$id || !webapiSnow($id))
@@ -256,7 +256,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             switch ($id) {
                 case 'bans':
                     if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-                        echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                         return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
                     }
                     if ($return = file_get_contents($nomads_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
@@ -270,7 +270,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             switch ($id) {
                 case 'bans':
                     if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-                        echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                         return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
                     }
                     if ($return = file_get_contents($tdm_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
@@ -287,5 +287,5 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 });
 $webapi->listen($socket);
 $webapi->on('error', function ($e) {
-	echo('[webapi] ' . $e->getMessage());
+	$civ13->logger->error('API ' . $e->getMessage());
 });

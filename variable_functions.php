@@ -68,11 +68,11 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, "", $fp);
             if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
-            else echo "[RELAY] Unable to find channel $target_channel" . PHP_EOL;
+            else $civ13->logger->warning("unable to find channel $target_channel");
         }
         ftruncate($file, 0); //clear the file
         fclose($file);
-    } else echo "[RELAY] Unable to open $file_path" . PHP_EOL;
+    } else $civ13->logger->warning("unable to open $file_path");
 
     /*
     echo '[RELAY - PATH] ' . $file_path . PHP_EOL;
@@ -150,7 +150,7 @@ $timer_function = function ($civ13)
         $ooc_relay($civ13, $guild, $nomads_admin_path, $nomads_admin_channel);  // #ahelp-nomads
         $ooc_relay($civ13, $guild, $tdm_ooc_path, $tdm_ooc_channel);  // #ooc-tdm
         $ooc_relay($civ13, $guild, $tdm_admin_path, $tdm_admin_channel);  // #ahelp-tdm
-    } else echo "[TIMER] Unable to get guild $civ13_guild_id" . PHP_EOL;
+    } else $civ13->logger->warning("unable to get guild $civ13_guild_id");
 };
 
 $on_ready = function ($civ13)
@@ -158,11 +158,11 @@ $on_ready = function ($civ13)
     $discord = $civ13->discord;
     $timer_function = $civ13->functions['misc']['timer_function'];
     
-    echo 'Logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' (' . $discord->id . ')' .  PHP_EOL;
-    echo('------' . PHP_EOL);
+    $civ13->logger->info('logged in as ' . $discord->user->username . "#" . $discord->user->discriminator . ' (' . $discord->id . ')');
+    $civ13->logger->info('------');
     
     if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
-        echo '[READY] Relay timer started!' . PHP_EOL;
+        $civ13->logger->info('chat relay timer started');
         $civ13->timers = $discord->getLoop()->addPeriodicTimer(10, function() use ($timer_function, $civ13) {
             $timer_function($civ13);
         });

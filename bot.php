@@ -39,6 +39,7 @@ $options = array(
     'filesystem' => $filesystem,
     //Debug options
     'verbose' => true,
+    'logger' => $logger,
     
     //Configurations
     'command_symbol' => '!s',

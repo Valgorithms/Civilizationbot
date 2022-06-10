@@ -14,6 +14,7 @@ class Civ13
     public $discord;
     public $browser; //unused
     public $filesystem;
+    public $logger;
     
     protected $webapi;
     
@@ -45,11 +46,22 @@ class Civ13
      */
     public function __construct(array $options = [])
     {
+        if (php_sapi_name() !== 'cli') {
+            trigger_error('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.', E_USER_ERROR);
+        }
+
+        // x86 need gmp extension for big integer operation
+        if (PHP_INT_SIZE === 4 && ! Discord\Helpers\Bitwise::init()) {
+            trigger_error('ext-gmp is not loaded. Permissions will NOT work correctly!', E_USER_WARNING);
+        }
+        
         $options = $this->resolveOptions($options);
 		
 		$this->loop = $options['loop'];
 		$this->browser = $options['browser'];
         $this->filesystem = $options['filesystem'];
+        $this->logger = $options['logger'];
+        
         
         if(isset($options['command_symbol'])) {
             $this->command_symbol = $options['command_symbol'];
@@ -76,22 +88,25 @@ class Civ13
             if(isset($options['functions']['misc']))
                 foreach ($options['functions']['misc'] as $key => $func)
                     $this->functions['misc'][$key] = $func;
-        } else $this->emit('No functions passed in options!');
-        if(isset($options['files']))
+        } else $this->logger->debug('No functions passed in options!');
+        if(isset($options['files'])) {
             foreach ($options['files'] as $key => $path)
                 $this->files[$key] = $path;
+        }  else $this->logger->debug('No files passed in options!');
         if(isset($options['ips']) && isset($options['ports'])) {
             foreach ($options['ips'] as $key => $ip)
                 $this->ips[$key] = $ip;
             foreach ($options['ports'] as $key => $port)
                 $this->ports[$key] = $port;
-        }
-        if(isset($options['channel_ids']))
+        } else $this->logger->debug('Either ips or ports was not passed in options!');
+        if(isset($options['channel_ids'])) {
             foreach ($options['channel_ids'] as $key => $id)
                 $this->channel_ids[$key] = $id;
-        if(isset($options['role_ids']))
+        } else $this->logger->debug('No channel_ids passed in options!');
+        if(isset($options['role_ids'])) {
             foreach ($options['role_ids'] as $key => $id)
                 $this->role_ids[$key] = $id;
+        } else $this->logger->debug('No role_ids passed in options!');
         $this->afterConstruct();
     }
     
@@ -102,12 +117,13 @@ class Civ13
                 if(! empty($this->functions['ready']))
                     foreach ($this->functions['ready'] as $func)
                         $func($this);
-                else $this->emit('No ready functions found!');
+                else $this->logger->debug('No ready functions found!');
                 $this->discord->on('message', function ($message)
                 {
                     if(! empty($this->functions['message']))
                         foreach ($this->functions['message'] as $func)
                             $func($this, $message);
+                    else $this->logger->debug('No message functions found!');
                 });
             });
         }
@@ -118,28 +134,28 @@ class Civ13
 	*/
 	protected function resolveOptions(array $options = []): array
 	{
-		if ($this->verbose) $this->emit('[CIV13] [RESOLVE OPTIONS]');
+        if (is_null($options['logger'])) {
+            $logger = new Monolog\Logger('Civ13');
+            $logger->pushHandler(new Monolog\Handler\StreamHandler('php://stdout', Monolog\Logger::DEBUG));
+            $options['logger'] = $logger;
+        }
+        
 		$options['loop'] = $options['loop'] ?? React\EventLoop\Factory::create();
 		$options['browser'] = $options['browser'] ?? new \React\Http\Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? \React\Filesystem\Factory::create($options['loop']);
 		return $options;
 	}
     
-    public function emit(string $string): void
-	{
-		echo "[EMIT] $string" . PHP_EOL;
-	}
-    
     public function run(): void
 	{
-		if ($this->verbose) $this->emit('[CIV13] [RUN]');
-		if(!(isset($this->discord))) $this->emit('[WARNING] Discord not set!');
+		if ($this->verbose) $this->logger->debug('Starting Discord loop');
+		if(!(isset($this->discord))) $this->logger->debug('[WARNING] Discord not set!');
 		else $this->discord->run();
 	}
     
     public function stop(): void
 	{
-		if ($this->verbose) $this->emit('[CIV13] [STOP]');
+		if ($this->verbose) $this->logger->debug('Shutting down');
 		if((isset($this->discord))) $this->discord->stop();
 	}
 }

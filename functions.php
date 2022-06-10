@@ -19,7 +19,7 @@ if (PHP_OS_FAMILY == "Windows") {
         $proc = proc_open($output, $descriptorspec, $pipes);
         $proc_details = proc_get_status($proc);
         $pid = $proc_details['pid'];
-        echo "[execInBackground] Executing shell command `$output` with PID $pid" . PHP_EOL;
+        echo "Executing external shell command `$output` with PID $pid";
     };
     function restart() {
         //exec("sudo nohup php8.1 bot.php > botlog.txt &");
@@ -32,7 +32,7 @@ if (PHP_OS_FAMILY == "Windows") {
         $proc = proc_open('sudo nohup php8.1 bot.php > botlog.txt &', $descriptorspec, $pipes);
         $proc_details = proc_get_status($proc);
         $pid = $proc_details['pid'];
-        echo "[RESTART] Executing shell command `$output` with PID $pid" . PHP_EOL;
+        echo "Executing external shell command `$output` with PID $pid";
     };
 }
 
