@@ -88,25 +88,25 @@ class Civ13
             if(isset($options['functions']['misc']))
                 foreach ($options['functions']['misc'] as $key => $func)
                     $this->functions['misc'][$key] = $func;
-        } else $this->logger->debug('No functions passed in options!');
+        } else $this->logger->warning('No functions passed in options!');
         if(isset($options['files'])) {
             foreach ($options['files'] as $key => $path)
                 $this->files[$key] = $path;
-        }  else $this->logger->debug('No files passed in options!');
+        }  else $this->logger->warning('No files passed in options!');
         if(isset($options['ips']) && isset($options['ports'])) {
             foreach ($options['ips'] as $key => $ip)
                 $this->ips[$key] = $ip;
             foreach ($options['ports'] as $key => $port)
                 $this->ports[$key] = $port;
-        } else $this->logger->debug('Either ips or ports was not passed in options!');
+        } else $this->logger->warning('Either ips or ports was not passed in options!');
         if(isset($options['channel_ids'])) {
             foreach ($options['channel_ids'] as $key => $id)
                 $this->channel_ids[$key] = $id;
-        } else $this->logger->debug('No channel_ids passed in options!');
+        } else $this->logger->warning('No channel_ids passed in options!');
         if(isset($options['role_ids'])) {
             foreach ($options['role_ids'] as $key => $id)
                 $this->role_ids[$key] = $id;
-        } else $this->logger->debug('No role_ids passed in options!');
+        } else $this->logger->warning('No role_ids passed in options!');
         $this->afterConstruct();
     }
     
@@ -148,14 +148,14 @@ class Civ13
     
     public function run(): void
 	{
-		if ($this->verbose) $this->logger->debug('Starting Discord loop');
-		if(!(isset($this->discord))) $this->logger->debug('[WARNING] Discord not set!');
+		if ($this->verbose) $this->logger->info('Starting Discord loop');
+		if(!(isset($this->discord))) $this->logger->warning('Discord not set!');
 		else $this->discord->run();
 	}
     
     public function stop(): void
 	{
-		if ($this->verbose) $this->logger->debug('Shutting down');
+		if ($this->verbose) $this->logger->info('Shutting down');
 		if((isset($this->discord))) $this->discord->stop();
 	}
 }
