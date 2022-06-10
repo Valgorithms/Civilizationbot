@@ -16,12 +16,25 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     $nomads_bans = $civ13->files['nomads_bans'];
     $tdm_bans = $civ13->files['tdm_bans'];
     
+    /*
 	$path = explode('/', $request->getUri()->getPath());
 	$sub = (isset($path[1]) ? (string) $path[1] : false);
 	$id = (isset($path[2]) ? (string) $path[2] : false);
 	$id2 = (isset($path[3]) ? (string) $path[3] : false);
 	$ip = (isset($path[4]) ? (string) $path[4] : false);
-	$idarray = array(); //get from post data
+	$idarray = array(); //get from post data (NYI)
+    */
+    
+    echo '[API] ';
+    $path = explode('/', $request->getUri()->getPath());
+    $repository = $sub = (isset($path[1]) ? (string) strtolower($path[1]) : false); if ($repository) echo "$repository/";
+    $method = $id = (isset($path[2]) ? (string) strtolower($path[2]) : false); if ($method) echo "$method/";
+    $id2 = $repository2 = (isset($path[3]) ? (string) strtolower($path[3]) : false); if ($id2) echo "$id2/";
+    $ip = $partial = $method2 = (isset($path[4]) ? (string) strtolower($path[4]) : false); if ($partial) echo "$partial/";
+    $id3 = (isset($path[5]) ? (string) strtolower($path[5]) : false); if ($id3) echo "$id3/";
+    $id4 = (isset($path[6]) ? (string) strtolower($path[6]) : false); if ($id4) echo "$id4/";
+    echo PHP_EOL;
+    $idarray = array(); //get from post data (NYI)
 	
 	if ($ip) echo '[REQUESTING IP] ' . $ip . PHP_EOL ;
     $whitelist = [
@@ -51,24 +64,6 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			}
             if ($return = file_get_contents('botlog.txt')) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
             else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog.txt`".PHP_EOL);
-            break;
-        
-        case 'nomads_bans':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
-				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
-			}
-            if ($return = file_get_contents($nomads_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
-            else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`".PHP_EOL);
-            break;
-        
-        case 'tdm_bans':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
-				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
-				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
-			}
-            if ($return = file_get_contents($tdm_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
-            else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`".PHP_EOL);
             break;
         
 		case 'channel':
@@ -135,13 +130,21 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				return webapiFail('user_name', $id);
 			break;
         
+        case 'reset':
+            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
+			}
+            execInBackground('git reset --hard origin/main');
+            $return = 'fixing git';
+            break;
         
         case 'pull':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
-            execInBackground('sudo git pull');
+            execInBackground('git pull');
             $return = 'updating civilizationbot';
             break;
         
@@ -150,7 +153,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
 			}
-            execInBackground('sudo composer update');
+            execInBackground('composer update');
             $return = 'updating dependencies';
             break;
         
@@ -164,9 +167,12 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 $channel->sendMessage("Restarting...");
             }
             $return = 'restarting';
-			execInBackground('sudo nohup php8.1 bot.php > botlog.txt &');
             $socket->close();
-            $discord->close();
+            $civ13->discord->getLoop()->addTimer(5, function () use ($socket, $civ13) {
+                \restart();
+                $civ13->discord->close();
+                die();
+            });
 			break;
 
 		case 'lookup':
@@ -238,6 +244,35 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			  return new \React\Http\Message\Response(200, ['Content-Type' => 'application/json'], json_encode($results));
 			});
 			break;
+        
+        case 'nomads':
+            switch ($id) {
+                case 'bans':
+                    if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+                        echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+                        return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
+                    }
+                    if ($return = file_get_contents($nomads_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
+                    else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`".PHP_EOL);
+                    break;
+                default:
+                    return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented'.PHP_EOL);
+            }
+            break;
+        case 'nomads':
+            switch ($id) {
+                case 'bans':
+                    if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+                        echo '[REJECT] ' . $request->getServerParams()['REMOTE_ADDR'] . PHP_EOL;
+                        return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
+                    }
+                    if ($return = file_get_contents($tdm_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
+                    else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`".PHP_EOL);
+                    break;
+                default:
+                    return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented'.PHP_EOL);
+            }
+            break;
 		default:
 			return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented'.PHP_EOL);
 	}

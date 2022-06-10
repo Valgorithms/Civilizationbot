@@ -538,13 +538,13 @@ $on_message = function ($civ13, $message)
             }
             if ($accepted) {
                 $message->channel->sendMessage("Please wait, updating the code...");
-                \execInBackground("sudo python3 $nomads_updateserverabspaths");
+                \execInBackground("python3 $nomads_updateserverabspaths");
                 $message->channel->sendMessage("Updated the code.");
-                \execInBackground("sudo rm -f $nomads_serverdata");
-                \execInBackground("sudo DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
+                \execInBackground("rm -f $nomads_serverdata");
+                \execInBackground("DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://$nomads_ip:$nomads_port>");
                 $discord->getLoop()->addTimer(10, function() use ($nomads_killsudos) { # ditto
-                    \execInBackground("sudo python3 $nomads_killsudos");
+                    \execInBackground("python3 $nomads_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -561,7 +561,7 @@ $on_message = function ($civ13, $message)
                 }
             }
             if ($accepted) {
-                \execInBackground("sudo python3 $nomads_killciv13");
+                \execInBackground("python3 $nomads_killciv13");
                 return $message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -578,15 +578,15 @@ $on_message = function ($civ13, $message)
                 }
             }
             if ($accepted) {
-                \execInBackground("sudo python3 $nomads_killciv13");
+                \execInBackground("python3 $nomads_killciv13");
                 $message->channel->sendMessage("Attempted to kill Civilization 13 Server.");
-                \execInBackground("sudo python3 $nomads_updateserverabspaths");
+                \execInBackground("python3 $nomads_updateserverabspaths");
                 $message->channel->sendMessage("Updated the code.");
-                \execInBackground("sudo rm -f $nomads_serverdata");
-                \execInBackground("sudo DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
+                \execInBackground("rm -f $nomads_serverdata");
+                \execInBackground("DreamDaemon $nomads_dmb $nomads_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (Main Server) <byond://$nomads_ip:$nomads_port>");
                 $discord->getLoop()->addTimer(10, function() use ($nomads_killsudos) { # ditto
-                    \execInBackground("sudo python3 $nomads_killsudos");
+                    \execInBackground("python3 $nomads_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -603,15 +603,15 @@ $on_message = function ($civ13, $message)
                 }
             }
             if ($accepted) {
-                \execInBackground("sudo python3 $tdm_killciv13");
+                \execInBackground("python3 $tdm_killciv13");
                 $message->channel->sendMessage("Attempted to kill Civilization 13 TDM Server.");
-                \execInBackground("sudo python3 $tdm_updateserverabspaths");
+                \execInBackground("python3 $tdm_updateserverabspaths");
                 $message->channel->sendMessage("Updated the code.");
-                \execInBackground("sudo rm -f $tdm_serverdata");
-                \execInBackground("sudo DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
-                $discord->getLoop()->addTimer(10, function() use ($message, $tdm_ip, $tdm_port, $tdm_killsudos) { # ditto
+                \execInBackground("rm -f $tdm_serverdata");
+                \execInBackground("DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
+                $discord->getLoop()->addTimer(10, function() use ($message, $tdm_ip, $tdm_port, $tdm_kills) { # ditto
                     $message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://$tdm_ip:$tdm_port>");
-                    \execInBackground("sudo python3 $tdm_killsudos");
+                    \execInBackground("python3 $tdm_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -633,7 +633,7 @@ $on_message = function ($civ13, $message)
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
                     $message->channel->sendMessage("Changing map to $mapto...");
-                    \execInBackground("sudo python3 $nomads_mapswap $mapto");
+                    \execInBackground("python3 $nomads_mapswap $mapto");
                     $message->channel->sendMessage("Sucessfully changed map to $mapto.");
                 }
             } else return $message->channel->sendMessage("Denied!");
@@ -652,13 +652,13 @@ $on_message = function ($civ13, $message)
             }
             if ($accepted) {
                 $message->channel->sendMessage("Please wait, updating the code...");
-                \execInBackground("sudo python3 $tdm_updateserverabspaths");
+                \execInBackground("python3 $tdm_updateserverabspaths");
                 $message->channel->sendMessage("Updated the code.");
-                \execInBackground("sudo rm -f $tdm_serverdata");
-                \execInBackground("sudo DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
+                \execInBackground("rm -f $tdm_serverdata");
+                \execInBackground("DreamDaemon $tdm_dmb $tdm_port -trusted -webclient -logself &");
                 $message->channel->sendMessage("Attempted to bring up Civilization 13 (TDM Server) <byond://$tdm_ip:$tdm_port>");
                 $discord->getLoop()->addTimer(10, function() use ($tdm_killsudos) { # ditto
-                    \execInBackground("sudo python3 $tdm_killsudos");
+                    \execInBackground("python3 $tdm_killsudos");
                 });
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -675,7 +675,7 @@ $on_message = function ($civ13, $message)
                 }
             }
             if ($accepted) {
-                \execInBackground("sudo python3 $tdm_killciv13");
+                \execInBackground("python3 $tdm_killciv13");
                 return $message->channel->sendMessage("Attempted to kill Civilization 13 (TDM Server).");
             } else return $message->channel->sendMessage("Denied!");
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
@@ -698,7 +698,7 @@ $on_message = function ($civ13, $message)
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
                     $message->channel->sendMessage("Changing map to $mapto...");
-                    \execInBackground("sudo python3 $tdm_mapswap $mapto");
+                    \execInBackground("python3 $tdm_mapswap $mapto");
                     return $message->channel->sendMessage("Sucessfully changed map to $mapto.");
                 }
             } else return $message->channel->sendMessage("Denied!");
@@ -1012,11 +1012,11 @@ $on_message2 = function ($civ13, $message)
                 if ($accepted) {
                     if ($state == "on") {
                         \execInBackground("cd $typespess_path");
-                        \execInBackground('sudo git pull');
-                        \execInBackground("sudo sh $typespess_launch_server_path &");
+                        \execInBackground('git pull');
+                        \execInBackground("sh $typespess_launch_server_path &");
                         return $message->channel->sendMessage("Put **TypeSpess Civ13** test server on: http://civ13.com/ts");
                     } elseif ($state == "off") {
-                        \execInBackground('sudo killall index.js');
+                        \execInBackground('killall index.js');
                         return $message->channel->sendMessage("**TypeSpess Civ13** test server down.");
                     }
                 }
