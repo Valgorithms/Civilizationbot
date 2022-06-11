@@ -41,3 +41,5 @@ secret.php
 helix_browser_error.txt
 messagereactionadd_debug.txt
 ping_result.txt
+bot.py
+bot2.py
