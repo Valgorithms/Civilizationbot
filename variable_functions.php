@@ -632,6 +632,9 @@ $on_message = function ($civ13, $message)
                 if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
+                    $message->channel->sendMessage("Attempting to change map to $mapto");
+                    \execInBackground("python3 $tdm_mapswap $mapto");
+                    /*
                     $message->channel->sendMessage('Calling mapswap...');
                     $process = \mapswap($nomads_mapswap, $mapto);
                     $process->stdout->on('end', function () use ($message, $mapto) {
@@ -640,6 +643,7 @@ $on_message = function ($civ13, $message)
                     $process->stdout->on('error', function (Exception $e) use ($message, $mapto) {
                         $message->channel->sendMessage("Error changing map to $mapto: " . $e->getMessage());
                     });
+                    */
                     
                 }
             } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$captain")->name . '] rank.');
@@ -703,14 +707,18 @@ $on_message = function ($civ13, $message)
                 if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
+                    $message->channel->sendMessage("Attempting to change map to $mapto");
+                    \execInBackground("python3 $tdm_mapswap $mapto");
+                    /*
                     $message->channel->sendMessage('Calling mapswap...');
-                    $process = \mapswap($nomads_mapswap, $mapto); //\execInBackground("python3 $tdm_mapswap $mapto");
+                    $process = \mapswap($nomads_mapswap, $mapto);
                     $process->stdout->on('end', function () use ($message, $mapto) {
                         $message->channel->sendMessage("Attempting to change map to $mapto");
                     });
                     $process->stdout->on('error', function (Exception $e) use ($message, $mapto) {
                         $message->channel->sendMessage("Error changing map to $mapto: " . $e->getMessage());
                     });
+                    */
                 }
             } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$knight")->name . '] rank.');
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
