@@ -37,8 +37,6 @@ $options = array(
     'discord' => $discord,
     'browser' => $browser,
     'filesystem' => $filesystem,
-    //Debug options
-    'verbose' => true,
     'logger' => $logger,
     
     //Configurations

@@ -18,8 +18,6 @@ class Civ13
     
     protected $webapi;
     
-    protected $verbose = true;
-    
     public $timers = [];
     
     public $functions = array(
@@ -148,14 +146,14 @@ class Civ13
     
     public function run(): void
 	{
-		if ($this->verbose) $this->logger->info('Starting Discord loop');
+		$this->logger->info('Starting Discord loop');
 		if(!(isset($this->discord))) $this->logger->warning('Discord not set!');
 		else $this->discord->run();
 	}
     
     public function stop(): void
 	{
-		if ($this->verbose) $this->logger->info('Shutting down');
+		$this->logger->info('Shutting down');
 		if((isset($this->discord))) $this->discord->stop();
 	}
 }
