@@ -21,7 +21,7 @@ if (PHP_OS_FAMILY == "Windows") {
         });
         
         $process->on('exit', function($exitCode, $termSignal) {
-            if ($term === null) {
+            if ($termSignal === null) {
                 echo 'Process exited with code ' . $exitCode . PHP_EOL;
             } else {
                 echo 'Process terminated with signal ' . $termSignal . PHP_EOL;
@@ -36,7 +36,6 @@ if (PHP_OS_FAMILY == "Windows") {
     function restart() {
         pclose(popen('cmd /c "'. getcwd() . '\run.bat"')); //pclose(popen("start /B ". $cmd, "r"));;
     };
-    
 } else {
     function spawnChildProcess($cmd) {
         $process = new React\ChildProcess\Process("sudo $cmd > /dev/null &");
@@ -119,4 +118,22 @@ function portIsAvailable(int $port = 1714): bool
     }
     socket_close($s);
     return false;
+}
+
+
+/*
+Civ13 scripts
+*/
+
+
+function mapswap($path, $mapto) {
+    $process = spawnChildProcess("python3 $path $mapto");
+    $process->on('exit', function($exitCode, $termSignal) {
+        if ($termSignal === null) {
+            echo 'Mapswap exited with code ' . $exitCode . PHP_EOL;
+        } else {
+            echo 'Mapswap terminated with signal ' . $termSignal . PHP_EOL;
+        }
+    });
+    return $process;
 }
