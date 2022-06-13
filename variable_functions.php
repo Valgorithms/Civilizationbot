@@ -218,7 +218,7 @@ $on_message = function ($civ13, $message)
     $author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
     if ($author_member = $message->member) {
         $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
-        $author_guild = $message->author->guild ?? $discord->guilds->offsetGet($message->author->guild_id);
+        $author_guild = $message->guild ?? $discord->guilds->offsetGet($message->guild_id);
     }
     
     $message_content = '';
@@ -462,7 +462,7 @@ $on_message = function ($civ13, $message)
                         fclose($whitelist2);
                     }
                     return $message->channel->sendMessage("$ckey has been added to the whitelist.");
-                } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$veteran")->name . '] rank.');
+                } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet("$veteran")->name : "Veteran" . '] rank.');
             } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         } else return $message->channel->sendMessage("Wrong format. Please try '!s whitelistme [ckey].'");
         return;
@@ -522,7 +522,7 @@ $on_message = function ($civ13, $message)
                     } else return $message->channel->sendMessage("Unable to access `$tdm_whitelist`");
                 }
                 return $message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
-            } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$veteran")->name . '] rank.');
+            } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet("$veteran")->name : "Veteran" . '] rank.');
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         return;
     }
@@ -546,7 +546,7 @@ $on_message = function ($civ13, $message)
                 $discord->getLoop()->addTimer(10, function() use ($nomads_killsudos) { # ditto
                     \execInBackground("python3 $nomads_killsudos");
                 });
-            } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$captain")->name . '] rank.');
+            } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet("$captain")->name : "Captain" . '] rank.');
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         return;
     }
@@ -588,7 +588,7 @@ $on_message = function ($civ13, $message)
                 $discord->getLoop()->addTimer(10, function() use ($nomads_killsudos) { # ditto
                     \execInBackground("python3 $nomads_killsudos");
                 });
-            } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$captain")->name . '] rank.');
+            } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet("$captain")->name : "Captain" . '] rank.');
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         return;
     }
@@ -643,6 +643,7 @@ $on_message = function ($civ13, $message)
                     $process->stdout->on('error', function (Exception $e) use ($message, $mapto) {
                         $message->channel->sendMessage("Error changing map to $mapto: " . $e->getMessage());
                     });
+                    $process->start();
                     */
                     
                 }
@@ -718,6 +719,7 @@ $on_message = function ($civ13, $message)
                     $process->stdout->on('error', function (Exception $e) use ($message, $mapto) {
                         $message->channel->sendMessage("Error changing map to $mapto: " . $e->getMessage());
                     });
+                    $process->start();
                     */
                 }
             } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$knight")->name . '] rank.');

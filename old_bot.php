@@ -254,7 +254,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
     $author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
     if ($author_member = $message->member) {
         $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
-        $author_guild = $message->author->guild ?? $discord->guilds->offsetGet($message->author->guild_id);
+        $author_guild = $message->guild ?? $discord->guilds->offsetGet($message->guild_id);
     }
     
     $message_content = '';

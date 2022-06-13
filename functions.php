@@ -1,34 +1,7 @@
 <?php
 if (PHP_OS_FAMILY == "Windows") {
     function spawnChildProcess($cmd) { //Not tested
-        $process = new React\ChildProcess\Process("start ". $cmd, "r");
-        $process->start();
-        
-        $process->stdout->on('data', function ($chunk) {
-            echo $chunk . PHP_EOL;
-        });
-        
-        $process->stdout->on('end', function () {
-            echo 'ended' . PHP_EOL;
-        });
-        
-        $process->stdout->on('error', function (Exception $e) {
-            echo 'error: ' . $e->getMessage() . PHP_EOL;
-        });
-        
-        $process->stdout->on('close', function () {
-            echo 'closed' . PHP_EOL;
-        });
-        
-        $process->on('exit', function($exitCode, $termSignal) {
-            if ($termSignal === null) {
-                echo 'Process exited with code ' . $exitCode . PHP_EOL;
-            } else {
-                echo 'Process terminated with signal ' . $termSignal . PHP_EOL;
-            }
-        });
-        
-        return $process;
+        execInBackground($cmd);
     }
     function execInBackground($cmd) {
         pclose(popen("start ". $cmd, "r")); //pclose(popen("start /B ". $cmd, "r"));;
@@ -38,9 +11,7 @@ if (PHP_OS_FAMILY == "Windows") {
     };
 } else {
     function spawnChildProcess($cmd) {
-        $process = new React\ChildProcess\Process("sudo $cmd > /dev/null &");
-        $process->start();
-        
+        $process = new React\ChildProcess\Process("sudo $cmd");        
         $process->stdout->on('data', function ($chunk) {
             echo $chunk . PHP_EOL;
         });
@@ -64,7 +35,6 @@ if (PHP_OS_FAMILY == "Windows") {
                 echo 'Process terminated with signal ' . $termSignal . PHP_EOL;
             }
         });
-        
         return $process;
     }
     function execInBackground($cmd) {
