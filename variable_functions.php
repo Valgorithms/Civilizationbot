@@ -1077,7 +1077,7 @@ $status_changer_random = function ($civ13) {
 
 $status_changer_timer = function ($civ13) {
     if($status_changer_random = $civ13->functions['misc']['status_changer_random']);
-    $civ13->discord->getLoop()->addTimer(60, function() use ($civ13, $status_changer_random) {
+    $civ13->discord->getLoop()->addTimer(120, function() use ($civ13, $status_changer_random) {
         $status_changer_random($civ13);
     });
 };
