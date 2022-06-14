@@ -26,6 +26,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     */
     
     $echo = 'API ';
+    $sub = 'index.';
     $path = explode('/', $request->getUri()->getPath());
     $repository = $sub = (isset($path[1]) ? (string) strtolower($path[1]) : false); if ($repository) $echo .= "$repository";
     $method = $id = (isset($path[2]) ? (string) strtolower($path[2]) : false); if ($method) $echo .= "/$method";
@@ -49,6 +50,10 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     }
 
 	switch ($sub) {
+       case (str_starts_with($sub, 'index.')):
+            $return = "<meta http-equiv = \"refresh\" content = \"0; url = https://www.valzargaming.com/?login\" />"; //Redirect to the website to log in
+            return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], $return.PHP_EOL);
+            break;
         case 'favicon.ico':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
 				$civ13->logger->info('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
