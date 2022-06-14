@@ -1045,3 +1045,39 @@ $on_message2 = function ($civ13, $message)
         }
     }
 };
+
+$status_changer = function ($discord, $activity, $state = 'online') {
+    $discord->updatePresence($activity, false, $state);
+};
+
+$status_changer_random = function ($civ13) {
+    if ($status_path = $civ13->files['status_path']) {
+        if ($file = fopen($status_path, 'r')) {
+            while (($fp = fgets($file, 4096)) !== false) {
+                $status_array[] = $fp;
+            }
+            if (count($status_array) > 0) {
+                $line = explode(";", $status_array[rand(0, count($status_array)-1)]);
+                $status = (string) $line[0];
+                $type = (int) $line[1];
+                $state = (string) $line[2];
+            }
+        } else $civ13->logger->warning("unable to open file " . $civ13->files['status_path'].PHP_EOL);
+    } else $civ13->logger->warning('status_path is not defined'.PHP_EOL);
+    
+    if ($status) {
+        $activity = new \Discord\Parts\User\Activity($civ13->discord, [ //Discord status            
+            'name' => $status,
+            'type' => $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
+        ]);
+        if($status_changer = $civ13->functions['misc']['status_changer'])
+            $status_changer($civ13->discord, $activity, $state);
+    }
+};
+
+$status_changer_timer = function ($civ13) {
+    if($status_changer_random = $civ13->functions['misc']['status_changer_random']);
+    $civ13->discord->getLoop()->addTimer(60, function() use ($civ13, $status_changer_random) {
+        $status_changer_random($civ13);
+    });
+};

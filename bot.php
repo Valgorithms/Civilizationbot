@@ -55,6 +55,7 @@ $options = array(
         //Fun
         'insults_path' => 'insults.txt',
         'ranking_path' => 'ranking.txt',
+        'status_path' => 'status.txt',
         
         //Nomads
         'nomads_ooc_path' => '/home/1713/civ13-rp/ooc.log',
@@ -118,6 +119,8 @@ $options = array(
     'functions' => array(
         'ready' => [
             'on_ready' => $on_ready,
+            'status_changer_timer' => $status_changer_timer,
+            'status_changer_random' => $status_changer_random,
         ],
         'message' => [
             'on_message' => $on_message,
@@ -127,6 +130,9 @@ $options = array(
             'recalculate_ranking' => $recalculate_ranking,
             'ooc_relay' => $ooc_relay,
             'timer_function' => $timer_function,
+            'status_changer' => $status_changer,
+            'status_changer_timer' => $status_changer_timer,
+            'status_changer_random' => $status_changer_random,
         ],
     ),
 );
