@@ -31,17 +31,9 @@ $on_ready = function ($civ13)
 $status_changer_random = function ($civ13)
 {
     if ($status_path = $civ13->files['status_path']) {
-        if ($file = fopen($status_path, 'r')) {
-            while (($fp = fgets($file, 4096)) !== false) {
-                $status_array[] = $fp;
-            }
-            fclose($file);
-            if (count($status_array) > 0) {
-                $line = explode(";", $status_array[rand(0, count($status_array)-1)]);
-                $status = (string) $line[0];
-                $type = (int) $line[1];
-                $state = (string) $line[2];
-            }
+        if ($status_array = file($status_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
+            list($status, $type, $state) = explode("; ", $status_array[array_rand($status_array)]);
+            $type = (int) $type;
         } else $civ13->logger->warning("unable to open file " . $civ13->files['status_path'].PHP_EOL);
     } else $civ13->logger->warning('status_path is not defined'.PHP_EOL);
     
