@@ -71,7 +71,7 @@ $options['functions'] = [
 ];
 ```
 
-See [examples folder](examples) for more.
+See [variable_functions.php](variable_functions.php) for function examples.
 
 ## Contributing
 
