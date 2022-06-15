@@ -57,8 +57,12 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     }
 
 	switch ($sub) {
-       case (str_starts_with($sub, 'index.')):
+        case (str_starts_with($sub, 'index.')):
             $return = "<meta http-equiv = \"refresh\" content = \"0; url = https://www.valzargaming.com/?login\" />"; //Redirect to the website to log in
+            return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], $return.PHP_EOL);
+            break;
+        case 'github':
+            $return = "<meta http-equiv = \"refresh\" content = \"0; url = https://github.com/VZGCoders/Civilizationbot\" />"; //Redirect to the website to log in
             return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], $return.PHP_EOL);
             break;
         case 'favicon.ico':
