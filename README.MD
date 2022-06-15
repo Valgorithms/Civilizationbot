@@ -48,7 +48,7 @@ The path to the caextract must be set in the [`php.ini`](https://secure.php.net/
 - FFmpeg
 
 ### Basic Configuration
-The Civ13 class intends to streamline the development process when using the DiscordPHP and other libraries while simultaneously avoid bloating the main bot.php file with a bunch of function definitions. It accomplishes this by defining functions as variables and passing them into the construction method at runtime via the declaration of an $options array. Functions are to be declared either according to the DiscordPHP event they should execute and in the order they should be executed or as a miscellaneous function that can simply be stored and referenced later.
+The Civ13 class intends to streamline the development process when using the DiscordPHP and other libraries while simultaneously avoiding bloating the main bot.php file with a bunch of function definitions. It accomplishes this by defining functions as variables and passing them into the construction method at runtime via the declaration of an $options array. Functions are to be declared either according to the DiscordPHP event they should execute and in the order they should be executed or as a miscellaneous function that can simply be stored and referenced later.
 
 ```php
 $options = array();
