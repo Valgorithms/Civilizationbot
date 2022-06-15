@@ -53,17 +53,17 @@ The Civ13 class intends to streamline the development process when using the Dis
 ```php
 $options = array();
 $options['functions'] = [
-    'ready' => [
+    'ready' => [ //Called automatically at start-up (Discord 'ready' event)
         'on_ready' => $on_ready,
         'status_changer_timer' => $status_changer_timer,
         'status_changer_random' => $status_changer_random,
     ],
-    'message' => [
+    'message' => [ //Called automatically whenever the bot sees a new message (Discord 'message' event)
         'on_message' => $on_message,
         'on_message2' => $on_message2,
     ],
-    'misc' => [ //Custom functions
-        'recalculate_ranking' => $recalculate_ranking,
+    'misc' => [ //Custom functions, can be called by other functions or externally
+        'recalculate_ranking' => $recalculate_ranking, //$recalculate_ranking = $civ13->functions->['misc']['recalculate_ranking']
         'ooc_relay' => $ooc_relay,
         'timer_function' => $timer_function,
         'status_changer' => $status_changer,
