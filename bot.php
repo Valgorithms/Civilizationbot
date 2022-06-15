@@ -138,8 +138,6 @@ $options = array(
             'ooc_relay' => $ooc_relay,
             'timer_function' => $timer_function,
             'status_changer' => $status_changer,
-            'status_changer_timer' => $status_changer_timer,
-            'status_changer_random' => $status_changer_random,
         ],
     ),
 );

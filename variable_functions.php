@@ -6,159 +6,11 @@
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
-$recalculate_ranking = function ($civ13)
-{
-    $tdm_awards_path = $civ13->files['tdm_awards_path'];
-    $ranking_path = $civ13->files['ranking_path'];
-    
-    $ranking = array();
-    $ckeylist = array();
-    $result = array();
-    
-    if ($search = fopen($tdm_awards_path, "r")) {
-        while(! feof($search)) {
-            $medal_s = 0;
-            $line = fgets($search);
-            $line = trim(str_replace(PHP_EOL, "", $line)); # remove '\n' at end of line
-            $duser = explode(';', $line);
-            if ($duser[2] == "long service medal")
-                $medal_s += 0.5;
-            if ($duser[2] == "combat medical badge")
-                $medal_s += 2;
-            if ($duser[2] == "tank destroyer silver badge")
-                $medal_s += 0.75;
-            if ($duser[2] == "tank destroyer gold badge")
-                $medal_s += 1.5;
-            if ($duser[2] == "assault badge")
-                $medal_s += 1.5;
-            if ($duser[2] == "wounded badge")
-                $medal_s += 0.5;
-            if ($duser[2] == "wounded silver badge")
-                $medal_s += 0.75;
-            if ($duser[2] == "wounded gold badge")
-                $medal_s += 1;
-            if ($duser[2] == "iron cross 1st class")
-                $medal_s += 3;
-            if ($duser[2] == "iron cross 2nd class")
-                $medal_s += 5;
-            $result[] = $medal_s . ';' . $duser[0];
-            if (!in_array($duser[0], $ckeylist))
-                $ckeylist[] = $duser[0];
-        }
-    } else return $message->channel->sendMessage("Unable to access `$tdm_awards_path`");
-    
-    foreach ($ckeylist as $i) {
-        $sumc = 0;
-        foreach ($result as $j) {
-            $sj = explode(';', $j);
-            if ($sj[1] == $i)
-                $sumc += (float) $sj[0];
-        }
-        $ranking[] = [$sumc,$i];
-    }
-    usort($ranking, function($a, $b) {
-        return $a[0] <=> $b[0];
-    });
-    $sorted_list = array_reverse($ranking);
-    if ($search = fopen($ranking_path, 'w')) {
-        foreach ($sorted_list as $i)
-            fwrite($search, $i[0] . ";" . $i[1] . PHP_EOL);
-    } else return $message->channel->sendMessage("Unable to access `$ranking`");
-    fclose ($search);
-};
-
-$ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
-{
-    $filesystem = $civ13->filesystem;
-     
-    if ($file = fopen($file_path, "r+")) {
-        while (($fp = fgets($file, 4096)) !== false) {
-            $fp = str_replace(PHP_EOL, "", $fp);
-            if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
-            else $civ13->logger->warning("unable to find channel $target_channel");
-        }
-        ftruncate($file, 0); //clear the file
-        fclose($file);
-    } else $civ13->logger->warning("unable to open $file_path");
-
-    /*
-    echo '[RELAY - PATH] ' . $file_path . PHP_EOL;
-    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
-        if ($file = $filesystem->file($file_path)) {
-            $file->getContents()->then(
-            function (string $contents) use ($file, $target_channel) {
-                $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
-                    if ($contents) echo '[RELAY - CONTENTS] ' . $contents . PHP_EOL;
-                    $lines = explode(PHP_EOL, $contents);
-                    $promise2 = React\Async\async(function () use ($lines, $target_channel) {
-                        foreach ($lines as $line) {
-                            if ($line) {
-                                echo '[RELAY - LINE] ' . $line . PHP_EOL;
-                                $target_channel->sendMessage($line);
-                            }
-                        }
-                        return;
-                    })();
-                    React\Async\await($promise2);
-                })();
-                $promise->then(function () use ($file) {
-                    echo '[RELAY - TRUNCATE]' . PHP_EOL;
-                    $file->putContents('');
-                }, function (Exception $e) {
-                    echo '[RELAY - ERROR] ' . $e->getMessage() . PHP_EOL;
-                });
-                React\Async\await($promise);
-            })->then(function () use ($file) {
-                echo '[RELAY - getContents]' . PHP_EOL;
-            }, function (Exception $e) {
-                echo '[RELAY - ERROR] ' . $e->getMessage() . PHP_EOL;
-            });
-        } else echo "[RELAY - ERROR] Unable to open $file_path" . PHP_EOL;
-    } else echo "[RELAY - ERROR] Unable to get channel $channel_id" . PHP_EOL;
-    */
-    
-    /*
-    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
-        if ($file = $filesystem->file($file_path)) {
-            $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
-                var_dump($contents);
-                $contents = explode(PHP_EOL, $contents);
-                foreach ($contents as $line) {
-                    $target_channel->sendMessage($line);
-                }
-            })->then(
-                function () use ($file) {
-                    $file->putContents('');
-                }, function (Exception $e) {
-                    echo '[RELAY - getContents Error] ' . $e->getMessage() . PHP_EOL;
-                }
-            )->done();
-        } else echo "[RELAY - ERROR] Unable to open $file_path" . PHP_EOL;
-    } else echo "[RELAY - ERROR] Unable to get channel $channel_id" . PHP_EOL;
-    */
-};
-
-$timer_function = function ($civ13)
-{
-    $discord = $civ13->discord;
-    $ooc_relay = $civ13->functions['misc']['ooc_relay'];
-    $civ13_guild_id = $civ13->civ13_guild_id;
-    $nomads_ooc_path = $civ13->files['nomads_ooc_path'];
-    $nomads_admin_path = $civ13->files['nomads_admin_path'];
-    $tdm_ooc_path = $civ13->files['tdm_ooc_path'];
-    $tdm_admin_path = $civ13->files['tdm_admin_path'];
-    $nomads_ooc_channel = $civ13->channel_ids['nomads_ooc_channel'];
-    $nomads_admin_channel = $civ13->channel_ids['nomads_admin_channel'];
-    $tdm_ooc_channel = $civ13->channel_ids['tdm_ooc_channel'];
-    $tdm_admin_channel = $civ13->channel_ids['tdm_admin_channel'];
-    
-    if ($guild = $discord->guilds->offsetGet($civ13_guild_id)) {
-        $ooc_relay($civ13, $guild, $nomads_ooc_path, $nomads_ooc_channel);  // #ooc-nomads
-        $ooc_relay($civ13, $guild, $nomads_admin_path, $nomads_admin_channel);  // #ahelp-nomads
-        $ooc_relay($civ13, $guild, $tdm_ooc_path, $tdm_ooc_channel);  // #ooc-tdm
-        $ooc_relay($civ13, $guild, $tdm_admin_path, $tdm_admin_channel);  // #ahelp-tdm
-    } else $civ13->logger->warning("unable to get guild $civ13_guild_id");
-};
+/*
+ *
+ * Ready Event
+ *
+*/
 
 $on_ready = function ($civ13)
 {
@@ -176,6 +28,46 @@ $on_ready = function ($civ13)
     }
 };
 
+$status_changer_random = function ($civ13)
+{
+    if ($status_path = $civ13->files['status_path']) {
+        if ($file = fopen($status_path, 'r')) {
+            while (($fp = fgets($file, 4096)) !== false) {
+                $status_array[] = $fp;
+            }
+            if (count($status_array) > 0) {
+                $line = explode(";", $status_array[rand(0, count($status_array)-1)]);
+                $status = (string) $line[0];
+                $type = (int) $line[1];
+                $state = (string) $line[2];
+            }
+        } else $civ13->logger->warning("unable to open file " . $civ13->files['status_path'].PHP_EOL);
+    } else $civ13->logger->warning('status_path is not defined'.PHP_EOL);
+    
+    if ($status) {
+        $activity = new \Discord\Parts\User\Activity($civ13->discord, [ //Discord status            
+            'name' => $status,
+            'type' => $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
+        ]);
+        if($status_changer = $civ13->functions['misc']['status_changer'])
+            $status_changer($civ13->discord, $activity, $state);
+    }
+};
+
+$status_changer_timer = function ($civ13)
+{
+    if($status_changer_random = $civ13->functions['ready']['status_changer_random']);
+        $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) {
+        $status_changer_random($civ13);
+    });
+};
+
+/*
+ *
+ * Message Event
+ *
+ */
+ 
 $on_message = function ($civ13, $message)
 {
     $discord = $civ13->discord;
@@ -1053,38 +945,165 @@ $on_message2 = function ($civ13, $message)
     }
 };
 
+/*
+ *
+ * Misc functions
+ *
+ */
+$recalculate_ranking = function ($civ13)
+{
+    $tdm_awards_path = $civ13->files['tdm_awards_path'];
+    $ranking_path = $civ13->files['ranking_path'];
+    
+    $ranking = array();
+    $ckeylist = array();
+    $result = array();
+    
+    if ($search = fopen($tdm_awards_path, "r")) {
+        while(! feof($search)) {
+            $medal_s = 0;
+            $line = fgets($search);
+            $line = trim(str_replace(PHP_EOL, "", $line)); # remove '\n' at end of line
+            $duser = explode(';', $line);
+            if ($duser[2] == "long service medal")
+                $medal_s += 0.5;
+            if ($duser[2] == "combat medical badge")
+                $medal_s += 2;
+            if ($duser[2] == "tank destroyer silver badge")
+                $medal_s += 0.75;
+            if ($duser[2] == "tank destroyer gold badge")
+                $medal_s += 1.5;
+            if ($duser[2] == "assault badge")
+                $medal_s += 1.5;
+            if ($duser[2] == "wounded badge")
+                $medal_s += 0.5;
+            if ($duser[2] == "wounded silver badge")
+                $medal_s += 0.75;
+            if ($duser[2] == "wounded gold badge")
+                $medal_s += 1;
+            if ($duser[2] == "iron cross 1st class")
+                $medal_s += 3;
+            if ($duser[2] == "iron cross 2nd class")
+                $medal_s += 5;
+            $result[] = $medal_s . ';' . $duser[0];
+            if (!in_array($duser[0], $ckeylist))
+                $ckeylist[] = $duser[0];
+        }
+    } else return $message->channel->sendMessage("Unable to access `$tdm_awards_path`");
+    
+    foreach ($ckeylist as $i) {
+        $sumc = 0;
+        foreach ($result as $j) {
+            $sj = explode(';', $j);
+            if ($sj[1] == $i)
+                $sumc += (float) $sj[0];
+        }
+        $ranking[] = [$sumc,$i];
+    }
+    usort($ranking, function($a, $b) {
+        return $a[0] <=> $b[0];
+    });
+    $sorted_list = array_reverse($ranking);
+    if ($search = fopen($ranking_path, 'w')) {
+        foreach ($sorted_list as $i)
+            fwrite($search, $i[0] . ";" . $i[1] . PHP_EOL);
+    } else return $message->channel->sendMessage("Unable to access `$ranking`");
+    fclose ($search);
+};
+
+$ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
+{
+    $filesystem = $civ13->filesystem;
+     
+    if ($file = fopen($file_path, "r+")) {
+        while (($fp = fgets($file, 4096)) !== false) {
+            $fp = str_replace(PHP_EOL, "", $fp);
+            if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
+            else $civ13->logger->warning("unable to find channel $target_channel");
+        }
+        ftruncate($file, 0); //clear the file
+        fclose($file);
+    } else $civ13->logger->warning("unable to open $file_path");
+
+    /*
+    echo '[RELAY - PATH] ' . $file_path . PHP_EOL;
+    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
+        if ($file = $filesystem->file($file_path)) {
+            $file->getContents()->then(
+            function (string $contents) use ($file, $target_channel) {
+                $promise = React\Async\async(function () use ($contents, $file, $target_channel) {
+                    if ($contents) echo '[RELAY - CONTENTS] ' . $contents . PHP_EOL;
+                    $lines = explode(PHP_EOL, $contents);
+                    $promise2 = React\Async\async(function () use ($lines, $target_channel) {
+                        foreach ($lines as $line) {
+                            if ($line) {
+                                echo '[RELAY - LINE] ' . $line . PHP_EOL;
+                                $target_channel->sendMessage($line);
+                            }
+                        }
+                        return;
+                    })();
+                    React\Async\await($promise2);
+                })();
+                $promise->then(function () use ($file) {
+                    echo '[RELAY - TRUNCATE]' . PHP_EOL;
+                    $file->putContents('');
+                }, function (Exception $e) {
+                    echo '[RELAY - ERROR] ' . $e->getMessage() . PHP_EOL;
+                });
+                React\Async\await($promise);
+            })->then(function () use ($file) {
+                echo '[RELAY - getContents]' . PHP_EOL;
+            }, function (Exception $e) {
+                echo '[RELAY - ERROR] ' . $e->getMessage() . PHP_EOL;
+            });
+        } else echo "[RELAY - ERROR] Unable to open $file_path" . PHP_EOL;
+    } else echo "[RELAY - ERROR] Unable to get channel $channel_id" . PHP_EOL;
+    */
+    
+    /*
+    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
+        if ($file = $filesystem->file($file_path)) {
+            $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
+                var_dump($contents);
+                $contents = explode(PHP_EOL, $contents);
+                foreach ($contents as $line) {
+                    $target_channel->sendMessage($line);
+                }
+            })->then(
+                function () use ($file) {
+                    $file->putContents('');
+                }, function (Exception $e) {
+                    echo '[RELAY - getContents Error] ' . $e->getMessage() . PHP_EOL;
+                }
+            )->done();
+        } else echo "[RELAY - ERROR] Unable to open $file_path" . PHP_EOL;
+    } else echo "[RELAY - ERROR] Unable to get channel $channel_id" . PHP_EOL;
+    */
+};
+
+$timer_function = function ($civ13)
+{
+    $discord = $civ13->discord;
+    $ooc_relay = $civ13->functions['misc']['ooc_relay'];
+    $civ13_guild_id = $civ13->civ13_guild_id;
+    $nomads_ooc_path = $civ13->files['nomads_ooc_path'];
+    $nomads_admin_path = $civ13->files['nomads_admin_path'];
+    $tdm_ooc_path = $civ13->files['tdm_ooc_path'];
+    $tdm_admin_path = $civ13->files['tdm_admin_path'];
+    $nomads_ooc_channel = $civ13->channel_ids['nomads_ooc_channel'];
+    $nomads_admin_channel = $civ13->channel_ids['nomads_admin_channel'];
+    $tdm_ooc_channel = $civ13->channel_ids['tdm_ooc_channel'];
+    $tdm_admin_channel = $civ13->channel_ids['tdm_admin_channel'];
+    
+    if ($guild = $discord->guilds->offsetGet($civ13_guild_id)) {
+        $ooc_relay($civ13, $guild, $nomads_ooc_path, $nomads_ooc_channel);  // #ooc-nomads
+        $ooc_relay($civ13, $guild, $nomads_admin_path, $nomads_admin_channel);  // #ahelp-nomads
+        $ooc_relay($civ13, $guild, $tdm_ooc_path, $tdm_ooc_channel);  // #ooc-tdm
+        $ooc_relay($civ13, $guild, $tdm_admin_path, $tdm_admin_channel);  // #ahelp-tdm
+    } else $civ13->logger->warning("unable to get guild $civ13_guild_id");
+};
+
 $status_changer = function ($discord, $activity, $state = 'online') {
     $discord->updatePresence($activity, false, $state);
-};
-
-$status_changer_random = function ($civ13) {
-    if ($status_path = $civ13->files['status_path']) {
-        if ($file = fopen($status_path, 'r')) {
-            while (($fp = fgets($file, 4096)) !== false) {
-                $status_array[] = $fp;
-            }
-            if (count($status_array) > 0) {
-                $line = explode(";", $status_array[rand(0, count($status_array)-1)]);
-                $status = (string) $line[0];
-                $type = (int) $line[1];
-                $state = (string) $line[2];
-            }
-        } else $civ13->logger->warning("unable to open file " . $civ13->files['status_path'].PHP_EOL);
-    } else $civ13->logger->warning('status_path is not defined'.PHP_EOL);
-    
-    if ($status) {
-        $activity = new \Discord\Parts\User\Activity($civ13->discord, [ //Discord status            
-            'name' => $status,
-            'type' => $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
-        ]);
-        if($status_changer = $civ13->functions['misc']['status_changer'])
-            $status_changer($civ13->discord, $activity, $state);
-    }
-};
-
-$status_changer_timer = function ($civ13) {
-    if($status_changer_random = $civ13->functions['misc']['status_changer_random']);
-        $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) {
-        $status_changer_random($civ13);
-    });
 };
