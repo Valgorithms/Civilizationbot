@@ -35,6 +35,7 @@ $status_changer_random = function ($civ13)
             while (($fp = fgets($file, 4096)) !== false) {
                 $status_array[] = $fp;
             }
+            fclose($file);
             if (count($status_array) > 0) {
                 $line = explode(";", $status_array[rand(0, count($status_array)-1)]);
                 $status = (string) $line[0];
