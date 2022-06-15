@@ -1,4 +1,11 @@
 <?php
+
+/*
+ * This file is a part of the Civ13 project.
+ *
+ * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
+ */
+
 $recalculate_ranking = function ($civ13)
 {
     $tdm_awards_path = $civ13->files['tdm_awards_path'];

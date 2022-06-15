@@ -1,4 +1,11 @@
 <?php
+
+/*
+ * This file is a part of the Civ13 project.
+ *
+ * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
+ */
+
 function webapiFail($part, $id) {
 	//logInfo('[webapi] Failed', ['part' => $part, 'id' => $id]);
 	return new \React\Http\Message\Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], ($id ? 'Invalid' : 'Missing').' '.$part.PHP_EOL);

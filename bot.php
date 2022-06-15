@@ -1,4 +1,11 @@
 <?php
+
+/*
+ * This file is a part of the Civ13 project.
+ *
+ * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
+ */
+
 set_time_limit(0);
 ignore_user_abort(1);
 ini_set('max_execution_time', 0);

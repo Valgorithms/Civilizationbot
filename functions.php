@@ -1,4 +1,11 @@
 <?php
+
+/*
+ * This file is a part of the Civ13 project.
+ *
+ * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
+ */
+
 if (PHP_OS_FAMILY == "Windows") {
     function spawnChildProcess($cmd) { //Not tested
         execInBackground($cmd);
