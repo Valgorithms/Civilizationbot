@@ -170,7 +170,7 @@ $on_ready = function ($civ13)
     
     if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
         $civ13->logger->info('chat relay timer started');
-        $civ13->timers = $discord->getLoop()->addPeriodicTimer(10, function() use ($timer_function, $civ13) {
+        $civ13->timers['relay_timer'] = $discord->getLoop()->addPeriodicTimer(10, function() use ($timer_function, $civ13) {
             $timer_function($civ13);
         });
     }
@@ -1084,7 +1084,7 @@ $status_changer_random = function ($civ13) {
 
 $status_changer_timer = function ($civ13) {
     if($status_changer_random = $civ13->functions['misc']['status_changer_random']);
-    $civ13->discord->getLoop()->addTimer(120, function() use ($civ13, $status_changer_random) {
+        $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) {
         $status_changer_random($civ13);
     });
 };
