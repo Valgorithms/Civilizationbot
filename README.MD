@@ -47,13 +47,31 @@ The path to the caextract must be set in the [`php.ini`](https://secure.php.net/
 - `ext-sodium`
 - FFmpeg
 
-### Basic Example
-TODO
+### Basic Configuration
+The Civ13 class intends to streamline the development process when using the DiscordPHP and other libraries while simultaneously avoiding bloating the main bot.php file with a bunch of function definitions. It accomplishes this by defining functions as variables and passing them into the construction method at runtime via the declaration of an $options array. Functions are to be declared either according to the DiscordPHP event they should execute and in the order they should be executed or as a miscellaneous function that can simply be stored and referenced later.
 
-See [examples folder](examples) for more.
+```php
+$options = array();
+$options['functions'] = [
+    'ready' => [ //Called automatically at start-up (Discord 'ready' event)
+        'on_ready' => $on_ready,
+        'status_changer_timer' => $status_changer_timer,
+        'status_changer_random' => $status_changer_random, //$status_changer_random = $civ13->functions->['ready']['status_changer_random']
+    ],
+    'message' => [ //Called automatically whenever the bot sees a new message (Discord 'message' event)
+        'on_message' => $on_message,
+        'on_message2' => $on_message2,
+    ],
+    'misc' => [ //Custom functions, can be called by other functions or externally
+        'recalculate_ranking' => $recalculate_ranking,
+        'ooc_relay' => $ooc_relay,
+        'timer_function' => $timer_function,
+        'status_changer' => $status_changer, //$status_changer = $civ13->functions->['misc']['status_changer']
+    ],
+];
+```
 
-## Documentation
-TODO
+See [variable_functions.php](variable_functions.php) for function examples.
 
 ## Contributing
 
