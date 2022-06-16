@@ -96,21 +96,3 @@ function portIsAvailable(int $port = 1714): bool
     socket_close($s);
     return false;
 }
-
-
-/*
-Civ13 scripts
-*/
-
-
-function mapswap($path, $mapto) {
-    $process = spawnChildProcess("python3 $path $mapto");
-    $process->on('exit', function($exitCode, $termSignal) {
-        if ($termSignal === null) {
-            echo 'Mapswap exited with code ' . $exitCode . PHP_EOL;
-        } else {
-            echo 'Mapswap terminated with signal ' . $termSignal . PHP_EOL;
-        }
-    });
-    return $process;
-}

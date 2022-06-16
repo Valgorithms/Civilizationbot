@@ -73,6 +73,8 @@ $on_message = function ($civ13, $message)
     $veteran = $civ13->role_ids['veteran'];
     $infantry = $civ13->role_ids['infantry'];
     $insults_path = $civ13->files['insults_path'];
+    $map_defines_path = $civ13->files['map_defines_path'];
+    
     $nomads_discord2ooc = $civ13->files['nomads_discord2ooc'];
     $tdm_discord2ooc = $civ13->files['tdm_discord2ooc'];
     $nomads_discord2admin = $civ13->files['nomads_discord2admin'];
@@ -99,10 +101,13 @@ $on_message = function ($civ13, $message)
     $tdm_dmb = $civ13->files['tdm_dmb'];
     $tdm_killsudos = $civ13->files['tdm_killsudos'];
     $tdm_killciv13 = $civ13->files['tdm_killciv13'];
+    
     $nomads_ip = $civ13->ips['nomads_ip'];
     $nomads_port = $civ13->ports['nomads_port'];
     $tdm_ip = $civ13->ips['tdm_ip'];
     $tdm_port = $civ13->ports['tdm_port'];
+    
+    $mapswap = $civ13->functions['misc']['mapswap'];
     
     if ($message->guild->owner_id != $owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$command_symbol) $command_symbol = '!s';
@@ -524,21 +529,38 @@ $on_message = function ($civ13, $message)
                 if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
-                    $message->channel->sendMessage("Attempting to change map to $mapto");
-                    \execInBackground("python3 $tdm_mapswap $mapto");
-                    /*
-                    $message->channel->sendMessage('Calling mapswap...');
-                    $process = \mapswap($nomads_mapswap, $mapto);
-                    $process->stdout->on('end', function () use ($message, $mapto) {
-                        $message->channel->sendMessage("Attempting to change map to $mapto");
-                    });
-                    $process->stdout->on('error', function (Exception $e) use ($message, $mapto) {
-                        $message->channel->sendMessage("Error changing map to $mapto: " . $e->getMessage());
-                    });
-                    $process->start();
-                    */
+                    $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
                     
-                }
+                    $maps = array();
+                    $filecheck1 = fopen($civ13->files['map_defines_path'], "r") ?? NULL;
+                    if ($filecheck1) {
+                        while (($fp = fgets($filecheck1, 4096)) !== false) {
+                            $filter = '"';
+                            $line = trim(str_replace($filter, "", $fp));
+                            $linesplit = explode(" ", $line); //$split_ckey[0] is the ckey
+                            if($map = trim($linesplit[2])) {
+                                $maps[] = $map;
+                            }
+                        }
+                        fclose($filecheck1);
+                    } else $civ13->logger->warning("unable to find file " . $civ13->files['map_defines_path'] . PHP_EOL);
+                    
+                    if(in_array($mapto, $maps)) {
+                        $message->channel->sendMessage("Attempting to change map to $mapto");
+                        \execInBackground("python3 $tdm_mapswap $mapto");
+                        /*
+                        $message->channel->sendMessage('Calling mapswap...');
+                        $process = $mapswap($civ13, $nomads_mapswap, $mapto);
+                        $process->stdout->on('end', function () use ($message, $mapto) {
+                            $message->channel->sendMessage("Attempting to change map to $mapto");
+                        });
+                        $process->stdout->on('error', function (Exception $e) use ($message, $mapto) {
+                            $message->channel->sendMessage("Error changing map to $mapto: " . $e->getMessage());
+                        });
+                        $process->start();
+                        */
+                    } else return $message->channel->sendMessage("$mapto was not found in the map definitions.");
+                } else return $message->channel->sendMessage("You need to include the name of the map.");
             } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$captain")->name . '] rank.');
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         return;
@@ -600,20 +622,39 @@ $on_message = function ($civ13, $message)
                 if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
-                    $message->channel->sendMessage("Attempting to change map to $mapto");
-                    \execInBackground("python3 $tdm_mapswap $mapto");
-                    /*
-                    $message->channel->sendMessage('Calling mapswap...');
-                    $process = \mapswap($nomads_mapswap, $mapto);
-                    $process->stdout->on('end', function () use ($message, $mapto) {
+                    $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
+                    
+                    $maps = array();
+                    $filecheck1 = fopen($civ13->files['map_defines_path'], "r") ?? NULL;
+                    if ($filecheck1) {
+                        while (($fp = fgets($filecheck1, 4096)) !== false) {
+                            $filter = '"';
+                            $line = trim(str_replace($filter, "", $fp));
+                            $linesplit = explode(" ", $line); //$split_ckey[0] is the ckey
+                            if($map = trim($linesplit[2])) {
+                                $maps[] = $map;
+                            }
+                        }
+                        fclose($filecheck1);
+                    } else $civ13->logger->warning("unable to find file " . $civ13->files['map_defines_path'] . PHP_EOL);
+                    
+                    
+                    if(in_array($mapto, $maps)) {
                         $message->channel->sendMessage("Attempting to change map to $mapto");
-                    });
-                    $process->stdout->on('error', function (Exception $e) use ($message, $mapto) {
-                        $message->channel->sendMessage("Error changing map to $mapto: " . $e->getMessage());
-                    });
-                    $process->start();
-                    */
-                }
+                        \execInBackground("python3 $tdm_mapswap $mapto");
+                        /*
+                        $message->channel->sendMessage('Calling mapswap...');
+                        $process = $mapswap($civ13, $nomads_mapswap, $mapto);
+                        $process->stdout->on('end', function () use ($message, $mapto) {
+                            $message->channel->sendMessage("Attempting to change map to $mapto");
+                        });
+                        $process->stdout->on('error', function (Exception $e) use ($message, $mapto) {
+                            $message->channel->sendMessage("Error changing map to $mapto: " . $e->getMessage());
+                        });
+                        $process->start();
+                        */
+                    } else $message->channel->sendMessage("$mapto was not found in the map definitions.");
+                } else $message->channel->sendMessage("You need to include the name of the map.");
             } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$knight")->name . '] rank.');
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         return;
@@ -1097,6 +1138,20 @@ $timer_function = function ($civ13)
     } else $civ13->logger->warning("unable to get guild $civ13_guild_id");
 };
 
-$status_changer = function ($discord, $activity, $state = 'online') {
+$status_changer = function ($discord, $activity, $state = 'online') 
+{
     $discord->updatePresence($activity, false, $state);
+};
+
+$mapswap = function ($civ13, $path, $mapto)
+{
+    $process = spawnChildProcess("python3 $path $mapto");
+    $process->on('exit', function($exitCode, $termSignal) {
+        if ($termSignal === null) {
+            echo 'Mapswap exited with code ' . $exitCode . PHP_EOL;
+        } else {
+            echo 'Mapswap terminated with signal ' . $termSignal . PHP_EOL;
+        }
+    });
+    return $process;
 };

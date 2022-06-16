@@ -33,12 +33,10 @@ $stats = new Stats();
 $stats->init($discord);
 $browser = new \React\Http\Browser($loop);
 $filesystem = \React\Filesystem\Factory::create($loop);
-
 include 'functions.php'; //execInBackground(), portIsAvailable()
 include 'variable_functions.php'; //$recalculate_ranking, $ooc_relay, $timer_function, $on_ready, $on_message, $on_message2
 include 'civ13.php';
-    
-    
+
 $options = array(
     'loop' => $loop,
     'discord' => $discord,
@@ -64,6 +62,9 @@ $options = array(
         'ranking_path' => 'ranking.txt',
         'status_path' => 'status.txt',
         
+        //Defines
+        'map_defines_path' => '/home/1713/civ13-git/code/__defines/maps.dm',
+        
         //Nomads
         'nomads_ooc_path' => '/home/1713/civ13-rp/ooc.log',
         'nomads_admin_path' => '/home/1713/civ13-rp/admin.log',
@@ -74,9 +75,6 @@ $options = array(
         'nomads_discord2unban' => '/home/1713/civ13-rp/SQL/discord2unban.txt',
         'nomads_whitelist' => '/home/1713/civ13-rp/SQL/whitelist.txt',
         'nomads_bans' => '/home/1713/civ13-rp/SQL/bans.txt',
-        
-        //Unused
-        'nomads_playerlogs' => '/home/1713/civ13-rp/SQL/playerlogs.txt',
         
         //TDM
         'tdm_ooc_path' => '/home/1713/civ13-tdm/ooc.log',
@@ -109,6 +107,9 @@ $options = array(
 
         'typespess_path' => '/home/1713/civ13-typespess',
         'typespess_launch_server_path' => 'scripts/launch_server.sh',
+        
+         //Unused
+        'nomads_playerlogs' => '/home/1713/civ13-rp/SQL/playerlogs.txt',
     ),
     'channel_ids' => array(
         'nomads_ooc_channel' => '636644156923445269', //#ooc-nomads
@@ -138,6 +139,7 @@ $options = array(
             'ooc_relay' => $ooc_relay,
             'timer_function' => $timer_function,
             'status_changer' => $status_changer,
+            'mapswap' => $mapswap,
         ],
     ),
 );
