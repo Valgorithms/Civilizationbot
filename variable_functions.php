@@ -565,6 +565,33 @@ $on_message = function ($civ13, $message)
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         return;
     }
+    if (str_starts_with($message_content_lower, 'maplist')) {
+        $accepted = false;
+        if ($author_member = $message->member) {
+            foreach ($author_member->roles as $role) {
+                switch ($role->id) {
+                    case $admiral:
+                    case $captain:
+                        $accepted = true;
+                }
+            }
+            if ($accepted) {
+                $split_message = explode("mapswap ", $message_content);
+
+                $mapto = $split_message[1];
+                $mapto = strtoupper($mapto);
+                $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
+                
+                $maps = array();
+                $filecheck1 = fopen($civ13->files['map_defines_path'], "r") ?? NULL;
+                if ($filecheck1) {
+                    $message->channel->sendFile($civ13->files['map_defines_path'], 'maps.txt');
+                    fclose($filecheck1);
+                } else $civ13->logger->warning("unable to find file " . $civ13->files['map_defines_path'] . PHP_EOL);
+            } else $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$captain")->name . '] rank.');
+        } else $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+        return;
+    }
     if (str_starts_with($message_content_lower, 'hosttdm')) {
         $accepted = false;
         if ($author_member = $message->member) {
@@ -637,7 +664,6 @@ $on_message = function ($civ13, $message)
                         }
                         fclose($filecheck1);
                     } else $civ13->logger->warning("unable to find file " . $civ13->files['map_defines_path'] . PHP_EOL);
-                    
                     
                     if(in_array($mapto, $maps)) {
                         $message->channel->sendMessage("Attempting to change map to $mapto");
