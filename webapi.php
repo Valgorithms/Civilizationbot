@@ -88,6 +88,15 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             if ($return = file_get_contents('botlog.txt')) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
             else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog.txt`".PHP_EOL);
             break;
+            
+        case 'botlog2':
+            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
+				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject'.PHP_EOL);
+			}
+            if ($return = file_get_contents('botlog2.txt')) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return.PHP_EOL);
+            else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog2.txt`".PHP_EOL);
+            break;
         
 		case 'channel':
 			if (!$id || !webapiSnow($id) || !$return = $discord->getChannel($id))
