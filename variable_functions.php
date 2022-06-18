@@ -264,21 +264,26 @@ $on_message = function ($civ13, $message)
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         if ($result = $ban($civ13, $split_message, $message))
             return $message->channel->sendMessage($result);
-        
-        /*
-        $file = fopen($nomads_discord2ban, "a");
-        $txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
-        fwrite($file, $txt);
-        fclose($file);
-        
-        $file = fopen($tdm_discord2ban, "a");
-        $txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
-        fwrite($file, $txt);
-        fclose($file);
-        $result = '**' . $message->member->username . '#' . $message->member->discriminator . '** banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
-        return $message->channel->sendMessage($result);
-        */
     }
+    if (str_starts_with($message_content_lower, 'nomadsban ')) {
+        $message_content = substr($message_content, 10);
+        $split_message = explode('; ', $message_content); //$split_target[1] is the target
+        if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+        if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
+        if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
+        if ($result = $nomads_ban($civ13, $split_message, $message))
+            return $message->channel->sendMessage($result);
+    }
+    if (str_starts_with($message_content_lower, 'tdmban ')) {
+        $message_content = substr($message_content, 7);
+        $split_message = explode('; ', $message_content); //$split_target[1] is the target
+        if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+        if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
+        if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
+        if ($result = $tdm_ban($civ13, $split_message, $message))
+            return $message->channel->sendMessage($result);
+    }
+    
     if (str_starts_with($message_content_lower, 'unban ')) {
         $message_content = substr($message_content, 6);
         $split_message = explode('; ', $message_content);
