@@ -15,14 +15,9 @@ function webapiSnow($string) {
 	return preg_match('/^[0-9]{16,18}$/', $string);
 }
 
-$socket = new \React\Socket\Server(sprintf('%s:%s', '0.0.0.0', '55555'), $loop);
+$socket = new \React\Socket\Server(sprintf('%s:%s', '0.0.0.0', '55555'), $civ13->loop);
 $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($civ13, $socket)
 {
-    $discord = $civ13->discord;
-    $loop = $civ13->loop;
-    $nomads_bans = $civ13->files['nomads_bans'];
-    $tdm_bans = $civ13->files['tdm_bans'];
-    
     /*
 	$path = explode('/', $request->getUri()->getPath());
 	$sub = (isset($path[1]) ? (string) $path[1] : false);
@@ -73,7 +68,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             $favicon = file_get_contents('favicon.ico');
             return new \React\Http\Message\Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
         case 'messagetest':
-            if ($channel = $discord->getChannel('712685552155230278')) {
+            if ($channel = $civ13->discord->getChannel('712685552155230278')) {
                 $civ13->logger->info("I'm alive!");
                 $return = "I'm alive!";
                 $channel->sendMessage("I'm alive!");
@@ -99,66 +94,66 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
         
 		case 'channel':
-			if (!$id || !webapiSnow($id) || !$return = $discord->getChannel($id))
+			if (!$id || !webapiSnow($id) || !$return = $civ13->discord->getChannel($id))
 				return webapiFail('channel_id', $id);
 			break;
 
 		case 'guild':
-			if (!$id || !webapiSnow($id) || !$return = $discord->guilds->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->offsetGet($id))
 				return webapiFail('guild_id', $id);
 			break;
 
 		case 'bans':
-			if (!$id || !webapiSnow($id) || !$guild = $discord->guilds->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
 				return webapiFail('guild_id', $id);
 			$return = $guild->bans;
 			break;
 
 		case 'channels':
-			if (!$id || !webapiSnow($id) || !$guild = $discord->guilds->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
 				return webapiFail('guild_id', $id);
 			$return = $guild->channels;
 			break;
 
 		case 'members':
-			if (!$id || !webapiSnow($id) || !$guild = $discord->guilds->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
 				return webapiFail('guild_id', $id);
 			$return = $guild->members;
 			break;
 
 		case 'emojis':
-			if (!$id || !webapiSnow($id) || !$guild = $discord->guilds->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
 				return webapiFail('guild_id', $id);
 			$return = $guild->emojis;
 			break;
 
 		case 'invites':
-			if (!$id || !webapiSnow($id) || !$guild = $discord->guilds->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
 				return webapiFail('guild_id', $id);
 			$return = $guild->invites;
 			break;
 
 		case 'roles':
-			if (!$id || !webapiSnow($id) || !$guild = $discord->guilds->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
 				return webapiFail('guild_id', $id);
 			$return = $guild->roles;
 			break;
 
 		case 'guildMember':
-			if (!$id || !webapiSnow($id) || !$guild = $discord->guilds->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
 				return webapiFail('guild_id', $id);
 			if (!$id2 || !webapiSnow($id2) || !$return = $guild->members->offsetGet($id2))
 				return webapiFail('user_id', $id2);
 			break;
 
 		case 'user':
-			if (!$id || !webapiSnow($id) || !$return = $discord->users->offsetGet($id)) {
+			if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->offsetGet($id)) {
 				return webapiFail('user_id', $id);
 			}
 			break;
 
 		case 'userName':
-			if (!$id || !$return = $discord->users->get('name', $id))
+			if (!$id || !$return = $civ13->discord->users->get('name', $id))
 				return webapiFail('user_name', $id);
 			break;
         
@@ -194,13 +189,13 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
 			}
-            if ($channel = $discord->getChannel('712685552155230278')) {
+            if ($channel = $civ13->discord->getChannel('712685552155230278')) {
                 $civ13->logger->info('[RESTART]');
                 $channel->sendMessage("Restarting...");
             }
             $return = 'restarting';
             $socket->close();
-            $civ13->discord->getLoop()->addTimer(5, function () use ($socket, $civ13) {
+            $civ13->discord->getLoop()->addTimer(5, function () use ($civ13, $socket) {
                 \restart();
                 $civ13->discord->close();
                 die();
@@ -212,7 +207,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
 			}
-			if (!$id || !webapiSnow($id) || !$return = $discord->users->offsetGet($id))
+			if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->offsetGet($id))
 				return webapiFail('user_id', $id);
 			break;
 
@@ -224,7 +219,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			if (!$id || !webapiSnow($id))
 				return webapiFail('user_id', $id);
 			$return = false;
-			if ($user = $discord->users->offsetGet($id)) { //Search all guilds the bot is in and check if the user id exists as a guild owner
+			if ($user = $civ13->discord->users->offsetGet($id)) { //Search all guilds the bot is in and check if the user id exists as a guild owner
 				foreach ($discord->guilds as $guild) {
 					if ($id == $guild->owner_id) {
 						$return = true;
@@ -238,8 +233,8 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			if (!$id || !webapiSnow($id)) {
 				return webapiFail('user_id', $id);
 			}
-			if (!$user = $discord->users->offsetGet($id)) {
-				$discord->users->fetch($id)->done(
+			if (!$user = $civ13->discord->users->offsetGet($id)) {
+				$civ13->discord->users->fetch($id)->done(
 					function ($user) {
 						$return = $user->avatar;
 						return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
@@ -257,14 +252,15 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 		case 'avatars':
 			$idarray = $data ?? array(); // $data contains POST data
 			$results = [];
-			$promise = $discord->users->fetch($idarray[0])->then(function ($user) use (&$results) {
+			$promise = $civ13->discord->users->fetch($idarray[0])->then(function ($user) use (&$results) {
 			  $results[$user->id] = $user->avatar;
 			});
 			
 			for ($i = 1; $i < count($idarray); $i++) {
-			  $promise->then(function () use (&$results, $idarray, $i, $discord) {
-				return $discord->users->fetch($idarray[$i])->then(function ($user) use (&$results) {
-				  $results[$user->id] = $user->avatar;
+                $discord = $civ13->discord;
+                $promise->then(function () use (&$results, $idarray, $i, $discord) {
+				return $civ13->discord->users->fetch($idarray[$i])->then(function ($user) use (&$results) {
+                    $results[$user->id] = $user->avatar;
 				});
 			  });
 			}
@@ -284,6 +280,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                         $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                         return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
+                    $nomads_bans = $civ13->files['nomads_bans'];
                     if ($return = file_get_contents($nomads_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`");
                     break;
@@ -298,6 +295,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                         $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                         return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
+                    $tdm_bans = $civ13->files['tdm_bans'];
                     if ($return = file_get_contents($tdm_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`");
                     break;
@@ -305,6 +303,15 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                     return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
             }
             break;
+        
+        case 'discord2ckey':
+			if (!$id || !webapiSnow($id) || !is_numeric($id))
+				return webapiFail('user_id', $id);
+            $discord2ckey = $civ13->functions['misc']['discord2ckey'];
+            $return = $discord2ckey($civ13, $id);
+            return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
+            break;
+            
 		default:
 			return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
 	}

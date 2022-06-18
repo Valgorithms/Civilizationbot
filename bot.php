@@ -143,6 +143,9 @@ $options = array(
             'status_changer' => $status_changer,
             'mapswap' => $mapswap,
             'ban' => $ban,
+            'nomads_ban' => $nomads_ban,
+            'tdm_ban' => $tdm_ban,
+            'discord2ckey' => $discord2ckey,
         ],
     ),
 );
