@@ -108,6 +108,9 @@ $on_message = function ($civ13, $message)
     $tdm_port = $civ13->ports['tdm_port'];
     
     $mapswap = $civ13->functions['misc']['mapswap'];
+    $ban = $civ13->functions['misc']['ban'];
+    $nomads_ban = $civ13->functions['misc']['nomads_ban'];
+    $tdm_ban = $civ13->functions['misc']['tdm_ban'];
     
     if ($message->guild->owner_id != $owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$command_symbol) $command_symbol = '!s';
@@ -259,6 +262,10 @@ $on_message = function ($civ13, $message)
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
+        if ($result = $ban($civ13, $split_message, $message))
+            return $message->channel->sendMessage($result);
+        
+        /*
         $file = fopen($nomads_discord2ban, "a");
         $txt = $message->author->username.":::".$split_message[0].":::".$split_message[1].":::".$split_message[2].PHP_EOL;
         fwrite($file, $txt);
@@ -270,6 +277,7 @@ $on_message = function ($civ13, $message)
         fclose($file);
         $result = '**' . $message->member->username . '#' . $message->member->discriminator . '** banned **' . $split_message[0] . '** for **' . $split_message[1] . '** with the reason **' . $split_message[2] . '**.';
         return $message->channel->sendMessage($result);
+        */
     }
     if (str_starts_with($message_content_lower, 'unban ')) {
         $message_content = substr($message_content, 6);
@@ -1181,3 +1189,76 @@ $mapswap = function ($civ13, $path, $mapto)
     });
     return $process;
 };
+
+$ban = function ($civ13, $array, $message = null)
+{
+    $nomads_discord2ban = $civ13->files['nomads_discord2ban'];
+    $tdm_discord2ban = $civ13->files['tdm_discord2ban'];
+    if (! $message) {
+        $admin = $civ13->discord->user->username;
+    } else $admin = $message->author->username . '#' . $message->member->discriminator;
+    
+    $txt = $admin.":::".$array[0].":::".$array[1].":::".$array[2].PHP_EOL;
+    
+    $result = '';
+    if ($file = fopen($nomads_discord2ban, "a")) {
+        fwrite($file, $txt);
+        fclose($file);
+    } else {
+        $civ13->logger->warning("unable to open $nomads_discord2ban");
+        $result .= "unable to open $nomads_discord2ban" . PHP_EOL;
+    }
+    
+    if ($file = fopen($tdm_discord2ban, "a")) {
+        fwrite($file, $txt);
+        fclose($file);
+    } else {
+        $civ13->logger->warning("unable to open $tdm_discord2ban");
+        $result .= "unable to open $tdm_discord2ban" . PHP_EOL;
+    }
+    $result .= '**' . $admin . '** banned **' . $array[0] . '** for **' . $array[1] . '** with the reason **' . $array[2] . '**.';
+    return $result;
+};
+
+$nomads_ban = function ($civ13, $array, $message = null)
+{
+    $nomads_discord2ban = $civ13->files['nomads_discord2ban'];
+    if (! $message) {
+        $admin = $civ13->discord->user->username;
+    } else $admin = $message->author->username . '#' . $message->member->discriminator;
+    
+    $txt = $admin.":::".$array[0].":::".$array[1].":::".$array[2].PHP_EOL;
+    
+    $result = '';
+    if ($file = fopen($nomads_discord2ban, "a")) {
+        fwrite($file, $txt);
+        fclose($file);
+    } else {
+        $civ13->logger->warning("unable to open $nomads_discord2ban");
+        $result .= "unable to open $nomads_discord2ban" . PHP_EOL;
+    }
+    $result .= '**' . $admin . '** banned **' . $array[0] . '** for **' . $array[1] . '** with the reason **' . $array[2] . '**.';
+    return $result;
+};
+
+$tdm_ban = function ($civ13, $array, $message = null)
+{
+    $tdm_discord2ban = $civ13->files['tdm_discord2ban'];
+    if (! $message) {
+        $admin = $civ13->discord->user->username;
+    } else $admin = $message->author->username . '#' . $message->member->discriminator;
+    
+    $txt = $admin.":::".$array[0].":::".$array[1].":::".$array[2].PHP_EOL;
+    
+    $result = '';
+    if ($file = fopen($tdm_discord2ban, "a")) {
+        fwrite($file, $txt);
+        fclose($file);
+    } else {
+        $civ13->logger->warning("unable to open $tdm_discord2ban");
+        $result .= "unable to open $tdm_discord2ban" . PHP_EOL;
+    }
+    $result .= '**' . $admin . '** banned **' . $array[0] . '** for **' . $array[1] . '** with the reason **' . $array[2] . '**.';
+    return $result;
+};
+

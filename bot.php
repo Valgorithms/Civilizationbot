@@ -123,6 +123,8 @@ $options = array(
         'knight' => '468982360659066912', //Admin
         'veteran' => '468983261708681216', //Promoted
         'infantry' => '468982790772228127', //Verified
+        'banished' => '710328377210306641', //Banned in-game (unused)
+        'paroled' => '745336314689355796', //On parole (unused)
     ),
     'functions' => array(
         'ready' => [
@@ -140,6 +142,7 @@ $options = array(
             'timer_function' => $timer_function,
             'status_changer' => $status_changer,
             'mapswap' => $mapswap,
+            'ban' => $ban,
         ],
     ),
 );
