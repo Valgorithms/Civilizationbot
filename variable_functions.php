@@ -797,15 +797,6 @@ $on_message = function ($civ13, $message)
         $filter = 'discord2ckey ';
         $ckey = trim(str_replace($filter, '', $message_content_lower));
         
-        /*
-        $filter = '.';
-        $ckey = trim(str_replace($filter, '', $ckey));
-        $filter = '_';
-        $ckey = trim(str_replace($filter, '', $ckey));
-        $filter = ' ';
-        $ckey = str_replace($filter, "", $ckey);
-        */
-        
         $filter = "<@";
         $id = trim(str_replace($filter, "", $ckey));
         $filter = "!";
@@ -835,6 +826,38 @@ $on_message = function ($civ13, $message)
             }
         } else $message->reply("`$id` does not contain a discord snowflake");
     }
+    if (str_starts_with($message_content_lower, 'ckey2discord')) {
+        $filter = 'ckey2discord ';
+        $ckey = trim(str_replace($filter, '', $message_content_lower));
+        
+        $filter = '.';
+        $ckey = trim(str_replace($filter, '', $ckey));
+        $filter = '_';
+        $ckey = trim(str_replace($filter, '', $ckey));
+        $filter = ' ';
+        $ckey = str_replace($filter, "", $ckey);
+        
+        $civ13->logger->info("CKEY2DISCORD ckey $ckey");
+        $ckey2discord = $civ13->functions['misc']['ckey2discord'];
+        if (is_array($result = $ckey2discord($civ13, $ckey))) { //curl json_decoded array
+            if($id = $result['id']) $message->reply("$ckey is registered to <@$id>");
+            else $message->reply("$ckey is not registered to any discord account");
+        } else { //React\Promise\Promise from $browser->post
+            $result->then(function ($response) use ($civ13, $message, $ckey) {
+                $result = json_decode((string)$response->getBody(), true);
+                if($id = $result['discord']) {
+                    $civ13->logger->info("CKEY2DISCORD id $id");
+                    $message->reply("$ckey is registered to <@$id>");
+                } else {
+                    $civ13->logger->info("CKEY2DISCORD id null");
+                    $message->reply("$ckey is not registered to any discord account");
+                }
+            }, function (Exception $e) use ($civ13) {
+                $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
+            });
+        }
+    }
+    
 };
 
 $on_message2 = function ($civ13, $message)
@@ -1257,7 +1280,18 @@ $discord2ckey = function ($civ13, $id)
         return json_decode($result, true); //Array
     } else { //React\Promise\Promise from $browser->post 
         return $result;
-    }    
+    }
+};
+
+$ckey2discord = function ($civ13, $ckey)
+{
+    $browser_post = $civ13->functions['misc']['browser_post'];
+    $result = $browser_post($civ13, 'http://civ13.valzargaming.com/ckey2discord/', ['Content-Type' => 'text/json'], ['ckey' => $ckey]);
+    if (is_array($result)) { //curl
+        return json_decode($result, true); //Array
+    } else { //React\Promise\Promise from $browser->post 
+        return $result;
+    }
 };
 
 $bancheck = function ($civ13, $ckey)

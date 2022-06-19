@@ -149,6 +149,7 @@ $options = array(
             'nomads_ban' => $nomads_ban,
             'tdm_ban' => $tdm_ban,
             'discord2ckey' => $discord2ckey,
+            'ckey2discord' => $ckey2discord,
             'browser_post' => $browser_post,
             'bancheck' => $bancheck,
         ],
