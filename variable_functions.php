@@ -816,9 +816,12 @@ $on_message = function ($civ13, $message)
         if (is_numeric($id)) {
             $civ13->logger->info("[DISCORD2CKEY] $id");
             $discord2ckey = $civ13->functions['misc']['discord2ckey'];
-            if ($result = $discord2ckey($civ13, $id, $message)) {
+            if (is_array($result = $discord2ckey($civ13, $id, $message))) {
                 if($ckey = $result['ckey']) $message->reply("<@$id> is registered to ckey $ckey");
                 else $message->reply("<@$id> is not registered to any ckey");
+            } else {
+                //ReactPHP browser post promise
+                echo '[get_class] ' . get_class($result) . PHP_EOL;
             }
         } else $message->reply("`$id` does not contain a discord snowflake");
     }
@@ -1220,19 +1223,62 @@ $tdm_ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
-$discord2ckey = function ($civ13, $id, $message = null)
+$browser_post = function ($url, $headers, $data)
 {
-    //Send a POST request to civ13.valzargaming.com/discord2ckey/ with POST['id'] = $id
-    $ch = curl_init(); //create curl resource
-    curl_setopt($ch, CURLOPT_URL, "http://civ13.valzargaming.com/discord2ckey/"); // set url
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    $data = array(
-        'id' => $id,
-    );
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    $result = curl_exec($ch);
+    //
+    if ($browser = $civ13->browser) {
+        return $browser->post($url, $headers, $data);
+    } else {
+        //Send a POST request to civ13.valzargaming.com/discord2ckey/ with POST['id'] = $id
+        $ch = curl_init(); //create curl resource
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
+        curl_setopt($ch, CURLOPT_POST, TRUE);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        $result = curl_exec($ch);
+        return json_decode($result, true); //Array
+    }
+};
 
-    echo $result;
-    return json_decode($result, true);
+$discord2ckey = function ($civ13, $id)
+{
+    $browser_post = $civ13->functions['misc']['browser_post'];
+    $result = $browser_post('http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/json'], json_encode(['id' => $id]));
+    if (is_array($result)) { //curl
+        return json_decode($result, true);
+    } else { //ReactPHP $browser->post() promise
+        return $result;
+    }
+    
+    
+    /*
+    if ($browser = $civ13->browser) {
+        $browser->post('http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/json'], json_encode(['id' => $id]))->then(
+            function ($response) use ($civ13) {
+                //
+            }, function (Exception $e) use ($civ13) {
+                $civ13->logger->warning('unable to connect to civ13.valzargaming.com/discord2ckey');
+            }
+        );
+    } else {
+        //Send a POST request to civ13.valzargaming.com/discord2ckey/ with POST['id'] = $id
+        $ch = curl_init(); //create curl resource
+        curl_setopt($ch, CURLOPT_URL, "http://civ13.valzargaming.com/discord2ckey/"); // set url
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
+        curl_setopt($ch, CURLOPT_POST, TRUE);
+        $data = array(
+            'id' => $id,
+        );
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        $result = curl_exec($ch);
+
+        echo $result;
+        return json_decode($result, true);
+    }
+    */
+};
+
+$bancheck_join = function ($civ13, $guildmember)
+{
+  //  
 };

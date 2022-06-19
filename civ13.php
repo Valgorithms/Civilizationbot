@@ -123,6 +123,12 @@ class Civ13
                             $func($this, $message);
                     else $this->logger->debug('No message functions found!');
                 });
+                $this->discord->on('GUILD_MEMBER_ADD', function ($guildmember) {
+                    if(! empty($this->functions['GUILD_MEMBER_ADD']))
+                        foreach ($this->functions['GUILD_MEMBER_ADD'] as $func)
+                            $func($this, $guildmember);
+                    else $this->logger->debug('No message functions found!');
+                });
             });
         }
     }

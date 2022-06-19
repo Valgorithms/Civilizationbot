@@ -136,6 +136,9 @@ $options = array(
             'on_message' => $on_message,
             'on_message2' => $on_message2,
         ],
+        'GUILD_MEMBER_ADD' => [
+            'bancheck_join' => $bancheck_join,
+        ],
         'misc' => [ //Custom functions
             'recalculate_ranking' => $recalculate_ranking,
             'ooc_relay' => $ooc_relay,
@@ -146,6 +149,7 @@ $options = array(
             'nomads_ban' => $nomads_ban,
             'tdm_ban' => $tdm_ban,
             'discord2ckey' => $discord2ckey,
+            'browser_post' => $browser_post,
         ],
     ),
 );
