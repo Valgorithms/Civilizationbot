@@ -814,11 +814,25 @@ $on_message = function ($civ13, $message)
         $id = trim(str_replace($filter, "", $id));
         
         if (is_numeric($id)) {
-            $civ13->logger->info("[DISCORD2CKEY] $id");
+            $civ13->logger->info("DISCORD2CKEY id $id");
             $discord2ckey = $civ13->functions['misc']['discord2ckey'];
-            if ($result = $discord2ckey($civ13, $id, $message)) {
+            if (is_array($result = $discord2ckey($civ13, $id))) { //curl json_decoded array
                 if($ckey = $result['ckey']) $message->reply("<@$id> is registered to ckey $ckey");
                 else $message->reply("<@$id> is not registered to any ckey");
+            } else { //React\Promise\Promise from $browser->post
+                $result->then(function ($response) use ($civ13, $message, $id) {
+                    //var_dump(json_decode((string)$response->getBody()));
+                    $result = json_decode((string)$response->getBody(), true);
+                    if($ckey = $result['ckey']) {
+                        $civ13->logger->info("DISCORD2CKEY ckey $ckey");
+                        $message->reply("<@$id> is registered to ckey $ckey");
+                    } else {
+                        $civ13->logger->info("DISCORD2CKEY ckey null");
+                        $message->reply("<@$id> is not registered to any ckey");
+                    }
+                }, function (Exception $e) use ($civ13) {
+                    $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
+                });
             }
         } else $message->reply("`$id` does not contain a discord snowflake");
     }
@@ -1220,19 +1234,34 @@ $tdm_ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
-$discord2ckey = function ($civ13, $id, $message = null)
+$browser_post = function ($civ13, string $url, $headers = [], array $data, $curl = false)
 {
     //Send a POST request to civ13.valzargaming.com/discord2ckey/ with POST['id'] = $id
-    $ch = curl_init(); //create curl resource
-    curl_setopt($ch, CURLOPT_URL, "http://civ13.valzargaming.com/discord2ckey/"); // set url
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    $data = array(
-        'id' => $id,
-    );
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    $result = curl_exec($ch);
+    if ( ! $curl && $browser = $civ13->browser) {
+        return $browser->post($url, ['Content-Type' => 'application/x-www-form-urlencoded'], http_build_query($data));
+    } else {
+        $ch = curl_init(); //create curl resource
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
+        curl_setopt($ch, CURLOPT_POST, TRUE);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        $result = curl_exec($ch);
+        return json_decode($result, true); //Array
+    }
+};
 
-    echo $result;
-    return json_decode($result, true);
+$discord2ckey = function ($civ13, $id)
+{
+    $browser_post = $civ13->functions['misc']['browser_post'];
+    $result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'text/json'], ['id' => $id]);
+    if (is_array($result)) { //curl
+        return json_decode($result, true); //Array
+    } else { //React\Promise\Promise from $browser->post 
+        return $result;
+    }    
+};
+
+$bancheck_join = function ($civ13, $guildmember)
+{
+  //  
 };
