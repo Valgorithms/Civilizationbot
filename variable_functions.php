@@ -275,7 +275,7 @@ $on_message = function ($civ13, $message)
                 }
                 if ($accepted) {
                     $found = false;
-                    $whitelist1 = fopen($civ13->files['nomads_whitelist'], "r") ?? NULL;
+                    $whitelist1 = fopen($civ13->files['nomads_whitelist'], "r");
                     if ($whitelist1) {
                         while (($fp = fgets($whitelist1, 4096)) !== false) {
                             $line = trim(str_replace(PHP_EOL, "", $fp));
@@ -287,7 +287,7 @@ $on_message = function ($civ13, $message)
                         }
                         fclose($whitelist1);
                     }
-                    $whitelist2 = fopen($civ13->files['tdm_whitelist'], "r") ?? NULL;
+                    $whitelist2 = fopen($civ13->files['tdm_whitelist'], "r");
                     if ($whitelist2) {
                         while (($fp = fgets($whitelist2, 4096)) !== false) {
                             $line = trim(str_replace(PHP_EOL, "", $fp));
@@ -301,7 +301,7 @@ $on_message = function ($civ13, $message)
                     
                     if (!$found) {
                         $found2 = false;
-                        $whitelist1 = fopen($civ13->files['nomads_whitelist'], "r") ?? NULL;
+                        $whitelist1 = fopen($civ13->files['nomads_whitelist'], "r");
                         if ($whitelist1) {
                             while (($fp = fgets($whitelist1, 4096)) !== false) {
                                 $line = trim(str_replace(PHP_EOL, "", $fp));
@@ -498,7 +498,7 @@ $on_message = function ($civ13, $message)
                     $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
                     
                     $maps = array();
-                    $filecheck1 = fopen($civ13->files['map_defines_path'], "r") ?? NULL;
+                    $filecheck1 = fopen($civ13->files['map_defines_path'], "r");
                     if ($filecheck1) {
                         while (($fp = fgets($filecheck1, 4096)) !== false) {
                             $filter = '"';
@@ -550,7 +550,7 @@ $on_message = function ($civ13, $message)
                 $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
                 
                 $maps = array();
-                $filecheck1 = fopen($civ13->files['map_defines_path'], "r") ?? NULL;
+                $filecheck1 = fopen($civ13->files['map_defines_path'], "r");
                 if ($filecheck1) {
                     $message->channel->sendFile($civ13->files['map_defines_path'], 'maps.txt');
                     fclose($filecheck1);
@@ -619,7 +619,7 @@ $on_message = function ($civ13, $message)
                     $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
                     
                     $maps = array();
-                    $filecheck1 = fopen($civ13->files['map_defines_path'], "r") ?? NULL;
+                    $filecheck1 = fopen($civ13->files['map_defines_path'], "r");
                     if ($filecheck1) {
                         while (($fp = fgets($filecheck1, 4096)) !== false) {
                             $filter = '"';
@@ -681,7 +681,7 @@ $on_message = function ($civ13, $message)
             $ckey = str_replace(' ', '', $ckey);
             $banreason = "unknown";
             $found = false;
-            $filecheck1 = fopen($civ13->files['nomads_bans'], "r") ?? NULL;
+            $filecheck1 = fopen($civ13->files['nomads_bans'], "r");
             if ($filecheck1) {
                 while (($fp = fgets($filecheck1, 4096)) !== false) {
                     str_replace(PHP_EOL, "", $fp);
@@ -698,7 +698,7 @@ $on_message = function ($civ13, $message)
                 }
                 fclose($filecheck1);
             }
-            $filecheck2 = fopen($civ13->files['tdm_bans'], "r") ?? NULL;
+            $filecheck2 = fopen($civ13->files['tdm_bans'], "r");
             if ($filecheck2) {
                 while (($fp = fgets($filecheck2, 4096)) !== false) {
                     str_replace(PHP_EOL, "", $fp);
@@ -821,7 +821,6 @@ $on_message = function ($civ13, $message)
                 else $message->reply("<@$id> is not registered to any ckey");
             } else { //React\Promise\Promise from $browser->post
                 $result->then(function ($response) use ($civ13, $message, $id) {
-                    //var_dump(json_decode((string)$response->getBody()));
                     $result = json_decode((string)$response->getBody(), true);
                     if($ckey = $result['ckey']) {
                         $civ13->logger->info("DISCORD2CKEY ckey $ckey");
@@ -1234,7 +1233,7 @@ $tdm_ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
-$browser_post = function ($civ13, string $url, $headers = [], array $data, $curl = false)
+$browser_post = function ($civ13, string $url, array $headers = [], array $data = [], $curl = false)
 {
     //Send a POST request to civ13.valzargaming.com/discord2ckey/ with POST['id'] = $id
     if ( ! $curl && $browser = $civ13->browser) {
@@ -1261,7 +1260,63 @@ $discord2ckey = function ($civ13, $id)
     }    
 };
 
+$bancheck = function ($civ13, $ckey)
+{
+    $return = false;
+    if ($filecheck1 = fopen($civ13->files['nomads_bans'], "r")) {
+        while (($fp = fgets($filecheck1, 4096)) !== false) {
+            str_replace(PHP_EOL, "", $fp);
+            $filter = "|||";
+            $line = trim(str_replace($filter, "", $fp));
+            $linesplit = explode(";", $line); //$split_ckey[0] is the ckey
+            if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                $return = true;
+            }
+        }
+        fclose($filecheck1);
+    }
+    if ($filecheck2 = fopen($civ13->files['tdm_bans'], "r")) {
+        while (($fp = fgets($filecheck2, 4096)) !== false) {
+            str_replace(PHP_EOL, "", $fp);
+            $filter = "|||";
+            $line = trim(str_replace($filter, "", $fp));
+            $linesplit = explode(";", $line); //$split_ckey[0] is the ckey
+            if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                $return = true;
+            }
+        }
+        fclose($filecheck2);
+    }
+    return $return;
+};
+
 $bancheck_join = function ($civ13, $guildmember)
 {
-  //  
+    if ($guildmember->guild_id != $civ13->civ13_guild_id) return;
+
+    $discord2ckey = $civ13->functions['misc']['discord2ckey'];
+    if (is_array($result = $discord2ckey($civ13, $guildmember->id))) { //curl json_decoded array
+        if($ckey = $result['ckey']) {
+            $bancheck = $civ13['misc']['bancheck'];
+            if ($bancheck($civ13, $ckey)) {
+                $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $guildmember, $ckey) {
+                    $guildmember->setRoles([$civ13['role_ids']['banished']], "bancheck join $ckey");
+                });
+            }
+        }
+    } else { //React\Promise\Promise from $browser->post
+        $result->then(function ($response) use ($civ13, $guildmember) {
+            $result = json_decode((string)$response->getBody(), true);
+            if($ckey = $result['ckey']) {
+                $bancheck = $civ13['misc']['bancheck'];
+                if ($bancheck($civ13, $ckey)) {
+                    $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $guildmember, $ckey) {
+                        $guildmember->setRoles([$civ13['role_ids']['banished']], "bancheck join $ckey");
+                    });
+                }
+            }
+        }, function (Exception $e) use ($civ13) {
+            $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
+        });
+    }
 };

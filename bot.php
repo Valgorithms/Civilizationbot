@@ -150,6 +150,7 @@ $options = array(
             'tdm_ban' => $tdm_ban,
             'discord2ckey' => $discord2ckey,
             'browser_post' => $browser_post,
+            'bancheck' => $bancheck,
         ],
     ),
 );
