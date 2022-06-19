@@ -857,7 +857,58 @@ $on_message = function ($civ13, $message)
             });
         }
     }
-    
+    if (str_starts_with($message_content_lower, 'ckey')) {
+        $filter = 'ckey ';
+        $ckey = trim(str_replace($filter, '', $message_content_lower));
+        
+        $filter = '.';
+        $ckey = trim(str_replace($filter, '', $ckey));
+        $filter = '_';
+        $ckey = trim(str_replace($filter, '', $ckey));
+        $filter = ' ';
+        $ckey = str_replace($filter, "", $ckey);
+        
+        $filter = "<@";
+        $id = trim(str_replace($filter, "", $ckey));
+        $filter = "!";
+        $id = trim(str_replace($filter, "", $id));
+        $filter = ">";
+        $id = trim(str_replace($filter, "", $id));
+        
+        if(is_numeric($id)) {
+            $civ13->logger->info("CKEY id $id");
+            $discord2ckey = $civ13->functions['misc']['discord2ckey'];
+            $result = $discord2ckey($civ13, $id);
+        } else {
+            $civ13->logger->info("CKEY ckey $ckey");
+            $ckey2discord = $civ13->functions['misc']['ckey2discord'];
+            $result = $ckey2discord($civ13, $ckey);
+        }
+        if (is_array($result)) { //curl json_decoded array
+            if($result_ckey = $result['ckey']) {
+                $civ13->logger->info("CKEY ckey $result_ckey");
+                $message->reply("<@$id> is registered to ckey $result_ckey");
+            }
+            if($result_id = $result['discord']) {
+                $civ13->logger->info("CKEY id $result_id");
+                $message->reply("$ckey is registered to <@$result_id>");
+            }
+        } else { //React\Promise\Promise from $browser->post
+            $result->then(function ($response) use ($civ13, $message, $id, $ckey) {
+                $result = json_decode((string)$response->getBody(), true);
+                if($result_ckey = $result['ckey']) {
+                    $civ13->logger->info("CKEY ckey $result_ckey");
+                    $message->reply("<@$id> is registered to ckey $result_ckey");
+                }
+                if($result_id = $result['discord']) {
+                    $civ13->logger->info("CKEY id $result_id");
+                    $message->reply("$ckey is registered to <@$result_id>");
+                }
+            }, function (Exception $e) use ($civ13) {
+                $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
+            });
+        }
+    }
 };
 
 $on_message2 = function ($civ13, $message)
