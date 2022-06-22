@@ -49,6 +49,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     ];
 	if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
         $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
+        return;
     }
 
 	switch ($sub) {
