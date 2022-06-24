@@ -513,7 +513,7 @@ $on_message = function ($civ13, $message)
                     
                     if(in_array($mapto, $maps)) {
                         $message->channel->sendMessage("Attempting to change map to $mapto");
-                        \execInBackground('python3 ' . $civ13->files['tdm_mapswap'] . " $mapto");
+                        \execInBackground('python3 ' . $civ13->files['nomads_mapswap'] . " $mapto");
                         /*
                         $message->channel->sendMessage('Calling mapswap...');
                         $mapswap = $civ13->functions['misc']['mapswap'];
@@ -612,7 +612,7 @@ $on_message = function ($civ13, $message)
                 }
             }
             if ($accepted) {
-                $split_message = explode("mapswap ", $message_content);
+                $split_message = explode("tdmmapswap ", $message_content);
                 if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
