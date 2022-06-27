@@ -895,7 +895,7 @@ $on_message = function ($civ13, $message)
             }
         } else { //React\Promise\Promise from $browser->post
             $result->then(function ($response) use ($civ13, $message, $id, $ckey) {
-                $result_ckey = json_decode((string)$response->getBody(), true);
+                $result = json_decode((string)$response->getBody(), true);
                 if($result_ckey = $result['ckey']) {
                     $civ13->logger->info("CKEY ckey $result_ckey");
                     $message->reply("<@$id> is registered to ckey $result_ckey");
