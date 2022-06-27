@@ -182,7 +182,9 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
 			}
             execInBackground('git pull');
-            $return = 'updating civilizationbot';
+            $civ13->logger->info('[GIT PULL]');
+            $channel->sendMessage("Updating code from GitHub...");
+            $return = 'updating code';
             break;
         
         case 'update':
@@ -191,6 +193,8 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
 			}
             execInBackground('composer update');
+            $civ13->logger->info('[COMPOSER UPDATE]');
+            $channel->sendMessage("Updating dependencies...");
             $return = 'updating dependencies';
             break;
         
