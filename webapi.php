@@ -68,13 +68,6 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			}
             $favicon = file_get_contents('favicon.ico');
             return new \React\Http\Message\Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
-        case 'messagetest':
-            if ($channel = $civ13->discord->getChannel('712685552155230278')) {
-                $civ13->logger->info("I'm alive!");
-                $return = "I'm alive!";
-                $channel->sendMessage("I'm alive!");
-            }
-            break;
         
         case 'nohup.out':
             if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
@@ -183,7 +176,8 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			}
             execInBackground('git pull');
             $civ13->logger->info('[GIT PULL]');
-            $channel->sendMessage("Updating code from GitHub...");
+            if ($channel = $civ13->discord->getChannel('712685552155230278'))
+                $channel->sendMessage("Updating code from GitHub...");
             $return = 'updating code';
             break;
         
@@ -194,7 +188,8 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 			}
             execInBackground('composer update');
             $civ13->logger->info('[COMPOSER UPDATE]');
-            $channel->sendMessage("Updating dependencies...");
+            if ($channel = $civ13->discord->getChannel('712685552155230278'))
+                $channel->sendMessage("Updating dependencies...");
             $return = 'updating dependencies';
             break;
         
@@ -203,10 +198,9 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 				$civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
 				return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
 			}
-            if ($channel = $civ13->discord->getChannel('712685552155230278')) {
-                $civ13->logger->info('[RESTART]');
+            $civ13->logger->info('[RESTART]');
+            if ($channel = $civ13->discord->getChannel('712685552155230278'))
                 $channel->sendMessage("Restarting...");
-            }
             $return = 'restarting';
             $socket->close();
             $civ13->discord->getLoop()->addTimer(5, function () use ($civ13, $socket) {
