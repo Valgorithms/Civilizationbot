@@ -12,7 +12,7 @@ class Civ13
 {
     public $loop;
     public $discord;
-    public $browser; //unused
+    public $browser;
     public $filesystem;
     public $logger;
     
