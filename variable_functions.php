@@ -1307,11 +1307,11 @@ $tdm_ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
-$browser_post = function ($civ13, string $url, array $headers = [], array $data = [], $curl = false)
+$browser_post = function ($civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false)
 {
     //Send a POST request to civ13.valzargaming.com/discord2ckey/ with POST['id'] = $id
     if ( ! $curl && $browser = $civ13->browser) {
-        return $browser->post($url, ['Content-Type' => 'application/x-www-form-urlencoded'], http_build_query($data));
+        return $browser->post($url, $headers, http_build_query($data));
     } else {
         $ch = curl_init(); //create curl resource
         curl_setopt($ch, CURLOPT_URL, $url);
