@@ -95,7 +95,7 @@ $on_message = function ($civ13, $message)
     }
     
     if (str_starts_with($message_content_lower,'cpu')) {
-        if (substr(php_uname(), 0, 7) == "Windows") {
+         if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
             $p = preg_replace('/\s+/', ' ', $p); //reduce spaces
             $p = str_replace("PercentProcessorTime", "", $p);
