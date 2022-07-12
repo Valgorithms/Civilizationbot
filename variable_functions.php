@@ -1307,6 +1307,19 @@ $tdm_ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
+$browser_get = function ($civ13, string $url, $curl = false)
+{
+    if ( ! $curl && $browser = $civ13->browser) {
+        return $browser->get($url);
+    } else {
+        $ch = curl_init(); //create curl resource
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
+        $result = curl_exec($ch);
+        return $data; //string
+    }
+};
+
 $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false)
 {
     //Send a POST request to civ13.valzargaming.com/discord2ckey/ with POST['id'] = $id
