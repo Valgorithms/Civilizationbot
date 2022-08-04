@@ -66,10 +66,9 @@ $on_message = function ($civ13, $message)
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
     
     $author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
-    $author_guild = $message->guild;
     if ($author_member = $message->member) {
         $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
-        $author_guild = $author_guild ?? $civ13->discord->guilds->offsetGet($message->guild_id);
+        $author_guild = $message->guild ?? $civ13->discord->guilds->offsetGet($message->guild_id);
     }
     
     $message_content = '';
