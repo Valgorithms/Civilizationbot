@@ -395,8 +395,8 @@ $on_message = function ($civ13, $message)
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
         $message->channel->sendMessage("Updated the code.");
         \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->ips['nomads_port'] . ' ' . $civ13->ips['nomads_port'] . ' -trusted -webclient -logself &');
-        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ips['nomads_port'] . '>');
+        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . $civ13->ports['nomads_port'] . '-trusted -webclient -logself &');
+        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ports['nomads_port'] . '>');
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
         });
@@ -434,8 +434,8 @@ $on_message = function ($civ13, $message)
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
         $message->channel->sendMessage("Updated the code.");
         \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->ips['nomads_port'] . ' ' . $civ13->ips['nomads_port'] . ' -trusted -webclient -logself &');
-        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ips['nomads_port'] . '>');
+        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . $civ13->ports['nomads_port'] . '-trusted -webclient -logself &');
+        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ports['nomads_port'] . '>');
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
         });
@@ -460,7 +460,7 @@ $on_message = function ($civ13, $message)
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
         \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . $civ13->ports['tdm_port'] . '-trusted -webclient -logself &');
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message, $tdm_kills) { # ditto
-            $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ips['tdm_port'] . '>');
+            $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
         });
         return;
@@ -555,7 +555,7 @@ $on_message = function ($civ13, $message)
         $message->channel->sendMessage("Updated the code.");
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
         \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . $civ13->ports['tdm_port'] . '-trusted -webclient -logself &');
-        $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ips['tdm_port'] . '>');
+        $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
         });
