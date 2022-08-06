@@ -1342,22 +1342,16 @@ $discord2ckey = function ($civ13, $id)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
     $result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['id' => $id]);
-    if (is_array($result)) { //curl
-        return json_decode($result, true); //Array
-    } else { //React\Promise\Promise from $browser->post 
-        return $result;
-    }
+    if (is_array($result)) return json_decode($result, true); 
+    return $result; //$browser->post returns React\Promise\Promise
 };
 
 $ckey2discord = function ($civ13, $ckey)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
     $result = $browser_post($civ13, 'http://civ13.valzargaming.com/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey]);
-    if (is_array($result)) { //curl
-        return json_decode($result, true); //Array
-    } else { //React\Promise\Promise from $browser->post 
-        return $result;
-    }
+    if (is_array($result)) return json_decode($result, true); //curl returns Array
+    return $result; //$browser->post returns React\Promise\Promise
 };
 
 $bancheck = function ($civ13, $ckey)
