@@ -54,9 +54,9 @@ class Civ13
         }
         
         $options = $this->resolveOptions($options);
-		
-		$this->loop = $options['loop'];
-		$this->browser = $options['browser'];
+        
+        $this->loop = $options['loop'];
+        $this->browser = $options['browser'];
         $this->filesystem = $options['filesystem'];
         $this->logger = $options['logger'];
         
@@ -72,9 +72,9 @@ class Civ13
         }
         
         if (isset($options['discord']) || isset($options['discord_options'])) {
-			if(isset($options['discord'])) $this->discord = $options['discord'];
-			elseif(isset($options['discord_options'])) $this->discord = new \Discord\Discord($options['discord_options']);
-		}
+            if(isset($options['discord'])) $this->discord = $options['discord'];
+            elseif(isset($options['discord_options'])) $this->discord = new \Discord\Discord($options['discord_options']);
+        }
         
         if(isset($options['functions'])) {
             if(isset($options['functions']['ready']))
@@ -134,32 +134,32 @@ class Civ13
     }
     
     /*
-	* Attempt to catch errors with the user-provided $options early
-	*/
-	protected function resolveOptions(array $options = []): array
-	{
+    * Attempt to catch errors with the user-provided $options early
+    */
+    protected function resolveOptions(array $options = []): array
+    {
         if (is_null($options['logger'])) {
             $logger = new Monolog\Logger('Civ13');
             $logger->pushHandler(new Monolog\Handler\StreamHandler('php://stdout', Monolog\Logger::DEBUG));
             $options['logger'] = $logger;
         }
         
-		$options['loop'] = $options['loop'] ?? React\EventLoop\Factory::create();
-		$options['browser'] = $options['browser'] ?? new \React\Http\Browser($options['loop']);
+        $options['loop'] = $options['loop'] ?? React\EventLoop\Factory::create();
+        $options['browser'] = $options['browser'] ?? new \React\Http\Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? \React\Filesystem\Factory::create($options['loop']);
-		return $options;
-	}
+        return $options;
+    }
     
     public function run(): void
-	{
-		$this->logger->info('Starting Discord loop');
-		if(!(isset($this->discord))) $this->logger->warning('Discord not set!');
-		else $this->discord->run();
-	}
+    {
+        $this->logger->info('Starting Discord loop');
+        if(!(isset($this->discord))) $this->logger->warning('Discord not set!');
+        else $this->discord->run();
+    }
     
     public function stop(): void
-	{
-		$this->logger->info('Shutting down');
-		if((isset($this->discord))) $this->discord->stop();
-	}
+    {
+        $this->logger->info('Shutting down');
+        if((isset($this->discord))) $this->discord->stop();
+    }
 }

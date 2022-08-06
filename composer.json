@@ -24,8 +24,8 @@
         "cs": ["./vendor/bin/php-cs-fixer fix"],
         "unit": ["./vendor/bin/phpunit"]
     },
-	"minimum-stability": "dev",
-	"prefer-stable": true,
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "config": {
         "allow-plugins": {
             "wyrihaximus/composer-update-bin-autoload-path": true

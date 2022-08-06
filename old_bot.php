@@ -1135,9 +1135,9 @@ set_error_handler(function (int $number, string $message, string $filename, int 
     }
     if ($warn) {
         ob_flush();
-		ob_start();
-		echo PHP_EOL . "Handler captured error $number: '$message' at `$filename:$fileline`" . PHP_EOL;
-		file_put_contents("error_main.txt", ob_get_flush());
+        ob_start();
+        echo PHP_EOL . "Handler captured error $number: '$message' at `$filename:$fileline`" . PHP_EOL;
+        file_put_contents("error_main.txt", ob_get_flush());
     }
 });
 

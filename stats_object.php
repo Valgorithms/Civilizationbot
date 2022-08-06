@@ -14,14 +14,14 @@ class Stats
      * @var Carbon
      */
     private $lastReconnect;
-	
-	private $discord;
+    
+    private $discord;
 
     public function init(&$discord): void
     {
         $this->startTime = $this->lastReconnect = Carbon\Carbon::now();
-		
-		$this->discord = $discord;
+        
+        $this->discord = $discord;
         $this->discord->on('reconnect', function () {
             $this->lastReconnect = Carbon\Carbon::now();
         });
