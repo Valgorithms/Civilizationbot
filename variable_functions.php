@@ -860,27 +860,28 @@ $on_message = function ($civ13, $message)
         if (is_array($result)) { //curl json_decoded array
             if($result_ckey = $result['ckey']) {
                 $civ13->logger->info("CKEY ckey $result_ckey");
-                $message->reply("<@$id> is registered to ckey $result_ckey");
+                return $message->reply("<@$id> is registered to ckey $result_ckey");
             }
             if($result_id = $result['discord']) {
                 $civ13->logger->info("CKEY id $result_id");
-                $message->reply("$ckey is registered to <@$result_id>");
+                return $message->reply("$ckey is registered to <@$result_id>");
             }
         } else { //React\Promise\Promise from $browser->post
             $result->then(function ($response) use ($civ13, $message, $id, $ckey) {
                 $result = json_decode((string)$response->getBody(), true);
                 if($result_ckey = $result['ckey']) {
                     $civ13->logger->info("CKEY ckey $result_ckey");
-                    $message->reply("<@$id> is registered to ckey $result_ckey");
+                    return $message->reply("<@$id> is registered to ckey $result_ckey");
                 }
                 if($result_id = $result['discord']) {
                     $civ13->logger->info("CKEY id $result_id");
-                    $message->reply("$ckey is registered to <@$result_id>");
+                    return $message->reply("$ckey is registered to <@$result_id>");
                 }
             }, function (Exception $e) use ($civ13) {
                 $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
             });
         }
+        return;
     }
 };
 
@@ -898,23 +899,20 @@ $on_message2 = function ($civ13, $message)
         $recalculate_ranking($civ13);
         $line_array = array();
         if (! $search = fopen($civ13->files['ranking_path'], "r")) return $message->channel->sendMessage('Unable to access `' . $civ13->files['ranking_path'] . '`');
-        while (($fp = fgets($search, 4096)) !== false) {
-            $line_array[] = $fp;
-        }
+        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
         fclose($search);
         
         $topsum = 1;
         $msg = '';
         for ($x=0;$x<count($line_array);$x++) {
-            $line = $line_array[$x];
-            if ($topsum <= 10) {
-                $line = trim(str_replace(PHP_EOL, "", $line));
-                $topsum += 1;
-                $sline = explode(';', $line);
-                $msg .= "(". ($topsum - 1) ."): **".$sline[1]."** with **".$sline[0]."** points." . PHP_EOL;
-            } else break;
+            if ($topsum > 10) break;
+            $line = trim(str_replace(PHP_EOL, "", $line_array[$x]));
+            $topsum += 1;
+            $sline = explode(';', $line);
+            $msg .= "(". ($topsum - 1) ."): **".$sline[1]."** with **".$sline[0]."** points." . PHP_EOL;
         }
         if ($msg != '') return $message->channel->sendMessage($msg);
+        return;
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
         $split_message = explode('rankme ', $message_content);
@@ -930,9 +928,7 @@ $on_message2 = function ($civ13, $message)
         $recalculate_ranking($civ13);
         $line_array = array();
         if (! $search = fopen($civ13->files['ranking_path'], "r")) return $message->channel->sendMessage('Unable to access `' . $civ13->files['ranking_path'] . '`');
-        while (($fp = fgets($search, 4096)) !== false) {
-            $line_array[] = $fp;
-        }
+        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
         fclose($search);
         
         $found = 0;
@@ -995,6 +991,7 @@ $on_message2 = function ($civ13, $message)
         }
         if ($result != '') return $message->channel->sendMessage($result);
         if (!$found && ($result == '')) return $message->channel->sendMessage("No medals found for this ckey.");
+        return;
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
         $split_message = explode('brmedals ', $message_content);
@@ -1021,6 +1018,7 @@ $on_message2 = function ($civ13, $message)
         }
         if ($result != '') return $message->channel->sendMessage($result);
         if (!$found && ($result == '')) return $message->channel->sendMessage("No medals found for this ckey.");
+        return;
     }
     if (str_starts_with($message_content_lower, 'ts')) {
         $split_message = explode('ts ', $message_content);
@@ -1035,17 +1033,16 @@ $on_message2 = function ($civ13, $message)
                         $accepted = true;
                 }
             }
-
-            if ($accepted) {
-                if ($state == "on") {
-                    \execInBackground('cd ' . $civ13->files['typespess_path']);
-                    \execInBackground('git pull');
-                    \execInBackground('sh ' . $civ13->files['typespess_launch_server_path'] . '&');
-                    return $message->channel->sendMessage("Put **TypeSpess Civ13** test server on: http://civ13.com/ts");
-                } elseif ($state == "off") {
-                    \execInBackground('killall index.js');
-                    return $message->channel->sendMessage("**TypeSpess Civ13** test server down.");
-                }
+            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet($civ13->role_ids['admiral'])->name : "admiral" . '] rank.');
+            
+            if ($state == "on") {
+                \execInBackground('cd ' . $civ13->files['typespess_path']);
+                \execInBackground('git pull');
+                \execInBackground('sh ' . $civ13->files['typespess_launch_server_path'] . '&');
+                return $message->channel->sendMessage("Put **TypeSpess Civ13** test server on: http://civ13.com/ts");
+            } elseif ($state == "off") {
+                \execInBackground('killall index.js');
+                return $message->channel->sendMessage("**TypeSpess Civ13** test server down.");
             }
         }
     }
