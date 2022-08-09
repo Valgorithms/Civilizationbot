@@ -395,7 +395,7 @@ $on_message = function ($civ13, $message)
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
         $message->channel->sendMessage("Updated the code.");
         \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . $civ13->ports['nomads_port'] . '-trusted -webclient -logself &');
+        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads_port'] . ' -trusted -webclient -logself &');
         $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ports['nomads_port'] . '>');
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
@@ -434,7 +434,7 @@ $on_message = function ($civ13, $message)
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
         $message->channel->sendMessage("Updated the code.");
         \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . $civ13->ports['nomads_port'] . '-trusted -webclient -logself &');
+        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . " " . $civ13->ports['nomads_port'] . ' -trusted -webclient -logself &');
         $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ports['nomads_port'] . '>');
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
@@ -458,7 +458,7 @@ $on_message = function ($civ13, $message)
         \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
         $message->channel->sendMessage("Updated the code.");
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . $civ13->ports['tdm_port'] . '-trusted -webclient -logself &');
+        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . " " . $civ13->ports['tdm_port'] . ' -trusted -webclient -logself &');
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message, $tdm_kills) { # ditto
             $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
@@ -554,7 +554,7 @@ $on_message = function ($civ13, $message)
         \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
         $message->channel->sendMessage("Updated the code.");
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . $civ13->ports['tdm_port'] . '-trusted -webclient -logself &');
+        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm_port'] . ' -trusted -webclient -logself &'); //
         $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
@@ -698,69 +698,60 @@ $on_message = function ($civ13, $message)
         if (!$server_is_up) {
             $embed->setColor(0x00ff00);
             $embed->addFieldValues("TDM Server Status", "Offline");
-            #$message->channel->sendEmbed($embed);
-            #return;
         } else {
-            $data = "None";
             if ($_1714) {
-                if (!$data = file_get_contents($civ13->files['tdm_serverdata']))
-                    return $message->channel->sendMessage('Unable to access ` ' . $civ13->files['tdm_serverdata'] . '`');
+                if (!$data = file_get_contents($civ13->files['tdm_serverdata'])) {
+                    $embed->setColor(0x00ff00);
+                    $embed->addFieldValues("TDM Server Status", "Starting");
+                } else {
+                    $data = str_replace('<b>Address</b>: ', '', $data);
+                    $data = str_replace('<b>Map</b>: ', '', $data);
+                    $data = str_replace('<b>Gamemode</b>: ', '', $data);
+                    $data = str_replace('<b>Players</b>: ', '', $data);
+                    $data = str_replace('</b>', '', $data);
+                    $data = str_replace('<b>', '', $data);
+                    $data = explode(';', $data);
+                    $embed->setColor(0x00ff00);
+                    $embed->addFieldValues("TDM Server Status", "Online");
+                    if (isset($data[1])) $embed->addFieldValues("Address", '<'.$data[1].'>');
+                    if (isset($data[2])) $embed->addFieldValues("Map", $data[2]);
+                    if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
+                    if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
+                }
             } else {
                 $embed->setColor(0x00ff00);
                 $embed->addFieldValues("TDM Server Status", "Offline");
-                #$message->channel->sendEmbed($embed);
-                #return;
             }
-            $data = str_replace('<b>Address</b>: ', '', $data);
-            $data = str_replace('<b>Map</b>: ', '', $data);
-            $data = str_replace('<b>Gamemode</b>: ', '', $data);
-            $data = str_replace('<b>Players</b>: ', '', $data);
-            $data = str_replace('</b>', '', $data);
-            $data = str_replace('<b>', '', $data);
-            $data = explode(';', $data);
-            #embed = discord.Embed(title="**Civ13 Bot**", color=0x00ff00)
-            $embed->setColor(0x00ff00);
-            $embed->addFieldValues("TDM Server Status", "Online");
-            if (isset($data[1])) $embed->addFieldValues("Address", '<'.$data[1].'>');
-            if (isset($data[2])) $embed->addFieldValues("Map", $data[2]);
-            if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
-            if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
-
-            #$message->channel->sendEmbed($embed);
-            #return;
         }
         $_1715 = !\portIsAvailable(1715);
         $server_is_up = ($_1715);
         if (!$server_is_up) {
             $embed->setColor(0x00ff00);
             $embed->addFieldValues("Nomads Server Status", "Offline");
-            #$message->channel->sendEmbed($embed);
-            #return;
         } else {
-            $data = "None";
             if ($_1714) {
-                if (!$data = file_get_contents($civ13->files['nomads_serverdata']))
-                    return $message->channel->sendMessage('Unable to access `' . $civ13->files['nomads_serverdata'] . '`');
+                if (!$data = file_get_contents($civ13->files['nomads_serverdata'])) {
+                    $embed->setColor(0x00ff00);
+                    $embed->addFieldValues("Nomads Server Status", "Starting");
+                } else {
+                    $data = str_replace('<b>Address</b>: ', '', $data);
+                    $data = str_replace('<b>Map</b>: ', '', $data);
+                    $data = str_replace('<b>Gamemode</b>: ', '', $data);
+                    $data = str_replace('<b>Players</b>: ', '', $data);
+                    $data = str_replace('</b>', '', $data);
+                    $data = str_replace('<b>', '', $data);
+                    $data = explode(';', $data);
+                    $embed->setColor(0x00ff00);
+                    $embed->addFieldValues("Nomads Server Status", "Online");
+                    if (isset($data[1])) $embed->addFieldValues("Address", '<'.$data[1].'>');
+                    if (isset($data[2])) $embed->addFieldValues("Map", $data[2]);
+                    if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
+                    if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
+                }
             } else {
                 $embed->setColor(0x00ff00);
                 $embed->addFieldValues("Nomads Server Status", "Offline");
-                #$message->channel->sendEmbed($embed);
-                #return;
             }
-            $data = str_replace('<b>Address</b>: ', '', $data);
-            $data = str_replace('<b>Map</b>: ', '', $data);
-            $data = str_replace('<b>Gamemode</b>: ', '', $data);
-            $data = str_replace('<b>Players</b>: ', '', $data);
-            $data = str_replace('</b>', '', $data);
-            $data = str_replace('<b>', '', $data);
-            $data = explode(';', $data);
-            #embed = discord.Embed(title="**Civ13 Bot**", color=0x00ff00)
-            $embed->setColor(0x00ff00);
-            $embed->addFieldValues("Nomads Server Status", "Online");
-            if (isset($data[1])) $embed->addFieldValues("Address", '<'.$data[1].'>');
-            if (isset($data[2])) $embed->addFieldValues("Map", $data[2]);
-            if (isset($data[3])) $embed->addFieldValues("Gamemode", $data[3]);
-            if (isset($data[4])) $embed->addFieldValues("Players", $data[4]);
         }
         $message->channel->sendEmbed($embed);
         return;
