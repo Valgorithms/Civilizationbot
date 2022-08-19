@@ -45,7 +45,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         gethostbyname('www.civ13.com'),
         gethostbyname('www.valzargaming.com'),
         '51.254.161.128', //civ13.com
-        '76.111.78.31', //valzargaming.com
+        '69.140.47.22', //valzargaming.com
     ];
     if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
         $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
@@ -54,11 +54,11 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
-            $return = "<meta http-equiv = \"refresh\" content = \"0; url = https://www.valzargaming.com/?login\" />"; //Redirect to the website to log in
+            $return = '<meta http-equiv = \"refresh\" content = \"0; url = https://www.valzargaming.com/?login\" />'; //Redirect to the website to log in
             return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'github':
-            $return = "<meta http-equiv = \"refresh\" content = \"0; url = https://github.com/VZGCoders/Civilizationbot\" />"; //Redirect to the website to log in
+            $return = '<meta http-equiv = \"refresh\" content = \"0; url = https://github.com/VZGCoders/Civilizationbot\" />'; //Redirect to the website to log in
             return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'favicon.ico':
@@ -177,7 +177,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             execInBackground('git pull');
             $civ13->logger->info('[GIT PULL]');
             if ($channel = $civ13->discord->getChannel('712685552155230278'))
-                $channel->sendMessage("Updating code from GitHub...");
+                $channel->sendMessage('Updating code from GitHub...');
             $return = 'updating code';
             break;
         
@@ -189,7 +189,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             execInBackground('composer update');
             $civ13->logger->info('[COMPOSER UPDATE]');
             if ($channel = $civ13->discord->getChannel('712685552155230278'))
-                $channel->sendMessage("Updating dependencies...");
+                $channel->sendMessage('Updating dependencies...');
             $return = 'updating dependencies';
             break;
         
@@ -200,7 +200,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             }
             $civ13->logger->info('[RESTART]');
             if ($channel = $civ13->discord->getChannel('712685552155230278'))
-                $channel->sendMessage("Restarting...");
+                $channel->sendMessage('Restarting...');
             $return = 'restarting';
             $socket->close();
             $civ13->discord->getLoop()->addTimer(5, function () use ($civ13, $socket) {
