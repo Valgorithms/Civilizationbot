@@ -574,7 +574,7 @@ $on_message = function ($civ13, $message)
         if (! $accepted) return $message->channel->sendMessage('Denied!');
         
         \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
-        return $message->channel->sendMessage('Attempted to kill Civilization 13 (TDM Server)."';
+        return $message->channel->sendMessage('Attempted to kill Civilization 13 (TDM Server).');
     }
     if (str_starts_with($message_content_lower, 'tdmmapswap')) {
         $accepted = false;
