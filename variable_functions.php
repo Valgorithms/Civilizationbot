@@ -349,7 +349,7 @@ $on_message = function ($civ13, $message)
         fclose($wlist);
         
         if ($count($lines_array) > 0) {
-            if (! $wlist = fopen($civ13->files['nomads_whitelist'], "w")) return $message->channel->sendMessage('Unable to access `' . $civ13->files['nomads_whitelist'] . '`');
+            if (! $wlist = fopen($civ13->files['nomads_whitelist'], 'w')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['nomads_whitelist'] . '`');
             foreach ($lines_array as $line)
                 if (!str_contains($line, $message->member->username)) {
                     fwrite($wlist, $line);
@@ -366,7 +366,7 @@ $on_message = function ($civ13, $message)
         fclose($wlist);
         
         if ($count($lines_array) > 0) {
-            if (! $wlist = fopen($civ13->files['tdm_whitelist'], "w")) return $message->channel->sendMessage('Unable to access `' . $civ13->files['tdm_whitelist'] . '`');
+            if (! $wlist = fopen($civ13->files['tdm_whitelist'], 'w')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['tdm_whitelist'] . '`');
             foreach ($lines_array as $line)
                 if (!str_contains($line, $message->member->username)) {
                     fwrite($wlist, $line);
@@ -627,7 +627,7 @@ $on_message = function ($civ13, $message)
         return;
     }
     
-    if (str_starts_with($message_content_lower, "banlist")) {
+    if (str_starts_with($message_content_lower, 'banlist')) {
         if ($author_member = $message->member) {
             foreach ($author_member->roles as $role) {
                 switch ($role->id) {
@@ -645,7 +645,7 @@ $on_message = function ($civ13, $message)
         return $message->channel->sendMessage($builder);
     }
     
-    if (str_starts_with($message_content_lower, "bancheck")) {
+    if (str_starts_with($message_content_lower, 'bancheck')) {
         $split_message = explode('bancheck ', $message_content);
         if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return  $message->channel->sendMessage('Wrong format. Please try `!s bancheck [ckey]`.');
         $ckey = trim($split_message[1]);
@@ -1102,7 +1102,7 @@ $recalculate_ranking = function ($civ13)
 
 $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
 {     
-    if ($file = fopen($file_path, "r+")) {
+    if ($file = fopen($file_path, 'r+')) {
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, '', $fp);
             if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
