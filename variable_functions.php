@@ -1287,13 +1287,14 @@ $browser_get = function ($civ13, string $url, array $headers = [], $curl = false
     return $data; //string
 };
 
-$browser_post = function ($civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false)
+$browser_post = function ($civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false, $port = 80)
 {
     //Send a POST request to 69.140.47.22:8081/discord2ckey/ with POST['id'] = $id
     if ( ! $curl && $browser = $civ13->browser) return $browser->post($url, $headers, http_build_query($data));
 
     $ch = curl_init(); //create curl resource
     curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_PORT, $port);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
     curl_setopt($ch, CURLOPT_POST, TRUE);
@@ -1305,7 +1306,7 @@ $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' 
 $discord2ckey = function ($civ13, $id)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
-    $result = $browser_post($civ13, 'http://69.140.47.22:8081/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['id' => $id]);
+    $result = $browser_post($civ13, 'http://69.140.47.22:8081/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['id' => $id], true, 8081);
     if (is_array($result)) return json_decode($result, true); 
     return $result; //$browser->post returns React\Promise\Promise
 };
@@ -1313,7 +1314,7 @@ $discord2ckey = function ($civ13, $id)
 $ckey2discord = function ($civ13, $ckey)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
-    $result = $browser_post($civ13, 'http://69.140.47.22:8081/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey]);
+    $result = $browser_post($civ13, 'http://69.140.47.22:8081/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey], true, 8081);
     if (is_array($result)) return json_decode($result, true); //curl returns Array
     return $result; //$browser->post returns React\Promise\Promise
 };
