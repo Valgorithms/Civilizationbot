@@ -1105,6 +1105,17 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
     if ($file = fopen($file_path, 'r+')) {
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, '', $fp);
+            //ban ckey if $fp contains a blacklisted word
+            if ($ban = $civ13->functions['misc']['ban']) {
+                $string = substr($fp, strpos($fp, '/')+1);
+                $ckey = substr($string, 0, strpos($string, ':'));
+                $badwords = ['beaner', 'brownie', 'chink', 'coconut', 'coon', 'darkie', 'darky', 'fag', 'faggot', 'gook', 'kike', 'nigga', 'nigger', 'oreo', 'tranny'];
+                foreach ($badwords as $badword) {
+                    if (str_contains(strtolower($fp), $badword)) {
+                        $ban($civ13, [$ckey, '999 years', 'Blacklisted word, please appeal on our discord']);
+                    }
+                }
+            }
             if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
             else $civ13->logger->warning("unable to find channel `$channel_id`");
         }
@@ -1171,13 +1182,13 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
 
 $timer_function = function ($civ13)
 {
-    $ooc_relay = $civ13->functions['misc']['ooc_relay'];
-    
     if ($guild = $civ13->discord->guilds->offsetGet($civ13->civ13_guild_id)) {
-        $ooc_relay($civ13, $guild, $civ13->files['nomads_ooc_path'], $civ13->channel_ids['nomads_ooc_channel']);  // #ooc-nomads
-        $ooc_relay($civ13, $guild, $civ13->files['nomads_admin_path'], $civ13->channel_ids['nomads_admin_channel']);  // #ahelp-nomads
-        $ooc_relay($civ13, $guild, $civ13->files['tdm_ooc_path'], $civ13->channel_ids['tdm_ooc_channel']);  // #ooc-tdm
-        $ooc_relay($civ13, $guild, $civ13->files['tdm_admin_path'], $civ13->channel_ids['tdm_admin_channel']);  // #ahelp-tdm
+        if ($ooc_relay = $civ13->functions['misc']['ooc_relay']) {
+            $ooc_relay($civ13, $guild, $civ13->files['nomads_ooc_path'], $civ13->channel_ids['nomads_ooc_channel']);  // #ooc-nomads
+            $ooc_relay($civ13, $guild, $civ13->files['nomads_admin_path'], $civ13->channel_ids['nomads_admin_channel']);  // #ahelp-nomads
+            $ooc_relay($civ13, $guild, $civ13->files['tdm_ooc_path'], $civ13->channel_ids['tdm_ooc_channel']);  // #ooc-tdm
+            $ooc_relay($civ13, $guild, $civ13->files['tdm_admin_path'], $civ13->channel_ids['tdm_admin_channel']);  // #ahelp-tdm
+        }
     } else $civ13->logger->warning('unable to get guild ' . $civ13->civ13_guild_id);
 };
 
