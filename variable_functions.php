@@ -1275,12 +1275,13 @@ $tdm_ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
-$browser_get = function ($civ13, string $url, array $headers = [], $curl = false)
+$browser_get = function ($civ13, string $url, array $headers = [], $curl = false, $port = 80)
 {
     if ( ! $curl && $browser = $civ13->browser) return $browser->get($url, $headers);
     
     $ch = curl_init(); //create curl resource
     curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_PORT, $port);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
     $result = curl_exec($ch);
@@ -1299,6 +1300,7 @@ $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' 
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
     curl_setopt($ch, CURLOPT_POST, TRUE);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     $result = curl_exec($ch);
     return json_decode($result, true); //Array
 };
