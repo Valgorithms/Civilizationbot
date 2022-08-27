@@ -1108,8 +1108,8 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
             //ban ckey if $fp contains a blacklisted word
             if ($ban = $civ13->functions['misc']['ban']) {
                 $string = substr($fp, strpos($fp, '/')+1);
+                $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'faggot', 'gook', 'kike', 'nigga', 'nigger', 'tranny'];
                 $ckey = substr($string, 0, strpos($string, ':'));
-                $badwords = ['beaner', 'brownie', 'chink', 'coconut', 'coon', 'darkie', 'darky', 'fag', 'faggot', 'gook', 'kike', 'nigga', 'nigger', 'oreo', 'tranny'];
                 foreach ($badwords as $badword) {
                     if (str_contains(strtolower($fp), $badword)) {
                         $ban($civ13, [$ckey, '999 years', 'Blacklisted word, please appeal on our discord']);
