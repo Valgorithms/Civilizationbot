@@ -1112,7 +1112,11 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
                 $ckey = substr($string, 0, strpos($string, ':'));
                 foreach ($badwords as $badword) {
                     if (str_contains(strtolower($fp), $badword)) {
-                        $ban($civ13, [$ckey, '999 years', 'Blacklisted word, please appeal on our discord']);
+                        $filtered = substr($badword, 0, 1);
+                        for ($x=1;$x<strlen($badword)-2; $x++)
+                            $filtered .= '*';
+                        $filtered  .= substr($badword, -1, 1);
+                        $ban($civ13, [$ckey, '999 years', "Blacklisted word ($filtered), please appeal on our discord"]);
                     }
                 }
             }
