@@ -23,6 +23,7 @@ $discord = new \Discord\Discord([
     'loop' => $loop,
     'logger' => $logger,
     'cacheInterface' => $cache,
+    'cacheSweep' => false, //Don't periodically wipe the in-memory cache in case something happens to Redis
     /*'socket_options' => [
         'dns' => '8.8.8.8', // can change dns
     ],*/
