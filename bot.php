@@ -15,17 +15,20 @@ require getcwd(). '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
 $loop = React\EventLoop\Factory::create();
+$redis = (new Clue\React\Redis\Factory($loop))->createLazyClient('127.0.0.1:6379');
+$cache = new WyriHaximus\React\Cache\Redis($redis, 'dphp:cache:'); // prefix is "dphp:cache"
 $logger = new Monolog\Logger('New logger');
 $logger->pushHandler(new Monolog\Handler\StreamHandler('php://stdout'));
 $discord = new \Discord\Discord([
     'loop' => $loop,
     'logger' => $logger,
+    'cacheInterface' => $cache,
     /*'socket_options' => [
         'dns' => '8.8.8.8', // can change dns
     ],*/
     'token' => "$token",
     'loadAllMembers' => true,
-    'storeMessages' => false, //Not needed yet
+    'storeMessages' => true, //Because why not?
     'intents' => Discord\WebSockets\Intents::getDefaultIntents() | Discord\WebSockets\Intents::GUILD_MEMBERS, // default intents as well as guild members
 ]);
 include 'stats_object.php'; 
