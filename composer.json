@@ -9,7 +9,7 @@
     ],
     "require": {
         "php": "^8.0.0",
-        "team-reflex/discord-php": "dev-master",
+        "team-reflex/discord-php": "dev-cacheInterface",
         "clue/redis-react": "^2.6",
         "wyrihaximus/react-cache-redis": "^4.2.0",
         "react/filesystem": "^0.2@dev",
