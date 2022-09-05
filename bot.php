@@ -30,7 +30,7 @@ $discord = new \Discord\Discord([
     'token' => "$token",
     'loadAllMembers' => true,
     'storeMessages' => true, //Because why not?
-    'intents' => Discord\WebSockets\Intents::getDefaultIntents() | Discord\WebSockets\Intents::GUILD_MEMBERS, // default intents as well as guild members
+    'intents' => Discord\WebSockets\Intents::getDefaultIntents() | Discord\WebSockets\Intents::GUILD_MEMBERS | Discord\WebSockets\Intents::MESSAGE_CONTENT, // default intents as well as guild members
 ]);
 include 'stats_object.php'; 
 $stats = new Stats();
