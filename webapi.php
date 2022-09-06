@@ -51,12 +51,11 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         '69.140.47.22',
     ];
     $substr_whitelist = ['10.0.0.', '192.168.']; 
-    $whitelist = [$external_ip, '127.0.0.1'];
     $whitelisted = false;
-    foreach ($substr_whitelist as $substr) if (substr($request->getServerParams()['REMOTE_ADDR'], 0, strlen($substr) == $substr)) $whitelisted = true;
-    if (in_array($request->getServerParams()['REMOTE_ADDR'] ,$external_ip)) $whitelisted = true;
+    foreach ($substr_whitelist as $substr) if (substr($request->getServerParams()['REMOTE_ADDR'], 0, strlen($substr)) == $substr) $whitelisted = true;
+    if (in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist)) $whitelisted = true;
     
-    if (!$whitelisted) return $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
+    if (!$whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
@@ -119,13 +118,11 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
 
         case 'members':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id))
-                return webapiFail('guild_id', $id);
-            $return = $guild->members;
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->members) return webapiFail('guild_id', $id);
             break;
 
         case 'emojis':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id)->emojis) return webapiFail('guild_id', $id);
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->emojis) return webapiFail('guild_id', $id);
             break;
 
         case 'invites':
@@ -133,7 +130,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
 
         case 'roles':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id)->roles) return webapiFail('guild_id', $id);
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->roles) return webapiFail('guild_id', $id);
             break;
 
         case 'guildMember':
@@ -201,8 +198,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id))
-                return webapiFail('user_id', $id);
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
             break;
 
         case 'owner':
@@ -307,6 +303,6 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     return new \React\Http\Message\Response(200, ['Content-Type' => 'text/json'], json_encode($return));
 });
 $webapi->listen($socket);
-$webapi->on('error', function ($e) {
+$webapi->on('error', function ($e) use ($civ13) {
     $civ13->logger->error('API ' . $e->getMessage());
 });
