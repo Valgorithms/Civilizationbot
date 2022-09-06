@@ -68,7 +68,7 @@ $on_message = function ($civ13, $message)
     $author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
     if ($author_member = $message->member) {
         $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
-        $author_guild = $message->guild ?? $civ13->discord->guilds->offsetGet($message->guild_id);
+        $author_guild = $message->guild ?? $civ13->discord->guilds->get('id', $message->guild_id);
     }
     
     $message_content = '';
@@ -274,7 +274,7 @@ $on_message = function ($civ13, $message)
                     $accepted = true;
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet($civ13->role_ids['veteran'])->name : 'Veteran' . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['veteran'])->name : 'Veteran' . '] rank.');
         
         $found = false;
         $whitelist1 = fopen($civ13->files['nomads_whitelist'], 'r');
@@ -340,7 +340,7 @@ $on_message = function ($civ13, $message)
                     $accepted = true;
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet($civ13->role_ids['veteran'])->name : "Veteran" . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['veteran'])->name : "Veteran" . '] rank.');
         
         $removed = "N/A";
         $lines_array = array();
@@ -389,7 +389,7 @@ $on_message = function ($civ13, $message)
                     $accepted = true;
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet($civ13->role_ids['captain'])->name : "Captain" . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['captain'])->name : "Captain" . '] rank.');
         
         $message->channel->sendMessage('Please wait, updating the code...');
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
@@ -427,7 +427,7 @@ $on_message = function ($civ13, $message)
                     $accepted = true;
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet($civ13->role_ids['captain'])->name : "Captain" . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['captain'])->name : "Captain" . '] rank.');
         
         \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
         $message->channel->sendMessage('Attempted to kill Civilization 13 Server.');
@@ -451,7 +451,7 @@ $on_message = function ($civ13, $message)
                     $accepted = true;
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet($civ13->role_ids['captain'])->name . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
         
         \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
         $message->channel->sendMessage('Attempted to kill Civilization 13 TDM Server.');
@@ -475,7 +475,7 @@ $on_message = function ($civ13, $message)
                     $accepted = true;
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet($civ13->role_ids['captain'])->name . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
         
         $split_message = explode('mapswap ', $message_content);
         if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return $message->channel->sendMessage('You need to include the name of the map.');
@@ -524,7 +524,7 @@ $on_message = function ($civ13, $message)
                         $accepted = true;
                 }
             }
-            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet($civ13->role_ids['captain'])->name . '] rank.');
+            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
             
             $split_message = explode('mapswap ', $message_content);
             $mapto = $split_message[1];
@@ -548,7 +548,7 @@ $on_message = function ($civ13, $message)
                     $accepted = true;
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet($civ13->role_ids['captain'])->name . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
         
         $message->channel->sendMessage('Please wait, updating the code...');
         \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
@@ -587,7 +587,7 @@ $on_message = function ($civ13, $message)
                     $accepted = true;
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet($civ13->role_ids['knight'])->name . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['knight'])->name . '] rank.');
         
         $split_message = explode('tdmmapswap ', $message_content);
         if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return $message->channel->sendMessage('You need to include the name of the map.');
@@ -638,7 +638,7 @@ $on_message = function ($civ13, $message)
                 }
             }
         }
-        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet($civ13->role_ids['knight'])->name . '] rank.');
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['knight'])->name . '] rank.');
         
         $builder = Discord\Builders\MessageBuilder::new();
         $builder->addFile($civ13->files['tdm_bans'], 'bans.txt');
@@ -1024,7 +1024,7 @@ $on_message2 = function ($civ13, $message)
                         $accepted = true;
                 }
             }
-            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->offsetGet($civ13->role_ids['admiral'])->name : "admiral" . '] rank.');
+            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['admiral'])->name : "admiral" . '] rank.');
             
             if ($state == "on") {
                 \execInBackground('cd ' . $civ13->files['typespess_path']);
@@ -1120,7 +1120,7 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
                     }
                 }
             }
-            if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
+            if ($target_channel = $guild->channels->get('id', $channel_id)) $target_channel->sendMessage($fp);
             else $civ13->logger->warning("unable to find channel `$channel_id`");
         }
         ftruncate($file, 0); //clear the file
@@ -1129,7 +1129,7 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
 
     /*
     echo '[RELAY - PATH] ' . $file_path . PHP_EOL;
-    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
+    if ($target_channel = $guild->channels->get('id', $channel_id)) {
         if ($file = $civ13->filesystem->file($file_path)) {
             $file->getContents()->then(
             function (string $contents) use ($file, $target_channel) {
@@ -1164,7 +1164,7 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
     */
     
     /*
-    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
+    if ($target_channel = $guild->channels->get('id', $channel_id)) {
         if ($file = $civ13->filesystem->file($file_path)) {
             $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
                 var_dump($contents);
@@ -1186,7 +1186,7 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
 
 $timer_function = function ($civ13)
 {
-    if ($guild = $civ13->discord->guilds->offsetGet($civ13->civ13_guild_id)) {
+    if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) {
         if ($ooc_relay = $civ13->functions['misc']['ooc_relay']) {
             $ooc_relay($civ13, $guild, $civ13->files['nomads_ooc_path'], $civ13->channel_ids['nomads_ooc_channel']);  // #ooc-nomads
             $ooc_relay($civ13, $guild, $civ13->files['nomads_admin_path'], $civ13->channel_ids['nomads_admin_channel']);  // #ahelp-nomads

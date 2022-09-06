@@ -159,7 +159,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
     if ($file = fopen($file_path, "r+")) {
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, "", $fp);
-            if ($target_channel = $guild->channels->offsetGet($channel_id)) $target_channel->sendMessage($fp);
+            if ($target_channel = $guild->channels->get('id', $id)($channel_id)) $target_channel->sendMessage($fp);
             else echo "[RELAY] Unable to find channel $target_channel" . PHP_EOL;
         }
         ftruncate($file, 0); //clear the file
@@ -168,7 +168,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
 
     /*
     echo '[RELAY - PATH] ' . $file_path . PHP_EOL;
-    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
+    if ($target_channel = $guild->channels->get('id', $id)($channel_id)) {
         if ($file = $filesystem->file($file_path)) {
             $file->getContents()->then(
             function (string $contents) use ($file, $target_channel) {
@@ -203,7 +203,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
     */
     
     /*
-    if ($target_channel = $guild->channels->offsetGet($channel_id)) {
+    if ($target_channel = $guild->channels->get('id', $id)($channel_id)) {
         if ($file = $filesystem->file($file_path)) {
             $file->getContents()->then(function (string $contents) use ($file, $target_channel) {
                 var_dump($contents);
@@ -225,7 +225,7 @@ $ooc_relay = function ($guild, string $file_path, string $channel_id) use ($file
 
 $timer_function = function () use ($discord, $ooc_relay, $civ13_guild_id, $nomads_ooc_path, $nomads_admin_path, $tdm_ooc_path, $tdm_admin_path, $nomads_ooc_channel, $nomads_admin_channel, $tdm_ooc_channel, $tdm_admin_channel)
 {
-    if ($guild = $discord->guilds->offsetGet($civ13_guild_id)) {
+    if ($guild = $discord->guilds->get('id', $id)($civ13_guild_id)) {
         $ooc_relay($guild, $nomads_ooc_path, $nomads_ooc_channel);  // #ooc-nomads
         $ooc_relay($guild, $nomads_admin_path, $nomads_admin_channel);  // #ahelp-nomads
         $ooc_relay($guild, $tdm_ooc_path, $tdm_ooc_channel);  // #ooc-tdm
@@ -254,7 +254,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
     $author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
     if ($author_member = $message->member) {
         $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
-        $author_guild = $message->guild ?? $discord->guilds->offsetGet($message->guild_id);
+        $author_guild = $message->guild ?? $discord->guilds->get('id', $id)($message->guild_id);
     }
     
     $message_content = '';
@@ -495,7 +495,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
                         fclose($whitelist2);
                     }
                     return $message->channel->sendMessage("$ckey has been added to the whitelist.");
-                } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$veteran")->name . '] rank.');
+                } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $id)("$veteran")->name . '] rank.');
             } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         } else return $message->channel->sendMessage("Wrong format. Please try '!s whitelistme [ckey].'");
         return;
@@ -555,7 +555,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
                     } else return $message->channel->sendMessage("Unable to access `$tdm_whitelist`");
                 }
                 return $message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
-            } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$veteran")->name . '] rank.');
+            } else return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $id)("$veteran")->name . '] rank.');
         } else return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         return;
     }
@@ -754,7 +754,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
             $builder = Discord\Builders\MessageBuilder::new();
             $builder->addFile($tdm_bans, 'bans.txt');
             return $message->channel->sendMessage($builder);
-        } return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->offsetGet("$knight")->name . '] rank.');
+        } return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $id)("$knight")->name . '] rank.');
     }
     
     if (str_starts_with($message_content_lower, "bancheck")) {

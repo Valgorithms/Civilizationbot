@@ -103,67 +103,50 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
         
         case 'channel':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->getChannel($id))
-                return webapiFail('channel_id', $id);
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->getChannel($id)) return webapiFail('channel_id', $id);
             break;
 
         case 'guild':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->offsetGet($id))
-                return webapiFail('guild_id', $id);
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
             break;
 
         case 'bans':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
-                return webapiFail('guild_id', $id);
-            $return = $guild->bans;
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->bans) return webapiFail('guild_id', $id);
             break;
 
         case 'channels':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
-                return webapiFail('guild_id', $id);
-            $return = $guild->channels;
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->channels) return webapiFail('guild_id', $id);
             break;
 
         case 'members':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
+            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id))
                 return webapiFail('guild_id', $id);
             $return = $guild->members;
             break;
 
         case 'emojis':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
-                return webapiFail('guild_id', $id);
-            $return = $guild->emojis;
+            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id)->emojis) return webapiFail('guild_id', $id);
             break;
 
         case 'invites':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
-                return webapiFail('guild_id', $id);
-            $return = $guild->invites;
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->invites) return webapiFail('guild_id', $id);
             break;
 
         case 'roles':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
-                return webapiFail('guild_id', $id);
-            $return = $guild->roles;
+            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id)->roles) return webapiFail('guild_id', $id);
             break;
 
         case 'guildMember':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->offsetGet($id))
-                return webapiFail('guild_id', $id);
-            if (!$id2 || !webapiSnow($id2) || !$return = $guild->members->offsetGet($id2))
-                return webapiFail('user_id', $id2);
+            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
+            if (!$id2 || !webapiSnow($id2) || !$return = $guild->members->get('id', $id2)) return webapiFail('user_id', $id2);
             break;
 
         case 'user':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->offsetGet($id)) {
-                return webapiFail('user_id', $id);
-            }
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
             break;
 
         case 'userName':
-            if (!$id || !$return = $civ13->discord->users->get('name', $id))
-                return webapiFail('user_name', $id);
+            if (!$id || !$return = $civ13->discord->users->get('name', $id)) return webapiFail('user_name', $id);
             break;
         
         case 'reset':
@@ -182,8 +165,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             }
             execInBackground('git pull');
             $civ13->logger->info('[GIT PULL]');
-            if ($channel = $civ13->discord->getChannel('712685552155230278'))
-                $channel->sendMessage('Updating code from GitHub...');
+            if ($channel = $civ13->discord->getChannel('712685552155230278')) $channel->sendMessage('Updating code from GitHub...');
             $return = 'updating code';
             break;
         
@@ -194,8 +176,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             }
             execInBackground('composer update');
             $civ13->logger->info('[COMPOSER UPDATE]');
-            if ($channel = $civ13->discord->getChannel('712685552155230278'))
-                $channel->sendMessage('Updating dependencies...');
+            if ($channel = $civ13->discord->getChannel('712685552155230278')) $channel->sendMessage('Updating dependencies...');
             $return = 'updating dependencies';
             break;
         
@@ -205,8 +186,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             $civ13->logger->info('[RESTART]');
-            if ($channel = $civ13->discord->getChannel('712685552155230278'))
-                $channel->sendMessage('Restarting...');
+            if ($channel = $civ13->discord->getChannel('712685552155230278')) $channel->sendMessage('Restarting...');
             $return = 'restarting';
             $socket->close();
             $civ13->discord->getLoop()->addTimer(5, function () use ($civ13, $socket) {
@@ -221,7 +201,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->offsetGet($id))
+            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id))
                 return webapiFail('user_id', $id);
             break;
 
@@ -230,10 +210,8 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if (!$id || !webapiSnow($id))
-                return webapiFail('user_id', $id);
-            $return = false;
-            if ($user = $civ13->discord->users->offsetGet($id)) { //Search all guilds the bot is in and check if the user id exists as a guild owner
+            if (!$id || !webapiSnow($id)) return webapiFail('user_id', $id); $return = false;
+            if ($user = $civ13->discord->users->get('id', $id)) { //Search all guilds the bot is in and check if the user id exists as a guild owner
                 foreach ($discord->guilds as $guild) {
                     if ($id == $guild->owner_id) {
                         $return = true;
@@ -244,10 +222,8 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
 
         case 'avatar':
-            if (!$id || !webapiSnow($id)) {
-                return webapiFail('user_id', $id);
-            }
-            if (!$user = $civ13->discord->users->offsetGet($id)) {
+            if (!$id || !webapiSnow($id)) return webapiFail('user_id', $id);
+            if (!$user = $civ13->discord->users->get('id', $id)) {
                 $civ13->discord->users->fetch($id)->done(
                     function ($user) {
                         $return = $user->avatar;
@@ -319,8 +295,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
         
         case 'discord2ckey':
-            if (!$id || !webapiSnow($id) || !is_numeric($id))
-                return webapiFail('user_id', $id);
+            if (!$id || !webapiSnow($id) || !is_numeric($id)) return webapiFail('user_id', $id);
             $discord2ckey = $civ13->functions['misc']['discord2ckey'];
             $return = $discord2ckey($civ13, $id);
             return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
