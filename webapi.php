@@ -15,8 +15,11 @@ function webapiSnow($string) {
     return preg_match('/^[0-9]{16,18}$/', $string);
 }
 
+$external_ip = file_get_contents('http://ipecho.net/plain');
+$valzargaming_ip = gethostbyname('www.valzargaming.com');
+
 $socket = new \React\Socket\Server(sprintf('%s:%s', '0.0.0.0', '55555'), $civ13->loop);
-$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($civ13, $socket)
+$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip)
 {
     /*
     $path = explode('/', $request->getUri()->getPath());
@@ -41,16 +44,19 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     
     if ($ip) $civ13->logger->info('API IP ' . $ip);
     $whitelist = [
-        '127.0.0.1', //local host
-        gethostbyname('www.civ13.com'),
-        gethostbyname('www.valzargaming.com'),
-        '51.254.161.128', //civ13.com
-        '69.140.47.22', //valzargaming.com
+        '127.0.0.1',
+        $external_ip,
+        $valzargaming_ip,
+        '51.254.161.128',
+        '69.140.47.22',
     ];
-    if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
-        $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
-        return;
-    }
+    $substr_whitelist = ['10.0.0.', '192.168.']; 
+    $whitelist = [$external_ip, '127.0.0.1'];
+    $whitelisted = false;
+    foreach ($substr_whitelist as $substr) if (substr($request->getServerParams()['REMOTE_ADDR'], 0, strlen($substr) == $substr)) $whitelisted = true;
+    if (in_array($request->getServerParams()['REMOTE_ADDR'] ,$external_ip)) $whitelisted = true;
+    
+    if (!$whitelisted) return $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
@@ -62,7 +68,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'favicon.ico':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+            if (!$whitelisted) {
                 $civ13->logger->info('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -70,7 +76,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             return new \React\Http\Message\Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
         
         case 'nohup.out':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -79,7 +85,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
         
         case 'botlog':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -88,7 +94,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
             
         case 'botlog2':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -161,7 +167,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
         
         case 'reset':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -170,7 +176,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
         
         case 'pull':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -182,7 +188,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
         
         case 'update':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -194,7 +200,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
         
         case 'restart':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -211,7 +217,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
 
         case 'lookup':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -220,7 +226,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             break;
 
         case 'owner':
-            if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) {
+            if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -284,7 +290,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         case 'nomads':
             switch ($id) {
                 case 'bans':
-                    if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+                    if (!$whitelisted) {
                         $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                         return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
@@ -299,7 +305,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         case 'nomads':
             switch ($id) {
                 case 'bans':
-                    if (substr($request->getServerParams()['REMOTE_ADDR'], 0, 6) != '10.0.0' && ! in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist) ) { //Restricted for obvious reasons
+                    if (!$whitelisted) {
                         $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                         return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
