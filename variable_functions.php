@@ -757,10 +757,10 @@ $on_message = function ($civ13, $message)
     }
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
         $filter = 'discord2ckey ';
-        $ckey = trim(str_replace($filter, '', $message_content_lower));
+        $id = trim(str_replace($filter, '', $message_content_lower));
         
         $filter = '<@';
-        $id = trim(str_replace($filter, '', $ckey));
+        $id = trim(str_replace($filter, '', $id));
         $filter = '!';
         $id = trim(str_replace($filter, '', $id));
         $filter = '>';
@@ -769,18 +769,37 @@ $on_message = function ($civ13, $message)
         
         $civ13->logger->info("DISCORD2CKEY id $id");
         $discord2ckey = $civ13->functions['misc']['discord2ckey'];
-        if (is_array($result = $discord2ckey($civ13, $id))) { //curl json_decoded array
+        $result = $discord2ckey($civ13, $id);
+        echo '[DISCORD2CKEY]'; var_dump($result);
+        if (is_array($result)) { //curl json_decoded array
             if($ckey = $result['ckey']) return $message->reply("<@$id> is registered to ckey $ckey");
             else return $message->reply("<@$id> is not registered to any ckey");
-        } else { //React\Promise\Promise from $browser->post
+        } elseif (is_object($result)) {
+            if($ckey = $result->ckey) {
+                $civ13->logger->info("DISCORD2CKEY ckey $id - OBJ");
+                return $message->reply("<@$id> is registered to $ckey");
+            } else {
+                $civ13->logger->info('DISCORD2CKEY ckey null - OBJ NULL');
+                return $message->reply("<@$id> is not registered to any ckey");
+            }
+        } elseif (is_string($result)) {
+            if($result) {
+                $civ13->logger->info("DISCORD2CKEY ckey $result - STRING");
+                return $message->reply("<@$id> is registered to $result");
+            } else {
+                $civ13->logger->info('DISCORD2CKEY ckey null - STRING NULL');
+                return $message->reply("<@$id> is not registered to any ckey");
+            }
+        }
+        else { //React\Promise\Promise from $browser->post
             $result->then(function ($response) use ($civ13, $message, $id) {
                 $result = json_decode((string)$response->getBody(), true);
                 if($ckey = $result['ckey']) {
                     $civ13->logger->info("DISCORD2CKEY ckey $ckey");
-                    $message->reply("<@$id> is registered to ckey $ckey");
+                    return $message->reply("<@$id> is registered to ckey $ckey");
                 } else {
                     $civ13->logger->info('DISCORD2CKEY ckey null');
-                    $message->reply("<@$id> is not registered to any ckey");
+                    return $message->reply("<@$id> is not registered to any ckey");
                 }
             }, function (Exception $e) use ($civ13) {
                 $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
@@ -799,20 +818,39 @@ $on_message = function ($civ13, $message)
         $filter = ' ';
         $ckey = str_replace($filter, '', $ckey);
         
-        $civ13->logger->info("CKEY2DISCORD ckey $ckey");
+        $civ13->logger->info("CKEY2DISCORD $ckey");
         $ckey2discord = $civ13->functions['misc']['ckey2discord'];
-        if (is_array($result = $ckey2discord($civ13, $ckey))) { //curl json_decoded array
+        $result = $ckey2discord($civ13, $ckey);
+        echo '[CKEY2DISCORD]'; var_dump($result);
+        if (is_array($result)) { //curl json_decoded array
             if($id = $result['id']) return $message->reply("$ckey is registered to <@$id>");
             else return $message->reply("$ckey is not registered to any discord account");
+        } elseif (is_object($result)) {
+            if($id = $result->discord) {
+                $civ13->logger->info("CKEY2DISCORD id $id");
+                $message->reply("$ckey is registered to <@$id>");
+            } else {
+                $civ13->logger->info('CKEY2DISCORD id null');
+                $message->reply("$ckey is not registered to any discord account");
+            }
+        } elseif (is_string($result)) {
+            if($result) {
+                $civ13->logger->info("CKEY2DISCORD id $result");
+                return $message->reply("$ckey is registered to <@$result>");
+            } else {
+                $civ13->logger->info('CKEY2DISCORD id null');
+                return $message->reply("$ckey is not registered to any discord account");
+            }
         } else { //React\Promise\Promise from $browser->post
-            $result->then(function ($response) use ($civ13, $message, $ckey) {
+            $civ13->logger->info('CKEY2DISCORD $BROWSER->POST');
+            $result->done(function ($response) use ($civ13, $message, $ckey) {
                 $result = json_decode((string)$response->getBody(), true);
                 if($id = $result['discord']) {
                     $civ13->logger->info("CKEY2DISCORD id $id");
-                    $message->reply("$ckey is registered to <@$id>");
+                    return $message->reply("$ckey is registered to <@$id>");
                 } else {
                     $civ13->logger->info('CKEY2DISCORD id null');
-                    $message->reply("$ckey is not registered to any discord account");
+                    return $message->reply("$ckey is not registered to any discord account");
                 }
             }, function (Exception $e) use ($civ13) {
                 $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
@@ -1309,7 +1347,7 @@ $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' 
 $discord2ckey = function ($civ13, $id)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
-    $result = $browser_post($civ13, 'http://69.140.47.22:8081/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['id' => $id]);
+    $result = $browser_post($civ13, 'http://69.140.47.22:8081/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
     if (is_array($result)) return json_decode(json_encode($result), true); //curl returns string
     return json_decode($result); //$browser->post returns React\Promise\Promise
 };
@@ -1317,7 +1355,7 @@ $discord2ckey = function ($civ13, $id)
 $ckey2discord = function ($civ13, $ckey)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
-    $result = $browser_post($civ13, 'http://69.140.47.22:8081/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey]);
+    $result = $browser_post($civ13, 'http://69.140.47.22:8081/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey], true);
     if (is_array($result)) return json_decode(json_encode($result), true);  //curl returns string
     return json_decode($result); //$browser->post returns React\Promise\Promise
 };
