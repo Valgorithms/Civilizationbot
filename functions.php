@@ -14,7 +14,7 @@ if (PHP_OS_FAMILY == 'Windows') {
         pclose(popen('start '. $cmd, "r")); //pclose(popen("start /B ". $cmd, "r"));;
     };
     function restart() {
-        pclose(popen('cmd /c "'. getcwd() . '\run.bat"')); //pclose(popen("start /B ". $cmd, "r"));;
+        pclose(popen('cmd /c "'. getcwd() . '\run.bat"', "r")); //pclose(popen("start /B ". $cmd, "r"));;
     };
 } else {
     function spawnChildProcess($cmd) {
@@ -36,7 +36,7 @@ if (PHP_OS_FAMILY == 'Windows') {
         });
         
         $process->on('exit', function($exitCode, $termSignal) {
-            if ($term === null) {
+            if ($termSignal === null) {
                 echo 'Process exited with code ' . $exitCode . PHP_EOL;
             } else {
                 echo 'Process terminated with signal ' . $termSignal . PHP_EOL;

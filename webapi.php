@@ -208,7 +208,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             }
             if (!$id || !webapiSnow($id)) return webapiFail('user_id', $id); $return = false;
             if ($user = $civ13->discord->users->get('id', $id)) { //Search all guilds the bot is in and check if the user id exists as a guild owner
-                foreach ($discord->guilds as $guild) {
+                foreach ($civ13->discord->guilds as $guild) {
                     if ($id == $guild->owner_id) {
                         $return = true;
                         break 1;
@@ -219,23 +219,13 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
 
         case 'avatar':
             if (!$id || !webapiSnow($id)) return webapiFail('user_id', $id);
-            if (!$user = $civ13->discord->users->get('id', $id)) {
-                $civ13->discord->users->fetch($id)->done(
-                    function ($user) {
-                        $return = $user->avatar;
-                        return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
-                    }, function ($error) {
-                        return webapiFail('user_id', $id);
-                    }
-                );
-                $return = 'https://cdn.discordapp.com/embed/avatars/'.rand(0,4).'.png';
-            }else{
-                $return = $user->avatar;
-            }
+            if (!$user = $civ13->discord->users->get('id', $id)) $return = 'https://cdn.discordapp.com/embed/avatars/'.rand(0,4).'.png';
+            else $return = $user->avatar;
             //if (!$return) return new \React\Http\Message\Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], (''));
             break;
 
-        case 'avatars':
+        case 'avatars': //This needs to be optimized to not use async code
+            /*
             $idarray = $data ?? array(); // $data contains POST data
             $results = [];
             $promise = $civ13->discord->users->fetch($idarray[0])->then(function ($user) use (&$results) {
@@ -257,6 +247,8 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
               // return with error ?
               return new \React\Http\Message\Response(200, ['Content-Type' => 'application/json'], json_encode($results));
             });
+            */
+            $return = '';
             break;
         
         case 'nomads':

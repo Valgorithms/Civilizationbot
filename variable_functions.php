@@ -104,6 +104,7 @@ $on_message = function ($civ13, $message)
             $load_array = explode(' ', $p);
 
             $x=0;
+            $load = '';
             foreach ($load_array as $line) {
                 if ($line != ' ' && $line != '') {
                     if ($x==0) {
@@ -133,11 +134,8 @@ $on_message = function ($civ13, $message)
             $insults_array = array();
             
             if (! $file = fopen($civ13->files['insults_path'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['insults_path'] . '`');
-            while (($fp = fgets($file, 4096)) !== false) {
-                if (trim(strtolower($fp)) == trim(strtolower($incel)))
-                    $insults_array[] = $insult;
-            }
-            if (count($insults_array > 0)) {
+            while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
+            if (count($insults_array) > 0) {
                 $insult = $insults_array[rand(0, count($insults_array)-1)];
                 return $message->channel->sendMessage("$incel, $insult");
             }
@@ -345,10 +343,10 @@ $on_message = function ($civ13, $message)
         $removed = "N/A";
         $lines_array = array();
         if (! $wlist = fopen($civ13->files['nomads_whitelist'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['nomads_whitelist'] . '`');  
-        while (($fp = fgets($playerlogs, 4096)) !== false) $lines_array[] = $fp;
+        while (($fp = fgets($wlist, 4096)) !== false) $lines_array[] = $fp;
         fclose($wlist);
         
-        if ($count($lines_array) > 0) {
+        if (count($lines_array) > 0) {
             if (! $wlist = fopen($civ13->files['nomads_whitelist'], 'w')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['nomads_whitelist'] . '`');
             foreach ($lines_array as $line)
                 if (!str_contains($line, $message->member->username)) {
@@ -362,10 +360,10 @@ $on_message = function ($civ13, $message)
         
         $lines_array = array();
         if (! $wlist = fopen($civ13->files['tdm_whitelist'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['tdm_whitelist'] . '`');
-        while (($fp = fgets($playerlogs, 4096)) !== false) $lines_array[] = $fp;
+        while (($fp = fgets($wlist, 4096)) !== false) $lines_array[] = $fp;
         fclose($wlist);
         
-        if ($count($lines_array) > 0) {
+        if (count($lines_array) > 0) {
             if (! $wlist = fopen($civ13->files['tdm_whitelist'], 'w')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['tdm_whitelist'] . '`');
             foreach ($lines_array as $line)
                 if (!str_contains($line, $message->member->username)) {
@@ -459,7 +457,7 @@ $on_message = function ($civ13, $message)
         $message->channel->sendMessage('Updated the code.');
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
         \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm_port'] . ' -trusted -webclient -logself &');
-        $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message, $tdm_kills) { # ditto
+        $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message) { # ditto
             $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
         });
@@ -628,6 +626,7 @@ $on_message = function ($civ13, $message)
     }
     
     if (str_starts_with($message_content_lower, 'banlist')) {
+        $accepted = false;
         if ($author_member = $message->member) {
             foreach ($author_member->roles as $role) {
                 switch ($role->id) {
@@ -887,7 +886,7 @@ $on_message2 = function ($civ13, $message)
     $message_content = substr($message->content, strlen($civ13->command_symbol)+1);
     $message_content_lower = strtolower($message_content);
     if (str_starts_with($message_content_lower, 'ranking')) {
-        $recalculate_ranking($civ13);
+        if(!$recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         $line_array = array();
         if (! $search = fopen($civ13->files['ranking_path'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['ranking_path'] . '`');
         while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
@@ -1024,7 +1023,7 @@ $on_message2 = function ($civ13, $message)
                         $accepted = true;
                 }
             }
-            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['admiral'])->name : "admiral" . '] rank.');
+            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids['admiral'])->name : "admiral" . '] rank.');
             
             if ($state == "on") {
                 \execInBackground('cd ' . $civ13->files['typespess_path']);
@@ -1050,7 +1049,7 @@ $recalculate_ranking = function ($civ13)
     $ckeylist = array();
     $result = array();
     
-    if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['tdm_awards_path'] . '`');
+    if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
     while(! feof($search)) {
         $medal_s = 0;
         $line = fgets($search);
@@ -1094,10 +1093,11 @@ $recalculate_ranking = function ($civ13)
         return $a[0] <=> $b[0];
     });
     $sorted_list = array_reverse($ranking);
-    if (! $search = fopen($civ13->files['ranking_path'], 'w')) return $message->channel->sendMessage("unable to access `$ranking`");
+    if (! $search = fopen($civ13->files['ranking_path'], 'w')) return false;
     foreach ($sorted_list as $i)
         fwrite($search, $i[0] . ';' . $i[1] . PHP_EOL);
     fclose ($search);
+    return true;
 };
 
 $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
@@ -1288,7 +1288,7 @@ $browser_get = function ($civ13, string $url, array $headers = [], $curl = false
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
     $result = curl_exec($ch);
-    return $data; //string
+    return $result; //string
 };
 
 $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false)
@@ -1303,23 +1303,23 @@ $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' 
     curl_setopt($ch, CURLOPT_POST, TRUE);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     $result = curl_exec($ch);
-    return json_decode($result, true); //Array
+    return $result;
 };
 
 $discord2ckey = function ($civ13, $id)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
     $result = $browser_post($civ13, 'http://69.140.47.22:8081/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['id' => $id]);
-    if (is_array($result)) return json_decode($result, true); 
-    return $result; //$browser->post returns React\Promise\Promise
+    if (is_array($result)) return json_decode(json_encode($result), true); //curl returns string
+    return json_decode($result); //$browser->post returns React\Promise\Promise
 };
 
 $ckey2discord = function ($civ13, $ckey)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
     $result = $browser_post($civ13, 'http://69.140.47.22:8081/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey]);
-    if (is_array($result)) return json_decode($result, true); //curl returns Array
-    return $result; //$browser->post returns React\Promise\Promise
+    if (is_array($result)) return json_decode(json_encode($result), true);  //curl returns string
+    return json_decode($result); //$browser->post returns React\Promise\Promise
 };
 
 $bancheck = function ($civ13, $ckey)
