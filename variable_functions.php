@@ -771,40 +771,26 @@ $on_message = function ($civ13, $message)
         $discord2ckey = $civ13->functions['misc']['discord2ckey'];
         $result = $discord2ckey($civ13, $id);
         echo '[DISCORD2CKEY]'; var_dump($result);
-        if (is_array($result)) { //curl json_decoded array
+        if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
+            if($result = $result->ckey) return $message->reply("<@$id> is registered to $result");
+            return $message->reply("<@$id> is not registered to any ckey");
+        }
+        if (is_array($result)) { //json_decoded array
+            if($result = $result['ckey']) return $message->reply("<@$id> is registered to ckey $result");
+            return $message->reply("<@$id> is not registered to any ckey");
+        }
+        if (is_string($result)) {
+            if($result) return $message->reply("<@$id> is registered to $result");
+            return $message->reply("<@$id> is not registered to any ckey");
+        }
+        //React\Promise\Promise from $browser->post
+        $result->then(function ($response) use ($civ13, $message, $id) {
+            $result = json_decode((string)$response->getBody(), true);
             if($ckey = $result['ckey']) return $message->reply("<@$id> is registered to ckey $ckey");
-            else return $message->reply("<@$id> is not registered to any ckey");
-        } elseif (is_object($result)) {
-            if($ckey = $result->ckey) {
-                $civ13->logger->info("DISCORD2CKEY ckey $id - OBJ");
-                return $message->reply("<@$id> is registered to $ckey");
-            } else {
-                $civ13->logger->info('DISCORD2CKEY ckey null - OBJ NULL');
-                return $message->reply("<@$id> is not registered to any ckey");
-            }
-        } elseif (is_string($result)) {
-            if($result) {
-                $civ13->logger->info("DISCORD2CKEY ckey $result - STRING");
-                return $message->reply("<@$id> is registered to $result");
-            } else {
-                $civ13->logger->info('DISCORD2CKEY ckey null - STRING NULL');
-                return $message->reply("<@$id> is not registered to any ckey");
-            }
-        }
-        else { //React\Promise\Promise from $browser->post
-            $result->then(function ($response) use ($civ13, $message, $id) {
-                $result = json_decode((string)$response->getBody(), true);
-                if($ckey = $result['ckey']) {
-                    $civ13->logger->info("DISCORD2CKEY ckey $ckey");
-                    return $message->reply("<@$id> is registered to ckey $ckey");
-                } else {
-                    $civ13->logger->info('DISCORD2CKEY ckey null');
-                    return $message->reply("<@$id> is not registered to any ckey");
-                }
-            }, function (Exception $e) use ($civ13) {
-                $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
-            });
-        }
+            return $message->reply("<@$id> is not registered to any ckey");
+        }, function (Exception $e) use ($civ13) {
+            $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
+        });
         return;
     }
     if (str_starts_with($message_content_lower, 'ckey2discord')) {
@@ -821,41 +807,25 @@ $on_message = function ($civ13, $message)
         $civ13->logger->info("CKEY2DISCORD $ckey");
         $ckey2discord = $civ13->functions['misc']['ckey2discord'];
         $result = $ckey2discord($civ13, $ckey);
-        echo '[CKEY2DISCORD]'; var_dump($result);
+        if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
+            if($id = $result->discord) return $message->reply("$ckey is registered to <@$id>");
+            return $message->reply("$ckey is not registered to any discord account");
+        }
         if (is_array($result)) { //curl json_decoded array
             if($id = $result['id']) return $message->reply("$ckey is registered to <@$id>");
-            else return $message->reply("$ckey is not registered to any discord account");
-        } elseif (is_object($result)) {
-            if($id = $result->discord) {
-                $civ13->logger->info("CKEY2DISCORD id $id");
-                $message->reply("$ckey is registered to <@$id>");
-            } else {
-                $civ13->logger->info('CKEY2DISCORD id null');
-                $message->reply("$ckey is not registered to any discord account");
-            }
-        } elseif (is_string($result)) {
-            if($result) {
-                $civ13->logger->info("CKEY2DISCORD id $result");
-                return $message->reply("$ckey is registered to <@$result>");
-            } else {
-                $civ13->logger->info('CKEY2DISCORD id null');
-                return $message->reply("$ckey is not registered to any discord account");
-            }
-        } else { //React\Promise\Promise from $browser->post
-            $civ13->logger->info('CKEY2DISCORD $BROWSER->POST');
-            $result->done(function ($response) use ($civ13, $message, $ckey) {
-                $result = json_decode((string)$response->getBody(), true);
-                if($id = $result['discord']) {
-                    $civ13->logger->info("CKEY2DISCORD id $id");
-                    return $message->reply("$ckey is registered to <@$id>");
-                } else {
-                    $civ13->logger->info('CKEY2DISCORD id null');
-                    return $message->reply("$ckey is not registered to any discord account");
-                }
-            }, function (Exception $e) use ($civ13) {
-                $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
-            });
+            return $message->reply("$ckey is not registered to any discord account");
         }
+        if (is_string($result)) {
+            if($result) return $message->reply("$ckey is registered to <@$result>");
+            return $message->reply("$ckey is not registered to any discord account");
+        } //React\Promise\Promise from $browser->post
+        $result->done(function ($response) use ($civ13, $message, $ckey) {
+            $result = json_decode((string)$response->getBody(), true);
+            if($id = $result['discord']) return $message->reply("$ckey is registered to <@$id>");
+            return $message->reply("$ckey is not registered to any discord account");
+        }, function (Exception $e) use ($civ13) {
+            $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
+        });
         return;
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
