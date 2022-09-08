@@ -806,7 +806,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
         return;
     }
     if (str_starts_with($message_content_lower,'serverstatus')) { //See GitHub Issue #1
-        $embed = $discord->factory(\Discord\Parts\Embed\Embed::class);
+        $embed = new \Discord\Parts\Embed\Embed($discord);
         $_1714 = !portIsAvailable(1714);
         $server_is_up = $_1714;
         if (!$server_is_up) {
