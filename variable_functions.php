@@ -84,17 +84,10 @@ $on_message = function ($civ13, $message)
         $message_content_lower = strtolower($message_content);
     }
     if (! $message_content) return;
-
-    if (str_starts_with($message_content_lower, 'ping')) {
-        $message->reply('Pong!');
-        return;
-    }
-    if (str_starts_with($message_content_lower, 'help')) {
-        $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
-        return;
-    }
+    if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
+    if (str_starts_with($message_content_lower, 'help')) return$message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
     
-    if (str_starts_with($message_content_lower,'cpu')) {
+    if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
             $p = preg_replace('/\s+/', ' ', $p); //reduce spaces
@@ -126,7 +119,6 @@ $on_message = function ($civ13, $message)
         }
         return $message->channel->sendMessage('Unrecognized operating system!');
     }
-    
     if (str_starts_with($message_content_lower, 'insult')) {
         $split_message = explode(' ', $message_content); //$split_target[1] is the target
         if ((count($split_message) > 1 ) && strlen($split_message[1] > 0)) {
@@ -146,19 +138,19 @@ $on_message = function ($civ13, $message)
         $message_filtered = substr($message_content, 4);
         switch (strtolower($message->channel->name)) {
             case 'ooc-nomads':                    
-                $file = fopen($civ13->files['nomads_discord2ooc'], 'a');
-                $txt = $message->author->username . ":::$message_filtered" . PHP_EOL;
-                fwrite($file, $txt);
-                fclose($file);
+                if($file = fopen($civ13->files['nomads_discord2ooc'], 'a')) {
+                    fwrite($file, $message->author->username . ":::$message_filtered" . PHP_EOL);
+                    fclose($file);
+                }
                 break;
             case 'ooc-tdm':
-                $file = fopen($civ13->files['tdm_discord2ooc'], 'a');
-                $txt = $message->author->username . ":::$message_filtered" . PHP_EOL;
-                fwrite($file, $txt);
-                fclose($file);
+                if($file = fopen($civ13->files['tdm_discord2ooc'], 'a')) {
+                    fwrite($file, $message->author->username . ":::$message_filtered" . PHP_EOL);
+                    fclose($file);
+                }
                 break;
             default:
-                $message->reply('You need to be in either the #ooc-nomads or #ooc-tdm channel to use this command.');
+                return $message->reply('You need to be in either the #ooc-nomads or #ooc-tdm channel to use this command.');
         }
         return;
     }
@@ -166,37 +158,36 @@ $on_message = function ($civ13, $message)
         $message_filtered = substr($message_content, 5);
         switch (strtolower($message->channel->name)) {
             case 'ahelp-nomads':
-                $file = fopen($civ13->files['nomads_discord2admin'], 'a');
-                $txt = $message->author->username . ":::$message_filtered" . PHP_EOL;
-                fwrite($file, $txt);
-                fclose($file);
+                if($file = fopen($civ13->files['nomads_discord2admin'], 'a')) {                    
+                    fwrite($file, $message->author->username . ":::$message_filtered" . PHP_EOL);
+                    fclose($file);
+                }
                 break;
             case 'ahelp-tdm':
-                $file = fopen($civ13->files['tdm_discord2admin'], 'a');
-                $txt = $message->author->username . ":::$message_filtered" . PHP_EOL;
-                fwrite($file, $txt);
-                fclose($file);
+                if($file = fopen($civ13->files['tdm_discord2admin'], 'a')) {
+                    fwrite($file, $message->author->username . ":::$message_filtered" . PHP_EOL);
+                    fclose($file);
+                }
                 break;
             default:
-                $message->reply('You need to be in either the #ahelp-nomads or #ahelp-tdm channel to use this command.');
+                return $message->reply('You need to be in either the #ahelp-nomads or #ahelp-tdm channel to use this command.');
         }
         return;
     }
     if (str_starts_with($message_content_lower, 'dm ') || str_starts_with($message_content_lower, 'pm ')) {
-        $message_content = substr($message_content, 3);
-        $split_message = explode(': ', $message_content);
+        $split_message = explode(': ', substr($message_content, 3));
         switch (strtolower($message->channel->name)) {
             case 'ahelp-nomads':
-                $file = fopen($civ13->files['nomads_discord2dm'], 'a');
-                $txt = $message->author->username.':::'.$split_message[0].':::'.$split_message[1].PHP_EOL;
-                fwrite($file, $txt);
-                fclose($file);
+                if($file = fopen($civ13->files['nomads_discord2dm'], 'a')) {
+                    fwrite($file, $message->author->username.':::'.$split_message[0].':::'.$split_message[1].PHP_EOL);
+                    fclose($file);
+                }
                 break;
             case 'ahelp-tdm':
-                $file = fopen($civ13->files['tdm_discord2dm'], 'a');
-                $txt = $message->author->username.':::'.$split_message[0].':::'.$split_message[1].PHP_EOL;
-                fwrite($file, $txt);
-                fclose($file);
+                if($file = fopen($civ13->files['tdm_discord2dm'], 'a')) {
+                    fwrite($file, $message->author->username.':::'.$split_message[0].':::'.$split_message[1].PHP_EOL);
+                    fclose($file);
+                }
                 break;
             default:
                 $message->reply('You need to be in either the #ahelp-nomads or #ahelp-tdm channel to use this command.');
@@ -233,25 +224,22 @@ $on_message = function ($civ13, $message)
         if ($result = $tdm_ban($civ13, $split_message, $message))
             return $message->channel->sendMessage($result);
     }
-    
     if (str_starts_with($message_content_lower, 'unban ')) {
         $message_content = substr($message_content, 6);
         $split_message = explode('; ', $message_content);
         
-        $file = fopen($civ13->files['nomads_discord2unban'], 'a');
-        $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
-        fwrite($file, $txt);
-        fclose($file);
-        
-        $file = fopen($civ13->files['tdm_discord2unban'], 'a');
-        $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
-        fwrite($file, $txt);
-        fclose($file);
-
-        $result = '**' . $message->author->username . '** unbanned **' . $split_message[0] . '**.';
-        return $message->channel->sendMessage($result);
+        if($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
+            $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
+            fwrite($file, $txt);
+            fclose($file);
+        }
+        if($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
+            $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
+            fwrite($file, $txt);
+            fclose($file);
+        }
+        return $message->channel->sendMessage('**' . $message->author->username . '** unbanned **' . $split_message[0] . '**.');
     }
-    #whitelist
     if (str_starts_with($message_content_lower, 'whitelistme')) {
         $split_message = trim(substr($message_content, 11));
         if (! strlen($split_message) > 0) return $message->channel->sendMessage('Wrong format. Please try `!s whitelistme [ckey]`.'); // if len($split_message) > 1 and len($split_message[1]) > 0:
@@ -280,10 +268,9 @@ $on_message = function ($civ13, $message)
             while (($fp = fgets($whitelist1, 4096)) !== false) {
                 $line = trim(str_replace(PHP_EOL, '', $fp));
                 $linesplit = explode(';', $line);
-                foreach ($linesplit as $split) {
+                foreach ($linesplit as $split)
                     if ($split == $ckey)
                         $found = true;
-                }
             }
             fclose($whitelist1);
         }
@@ -395,10 +382,9 @@ $on_message = function ($civ13, $message)
         \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
         \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads_port'] . ' -trusted -webclient -logself &');
         $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ports['nomads_port'] . '>');
-        $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
+        return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
         });
-        return;
     }
     if (str_starts_with($message_content_lower, 'killciv')) {
         $accepted = false;
@@ -434,10 +420,9 @@ $on_message = function ($civ13, $message)
         \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
         \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads_port'] . ' -trusted -webclient -logself &');
         $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ports['nomads_port'] . '>');
-        $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
+        return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
         });
-        return;
     }
     if (str_starts_with($message_content_lower, 'restarttdm')) {
         $accepted = false;
@@ -457,11 +442,10 @@ $on_message = function ($civ13, $message)
         $message->channel->sendMessage('Updated the code.');
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
         \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm_port'] . ' -trusted -webclient -logself &');
-        $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message) { # ditto
+        return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message) { # ditto
             $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
         });
-        return;
     }
     if (str_starts_with($message_content_lower, 'mapswap')) {
         $accepted = false;
@@ -482,8 +466,7 @@ $on_message = function ($civ13, $message)
         $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
         
         $maps = array();
-        $filecheck1 = fopen($civ13->files['map_defines_path'], 'r');
-        if ($filecheck1) {
+        if ($filecheck1 = fopen($civ13->files['map_defines_path'], 'r')) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
                 $filter = '"';
                 $line = trim(str_replace($filter, '', $fp));
@@ -496,7 +479,6 @@ $on_message = function ($civ13, $message)
         } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
         
         if(! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
-        $message->channel->sendMessage("Attempting to change map to $mapto");
         \execInBackground('python3 ' . $civ13->files['nomads_mapswap'] . " $mapto");
         /*
         $message->channel->sendMessage('Calling mapswap...');
@@ -510,31 +492,30 @@ $on_message = function ($civ13, $message)
         });
         $process->start();
         */
-        return;
+        return $message->channel->sendMessage("Attempting to change map to $mapto");
     }
     if (str_starts_with($message_content_lower, 'maplist')) {
         $accepted = false;
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-            foreach ($author_member->roles as $role) {
-                switch ($role->id) {
-                    case $civ13->role_ids['admiral']:
-                    case $civ13->role_ids['captain']:
-                        $accepted = true;
-                }
+        foreach ($author_member->roles as $role) {
+            switch ($role->id) {
+                case $civ13->role_ids['admiral']:
+                case $civ13->role_ids['captain']:
+                    $accepted = true;
             }
-            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
-            
-            $split_message = explode('mapswap ', $message_content);
-            $mapto = $split_message[1];
-            $mapto = strtoupper($mapto);
-            $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
-            $maps = array();
-            $filecheck1 = fopen($civ13->files['map_defines_path'], 'r');
-            if ($filecheck1) {
-                $message->channel->sendFile($civ13->files['map_defines_path'], 'maps.txt');
-                fclose($filecheck1);
-            } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
-        return;
+        }
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
+        
+        $split_message = explode('mapswap ', $message_content);
+        $mapto = $split_message[1];
+        $mapto = strtoupper($mapto);
+        $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
+        $maps = array();
+        if ($filecheck1 = fopen($civ13->files['map_defines_path'], 'r')) {
+            fclose($filecheck1);
+            return $message->channel->sendFile($civ13->files['map_defines_path'], 'maps.txt');
+        }
+        return $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
     }
     if (str_starts_with($message_content_lower, 'hosttdm')) {
         $accepted = false;
@@ -554,10 +535,9 @@ $on_message = function ($civ13, $message)
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
         \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm_port'] . ' -trusted -webclient -logself &'); //
         $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
-        $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
+        return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
         });
-        return;
     }
     if (str_starts_with($message_content_lower, 'killtdm')) {
         $accepted = false;
@@ -594,8 +574,7 @@ $on_message = function ($civ13, $message)
         $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
         
         $maps = array();
-        $filecheck1 = fopen($civ13->files['map_defines_path'], 'r');
-        if ($filecheck1) {
+        if ($filecheck1 = fopen($civ13->files['map_defines_path'], 'r')) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
                 $filter = '"';
                 $line = trim(str_replace($filter, '', $fp));
@@ -605,10 +584,9 @@ $on_message = function ($civ13, $message)
                 }
             }
             fclose($filecheck1);
-        } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
+        } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path']);
         
         if(! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
-        $message->channel->sendMessage("Attempting to change map to $mapto");
         \execInBackground('python3 ' . $civ13->files['tdm_mapswap'] . " $mapto");
         /*
         $message->channel->sendMessage('Calling mapswap...');
@@ -622,9 +600,8 @@ $on_message = function ($civ13, $message)
         });
         $process->start();
         */
-        return;
+        return $message->channel->sendMessage("Attempting to change map to $mapto");
     }
-    
     if (str_starts_with($message_content_lower, 'banlist')) {
         $accepted = false;
         if ($author_member = $message->member) {
@@ -643,7 +620,6 @@ $on_message = function ($civ13, $message)
         $builder->addFile($civ13->files['tdm_bans'], 'bans.txt');
         return $message->channel->sendMessage($builder);
     }
-    
     if (str_starts_with($message_content_lower, 'bancheck')) {
         $split_message = explode('bancheck ', $message_content);
         if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return  $message->channel->sendMessage('Wrong format. Please try `!s bancheck [ckey]`.');
@@ -653,8 +629,7 @@ $on_message = function ($civ13, $message)
         $ckey = str_replace(' ', '', $ckey);
         $banreason = "unknown";
         $found = false;
-        $filecheck1 = fopen($civ13->files['nomads_bans'], 'r');
-        if ($filecheck1) {
+        if ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r')) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
                 str_replace(PHP_EOL, '', $fp);
                 $filter = '|||';
@@ -670,8 +645,7 @@ $on_message = function ($civ13, $message)
             }
             fclose($filecheck1);
         }
-        $filecheck2 = fopen($civ13->files['tdm_bans'], 'r');
-        if ($filecheck2) {
+        if ($filecheck2 = fopen($civ13->files['tdm_bans'], 'r')) {
             while (($fp = fgets($filecheck2, 4096)) !== false) {
                 str_replace(PHP_EOL, '', $fp);
                 $filter = '|||';
@@ -690,7 +664,7 @@ $on_message = function ($civ13, $message)
         if (!$found) return $message->channel->sendMessage("No bans were found for **$ckey**.");
         return;
     }
-    if (str_starts_with($message_content_lower,'serverstatus')) { //See GitHub Issue #1
+    if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
         $embed = $civ13->discord->factory(\Discord\Parts\Embed\Embed::class);
         $_1714 = !\portIsAvailable(1714);
         $server_is_up = $_1714;
@@ -752,13 +726,11 @@ $on_message = function ($civ13, $message)
                 $embed->addFieldValues('Nomads Server Status', 'Offline');
             }
         }
-        $message->channel->sendEmbed($embed);
-        return;
+        return $message->channel->sendEmbed($embed);
     }
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
         $filter = 'discord2ckey ';
         $id = trim(str_replace($filter, '', $message_content_lower));
-        
         $filter = '<@';
         $id = trim(str_replace($filter, '', $id));
         $filter = '!';
@@ -796,7 +768,6 @@ $on_message = function ($civ13, $message)
     if (str_starts_with($message_content_lower, 'ckey2discord')) {
         $filter = 'ckey2discord ';
         $ckey = trim(str_replace($filter, '', $message_content_lower));
-        
         $filter = '.';
         $ckey = trim(str_replace($filter, '', $ckey));
         $filter = '_';
@@ -885,11 +856,10 @@ $on_message = function ($civ13, $message)
 
 $on_message2 = function ($civ13, $message)
 {
-    $recalculate_ranking = $civ13->functions['misc']['recalculate_ranking'];
-    
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
     if (! str_starts_with($message->content, $civ13->command_symbol . ' ')) return; //Add these as slash commands?
+    $recalculate_ranking = $civ13->functions['misc']['recalculate_ranking'];
     
     $message_content = substr($message->content, strlen($civ13->command_symbol)+1);
     $message_content_lower = strtolower($message_content);
@@ -953,7 +923,7 @@ $on_message2 = function ($civ13, $message)
             $ckey = str_replace(' ', '', $ckey);
         }
         $result = '';
-        $search = fopen($civ13->files['tdm_awards_path'], 'r');
+        if (!$search = fopen($civ13->files['tdm_awards_path'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['tdm_awards_path'] . '`');
         $found = false;
         while(! feof($search)) {
             $line = fgets($search);
@@ -1057,35 +1027,24 @@ $recalculate_ranking = function ($civ13)
     $ckeylist = array();
     $result = array();
     
-    if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
+    if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return $civ13->logger->warning('Unable to access `' . $civ13->files['tdm_awards_path'] . '`');
     while(! feof($search)) {
         $medal_s = 0;
         $line = fgets($search);
         $line = trim(str_replace(PHP_EOL, '', $line)); # remove '\n' at end of line
         $duser = explode(';', $line);
-        if ($duser[2] == "long service medal")
-            $medal_s += 0.5;
-        if ($duser[2] == "combat medical badge")
-            $medal_s += 2;
-        if ($duser[2] == "tank destroyer silver badge")
-            $medal_s += 0.75;
-        if ($duser[2] == "tank destroyer gold badge")
-            $medal_s += 1.5;
-        if ($duser[2] == "assault badge")
-            $medal_s += 1.5;
-        if ($duser[2] == "wounded badge")
-            $medal_s += 0.5;
-        if ($duser[2] == "wounded silver badge")
-            $medal_s += 0.75;
-        if ($duser[2] == "wounded gold badge")
-            $medal_s += 1;
-        if ($duser[2] == "iron cross 1st class")
-            $medal_s += 3;
-        if ($duser[2] == "iron cross 2nd class")
-            $medal_s += 5;
+        if ($duser[2] == "long service medal") $medal_s += 0.5;
+        if ($duser[2] == "combat medical badge") $medal_s += 2;
+        if ($duser[2] == "tank destroyer silver badge") $medal_s += 0.75;
+        if ($duser[2] == "tank destroyer gold badge") $medal_s += 1.5;
+        if ($duser[2] == "assault badge") $medal_s += 1.5;
+        if ($duser[2] == "wounded badge") $medal_s += 0.5;
+        if ($duser[2] == "wounded silver badge") $medal_s += 0.75;
+        if ($duser[2] == "wounded gold badge") $medal_s += 1;
+        if ($duser[2] == "iron cross 1st class") $medal_s += 3;
+        if ($duser[2] == "iron cross 2nd class") $medal_s += 5;
         $result[] = $medal_s . ';' . $duser[0];
-        if (!in_array($duser[0], $ckeylist))
-            $ckeylist[] = $duser[0];
+        if (!in_array($duser[0], $ckeylist)) $ckeylist[] = $duser[0];
     }
     
     foreach ($ckeylist as $i) {
@@ -1101,39 +1060,36 @@ $recalculate_ranking = function ($civ13)
         return $a[0] <=> $b[0];
     });
     $sorted_list = array_reverse($ranking);
-    if (! $search = fopen($civ13->files['ranking_path'], 'w')) return false;
-    foreach ($sorted_list as $i)
-        fwrite($search, $i[0] . ';' . $i[1] . PHP_EOL);
-    fclose ($search);
-    return true;
+    if (! $search = fopen($civ13->files['ranking_path'], 'w')) return $civ13->logger->warning('Unable to access `' . $civ13->files['ranking_path'] . '`');
+    foreach ($sorted_list as $i) fwrite($search, $i[0] . ';' . $i[1] . PHP_EOL);
+    return fclose ($search);
 };
 
 $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
 {     
-    if ($file = fopen($file_path, 'r+')) {
-        while (($fp = fgets($file, 4096)) !== false) {
-            $fp = str_replace(PHP_EOL, '', $fp);
-            //ban ckey if $fp contains a blacklisted word
-            if ($ban = $civ13->functions['misc']['ban']) {
-                $string = substr($fp, strpos($fp, '/')+1);
-                $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'faggot', 'gook', 'kike', 'nigga', 'nigger', 'tranny'];
-                $ckey = substr($string, 0, strpos($string, ':'));
-                foreach ($badwords as $badword) {
-                    if (str_contains(strtolower($fp), $badword)) {
-                        $filtered = substr($badword, 0, 1);
-                        for ($x=1;$x<strlen($badword)-2; $x++)
-                            $filtered .= '*';
-                        $filtered  .= substr($badword, -1, 1);
-                        $ban($civ13, [$ckey, '999 years', "Blacklisted word ($filtered), please appeal on our discord"]);
-                    }
+    if (! $file = fopen($file_path, 'r+')) return $civ13->logger->warning("unable to open `$file_path`");
+    while (($fp = fgets($file, 4096)) !== false) {
+        $fp = str_replace(PHP_EOL, '', $fp);
+        //ban ckey if $fp contains a blacklisted word
+        if ($ban = $civ13->functions['misc']['ban']) {
+            $string = substr($fp, strpos($fp, '/')+1);
+            $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'faggot', 'gook', 'kike', 'nigga', 'nigger', 'tranny'];
+            $ckey = substr($string, 0, strpos($string, ':'));
+            foreach ($badwords as $badword) {
+                if (str_contains(strtolower($fp), $badword)) {
+                    $filtered = substr($badword, 0, 1);
+                    for ($x=1;$x<strlen($badword)-2; $x++)
+                        $filtered .= '*';
+                    $filtered  .= substr($badword, -1, 1);
+                    $ban($civ13, [$ckey, '999 years', "Blacklisted word ($filtered), please appeal on our discord"]);
                 }
             }
-            if ($target_channel = $guild->channels->get('id', $channel_id)) $target_channel->sendMessage($fp);
-            else $civ13->logger->warning("unable to find channel `$channel_id`");
         }
-        ftruncate($file, 0); //clear the file
-        fclose($file);
-    } else $civ13->logger->warning("unable to open `$file_path`");
+        if ($target_channel = $guild->channels->get('id', $channel_id)) $target_channel->sendMessage($fp);
+        else $civ13->logger->warning("unable to find channel `$channel_id`");
+    }
+    ftruncate($file, 0); //clear the file
+    return fclose($file);
 
     /*
     echo '[RELAY - PATH] ' . $file_path . PHP_EOL;
@@ -1194,14 +1150,13 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id)
 
 $timer_function = function ($civ13)
 {
-    if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) {
-        if ($ooc_relay = $civ13->functions['misc']['ooc_relay']) {
-            $ooc_relay($civ13, $guild, $civ13->files['nomads_ooc_path'], $civ13->channel_ids['nomads_ooc_channel']);  // #ooc-nomads
-            $ooc_relay($civ13, $guild, $civ13->files['nomads_admin_path'], $civ13->channel_ids['nomads_admin_channel']);  // #ahelp-nomads
-            $ooc_relay($civ13, $guild, $civ13->files['tdm_ooc_path'], $civ13->channel_ids['tdm_ooc_channel']);  // #ooc-tdm
-            $ooc_relay($civ13, $guild, $civ13->files['tdm_admin_path'], $civ13->channel_ids['tdm_admin_channel']);  // #ahelp-tdm
-        }
-    } else $civ13->logger->warning('unable to get guild ' . $civ13->civ13_guild_id);
+    if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return $civ13->logger->warning('unable to get guild ' . $civ13->civ13_guild_id);
+    if ($ooc_relay = $civ13->functions['misc']['ooc_relay']) {
+        $ooc_relay($civ13, $guild, $civ13->files['nomads_ooc_path'], $civ13->channel_ids['nomads_ooc_channel']);  // #ooc-nomads
+        $ooc_relay($civ13, $guild, $civ13->files['nomads_admin_path'], $civ13->channel_ids['nomads_admin_channel']);  // #ahelp-nomads
+        $ooc_relay($civ13, $guild, $civ13->files['tdm_ooc_path'], $civ13->channel_ids['tdm_ooc_channel']);  // #ooc-tdm
+        $ooc_relay($civ13, $guild, $civ13->files['tdm_admin_path'], $civ13->channel_ids['tdm_admin_channel']);  // #ahelp-tdm
+    }
 };
 
 $status_changer = function ($discord, $activity, $state = 'online') 
@@ -1212,23 +1167,17 @@ $status_changer = function ($discord, $activity, $state = 'online')
 $mapswap = function ($civ13, $path, $mapto)
 {
     $process = spawnChildProcess("python3 $path $mapto");
-    $process->on('exit', function($exitCode, $termSignal) {
-        if ($termSignal === null) {
-            echo 'Mapswap exited with code ' . $exitCode . PHP_EOL;
-        } else {
-            echo 'Mapswap terminated with signal ' . $termSignal . PHP_EOL;
-        }
+    $process->on('exit', function($exitCode, $termSignal) use ($civ13) {
+        if ($termSignal === null) $civ13->logger->info('Mapswap exited with code ' . $exitCode);
+        $civ13->logger->info('Mapswap terminated with signal ' . $termSignal);
     });
     return $process;
 };
 
 $ban = function ($civ13, $array, $message = null)
 {
-    if (! $message) $admin = $civ13->discord->user->username;
-    else $admin = $message->author->username . '#' . $message->member->discriminator;
-    
+    $admin = ($message ? $civ13->discord->user->username : $message->author->username . '#' . $message->member->discriminator);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
-    
     $result = '';
     if ($file = fopen($civ13->files['nomads_discord2ban'], 'a')) {
         fwrite($file, $txt);
@@ -1251,11 +1200,8 @@ $ban = function ($civ13, $array, $message = null)
 
 $nomads_ban = function ($civ13, $array, $message = null)
 {
-    if (! $message) $admin = $civ13->discord->user->username;
-    else $admin = $message->author->username . '#' . $message->member->discriminator;
-    
+    $admin = ($message ? $civ13->discord->user->username : $message->author->username . '#' . $message->member->discriminator);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
-    
     $result = '';
     if ($file = fopen($civ13->files['nomads_discord2ban'], 'a')) {
         fwrite($file, $txt);
@@ -1270,11 +1216,8 @@ $nomads_ban = function ($civ13, $array, $message = null)
 
 $tdm_ban = function ($civ13, $array, $message = null)
 {
-    if (! $message) $admin = $civ13->discord->user->username;
-    else $admin = $message->author->username . '#' . $message->member->discriminator;
-    
+    $admin = ($message ? $civ13->discord->user->username : $message->author->username . '#' . $message->member->discriminator);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
-    
     $result = '';
     if ($file = fopen($civ13->files['tdm_discord2ban'], 'a')) {
         fwrite($file, $txt);
@@ -1344,7 +1287,7 @@ $bancheck = function ($civ13, $ckey)
             }
         }
         fclose($filecheck1);
-    }
+    } else $civ13->logger->warning('unable to open ' . $civ13->files['nomads_bans']);
     if ($filecheck2 = fopen($civ13->files['tdm_bans'], 'r')) {
         while (($fp = fgets($filecheck2, 4096)) !== false) {
             str_replace(PHP_EOL, '', $fp);
@@ -1356,15 +1299,15 @@ $bancheck = function ($civ13, $ckey)
             }
         }
         fclose($filecheck2);
-    }
+    } else $civ13->logger->warning('unable to open ' . $civ13->files['tdm_bans']);
     return $return;
 };
 
 $bancheck_join = function ($civ13, $guildmember)
 {
     if ($guildmember->guild_id != $civ13->civ13_guild_id) return;
-
-    $discord2ckey = $civ13->functions['misc']['discord2ckey'];
+    if(! $discord2ckey = $civ13->functions['misc']['discord2ckey']) return;
+    
     if (is_array($result = $discord2ckey($civ13, $guildmember->id))) { //curl json_decoded array
         if($ckey = $result['ckey']) {
             $bancheck = $civ13['misc']['bancheck'];
