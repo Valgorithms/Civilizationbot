@@ -665,7 +665,7 @@ $on_message = function ($civ13, $message)
         return;
     }
     if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
-        $embed = $civ13->discord->factory(\Discord\Parts\Embed\Embed::class);
+        $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
         $_1714 = !\portIsAvailable(1714);
         $server_is_up = $_1714;
         if (!$server_is_up) {
