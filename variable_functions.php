@@ -804,15 +804,15 @@ $on_message = function ($civ13, $message)
         $filter = ' ';
         $ckey = str_replace($filter, '', $ckey);
         
-        $civ13->logger->info("CKEY2DISCORD $ckey");
+        $civ13->logger->info("CKEY2DISCORD ckey $ckey");
         $ckey2discord = $civ13->functions['misc']['ckey2discord'];
         $result = $ckey2discord($civ13, $ckey);
         if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
-            if($id = $result->discord) return $message->reply("$ckey is registered to <@$id>");
+            if($result = $result->discord) return $message->reply("$ckey is registered to <@$result>");
             return $message->reply("$ckey is not registered to any discord account");
         }
         if (is_array($result)) { //curl json_decoded array
-            if($id = $result['id']) return $message->reply("$ckey is registered to <@$id>");
+            if($result = $result['id']) return $message->reply("$ckey is registered to <@$result>");
             return $message->reply("$ckey is not registered to any discord account");
         }
         if (is_string($result)) {
@@ -821,7 +821,7 @@ $on_message = function ($civ13, $message)
         } //React\Promise\Promise from $browser->post
         $result->done(function ($response) use ($civ13, $message, $ckey) {
             $result = json_decode((string)$response->getBody(), true);
-            if($id = $result['discord']) return $message->reply("$ckey is registered to <@$id>");
+            if($id = $result['discord']) return $message->reply("$ckey is registered to <@$result>");
             return $message->reply("$ckey is not registered to any discord account");
         }, function (Exception $e) use ($civ13) {
             $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
