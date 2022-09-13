@@ -16,7 +16,7 @@ $on_ready = function ($civ13)
 {
     $timer_function = $civ13->functions['misc']['timer_function'];
     
-    $civ13->logger->info('logged in as ' . $civ13->discord->user->username . '#' . $civ13->discord->user->discriminator . ' (' . $civ13->discord->id . ')');
+    $civ13->logger->info('logged in as ' . $civ13->discord->user->displayname . ' (' . $civ13->discord->id . ')');
     $civ13->logger->info('------');
     
     if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
@@ -1176,7 +1176,7 @@ $mapswap = function ($civ13, $path, $mapto)
 
 $ban = function ($civ13, $array, $message = null)
 {
-    $admin = ($message ? $civ13->discord->user->username : $message->author->username . '#' . $message->member->discriminator);
+    $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
     $result = '';
     if ($file = fopen($civ13->files['nomads_discord2ban'], 'a')) {
@@ -1200,7 +1200,7 @@ $ban = function ($civ13, $array, $message = null)
 
 $nomads_ban = function ($civ13, $array, $message = null)
 {
-    $admin = ($message ? $civ13->discord->user->username : $message->author->username . '#' . $message->member->discriminator);
+    $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
     $result = '';
     if ($file = fopen($civ13->files['nomads_discord2ban'], 'a')) {
@@ -1216,7 +1216,7 @@ $nomads_ban = function ($civ13, $array, $message = null)
 
 $tdm_ban = function ($civ13, $array, $message = null)
 {
-    $admin = ($message ? $civ13->discord->user->username : $message->author->username . '#' . $message->member->discriminator);
+    $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
     $result = '';
     if ($file = fopen($civ13->files['tdm_discord2ban'], 'a')) {
