@@ -40,7 +40,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     $id3 = (isset($path[5]) ? (string) strtolower($path[5]) : false); if ($id3) $echo .= "/$id3";
     $id4 = (isset($path[6]) ? (string) strtolower($path[6]) : false); if ($id4) $echo .= "/$id4";
     $idarray = array(); //get from post data (NYI)
-    $civ13->logger->info($echo);
+    //$civ13->logger->info($echo);
     
     if ($ip) $civ13->logger->info('API IP ' . $ip);
     $whitelist = [
