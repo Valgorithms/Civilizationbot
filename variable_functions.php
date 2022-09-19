@@ -1244,7 +1244,7 @@ $browser_get = function ($civ13, string $url, array $headers = [], $curl = false
 
 $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false)
 {
-    //Send a POST request to 69.140.47.22:8081/discord2ckey/ with POST['id'] = $id
+    //Send a POST request to valzargaming.com:8081/discord2ckey/ with POST['id'] = $id
     if ( ! $curl && $browser = $civ13->browser) return $browser->post($url, $headers, http_build_query($data));
 
     $ch = curl_init(); //create curl resource
@@ -1260,7 +1260,7 @@ $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' 
 $discord2ckey = function ($civ13, $id)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
-    $result = $browser_post($civ13, 'http://69.140.47.22:8081/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
+    $result = $browser_post($civ13, 'http://valzargaming.com:8081/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
     if (is_array($result)) return json_decode(json_encode($result), true); //curl returns string
     return json_decode($result); //$browser->post returns React\Promise\Promise
 };
@@ -1268,7 +1268,7 @@ $discord2ckey = function ($civ13, $id)
 $ckey2discord = function ($civ13, $ckey)
 {
     $browser_post = $civ13->functions['misc']['browser_post'];
-    $result = $browser_post($civ13, 'http://69.140.47.22:8081/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey], true);
+    $result = $browser_post($civ13, 'http://valzargaming.com:8081/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey], true);
     if (is_array($result)) return json_decode(json_encode($result), true);  //curl returns string
     return json_decode($result); //$browser->post returns React\Promise\Promise
 };
