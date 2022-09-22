@@ -12,7 +12,7 @@ function webapiFail($part, $id) {
 }
 
 function webapiSnow($string) {
-    return preg_match('/^[0-9]{16,18}$/', $string);
+    return preg_match('/^[0-9]{16,20}$/', $string);
 }
 
 $external_ip = file_get_contents('http://ipecho.net/plain');
