@@ -12,6 +12,30 @@
  *
 */
 
+$ban = function ($civ13, $array, $message = null)
+{
+    $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
+    $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
+    $result = '';
+    if ($file = fopen($civ13->files['nomads_discord2ban'], 'a')) {
+        fwrite($file, $txt);
+        fclose($file);
+    } else {
+        $civ13->logger->warning('unable to open ' . $civ13->files['nomads_discord2ban']);
+        $result .= 'unable to open ' . $civ13->files['nomads_discord2ban'] . PHP_EOL;
+    }
+    
+    if ($file = fopen($civ13->files['tdm_discord2ban'], 'a')) {
+        fwrite($file, $txt);
+        fclose($file);
+    } else {
+        $civ13->logger->warning('unable to open ' . $civ13->files['tdm_discord2ban']);
+        $result .= 'unable to open `' . $civ13->files['tdm_discord2ban'] . '`' . PHP_EOL;
+    }
+    $result .= '**' . $admin . '** banned **' . $array[0] . '** for **' . $array[1] . '** with the reason **' . $array[2] . '**.';
+    return $result;
+};
+
 $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id) use ($ban)
 {     
     if (! $file = fopen($file_path, 'r+')) return $civ13->logger->warning("unable to open `$file_path`");
@@ -151,30 +175,6 @@ $status_changer_timer = function ($civ13) use ($status_changer_random)
  *
  */
  
- $ban = function ($civ13, $array, $message = null)
-{
-    $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
-    $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
-    $result = '';
-    if ($file = fopen($civ13->files['nomads_discord2ban'], 'a')) {
-        fwrite($file, $txt);
-        fclose($file);
-    } else {
-        $civ13->logger->warning('unable to open ' . $civ13->files['nomads_discord2ban']);
-        $result .= 'unable to open ' . $civ13->files['nomads_discord2ban'] . PHP_EOL;
-    }
-    
-    if ($file = fopen($civ13->files['tdm_discord2ban'], 'a')) {
-        fwrite($file, $txt);
-        fclose($file);
-    } else {
-        $civ13->logger->warning('unable to open ' . $civ13->files['tdm_discord2ban']);
-        $result .= 'unable to open `' . $civ13->files['tdm_discord2ban'] . '`' . PHP_EOL;
-    }
-    $result .= '**' . $admin . '** banned **' . $array[0] . '** for **' . $array[1] . '** with the reason **' . $array[2] . '**.';
-    return $result;
-};
-
 $nomads_ban = function ($civ13, $array, $message = null)
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
@@ -798,6 +798,7 @@ $on_message = function ($civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $dis
         if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['knight'])->name . '] rank.');
         
         $builder = Discord\Builders\MessageBuilder::new();
+        
         $builder->addFile($civ13->files['tdm_bans'], 'bans.txt');
         return $message->channel->sendMessage($builder);
     }
