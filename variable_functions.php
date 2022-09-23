@@ -48,8 +48,7 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id) us
         foreach ($badwords as $badword) {
             if (str_contains(strtolower($fp), $badword)) {
                 $filtered = substr($badword, 0, 1);
-                for ($x=1;$x<strlen($badword)-2; $x++)
-                    $filtered .= '%';
+                for ($x=1;$x<strlen($badword)-2; $x++) $filtered .= '%';
                 $filtered  .= substr($badword, -1, 1);
                 $ban($civ13, [$ckey, '999 years', "Blacklisted word ($filtered), please appeal on our discord"]);
             }
@@ -133,9 +132,7 @@ $on_ready = function ($civ13) use ($timer_function)
     
     if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
         $civ13->logger->info('chat relay timer started');
-        $civ13->timers['relay_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(10, function() use ($timer_function, $civ13) {
-            $timer_function($civ13);
-        });
+        $civ13->timers['relay_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(10, function() use ($timer_function, $civ13) { $timer_function($civ13); });
     }
 };
 
@@ -164,9 +161,7 @@ $status_changer_random = function ($civ13) use ($status_changer)
 
 $status_changer_timer = function ($civ13) use ($status_changer_random)
 {
-    $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) {
-        $status_changer_random($civ13);
-    });
+    $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
 /*
