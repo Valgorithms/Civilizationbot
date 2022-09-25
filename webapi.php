@@ -48,7 +48,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         $external_ip,
         $valzargaming_ip,
         '51.254.161.128',
-        '73.200.62.219',
+        '69.244.83.231',
     ];
     $substr_whitelist = ['10.0.0.', '192.168.']; 
     $whitelisted = false;
