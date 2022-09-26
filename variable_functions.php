@@ -231,14 +231,14 @@ $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' 
 
 $discord2ckey = function ($civ13, $id) use ($browser_post)
 {
-    $result = $browser_post($civ13, 'http://valzargaming.com:8081/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
+    $result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
     if (is_array($result)) return json_decode(json_encode($result), true); //curl returns string
     return json_decode($result); //$browser->post returns React\Promise\Promise
 };
 
 $ckey2discord = function ($civ13, $ckey) use ($browser_post)
 {
-    $result = $browser_post($civ13, 'http://valzargaming.com:8081/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey], true);
+    $result = $browser_post($civ13, 'http://civ13.valzargaming.com/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey], true);
     if (is_array($result)) return json_decode(json_encode($result), true);  //curl returns string
     return json_decode($result); //$browser->post returns React\Promise\Promise
 };
