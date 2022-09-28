@@ -299,7 +299,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         $commands->save($command);
     }
     
-    if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
+    //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
     if (!$commands->get('name', 'ckey')) {
         $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
             'type' => \Discord\Parts\Interactions\Command\Command::USER,
