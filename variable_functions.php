@@ -279,6 +279,15 @@ $discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
 
 $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash)
 {
+     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
+    if (!$commands->get('name', 'invite')) {
+        $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+                'name' => 'invite',
+                'description' => 'Bot invite link'
+        ]);
+        $commands->save($command);
+    }
+    
     //if ($command = $commands->get('name', 'players')) $commands->delete($command->id);
     if (! $commands->get('name', 'players')) {
         $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
@@ -298,6 +307,10 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     }
     
     // listen for global commands
+    $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {
+        $interaction->respondWithMessage(Discord\Builders\MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')));
+    });
+    
     $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
         if (!$serverinfo = file_get_contents('http://' . $civ13->ips['vzg']. '/servers/serverinfo.json')) return $interaction->respondWithMessage('Unable to fetch serverinfo.json, webserver might be down');
         $data_json = json_decode($serverinfo);
