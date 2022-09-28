@@ -52,14 +52,6 @@ $options = array(
     'command_symbol' => '!s',
     'owner_id' => '196253985072611328', //Taislin
     'civ13_guild_id' => '468979034571931648', //Civ13
-    'ips' => array(
-        'nomads_ip' => gethostbyname('www.civ13.com'),
-        'tdm_ip' => gethostbyname('www.civ13.com'),
-    ),
-    'ports' => array(
-        'nomads_port' => '1715',
-        'tdm_port' => '1714',
-    ),
     'files' => array(
         //Fun
         'insults_path' => 'insults.txt',
@@ -135,6 +127,7 @@ $options = array(
             'on_ready' => $on_ready,
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
+            'set_ips' => $set_ips,
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,

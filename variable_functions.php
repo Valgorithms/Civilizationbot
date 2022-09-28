@@ -12,6 +12,24 @@
  *
 */
 
+$set_ips = function (\Civ13\Civ13 $civ13)
+{
+    $vzg_ip = gethostbyname('www.valzargaming.com');
+    $external_ip = file_get_contents('http://ipecho.net/plain');
+    $civ13->ips = [
+        'nomads' => $external_ip,
+        'tdm' => $external_ip,
+        'vzg' => $vzg_ip,
+    ];
+    $civ13->ports = [
+        'nomads' => '1715',
+        'tdm' => '1714',
+        'persistence' => '7777',
+        'bc' => '1717', 
+        'kepler' => '1718',
+    ];
+};
+
 $ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
@@ -261,7 +279,16 @@ $discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
 
 $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash)
 {
-    if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
+    //if ($command = $commands->get('name', 'players')) $commands->delete($command->id);
+    if (! $commands->get('name', 'players')) {
+        $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'name' => 'players',
+            'description' => 'Show Space Station 13 server information'
+        ]);
+        $commands->save($command);
+    }
+    
+    //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
     if (!$commands->get('name', 'ckey')) {
         $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
                 'type' => \Discord\Parts\Interactions\Command\Command::USER,
@@ -271,7 +298,140 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     }
     
     // listen for global commands
-
+    $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
+        if (!$serverinfo = file_get_contents('http://' . $civ13->ips['vzg']. '/servers/serverinfo.json')) return $interaction->respondWithMessage('Unable to fetch serverinfo.json, webserver might be down');
+        $data_json = json_decode($serverinfo);
+        
+        $desc_string_array = array();
+        $desc_string = "";
+        $server_state = array();
+        foreach ($data_json as $varname => $varvalue){ //individual servers
+            $varvalue = json_encode($varvalue);
+            $server_state["$varname"] = $varvalue;
+            
+            $desc_string = $desc_string . $varname . ": " . urldecode($varvalue) . "\n";
+            $desc_string_array[] = $desc_string ?? "null";
+            $desc_string = "";
+        }
+        
+        
+        $servers = [
+            'TDM' => 'byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'],
+            'Nomads' => 'byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'],
+            'Persistence' => 'byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['persistence'],
+            'Blue Colony' => 'byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['bc'],
+        ];
+        $server_index[0] = 'TDM';
+        $server_url[0] = $servers['TDM'];
+        $server_index[1] = 'Nomads';
+        $server_url[1] = $servers['Nomads'];
+        $server_index[2] = 'Persistence';
+        $server_url[2] = $servers['Persistence'];
+        $server_index[3] = 'Blue Colony';
+        $server_url[3] = $servers['Blue Colony'];
+        //$server_index[4] = "Kepler Station CC13" . PHP_EOL;
+        //$server_url[4] = "byond://69.244.83.231:7778";
+        
+        $server_state_dump = array(); // new assoc array for use with the embed
+        foreach ($server_index as $index => $servername){ //This is stupid. The arrays above need to be rewritten as assoc $servers and the methods below need to change as such.
+            $assocArray = json_decode($server_state[$index], true);
+            foreach ($assocArray as $key => $value){
+                if ($value) $value = urldecode($value);
+                else $value = null;
+                $playerlist = '';
+                if ($key/* && $value && ($value != "unknown")*/) switch($key){
+                    case 'version': //First key if online
+                        $server_state_dump[$index]['Server'] = '<' . $server_url[$index] . '> '. PHP_EOL . $server_index[$index];
+                        break;
+                    case 'ERROR': //First key if offline
+                        $server_state_dump[$index]['Server'] = $server_url[$index] . PHP_EOL . $server_index[$index] . PHP_EOL . '(Offline)'; //Don't show offline
+                        break;
+                    case 'host':
+                        if ($value == NULL || $value == '') $server_state_dump[$index]['Host'] = 'Taislin'; //Taislin didn't configure the host file
+                        elseif (strpos($value, 'Guest')!==false) $server_state_dump[$index]['Host'] = 'ValZarGaming'; //Byond wasn't logged in at server start
+                        else $server_state_dump[$index]['Host'] = $value;
+                        break;
+                    /*case "players":
+                        $server_state_dump[$index]["Player Count"] = $value;
+                        break;*/
+                    case 'age':
+                        //"Epoch", urldecode($serverinfo[0]["Epoch"])
+                        $server_state_dump[$index]['Epoch'] = $value;
+                        break;
+                    case 'season':
+                        //"Season", urldecode($serverinfo[0]["Season"])
+                        $server_state_dump[$index]["Season"] = $value;
+                        break;
+                    case 'map':
+                        //"Map", urldecode($serverinfo[0]["Map"]);
+                        $server_state_dump[$index]["Map"] = $value;
+                        break;
+                    case 'roundduration':
+                        $rd = explode (":", $value);
+                        $remainder = ($rd[0] % 24);
+                        $rd[0] = floor($rd[0] / 24);
+                        if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = $rd[0] . "d " . $remainder . "h " . $rd[1] . "m";
+                        else $rt = null; //"STARTING"; //Round is starting
+                        $server_state_dump[$index]["Round Time"] = $rt;
+                        break;
+                    case 'stationtime':
+                        $rd = explode (":", $value);
+                        $remainder = ($rd[0] % 24);
+                        $rd[0] = floor($rd[0] / 24);
+                        if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = $rd[0] . "d " . $remainder . "h " . $rd[1] . "m";
+                        else $rt = null; //"STARTING"; //Round is starting
+                        //$server_state_dump[$index]["Station Time"] = $rt;
+                        break;
+                    case 'cachetime':
+                        //$server_state_dump[$index]["Cache Time"] = gmdate("F j, Y, g:i a", $value) . " GMT";
+                        break;
+                    default:
+                        if ((substr($key, 0, 6) == "player") && ($key != "players") ){
+                            $server_state_dump[$index]["Players"][] = $value;
+                            //$playerlist = $playerlist . "$varvalue, ";
+                            //"Players", urldecode($serverinfo[0]["players"])
+                        }
+                        break;
+                }
+            }
+        }
+        
+        $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
+        foreach ($server_index as $x => $temp){
+            if (is_array($server_state_dump[$x]))
+            foreach ($server_state_dump[$x] as $key => $value){ //Status / Byond / Host / Player Count / Epoch / Season / Map / Round Time / Station Time / Players
+                if (!($key && $value)) continue;
+                if (is_array($value)){
+                    $output_string = implode(', ', $value);
+                    $embed->addFieldValues($key . " (" . count($value) . ")", $output_string, true);
+                }elseif ($key == "Host"){
+                    if (strpos($value, "(Offline") == false)
+                    $embed->addFieldValues($key, $value, true);
+                }elseif ($key == "Server"){
+                    $embed->addFieldValues($key, $value, false);
+                }else{
+                    $embed->addFieldValues($key, $value, true);
+                }
+            }
+        }
+        //Finalize the embed
+        if (isset($civ13->owner_id) && $owner = $civ13->discord->users->get('id', $civ13->owner_id)) $embed->setFooter(($civ13->github ?  "{$civ13->github}" . PHP_EOL : '') . "{$civ13->discord->username} by {$owner->displayname}");
+        $embed
+            ->setColor(0xe1452d)
+            ->setTimestamp()
+            ->setURL("");
+        
+        $message = \Discord\Builders\MessageBuilder::new()
+            ->setContent('Players')
+            ->addEmbed($embed);
+        $interaction->respondWithMessage($message)->done(
+        function ($success){
+            //
+        }, function ($error) use ($civ13) {
+             $civ13->logger->warning('Error responding to interaction with message: ' . $error->getMessage());
+        });
+    });
+    
     // listen for guild commands
     
     // listen for user commands
@@ -615,8 +775,8 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
         $message->channel->sendMessage('Updated the code.');
         \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads_port'] . ' -trusted -webclient -logself &');
-        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ports['nomads_port'] . '>');
+        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads'] . ' -trusted -webclient -logself &');
+        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
         return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
         });
@@ -653,8 +813,8 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
         $message->channel->sendMessage('Updated the code.');
         \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads_port'] . ' -trusted -webclient -logself &');
-        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads_ip'] . ':' . $civ13->ports['nomads_port'] . '>');
+        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads'] . ' -trusted -webclient -logself &');
+        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
         return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
         });
@@ -676,9 +836,9 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
         $message->channel->sendMessage('Updated the code.');
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm_port'] . ' -trusted -webclient -logself &');
+        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm'] . ' -trusted -webclient -logself &');
         return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message) { # ditto
-            $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
+            $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
         });
     }
@@ -767,8 +927,8 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
         $message->channel->sendMessage('Updated the code.');
         \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm_port'] . ' -trusted -webclient -logself &'); //
-        $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm_ip'] . ':' . $civ13->ports['tdm_port'] . '>');
+        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm'] . ' -trusted -webclient -logself &'); //
+        $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
         return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
             \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
         });
