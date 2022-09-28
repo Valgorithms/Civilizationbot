@@ -49,7 +49,7 @@ class Civ13
         }
 
         // x86 need gmp extension for big integer operation
-        if (PHP_INT_SIZE === 4 && ! Discord\Helpers\Bitwise::init()) {
+        if (PHP_INT_SIZE === 4 && ! \Discord\Helpers\BigInt::init()) {
             trigger_error('ext-gmp is not loaded. Permissions will NOT work correctly!', E_USER_WARNING);
         }
         
@@ -61,15 +61,9 @@ class Civ13
         $this->logger = $options['logger'];
         
         
-        if(isset($options['command_symbol'])) {
-            $this->command_symbol = $options['command_symbol'];
-        }
-        if(isset($options['owner_id'])) {
-            $this->owner_id = $options['owner_id'];
-        }
-        if(isset($options['civ13_guild_id'])) {
-            $this->civ13_guild_id = $options['civ13_guild_id'];
-        }
+        if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
+        if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
+        if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
         
         if (isset($options['discord']) || isset($options['discord_options'])) {
             if(isset($options['discord'])) $this->discord = $options['discord'];
@@ -77,34 +71,20 @@ class Civ13
         }
         
         if(isset($options['functions'])) {
-            if(isset($options['functions']['ready']))
-                foreach ($options['functions']['ready'] as $key => $func)
-                    $this->functions['ready'][$key] = $func;
-            if(isset($options['functions']['message']))
-                foreach ($options['functions']['message'] as $key => $func)
-                    $this->functions['message'][$key] = $func;
-            if(isset($options['functions']['misc']))
-                foreach ($options['functions']['misc'] as $key => $func)
-                    $this->functions['misc'][$key] = $func;
+            if(isset($options['functions']['ready'])) foreach ($options['functions']['ready'] as $key => $func) $this->functions['ready'][$key] = $func;
+            if(isset($options['functions']['message'])) foreach ($options['functions']['message'] as $key => $func) $this->functions['message'][$key] = $func;
+            if(isset($options['functions']['misc'])) foreach ($options['functions']['misc'] as $key => $func) $this->functions['misc'][$key] = $func;
         } else $this->logger->warning('No functions passed in options!');
-        if(isset($options['files'])) {
-            foreach ($options['files'] as $key => $path)
-                $this->files[$key] = $path;
-        }  else $this->logger->warning('No files passed in options!');
+        if(isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
+        else $this->logger->warning('No files passed in options!');
         if(isset($options['ips']) && isset($options['ports'])) {
-            foreach ($options['ips'] as $key => $ip)
-                $this->ips[$key] = $ip;
-            foreach ($options['ports'] as $key => $port)
-                $this->ports[$key] = $port;
+            foreach ($options['ips'] as $key => $ip) $this->ips[$key] = $ip;
+            foreach ($options['ports'] as $key => $port) $this->ports[$key] = $port;
         } else $this->logger->warning('Either ips or ports was not passed in options!');
-        if(isset($options['channel_ids'])) {
-            foreach ($options['channel_ids'] as $key => $id)
-                $this->channel_ids[$key] = $id;
-        } else $this->logger->warning('No channel_ids passed in options!');
-        if(isset($options['role_ids'])) {
-            foreach ($options['role_ids'] as $key => $id)
-                $this->role_ids[$key] = $id;
-        } else $this->logger->warning('No role_ids passed in options!');
+        if(isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $id) $this->channel_ids[$key] = $id;
+        else $this->logger->warning('No channel_ids passed in options!');
+        if(isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
+        else $this->logger->warning('No role_ids passed in options!');
         $this->afterConstruct();
     }
     
@@ -112,21 +92,19 @@ class Civ13
     {
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
-                if(! empty($this->functions['ready']))
-                    foreach ($this->functions['ready'] as $func)
-                        $func($this);
+                if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
-                $this->discord->on('message', function ($message)
-                {
-                    if(! empty($this->functions['message']))
-                        foreach ($this->functions['message'] as $func)
-                            $func($this, $message);
+                $this->discord->application->commands->freshen()->done( function ($commands) {
+                    if (!empty($this->functions['ready_slash'])) foreach ($this->functions['ready_slash'] as $key => $func) $func($this, $commands);
+                    else $this->logger->debug('No ready slash functions found!');
+                });
+                
+                $this->discord->on('message', function ($message) {
+                    if(! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message);
                     else $this->logger->debug('No message functions found!');
                 });
                 $this->discord->on('GUILD_MEMBER_ADD', function ($guildmember) {
-                    if(! empty($this->functions['GUILD_MEMBER_ADD']))
-                        foreach ($this->functions['GUILD_MEMBER_ADD'] as $func)
-                            $func($this, $guildmember);
+                    if(! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $guildmember);
                     else $this->logger->debug('No message functions found!');
                 });
             });
@@ -139,12 +117,12 @@ class Civ13
     protected function resolveOptions(array $options = []): array
     {
         if (is_null($options['logger'])) {
-            $logger = new Monolog\Logger('Civ13');
-            $logger->pushHandler(new Monolog\Handler\StreamHandler('php://stdout', Monolog\Logger::DEBUG));
+            $logger = new \Monolog\Logger('Civ13');
+            $logger->pushHandler(new \Monolog\Handler\StreamHandler('php://stdout', \Monolog\Logger::DEBUG));
             $options['logger'] = $logger;
         }
         
-        $options['loop'] = $options['loop'] ?? React\EventLoop\Factory::create();
+        $options['loop'] = $options['loop'] ?? \React\EventLoop\Factory::create();
         $options['browser'] = $options['browser'] ?? new \React\Http\Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? \React\Filesystem\Factory::create($options['loop']);
         return $options;

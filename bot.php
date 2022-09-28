@@ -136,6 +136,9 @@ $options = array(
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
         ],
+        'ready_slash' => [
+            'slash_init' => $slash_init,
+        ],
         'message' => [
             'on_message' => $on_message,
             'on_message2' => $on_message2,

@@ -12,7 +12,7 @@
  *
 */
 
-$ban = function ($civ13, $array, $message = null)
+$ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
@@ -36,7 +36,7 @@ $ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
-$ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id) use ($ban)
+$ooc_relay = function (\Civ13\Civ13 $civ13, $guild, string $file_path, string $channel_id) use ($ban)
 {     
     if (! $file = fopen($file_path, 'r+')) return $civ13->logger->warning("unable to open `$file_path`");
     while (($fp = fgets($file, 4096)) !== false) {
@@ -116,7 +116,7 @@ $ooc_relay = function ($civ13, $guild, string $file_path, string $channel_id) us
     */
 };
 
-$timer_function = function ($civ13) use ($ooc_relay)
+$timer_function = function (\Civ13\Civ13 $civ13) use ($ooc_relay)
 {
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return $civ13->logger->warning('unable to get guild ' . $civ13->civ13_guild_id);
     $ooc_relay($civ13, $guild, $civ13->files['nomads_ooc_path'], $civ13->channel_ids['nomads_ooc_channel']);  // #ooc-nomads
@@ -125,7 +125,7 @@ $timer_function = function ($civ13) use ($ooc_relay)
     $ooc_relay($civ13, $guild, $civ13->files['tdm_admin_path'], $civ13->channel_ids['tdm_admin_channel']);  // #ahelp-tdm
 };
 
-$on_ready = function ($civ13) use ($timer_function)
+$on_ready = function (\Civ13\Civ13 $civ13) use ($timer_function)
 {
     $civ13->logger->info('logged in as ' . $civ13->discord->user->displayname . ' (' . $civ13->discord->id . ')');
     $civ13->logger->info('------');
@@ -141,7 +141,7 @@ $status_changer = function ($discord, $activity, $state = 'online')
     $discord->updatePresence($activity, false, $state);
 };
 
-$status_changer_random = function ($civ13) use ($status_changer)
+$status_changer_random = function (\Civ13\Civ13 $civ13) use ($status_changer)
 {
     if ($civ13->files['status_path']) {
         if ($status_array = file($civ13->files['status_path'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
@@ -159,7 +159,7 @@ $status_changer_random = function ($civ13) use ($status_changer)
     }
 };
 
-$status_changer_timer = function ($civ13) use ($status_changer_random)
+$status_changer_timer = function (\Civ13\Civ13 $civ13) use ($status_changer_random)
 {
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
@@ -170,7 +170,7 @@ $status_changer_timer = function ($civ13) use ($status_changer_random)
  *
  */
  
-$nomads_ban = function ($civ13, $array, $message = null)
+$nomads_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
@@ -186,7 +186,7 @@ $nomads_ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
-$tdm_ban = function ($civ13, $array, $message = null)
+$tdm_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
@@ -202,7 +202,7 @@ $tdm_ban = function ($civ13, $array, $message = null)
     return $result;
 };
 
-$browser_get = function ($civ13, string $url, array $headers = [], $curl = false)
+$browser_get = function (\Civ13\Civ13 $civ13, string $url, array $headers = [], $curl = false)
 {
     if ( ! $curl && $browser = $civ13->browser) return $browser->get($url, $headers);
     
@@ -214,7 +214,7 @@ $browser_get = function ($civ13, string $url, array $headers = [], $curl = false
     return $result; //string
 };
 
-$browser_post = function ($civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false)
+$browser_post = function (\Civ13\Civ13 $civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false)
 {
     //Send a POST request to valzargaming.com:8081/discord2ckey/ with POST['id'] = $id
     if ( ! $curl && $browser = $civ13->browser) return $browser->post($url, $headers, http_build_query($data));
@@ -229,21 +229,76 @@ $browser_post = function ($civ13, string $url, array $headers = ['Content-Type' 
     return $result;
 };
 
-$discord2ckey = function ($civ13, $id) use ($browser_post)
+$discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
+{
+    if (!$result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true)) return "<@$id> is either not registered to any ckey or the server did not return a response";
+    if (is_array($result)) $result = json_decode(json_encode($result), true); //curl returns string
+    elseif (is_string($result)) $result = json_decode($result); //$browser->post returns React\Promise\Promise
+    
+    $response = null;
+    if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
+        if ($result = $result->ckey)  $response = "<@$id> is registered to $result";
+        else $response = "<@$id> is not registered to any ckey";
+    }
+    if (is_array($result)) { //json_decoded array
+        if ($result = $result['ckey']) $response = "<@$id> is registered to ckey $result";
+        else $response = "<@$id> is not registered to any ckey";
+    }
+    if (is_string($result)) {
+        if ($result) $response = "<@$id> is registered to $result";
+        else $response = "<@$id> is not registered to any ckey";
+    }
+    
+    //React\Promise\Promise from $browser->post
+    return $response ?? $result->then(function ($response) use ($civ13, $id) {
+        $result = json_decode((string)$response->getBody(), true);
+        if ($ckey = $result['ckey']) return "<@$id> is registered to ckey $ckey";
+        return "<@$id> is not registered to any ckey";
+    }, function (Exception $e) use ($civ13) {
+        $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
+    });
+};
+
+$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash)
+{
+    if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
+    if (!$commands->get('name', 'ckey')) {
+        $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+                'type' => \Discord\Parts\Interactions\Command\Command::USER,
+                'name' => 'ckey',
+        ]);
+        $commands->save($command);
+    }
+    
+    // listen for global commands
+
+    // listen for guild commands
+    
+    // listen for user commands
+    $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13, $discord2ckey_slash) {
+        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
+        if ($response instanceof \React\Promise\Promise ) return $response->done(
+            function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response)); }
+        );
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response));
+    });
+};
+
+$discord2ckey = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
 {
     $result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
     if (is_array($result)) return json_decode(json_encode($result), true); //curl returns string
-    return json_decode($result); //$browser->post returns React\Promise\Promise
+    elseif (is_string($result)) return json_decode($result); //$browser->post returns React\Promise\Promise
 };
 
-$ckey2discord = function ($civ13, $ckey) use ($browser_post)
+$ckey2discord = function (\Civ13\Civ13 $civ13, $ckey) use ($browser_post)
 {
     $result = $browser_post($civ13, 'http://civ13.valzargaming.com/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey], true);
     if (is_array($result)) return json_decode(json_encode($result), true);  //curl returns string
     return json_decode($result); //$browser->post returns React\Promise\Promise
 };
  
-$on_message = function ($civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord)
+$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -1027,7 +1082,7 @@ $on_message = function ($civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $dis
     }
 };
 
-$recalculate_ranking = function ($civ13)
+$recalculate_ranking = function (\Civ13\Civ13 $civ13)
 {
     $ranking = array();
     $ckeylist = array();
@@ -1071,7 +1126,7 @@ $recalculate_ranking = function ($civ13)
     return fclose ($search);
 };
 
-$on_message2 = function ($civ13, $message) use ($recalculate_ranking)
+$on_message2 = function (\Civ13\Civ13 $civ13, $message) use ($recalculate_ranking)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -1238,7 +1293,7 @@ $on_message2 = function ($civ13, $message) use ($recalculate_ranking)
  *
  */
 
-$mapswap = function ($civ13, $path, $mapto)
+$mapswap = function (\Civ13\Civ13 $civ13, $path, $mapto)
 {
     $process = spawnChildProcess("python3 $path $mapto");
     $process->on('exit', function($exitCode, $termSignal) use ($civ13) {
@@ -1248,7 +1303,7 @@ $mapswap = function ($civ13, $path, $mapto)
     return $process;
 };
 
-$bancheck = function ($civ13, $ckey)
+$bancheck = function (\Civ13\Civ13 $civ13, $ckey)
 {
     $return = false;
     if ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r')) {
@@ -1278,7 +1333,7 @@ $bancheck = function ($civ13, $ckey)
     return $return;
 };
 
-$bancheck_join = function ($civ13, $guildmember) use ($discord2ckey)
+$bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey)
 {
     if ($guildmember->guild_id != $civ13->civ13_guild_id) return;
     
