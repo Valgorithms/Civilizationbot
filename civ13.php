@@ -22,6 +22,7 @@ class Civ13
     
     public $functions = array(
         'ready' => [],
+        'ready_slash' => [],
         'messages' => [],
         'misc' => [],
     );
@@ -70,11 +71,11 @@ class Civ13
             elseif(isset($options['discord_options'])) $this->discord = new \Discord\Discord($options['discord_options']);
         }
         
-        if(isset($options['functions'])) {
-            if(isset($options['functions']['ready'])) foreach ($options['functions']['ready'] as $key => $func) $this->functions['ready'][$key] = $func;
-            if(isset($options['functions']['message'])) foreach ($options['functions']['message'] as $key => $func) $this->functions['message'][$key] = $func;
-            if(isset($options['functions']['misc'])) foreach ($options['functions']['misc'] as $key => $func) $this->functions['misc'][$key] = $func;
+        if (isset($options['functions'])) {
+            foreach ($options['functions'] as $key1 => $key2) foreach ($options['functions'][$key1] as $key3 => $func) $this->functions[$key1][$key3] = $func;
         } else $this->logger->warning('No functions passed in options!');
+        
+        
         if(isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
         else $this->logger->warning('No files passed in options!');
         if(isset($options['ips']) && isset($options['ports'])) {
