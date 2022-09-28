@@ -279,13 +279,13 @@ $discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
 
 $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash)
 {
-     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
+    //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
     if (!$commands->get('name', 'invite')) {
         $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
                 'name' => 'invite',
                 'description' => 'Bot invite link',
                 'dm_permission' => false,
-                'default_permission' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_guild'],
+                'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_guild'],
         ]);
         $commands->save($command);
     }
@@ -305,7 +305,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
             'type' => \Discord\Parts\Interactions\Command\Command::USER,
             'name' => 'ckey',
             'dm_permission' => false,
-            'default_permission' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['moderate_members'],
+            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['moderate_members'],
         ]);
         $commands->save($command);
     }
