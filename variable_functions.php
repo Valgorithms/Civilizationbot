@@ -1569,8 +1569,6 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
             'dm_permission' => false,
             'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_roles'],
         ]));
-        
-        if ($command = $commands->get('name', 'mapswap_nomads')) $commands->delete($command->id);
     });
         
         //if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
