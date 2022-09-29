@@ -106,7 +106,7 @@ $discord = new \Discord\Discord([
     'storeMessages' => false, //Not needed yet
     'logger' => $logger,
     'loop' => $loop,
-    'intents' => Discord\WebSockets\Intents::getDefaultIntents() | Discord\WebSockets\Intents::GUILD_MEMBERS, // default intents as well as guild members
+    'intents' => \Discord\WebSockets\Intents::getDefaultIntents() | \Discord\WebSockets\Intents::GUILD_MEMBERS, // default intents as well as guild members
 ]);
 $filesystem = \React\Filesystem\Factory::create($loop);
 include 'webapi.php';
@@ -752,7 +752,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
             }
         }
         if ($accepted) {
-            $builder = Discord\Builders\MessageBuilder::new();
+            $builder = \Discord\Builders\MessageBuilder::new();
             $builder->addFile($tdm_bans, 'bans.txt');
             return $message->channel->sendMessage($builder);
         } return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', "$knight")->name . '] rank.');
