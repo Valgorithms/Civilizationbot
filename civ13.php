@@ -61,19 +61,15 @@ class Civ13
         $this->filesystem = $options['filesystem'];
         $this->logger = $options['logger'];
         
-        
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
         if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
-        
-        if (isset($options['discord']) || isset($options['discord_options'])) {
-            if(isset($options['discord'])) $this->discord = $options['discord'];
-            elseif(isset($options['discord_options'])) $this->discord = new \Discord\Discord($options['discord_options']);
-        }
+                
+        if(isset($options['discord'])) $this->discord = $options['discord'];
+        elseif(isset($options['discord_options'])) $this->discord = new \Discord\Discord($options['discord_options']);
         
         if (isset($options['functions'])) foreach ($options['functions'] as $key1 => $key2) foreach ($options['functions'][$key1] as $key3 => $func) $this->functions[$key1][$key3] = $func;
         else $this->logger->warning('No functions passed in options!');
-        
         
         if(isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
         else $this->logger->warning('No files passed in options!');

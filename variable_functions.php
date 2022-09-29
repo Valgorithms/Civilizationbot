@@ -4,7 +4,7 @@
  * This file is a part of the Civ13 project.
  *
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
- */
+ */ 
 
 /*
  *
@@ -277,190 +277,6 @@ $discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
     });
 };
 
-$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash)
-{
-    //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
-    if (!$commands->get('name', 'invite')) {
-        $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-                'name' => 'invite',
-                'description' => 'Bot invite link',
-                'dm_permission' => false,
-                'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_guild'],
-        ]);
-        $commands->save($command);
-    }
-    
-    //if ($command = $commands->get('name', 'players')) $commands->delete($command->id);
-    if (! $commands->get('name', 'players')) {
-        $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-            'name' => 'players',
-            'description' => 'Show Space Station 13 server information'
-        ]);
-        $commands->save($command);
-    }
-    
-    //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
-    if (!$commands->get('name', 'ckey')) {
-        $command = new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-            'type' => \Discord\Parts\Interactions\Command\Command::USER,
-            'name' => 'ckey',
-            'dm_permission' => false,
-            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['moderate_members'],
-        ]);
-        $commands->save($command);
-    }
-    
-    // listen for global commands
-    $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {
-        $interaction->respondWithMessage(Discord\Builders\MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')));
-    });
-    
-    $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
-        if (!$serverinfo = file_get_contents('http://' . $civ13->ips['vzg']. '/servers/serverinfo.json')) return $interaction->respondWithMessage('Unable to fetch serverinfo.json, webserver might be down');
-        $data_json = json_decode($serverinfo);
-        
-        $desc_string_array = array();
-        $desc_string = "";
-        $server_state = array();
-        foreach ($data_json as $varname => $varvalue){ //individual servers
-            $varvalue = json_encode($varvalue);
-            $server_state["$varname"] = $varvalue;
-            
-            $desc_string = $desc_string . $varname . ": " . urldecode($varvalue) . "\n";
-            $desc_string_array[] = $desc_string ?? "null";
-            $desc_string = "";
-        }
-        
-        
-        $servers = [
-            'TDM' => 'byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'],
-            'Nomads' => 'byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'],
-            'Persistence' => 'byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['persistence'],
-            'Blue Colony' => 'byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['bc'],
-        ];
-        $server_index[0] = 'TDM';
-        $server_url[0] = $servers['TDM'];
-        $server_index[1] = 'Nomads';
-        $server_url[1] = $servers['Nomads'];
-        $server_index[2] = 'Persistence';
-        $server_url[2] = $servers['Persistence'];
-        $server_index[3] = 'Blue Colony';
-        $server_url[3] = $servers['Blue Colony'];
-        //$server_index[4] = "Kepler Station CC13" . PHP_EOL;
-        //$server_url[4] = "byond://69.244.83.231:7778";
-        
-        $server_state_dump = array(); // new assoc array for use with the embed
-        foreach ($server_index as $index => $servername){ //This is stupid. The arrays above need to be rewritten as assoc $servers and the methods below need to change as such.
-            $assocArray = json_decode($server_state[$index], true);
-            foreach ($assocArray as $key => $value){
-                if ($value) $value = urldecode($value);
-                else $value = null;
-                $playerlist = '';
-                if ($key/* && $value && ($value != "unknown")*/) switch($key){
-                    case 'version': //First key if online
-                        $server_state_dump[$index]['Server'] = '<' . $server_url[$index] . '> '. PHP_EOL . $server_index[$index];
-                        break;
-                    case 'ERROR': //First key if offline
-                        $server_state_dump[$index]['Server'] = $server_url[$index] . PHP_EOL . $server_index[$index] . PHP_EOL . '(Offline)'; //Don't show offline
-                        break;
-                    case 'host':
-                        if ($value == NULL || $value == '') $server_state_dump[$index]['Host'] = 'Taislin'; //Taislin didn't configure the host file
-                        elseif (strpos($value, 'Guest')!==false) $server_state_dump[$index]['Host'] = 'ValZarGaming'; //Byond wasn't logged in at server start
-                        else $server_state_dump[$index]['Host'] = $value;
-                        break;
-                    /*case "players":
-                        $server_state_dump[$index]["Player Count"] = $value;
-                        break;*/
-                    case 'age':
-                        //"Epoch", urldecode($serverinfo[0]["Epoch"])
-                        $server_state_dump[$index]['Epoch'] = $value;
-                        break;
-                    case 'season':
-                        //"Season", urldecode($serverinfo[0]["Season"])
-                        $server_state_dump[$index]["Season"] = $value;
-                        break;
-                    case 'map':
-                        //"Map", urldecode($serverinfo[0]["Map"]);
-                        $server_state_dump[$index]["Map"] = $value;
-                        break;
-                    case 'roundduration':
-                        $rd = explode (":", $value);
-                        $remainder = ($rd[0] % 24);
-                        $rd[0] = floor($rd[0] / 24);
-                        if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = $rd[0] . "d " . $remainder . "h " . $rd[1] . "m";
-                        else $rt = null; //"STARTING"; //Round is starting
-                        $server_state_dump[$index]["Round Time"] = $rt;
-                        break;
-                    case 'stationtime':
-                        $rd = explode (":", $value);
-                        $remainder = ($rd[0] % 24);
-                        $rd[0] = floor($rd[0] / 24);
-                        if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = $rd[0] . "d " . $remainder . "h " . $rd[1] . "m";
-                        else $rt = null; //"STARTING"; //Round is starting
-                        //$server_state_dump[$index]["Station Time"] = $rt;
-                        break;
-                    case 'cachetime':
-                        //$server_state_dump[$index]["Cache Time"] = gmdate("F j, Y, g:i a", $value) . " GMT";
-                        break;
-                    default:
-                        if ((substr($key, 0, 6) == "player") && ($key != "players") ){
-                            $server_state_dump[$index]["Players"][] = $value;
-                            //$playerlist = $playerlist . "$varvalue, ";
-                            //"Players", urldecode($serverinfo[0]["players"])
-                        }
-                        break;
-                }
-            }
-        }
-        
-        $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
-        foreach ($server_index as $x => $temp){
-            if (is_array($server_state_dump[$x]))
-            foreach ($server_state_dump[$x] as $key => $value){ //Status / Byond / Host / Player Count / Epoch / Season / Map / Round Time / Station Time / Players
-                if (!($key && $value)) continue;
-                if (is_array($value)){
-                    $output_string = implode(', ', $value);
-                    $embed->addFieldValues($key . " (" . count($value) . ")", $output_string, true);
-                }elseif ($key == "Host"){
-                    if (strpos($value, "(Offline") == false)
-                    $embed->addFieldValues($key, $value, true);
-                }elseif ($key == "Server"){
-                    $embed->addFieldValues($key, $value, false);
-                }else{
-                    $embed->addFieldValues($key, $value, true);
-                }
-            }
-        }
-        //Finalize the embed
-        if (isset($civ13->owner_id) && $owner = $civ13->discord->users->get('id', $civ13->owner_id)) $embed->setFooter(($civ13->github ?  "{$civ13->github}" . PHP_EOL : '') . "{$civ13->discord->username} by {$owner->displayname}");
-        $embed
-            ->setColor(0xe1452d)
-            ->setTimestamp()
-            ->setURL("");
-        
-        $message = \Discord\Builders\MessageBuilder::new()
-            ->setContent('Players')
-            ->addEmbed($embed);
-        $interaction->respondWithMessage($message)->done(
-        function ($success){
-            //
-        }, function ($error) use ($civ13) {
-             $civ13->logger->warning('Error responding to interaction with message: ' . $error->getMessage());
-        });
-    });
-    
-    // listen for guild commands
-    
-    // listen for user commands
-    $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13, $discord2ckey_slash) {
-        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
-        if ($response instanceof \React\Promise\Promise ) return $response->done(
-            function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response)); }
-        );
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response));
-    });
-};
-
 $discord2ckey = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
 {
     $result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
@@ -475,7 +291,48 @@ $ckey2discord = function (\Civ13\Civ13 $civ13, $ckey) use ($browser_post)
     return json_decode($result); //$browser->post returns React\Promise\Promise
 };
  
-$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord)
+$restart_nomads = function (\Civ13\Civ13 $civ13, $message = null)
+{
+    \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
+    if ($message !== null) $message->channel->sendMessage('Attempted to kill Civilization 13 Server.');
+    \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
+    if ($message !== null) $message->channel->sendMessage('Updated the code.');
+    \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
+    \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads'] . ' -trusted -webclient -logself &');
+    if ($message !== null) $message->channel->sendMessage('Attempted to bring up Civilization 13 (Nomads Server) <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
+    $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
+        \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
+    });
+};
+
+$restart_tdm = function (\Civ13\Civ13 $civ13, $message = null)
+{
+    \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
+    if ($message !== null) $message->channel->sendMessage('Attempted to kill Civilization 13 TDM Server.');
+    \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
+    if ($message !== null) $message->channel->sendMessage('Updated the code.');
+    \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
+    \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm'] . ' -trusted -webclient -logself &');
+    if ($message !== null) $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
+    $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message) { # ditto
+        \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
+    });
+};
+
+$nomads_mapswap = function (\Civ13\Civ13 $civ13, string $mapto, $message = null)
+{
+    \execInBackground('python3 ' . $civ13->files['nomads_mapswap'] . " $mapto");
+    if ($message !== null) $message->channel->sendMessage("Attempting to change map to $mapto");
+};
+
+$tdm_mapswap = function (\Civ13\Civ13 $civ13, string $mapto, $message = null)
+{
+    \execInBackground('python3 ' . $civ13->files['tdm_mapswap'] . " $mapto");
+    if ($message !== null) $message->channel->sendMessage("Attempting to change map to $mapto");
+};
+
+
+$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -824,17 +681,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
             }
         }
         if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['captain'])->name : "Captain" . '] rank.');
-        
-        \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
-        $message->channel->sendMessage('Attempted to kill Civilization 13 Server.');
-        \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
-        $message->channel->sendMessage('Updated the code.');
-        \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads'] . ' -trusted -webclient -logself &');
-        $message->channel->sendMessage('Attempted to bring up Civilization 13 (Main Server) <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
-        return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13) { # ditto
-            \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
-        });
+        return $restart_nomads($civ13, $message);
     }
     if (str_starts_with($message_content_lower, 'restarttdm')) {
         $accepted = false;
@@ -847,17 +694,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
             }
         }
         if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
-        
-        \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
-        $message->channel->sendMessage('Attempted to kill Civilization 13 TDM Server.');
-        \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
-        $message->channel->sendMessage('Updated the code.');
-        \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
-        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm'] . ' -trusted -webclient -logself &');
-        return $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $message) { # ditto
-            $message->channel->sendMessage('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
-            \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
-        });
+        return $restart_tdm($civ13, $message);
     }
     if (str_starts_with($message_content_lower, 'mapswap')) {
         $accepted = false;
@@ -891,7 +728,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
         
         if(! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
-        \execInBackground('python3 ' . $civ13->files['nomads_mapswap'] . " $mapto");
+        return $nomads_mapswap($civ13, $mapto);
         /*
         $message->channel->sendMessage('Calling mapswap...');
         $process = $mapswap($civ13, $civ13->files['nomads_mapswap'], $mapto);
@@ -903,7 +740,6 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         });
         $process->start();
         */
-        return $message->channel->sendMessage("Attempting to change map to $mapto");
     }
     if (str_starts_with($message_content_lower, 'maplist')) {
         $accepted = false;
@@ -996,7 +832,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path']);
         
         if(! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
-        \execInBackground('python3 ' . $civ13->files['tdm_mapswap'] . " $mapto");
+        return $tdm_mapswap($civ13, $mapto, $message);
         /*
         $message->channel->sendMessage('Calling mapswap...');
         $process = $mapswap($civ13, $civ13->files['nomads_mapswap'], $mapto);
@@ -1008,7 +844,6 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         });
         $process->start();
         */
-        return $message->channel->sendMessage("Attempting to change map to $mapto");
     }
     if (str_starts_with($message_content_lower, 'banlist')) {
         $accepted = false;
@@ -1538,4 +1373,207 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey
             $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
         });
     }
+};
+
+$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $restart_tdm, $restart_nomads, /*$nomads_mapswap, $tdm_mapswap*/)
+{
+    //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
+    if (!$commands->get('name', 'invite')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'name' => 'invite',
+            'description' => 'Bot invite link',
+            'dm_permission' => false,
+            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_guild'],
+    ]));
+    
+    //if ($command = $commands->get('name', 'players')) $commands->delete($command->id);
+    if (! $commands->get('name', 'players')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'name' => 'players',
+        'description' => 'Show Space Station 13 server information'
+    ]));
+    
+    //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
+    if (!$commands->get('name', 'ckey')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+        'name' => 'ckey',
+        'dm_permission' => false,
+        'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['moderate_members'],
+    ]));
+    
+    // listen for global commands
+    $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {
+        $interaction->respondWithMessage(Discord\Builders\MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')));
+    });
+    
+    $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
+        if (!$serverinfo = file_get_contents('http://' . $civ13->ips['vzg']. '/servers/serverinfo.json')) return $interaction->respondWithMessage('Unable to fetch serverinfo.json, webserver might be down');
+        $data_json = json_decode($serverinfo);
+        
+        $desc_string_array = array();
+        $desc_string = "";
+        $server_state = array();
+        foreach ($data_json as $varname => $varvalue){ //individual servers
+            $varvalue = json_encode($varvalue);
+            $server_state["$varname"] = $varvalue;
+            
+            $desc_string = $desc_string . $varname . ": " . urldecode($varvalue) . "\n";
+            $desc_string_array[] = $desc_string ?? "null";
+            $desc_string = "";
+        }
+        
+        $servers = [
+            'TDM' => 'byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'],
+            'Nomads' => 'byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'],
+            'Persistence' => 'byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['persistence'],
+            'Blue Colony' => 'byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['bc'],
+        ];
+        $server_index[0] = 'TDM';
+        $server_url[0] = $servers['TDM'];
+        $server_index[1] = 'Nomads';
+        $server_url[1] = $servers['Nomads'];
+        $server_index[2] = 'Persistence';
+        $server_url[2] = $servers['Persistence'];
+        $server_index[3] = 'Blue Colony';
+        $server_url[3] = $servers['Blue Colony'];
+        //$server_index[4] = "Kepler Station CC13" . PHP_EOL;
+        //$server_url[4] = "byond://69.244.83.231:7778";
+        
+        $server_state_dump = array(); // new assoc array for use with the embed
+        foreach ($server_index as $index => $servername){ //This is stupid. The arrays above need to be rewritten as assoc $servers and the methods below need to change as such.
+            $assocArray = json_decode($server_state[$index], true);
+            foreach ($assocArray as $key => $value){
+                if ($value) $value = urldecode($value);
+                else $value = null;
+                $playerlist = '';
+                if ($key/* && $value && ($value != "unknown")*/) switch($key){
+                    case 'version': //First key if online
+                        $server_state_dump[$index]['Server'] = '<' . $server_url[$index] . '> '. PHP_EOL . $server_index[$index];
+                        break;
+                    case 'ERROR': //First key if offline
+                        $server_state_dump[$index]['Server'] = $server_url[$index] . PHP_EOL . $server_index[$index] . PHP_EOL . '(Offline)'; //Don't show offline
+                        break;
+                    case 'host':
+                        if ($value == NULL || $value == '') $server_state_dump[$index]['Host'] = 'Taislin'; //Taislin didn't configure the host file
+                        elseif (strpos($value, 'Guest')!==false) $server_state_dump[$index]['Host'] = 'ValZarGaming'; //Byond wasn't logged in at server start
+                        else $server_state_dump[$index]['Host'] = $value;
+                        break;
+                    /*case "players":
+                        $server_state_dump[$index]["Player Count"] = $value;
+                        break;*/
+                    case 'age':
+                        //"Epoch", urldecode($serverinfo[0]["Epoch"])
+                        $server_state_dump[$index]['Epoch'] = $value;
+                        break;
+                    case 'season':
+                        //"Season", urldecode($serverinfo[0]["Season"])
+                        $server_state_dump[$index]["Season"] = $value;
+                        break;
+                    case 'map':
+                        //"Map", urldecode($serverinfo[0]["Map"]);
+                        $server_state_dump[$index]["Map"] = $value;
+                        break;
+                    case 'roundduration':
+                        $rd = explode (":", $value);
+                        $remainder = ($rd[0] % 24);
+                        $rd[0] = floor($rd[0] / 24);
+                        if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = $rd[0] . "d " . $remainder . "h " . $rd[1] . "m";
+                        else $rt = null; //"STARTING"; //Round is starting
+                        $server_state_dump[$index]["Round Time"] = $rt;
+                        break;
+                    case 'stationtime':
+                        $rd = explode (":", $value);
+                        $remainder = ($rd[0] % 24);
+                        $rd[0] = floor($rd[0] / 24);
+                        if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = $rd[0] . "d " . $remainder . "h " . $rd[1] . "m";
+                        else $rt = null; //"STARTING"; //Round is starting
+                        //$server_state_dump[$index]["Station Time"] = $rt;
+                        break;
+                    case 'cachetime':
+                        //$server_state_dump[$index]["Cache Time"] = gmdate("F j, Y, g:i a", $value) . " GMT";
+                        break;
+                    default:
+                        if ((substr($key, 0, 6) == "player") && ($key != "players") ){
+                            $server_state_dump[$index]["Players"][] = $value;
+                            //$playerlist = $playerlist . "$varvalue, ";
+                            //"Players", urldecode($serverinfo[0]["players"])
+                        }
+                        break;
+                }
+            }
+        }
+        
+        $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
+        foreach ($server_index as $x => $temp){
+            if (is_array($server_state_dump[$x]))
+            foreach ($server_state_dump[$x] as $key => $value){ //Status / Byond / Host / Player Count / Epoch / Season / Map / Round Time / Station Time / Players
+                if (!($key && $value)) continue;
+                if (is_array($value)){
+                    $output_string = implode(', ', $value);
+                    $embed->addFieldValues($key . " (" . count($value) . ")", $output_string, true);
+                }elseif ($key == "Host"){
+                    if (strpos($value, "(Offline") == false)
+                    $embed->addFieldValues($key, $value, true);
+                }elseif ($key == "Server"){
+                    $embed->addFieldValues($key, $value, false);
+                }else{
+                    $embed->addFieldValues($key, $value, true);
+                }
+            }
+        }
+        //Finalize the embed
+        if (isset($civ13->owner_id) && $owner = $civ13->discord->users->get('id', $civ13->owner_id)) $embed->setFooter(($civ13->github ?  "{$civ13->github}" . PHP_EOL : '') . "{$civ13->discord->username} by {$owner->displayname}");
+        $embed
+            ->setColor(0xe1452d)
+            ->setTimestamp()
+            ->setURL("");
+        
+        $message = \Discord\Builders\MessageBuilder::new()
+            ->setContent('Players')
+            ->addEmbed($embed);
+        $interaction->respondWithMessage($message)->done(
+        function ($success){
+            //
+        }, function ($error) use ($civ13) {
+             $civ13->logger->warning('Error responding to interaction with message: ' . $error->getMessage());
+        });
+    });
+    
+    // listen for guild commands
+    $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->commands->freshen()->done( function ($commands) use ($civ13) {
+        //if ($command = $commands->get('name', 'nomads')) $commands->delete($command->id);
+        if (!$commands->get('name', 'restart_nomads')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
+            'name' => 'restart_nomads',
+            'description' => 'Restart the Nomads server',
+            'dm_permission' => false,
+            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_roles'],
+        ]));
+        
+        //if ($command = $commands->get('name', 'restart tdm')) $commands->delete($command->id);
+        if (!$commands->get('name', 'restart_tdm')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
+            'name' => 'restart_tdm',
+            'description' => 'Restart the TDM server',
+            'dm_permission' => false,
+            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_roles'],
+        ]));
+    });
+    
+    // listen for user commands
+    $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13, $discord2ckey_slash) {
+        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
+        if ($response instanceof \React\Promise\Promise ) return $response->done(
+            function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response)); }
+        );
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response));
+    });
+    
+    $civ13->discord->listenCommand('restart_nomads', function ($interaction) use ($civ13, $restart_nomads) {
+        $interaction->respondWithMessage(Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
+        $restart_nomads($civ13);
+    });
+    
+    $civ13->discord->listenCommand('restart_tdm', function ($interaction) use ($civ13, $restart_tdm) {
+        $interaction->respondWithMessage(Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
+        $restart_tdm($civ13);
+    });
 };
