@@ -1666,6 +1666,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
                     $nomads_mapswap($civ13, $mapto);
                     $select->removeListener();
                 }, $civ13->discord);
+                $select->addOption(\Discord\Builders\Components\Option::new($map));
                 $builder->addComponent($select);
             }
         }
