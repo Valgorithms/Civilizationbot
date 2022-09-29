@@ -1552,7 +1552,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     
     // listen for guild commands
     $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->commands->freshen()->done( function ($commands) use ($civ13) {
-        //if ($command = $commands->get('name', 'nomads')) $commands->delete($command->id);
+        //if ($command = $commands->get('name', 'restart_nomads')) $commands->delete($command->id);
         if (!$commands->get('name', 'restart_nomads')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
             'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
             'name' => 'restart_nomads',
@@ -1570,14 +1570,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
             'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_roles'],
         ]));
         
-        //if ($command = $commands->get('name', 'restart tdm')) $commands->delete($command->id);
-        if (!$commands->get('name', 'mapswap_nomads')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
-            'name' => 'mapswap_nomads',
-            'description' => 'Changes the map on the Nomads server',
-            'dm_permission' => false,
-            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_roles'],
-        ]));
+        if ($command = $commands->get('name', 'mapswap_nomads')) $commands->delete($command->id);
     });
         
         //if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
@@ -1616,67 +1609,5 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         });
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **$ckey**."));
         $unban($civ13, $ckey, $admin);
-    });
-    $civ13->discord->listenCommand('mapswap_nomads', function ($interaction) use ($civ13, $nomads_mapswap) {
-        if (! $file = fopen($civ13->files['map_defines_path'], 'r')) return $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
-        
-        $maps = array();
-        while (($fp = fgets($file, 4096)) !== false) if ($map = trim(explode(' ', trim(str_replace('"', '', $fp)))[2])) $maps[] = $map;
-        fclose($file);
-        
-        
-        $builders = [];
-        $builder = \Discord\Builders\MessageBuilder::new();
-        $x=0;
-        foreach ($maps as $map) {
-            if($x > 0 && $x % 125 == 0) {
-                $builder->setContent('Please select a map from the list to swap to.');
-                $builders[] = clone $builder;
-                $builder = \Discord\Builders\MessageBuilder::new();
-                $select = \Discord\Builders\Components\SelectMenu::new();
-                $select->setListener(function (\Discord\Parts\Interactions\Interaction $interaction) use ($civ13, $select, $nomads_mapswap) {
-                    $mapto = $interaction->data->values[0];
-                    $interaction->channel->sendMessage(\Discord\Builders\MessageBuilder::new()->setContent("Attempting to change map to $mapto"));
-                    $nomads_mapswap($civ13, $mapto);
-                    $select->removeListener();
-                }, $civ13->discord);
-                $select->addOption(\Discord\Builders\Components\Option::new($map));
-                $builder->addComponent($select);
-                $x=0;
-                continue;
-            }
-            if($x > 0 && $x % 25 == 0) {
-                $select = \Discord\Builders\Components\SelectMenu::new();
-                $select->setListener(function (\Discord\Parts\Interactions\Interaction $interaction) use ($civ13, $select, $nomads_mapswap) {
-                    $mapto = $interaction->data->values[0];
-                    $interaction->channel->sendMessage(\Discord\Builders\MessageBuilder::new()->setContent("Attempting to change map to $mapto"));
-                    $nomads_mapswap($civ13, $mapto);
-                    $select->removeListener();
-                }, $civ13->discord);
-                $select->addOption(\Discord\Builders\Components\Option::new($map));
-                $builder->addComponent($select);
-                $x++;
-                continue;
-            }
-            if ($x % 25 != 0) {
-                $select = \Discord\Builders\Components\SelectMenu::new();
-                $select->setListener(function (\Discord\Parts\Interactions\Interaction $interaction) use ($civ13, $select, $nomads_mapswap) {
-                    $mapto = $interaction->data->values[0];
-                    $interaction->channel->sendMessage(\Discord\Builders\MessageBuilder::new()->setContent("Attempting to change map to $mapto"));
-                    $nomads_mapswap($civ13, $mapto);
-                    $select->removeListener();
-                }, $civ13->discord);
-                $select->addOption(\Discord\Builders\Components\Option::new($map));
-                $builder->addComponent($select);
-            }
-        }
-        $builders[] = clone $builder;
-        $channel = $interaction->channel ?? $civ13->discord->getChannel($interaction->channel_id);
-        foreach ($builders as $builder) {
-            $x=1;
-            $builder->setContent("Mapswap Menu $x");
-            $interaction->respondWithMessage($builder);
-            $x++;
-        }
     });
 };
