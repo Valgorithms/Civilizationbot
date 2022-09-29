@@ -247,7 +247,7 @@ $browser_post = function (\Civ13\Civ13 $civ13, string $url, array $headers = ['C
     return $result;
 };
 
-$discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
+$discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post) : \React\Promise\Promise|array
 {
     if (!$result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true)) return "<@$id> is either not registered to any ckey or the server did not return a response";
     if (is_array($result)) $result = json_decode(json_encode($result), true); //curl returns string
@@ -255,23 +255,23 @@ $discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
     
     $response = null;
     if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
-        if ($result = $result->ckey)  $response = "<@$id> is registered to $result";
-        else $response = "<@$id> is not registered to any ckey";
+        if ($ckey = $result->ckey)  $response = ["<@$id> is registered to $ckey", $ckey];
+        else $response = ["<@$id> is not registered to any ckey", null];
     }
     if (is_array($result)) { //json_decoded array
-        if ($result = $result['ckey']) $response = "<@$id> is registered to ckey $result";
-        else $response = "<@$id> is not registered to any ckey";
+        if ($ckey = $result['ckey']) $response = ["<@$id> is registered to ckey $ckey", $ckey];
+        else $response = ["<@$id> is not registered to any ckey", null];
     }
     if (is_string($result)) {
-        if ($result) $response = "<@$id> is registered to $result";
-        else $response = "<@$id> is not registered to any ckey";
+        if ($result) $response = ["<@$id> is registered to $result", $result];
+        else $response = ["<@$id> is not registered to any ckey", null];
     }
     
     //React\Promise\Promise from $browser->post
     return $response ?? $result->then(function ($response) use ($civ13, $id) {
         $result = json_decode((string)$response->getBody(), true);
-        if ($ckey = $result['ckey']) return "<@$id> is registered to ckey $ckey";
-        return "<@$id> is not registered to any ckey";
+        if ($ckey = $result['ckey']) return ["<@$id> is registered to ckey $ckey", $ckey];
+        return ["<@$id> is not registered to any ckey", null];
     }, function (Exception $e) use ($civ13) {
         $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
     });
@@ -331,8 +331,21 @@ $tdm_mapswap = function (\Civ13\Civ13 $civ13, string $mapto, $message = null)
     if ($message !== null) $message->channel->sendMessage("Attempting to change map to $mapto");
 };
 
+$unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null)
+{
+    if (!$admin) $admin = $civ13->discord->user->displayname;
+    if($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
+        fwrite($file, "$admin:::$ckey");
+        fclose($file);
+    }
+    if($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
+        fwrite($file, "$admin:::$ckey");
+        fclose($file);
+    }
+};
 
-$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap)
+
+$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $unban)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -497,6 +510,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         $message_content = substr($message_content, 6);
         $split_message = explode('; ', $message_content);
         
+        /*
         if($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
             $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
             fwrite($file, $txt);
@@ -508,6 +522,9 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
             fclose($file);
         }
         return $message->channel->sendMessage('**' . $message->author->username . '** unbanned **' . $split_message[0] . '**.');
+        */
+        $unban($civ13, $split_message[0], $message->author->displayname);
+        return $message->channel->sendMessage('**' . $message->author->displayname . '** unbanned **' . $split_message[0] . '**.');
     }
     if (str_starts_with($message_content_lower, 'whitelistme')) {
         $split_message = trim(substr($message_content, 11));
@@ -1375,7 +1392,7 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey
     }
 };
 
-$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $restart_tdm, $restart_nomads, /*$nomads_mapswap, $tdm_mapswap*/)
+$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $unban, $restart_tdm, $restart_nomads, /*$nomads_mapswap, $tdm_mapswap*/)
 {
     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
     if (!$commands->get('name', 'invite')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
@@ -1557,10 +1574,18 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
             'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_roles'],
         ]));
     });
+        
+        //if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
+    if (!$commands->get('name', 'unban')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+        'name' => 'unban',
+        'dm_permission' => false,
+        'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['moderate_members'],
+    ]));
     
     // listen for user commands
     $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13, $discord2ckey_slash) {
-        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
+        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[0]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
         if ($response instanceof \React\Promise\Promise ) return $response->done(
             function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response)); }
         );
@@ -1575,5 +1600,16 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     $civ13->discord->listenCommand('restart_tdm', function ($interaction) use ($civ13, $restart_tdm) {
         $interaction->respondWithMessage(Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
         $restart_tdm($civ13);
+    });
+    
+    $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $discord2ckey_slash, $unban) {
+        $admin = $interaction->user->displayname;
+        if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
+        if ($ckey instanceof \React\Promise\Promise ) return $ckey->done( function ($ckey) use ($civ13, $interaction, $unban, $admin) {
+            $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **$ckey**."));
+            $unban($civ13, $ckey, $admin);
+        });
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **$ckey**."));
+        $unban($civ13, $ckey, $admin);
     });
 };
