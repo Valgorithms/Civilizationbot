@@ -1390,12 +1390,13 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey
 
 $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap)
 {
+    //Declare commands
     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
     if (!$commands->get('name', 'invite')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
             'name' => 'invite',
             'description' => 'Bot invite link',
             'dm_permission' => false,
-            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_guild'],
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['manage_guild' => true]),
     ]));
     
     //if ($command = $commands->get('name', 'players')) $commands->delete($command->id);
@@ -1409,10 +1410,37 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         'type' => \Discord\Parts\Interactions\Command\Command::USER,
         'name' => 'ckey',
         'dm_permission' => false,
-        'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['moderate_members'],
+        'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
     ]));
     
-    // listen for global commands
+    $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->commands->freshen()->done( function ($commands) use ($civ13) {
+        //if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
+        if (!$commands->get('name', 'unban')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'type' => \Discord\Parts\Interactions\Command\Command::USER,
+            'name' => 'unban',
+            'dm_permission' => false,
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
+        ]));
+        
+        //if ($command = $commands->get('name', 'restart_nomads')) $commands->delete($command->id);
+        if (!$commands->get('name', 'restart_nomads')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
+            'name' => 'restart_nomads',
+            'description' => 'Restart the Nomads server',
+            'dm_permission' => false,
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['manage_roles' => true]),
+        ]));
+        
+        //if ($command = $commands->get('name', 'restart tdm')) $commands->delete($command->id);
+        if (!$commands->get('name', 'restart_tdm')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
+            'name' => 'restart_tdm',
+            'description' => 'Restart the TDM server',
+            'dm_permission' => false,
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['manage_roles' => true]),
+        ]));
+    });
+    
     $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')));
     });
@@ -1550,52 +1578,12 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         });
     });
     
-    // listen for guild commands
-    $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->commands->freshen()->done( function ($commands) use ($civ13) {
-        //if ($command = $commands->get('name', 'restart_nomads')) $commands->delete($command->id);
-        if (!$commands->get('name', 'restart_nomads')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
-            'name' => 'restart_nomads',
-            'description' => 'Restart the Nomads server',
-            'dm_permission' => false,
-            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_roles'],
-        ]));
-        
-        //if ($command = $commands->get('name', 'restart tdm')) $commands->delete($command->id);
-        if (!$commands->get('name', 'restart_tdm')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
-            'name' => 'restart_tdm',
-            'description' => 'Restart the TDM server',
-            'dm_permission' => false,
-            'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['manage_roles'],
-        ]));
-    });
-        
-        //if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
-    if (!$commands->get('name', 'unban')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-        'type' => \Discord\Parts\Interactions\Command\Command::USER,
-        'name' => 'unban',
-        'dm_permission' => false,
-        'default_member_permissions' => \Discord\Parts\Permissions\Permission::ROLE_PERMISSIONS['moderate_members'],
-    ]));
-    
-    // listen for user commands
     $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13, $discord2ckey_slash) {
         if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[0]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
         if ($response instanceof \React\Promise\Promise ) return $response->done(
             function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response)); }
         );
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response));
-    });
-    
-    $civ13->discord->listenCommand('restart_nomads', function ($interaction) use ($civ13, $restart_nomads) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
-        $restart_nomads($civ13);
-    });
-    
-    $civ13->discord->listenCommand('restart_tdm', function ($interaction) use ($civ13, $restart_tdm) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
-        $restart_tdm($civ13);
     });
     
     $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $discord2ckey_slash, $unban) {
@@ -1607,5 +1595,15 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         });
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **$ckey**."));
         $unban($civ13, $ckey, $admin);
+    });
+    
+    $civ13->discord->listenCommand('restart_nomads', function ($interaction) use ($civ13, $restart_nomads) {
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
+        $restart_nomads($civ13);
+    });
+    
+    $civ13->discord->listenCommand('restart_tdm', function ($interaction) use ($civ13, $restart_tdm) {
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
+        $restart_tdm($civ13);
     });
 };
