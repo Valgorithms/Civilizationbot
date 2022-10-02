@@ -1328,7 +1328,7 @@ $mapswap = function (\Civ13\Civ13 $civ13, $path, $mapto)
     return $process;
 };
 
-$bancheck = function (\Civ13\Civ13 $civ13, $ckey)
+$bancheck = function (\Civ13\Civ13 $civ13, string $ckey)
 {
     $return = false;
     if ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r')) {
@@ -1388,7 +1388,7 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey
     }
 };
 
-$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap)
+$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $bancheck, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap)
 {
     //Declare commands
     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
@@ -1409,6 +1409,14 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     if (!$commands->get('name', 'ckey')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
         'type' => \Discord\Parts\Interactions\Command\Command::USER,
         'name' => 'ckey',
+        'dm_permission' => false,
+        'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
+    ]));
+    
+     //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
+    if (!$commands->get('name', 'bancheck')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+        'name' => 'bancheck',
         'dm_permission' => false,
         'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
     ]));
@@ -1584,6 +1592,18 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
             function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true); }
         );
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true);
+    });
+    
+    $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $discord2ckey_slash, $bancheck) {
+        if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
+        if ($ckey instanceof \React\Promise\Promise ) return $ckey->done(
+            function ($ckey) use ($interaction, $bancheck) {
+                if ($bancheck($ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."));
+                return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."));
+            }
+        );
+        if ($bancheck($ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."));
+        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."));
     });
     
     $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $discord2ckey_slash, $unban) {
