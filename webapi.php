@@ -186,7 +186,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             if ($channel = $civ13->discord->getChannel('712685552155230278')) $channel->sendMessage('Restarting...');
             $return = 'restarting';
             $socket->close();
-            $civ13->discord->getLoop()->addTimer(5, function () use ($civ13, $socket) {
+            $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
                 \restart();
                 $civ13->discord->close();
                 die();

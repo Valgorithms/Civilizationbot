@@ -1391,6 +1391,31 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey
 $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $bancheck, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap)
 {
     //Declare commands
+    
+    //if ($command = $commands->get('name', 'restart')) $commands->delete($command->id);
+    if (!$commands->get('name', 'restart')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'name' => 'restart',
+            'description' => 'Restart the bot',
+            'dm_permission' => false,
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
+    ]));
+    
+    //if ($command = $commands->get('name', 'pull')) $commands->delete($command->id);
+    if (!$commands->get('name', 'pull')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'name' => 'pull',
+            'description' => 'Update the bot\'s code',
+            'dm_permission' => false,
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
+    ]));
+    
+    //if ($command = $commands->get('name', 'update')) $commands->delete($command->id);
+    if (!$commands->get('name', 'update')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'name' => 'update',
+            'description' => 'Update the bot\'s dependencies',
+            'dm_permission' => false,
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
+    ]));
+    
     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
     if (!$commands->get('name', 'invite')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
             'name' => 'invite',
@@ -1436,7 +1461,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
             'name' => 'restart_nomads',
             'description' => 'Restart the Nomads server',
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['manage_roles' => true]),
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
         ]));
         
         //if ($command = $commands->get('name', 'restart tdm')) $commands->delete($command->id);
@@ -1445,8 +1470,30 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
             'name' => 'restart_tdm',
             'description' => 'Restart the TDM server',
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['manage_roles' => true]),
+            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
         ]));
+    });
+    
+    $civ13->discord->listenCommand('restart', function ($interaction) use ($civ13) {
+        $civ13->logger->info('[RESTART]');
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Restarting...'));
+        $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
+            \restart();
+            $civ13->discord->close();
+            die();
+        });
+    });
+    
+    $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13) {
+        $civ13->logger->info('[GIT PULL]');
+        \execInBackground('git pull');
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Updating code from GitHub...'));
+    });
+    
+    $civ13->discord->listenCommand('update', function ($interaction) use ($civ13) {
+        $civ13->logger->info('[COMPOSER UPDATE]');
+        \execInBackground('composer update');
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Updating dependencies...'));
     });
     
     $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {
