@@ -1480,7 +1480,6 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
             \restart();
             $civ13->discord->close();
-            die();
         });
     });
     
