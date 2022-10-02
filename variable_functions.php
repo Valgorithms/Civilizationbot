@@ -1597,12 +1597,12 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $discord2ckey_slash, $bancheck) {
         if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
         if ($ckey instanceof \React\Promise\Promise ) return $ckey->done(
-            function ($ckey) use ($interaction, $bancheck) {
-                if ($bancheck($ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."));
+            function ($ckey) use ($civ13, $interaction, $bancheck) {
+                if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."));
                 return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."));
             }
         );
-        if ($bancheck($ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."));
+        if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."));
         return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."));
     });
     
