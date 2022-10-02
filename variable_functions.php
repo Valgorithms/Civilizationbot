@@ -1450,7 +1450,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     });
     
     $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')));
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')), true);
     });
     
     $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
@@ -1587,7 +1587,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     });
     
     $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13, $discord2ckey_slash) {
-        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[0]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
+        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[0]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
         if ($response instanceof \React\Promise\Promise ) return $response->done(
             function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true); }
         );
@@ -1595,20 +1595,20 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     });
     
     $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $discord2ckey_slash, $bancheck) {
-        if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
+        if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
         if ($ckey instanceof \React\Promise\Promise ) return $ckey->done(
             function ($ckey) use ($civ13, $interaction, $bancheck) {
-                if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."));
-                return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."));
+                if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."), true);
+                return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."), true);
             }
         );
-        if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."));
-        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."));
+        if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."), true);
+        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."), true);
     });
     
     $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $discord2ckey_slash, $unban) {
         $admin = $interaction->user->displayname;
-        if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'));
+        if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
         if ($ckey instanceof \React\Promise\Promise ) return $ckey->done( function ($ckey) use ($civ13, $interaction, $unban, $admin) {
             $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **$ckey**."));
             $unban($civ13, $ckey, $admin);
