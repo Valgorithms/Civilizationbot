@@ -46,6 +46,7 @@ $options = array(
     'browser' => $browser,
     'filesystem' => $filesystem,
     'logger' => $logger,
+    'stats' => $stats,
     
     //Configurations
     'command_symbol' => '!s',

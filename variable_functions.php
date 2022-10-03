@@ -1392,6 +1392,12 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
 {
     //Declare commands
     
+    //if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
+    if (!$commands->get('name', 'ping')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+            'name' => 'ping',
+            'description' => 'Replies with Pong!',
+    ]));
+    
     //if ($command = $commands->get('name', 'restart')) $commands->delete($command->id);
     if (!$commands->get('name', 'restart')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
             'name' => 'restart',
@@ -1415,6 +1421,14 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
             'dm_permission' => false,
             'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
     ]));
+
+    //if ($command = $commands->get('name', 'stats')) $commands->delete($command->id);
+    if (!$commands->get('name', 'stats')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'name' => 'stats',
+        'description' => 'Get runtime information about the bot',
+        'dm_permission' => false,
+        'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
+]));
     
     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
     if (!$commands->get('name', 'invite')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
@@ -1474,6 +1488,10 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         ]));
     });
     
+    $civ13->discord->listenCommand('ping', function ($interaction) use ($civ13) {
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Pong!'));
+    });
+    
     $civ13->discord->listenCommand('restart', function ($interaction) use ($civ13) {
         $civ13->logger->info('[RESTART]');
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Restarting...'));
@@ -1493,6 +1511,10 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         $civ13->logger->info('[COMPOSER UPDATE]');
         \execInBackground('composer update');
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Updating dependencies...'));
+    });
+    
+    $civ13->discord->listenCommand('stats', function ($interaction) use ($civ13) {
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($civ13->stats->handleInteraction($interaction)));
     });
     
     $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {

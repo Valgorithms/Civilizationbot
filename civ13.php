@@ -15,6 +15,7 @@ class Civ13
     public $browser;
     public $filesystem;
     public $logger;
+    public $stats;
     
     protected $webapi;
     
@@ -60,6 +61,7 @@ class Civ13
         $this->browser = $options['browser'];
         $this->filesystem = $options['filesystem'];
         $this->logger = $options['logger'];
+        $this->stats = $options['stats'];
         
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
         if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
@@ -73,10 +75,6 @@ class Civ13
         
         if(isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
         else $this->logger->warning('No files passed in options!');
-        if(isset($options['ips']) && isset($options['ports'])) {
-            foreach ($options['ips'] as $key => $ip) $this->ips[$key] = $ip;
-            foreach ($options['ports'] as $key => $port) $this->ports[$key] = $port;
-        } else $this->logger->warning('Either ips or ports was not passed in options!');
         if(isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $id) $this->channel_ids[$key] = $id;
         else $this->logger->warning('No channel_ids passed in options!');
         if(isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;

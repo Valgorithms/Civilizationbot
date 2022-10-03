@@ -45,6 +45,19 @@ class Stats
     }
 
     /**
+     * Returns the current commit of Civilizationbot.
+     *
+     * @return string
+     */
+    private function getBotVersion(): string
+    {
+        return str_replace(
+            "\n", ' ',
+            `git rev-parse --abbrev-ref HEAD; git log --oneline -1`
+        );
+    }
+
+    /**
      * Returns the current commit of DiscordPHP.
      *
      * @return string
@@ -53,7 +66,7 @@ class Stats
     {
         return str_replace(
             "\n", ' ',
-            `cd ` . getcwd() . `/vendor/team-reflex/discord-php; git rev-parse --abbrev-ref HEAD; git log --oneline -1`
+            `git rev-parse --abbrev-ref HEAD; git log --oneline -1`
         );
     }
 
@@ -70,22 +83,40 @@ class Stats
         return @round($size / pow(1024, ($i = floor(log($size, 1024)))), 2).' '.$unit[$i];
     }
 
-    public function handle($message): void
+    public function handleMessage($message): Discord\Parts\Embed\Embed
     {
-        $embed = new \Discord\Parts\Embed\Embed($this->discord);
+        $embed = new Discord\Parts\Embed\Embed($this->discord);
         $embed
             ->setTitle('DiscordPHP')
             ->setDescription('This bot runs with DiscordPHP.')
             ->addFieldValues('PHP Version', phpversion())
             //->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
+            ->addFieldValues('Bot Version', $this->getBotVersion())
             ->addFieldValues('Start time', $this->startTime->longRelativeToNowDiffForHumans(3))
             ->addFieldValues('Last reconnected', $this->lastReconnect->longRelativeToNowDiffForHumans(3))
             ->addFieldValues('Guild count', $this->discord->guilds->count())
             ->addFieldValues('Channel count', $this->getChannelCount())
             ->addFieldValues('User count', $this->discord->users->count())
             ->addFieldValues('Memory usage', $this->getMemoryUsageFriendly());
-
-        $message->channel->sendEmbed($embed);
+        return $embed;
+    }
+    
+    public function handleInteraction($interaction): Discord\Parts\Embed\Embed
+    {
+        $embed = new Discord\Parts\Embed\Embed($this->discord);
+        $embed
+            ->setTitle('DiscordPHP')
+            ->setDescription('This bot runs with DiscordPHP.')
+            ->addFieldValues('PHP Version', phpversion())
+            //->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
+            ->addFieldValues('Bot Version', $this->getBotVersion())
+            ->addFieldValues('Start time', $this->startTime->longRelativeToNowDiffForHumans(3))
+            ->addFieldValues('Last reconnected', $this->lastReconnect->longRelativeToNowDiffForHumans(3))
+            ->addFieldValues('Guild count', $this->discord->guilds->count())
+            ->addFieldValues('Channel count', $this->getChannelCount())
+            ->addFieldValues('User count', $this->discord->users->count())
+            ->addFieldValues('Memory usage', $this->getMemoryUsageFriendly());
+        return $embed;
     }
 
     public function getHelp(): string
