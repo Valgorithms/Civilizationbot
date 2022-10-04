@@ -15,7 +15,7 @@ class Stats
      */
     private $lastReconnect;
     
-    private $discord;
+    private Discord\Discord $discord;
 
     public function init(&$discord): void
     {
@@ -64,10 +64,7 @@ class Stats
      */
     private function getDiscordPHPVersion(): string
     {
-        return str_replace(
-            "\n", ' ',
-            `git rev-parse --abbrev-ref HEAD; git log --oneline -1`
-        );
+        return $this->discord::VERSION;
     }
 
     /**
@@ -90,7 +87,7 @@ class Stats
             ->setTitle('DiscordPHP')
             ->setDescription('This bot runs with DiscordPHP.')
             ->addFieldValues('PHP Version', phpversion())
-            //->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
+            ->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
             ->addFieldValues('Bot Version', $this->getBotVersion())
             ->addFieldValues('Start time', $this->startTime->longRelativeToNowDiffForHumans(3))
             ->addFieldValues('Last reconnected', $this->lastReconnect->longRelativeToNowDiffForHumans(3))
@@ -108,7 +105,7 @@ class Stats
             ->setTitle('DiscordPHP')
             ->setDescription('This bot runs with DiscordPHP.')
             ->addFieldValues('PHP Version', phpversion())
-            //->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
+            ->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
             ->addFieldValues('Bot Version', $this->getBotVersion())
             ->addFieldValues('Start time', $this->startTime->longRelativeToNowDiffForHumans(3))
             ->addFieldValues('Last reconnected', $this->lastReconnect->longRelativeToNowDiffForHumans(3))
