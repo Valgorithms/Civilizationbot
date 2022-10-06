@@ -1694,4 +1694,16 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
         $restart_tdm($civ13);
     });
+    
+    /*For deferred interactions
+    $civ13->discord->listenCommand('',  function (Interaction $interaction) use ($civ13) {
+      // code is expected to be slow, defer the interaction
+      $interaction->acknowledge()->done(function () use ($interaction, $civ13) { // wait until the bot says "Is thinking..."
+        // do heavy code here (up to 15 minutes)
+        // ...
+        // send follow up (instead of respond)
+        $interaction->sendFollowUpMessage(MessageBuilder...);
+      });
+    }
+    */
 };

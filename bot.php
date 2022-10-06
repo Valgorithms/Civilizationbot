@@ -14,10 +14,10 @@ define('MAIN_INCLUDED', 1); //Token and SQL credential files may be protected lo
 require getcwd(). '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
-$loop = React\EventLoop\Factory::create();
-$redis = new WyriHaximus\React\Cache\Redis((new Clue\React\Redis\Factory($loop))->createLazyClient('127.0.0.1:6379'), 'dphp:cache:'); // prefix is "dphp:cache"
-$logger = new Monolog\Logger('New logger');
-$logger->pushHandler(new Monolog\Handler\StreamHandler('php://stdout'));
+$loop = \React\EventLoop\Loop::get();
+$redis = new \WyriHaximus\React\Cache\Redis((new Clue\React\Redis\Factory($loop))->createLazyClient('127.0.0.1:6379'), 'dphp:cache:'); // prefix is "dphp:cache"
+$logger = new \Monolog\Logger('New logger');
+$logger->pushHandler(new \Monolog\Handler\StreamHandler('php://stdout'));
 $discord = new \Discord\Discord([
     'loop' => $loop,
     'logger' => $logger,
@@ -29,7 +29,7 @@ $discord = new \Discord\Discord([
     'token' => $token,
     'loadAllMembers' => true,
     'storeMessages' => true, //Because why not?
-    'intents' => \Discord\WebSockets\Intents::getDefaultIntents() | \Discord\WebSockets\Intents::GUILD_MEMBERS | \Discord\WebSockets\Intents::MESSAGE_CONTENT, // default intents as well as guild members
+    'intents' => \Discord\WebSockets\Intents::getDefaultIntents() | \Discord\WebSockets\Intents::GUILD_MEMBERS | \Discord\WebSockets\Intents::MESSAGE_CONTENT,
 ]);
 include 'stats_object.php'; 
 $stats = new Stats();
