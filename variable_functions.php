@@ -745,7 +745,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
         
         if(! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
-        return $nomads_mapswap($civ13, $mapto);
+        return $nomads_mapswap($civ13, $mapto, $message);
         /*
         $message->channel->sendMessage('Calling mapswap...');
         $process = $mapswap($civ13, $civ13->files['nomads_mapswap'], $mapto);
