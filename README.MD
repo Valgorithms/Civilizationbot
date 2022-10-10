@@ -1,6 +1,6 @@
 CivilizationBot
 ====
-[![Civilization 13 Discord](https://discord.com/api/guilds/468979034571931648/widget.png?style=banner1)](https://discord.gg/hBEtg4x)
+[![Civilization 13 Discord](https://discord.com/api/guilds/468979034571931648/widget.png?style=banner1)](https://civ13.com/discord)
 
 The official [Civ13](https://civ13.com) Discord bot built on DiscordPHP with documentation [available here](http://discord-php.github.io/DiscordPHP), albeit limited at the moment, as well as a class reference. Feel free to ask questions in the Discord server above.
 
