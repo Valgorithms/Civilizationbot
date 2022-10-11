@@ -843,7 +843,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
                 $filter = '"';
                 $line = trim(str_replace($filter, '', $fp));
                 $linesplit = explode(' ', $line); //$split_ckey[0] is the ckey
-                if($map = trim($linesplit[2])) $maps[] = $map;
+                if(isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
             }
             fclose($filecheck1);
         } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path']);
