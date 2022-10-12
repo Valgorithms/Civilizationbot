@@ -334,11 +334,11 @@ $tdm_mapswap = function (\Civ13\Civ13 $civ13, string $mapto, $message = null)
 $unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null)
 {
     if (!$admin) $admin = $civ13->discord->user->displayname;
-    if($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
+    if ($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
         fwrite($file, "$admin:::$ckey");
         fclose($file);
     }
-    if($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
+    if ($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
         fwrite($file, "$admin:::$ckey");
         fclose($file);
     }
@@ -423,13 +423,13 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         $message_filtered = substr($message_content, 4);
         switch (strtolower($message->channel->name)) {
             case 'ooc-nomads':                    
-                if($file = fopen($civ13->files['nomads_discord2ooc'], 'a')) {
+                if ($file = fopen($civ13->files['nomads_discord2ooc'], 'a')) {
                     fwrite($file, $message->author->username . ":::$message_filtered" . PHP_EOL);
                     fclose($file);
                 }
                 break;
             case 'ooc-tdm':
-                if($file = fopen($civ13->files['tdm_discord2ooc'], 'a')) {
+                if ($file = fopen($civ13->files['tdm_discord2ooc'], 'a')) {
                     fwrite($file, $message->author->username . ":::$message_filtered" . PHP_EOL);
                     fclose($file);
                 }
@@ -443,13 +443,13 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         $message_filtered = substr($message_content, 5);
         switch (strtolower($message->channel->name)) {
             case 'ahelp-nomads':
-                if($file = fopen($civ13->files['nomads_discord2admin'], 'a')) {                    
+                if ($file = fopen($civ13->files['nomads_discord2admin'], 'a')) {                    
                     fwrite($file, $message->author->username . ":::$message_filtered" . PHP_EOL);
                     fclose($file);
                 }
                 break;
             case 'ahelp-tdm':
-                if($file = fopen($civ13->files['tdm_discord2admin'], 'a')) {
+                if ($file = fopen($civ13->files['tdm_discord2admin'], 'a')) {
                     fwrite($file, $message->author->username . ":::$message_filtered" . PHP_EOL);
                     fclose($file);
                 }
@@ -463,13 +463,13 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         $split_message = explode(': ', substr($message_content, 3));
         switch (strtolower($message->channel->name)) {
             case 'ahelp-nomads':
-                if($file = fopen($civ13->files['nomads_discord2dm'], 'a')) {
+                if ($file = fopen($civ13->files['nomads_discord2dm'], 'a')) {
                     fwrite($file, $message->author->username.':::'.$split_message[0].':::'.$split_message[1].PHP_EOL);
                     fclose($file);
                 }
                 break;
             case 'ahelp-tdm':
-                if($file = fopen($civ13->files['tdm_discord2dm'], 'a')) {
+                if ($file = fopen($civ13->files['tdm_discord2dm'], 'a')) {
                     fwrite($file, $message->author->username.':::'.$split_message[0].':::'.$split_message[1].PHP_EOL);
                     fclose($file);
                 }
@@ -511,12 +511,12 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         $split_message = explode('; ', $message_content);
         
         /*
-        if($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
+        if ($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
             $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
             fwrite($file, $txt);
             fclose($file);
         }
-        if($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
+        if ($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
             $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
             fwrite($file, $txt);
             fclose($file);
@@ -737,14 +737,14 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
                 $filter = '"';
                 $line = trim(str_replace($filter, '', $fp));
                 $linesplit = explode(' ', $line); //$split_ckey[0] is the ckey
-                if($map = trim($linesplit[2])) {
+                if ($map = trim($linesplit[2])) {
                     $maps[] = $map;
                 }
             }
             fclose($filecheck1);
         } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
         
-        if(! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
+        if (! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
         return $nomads_mapswap($civ13, $mapto, $message);
         /*
         $message->channel->sendMessage('Calling mapswap...');
@@ -843,12 +843,12 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
                 $filter = '"';
                 $line = trim(str_replace($filter, '', $fp));
                 $linesplit = explode(' ', $line); //$split_ckey[0] is the ckey
-                if(isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
+                if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
             }
             fclose($filecheck1);
         } else $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path']);
         
-        if(! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
+        if (! in_array($mapto, $maps)) return $message->channel->sendMessage("$mapto was not found in the map definitions.");
         return $tdm_mapswap($civ13, $mapto, $message);
         /*
         $message->channel->sendMessage('Calling mapswap...');
@@ -864,26 +864,20 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
     }
     if (str_starts_with($message_content_lower, 'banlist')) {
         $accepted = false;
-        if ($author_member = $message->member) {
-            foreach ($author_member->roles as $role) {
-                switch ($role->id) {
-                    case $civ13->role_ids['admiral']:
-                    case $civ13->role_ids['captain']:
-                    case $civ13->role_ids['knight']:
-                        $accepted = true;
-                }
+        if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+        foreach ($author_member->roles as $role) {
+            switch ($role->id) {
+                case $civ13->role_ids['admiral']:
+                case $civ13->role_ids['captain']:
+                case $civ13->role_ids['knight']:
+                    $accepted = true;
             }
         }
         if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['knight'])->name . '] rank.');
         return $message->channel->sendMessage(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
     }
     if (str_starts_with($message_content_lower, 'bancheck')) {
-        $split_message = explode('bancheck ', $message_content);
-        if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return  $message->channel->sendMessage('Wrong format. Please try `!s bancheck [ckey]`.');
-        $ckey = trim($split_message[1]);
-        $ckey = strtolower($ckey);
-        $ckey = str_replace('_', '', $ckey);
-        $ckey = str_replace(' ', '', $ckey);
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
         $banreason = "unknown";
         $found = false;
         if ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r')) {
@@ -904,9 +898,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         }
         if ($filecheck2 = fopen($civ13->files['tdm_bans'], 'r')) {
             while (($fp = fgets($filecheck2, 4096)) !== false) {
-                str_replace(PHP_EOL, '', $fp);
-                $filter = '|||';
-                $line = trim(str_replace($filter, '', $fp));
+                $line = trim(str_replace([PHP_EOL, '|||'], '', $fp));
                 $linesplit = explode(';', $line); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
                     $found = true;
@@ -934,13 +926,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
                     $embed->setColor(0x00ff00);
                     $embed->addFieldValues('TDM Server Status', 'Starting');
                 } else {
-                    $data = str_replace('<b>Address</b>: ', '', $data);
-                    $data = str_replace('<b>Map</b>: ', '', $data);
-                    $data = str_replace('<b>Gamemode</b>: ', '', $data);
-                    $data = str_replace('<b>Players</b>: ', '', $data);
-                    $data = str_replace('</b>', '', $data);
-                    $data = str_replace('<b>', '', $data);
-                    $data = explode(';', $data);
+                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
                     $embed->setColor(0x00ff00);
                     $embed->addFieldValues('TDM Server Status', 'Online');
                     if (isset($data[1])) $embed->addFieldValues('Address', '<'.$data[1].'>');
@@ -964,13 +950,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
                     $embed->setColor(0x00ff00);
                     $embed->addFieldValues('Nomads Server Status', 'Starting');
                 } else {
-                    $data = str_replace('<b>Address</b>: ', '', $data);
-                    $data = str_replace('<b>Map</b>: ', '', $data);
-                    $data = str_replace('<b>Gamemode</b>: ', '', $data);
-                    $data = str_replace('<b>Players</b>: ', '', $data);
-                    $data = str_replace('</b>', '', $data);
-                    $data = str_replace('<b>', '', $data);
-                    $data = explode(';', $data);
+                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
                     $embed->setColor(0x00ff00);
                     $embed->addFieldValues('Nomads Server Status', 'Online');
                     if (isset($data[1])) $embed->addFieldValues('Address', '<'.$data[1].'>');
@@ -986,35 +966,30 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         return $message->channel->sendEmbed($embed);
     }
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
-        $filter = 'discord2ckey ';
-        $id = trim(str_replace($filter, '', $message_content_lower));
-        $filter = '<@';
-        $id = trim(str_replace($filter, '', $id));
-        $filter = '!';
-        $id = trim(str_replace($filter, '', $id));
-        $filter = '>';
-        $id = trim(str_replace($filter, '', $id));
-        if (! is_numeric($id)) return $message->reply("`$id` does not contain a discord snowflake");
+        $message_content = trim(substr($message_content, strlen('discord2ckey')));
+        $message_content_lower = strtolower($message_content);
+        preg_match('/<#([0-9]*)>/', $message_content_lower, $matches);
+        if (! is_numeric($id = $matches[1])) return $message->reply("`$message_content` does not contain a discord snowflake");
         
         $civ13->logger->info("DISCORD2CKEY id $id");
         $result = $discord2ckey($civ13, $id);
         echo '[DISCORD2CKEY]'; var_dump($result);
         if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
-            if($result = $result->ckey) return $message->reply("<@$id> is registered to $result");
+            if ($result = $result->ckey) return $message->reply("<@$id> is registered to $result");
             return $message->reply("<@$id> is not registered to any ckey");
         }
         if (is_array($result)) { //json_decoded array
-            if($result = $result['ckey']) return $message->reply("<@$id> is registered to ckey $result");
+            if ($result = $result['ckey']) return $message->reply("<@$id> is registered to ckey $result");
             return $message->reply("<@$id> is not registered to any ckey");
         }
         if (is_string($result)) {
-            if($result) return $message->reply("<@$id> is registered to $result");
+            if ($result) return $message->reply("<@$id> is registered to $result");
             return $message->reply("<@$id> is not registered to any ckey");
         }
         //React\Promise\Promise from $browser->post
         $result->then(function ($response) use ($civ13, $message, $id) {
             $result = json_decode((string)$response->getBody(), true);
-            if($ckey = $result['ckey']) return $message->reply("<@$id> is registered to ckey $ckey");
+            if ($ckey = $result['ckey']) return $message->reply("<@$id> is registered to ckey $ckey");
             return $message->reply("<@$id> is not registered to any ckey");
         }, function (Exception $e) use ($civ13) {
             $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
@@ -1022,32 +997,25 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         return;
     }
     if (str_starts_with($message_content_lower, 'ckey2discord')) {
-        $filter = 'ckey2discord ';
-        $ckey = trim(str_replace($filter, '', $message_content_lower));
-        $filter = '.';
-        $ckey = trim(str_replace($filter, '', $ckey));
-        $filter = '_';
-        $ckey = trim(str_replace($filter, '', $ckey));
-        $filter = ' ';
-        $ckey = str_replace($filter, '', $ckey);
+        $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('discord2ckey'))));
         
         $civ13->logger->info("CKEY2DISCORD ckey $ckey");
         $result = $ckey2discord($civ13, $ckey);
         if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
-            if($result = $result->discord) return $message->reply("$ckey is registered to <@$result>");
+            if ($result = $result->discord) return $message->reply("$ckey is registered to <@$result>");
             return $message->reply("$ckey is not registered to any discord account");
         }
         if (is_array($result)) { //curl json_decoded array
-            if($result = $result['id']) return $message->reply("$ckey is registered to <@$result>");
+            if ($result = $result['id']) return $message->reply("$ckey is registered to <@$result>");
             return $message->reply("$ckey is not registered to any discord account");
         }
         if (is_string($result)) {
-            if($result) return $message->reply("$ckey is registered to <@$result>");
+            if ($result) return $message->reply("$ckey is registered to <@$result>");
             return $message->reply("$ckey is not registered to any discord account");
         } //React\Promise\Promise from $browser->post
         $result->done(function ($response) use ($civ13, $message, $ckey) {
             $result = json_decode((string)$response->getBody(), true);
-            if($id = $result['discord']) return $message->reply("$ckey is registered to <@$result>");
+            if ($id = $result['discord']) return $message->reply("$ckey is registered to <@$result>");
             return $message->reply("$ckey is not registered to any discord account");
         }, function (Exception $e) use ($civ13) {
             $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
@@ -1055,24 +1023,10 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         return;
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
-        $filter = 'ckey ';
-        $ckey = trim(str_replace($filter, '', $message_content_lower));
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('ckey'))))) return $message->reply('Wrong format. Please try `ckey [ckey]` or `ckey [<@mention>].');
+        $id = trim(str_replace(['<@', '!', '>'], '', $ckey));
         
-        $filter = '.';
-        $ckey = trim(str_replace($filter, '', $ckey));
-        $filter = '_';
-        $ckey = trim(str_replace($filter, '', $ckey));
-        $filter = ' ';
-        $ckey = str_replace($filter, '', $ckey);
-        
-        $filter = '<@';
-        $id = trim(str_replace($filter, '', $ckey));
-        $filter = '!';
-        $id = trim(str_replace($filter, '', $id));
-        $filter = '>';
-        $id = trim(str_replace($filter, '', $id));
-        
-        if(is_numeric($id)) {
+        if (is_numeric($id)) {
             $civ13->logger->info("CKEY id $id");
             $result = $discord2ckey($civ13, $id);
         } else {
@@ -1080,22 +1034,22 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
             $result = $ckey2discord($civ13, $ckey);
         }
         if (is_array($result)) { //curl json_decoded array
-            if($result_ckey = $result['ckey']) {
+            if ($result_ckey = $result['ckey']) {
                 $civ13->logger->info("CKEY ckey $result_ckey");
                 return $message->reply("<@$id> is registered to ckey $result_ckey");
             }
-            if($result_id = $result['discord']) {
+            if ($result_id = $result['discord']) {
                 $civ13->logger->info("CKEY id $result_id");
                 return $message->reply("$ckey is registered to <@$result_id>");
             }
         } else { //React\Promise\Promise from $browser->post
             $result->then(function ($response) use ($civ13, $message, $id, $ckey) {
                 $result = json_decode((string)$response->getBody(), true);
-                if($result_ckey = $result['ckey']) {
+                if ($result_ckey = $result['ckey']) {
                     $civ13->logger->info("CKEY ckey $result_ckey");
                     return $message->reply("<@$id> is registered to ckey $result_ckey");
                 }
-                if($result_id = $result['discord']) {
+                if ($result_id = $result['discord']) {
                     $civ13->logger->info("CKEY id $result_id");
                     return $message->reply("$ckey is registered to <@$result_id>");
                 }
@@ -1114,7 +1068,7 @@ $recalculate_ranking = function (\Civ13\Civ13 $civ13)
     $result = array();
     
     if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return $civ13->logger->warning('Unable to access `' . $civ13->files['tdm_awards_path'] . '`');
-    while(! feof($search)) {
+    while (! feof($search)) {
         $medal_s = 0;
         $line = fgets($search);
         $line = trim(str_replace(PHP_EOL, '', $line)); # remove '\n' at end of line
@@ -1137,21 +1091,115 @@ $recalculate_ranking = function (\Civ13\Civ13 $civ13)
         $sumc = 0;
         foreach ($result as $j) {
             $sj = explode(';', $j);
-            if ($sj[1] == $i)
-                $sumc += (float) $sj[0];
+            if ($sj[1] == $i) $sumc += (float) $sj[0];
         }
         $ranking[] = [$sumc,$i];
     }
-    usort($ranking, function($a, $b) {
-        return $a[0] <=> $b[0];
-    });
+    usort($ranking, function($a, $b) { return $a[0] <=> $b[0]; });
     $sorted_list = array_reverse($ranking);
     if (! $search = fopen($civ13->files['ranking_path'], 'w')) return $civ13->logger->warning('Unable to access `' . $civ13->files['ranking_path'] . '`');
     foreach ($sorted_list as $i) fwrite($search, $i[0] . ';' . $i[1] . PHP_EOL);
     return fclose ($search);
 };
 
-$on_message2 = function (\Civ13\Civ13 $civ13, $message) use ($recalculate_ranking)
+$ranking = function (\Civ13\Civ13 $civ13)
+{
+    $line_array = array();
+    if (! $search = fopen($civ13->files['ranking_path'], 'r')) return 'Unable to access `' . $civ13->files['ranking_path'] . '`';
+    while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+    fclose($search);
+
+    $topsum = 1;
+    $msg = '';
+    for ($x=0;$x<count($line_array);$x++) {
+        if ($topsum > 10) break;
+        $line = trim(str_replace(PHP_EOL, '', $line_array[$x]));
+        $topsum += 1;
+        $sline = explode(';', $line);
+        $msg .= '('. ($topsum - 1) ."): **".$sline[1].'** with **'.$sline[0].'** points.' . PHP_EOL;
+    }
+    return $msg;
+};
+
+$rankme = function (\Civ13\Civ13 $civ13, $ckey)
+{
+    $line_array = array();
+    if (! $search = fopen($civ13->files['ranking_path'], 'r')) return 'Unable to access `' . $civ13->files['ranking_path'] . '`';
+    while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+    fclose($search);
+    
+    $found = 0;
+    $result = '';
+    for ($x=0;$x<count($line_array);$x++) {
+        $sline = explode(';', trim(str_replace(PHP_EOL, '', $line_array[$x])));
+        if ($sline[1] == $ckey) {
+            $found = 1;
+            $result .= "**" . $sline[1] . "**" . " has a total rank of **" . $sline[0] . "**.";
+        };
+    }
+    if (!$found) return "No medals found for ckey `$ckey`.";
+    return $result;
+};
+
+$medals = function (\Civ13\Civ13 $civ13, $ckey)
+{
+    $result = '';
+    if (!$search = fopen($civ13->files['tdm_awards_path'], 'r')) return 'Unable to access `' . $civ13->files['tdm_awards_path'] . '`';
+    $found = false;
+    while (! feof($search)) {
+        $line = fgets($search);
+        $line = trim(str_replace(PHP_EOL, '', $line)); # remove '\n' at end of line
+        if (str_contains($line, $ckey)) {
+            $found = true;
+            $duser = explode(';', $line);
+            if ($duser[0] == $ckey) {
+                $medal_s = "<:long_service:705786458874707978>";
+                if ($duser[2] == "long service medal")
+                    $medal_s = "<:long_service:705786458874707978>";
+                if ($duser[2] == "combat medical badge")
+                    $medal_s = "<:combat_medical_badge:706583430141444126>";
+                if ($duser[2] == "tank destroyer silver badge")
+                    $medal_s = "<:tank_silver:705786458882965504>";
+                if ($duser[2] == "tank destroyer gold badge")
+                    $medal_s = "<:tank_gold:705787308926042112>";
+                if ($duser[2] == "assault badge")
+                    $medal_s = "<:assault:705786458581106772>";
+                if ($duser[2] == "wounded badge")
+                    $medal_s = "<:wounded:705786458677706904>";
+                if ($duser[2] == "wounded silver badge")
+                    $medal_s = "<:wounded_silver:705786458916651068>";
+                if ($duser[2] == "wounded gold badge")
+                    $medal_s = "<:wounded_gold:705786458845216848>";
+                if ($duser[2] == "iron cross 1st class")
+                    $medal_s = "<:iron_cross1:705786458572587109>";
+                if ($duser[2] == "iron cross 2nd class")
+                    $medal_s = "<:iron_cross2:705786458849673267>";
+                $result .= "**" . $duser[1] . ":**" . ' ' . $medal_s . " **" . $duser[2] . "**, *" . $duser[4] . "*, " . $duser[5] . PHP_EOL;
+            }
+        }
+    }
+    if ($result != '') return $result;
+    if (!$found && ($result == '')) return 'No medals found for this ckey.';
+};
+
+$brmedals = function (\Civ13\Civ13 $civ13, $ckey)
+{
+    $result = '';
+    $search = fopen($civ13->files['tdm_awards_br_path'], 'r');
+    $found = false;
+    while (! feof($search)) {
+        $line = trim(str_replace(PHP_EOL, '', fgets($search))); # remove '\n' at end of line
+        if (str_contains($line, $ckey)) {
+            $found = true;
+            $duser = explode(';', $line);
+            if ($duser[0] == $ckey) $result .= '**' . $duser[1] . ':** placed *' . $duser[2] . ' of  '. $duser[5] . ',* on ' . $duser[4] . ' (' . $duser[3] . ')' . PHP_EOL;
+        }
+    }
+    if ($result != '') return $result;
+    if (!$found && ($result == '')) return 'No medals found for this ckey.';
+};
+
+$on_message2 = function (\Civ13\Civ13 $civ13, $message) use ($recalculate_ranking, $ranking, $rankme, $medals, $brmedals)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -1160,154 +1208,42 @@ $on_message2 = function (\Civ13\Civ13 $civ13, $message) use ($recalculate_rankin
     $message_content = substr($message->content, strlen($civ13->command_symbol)+1);
     $message_content_lower = strtolower($message_content);
     if (str_starts_with($message_content_lower, 'ranking')) {
-        if(!$recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
-        $line_array = array();
-        if (! $search = fopen($civ13->files['ranking_path'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['ranking_path'] . '`');
-        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-        fclose($search);
-        
-        $topsum = 1;
-        $msg = '';
-        for ($x=0;$x<count($line_array);$x++) {
-            if ($topsum > 10) break;
-            $line = trim(str_replace(PHP_EOL, '', $line_array[$x]));
-            $topsum += 1;
-            $sline = explode(';', $line);
-            $msg .= '('. ($topsum - 1) ."): **".$sline[1].'** with **'.$sline[0].'** points.' . PHP_EOL;
-        }
-        if ($msg != '') return $message->channel->sendMessage($msg);
-        return;
+        if (!$recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
+        if (!$msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
+        return $message->channel->sendMessage($msg);
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
-        $split_message = explode('rankme ', $message_content);
-        $ckey = '';
-        $medal_s = 0;
-        $result = '';
-        if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
-            $ckey = $split_message[1];
-            $ckey = strtolower($ckey);
-            $ckey = str_replace('_', '', $ckey);
-            $ckey = str_replace(' ', '', $ckey);
-        }
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
         $recalculate_ranking($civ13);
-        $line_array = array();
-        if (! $search = fopen($civ13->files['ranking_path'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['ranking_path'] . '`');
-        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-        fclose($search);
-        
-        $found = 0;
-        $result = '';
-        for ($x=0;$x<count($line_array);$x++) {
-            $line = $line_array[$x];
-            $line = trim(str_replace(PHP_EOL, '', $line));
-            $sline = explode(';', $line);
-            if ($sline[1] == $ckey) {
-                $found = 1;
-                $result .= "**" . $sline[1] . "**" . " has a total rank of **" . $sline[0] . "**.";
-            };
-        }
-        if (!$found) return $message->channel->sendMessage('No medals found for this ckey.');
-        return $message->channel->sendMessage($result);
+        if (! $msg = $rankme($civ13, $ckey)) return $message->reply('There was an error trying to get your ranking!');
+        return $message->reply($msg);
     }
     if (str_starts_with($message_content_lower, 'medals')) {
-        $split_message = explode('medals ', $message_content);
-        $ckey = '';
-        if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
-            $ckey = $split_message[1];
-            $ckey = strtolower($ckey);
-            $ckey = str_replace('_', '', $ckey);
-            $ckey = str_replace(' ', '', $ckey);
-        }
-        $result = '';
-        if (!$search = fopen($civ13->files['tdm_awards_path'], 'r')) return $message->channel->sendMessage('Unable to access `' . $civ13->files['tdm_awards_path'] . '`');
-        $found = false;
-        while(! feof($search)) {
-            $line = fgets($search);
-            $line = trim(str_replace(PHP_EOL, '', $line)); # remove '\n' at end of line
-            if (str_contains($line, $ckey)) {
-                $found = true;
-                $duser = explode(';', $line);
-                if ($duser[0] == $ckey) {
-                    $medal_s = "<:long_service:705786458874707978>";
-                    if ($duser[2] == "long service medal")
-                        $medal_s = "<:long_service:705786458874707978>";
-                    if ($duser[2] == "combat medical badge")
-                        $medal_s = "<:combat_medical_badge:706583430141444126>";
-                    if ($duser[2] == "tank destroyer silver badge")
-                        $medal_s = "<:tank_silver:705786458882965504>";
-                    if ($duser[2] == "tank destroyer gold badge")
-                        $medal_s = "<:tank_gold:705787308926042112>";
-                    if ($duser[2] == "assault badge")
-                        $medal_s = "<:assault:705786458581106772>";
-                    if ($duser[2] == "wounded badge")
-                        $medal_s = "<:wounded:705786458677706904>";
-                    if ($duser[2] == "wounded silver badge")
-                        $medal_s = "<:wounded_silver:705786458916651068>";
-                    if ($duser[2] == "wounded gold badge")
-                        $medal_s = "<:wounded_gold:705786458845216848>";
-                    if ($duser[2] == "iron cross 1st class")
-                        $medal_s = "<:iron_cross1:705786458572587109>";
-                    if ($duser[2] == "iron cross 2nd class")
-                        $medal_s = "<:iron_cross2:705786458849673267>";
-                    $result .= "**" . $duser[1] . ":**" . ' ' . $medal_s . " **" . $duser[2] . "**, *" . $duser[4] . "*, " . $duser[5] . PHP_EOL;
-                }
-            }
-        }
-        if ($result != '') return $message->channel->sendMessage($result);
-        if (!$found && ($result == '')) return $message->channel->sendMessage('No medals found for this ckey.');
-        return;
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
+        if (! $msg = $medals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
+        return $message->reply($msg);
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
-        $split_message = explode('brmedals ', $message_content);
-        $ckey = '';
-        if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
-            $ckey = $split_message[1];
-            $ckey = strtolower($ckey);
-            $ckey = str_replace('_', '', $ckey);
-            $ckey = str_replace(' ', '', $ckey);
-        }
-        $result = '';
-        $search = fopen($civ13->files['tdm_awards_br_path'], 'r');
-        $found = false;
-        while(! feof($search)) {
-            $line = fgets($search);
-            $line = trim(str_replace(PHP_EOL, '', $line)); # remove '\n' at end of line
-            if (str_contains($line, $ckey)) {
-                $found = true;
-                $duser = explode(';', $line);
-                if ($duser[0] == $ckey) {
-                    $result .= '**' . $duser[1] . ':** placed *' . $duser[2] . ' of  '. $duser[5] . ',* on ' . $duser[4] . ' (' . $duser[3] . ')' . PHP_EOL;
-                }
-            }
-        }
-        if ($result != '') return $message->channel->sendMessage($result);
-        if (!$found && ($result == '')) return $message->channel->sendMessage('No medals found for this ckey.');
-        return;
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('brmedals'))))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
+        if (! $msg = $brmedals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
+        return $msg;
     }
     if (str_starts_with($message_content_lower, 'ts')) {
-        $split_message = explode('ts ', $message_content);
-        if ((count($split_message) > 1) && (strlen($split_message[1]) > 0)) {
-            $state = $split_message[1];
-            $accepted = false;
-            
-            if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-            foreach ($author_member->roles as $role) {
-                switch ($role->id) {
-                    case $civ13->role_ids['admiral']:
-                        $accepted = true;
-                }
-            }
-            if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids['admiral'])->name : "admiral" . '] rank.');
-            
-            if ($state == "on") {
-                \execInBackground('cd ' . $civ13->files['typespess_path']);
-                \execInBackground('git pull');
-                \execInBackground('sh ' . $civ13->files['typespess_launch_server_path'] . '&');
-                return $message->channel->sendMessage('Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
-            } elseif ($state == "off") {
-                \execInBackground('killall index.js');
-                return $message->channel->sendMessage('**TypeSpess Civ13** test server down.');
-            }
+        if (! $state = trim(substr($message_content_lower, strlen('ts')))) return $message->reply('Wrong format. Please try `ts on` or `ts off`.');
+        if (! in_array($state, ['on', 'off'])) return $message->reply('Wrong format. Please try `ts on` or `ts off`.');
+        $accepted = false;        
+        if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+        foreach ($author_member->roles as $role) if ($role->id == $civ13->role_ids['admiral']) $accepted = true;
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids['admiral'])->name : "admiral" . '] rank.');
+        
+        if ($state == 'on') {
+            \execInBackground('cd ' . $civ13->files['typespess_path']);
+            \execInBackground('git pull');
+            \execInBackground('sh ' . $civ13->files['typespess_launch_server_path'] . '&');
+            return $message->channel->sendMessage('Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
+        } else {
+            \execInBackground('killall index.js');
+            return $message->channel->sendMessage('**TypeSpess Civ13** test server down.');
         }
     }
 };
@@ -1363,7 +1299,7 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey
     if ($guildmember->guild_id != $civ13->civ13_guild_id) return;
     
     if (is_array($result = $discord2ckey($civ13, $guildmember->id))) { //curl json_decoded array
-        if($ckey = $result['ckey']) {
+        if ($ckey = $result['ckey']) {
             $bancheck = $civ13['misc']['bancheck'];
             if ($bancheck($civ13, $ckey)) {
                 $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $guildmember, $ckey) {
@@ -1374,7 +1310,7 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey
     } else { //React\Promise\Promise from $browser->post
         $result->then(function ($response) use ($civ13, $guildmember) {
             $result = json_decode((string)$response->getBody(), true);
-            if($ckey = $result['ckey']) {
+            if ($ckey = $result['ckey']) {
                 $bancheck = $civ13['misc']['bancheck'];
                 if ($bancheck($civ13, $ckey)) {
                     $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $guildmember, $ckey) {
