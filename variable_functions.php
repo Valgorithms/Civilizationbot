@@ -1121,7 +1121,7 @@ $ranking = function (\Civ13\Civ13 $civ13)
     return $msg;
 };
 
-$rankme = function (\Civ13\Civ13 $civ13, $ckey)
+$rankme = function (\Civ13\Civ13 $civ13, string $ckey)
 {
     $line_array = array();
     if (! $search = fopen($civ13->files['ranking_path'], 'r')) return 'Unable to access `' . $civ13->files['ranking_path'] . '`';
@@ -1141,7 +1141,7 @@ $rankme = function (\Civ13\Civ13 $civ13, $ckey)
     return $result;
 };
 
-$medals = function (\Civ13\Civ13 $civ13, $ckey)
+$medals = function (\Civ13\Civ13 $civ13, string $ckey)
 {
     $result = '';
     if (!$search = fopen($civ13->files['tdm_awards_path'], 'r')) return 'Unable to access `' . $civ13->files['tdm_awards_path'] . '`';
@@ -1182,7 +1182,7 @@ $medals = function (\Civ13\Civ13 $civ13, $ckey)
     if (!$found && ($result == '')) return 'No medals found for this ckey.';
 };
 
-$brmedals = function (\Civ13\Civ13 $civ13, $ckey)
+$brmedals = function (\Civ13\Civ13 $civ13, string $ckey)
 {
     $result = '';
     $search = fopen($civ13->files['tdm_awards_br_path'], 'r');
@@ -1203,10 +1203,21 @@ $on_message2 = function (\Civ13\Civ13 $civ13, $message) use ($recalculate_rankin
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
-    if (! str_starts_with($message->content, $civ13->command_symbol . ' ')) return; //Add these as slash commands?
+
+    $message_content = '';
+    $message_content_lower = '';
+    if (str_starts_with($message->content, $civ13->command_symbol . ' ')) { //Add these as slash commands?
+        $message_content = substr($message->content, strlen($civ13->command_symbol)+1);
+        $message_content_lower = strtolower($message_content);
+    } elseif (str_starts_with($message->content, '<@!' . $civ13->discord->id . '>')) { //Add these as slash commands?
+        $message_content = trim(substr($message->content, strlen($civ13->discord->id)+4));
+        $message_content_lower = strtolower($message_content);
+    } elseif (str_starts_with($message->content, '<@' . $civ13->discord->id . '>')) { //Add these as slash commands?
+        $message_content = trim(substr($message->content, strlen($civ13->discord->id)+3));
+        $message_content_lower = strtolower($message_content);
+    }
+    if (! $message_content) return;
     
-    $message_content = substr($message->content, strlen($civ13->command_symbol)+1);
-    $message_content_lower = strtolower($message_content);
     if (str_starts_with($message_content_lower, 'ranking')) {
         if (!$recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (!$msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
@@ -1324,7 +1335,7 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey
     }
 };
 
-$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $bancheck, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap)
+$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $bancheck, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap, $ranking, $rankme, $medals, $brmedals)
 {
     //Declare commands
     
@@ -1394,6 +1405,39 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         'name' => 'bancheck',
         'dm_permission' => false,
         'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
+    ]));
+    
+    //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
+    if (! $commands->get('name', 'ranking')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'name' => 'ranking',
+        'description' => 'See the ranks of the top players on the Civ13 server'
+    ]));
+    
+    //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
+    if (! $commands->get('name', 'rankme')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'name' => 'rankme',
+        'description' => 'See your ranking on the Civ13 server'
+    ]));
+    
+    //if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
+    if (!$commands->get('name', 'rank')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+        'name' => 'rank',
+        'dm_permission' => false,
+    ]));
+    
+    //if ($command = $commands->get('name', 'medals')) $commands->delete($command->id);
+    if (!$commands->get('name', 'medals')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+        'name' => 'medals',
+        'dm_permission' => false,
+    ]));
+    
+    //if ($command = $commands->get('name', 'brmedals')) $commands->delete($command->id);
+    if (!$commands->get('name', 'brmedals')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+        'name' => 'brmedals',
+        'dm_permission' => false,
     ]));
     
     $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->commands->freshen()->done( function ($commands) use ($civ13) {
@@ -1592,13 +1636,13 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     
     $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13, $discord2ckey_slash) {
         if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[0]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($response instanceof \React\Promise\Promise ) return $response->done(function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true); });
+        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true); });
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true);
     });
     
     $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $discord2ckey_slash, $bancheck) {
         if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($ckey instanceof \React\Promise\Promise ) return $ckey->done(
+        if ($ckey instanceof \React\Promise\Promise) return $ckey->done(
             function ($ckey) use ($civ13, $interaction, $bancheck) {
                 if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."), true);
                 return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."), true);
@@ -1611,7 +1655,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $discord2ckey_slash, $unban) {
         $admin = $interaction->user->displayname;
         if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($ckey instanceof \React\Promise\Promise ) return $ckey->done( function ($ckey) use ($civ13, $interaction, $unban, $admin) {
+        if ($ckey instanceof \React\Promise\Promise) return $ckey->done( function ($ckey) use ($civ13, $interaction, $unban, $admin) {
             $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **$ckey**."));
             $unban($civ13, $ckey, $admin);
         });
@@ -1629,6 +1673,29 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         $restart_tdm($civ13);
     });
     
+    $civ13->discord->listenCommand('ranking', function ($interaction) use ($civ13, $discord2ckey_slash, $ranking) {
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($ranking($civ13)), true);
+    });
+    $civ13->discord->listenCommand('rankme', function ($interaction) use ($civ13, $discord2ckey_slash, $rankme) {
+        if (!$response = $discord2ckey_slash($civ13, $interaction->member->id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
+        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($civ13, $interaction, $rankme) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $response)), true); });
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $response)), true);
+    });
+    $civ13->discord->listenCommand('rank', function ($interaction) use ($civ13, $discord2ckey_slash, $rankme) {
+        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
+        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($civ13, $interaction, $rankme, ) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $response)), true); });
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $response)), true);
+    });
+    $civ13->discord->listenCommand('medals', function ($interaction) use ($civ13, $discord2ckey_slash, $medals) {
+        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
+        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($civ13, $interaction, $medals) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($medals($civ13, $response)), true); });
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($medals($civ13, $response)), true);
+    });
+    $civ13->discord->listenCommand('brmedals', function ($interaction) use ($civ13, $discord2ckey_slash, $brmedals) {
+        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
+        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($civ13, $interaction, $brmedals) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($brmedals($civ13, $response)), true); });
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($brmedals($civ13, $response)), true);
+    });
     /*For deferred interactions
     $civ13->discord->listenCommand('',  function (Interaction $interaction) use ($civ13) {
       // code is expected to be slow, defer the interaction
