@@ -355,30 +355,30 @@ $filenav = function (\Civ13\Civ13 $civ13, string $basedir, array $subdirs) use (
     return $filenav($civ13, "$basedir/$subdir", $subdirs);
 };
 
-$log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content_lower) use ($filenav)
+$log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content) use ($filenav)
 {
-    $tokens = explode(';', strtolower($message_content_lower));
+    $tokens = explode(';', $message_content);
     $civ13->logger->info('[LOG HANDLER] `' . implode('`, `', $tokens) . '`');
     if (!in_array($tokens[0], ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
-    if (trim($tokens[0]) == 'nomads') {
+    if (trim(strtolower($tokens[0])) == 'nomads') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
         echo '[RESULTS]'; var_dump($results);
         if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
         echo '[MODIFIED]'; var_dump($results);
-        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: `' . PHP_EOL . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-        return $message->reply($results[2] . 'is not an available option! Available options: `' . PHP_EOL . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
-    if (trim($tokens[0]) == 'tdm') {
+    if (trim(strtolower($tokens[0])) == 'tdm') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['tdm_log_basedir'], $tokens);
         echo '[RESULTS]'; var_dump($results);
         if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
         echo '[MODIFIED]'; var_dump($results[1]);
-        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: `' . PHP_EOL . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-        return $message->reply($results[2] . 'is not an available option! Available options: `' . PHP_EOL . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
     return;
 };
@@ -421,7 +421,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
             }
         }
         if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['knight'])->name : 'Knight' . '] rank.');
-        if ($log_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
+        if ($log_handler($civ13, $message, trim(substr($message_content, 4)))) return;
     }
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
