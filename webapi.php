@@ -266,7 +266,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                     return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
             }
             break;
-        case 'nomads':
+        case 'tdm':
             switch ($id) {
                 case 'bans':
                     if (!$whitelisted) {
