@@ -367,8 +367,8 @@ $log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content_
         if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
         echo '[MODIFIED]'; var_dump($results);
-        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: `' . implode('`, `', $results[1]) . '`');
-        return $message->reply($results[2] . 'is not an available option! Available options: `' . implode('`, `', $results[1]) . '`');
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: `' . PHP_EOL . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        return $message->reply($results[2] . 'is not an available option! Available options: `' . PHP_EOL . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
     if (trim($tokens[0]) == 'tdm') {
         unset($tokens[0]);
@@ -377,8 +377,8 @@ $log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content_
         if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
         echo '[MODIFIED]'; var_dump($results[1]);
-        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: `' . implode('`, `', $results[1]) . '`');
-        return $message->reply($results[2] . 'is not an available option! Available options: `' . implode('`, `', $results[1]) . '`');
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: `' . PHP_EOL . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        return $message->reply($results[2] . 'is not an available option! Available options: `' . PHP_EOL . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
     return;
 };
