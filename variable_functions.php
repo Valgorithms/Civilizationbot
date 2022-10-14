@@ -387,9 +387,10 @@ $banlog_handler = function (\Civ13\Civ13 $civ13, $message, string $message_conte
 
 $rank_check = function (\Civ13\Civ13 $civ13, $message, array $allowed_ranks)
 {
-    foreach ($message->member->roles as $role) if (in_array($role->id, $allowed_ranks)) return true;
-    $message->reply('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($allowed_ranks)])->name : array_pop($allowed_ranks) . '] rank.');
-    return false;
+    $resolved_ranks = [];
+    foreach ($allowed_ranks as $rank) $resolved_ranks[] = $civ13->role_ids[$rank];
+    foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
+    $message->reply('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks) . '] rank.');
 };
 
 $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $unban, $log_handler, $banlog_handler)
