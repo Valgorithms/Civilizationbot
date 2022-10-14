@@ -359,7 +359,7 @@ $log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content_
 {
     $tokens = explode(';', strtolower($message_content_lower));
     $civ13->logger->info('[LOG HANDLER] `' . implode('`, `', $tokens) . '`');
-    if (! isset($tokens[1])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
+    if (!in_array($tokens[0], ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
     if (trim($tokens[0]) == 'nomads') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
@@ -411,6 +411,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
     if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
     
     if (str_starts_with($message_content_lower, 'logs')) {
+        $accepted = false;
         foreach ($author_member->roles as $role) {
             switch ($role->id) {
                 case $civ13->role_ids['admiral']:
