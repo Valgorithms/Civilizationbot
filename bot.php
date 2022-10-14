@@ -136,7 +136,6 @@ $options = array(
         ],
         'message' => [
             'on_message' => $on_message,
-            'on_message2' => $on_message2,
         ],
         'GUILD_MEMBER_ADD' => [
             'bancheck_join' => $bancheck_join,
