@@ -410,7 +410,18 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
     if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
     if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
     
-    if (str_starts_with($message_content_lower, 'logs')) if ($log_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
+    if (str_starts_with($message_content_lower, 'logs')) {
+        foreach ($author_member->roles as $role) {
+            switch ($role->id) {
+                case $civ13->role_ids['admiral']:
+                case $civ13->role_ids['captain']:
+                case $civ13->role_ids['knight']:
+                    $accepted = true;
+            }
+        }
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['knight'])->name : 'Knight' . '] rank.');
+        if ($log_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
+    }
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
