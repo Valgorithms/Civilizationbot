@@ -344,8 +344,46 @@ $unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null)
     }
 };
 
+$filenav = function (\Civ13\Civ13 $civ13, string $basedir, array $subdirs) use (&$filenav): array
+{
+    $civ13->logger->debug("[FILENAV] [$basedir][`" . implode('`, `', $subdirs) . '`]');
+    $scandir = scandir($basedir);
+    unset($scandir[1], $scandir[0]);
+    if (! $subdir = trim(array_shift($subdirs))) return [false, $scandir];
+    if (! in_array($subdir, $scandir)) return [false, $scandir, $subdir];
+    if (is_file("$basedir/$subdir")) return [true, "$basedir/$subdir"];
+    return $filenav($civ13, "$basedir/$subdir", $subdirs);
+};
 
-$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $unban)
+$log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content_lower) use ($filenav)
+{
+    $tokens = explode(';', strtolower($message_content_lower));
+    $civ13->logger->info('[LOG HANDLER] `' . implode('`, `', $tokens) . '`');
+    if (! isset($tokens[1])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
+    if (trim($tokens[0]) == 'nomads') {
+        unset($tokens[0]);
+        $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
+        echo '[RESULTS]'; var_dump($results);
+        if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
+        if (count($results[1]) > 14) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
+        echo '[MODIFIED]'; var_dump($results);
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: `' . implode('`, `', $results[1]) . '`');
+        return $message->reply($results[2] . 'is not an available option! Available options: `' . implode('`, `', $results[1]) . '`');
+    }
+    if (trim($tokens[0]) == 'tdm') {
+        unset($tokens[0]);
+        $results = $filenav($civ13, $civ13->files['tdm_log_basedir'], $tokens);
+        echo '[RESULTS]'; var_dump($results);
+        if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
+        if (count($results[1]) > 14) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
+        echo '[MODIFIED]'; var_dump($results[1]);
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: `' . implode('`, `', $results[1]) . '`');
+        return $message->reply($results[2] . 'is not an available option! Available options: `' . implode('`, `', $results[1]) . '`');
+    }
+    return;
+};
+
+$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $unban, $log_handler)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -370,8 +408,9 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
     }
     if (! $message_content) return;
     if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
-    if (str_starts_with($message_content_lower, 'help')) return$message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
+    if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
     
+    if (str_starts_with($message_content_lower, 'logs')) if ($log_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
@@ -1639,7 +1678,6 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true); });
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true);
     });
-    
     $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $discord2ckey_slash, $bancheck) {
         if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
         if ($ckey instanceof \React\Promise\Promise) return $ckey->done(
@@ -1667,7 +1705,6 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
         $restart_nomads($civ13);
     });
-    
     $civ13->discord->listenCommand('restart_tdm', function ($interaction) use ($civ13, $restart_tdm) {
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to bring up Civilization 13 (TDM Server) <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
         $restart_tdm($civ13);

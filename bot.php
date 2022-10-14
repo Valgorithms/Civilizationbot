@@ -62,6 +62,7 @@ $options = array(
         'map_defines_path' => '/home/1713/civ13-git/code/__defines/maps.dm',
         
         //Nomads
+        'nomads_log_basedir' => '/home/1713/civ13-rp/data/logs',
         'nomads_ooc_path' => '/home/1713/civ13-rp/ooc.log',
         'nomads_admin_path' => '/home/1713/civ13-rp/admin.log',
         'nomads_discord2ooc' => '/home/1713/civ13-rp/SQL/discord2ooc.txt',
@@ -73,6 +74,7 @@ $options = array(
         'nomads_bans' => '/home/1713/civ13-rp/SQL/bans.txt',
         
         //TDM
+        'tdm_log_basedir' => '/home/1713/civ13-tdm/data/logs',
         'tdm_ooc_path' => '/home/1713/civ13-tdm/ooc.log',
         'tdm_admin_path' => '/home/1713/civ13-tdm/admin.log',
         'tdm_discord2ooc' => '/home/1713/civ13-tdm/SQL/discord2ooc.txt',
