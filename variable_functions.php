@@ -385,9 +385,10 @@ $banlog_handler = function (\Civ13\Civ13 $civ13, $message, string $message_conte
     if ($message_content_lower == 'tdm') return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
 };
 
-$rank_check = function (\Civ13\Civ13 $civ13, $member, array $allowed_ranks)
+$rank_check = function (\Civ13\Civ13 $civ13, $message, array $allowed_ranks)
 {
-    foreach ($member->roles as $role) if (in_array($role->id, $allowed_ranks)) return true;
+    foreach ($message->member->roles as $role) if (in_array($role->id, $allowed_ranks)) return true;
+    $message->reply('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($allowed_ranks)])->name : array_pop($allowed_ranks) . '] rank.');
     return false;
 };
 
@@ -419,11 +420,11 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
     if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostciv, killciv, restartciv, mapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
     
     if (str_starts_with($message_content_lower, 'logs')) {
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain', 'knight'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['knight'])->name : 'Knight' . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
         if ($log_handler($civ13, $message, trim(substr($message_content, 4)))) return;
     }
     if (str_starts_with($message_content_lower, 'bans')) {
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain', 'knight'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['knight'])->name : 'Knight' . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
         if ($banlog_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
     }
     if (str_starts_with($message_content_lower, 'cpu')) {
@@ -584,7 +585,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
         $split_message = trim(substr($message_content, 11));
         if (! strlen($split_message) > 0) return $message->channel->sendMessage('Wrong format. Please try `!s whitelistme [ckey]`.'); // if len($split_message) > 1 and len($split_message[1]) > 0:
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain', 'knight', 'veteran'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['veteran'])->name : 'Veteran' . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran'])) return;
         
         $ckey = trim(str_replace(['.', '_', ' '], '', strtolower($split_message)));
         $found = false;
@@ -638,7 +639,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
     }
     if (str_starts_with($message_content_lower, 'unwhitelistme')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain', 'knight', 'veteran', 'infantry'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['veteran'])->name : "Veteran" . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran', 'infantry'])) return;
         
         $removed = "N/A";
         $lines_array = array();
@@ -678,7 +679,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
     }
     if (str_starts_with($message_content_lower, 'hostciv')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['captain'])->name : "Captain" . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
         
         $message->channel->sendMessage('Please wait, updating the code...');
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
@@ -692,24 +693,24 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
     }
     if (str_starts_with($message_content_lower, 'killciv')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.'); 
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain'])) return $message->channel->sendMessage('Denied!');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
         
         \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
         return $message->channel->sendMessage('Attempted to kill Civilization 13 Server.');
     }
     if (str_starts_with($message_content_lower, 'restartciv')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['captain'])->name : "Captain" . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
         return $restart_nomads($civ13, $message);
     }
     if (str_starts_with($message_content_lower, 'restarttdm')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
         return $restart_tdm($civ13, $message);
     }
     if (str_starts_with($message_content_lower, 'mapswap')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
         
         $split_message = explode('mapswap ', $message_content);
         if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return $message->channel->sendMessage('You need to include the name of the map.');
@@ -746,7 +747,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
     }
     if (str_starts_with($message_content_lower, 'maplist')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
         
         $split_message = explode('mapswap ', $message_content);
         $mapto = $split_message[1];
@@ -761,7 +762,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
     }
     if (str_starts_with($message_content_lower, 'hosttdm')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['captain'])->name . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
         
         $message->channel->sendMessage('Please wait, updating the code...');
         \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
@@ -775,17 +776,17 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
     }
     if (str_starts_with($message_content_lower, 'killtdm')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain'])) return $message->channel->sendMessage('Denied!');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
         
         \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
         return $message->channel->sendMessage('Attempted to kill Civilization 13 (TDM Server).');
     }
     if (str_starts_with($message_content_lower, 'tdmmapswap')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain', 'knight'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['knight'])->name . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
         
         $split_message = explode('tdmmapswap ', $message_content);
-        if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return $message->channel->sendMessage('You need to include the name of the map.');
+        if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return;
         $mapto = $split_message[1];
         $mapto = strtoupper($mapto);
         $civ13->logger->info("[MAPTO] $mapto".PHP_EOL);
@@ -817,7 +818,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $ban, $
     }
     if (str_starts_with($message_content_lower, 'banlist')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral', 'captain', 'knight'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles->get('id', $civ13->role_ids['knight'])->name . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
         return $message->channel->sendMessage(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
     }
     if (str_starts_with($message_content_lower, 'bancheck')) {
@@ -1186,7 +1187,7 @@ $on_message2 = function (\Civ13\Civ13 $civ13, $message) use ($rank_check, $recal
         if (! $state = trim(substr($message_content_lower, strlen('ts')))) return $message->reply('Wrong format. Please try `ts on` or `ts off`.');
         if (! in_array($state, ['on', 'off'])) return $message->reply('Wrong format. Please try `ts on` or `ts off`.');
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message->member, ['admiral'])) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids['admiral'])->name : "admiral" . '] rank.');
+        if (! $rank_check($civ13, $message, ['admiral'])) return;
         
         if ($state == 'on') {
             \execInBackground('cd ' . $civ13->files['typespess_path']);
