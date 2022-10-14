@@ -346,7 +346,7 @@ $unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null)
 
 $filenav = function (\Civ13\Civ13 $civ13, string $basedir, array $subdirs) use (&$filenav): array
 {
-    $civ13->logger->debug("[FILENAV] [$basedir][`" . implode('`, `', $subdirs) . '`]');
+    //$civ13->logger->debug("[FILENAV] [$basedir][`" . implode('`, `', $subdirs) . '`]');
     $scandir = scandir($basedir);
     unset($scandir[1], $scandir[0]);
     if (! $subdir = trim(array_shift($subdirs))) return [false, $scandir];
@@ -358,32 +358,34 @@ $filenav = function (\Civ13\Civ13 $civ13, string $basedir, array $subdirs) use (
 $log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content) use ($filenav)
 {
     $tokens = explode(';', $message_content);
-    $civ13->logger->info('[LOG HANDLER] `' . implode('`, `', $tokens) . '`');
+    //$civ13->logger->info('[LOG HANDLER] `' . implode('`, `', $tokens) . '`');
     if (!in_array($tokens[0], ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
     if (trim(strtolower($tokens[0])) == 'nomads') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
-        echo '[RESULTS]'; var_dump($results);
         if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-        echo '[MODIFIED]'; var_dump($results);
         if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
         return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
     if (trim(strtolower($tokens[0])) == 'tdm') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['tdm_log_basedir'], $tokens);
-        echo '[RESULTS]'; var_dump($results);
         if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-        echo '[MODIFIED]'; var_dump($results[1]);
         if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
         return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
-    return;
 };
 
-$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $unban, $log_handler)
+$banlog_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content_lower) use ($filenav)
+{
+    if (!in_array($message_content_lower, ['nomads', 'tdm'])) return $message->reply('Please use the format `bans nomads` or `bans tdm');
+    if ($message_content_lower == 'nomads') return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['nomads_bans'], 'bans.txt'));
+    if ($message_content_lower == 'tdm') return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
+};
+
+$on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $tdm_ban, $discord2ckey, $ckey2discord, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $unban, $log_handler, $banlog_handler)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -422,6 +424,19 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         }
         if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['knight'])->name : 'Knight' . '] rank.');
         if ($log_handler($civ13, $message, trim(substr($message_content, 4)))) return;
+    }
+    if (str_starts_with($message_content_lower, 'bans')) {
+        $accepted = false;
+        foreach ($author_member->roles as $role) {
+            switch ($role->id) {
+                case $civ13->role_ids['admiral']:
+                case $civ13->role_ids['captain']:
+                case $civ13->role_ids['knight']:
+                    $accepted = true;
+            }
+        }
+        if (! $accepted) return $message->channel->sendMessage('Rejected! You need to have at least the [' . $author_guild->roles ? $author_guild->roles->get('id', $civ13->role_ids['knight'])->name : 'Knight' . '] rank.');
+        if ($banlog_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
     }
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
@@ -1024,7 +1039,6 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($ban, $nomads_ban, $
         
         $civ13->logger->info("DISCORD2CKEY id $id");
         $result = $discord2ckey($civ13, $id);
-        echo '[DISCORD2CKEY]'; var_dump($result);
         if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
             if ($result = $result->ckey) return $message->reply("<@$id> is registered to $result");
             return $message->reply("<@$id> is not registered to any ckey");
