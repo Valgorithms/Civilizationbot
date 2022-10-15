@@ -413,11 +413,10 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
     if (str_starts_with($message_content_lower, 'whitelistme')) {
-        $split_message = trim(substr($message_content, 11));
-        if (! strlen($split_message) > 0) return $message->channel->sendMessage('Wrong format. Please try `!s whitelistme [ckey]`.'); // if len($split_message) > 1 and len($split_message[1]) > 0:
+        $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 11)));
+        if (! $ckey) return $message->channel->sendMessage('Wrong format. Please try `!s whitelistme [ckey]`.'); // if len($split_message) > 1 and len($split_message[1]) > 0:
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran'])) return;
         
-        $ckey = trim(str_replace(['.', '_', ' '], '', strtolower($split_message)));
         $found = false;
         $whitelist1 = fopen($civ13->files['nomads_whitelist'], 'r');
         if ($whitelist1) {
@@ -720,18 +719,18 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         return $message->channel->sendMessage($msg);
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
         $recalculate_ranking($civ13);
         if (! $msg = $rankme($civ13, $ckey)) return $message->reply('There was an error trying to get your ranking!');
         return $message->reply($msg);
     }
     if (str_starts_with($message_content_lower, 'medals')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
         if (! $msg = $medals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
         return $message->reply($msg);
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('brmedals'))))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('brmedals'))))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
         if (! $msg = $brmedals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
         return $msg;
     }
@@ -873,7 +872,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
         return;
     }
     if (str_starts_with($message_content_lower, 'bancheck')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
         $banreason = "unknown";
         $found = false;
         if ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r')) {
@@ -882,7 +881,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
                 $filter = '|||';
                 $line = trim(str_replace($filter, '', $fp));
                 $linesplit = explode(';', $line); //$split_ckey[0] is the ckey
-                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                     $found = true;
                     $banreason = $linesplit[3];
                     $bandate = $linesplit[5];
@@ -896,7 +895,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
             while (($fp = fgets($filecheck2, 4096)) !== false) {
                 $line = trim(str_replace([PHP_EOL, '|||'], '', $fp));
                 $linesplit = explode(';', $line); //$split_ckey[0] is the ckey
-                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                     $found = true;
                     $banreason = $linesplit[3];
                     $bandate = $linesplit[5];
@@ -1018,7 +1017,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
         return;
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('ckey'))))) return $message->reply('Wrong format. Please try `ckey [ckey]` or `ckey [<@mention>].');
+        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('ckey'))))) return $message->reply('Wrong format. Please try `ckey [ckey]` or `ckey [<@mention>].');
         $id = trim(str_replace(['<@', '!', '>'], '', $ckey));
         
         if (is_numeric($id)) {
