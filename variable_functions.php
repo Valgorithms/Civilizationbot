@@ -75,7 +75,7 @@ $nomads_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
         $civ13->logger->warning('unable to open ' . $civ13->files['nomads_discord2ban']);
         $result .= 'unable to open ' . $civ13->files['nomads_discord2ban'] . PHP_EOL;
     }
-    $result .= '**' . $admin . '** banned **' . $array[0] . '** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
+    $result .= '**' . $admin . '** banned **' . $array[0] . '** from **Nomads** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
     return $result;
 };
 $tdm_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
@@ -90,7 +90,7 @@ $tdm_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
         $civ13->logger->warning('unable to open ' . $civ13->files['tdm_discord2ban']);
         $result .= 'unable to open ' . $civ13->files['tdm_discord2ban'] . PHP_EOL;
     }
-    $result .= '**' . $admin . '** banned **' . $array[0] . '** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
+    $result .= '**' . $admin . '** banned **' . $array[0] . '** from **TDM** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
     return $result;
 };
 $ban = function (\Civ13\Civ13 $civ13, $array, $message = null) use ($nomads_ban, $tdm_ban)
