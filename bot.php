@@ -37,7 +37,8 @@ $stats->init($discord);
 $browser = new \React\Http\Browser($loop);
 $filesystem = \React\Filesystem\Factory::create($loop);
 include 'functions.php'; //execInBackground(), portIsAvailable()
-include 'variable_functions.php'; //$recalculate_ranking, $ooc_relay, $timer_function, $on_ready, $on_message, $on_message2
+include 'variable_functions.php';
+include 'verifier_functions.php';
 include 'civ13.php';
 
 $options = array(
