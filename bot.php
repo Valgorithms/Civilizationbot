@@ -158,6 +158,7 @@ $options = array(
         ],
     ),
 );
+if (include 'civ13_token.php') $options['civ13_token'] = $civ13_token;
 $civ13 = new Civ13\Civ13($options);
 include 'webapi.php'; //$socket, $webapi, webapiFail(), webapiSnow();
 $civ13->run();
