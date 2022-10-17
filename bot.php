@@ -155,6 +155,7 @@ $options = array(
             'browser_get' => $browser_get,
             'browser_post' => $browser_post,
             'bancheck' => $bancheck,
+            'verify_new' => $verify_new,
         ],
     ),
 );

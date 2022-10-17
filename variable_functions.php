@@ -61,7 +61,6 @@ $status_changer_timer = function (\Civ13\Civ13 $civ13) use ($status_changer_rand
  * Message Event
  *
  */
- 
 
 $nomads_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
 {
@@ -143,7 +142,7 @@ $discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post) : 
 {
     if (!$result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true)) return "<@$id> is either not registered to any ckey or the server did not return a response";
     if (is_array($result)) $result = json_decode(json_encode($result), true); //curl returns string
-    elseif (is_string($result)) $result = json_decode($result); //$browser->post returns React\Promise\Promise
+    elseif (is_string($result)) $result = json_decode($result, true); //$browser->post returns React\Promise\Promise
     
     $response = null;
     if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
@@ -172,7 +171,7 @@ $discord2ckey = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
 {
     $result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
     if (is_array($result)) return json_decode(json_encode($result), true); //curl returns string
-    elseif (is_string($result)) return json_decode($result); //$browser->post returns React\Promise\Promise
+    elseif (is_string($result)) return json_decode($result, true); //$browser->post returns React\Promise\Promise
 };
 $ckey2discord = function (\Civ13\Civ13 $civ13, $ckey) use ($browser_post)
 {
@@ -1285,7 +1284,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
     
     $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
         if (!$serverinfo = file_get_contents('http://' . $civ13->ips['vzg']. '/servers/serverinfo.json')) return $interaction->respondWithMessage('Unable to fetch serverinfo.json, webserver might be down');
-        $data_json = json_decode($serverinfo);
+        $data_json = json_decode($serverinfo, true);
         
         $desc_string_array = array();
         $desc_string = "";
