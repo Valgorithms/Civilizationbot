@@ -38,6 +38,8 @@ class Civ13
     public $channel_ids = [];
     public $role_ids = [];
     
+    public $verified = [];
+    
     /**
      * Creates a Civ13 client instance.
      *
@@ -86,6 +88,8 @@ class Civ13
     {
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
+                $this->verified = json_decode(file_get_contents('http://valzargaming.com/verified/'), true);
+                
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
                 $this->discord->application->commands->freshen()->done( function ($commands) {
