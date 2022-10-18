@@ -967,7 +967,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
     }
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
         $message_content = trim(substr($message_content, strlen('discord2ckey')));
-        preg_match('/^[0-9]{16,20}$/', str_replace(['<@', '<@!', '>'], $message_content), $matches);
+        preg_match('/^[0-9]{16,20}$/', str_replace(['<@', '<@!', '>'], '', $message_content), $matches);
         if (empty($matches) || ! is_numeric($matches[0])) return $message->reply("`$message_content` does not contain a discord snowflake");
         $id = $matches[0];
         
