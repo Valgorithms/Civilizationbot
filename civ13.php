@@ -96,8 +96,7 @@ class Civ13
     {
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
-                //Populate verified list from database
-                $this->getVerified();
+                $this->getVerified(); //Populate verified property with data from DB
                 //Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
