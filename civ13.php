@@ -39,7 +39,7 @@ class Civ13
     public $channel_ids = [];
     public $role_ids = [];
     
-    public $verified = [];
+    public $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     
     /**
      * Creates a Civ13 client instance.
@@ -97,7 +97,7 @@ class Civ13
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
                 //Populate verified list from database
-                $this->verified = json_decode(file_get_contents('http://valzargaming.com/verified/'), true);
+                if ($verified = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) $this->verified = new \Discord\Helpers\Collection(array_combine(array_keys($verified), array_values($verified)));
                 //Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
