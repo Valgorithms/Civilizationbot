@@ -411,11 +411,17 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
+    if (str_starts_with($message_content_lower, 'promotable')) {
+        if (! $promotable_check = $civ13->functions['misc']['promotable_check']) return $message->react("🔥");
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
+        if (! $promotable_check($civ13, trim(substr($message_content, 10)))) return $message->react("👎");
+        return $message->react("👍");
+    }
+    
     if (str_starts_with($message_content_lower, 'whitelistme')) {
         $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 11)));
         if (! $ckey) return $message->channel->sendMessage('Wrong format. Please try `!s whitelistme [ckey]`.'); // if len($split_message) > 1 and len($split_message[1]) > 0:
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran'])) return;
-        
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran'])) return $message->react("❌");         
         $found = false;
         $whitelist1 = fopen($civ13->files['nomads_whitelist'], 'r');
         if ($whitelist1) {
@@ -467,7 +473,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     }
     if (str_starts_with($message_content_lower, 'unwhitelistme')) {
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran', 'infantry'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran', 'infantry'])) return $message->react("❌");
         
         $removed = "N/A";
         $lines_array = array();
@@ -506,7 +512,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         return $message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
     }
     if (str_starts_with($message_content_lower, 'ban ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $message_content = substr($message_content, 4);
         $split_message = explode('; ', $message_content); //$split_target[1] is the target
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
@@ -515,7 +521,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         if ($result = $ban($civ13, $split_message, $message)) return $message->channel->sendMessage($result);
     }
     if (str_starts_with($message_content_lower, 'nomadsban ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $message_content = substr($message_content, 10);
         $split_message = explode('; ', $message_content); //$split_target[1] is the target
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
@@ -525,7 +531,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
             return $message->channel->sendMessage($result);
     }
     if (str_starts_with($message_content_lower, 'tdmban ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $message_content = substr($message_content, 7);
         $split_message = explode('; ', $message_content); //$split_target[1] is the target
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
@@ -535,9 +541,9 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
             return $message->channel->sendMessage($result);
     }
     if (str_starts_with($message_content_lower, 'unban ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
-        $message_content = substr($message_content, 6);
-        $split_message = explode('; ', $message_content);
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        $message_content_lower = substr($message_content_lower, 6);
+        $split_message = explode('; ', $message_content_lower);
         
         /*
         if ($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
@@ -556,7 +562,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         return $message->channel->sendMessage('**' . $message->author->displayname . '** unbanned **' . $split_message[0] . '**.');
     }
     if (str_starts_with($message_content_lower, 'hostciv')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $message->channel->sendMessage('Please wait, updating the code...');
         \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
         $message->channel->sendMessage('Updated the code.');
@@ -568,20 +574,20 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         });
     }
     if (str_starts_with($message_content_lower, 'killciv')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
         return $message->channel->sendMessage('Attempted to kill Civilization 13 Server.');
     }
     if (str_starts_with($message_content_lower, 'restartciv')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         return $restart_nomads($civ13, $message);
     }
     if (str_starts_with($message_content_lower, 'restarttdm')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         return $restart_tdm($civ13, $message);
     }
     if (str_starts_with($message_content_lower, 'mapswap')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         
         $split_message = explode('mapswap ', $message_content);
         if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return $message->channel->sendMessage('You need to include the name of the map.');
@@ -617,7 +623,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         */
     }
     if (str_starts_with($message_content_lower, 'maplist')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         
         $split_message = explode('mapswap ', $message_content);
         $mapto = $split_message[1];
@@ -631,7 +637,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         return $civ13->logger->warning('unable to find file ' . $civ13->files['map_defines_path'] . PHP_EOL);
     }
     if (str_starts_with($message_content_lower, 'hosttdm')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         
         $message->channel->sendMessage('Please wait, updating the code...');
         \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
@@ -644,12 +650,12 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         });
     }
     if (str_starts_with($message_content_lower, 'killtdm')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
         return $message->channel->sendMessage('Attempted to kill Civilization 13 (TDM Server).');
     }
     if (str_starts_with($message_content_lower, 'tdmmapswap')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         
         $split_message = explode('tdmmapswap ', $message_content);
         if (!((count($split_message) > 1) && (strlen($split_message[1]) > 0))) return;
@@ -683,15 +689,15 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         */
     }
     if (str_starts_with($message_content_lower, 'banlist')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         return $message->channel->sendMessage(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
     }
     if (str_starts_with($message_content_lower, 'logs')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if ($log_handler($civ13, $message, trim(substr($message_content, 4)))) return;
     }
     if (str_starts_with($message_content_lower, 'bans')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return;
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if ($banlog_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
     }
 
@@ -699,7 +705,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         if (! $state = trim(substr($message_content_lower, strlen('ts')))) return $message->reply('Wrong format. Please try `ts on` or `ts off`.');
         if (! in_array($state, ['on', 'off'])) return $message->reply('Wrong format. Please try `ts on` or `ts off`.');
         if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
-        if (! $rank_check($civ13, $message, ['admiral'])) return;
+        if (! $rank_check($civ13, $message, ['admiral'])) return $message->react("❌");
         
         if ($state == 'on') {
             \execInBackground('cd ' . $civ13->files['typespess_path']);

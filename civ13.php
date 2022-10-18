@@ -31,7 +31,7 @@ class Civ13
     public $command_symbol = '!s';
     public $owner_id = '196253985072611328';
     public $civ13_guild_id = '468979034571931648';
-    public $civ13_token = '';
+    public $civ_token = '';
     
     public $files = [];
     public $ips = [];
@@ -75,7 +75,7 @@ class Civ13
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
         if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
-        if(isset($options['civ13_token'])) $this->civ13_token = $options['civ13_token'];
+        if(isset($options['civ_token'])) $this->civ13_token = $options['civ_token'];
                 
         if(isset($options['discord'])) $this->discord = $options['discord'];
         elseif(isset($options['discord_options'])) $this->discord = new \Discord\Discord($options['discord_options']);
@@ -216,5 +216,6 @@ class Civ13
     public function getVerified()
     {
         if ($verified = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) $this->verified = new \Discord\Helpers\Collection(array_combine(array_keys($verified), array_values($verified)));
+        return $this->verified;
     }
 }
