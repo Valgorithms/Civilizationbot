@@ -1070,9 +1070,7 @@ $bancheck = function (\Civ13\Civ13 $civ13, string $ckey)
             $filter = '|||';
             $line = trim(str_replace($filter, '', $fp));
             $linesplit = explode(';', $line); //$split_ckey[0] is the ckey
-            if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
-                $return = true;
-            }
+            if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) $return = true;
         }
         fclose($filecheck1);
     } else $civ13->logger->warning('unable to open ' . $civ13->files['nomads_bans']);
@@ -1082,9 +1080,7 @@ $bancheck = function (\Civ13\Civ13 $civ13, string $ckey)
             $filter = '|||';
             $line = trim(str_replace($filter, '', $fp));
             $linesplit = explode(';', $line); //$split_ckey[0] is the ckey
-            if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
-                $return = true;
-            }
+            if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) $return = true;
         }
         fclose($filecheck2);
     } else $civ13->logger->warning('unable to open ' . $civ13->files['tdm_bans']);

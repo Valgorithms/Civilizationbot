@@ -155,7 +155,9 @@ $options = array(
             'browser_get' => $browser_get,
             'browser_post' => $browser_post,
             'bancheck' => $bancheck,
+            'discord2ckey_slash' => $discord2ckey_slash,
             'verify_new' => $verify_new,
+            'promotable_check' => $promotable_check,
         ],
     ),
 );
