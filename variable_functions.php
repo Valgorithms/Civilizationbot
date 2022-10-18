@@ -418,6 +418,14 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         return $message->react("👍");
     }
     
+    if (str_starts_with($message_content_lower, 'mass_promotor_loop')) {
+        echo '[mass_promotor_loop]' . PHP_EOL;
+        if (! $mass_promotor_loop = $civ13->functions['misc']['mass_promotor_loop']) return $message->react("🔥");
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
+        if (! $mass_promotor_loop($civ13)) return $message->react("👎");
+        return $message->react("👍");
+    }
+    
     if (str_starts_with($message_content_lower, 'whitelistme')) {
         $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 11)));
         if (! $ckey) return $message->channel->sendMessage('Wrong format. Please try `!s whitelistme [ckey]`.'); // if len($split_message) > 1 and len($split_message[1]) > 0:

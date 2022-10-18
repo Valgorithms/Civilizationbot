@@ -158,10 +158,11 @@ $options = array(
             'discord2ckey_slash' => $discord2ckey_slash,
             'verify_new' => $verify_new,
             'promotable_check' => $promotable_check,
+            'mass_promotor_loop' => $mass_promotor_loop,
         ],
     ),
 );
-if (include 'civ_token.php') $options['civ_token'] = $civ13_token;
+if (include 'civ_token.php') $options['civ_token'] = $civ_token;
 $civ13 = new Civ13\Civ13($options);
 include 'webapi.php'; //$socket, $webapi, webapiFail(), webapiSnow();
 $civ13->run();
