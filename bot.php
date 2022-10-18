@@ -158,7 +158,7 @@ $options = array(
             'discord2ckey_slash' => $discord2ckey_slash,
             'verify_new' => $verify_new,
             'promotable_check' => $promotable_check,
-            'mass_promotor_loop' => $mass_promotor_loop,
+            'mass_promotion_loop' => $mass_promotion_loop,
         ],
     ),
 );
