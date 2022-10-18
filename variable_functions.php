@@ -969,6 +969,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
         $message_content = trim(substr($message_content, strlen('discord2ckey')));
         $message_content_lower = strtolower($message_content);
         preg_match('/^[0-9]{16,20}$/', $message_content_lower, $matches);
+        var_dump($matches);
         if (empty($matches) || ! is_numeric($matches[0])) return $message->reply("`$message_content` does not contain a discord snowflake");
         $id = $matches[0];
         
