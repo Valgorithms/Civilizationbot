@@ -31,4 +31,4 @@ $mass_promotor_loop = function (\Civ13\Civ13 $civ13) use ($promotable_check)
     $promotable = [];
     foreach ($guild->members as $member) if ($promotable_check($civ13, $member->id)) $promotable[] = $member;
     return true;
-}
+};
