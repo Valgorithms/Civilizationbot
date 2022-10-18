@@ -17,7 +17,7 @@ $promotable_check = function (\Civ13\Civ13 $civ13, string $identifier): bool
     if (! $civ13->verified && ! $civ13->getVerified()) return false; //Unable to get info from DB
     if (! $discord2ckey_slash = $civ13->functions['misc']['discord2ckey_slash']) return false;
     if (! $bancheck = $civ13->functions['misc']['bancheck']) return false;
-    preg_match('/^[0-9]{16,20}$/', $identifier, $matches);
+    preg_match('/^[0-9]{16,20}$/', str_replace(['<@', '<@!', '>'], $identifier), $matches);
     if (! $item = $civ13->verified->get('ss13', htmlspecialchars($identifier)) ?? $civ13->verified->get('discord', $matches[0])) return false; //a, ckey and/or discord id exists in DB
     if (($item['seen_tdm'] + $item['seen_nomads'] + $item['seen_pers'])<100) return false; //b, 100 seen
     if (strtotime($item['create_time']) > strtotime('-1 year')) return false; //c, 1 year
