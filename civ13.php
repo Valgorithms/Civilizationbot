@@ -97,7 +97,7 @@ class Civ13
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
                 //Populate verified list from database
-                if ($verified = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) $this->verified = new \Discord\Helpers\Collection(array_combine(array_keys($verified), array_values($verified)));
+                $this->getVerified();
                 //Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
@@ -160,13 +160,13 @@ class Civ13
     /*
      * Please maintain a consistent schema for directories and files
      *
-     * Tutelar's $filecache_path should be a folder named json inside of either cwd() or __DIR__
+     * The bot's $filecache_path should be a folder named json inside of either cwd() or __DIR__
      * getcwd() should be used if there are multiple instances of this bot operating from different source directories or on different shards but share the same bot files (NYI)
      * __DIR__ should be used if the json folder should be expected to always be in the same folder as this file, but only if this bot is not installed inside of /vendor/
      *
      * The recommended schema is to follow DiscordPHP's Redis schema, but replace : with ;
      * dphp:cache:Channel:115233111977099271:1001123612587212820 would become dphp;cache;Channel;115233111977099271;1001123612587212820.json
-     * In the above example the first set numbers represents the guild_id and the second set of numbers represents the channel_id
+     * In the above example the first set of numbers represents the guild_id and the second set of numbers represents the channel_id
      * Similarly, Messages might be cached like dphp;cache;Message;11523311197709927;234582138740146176;1014616396270932038.json where the third set of numbers represents the message_id
      * This schema is recommended because the expected max length of the file name will not usually exceed 80 characters, which is far below the NTFS character limit of 255,
      * and is still generic enough to easily automate saving and loading files using data served by Discord
@@ -211,5 +211,10 @@ class Civ13
         ];
         if ($this->VarSave('discord_config.json', $discord_config)) $this->logger->info("Created new config for guild {$guild->name}");
         else $this->logger->warning("Failed top creat new config for guild {$guild->name}");
+    }
+    
+    public function getVerified()
+    {
+        if ($verified = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) $this->verified = new \Discord\Helpers\Collection(array_combine(array_keys($verified), array_values($verified)));
     }
 }
