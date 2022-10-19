@@ -289,6 +289,10 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
             break;
             
+        case 'verified':
+            return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], json_encode($civ13->verified->toArray()));
+            break;
+            
         default:
             return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
     }

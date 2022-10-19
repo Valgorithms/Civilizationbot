@@ -18,6 +18,7 @@ class Civ13
     public $stats;
     
     protected $webapi;
+    public $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     
     public $timers = [];
     
@@ -38,8 +39,6 @@ class Civ13
     public $ports = [];
     public $channel_ids = [];
     public $role_ids = [];
-    
-    public $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     
     /**
      * Creates a Civ13 client instance.
