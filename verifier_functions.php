@@ -37,7 +37,7 @@ $mass_promotion_loop = function (\Civ13\Civ13 $civ13) use ($promotable_check)
     return true;
 };
 
-$mass_promotion_timer function (\Civ13\Civ13 $civ13) use ($mass_promotion_loop)
+$mass_promotion_timer = function (\Civ13\Civ13 $civ13) use ($mass_promotion_loop)
 {
-    $civ13->timers['mass_promotion_timer'] = $civ13->disacord->getLoop()->addPeriodicTimer(86400, function () use ($mass_promotion_loop { $mass_promotion_loop; });
+    $civ13->timers['mass_promotion_timer'] = $civ13->disacord->getLoop()->addPeriodicTimer(86400, function () use ($mass_promotion_loop) { $mass_promotion_loop; });
 };
