@@ -53,6 +53,7 @@ $options = array(
     'command_symbol' => '!s',
     'owner_id' => '196253985072611328', //Taislin
     'civ13_guild_id' => '468979034571931648', //Civ13
+    'verifier_feed_channel_id' => '1032411190695055440', //Channel VZG Verifier webhooks verification messages to
     'files' => array(
         //Fun
         'insults_path' => 'insults.txt',
@@ -137,6 +138,7 @@ $options = array(
         ],
         'message' => [
             'on_message' => $on_message,
+            'verify_refresh' => $verify_refresh,
         ],
         'GUILD_MEMBER_ADD' => [
             'bancheck_join' => $bancheck_join,
