@@ -43,7 +43,7 @@ $mass_promotion_check = function (\Civ13\Civ13 $civ13, $message) use ($promotabl
     if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;
     $promotables = [];
     foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [$member->displayname, $civ13->verified->get('discord', $member->id)['ss13']];
-    return $message->reply(\Discord\Builders\MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
+    return $promotables;
 };
 
 $mass_promotion_timer = function (\Civ13\Civ13 $civ13) use ($mass_promotion_loop)

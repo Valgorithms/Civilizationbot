@@ -428,7 +428,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     if (str_starts_with($message_content_lower, 'mass_promotion_check')) {
         if (! $mass_promotion_loop = $civ13->functions['misc']['mass_promotion_check']) return $message->react("🔥");
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
-        if ($mass_promotion_loop($civ13)) return;
+        if ($promotables = $mass_promotion_loop($civ13, $message)) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));;
     }
     
     if (str_starts_with($message_content_lower, 'whitelistme')) {
