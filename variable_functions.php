@@ -983,7 +983,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
         $id = trim(str_replace(['<@!', '<@', '>'], '', substr($message_content_lower, strlen('discord2ckey'))));
         if (! $item = $civ13->verified->get('discord', $id)) return $message->reply("`$id` is not registered to any byond username");
-        return $message->reply("`$id` is registered to <@" . $item['ss13'] . '>');
+        return $message->reply("`$id` is registered to " . $item['ss13']);
     }
     if (str_starts_with($message_content_lower, 'ckey2discord')) {
         $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('discord2ckey'))));
