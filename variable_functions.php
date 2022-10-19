@@ -466,6 +466,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
             }
             fclose($whitelist1);
         }
+        if ($found2) return $message->channel->sendMessage("$ckey is already in the whitelist!");
         
         $txt = $ckey."=".$message->member->username.PHP_EOL;
         if ($whitelist1 = fopen($civ13->files['nomads_whitelist'], 'a')) {
@@ -479,7 +480,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         return $message->channel->sendMessage("$ckey has been added to the whitelist.");
     }
     if (str_starts_with($message_content_lower, 'unwhitelistme')) {
-        if (! $author_member = $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
+        if (! $message->member) return $message->channel->sendMessage('Error! Unable to get Discord Member class.');
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran', 'infantry'])) return $message->react("❌");
         
         $removed = "N/A";
@@ -767,10 +768,10 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
     }
     if (! $message_content) return;
     
-    $author_user = $message->author;
-    if ($author_member = $message->member) {
-        $author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
-        $author_guild = $message->guild ?? $civ13->discord->guilds->get('id', $message->guild_id);
+    //$author_user = $message->author;
+    if (/*$author_member =*/ $message->member) {
+        //$author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
+        //$author_guild = $message->guild ?? $civ13->discord->guilds->get('id', $message->guild_id);
         if ($guild_message($civ13, $message, $message_content, $message_content_lower)) return;
     }
     

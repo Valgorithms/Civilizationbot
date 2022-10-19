@@ -15,7 +15,6 @@ $verify_new = function (\Civ13\Civ13 $civ13, string $ckey, string $discord): boo
 $promotable_check = function (\Civ13\Civ13 $civ13, string $identifier): bool
 {
     if (! $civ13->verified && ! $civ13->getVerified()) return false; //Unable to get info from DB
-    if (! $discord2ckey_slash = $civ13->functions['misc']['discord2ckey_slash']) return false;
     if (! $bancheck = $civ13->functions['misc']['bancheck']) return false;
     if (! $item = $civ13->verified->get('ss13', htmlspecialchars($identifier)) ?? $civ13->verified->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; //a, ckey and/or discord id exists in DB
     if (($item['seen_tdm'] + $item['seen_nomads'] + $item['seen_pers'])<100) return false; //b, 100 seen
