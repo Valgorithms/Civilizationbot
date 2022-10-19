@@ -484,6 +484,10 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         }
         return $message->channel->sendMessage("Ckey $removed has been removed from the whitelist.");
     }
+    if (str_starts_with($message_content_lower, 'refresh')) {
+        if ($civ13->getVerified()) return $message->react("👍");
+        return $message->react("👎");
+    }
     if (str_starts_with($message_content_lower, 'ban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $message_content = substr($message_content, 4);
