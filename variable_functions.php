@@ -138,48 +138,6 @@ $browser_post = function (\Civ13\Civ13 $civ13, string $url, array $headers = ['C
     return $result;
 };
 
-$discord2ckey_slash = function (\Civ13\Civ13 $civ13, $id) use ($browser_post) : \React\Promise\Promise|array
-{
-    if (!$result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true)) return "<@$id> is either not registered to any ckey or the server did not return a response";
-    if (is_array($result)) $result = json_decode(json_encode($result), true); //curl returns string
-    elseif (is_string($result)) $result = json_decode($result, true); //$browser->post returns React\Promise\Promise
-    
-    $response = null;
-    if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
-        if ($ckey = $result->ckey)  $response = ["<@$id> is registered to $ckey", $ckey];
-        else $response = ["<@$id> is not registered to any ckey", null];
-    }
-    if (is_array($result)) { //json_decoded array
-        if ($ckey = $result['ckey']) $response = ["<@$id> is registered to ckey $ckey", $ckey];
-        else $response = ["<@$id> is not registered to any ckey", null];
-    }
-    if (is_string($result)) {
-        if ($result) $response = ["<@$id> is registered to $result", $result];
-        else $response = ["<@$id> is not registered to any ckey", null];
-    }
-    
-    //React\Promise\Promise from $browser->post
-    return $response ?? $result->then(function ($response) use ($civ13, $id) {
-        $result = json_decode((string)$response->getBody(), true);
-        if ($ckey = $result['ckey']) return ["<@$id> is registered to ckey $ckey", $ckey];
-        return ["<@$id> is not registered to any ckey", null];
-    }, function (Exception $e) use ($civ13) {
-        $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
-    });
-};
-$discord2ckey = function (\Civ13\Civ13 $civ13, $id) use ($browser_post)
-{
-    $result = $browser_post($civ13, 'http://civ13.valzargaming.com/discord2ckey/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['discord' => $id], true);
-    if (is_array($result)) return json_decode(json_encode($result), true); //curl returns string
-    elseif (is_string($result)) return json_decode($result, true); //$browser->post returns React\Promise\Promise
-};
-$ckey2discord = function (\Civ13\Civ13 $civ13, $ckey) use ($browser_post)
-{
-    $result = $browser_post($civ13, 'http://civ13.valzargaming.com/ckey2discord/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey], true);
-    if (is_array($result)) return json_decode(json_encode($result), true);  //curl returns string
-    return json_decode($result); //$browser->post returns React\Promise\Promise
-};
-
 $restart_nomads = function (\Civ13\Civ13 $civ13, $message = null)
 {
     \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
@@ -756,7 +714,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     }
     
 };
-$on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $discord2ckey, $ckey2discord)
+$on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -991,41 +949,9 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
         return $message->reply("`$ckey` is registered to <@" . $item['discord'] . '>');
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('ckey'))))) return $message->reply('Wrong format. Please try `ckey [ckey]` or `ckey [<@mention>].');
-        $id = trim(str_replace(['<@', '!', '>'], '', $ckey));
-        
-        if (is_numeric($id)) {
-            $civ13->logger->info("CKEY id $id");
-            $result = $discord2ckey($civ13, $id);
-        } else {
-            $civ13->logger->info("CKEY ckey $ckey");
-            $result = $ckey2discord($civ13, $ckey);
-        }
-        if (is_array($result)) { //curl json_decoded array
-            if ($result_ckey = $result['ckey']) {
-                $civ13->logger->info("CKEY ckey $result_ckey");
-                return $message->reply("<@$id> is registered to ckey $result_ckey");
-            }
-            if ($result_id = $result['discord']) {
-                $civ13->logger->info("CKEY id $result_id");
-                return $message->reply("$ckey is registered to <@$result_id>");
-            }
-        } else { //React\Promise\Promise from $browser->post
-            $result->then(function ($response) use ($civ13, $message, $id, $ckey) {
-                $result = json_decode((string)$response->getBody(), true);
-                if ($result_ckey = $result['ckey']) {
-                    $civ13->logger->info("CKEY ckey $result_ckey");
-                    return $message->reply("<@$id> is registered to ckey $result_ckey");
-                }
-                if ($result_id = $result['discord']) {
-                    $civ13->logger->info("CKEY id $result_id");
-                    return $message->reply("$ckey is registered to <@$result_id>");
-                }
-            }, function (Exception $e) use ($civ13) {
-                $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
-            });
-        }
-        return;
+        $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('ckey'))));
+        if (! $item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`$ckey` is not registered to any discord id");
+        return $message->reply("`$ckey` is registered to <@" . $item['discord'] . '>');
     }
 };
 
@@ -1061,33 +987,16 @@ $bancheck = function (\Civ13\Civ13 $civ13, string $ckey)
     } else $civ13->logger->warning('unable to open ' . $civ13->files['tdm_bans']);
     return $return;
 };
-$bancheck_join = function (\Civ13\Civ13 $civ13, $guildmember) use ($discord2ckey, $bancheck)
+$bancheck_join = function (\Civ13\Civ13 $civ13, $member) use ($bancheck)
 {
-    if ($guildmember->guild_id != $civ13->civ13_guild_id) return;
-    if (is_array($result = $discord2ckey($civ13, $guildmember->id))) { //curl json_decoded array
-        if ($ckey = $result['ckey']) {
-            if ($bancheck($civ13, $ckey)) {
-                $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $guildmember, $ckey) {
-                    $guildmember->setRoles([$civ13['role_ids']['banished']], "bancheck join $ckey");
-                });
-            }
-        }
-    } else { //React\Promise\Promise from $browser->post
-        $result->then(function ($response) use ($civ13, $guildmember, $bancheck) {
-            $result = json_decode((string)$response->getBody(), true);
-            if ($ckey = $result['ckey']) {
-                if ($bancheck($civ13, $ckey)) {
-                    $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $guildmember, $ckey) {
-                        $guildmember->setRoles([$civ13['role_ids']['banished']], "bancheck join $ckey");
-                    });
-                }
-            }
-        }, function (Exception $e) use ($civ13) {
-            $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
+    if ($member->guild_id != $civ13->civ13_guild_id) return;    
+    if ($item = $civ13->verified->get('discord', $member->id)) if ($bancheck($civ13, $item['ss13'])) {
+        $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $member, $item) {
+            $member->setRoles([$civ13['role_ids']['banished']], 'bancheck join ' . $item['ss13']);
         });
     }
 };
-$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash, $bancheck, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap, $ranking, $rankme, $medals, $brmedals)
+$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap, $ranking, $rankme, $medals, $brmedals)
 {
     //Declare commands
     
@@ -1386,32 +1295,21 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         });
     });
     
-    $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13, $discord2ckey_slash) {
-        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[0]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($interaction) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true); });
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($response), true);
+    $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13) {
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to " . $item['ss13']), true);
     });
-    $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $discord2ckey_slash, $bancheck) {
-        if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($ckey instanceof \React\Promise\Promise) return $ckey->done(
-            function ($ckey) use ($civ13, $interaction, $bancheck) {
-                if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."), true);
-                return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."), true);
-            }
-        );
-        if ($bancheck($civ13, $ckey)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is currently banned on one of the Civ13.com servers."), true);
-        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("$ckey is not currently banned on one of the Civ13.com servers."), true);
+    $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $bancheck) {
+    if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        if ($bancheck($civ13, $item['ss13'])) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("`{$item['ss13']}` is currently banned on one of the Civ13.com servers."), true);
+        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("`{$item['ss13']}` is not currently banned on one of the Civ13.com servers."), true);
     });
     
-    $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $discord2ckey_slash, $unban) {
+    $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $unban) {
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         $admin = $interaction->user->displayname;
-        if (!$ckey = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($ckey instanceof \React\Promise\Promise) return $ckey->done( function ($ckey) use ($civ13, $interaction, $unban, $admin) {
-            $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **$ckey**."));
-            $unban($civ13, $ckey, $admin);
-        });
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **$ckey**."));
-        $unban($civ13, $ckey, $admin);
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**$admin** unbanned **`{$item['ss13']}`**."));
+        $unban($civ13, $item['ss13'], $admin);
     });
     
     $civ13->discord->listenCommand('restart_nomads', function ($interaction) use ($civ13, $restart_nomads) {
@@ -1423,28 +1321,24 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($discord2ckey_slash
         $restart_tdm($civ13);
     });
     
-    $civ13->discord->listenCommand('ranking', function ($interaction) use ($civ13, $discord2ckey_slash, $ranking) {
+    $civ13->discord->listenCommand('ranking', function ($interaction) use ($civ13, $ranking) {
         $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($ranking($civ13)), true);
     });
-    $civ13->discord->listenCommand('rankme', function ($interaction) use ($civ13, $discord2ckey_slash, $rankme) {
-        if (!$response = $discord2ckey_slash($civ13, $interaction->member->id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($civ13, $interaction, $rankme) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $response)), true); });
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $response)), true);
+    $civ13->discord->listenCommand('rankme', function ($interaction) use ($civ13, $rankme) {
+        if (! $item = $civ13->verified->get('discord', $interaction->member->id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
     });
-    $civ13->discord->listenCommand('rank', function ($interaction) use ($civ13, $discord2ckey_slash, $rankme) {
-        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($civ13, $interaction, $rankme, ) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $response)), true); });
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $response)), true);
+    $civ13->discord->listenCommand('rank', function ($interaction) use ($civ13, $rankme) {
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
     });
-    $civ13->discord->listenCommand('medals', function ($interaction) use ($civ13, $discord2ckey_slash, $medals) {
-        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($civ13, $interaction, $medals) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($medals($civ13, $response)), true); });
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($medals($civ13, $response)), true);
+    $civ13->discord->listenCommand('medals', function ($interaction) use ($civ13, $medals) {
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($medals($civ13, $item['ss13'])), true);
     });
-    $civ13->discord->listenCommand('brmedals', function ($interaction) use ($civ13, $discord2ckey_slash, $brmedals) {
-        if (!$response = $discord2ckey_slash($civ13, $interaction->data->target_id)[1]) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('There was an error retrieving data'), true);
-        if ($response instanceof \React\Promise\Promise) return $response->done(function ($response) use ($civ13, $interaction, $brmedals) { $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($brmedals($civ13, $response)), true); });
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($brmedals($civ13, $response)), true);
+    $civ13->discord->listenCommand('brmedals', function ($interaction) use ($civ13, $brmedals) {
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($brmedals($civ13, $item['ss13'])), true);
     });
     /*For deferred interactions
     $civ13->discord->listenCommand('',  function (Interaction $interaction) use ($civ13) {
