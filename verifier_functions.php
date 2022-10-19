@@ -42,7 +42,7 @@ $mass_promotion_check = function (\Civ13\Civ13 $civ13, $message) use ($promotabl
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
     if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;
     $promotables = [];
-    foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [$member->displayname, $civ13->verified->get('discord', $member->id)['ss13']];
+    foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [(string) $member, $member->displayname, $civ13->verified->get('discord', $member->id)['ss13']];
     return $promotables;
 };
 
