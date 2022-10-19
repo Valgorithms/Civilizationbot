@@ -981,60 +981,14 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
         return $message->channel->sendEmbed($embed);
     }
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
-        $message_content = trim(substr($message_content, strlen('discord2ckey')));
-        preg_match('/^[0-9]{16,20}$/', str_replace(['<@', '<@!', '>'], '', $message_content), $matches);
-        if (empty($matches) || ! is_numeric($matches[0])) return $message->reply("`$message_content` does not contain a discord snowflake");
-        $id = $matches[0];
-        
-        $civ13->logger->info("DISCORD2CKEY id $id");
-        $result = $discord2ckey($civ13, $id);
-        if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
-            if ($result = $result->ckey) return $message->reply("<@$id> is registered to $result");
-            return $message->reply("<@$id> is not registered to any ckey");
-        }
-        if (is_array($result)) { //json_decoded array
-            if ($result = $result['ckey']) return $message->reply("<@$id> is registered to ckey $result");
-            return $message->reply("<@$id> is not registered to any ckey");
-        }
-        if (is_string($result)) {
-            if ($result) return $message->reply("<@$id> is registered to $result");
-            return $message->reply("<@$id> is not registered to any ckey");
-        }
-        //React\Promise\Promise from $browser->post
-        $result->then(function ($response) use ($civ13, $message, $id) {
-            $result = json_decode((string)$response->getBody(), true);
-            if ($ckey = $result['ckey']) return $message->reply("<@$id> is registered to ckey $ckey");
-            return $message->reply("<@$id> is not registered to any ckey");
-        }, function (Exception $e) use ($civ13) {
-            $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
-        });
-        return;
+        $id = trim(substr($message_content_lower, strlen('discord2ckey')));
+        if (! $item = $civ13->verified->get('discord', $id)) return $message->reply("`$id` is not registered to any byond username");
+        return $message->reply("`$id` is registered to <@" . $item['ss13'] . '>');
     }
     if (str_starts_with($message_content_lower, 'ckey2discord')) {
         $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('discord2ckey'))));
-        
-        $civ13->logger->info("CKEY2DISCORD ckey $ckey");
-        $result = $ckey2discord($civ13, $ckey);
-        if (is_object($result) && !str_contains(get_class($result), 'React\Promise')) { //json_decoded object
-            if ($result = $result->discord) return $message->reply("$ckey is registered to <@$result>");
-            return $message->reply("$ckey is not registered to any discord account");
-        }
-        if (is_array($result)) { //curl json_decoded array
-            if ($result = $result['id']) return $message->reply("$ckey is registered to <@$result>");
-            return $message->reply("$ckey is not registered to any discord account");
-        }
-        if (is_string($result)) {
-            if ($result) return $message->reply("$ckey is registered to <@$result>");
-            return $message->reply("$ckey is not registered to any discord account");
-        } //React\Promise\Promise from $browser->post
-        $result->done(function ($response) use ($civ13, $message, $ckey) {
-            $result = json_decode((string)$response->getBody(), true);
-            if ($id = $result['discord']) return $message->reply("$ckey is registered to <@$result>");
-            return $message->reply("$ckey is not registered to any discord account");
-        }, function (Exception $e) use ($civ13) {
-            $civ13->logger->warning('BROWSER POST error: ' . $e->getMessage());
-        });
-        return;
+        if (! $item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`$ckey` is not registered to any discord id");
+        return $message->reply("`$ckey` is registered to <@" . $item['discord'] . '>');
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('ckey'))))) return $message->reply('Wrong format. Please try `ckey [ckey]` or `ckey [<@mention>].');
