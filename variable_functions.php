@@ -981,7 +981,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $dis
         return $message->channel->sendEmbed($embed);
     }
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
-        $id = trim(substr($message_content_lower, strlen('discord2ckey')));
+        $id = trim(str_replace(['<@!', '<@', '>'], '', substr($message_content_lower, strlen('discord2ckey'))));
         if (! $item = $civ13->verified->get('discord', $id)) return $message->reply("`$id` is not registered to any byond username");
         return $message->reply("`$id` is registered to <@" . $item['ss13'] . '>');
     }
