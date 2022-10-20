@@ -50,6 +50,7 @@ $options = array(
     'stats' => $stats,
     
     //Configurations
+    'github' => 'https://github.com/VZGCoders/Civilizationbot',
     'command_symbol' => '!s',
     'owner_id' => '196253985072611328', //Taislin
     'civ13_guild_id' => '468979034571931648', //Civ13

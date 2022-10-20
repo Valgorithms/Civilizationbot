@@ -74,6 +74,7 @@ class Civ13
         
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
         if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
+        if(isset($options['github'])) $this->github = $options['github'];
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
         if(isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if(isset($options['civ_token'])) $this->civ13_token = $options['civ_token'];

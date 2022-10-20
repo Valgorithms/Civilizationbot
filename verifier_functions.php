@@ -5,7 +5,7 @@ $verify_refresh = function (\Civ13\Civ13 $civ13)
     $this->discord->on('message', function ($message) {
         if ($message->channel_id == $civ13->verifier_feed_channel_id) $civ13->getVerified();
     });
-}
+};
 
 $verify_new = function (\Civ13\Civ13 $civ13, string $ckey, string $discord): bool
 {
