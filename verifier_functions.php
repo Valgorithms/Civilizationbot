@@ -1,8 +1,24 @@
 <?php
 
+$whitelist_update = function (\Civ13\Civ13 $civ13, array $whitelists): bool
+{
+    if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
+    foreach ($whitelists as $whitelist) {
+        if (! $file = fopen($whitelist, 'a')) continue;
+        ftruncate($file, 0); //Clear the file
+        foreach ($civ13->verified as $item) {
+            if (! $member = $guild->members->get('id', $item['discord'])) continue;
+            if (! $member->roles->has($civ13->role_ids['veteran'])) continue;
+            fwrite($file, $item['ss13'] . ' = ' . $item['discord'] . PHP_EOL); //ckey = discord
+        }
+        fclose($file);
+    }
+    return true;
+};
+
 $verify_refresh = function (\Civ13\Civ13 $civ13)
 {
-    $this->discord->on('message', function ($message) {
+    $this->discord->on('message', function ($message) use ($civ13) {
         if ($message->channel_id == $civ13->verifier_feed_channel_id) $civ13->getVerified();
     });
 };

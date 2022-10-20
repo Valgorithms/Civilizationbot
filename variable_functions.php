@@ -390,48 +390,22 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     
     if (str_starts_with($message_content_lower, 'whitelistme')) {
         $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 11)));
-        if (! $ckey) return $message->channel->sendMessage('Wrong format. Please try `!s whitelistme [ckey]`.'); // if len($split_message) > 1 and len($split_message[1]) > 0:
+        if (! $ckey = $civ13->verified->get('discord', $message->member->id)['ss13']) return $message->reply("I didn't find your ckey in the approved list! Please reach out to an administrator.");
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran'])) return $message->react("❌");         
         $found = false;
         $whitelist1 = fopen($civ13->files['nomads_whitelist'], 'r');
         if ($whitelist1) {
-            while (($fp = fgets($whitelist1, 4096)) !== false) {
-                $line = trim(str_replace(PHP_EOL, '', $fp));
-                $linesplit = explode(';', $line);
-                foreach ($linesplit as $split)
-                    if ($split == $ckey)
-                        $found = true;
-            }
+            while (($fp = fgets($whitelist1, 4096)) !== false) foreach (explode(';', trim(str_replace(PHP_EOL, '', $fp))) as $split) if ($split == $ckey) $found = true;
             fclose($whitelist1);
         }
         $whitelist2 = fopen($civ13->files['tdm_whitelist'], 'r');
         if ($whitelist2) {
-            while (($fp = fgets($whitelist2, 4096)) !== false) {
-                $line = trim(str_replace(PHP_EOL, '', $fp));
-                $linesplit = explode(';', $line);
-                foreach ($linesplit as $split)
-                    if ($split == $ckey)
-                        $found = true;
-            }
+            while (($fp = fgets($whitelist2, 4096)) !== false) foreach (explode(';', trim(str_replace(PHP_EOL, '', $fp))) as $split) if ($split == $ckey) $found = true;
             fclose($whitelist2);
         }
         if ($found) return $message->channel->sendMessage("$ckey is already in the whitelist!");
         
-        $found2 = false;
-        if ($whitelist1 = fopen($civ13->files['nomads_whitelist'], 'r')) {
-            while (($fp = fgets($whitelist1, 4096)) !== false) {
-                $line = trim(str_replace(PHP_EOL, '', $fp));
-                $linesplit = explode(';', $line);
-                foreach ($linesplit as $split) {
-                    if ($split == $message->member->username)
-                        $found2 = true;
-                }
-            }
-            fclose($whitelist1);
-        }
-        if ($found2) return $message->channel->sendMessage("$ckey is already in the whitelist!");
-        
-        $txt = $ckey."=".$message->member->username.PHP_EOL;
+        $txt = "$ckey = {$message->member->id}" . PHP_EOL;
         if ($whitelist1 = fopen($civ13->files['nomads_whitelist'], 'a')) {
             fwrite($whitelist1, $txt);
             fclose($whitelist1);
