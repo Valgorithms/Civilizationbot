@@ -1265,7 +1265,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, 
     */
 };
 
-$ooc_relay = function (\Civ13\Civ13 $civ13, $guild, string $file_path, string $channel_id) use ($ban)
+$ooc_relay = function (\Civ13\Civ13 $civ13, $guild, string $file_path, $channel) use ($ban)
 {     
     if (! $file = fopen($file_path, 'r+')) return $civ13->logger->warning("unable to open `$file_path`");
     while (($fp = fgets($file, 4096)) !== false) {
@@ -1282,8 +1282,13 @@ $ooc_relay = function (\Civ13\Civ13 $civ13, $guild, string $file_path, string $c
                 $ban($civ13, [$ckey, '999 years', "Blacklisted word ($filtered), please appeal on our discord"]);
             }
         }
-        if ($target_channel = $guild->channels->get('id', $channel_id)) $target_channel->sendMessage($fp);
-        else $civ13->logger->warning("unable to find channel `$channel_id`");
+        if( ! $user = $civ13->discord->users->get('id', $civ13->verified->get('ss13', $ckey)['discord'])) $channel->sendMessage($fp);
+        else {
+            $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
+            $embed->setAuthor($user->displayname, $user->avatar);
+            $embed->setDescription($fp);
+            $channel->sendEmbed($embed);
+        }
     }
     ftruncate($file, 0); //clear the file
     return fclose($file);
@@ -1347,10 +1352,10 @@ $ooc_relay = function (\Civ13\Civ13 $civ13, $guild, string $file_path, string $c
 $timer_function = function (\Civ13\Civ13 $civ13) use ($ooc_relay)
 {
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return $civ13->logger->warning('unable to get guild ' . $civ13->civ13_guild_id);
-    $ooc_relay($civ13, $guild, $civ13->files['nomads_ooc_path'], $civ13->channel_ids['nomads_ooc_channel']);  // #ooc-nomads
-    $ooc_relay($civ13, $guild, $civ13->files['nomads_admin_path'], $civ13->channel_ids['nomads_admin_channel']);  // #ahelp-nomads
-    $ooc_relay($civ13, $guild, $civ13->files['tdm_ooc_path'], $civ13->channel_ids['tdm_ooc_channel']);  // #ooc-tdm
-    $ooc_relay($civ13, $guild, $civ13->files['tdm_admin_path'], $civ13->channel_ids['tdm_admin_channel']);  // #ahelp-tdm
+    if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$ooc_relay($civ13, $guild, $civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
+    if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_admin_channel'])) $ooc_relay($civ13, $guild, $civ13->files['nomads_admin_path'], $channel);  // #ahelp-nomads
+    if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_ooc_channel'])) $ooc_relay($civ13, $guild, $civ13->files['tdm_ooc_path'], $channel);  // #ooc-tdm
+    if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $ooc_relay($civ13, $guild, $civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
 };
 $on_ready = function (\Civ13\Civ13 $civ13) use ($timer_function)
 {
