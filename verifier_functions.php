@@ -16,10 +16,31 @@ $whitelist_update = function (\Civ13\Civ13 $civ13, array $whitelists): bool
     return true;
 };
 
-$verify_refresh = function (\Civ13\Civ13 $civ13)
+$civ_listeners = function (\Civ13\Civ13 $civ13) use ($whitelist_update) //Handles Verified and Veteran cache and lists lists
 {
-    $this->discord->on('message', function ($message) use ($civ13) {
-        if ($message->channel_id == $civ13->verifier_feed_channel_id) $civ13->getVerified();
+    $civ13->discord->on('message', function ($message) use ($civ13) {
+        if ($message->channel_id == $civ13->verifier_feed_channel_id) return $civ13->getVerified();
+    });
+    
+    $civ13->discord->on('GUILD_MEMBER_ADD', function (\Discord\Parts\User\Member $member) use ($civ13)
+    {
+        $civ13->discord->getLoop()->addTimer(8640, function() use ($civ13, $member) { //Kick member if they have not verified
+            if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return;
+            if (! $member_future = $guild->members->get('id', $member->id)) return;
+            if ($member_future->roles->has($civ13->role_ids['infantry']) || $member_future->roles->has($civ13->role_ids['veteran'])) return;
+            return $guild->members->kick($member_future, 'Not verified');
+        });
+    });
+    
+    $civ13->discord->on('GUILD_MEMBER_REMOVE', function (\Discord\Parts\User\Member $member) use ($civ13, $whitelist_update)
+    {
+         if ($member->roles->has($civ13->role_ids['veteran'])) $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
+    });
+    
+    $civ13->discord->on('GUILD_MEMBER_UPDATE', function (\Discord\Parts\User\Member $member, \Discord\Discord $discord, ?\Discord\Parts\User\Member $member_old) use ($civ13, $whitelist_update)
+    {
+        if ($member->roles->has($civ13->role_ids['veteran']) && ! $member_old->roles->has($civ13->role_ids['veteran'])) return $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
+        if (! $member->roles->has($civ13->role_ids['veteran']) && $member_old->roles->has($civ13->role_ids['veteran'])) return $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
     });
 };
 

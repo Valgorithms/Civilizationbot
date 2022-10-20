@@ -133,13 +133,13 @@ $options = array(
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
             'set_ips' => $set_ips,
+            'civ_listeners' => $civ_listeners,
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,
         ],
         'message' => [
             'on_message' => $on_message,
-            'verify_refresh' => $verify_refresh,
         ],
         'GUILD_MEMBER_ADD' => [
             'bancheck_join' => $bancheck_join,
