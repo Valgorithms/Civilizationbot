@@ -1203,7 +1203,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, 
         $embed->setFooter(($civ13->github ?  "{$civ13->github}" . PHP_EOL : '') . "{$civ13->discord->username} by Valithor#5947");
         $embed->setColor(0xe1452d);
         $embed->setTimestamp();
-        $embed->setURL("");
+        $embed->setURL('');
         return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->addEmbed($embed));
     });
     
