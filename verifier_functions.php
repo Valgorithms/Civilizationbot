@@ -54,23 +54,32 @@ $verify_new = function (\Civ13\Civ13 $civ13, string $ckey, string $discord): boo
     
 };
 
-//a) They have completed the get-approved process.
-//b) They have been registered  for at least a current undisclosed period of time.
-//c) They have been active on the server (currently undisclosed period of time).
-//d) They have not received any bans on any of the Civ13.com servers. (NYI, not currently tracking bans for all time, only active bans)
-//e) They have not received any infractions in the Civ13 discord. (NYI)
+//a) They have completed the #get-approved process
+//b) They have been registered for a while (current undisclosed period of time)
+//c) They have been a regular player (have played for an undisclosed period of time)
+//d) They have not received any bans on any of the Civ13.com servers (Particully implemented, not currently tracking bans for all time, only active bans)
+//e) They are currently Civ13 discord server
+//f) They have not received any infractions in the Civ13 discord. (NYI)
+//g) They have been *recently* active on any of the Civ13.com servers (Determined by admin review)
 $promotable_check = function (\Civ13\Civ13 $civ13, string $identifier): bool
 {
     if (! $civ13->verified && ! $civ13->getVerified()) return false; //Unable to get info from DB
     if (! $bancheck = $civ13->functions['misc']['bancheck']) return false;
-    if (! $item = $civ13->verified->get('ss13', htmlspecialchars($identifier)) ?? $civ13->verified->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; //a, ckey and/or discord id exists in DB
+    if (! $item = $civ13->verified->get('ss13', htmlspecialchars($identifier)) ?? $civ13->verified->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; //a&e, ckey and/or discord id exists in DB and member is in the Discord server
     if (($item['seen_tdm'] + $item['seen_nomads'] + $item['seen_pers'])<100) return false; //b, 100 seen
     if (strtotime($item['create_time']) > strtotime('-1 year')) return false; //c, 1 year
     if ($bancheck($civ13, $item['ss13'])) return false; //d, must not have active ban
     return true;
 };
-
-$mass_promotion_loop = function (\Civ13\Civ13 $civ13) use ($promotable_check)
+$mass_promotion_check = function (\Civ13\Civ13 $civ13, $message) use ($promotable_check)
+{
+    if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
+    if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;
+    $promotables = [];
+    foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [(string) $member, $member->displayname, $civ13->verified->get('discord', $member->id)['ss13']];
+    return $promotables;
+};
+$mass_promotion_loop = function (\Civ13\Civ13 $civ13) use ($promotable_check) // Not implemented
 {
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
     if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;;
@@ -83,17 +92,7 @@ $mass_promotion_loop = function (\Civ13\Civ13 $civ13) use ($promotable_check)
     }
     return true;
 };
-
-$mass_promotion_check = function (\Civ13\Civ13 $civ13, $message) use ($promotable_check)
-{
-    if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
-    if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;
-    $promotables = [];
-    foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [(string) $member, $member->displayname, $civ13->verified->get('discord', $member->id)['ss13']];
-    return $promotables;
-};
-
-$mass_promotion_timer = function (\Civ13\Civ13 $civ13) use ($mass_promotion_loop)
+$mass_promotion_timer = function (\Civ13\Civ13 $civ13) use ($mass_promotion_loop) //Not implemented
 {
     $civ13->timers['mass_promotion_timer'] = $civ13->disacord->getLoop()->addPeriodicTimer(86400, function () use ($mass_promotion_loop) { $mass_promotion_loop; });
 };
