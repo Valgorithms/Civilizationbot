@@ -67,8 +67,10 @@ class Civ13
         $this->stats = $options['stats'];
         
         if (isset($options['filecache_path'])) {
-            if (is_string($options['filecache_path'])) $this->filecache_path = $options['filecache_path'];
-            else $this->filecache_path = getcwd() . '/json/';
+            if (is_string($options['filecache_path'])) {
+                if (! str_ends_with($options['filecache_path'], '/')) $options['filecache_path'] .= '/';
+                $this->filecache_path = $options['filecache_path'];
+            } else $this->filecache_path = getcwd() . '/json/';
         } else $this->filecache_path = getcwd() . '/json/';
         if (!file_exists($this->filecache_path)) mkdir($this->filecache_path, 0664, true);
         
