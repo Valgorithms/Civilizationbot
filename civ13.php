@@ -216,8 +216,8 @@ class Civ13
 
     public function getVerified(): \Discord\Helpers\Collection
     {
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return new \Discord\Helpers\Collection();
-        if (! $verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) return new \Discord\Helpers\Collection();
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return new \Discord\Helpers\Collection([], 'discord');
+        if (! $verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) return new \Discord\Helpers\Collection([], 'discord');
     
         return $this->verified = (new \Discord\Helpers\Collection($verified_array, 'discord'))->filter(function($v) use ($guild) {
             return $guild->members->has($v['discord']);
