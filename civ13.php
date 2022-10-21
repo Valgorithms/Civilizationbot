@@ -213,16 +213,15 @@ class Civ13
         if ($this->VarSave('discord_config.json', $discord_config)) $this->logger->info("Created new config for guild {$guild->name}");
         else $this->logger->warning("Failed top creat new config for guild {$guild->name}");
     }
-    
+
     public function getVerified(): \Discord\Helpers\Collection
     {
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return new \Discord\Helpers\Collection();
-        if (! $verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) return new \Discord\Helpers\Collection();
-        $verified = new \Discord\Helpers\Collection($verified_array, 'discord');
-        foreach ($verified as $v) {
-            if (! $guild->members->get('id', $v['discord'])) continue;
-            $verified->pull($v['discord']);
-        }
-        return $this->verified = $verified;
+        $collection = new \Discord\Helpers\Collection();
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $collection;
+        if (! $verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) return $collection;
+    
+        return $this->verified = (new \Discord\Helpers\Collection($verified_array, 'discord'))->filter(function($v) use ($guild) {
+            return $guild->members->has($v['discord']);
+        });
     }
 }
