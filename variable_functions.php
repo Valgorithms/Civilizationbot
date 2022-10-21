@@ -1246,7 +1246,7 @@ $ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($b
         if( ! $user = $civ13->discord->users->get('id', $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))['discord'])) $channel->sendMessage($fp);
         else {
             $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
-            $embed->setAuthor($user->displayname, $user->avatar);
+            $embed->setAuthor("{$user->displayname} ({$user->id}"), $user->avatar);
             $embed->setDescription($fp);
             $channel->sendEmbed($embed);
         }
