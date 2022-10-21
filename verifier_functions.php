@@ -43,16 +43,15 @@ $civ_listeners = function (\Civ13\Civ13 $civ13) use ($whitelist_update) //Handle
         if (! $member->roles->has($civ13->role_ids['veteran']) && $member_old->roles->has($civ13->role_ids['veteran'])) $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
         if ($member->roles->has($civ13->role_ids['infantry']) && ! $member_old->roles->has($civ13->role_ids['infantry'])) $civ13->getVerified();;
         if (! $member->roles->has($civ13->role_ids['infantry']) && $member_old->roles->has($civ13->role_ids['infantry'])) $civ13->getVerified();;
-        
     });
 };
 
 $verify_new = function (\Civ13\Civ13 $civ13, string $ckey, string $discord): bool
 {
-    if (! $browser_post = $civ13->functions['misc']['browser_post']) return false;
-    $browser_post($civ13, 'http://www.valzargaming.com/verified/', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey, 'discord' => $discord], true);
-    //Check result, then add to $civ13->verified cache
-    return true;
+    if (! $browser_call = $civ13->functions['misc']['browser_call']) return false;
+    if ($browser_call($civ13, 'http://www.valzargaming.com/verified/', 'POST', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey, 'discord' => $discord], true)) return true; //Check result, then add to $civ13->verified cache
+    return false;
+    
 };
 
 //a) They have completed the get-approved process.

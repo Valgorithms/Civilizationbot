@@ -110,28 +110,27 @@ $unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null)
     }
 };
 
-$browser_get = function (\Civ13\Civ13 $civ13, string $url, array $headers = [], $curl = false)
+$browser_call = function (\Civ13\Civ13 $civ13, string $url, string $method = 'GET', array $headers = [], array|string $data = [], $curl = true): \React\Promise\ExtendedPromiseInterface|string|false
 {
-    if ( ! $curl && $browser = $civ13->browser) return $browser->get($url, $headers);
+    if (! is_string($data)) $data = http_build_query($data);
     
-    $ch = curl_init(); //create curl resource
+    if ( ! $curl && $browser = $civ13->browser) return $browser->{$method}($url, $headers, $data);
+    
+    $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
-    $result = curl_exec($ch);
-    return $result; //string
-};
-$browser_post = function (\Civ13\Civ13 $civ13, string $url, array $headers = ['Content-Type' => 'application/x-www-form-urlencoded'], array $data = [], $curl = false)
-{
-    //Send a POST request to valzargaming.com:8081/discord2ckey/ with POST['id'] = $id
-    if ( ! $curl && $browser = $civ13->browser) return $browser->post($url, $headers, http_build_query($data));
-
-    $ch = curl_init(); //create curl resource
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    switch ($method) {
+        case 'GET':
+            break;
+        case 'POST':
+            curl_setopt($ch, CURLOPT_POST, TRUE);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+            break;
+        default:
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    }
     $result = curl_exec($ch);
     return $result;
 };
