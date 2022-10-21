@@ -1246,7 +1246,7 @@ $ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($b
         if( ! $user = $civ13->discord->users->get('id', $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))['discord'])) $channel->sendMessage($fp);
         else {
             $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
-            $embed->setAuthor("{$user->displayname} ({$user->id}"), $user->avatar);
+            $embed->setAuthor("{$user->displayname} {($user->id)}", $user->avatar);
             $embed->setDescription($fp);
             $channel->sendEmbed($embed);
         }
@@ -1312,11 +1312,12 @@ $ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($b
 };
 $timer_function = function (\Civ13\Civ13 $civ13) use ($ooc_relay)
 {
-    if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return $civ13->logger->warning('unable to get guild ' . $civ13->civ13_guild_id);
-    if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$ooc_relay($civ13, $civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
-    if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_admin_channel'])) $ooc_relay($civ13, $civ13->files['nomads_admin_path'], $channel);  // #ahelp-nomads
-    if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_ooc_channel'])) $ooc_relay($civ13, $civ13->files['tdm_ooc_path'], $channel);  // #ooc-tdm
-    if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $ooc_relay($civ13, $civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
+        if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) { 
+        if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$ooc_relay($civ13, $civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
+        if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_admin_channel'])) $ooc_relay($civ13, $civ13->files['nomads_admin_path'], $channel);  // #ahelp-nomads
+        if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_ooc_channel'])) $ooc_relay($civ13, $civ13->files['tdm_ooc_path'], $channel);  // #ooc-tdm
+        if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $ooc_relay($civ13, $civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
+    }
 };
 $on_ready = function (\Civ13\Civ13 $civ13) use ($timer_function): void
 {
