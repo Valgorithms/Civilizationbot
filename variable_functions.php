@@ -12,7 +12,7 @@
  *
 */
 
-$set_ips = function (\Civ13\Civ13 $civ13)
+$set_ips = function (\Civ13\Civ13 $civ13): void
 {
     $vzg_ip = gethostbyname('www.valzargaming.com');
     $external_ip = file_get_contents('http://ipecho.net/plain');
@@ -30,7 +30,7 @@ $set_ips = function (\Civ13\Civ13 $civ13)
     ];
 };
 
-$status_changer = function ($discord, $activity, $state = 'online') 
+$status_changer = function ($discord, $activity, $state = 'online'): void
 {
     $discord->updatePresence($activity, false, $state);
 };
@@ -40,16 +40,15 @@ $status_changer_random = function (\Civ13\Civ13 $civ13) use ($status_changer)
     if (! $status_array = file($civ13->files['status_path'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return $civ13->logger->warning('unable to open file ' . $civ13->files['status_path']);
     
     list($status, $type, $state) = explode('; ', $status_array[array_rand($status_array)]);
-    $type = (int) $type;
     if ($status) {
         $activity = new \Discord\Parts\User\Activity($civ13->discord, [ //Discord status            
             'name' => $status,
-            'type' => $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
+            'type' => (int) $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
         ]);
         $status_changer($civ13->discord, $activity, $state);
     }
 };
-$status_changer_timer = function (\Civ13\Civ13 $civ13) use ($status_changer_random)
+$status_changer_timer = function (\Civ13\Civ13 $civ13) use ($status_changer_random): void
 {
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
@@ -60,7 +59,7 @@ $status_changer_timer = function (\Civ13\Civ13 $civ13) use ($status_changer_rand
  *
  */
 
-$nomads_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
+$nomads_ban = function (\Civ13\Civ13 $civ13, $array, $message = null): string
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
@@ -75,7 +74,7 @@ $nomads_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
     $result .= '**' . $admin . '** banned **' . $array[0] . '** from **Nomads** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
     return $result;
 };
-$tdm_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
+$tdm_ban = function (\Civ13\Civ13 $civ13, $array, $message = null): string
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
@@ -90,14 +89,14 @@ $tdm_ban = function (\Civ13\Civ13 $civ13, $array, $message = null)
     $result .= '**' . $admin . '** banned **' . $array[0] . '** from **TDM** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
     return $result;
 };
-$ban = function (\Civ13\Civ13 $civ13, $array, $message = null) use ($nomads_ban, $tdm_ban)
+$ban = function (\Civ13\Civ13 $civ13, $array, $message = null) use ($nomads_ban, $tdm_ban): string
 {
     $result = '';
     $result .= $nomads_ban($civ13, $array, $message);
     $result .= $tdm_ban($civ13, $array, $message);
     return $result;
 };
-$unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null)
+$unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null): void
 {
     if (!$admin) $admin = $civ13->discord->user->displayname;
     if ($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
@@ -135,7 +134,7 @@ $browser_call = function (\Civ13\Civ13 $civ13, string $url, string $method = 'GE
     return $result;
 };
 
-$restart_nomads = function (\Civ13\Civ13 $civ13, $message = null) //Move message handling outside of function
+$restart_nomads = function (\Civ13\Civ13 $civ13, $message = null): void //Move message handling outside of function
 {
     \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
     if ($message !== null) $message->channel->sendMessage('Attempted to kill Civilization 13 Server.');
@@ -148,7 +147,7 @@ $restart_nomads = function (\Civ13\Civ13 $civ13, $message = null) //Move message
         \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
     });
 };
-$restart_tdm = function (\Civ13\Civ13 $civ13, $message = null) //Move message handling outside of function
+$restart_tdm = function (\Civ13\Civ13 $civ13, $message = null): void //Move message handling outside of function
 {
     \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
     if ($message !== null) $message->channel->sendMessage('Attempted to kill Civilization 13 TDM Server.');
@@ -161,17 +160,17 @@ $restart_tdm = function (\Civ13\Civ13 $civ13, $message = null) //Move message ha
         \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
     });
 };
-$nomads_mapswap = function (\Civ13\Civ13 $civ13, string $mapto, $message = null) //Move message handling outside of function
+$nomads_mapswap = function (\Civ13\Civ13 $civ13, string $mapto, $message = null): void //Move message handling outside of function
 {
     \execInBackground('python3 ' . $civ13->files['nomads_mapswap'] . " $mapto");
     if ($message !== null) $message->channel->sendMessage("Attempting to change map to $mapto");
 };
-$tdm_mapswap = function (\Civ13\Civ13 $civ13, string $mapto, $message = null) //Move message handling outside of function
+$tdm_mapswap = function (\Civ13\Civ13 $civ13, string $mapto, $message = null): void //Move message handling outside of function
 {
     \execInBackground('python3 ' . $civ13->files['tdm_mapswap'] . " $mapto");
     if ($message !== null) $message->channel->sendMessage("Attempting to change map to $mapto");
 };
-$mapswap = function (\Civ13\Civ13 $civ13, string $path, string $mapto)
+$mapswap = function (\Civ13\Civ13 $civ13, string $path, string $mapto): void
 {
     /*$process = spawnChildProcess("python3 $path $mapto");
     $process->on('exit', function($exitCode, $termSignal) use ($civ13) {
@@ -259,9 +258,9 @@ $recalculate_ranking = function (\Civ13\Civ13 $civ13)
     $sorted_list = array_reverse($ranking);
     if (! $search = fopen($civ13->files['ranking_path'], 'w')) return $civ13->logger->warning('Unable to access `' . $civ13->files['ranking_path'] . '`');
     foreach ($sorted_list as $i) fwrite($search, $i[0] . ';' . $i[1] . PHP_EOL);
-    return fclose ($search);
+    fclose ($search);
 };
-$ranking = function (\Civ13\Civ13 $civ13)
+$ranking = function (\Civ13\Civ13 $civ13): string
 {
     $line_array = array();
     if (! $search = fopen($civ13->files['ranking_path'], 'r')) return 'Unable to access `' . $civ13->files['ranking_path'] . '`';
@@ -279,7 +278,7 @@ $ranking = function (\Civ13\Civ13 $civ13)
     }
     return $msg;
 };
-$rankme = function (\Civ13\Civ13 $civ13, string $ckey)
+$rankme = function (\Civ13\Civ13 $civ13, string $ckey): string
 {
     $line_array = array();
     if (! $search = fopen($civ13->files['ranking_path'], 'r')) return 'Unable to access `' . $civ13->files['ranking_path'] . '`';
@@ -298,7 +297,7 @@ $rankme = function (\Civ13\Civ13 $civ13, string $ckey)
     if (!$found) return "No medals found for ckey `$ckey`.";
     return $result;
 };
-$medals = function (\Civ13\Civ13 $civ13, string $ckey)
+$medals = function (\Civ13\Civ13 $civ13, string $ckey): string
 {
     $result = '';
     if (!$search = fopen($civ13->files['tdm_awards_path'], 'r')) return 'Unable to access `' . $civ13->files['tdm_awards_path'] . '`';
@@ -338,7 +337,7 @@ $medals = function (\Civ13\Civ13 $civ13, string $ckey)
     if ($result != '') return $result;
     if (!$found && ($result == '')) return 'No medals found for this ckey.';
 };
-$brmedals = function (\Civ13\Civ13 $civ13, string $ckey)
+$brmedals = function (\Civ13\Civ13 $civ13, string $ckey): string
 {
     $result = '';
     $search = fopen($civ13->files['tdm_awards_br_path'], 'r');
@@ -355,12 +354,13 @@ $brmedals = function (\Civ13\Civ13 $civ13, string $ckey)
     if (!$found && ($result == '')) return 'No medals found for this ckey.';
 };
 
-$rank_check = function (\Civ13\Civ13 $civ13, $message, array $allowed_ranks)
+$rank_check = function (\Civ13\Civ13 $civ13, $message, array $allowed_ranks): bool
 {
     $resolved_ranks = [];
     foreach ($allowed_ranks as $rank) $resolved_ranks[] = $civ13->role_ids[$rank];
     foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
     $message->reply('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks) . '] rank.');
+    return false;
 };
 $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals)
 {
@@ -955,16 +955,15 @@ $bancheck = function (\Civ13\Civ13 $civ13, string $ckey): bool
     } else $civ13->logger->warning('unable to open ' . $civ13->files['tdm_bans']);
     return $return;
 };
-$bancheck_join = function (\Civ13\Civ13 $civ13, $member) use ($bancheck)
+$bancheck_join = function (\Civ13\Civ13 $civ13, $member) use ($bancheck): void
 {
-    if ($member->guild_id != $civ13->civ13_guild_id) return;    
-    if ($item = $civ13->verified->get('discord', $member->id)) if ($bancheck($civ13, $item['ss13'])) {
+    if ($member->guild_id == $civ13->civ13_guild_id) if ($item = $civ13->verified->get('discord', $member->id)) if ($bancheck($civ13, $item['ss13'])) {
         $civ13->discord->getLoop()->addTimer(10, function() use ($civ13, $member, $item) {
             $member->setRoles([$civ13['role_ids']['banished']], 'bancheck join ' . $item['ss13']);
         });
     }
 };
-$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, $restart_tdm, $restart_nomads, $nomads_mapswap, $tdm_mapswap, $ranking, $rankme, $medals, $brmedals)
+$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, $restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
 {
     //Declare commands
     
@@ -1227,7 +1226,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, 
     */
 };
 
-$ooc_relay = function (\Civ13\Civ13 $civ13, $guild, string $file_path, $channel) use ($ban)
+$ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($ban)
 {     
     if (! $file = fopen($file_path, 'r+')) return $civ13->logger->warning("unable to open `$file_path`");
     while (($fp = fgets($file, 4096)) !== false) {
@@ -1319,7 +1318,7 @@ $timer_function = function (\Civ13\Civ13 $civ13) use ($ooc_relay)
     if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_ooc_channel'])) $ooc_relay($civ13, $guild, $civ13->files['tdm_ooc_path'], $channel);  // #ooc-tdm
     if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $ooc_relay($civ13, $guild, $civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
 };
-$on_ready = function (\Civ13\Civ13 $civ13) use ($timer_function)
+$on_ready = function (\Civ13\Civ13 $civ13) use ($timer_function): void
 {
     $civ13->logger->info('logged in as ' . $civ13->discord->user->displayname . ' (' . $civ13->discord->id . ')');
     $civ13->logger->info('------');
