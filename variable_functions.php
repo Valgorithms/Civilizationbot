@@ -650,6 +650,11 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
         if ($banlog_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
     }
 
+    if (str_starts_with($message_content_lower, 'stop')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+        return $civ13->stop();
+    }
+
     if (str_starts_with($message_content_lower, 'ts')) {
         if (! $state = trim(substr($message_content_lower, strlen('ts')))) return $message->reply('Wrong format. Please try `ts on` or `ts off`.');
         if (! in_array($state, ['on', 'off'])) return $message->reply('Wrong format. Please try `ts on` or `ts off`.');
