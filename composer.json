@@ -14,7 +14,8 @@
         "wyrihaximus/react-cache-redis": "^4.2.0",
         "react/filesystem": "^0.2@dev",
         "react/async": "4.x-dev",
-        "react/child-process": "0.6.4"
+        "react/child-process": "0.6.4",
+        "vzgcoders/twitchphp": "dev-main"
     },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
