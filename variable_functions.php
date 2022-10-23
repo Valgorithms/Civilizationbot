@@ -1248,8 +1248,9 @@ $ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($b
                 $ban($civ13, [$ckey, '999 years', "Blacklisted word ($filtered), please appeal on our discord"]);
             }
         }
-        if( ! $user = $civ13->discord->users->get('id', $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))['discord'])) $channel->sendMessage($fp);
+        if (! $item = $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
         else {
+            $user = $civ13->discord->users->get('id', $item['discord']);
             $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
             $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
             $embed->setDescription($fp);

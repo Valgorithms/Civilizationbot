@@ -66,8 +66,8 @@ $promotable_check = function (\Civ13\Civ13 $civ13, string $identifier): bool
     if (! $civ13->verified && ! $civ13->getVerified()) return false; //Unable to get info from DB
     if (! $bancheck = $civ13->functions['misc']['bancheck']) return false;
     if (! $item = $civ13->verified->get('ss13', htmlspecialchars($identifier)) ?? $civ13->verified->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; //a&e, ckey and/or discord id exists in DB and member is in the Discord server
-    if (($item['seen_tdm'] + $item['seen_nomads'] + $item['seen_pers'])<100) return false; //b, 100 seen
-    if (strtotime($item['create_time']) > strtotime('-1 year')) return false; //c, 1 year
+    if (($item['seen_tdm'] + $item['seen_nomads'] + $item['seen_pers'])<100) return false; //c, 100 seen
+    if (strtotime($item['create_time']) > strtotime('-1 year')) return false; //b, 1 year
     if ($bancheck($civ13, $item['ss13'])) return false; //d, must not have active ban
     return true;
 };
