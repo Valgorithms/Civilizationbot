@@ -354,6 +354,42 @@ $brmedals = function (\Civ13\Civ13 $civ13, string $ckey): string
     if (!$found && ($result == '')) return 'No medals found for this ckey.';
 };
 
+$tests = function (\Civ13\Civ13 $civ13, $message, string $message_content)
+{
+    $tokens = explode(' ', $message_content);
+    if (!$tokens[0]) {
+        if (empty($civ13->tests)) return $message->reply("No tests have been created yet! Try creating one with `tests test_key add {Your Test's Question}`");
+        return $message->reply('Available tests: `' . implode('`, `', array_keys($civ13->tests)) . '`');
+    }
+    if (! isset($tokens[1]) || (! array_key_exists($test_key = $tokens[0], $civ13->tests) && $tokens[1] != 'add')) return $message->reply("Test `$test_key` hasn't been created yet! Please add a question first.");
+    if ($tokens[1] == 'list') return $message->reply(\Discord\Builders\MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($civ13->tests[$test_key], true)));
+    if ($tokens[1] == 'add') {
+        unset ($tokens[1], $tokens[0]);
+        $civ13->tests[$test_key][] = $question = implode(' ', $tokens);
+        $message->reply("Added question to test $test_key: $question");
+        return $civ13->VarSave('tests.json', $civ13->tests);
+    }
+    if ($tokens[1] == 'remove') {
+        if (! is_numeric($tokens[2])) return $message->replay("Invalid format! Please use the format `tests test_key remove #`");
+        if (! isset($civ13->tests[$test_key][$tokens[2]])) return $message->reply("Question not found in test $test_key! Please use the format `tests test_key remove #`");
+        $message->reply('Removed question ' . $tokens[2]  . ': '  . $civ13->tests[$test_key][$tokens[2]]);
+        unset($civ13->tests[$test_key][$tokens[2]]);
+        return $civ13->VarSave('tests.json', $civ13->tests);
+    }
+    if ($tokens[1] == 'post') {
+        if (! is_numeric($tokens[2])) return $message->replay("Invalid format! Please use the format `tests test_key post #`");
+        if (count($civ13->tests[$test_key])<$tokens[2]) return $message->replay("Can't return more questions than exist in a test!");
+        $questions = [];
+        while (count($questions)<$tokens[2]) if (! in_array($civ13->tests[$test_key][($rand = array_rand($civ13->tests[$test_key]))], $questions)) $questions[] = $civ13->tests[$test_key][$rand];
+        return $message->reply("$test_key test:" . PHP_EOL . implode(PHP_EOL, $questions));
+    }
+    if ($tokens[1] == 'delete') {
+        $message->reply("Deleted test `$test_key`");
+        unset($civ13->tests[$test_key]);
+        return $civ13->VarSave('tests.json', $civ13->tests);
+    }
+};
+
 $rank_check = function (\Civ13\Civ13 $civ13, $message, array $allowed_ranks): bool
 {
     $resolved_ranks = [];
@@ -362,9 +398,14 @@ $rank_check = function (\Civ13\Civ13 $civ13, $message, array $allowed_ranks): bo
     $message->reply('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks) . '] rank.');
     return false;
 };
-$guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals)
+$guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
+    
+    if (str_starts_with($message_content_lower, 'tests')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
+        return $tests($civ13, $message, trim(substr($message_content, strlen('tests'))));
+    }
     
     if (str_starts_with($message_content_lower, 'promotable')) {
         if (! $promotable_check = $civ13->functions['misc']['promotable_check']) return $message->react("🔥");

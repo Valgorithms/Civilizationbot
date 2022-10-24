@@ -41,6 +41,9 @@ class Civ13
     public $channel_ids = [];
     public $role_ids = [];
     
+    public $discord_config = [];
+    public $tests = [];
+    
     /**
      * Creates a Civ13 client instance.
      *
@@ -106,6 +109,10 @@ class Civ13
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
                 $this->discord_config = $discord_config;
                 register_shutdown_function([$this, "VarSave"], 'discord_config.json', $this->discord_config);
+                
+                if (! $tests = $this->VarLoad('tests.json')) $tests = [];
+                $this->tests = $tests;
+                register_shutdown_function([$this, "VarSave"], 'tests.json', $this->tests);
                 
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
