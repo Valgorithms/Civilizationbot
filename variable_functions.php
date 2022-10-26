@@ -758,7 +758,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message)
             while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
             if (count($insults_array) > 0) {
                 $insult = $insults_array[rand(0, count($insults_array)-1)];
-                return $message->channel->sendMessage("$incel, $insult");
+                return $message->channel->sendMessage(\Discord\Builders\MessageBuilder::new()->setContent("$incel, $insult")->setAllowedMentions(['parse'=>[]]));
             }
         }
         return;
