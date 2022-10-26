@@ -6,14 +6,17 @@
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */ 
 
-/*
- *
- * Ready Event
- *
-*/
+use \Civ13\Civ13;
+use \Discord\Builders\MessageBuilder;
+use \Discord\Parts\Embed\Embed;
+use \Discord\Parts\User\Activity;
+use \Discord\Parts\Interactions\Command\Command;
+use \Discord\Parts\Permissions\RolePermission;
+use \React\EventLoop\Timer\Timer;
+use \React\Promise\ExtendedPromiseInterface;
 
-$set_ips = function (\Civ13\Civ13 $civ13): void
-{
+$set_ips = function (Civ13 $civ13): void
+{ //on ready
     $vzg_ip = gethostbyname('www.valzargaming.com');
     $external_ip = file_get_contents('http://ipecho.net/plain');
     $civ13->ips = [
@@ -34,7 +37,7 @@ $status_changer = function ($discord, $activity, $state = 'online'): void
 {
     $discord->updatePresence($activity, false, $state);
 };
-$status_changer_random = function (\Civ13\Civ13 $civ13) use ($status_changer): bool
+$status_changer_random = function (Civ13 $civ13) use ($status_changer): bool
 {
     if (! $civ13->files['status_path']) {
         unset($civ13->timers['status_changer_timer']);
@@ -49,7 +52,7 @@ $status_changer_random = function (\Civ13\Civ13 $civ13) use ($status_changer): b
     
     list($status, $type, $state) = explode('; ', $status_array[array_rand($status_array)]);
     if ($status) {
-        $activity = new \Discord\Parts\User\Activity($civ13->discord, [ //Discord status            
+        $activity = new Activity($civ13->discord, [ //Discord status            
             'name' => $status,
             'type' => (int) $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
         ]);
@@ -57,18 +60,12 @@ $status_changer_random = function (\Civ13\Civ13 $civ13) use ($status_changer): b
     }
     return true;
 };
-$status_changer_timer = function (\Civ13\Civ13 $civ13) use ($status_changer_random): void
-{
+$status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
+{ //on ready
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-/*
- *
- * Message Event
- *
- */
-
-$nomads_ban = function (\Civ13\Civ13 $civ13, $array, $message = null): string
+$nomads_ban = function (Civ13 $civ13, $array, $message = null): string
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
@@ -83,7 +80,7 @@ $nomads_ban = function (\Civ13\Civ13 $civ13, $array, $message = null): string
     $result .= '**' . $admin . '** banned **' . $array[0] . '** from **Nomads** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
     return $result;
 };
-$tdm_ban = function (\Civ13\Civ13 $civ13, $array, $message = null): string
+$tdm_ban = function (Civ13 $civ13, $array, $message = null): string
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
@@ -92,11 +89,11 @@ $tdm_ban = function (\Civ13\Civ13 $civ13, $array, $message = null): string
     fclose($file);
     return "**$admin** banned **" . $array[0] . '** from **TDM** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
 };
-$ban = function (\Civ13\Civ13 $civ13, $array, $message = null) use ($nomads_ban, $tdm_ban): string
+$ban = function (Civ13 $civ13, $array, $message = null) use ($nomads_ban, $tdm_ban): string
 {
     return $nomads_ban($civ13, $array, $message) . $tdm_ban($civ13, $array, $message);
 };
-$unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null): void
+$unban = function (Civ13 $civ13, string $ckey, ?string $admin = null): void
 {
     if (!$admin) $admin = $civ13->discord->user->displayname;
     if ($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
@@ -109,7 +106,7 @@ $unban = function (\Civ13\Civ13 $civ13, string $ckey, ?string $admin = null): vo
     }
 };
 
-$browser_call = function (\Civ13\Civ13 $civ13, string $url, string $method = 'GET', array $headers = [], array|string $data = [], $curl = true): false|string|\React\Promise\ExtendedPromiseInterface
+$browser_call = function (Civ13 $civ13, string $url, string $method = 'GET', array $headers = [], array|string $data = [], $curl = true): false|string|ExtendedPromiseInterface
 {
     if (! is_string($data)) $data = http_build_query($data);
     if ( ! $curl && $browser = $civ13->browser) return $browser->{$method}($url, $headers, $data);
@@ -133,7 +130,7 @@ $browser_call = function (\Civ13\Civ13 $civ13, string $url, string $method = 'GE
     return $result;
 };
 
-$host_nomads = function (\Civ13\Civ13 $civ13): void
+$host_nomads = function (Civ13 $civ13): void
 {
     \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
     \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
@@ -142,16 +139,16 @@ $host_nomads = function (\Civ13\Civ13 $civ13): void
         \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads'] . ' -trusted -webclient -logself &');
     });
 };
-$kill_nomads = function (\Civ13\Civ13 $civ13): void
+$kill_nomads = function (Civ13 $civ13): void
 {
     \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
 };
-$restart_nomads = function (\Civ13\Civ13 $civ13) use ($kill_nomads, $host_nomads): void
+$restart_nomads = function (Civ13 $civ13) use ($kill_nomads, $host_nomads): void
 {
     $kill_nomads($civ13);
     $host_nomads($civ13);
 };
-$host_tdm = function (\Civ13\Civ13 $civ13): void
+$host_tdm = function (Civ13 $civ13): void
 {
     \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
     \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
@@ -160,16 +157,16 @@ $host_tdm = function (\Civ13\Civ13 $civ13): void
         \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm'] . ' -trusted -webclient -logself &');
     });
 };
-$kill_tdm = function (\Civ13\Civ13 $civ13): void
+$kill_tdm = function (Civ13 $civ13): void
 {
     \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
 };
-$restart_tdm = function (\Civ13\Civ13 $civ13) use ($kill_tdm, $host_tdm): void
+$restart_tdm = function (Civ13 $civ13) use ($kill_tdm, $host_tdm): void
 {
     $kill_tdm($civ13);
     $host_tdm($civ13);
 };
-$nomads_mapswap = function (\Civ13\Civ13 $civ13, string $mapto): bool
+$nomads_mapswap = function (Civ13 $civ13, string $mapto): bool
 {
     if (! $file = fopen($civ13->files['map_defines_path'], 'r')) return false;
     
@@ -184,7 +181,7 @@ $nomads_mapswap = function (\Civ13\Civ13 $civ13, string $mapto): bool
     \execInBackground('python3 ' . $civ13->files['nomads_mapswap'] . " $mapto");
     return true;
 };
-$tdm_mapswap = function (\Civ13\Civ13 $civ13, string $mapto): bool
+$tdm_mapswap = function (Civ13 $civ13, string $mapto): bool
 {
     if (! $file = fopen($civ13->files['map_defines_path'], 'r')) return false;
     
@@ -200,7 +197,7 @@ $tdm_mapswap = function (\Civ13\Civ13 $civ13, string $mapto): bool
     return true;
 };
 
-$filenav = function (\Civ13\Civ13 $civ13, string $basedir, array $subdirs) use (&$filenav): array
+$filenav = function (Civ13 $civ13, string $basedir, array $subdirs) use (&$filenav): array
 {
     $scandir = scandir($basedir);
     unset($scandir[1], $scandir[0]);
@@ -209,14 +206,14 @@ $filenav = function (\Civ13\Civ13 $civ13, string $basedir, array $subdirs) use (
     if (is_file("$basedir/$subdir")) return [true, "$basedir/$subdir"];
     return $filenav($civ13, "$basedir/$subdir", $subdirs);
 };
-$log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content) use ($filenav)
+$log_handler = function (Civ13 $civ13, $message, string $message_content) use ($filenav)
 {
     $tokens = explode(';', $message_content);
     if (!in_array($tokens[0], ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
     if (trim(strtolower($tokens[0])) == 'nomads') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
-        if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
+        if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
         if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
         return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
@@ -224,20 +221,20 @@ $log_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content)
     if (trim(strtolower($tokens[0])) == 'tdm') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['tdm_log_basedir'], $tokens);
-        if ($results[0]) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($results[1], 'log.txt'));
+        if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
         if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
         return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
 };
-$banlog_handler = function (\Civ13\Civ13 $civ13, $message, string $message_content_lower)
+$banlog_handler = function (Civ13 $civ13, $message, string $message_content_lower)
 {
     if (!in_array($message_content_lower, ['nomads', 'tdm'])) return $message->reply('Please use the format `bans nomads` or `bans tdm');
-    if ($message_content_lower == 'nomads') return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['nomads_bans'], 'bans.txt'));
-    if ($message_content_lower == 'tdm') return $message->reply(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
+    if ($message_content_lower == 'nomads') return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_bans'], 'bans.txt'));
+    if ($message_content_lower == 'tdm') return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
 };
 
-$recalculate_ranking = function (\Civ13\Civ13 $civ13): bool
+$recalculate_ranking = function (Civ13 $civ13): bool
 {
     $ranking = array();
     $ckeylist = array();
@@ -278,7 +275,7 @@ $recalculate_ranking = function (\Civ13\Civ13 $civ13): bool
     fclose ($search);
     return true;
 };
-$ranking = function (\Civ13\Civ13 $civ13): false|string
+$ranking = function (Civ13 $civ13): false|string
 {
     $line_array = array();
     if (! $search = fopen($civ13->files['ranking_path'], 'r')) return false;
@@ -296,7 +293,7 @@ $ranking = function (\Civ13\Civ13 $civ13): false|string
     }
     return $msg;
 };
-$rankme = function (\Civ13\Civ13 $civ13, string $ckey): false|string
+$rankme = function (Civ13 $civ13, string $ckey): false|string
 {
     $line_array = array();
     if (! $search = fopen($civ13->files['ranking_path'], 'r')) return false;
@@ -315,7 +312,7 @@ $rankme = function (\Civ13\Civ13 $civ13, string $ckey): false|string
     if (!$found) return "No medals found for ckey `$ckey`.";
     return $result;
 };
-$medals = function (\Civ13\Civ13 $civ13, string $ckey): false|string
+$medals = function (Civ13 $civ13, string $ckey): false|string
 {
     $result = '';
     if (!$search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
@@ -355,7 +352,7 @@ $medals = function (\Civ13\Civ13 $civ13, string $ckey): false|string
     if ($result != '') return $result;
     if (!$found && ($result == '')) return 'No medals found for this ckey.';
 };
-$brmedals = function (\Civ13\Civ13 $civ13, string $ckey): string
+$brmedals = function (Civ13 $civ13, string $ckey): string
 {
     $result = '';
     $search = fopen($civ13->files['tdm_awards_br_path'], 'r');
@@ -372,7 +369,7 @@ $brmedals = function (\Civ13\Civ13 $civ13, string $ckey): string
     if (!$found && ($result == '')) return 'No medals found for this ckey.';
 };
 
-$tests = function (\Civ13\Civ13 $civ13, $message, string $message_content)
+$tests = function (Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(' ', $message_content);
     if (!$tokens[0]) {
@@ -380,7 +377,7 @@ $tests = function (\Civ13\Civ13 $civ13, $message, string $message_content)
         return $message->reply('Available tests: `' . implode('`, `', array_keys($civ13->tests)) . '`');
     }
     if (! isset($tokens[1]) || (! array_key_exists($test_key = $tokens[0], $civ13->tests) && $tokens[1] != 'add')) return $message->reply("Test `$test_key` hasn't been created yet! Please add a question first.");
-    if ($tokens[1] == 'list') return $message->reply(\Discord\Builders\MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($civ13->tests[$test_key], true)));
+    if ($tokens[1] == 'list') return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($civ13->tests[$test_key], true)));
     if ($tokens[1] == 'add') {
         unset ($tokens[1], $tokens[0]);
         $civ13->tests[$test_key][] = $question = implode(' ', $tokens);
@@ -408,7 +405,7 @@ $tests = function (\Civ13\Civ13 $civ13, $message, string $message_content)
     }
 };
 
-$rank_check = function (\Civ13\Civ13 $civ13, $message, array $allowed_ranks): bool
+$rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
 {
     $resolved_ranks = [];
     foreach ($allowed_ranks as $rank) $resolved_ranks[] = $civ13->role_ids[$rank];
@@ -416,7 +413,7 @@ $rank_check = function (\Civ13\Civ13 $civ13, $message, array $allowed_ranks): bo
     $message->reply('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks) . '] rank.');
     return false;
 };
-$guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $kill_nomads, $kill_tdm, $hostnomads, $hosttdm, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $kill_nomads, $kill_tdm, $hostnomads, $hosttdm, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -442,7 +439,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     if (str_starts_with($message_content_lower, 'mass_promotion_check')) {
         if (! $mass_promotion_loop = $civ13->functions['misc']['mass_promotion_check']) return $message->react("🔥");
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
-        if ($promotables = $mass_promotion_loop($civ13, $message)) return $message->reply(\Discord\Builders\MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));;
+        if ($promotables = $mass_promotion_loop($civ13, $message)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));;
         return $message->react("👎");
     }
     
@@ -617,7 +614,7 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     }
     if (str_starts_with($message_content_lower, 'banlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        return $message->channel->reply(\Discord\Builders\MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
+        return $message->channel->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
     }
     if (str_starts_with($message_content_lower, 'logs')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -673,50 +670,50 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     
 };
 
-$nomads_discord2ooc = function (\Civ13\Civ13 $civ13, $author, $string): bool
+$nomads_discord2ooc = function (Civ13 $civ13, $author, $string): bool
 {
     if (! $file = fopen($civ13->files['nomads_discord2ooc'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true; 
 };
-$tdm_discord2ooc = function (\Civ13\Civ13 $civ13, $author, $string): bool
+$tdm_discord2ooc = function (Civ13 $civ13, $author, $string): bool
 {
     if (! $file = fopen($civ13->files['tdm_discord2ooc'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true; 
 };
-$nomads_discord2admin = function (\Civ13\Civ13 $civ13, $author, $string): bool
+$nomads_discord2admin = function (Civ13 $civ13, $author, $string): bool
 {
     if (! $file = fopen($civ13->files['nomads_discord2admin'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
-$tdm_discord2admin = function (\Civ13\Civ13 $civ13, $author, $string): bool
+$tdm_discord2admin = function (Civ13 $civ13, $author, $string): bool
 {
     if (! $file = fopen($civ13->files['tdm_discord2admin'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
-$nomads_discord2dm = function (\Civ13\Civ13 $civ13, $author, $string): bool
+$nomads_discord2dm = function (Civ13 $civ13, $author, $string): bool
 {
     if (! $file = fopen($civ13->files['nomads_discord2dm'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
-$tdm_discord2dm = function (\Civ13\Civ13 $civ13, $author, $string): bool
+$tdm_discord2dm = function (Civ13 $civ13, $author, $string): bool
 {
     if (! $file = fopen($civ13->files['tdm_discord2dm'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
-$on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm)
-{
+$on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm)
+{ // on message
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
     
@@ -785,7 +782,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $nom
             while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
             if (count($insults_array) > 0) {
                 $insult = $insults_array[rand(0, count($insults_array)-1)];
-                return $message->channel->sendMessage(\Discord\Builders\MessageBuilder::new()->setContent("$incel, $insult")->setAllowedMentions(['parse'=>[]]));
+                return $message->channel->sendMessage(MessageBuilder::new()->setContent("$incel, $insult")->setAllowedMentions(['parse'=>[]]));
             }
         }
         return;
@@ -864,7 +861,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $nom
         return;
     }
     if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
-        $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
+        $embed = new Embed($civ13->discord);
         $_1714 = !\portIsAvailable(1714);
         $server_is_up = $_1714;
         if (!$server_is_up) {
@@ -932,7 +929,7 @@ $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $nom
     }
 };
 
-$bancheck = function (\Civ13\Civ13 $civ13, string $ckey): bool
+$bancheck = function (Civ13 $civ13, string $ckey): bool
 {
     $return = false;
     if ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r')) {
@@ -953,7 +950,7 @@ $bancheck = function (\Civ13\Civ13 $civ13, string $ckey): bool
     } else $civ13->logger->warning('unable to open ' . $civ13->files['tdm_bans']);
     return $return;
 };
-$bancheck_join = function (\Civ13\Civ13 $civ13, $member) use ($bancheck): void
+$bancheck_join = function (Civ13 $civ13, $member) use ($bancheck): void
 { //on GUILD_MEMBER_ADD
     if ($member->guild_id == $civ13->civ13_guild_id) if ($item = $civ13->verified->get('discord', $member->id)) if ($bancheck($civ13, $item['ss13'])) {
         $civ13->discord->getLoop()->addTimer(30, function() use ($civ13, $member, $item) {
@@ -961,144 +958,144 @@ $bancheck_join = function (\Civ13\Civ13 $civ13, $member) use ($bancheck): void
         });
     }
 };
-$slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, $restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
-{ //on ready
+$slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
+{ //ready_slash
     //if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
-    if (!$commands->get('name', 'ping')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (!$commands->get('name', 'ping')) $commands->save(new Command($civ13->discord, [
             'name' => 'ping',
             'description' => 'Replies with Pong!',
     ]));
     
     //if ($command = $commands->get('name', 'restart')) $commands->delete($command->id);
-    if (!$commands->get('name', 'restart')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (!$commands->get('name', 'restart')) $commands->save(new Command($civ13->discord, [
             'name' => 'restart',
             'description' => 'Restart the bot',
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
+            'default_member_permissions' => (string) new RolePermission($civ13->discord, ['view_audit_log' => true]),
     ]));
     
     //if ($command = $commands->get('name', 'pull')) $commands->delete($command->id);
-    if (!$commands->get('name', 'pull')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (!$commands->get('name', 'pull')) $commands->save(new Command($civ13->discord, [
             'name' => 'pull',
-            'description' => 'Update the bot\'s code',
+            'description' => "Update the bot's code",
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
+            'default_member_permissions' => (string) new RolePermission($civ13->discord, ['view_audit_log' => true]),
     ]));
     
     //if ($command = $commands->get('name', 'update')) $commands->delete($command->id);
-    if (!$commands->get('name', 'update')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (!$commands->get('name', 'update')) $commands->save(new Command($civ13->discord, [
             'name' => 'update',
-            'description' => 'Update the bot\'s dependencies',
+            'description' => "Update the bot's dependencies",
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
+            'default_member_permissions' => (string) new RolePermission($civ13->discord, ['view_audit_log' => true]),
     ]));
 
     //if ($command = $commands->get('name', 'stats')) $commands->delete($command->id);
-    if (!$commands->get('name', 'stats')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (!$commands->get('name', 'stats')) $commands->save(new Command($civ13->discord, [
         'name' => 'stats',
         'description' => 'Get runtime information about the bot',
         'dm_permission' => false,
-        'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
+        'default_member_permissions' => (string) new RolePermission($civ13->discord, ['moderate_members' => true]),
     ]));
     
     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
-    if (!$commands->get('name', 'invite')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (!$commands->get('name', 'invite')) $commands->save(new Command($civ13->discord, [
             'name' => 'invite',
             'description' => 'Bot invite link',
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['manage_guild' => true]),
+            'default_member_permissions' => (string) new RolePermission($civ13->discord, ['manage_guild' => true]),
     ]));
     
     //if ($command = $commands->get('name', 'players')) $commands->delete($command->id);
-    if (! $commands->get('name', 'players')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (! $commands->get('name', 'players')) $commands->save(new Command($civ13->discord, [
         'name' => 'players',
         'description' => 'Show Space Station 13 server information'
     ]));
     
     //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
-    if (!$commands->get('name', 'ckey')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+    if (!$commands->get('name', 'ckey')) $commands->save(new Command($civ13->discord, [
+        'type' => Command::USER,
         'name' => 'ckey',
         'dm_permission' => false,
-        'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
+        'default_member_permissions' => (string) new RolePermission($civ13->discord, ['moderate_members' => true]),
     ]));
     
      //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
-    if (!$commands->get('name', 'bancheck')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+    if (!$commands->get('name', 'bancheck')) $commands->save(new Command($civ13->discord, [
+        'type' => Command::USER,
         'name' => 'bancheck',
         'dm_permission' => false,
-        'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
+        'default_member_permissions' => (string) new RolePermission($civ13->discord, ['moderate_members' => true]),
     ]));
     
     //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
-    if (! $commands->get('name', 'ranking')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (! $commands->get('name', 'ranking')) $commands->save(new Command($civ13->discord, [
         'name' => 'ranking',
         'description' => 'See the ranks of the top players on the Civ13 server'
     ]));
     
     //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
-    if (! $commands->get('name', 'rankme')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
+    if (! $commands->get('name', 'rankme')) $commands->save(new Command($civ13->discord, [
         'name' => 'rankme',
         'description' => 'See your ranking on the Civ13 server'
     ]));
     
     //if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
-    if (!$commands->get('name', 'rank')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+    if (!$commands->get('name', 'rank')) $commands->save(new Command($civ13->discord, [
+        'type' => Command::USER,
         'name' => 'rank',
         'dm_permission' => false,
     ]));
     
     //if ($command = $commands->get('name', 'medals')) $commands->delete($command->id);
-    if (!$commands->get('name', 'medals')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+    if (!$commands->get('name', 'medals')) $commands->save(new Command($civ13->discord, [
+        'type' => Command::USER,
         'name' => 'medals',
         'dm_permission' => false,
     ]));
     
     //if ($command = $commands->get('name', 'brmedals')) $commands->delete($command->id);
-    if (!$commands->get('name', 'brmedals')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-        'type' => \Discord\Parts\Interactions\Command\Command::USER,
+    if (!$commands->get('name', 'brmedals')) $commands->save(new Command($civ13->discord, [
+        'type' => Command::USER,
         'name' => 'brmedals',
         'dm_permission' => false,
     ]));
     
     $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->commands->freshen()->done( function ($commands) use ($civ13) {
         //if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
-        if (!$commands->get('name', 'unban')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-            'type' => \Discord\Parts\Interactions\Command\Command::USER,
+        if (!$commands->get('name', 'unban')) $commands->save(new Command($civ13->discord, [
+            'type' => Command::USER,
             'name' => 'unban',
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['moderate_members' => true]),
+            'default_member_permissions' => (string) new RolePermission($civ13->discord, ['moderate_members' => true]),
         ]));
         
         //if ($command = $commands->get('name', 'restart_nomads')) $commands->delete($command->id);
-        if (!$commands->get('name', 'restart_nomads')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
+        if (!$commands->get('name', 'restart_nomads')) $commands->save(new Command($civ13->discord, [
+            'type' => Command::CHAT_INPUT,
             'name' => 'restart_nomads',
             'description' => 'Restart the Nomads server',
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
+            'default_member_permissions' => (string) new RolePermission($civ13->discord, ['view_audit_log' => true]),
         ]));
         
         //if ($command = $commands->get('name', 'restart tdm')) $commands->delete($command->id);
-        if (!$commands->get('name', 'restart_tdm')) $commands->save(new \Discord\Parts\Interactions\Command\Command($civ13->discord, [
-            'type' => \Discord\Parts\Interactions\Command\Command::CHAT_INPUT,
+        if (!$commands->get('name', 'restart_tdm')) $commands->save(new Command($civ13->discord, [
+            'type' => Command::CHAT_INPUT,
             'name' => 'restart_tdm',
             'description' => 'Restart the TDM server',
             'dm_permission' => false,
-            'default_member_permissions' => (string) new \Discord\Parts\Permissions\RolePermission($civ13->discord, ['view_audit_log' => true]),
+            'default_member_permissions' => (string) new RolePermission($civ13->discord, ['view_audit_log' => true]),
         ]));
     });
     
     $civ13->discord->listenCommand('ping', function ($interaction) use ($civ13) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Pong!'));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
     });
     
     $civ13->discord->listenCommand('restart', function ($interaction) use ($civ13) {
         $civ13->logger->info('[RESTART]');
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Restarting...'));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Restarting...'));
         $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
             \restart();
             $civ13->discord->close();
@@ -1108,21 +1105,21 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, 
     $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13) {
         $civ13->logger->info('[GIT PULL]');
         \execInBackground('git pull');
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Updating code from GitHub...'));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating code from GitHub...'));
     });
     
     $civ13->discord->listenCommand('update', function ($interaction) use ($civ13) {
         $civ13->logger->info('[COMPOSER UPDATE]');
         \execInBackground('composer update');
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Updating dependencies...'));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
     });
     
     $civ13->discord->listenCommand('stats', function ($interaction) use ($civ13) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($civ13->stats->handleInteraction($interaction)));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($civ13->stats->handleInteraction($interaction)));
     });
     
     $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')), true);
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')), true);
     });
     
     $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
@@ -1132,7 +1129,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, 
         $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => '<byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['persistence'] . '>'];
         $server_info[3] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => '<byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['bc'] . '>'];
         
-        $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
+        $embed = new Embed($civ13->discord);
         foreach ($data_json as $server) {
             $server_info_hard = array_shift($server_info);
             if (array_key_exists('ERROR', $server)) continue;
@@ -1162,52 +1159,52 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, 
         $embed->setColor(0xe1452d);
         $embed->setTimestamp();
         $embed->setURL('');
-        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->addEmbed($embed));
+        return $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed));
     });
     
     $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13) {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to " . $item['ss13']), true);
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to " . $item['ss13']), true);
     });
     $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $bancheck) {
-    if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        if ($bancheck($civ13, $item['ss13'])) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("`{$item['ss13']}` is currently banned on one of the Civ13.com servers."), true);
-        return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("`{$item['ss13']}` is not currently banned on one of the Civ13.com servers."), true);
+    if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        if ($bancheck($civ13, $item['ss13'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$item['ss13']}` is currently banned on one of the Civ13.com servers."), true);
+        return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$item['ss13']}` is not currently banned on one of the Civ13.com servers."), true);
     });
     
     $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $unban) {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("**{$interaction->user->displayname}** unbanned **`{$item['ss13']}`**."));
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent("**{$interaction->user->displayname}** unbanned **`{$item['ss13']}`**."));
         $unban($civ13, $item['ss13'], $interaction->user->displayname);
     });
     
     $civ13->discord->listenCommand('restart_nomads', function ($interaction) use ($civ13, $restart_nomads) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to kill, update, and bring up Nomads <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Attempted to kill, update, and bring up Nomads <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
         $restart_nomads($civ13);
     });
     $civ13->discord->listenCommand('restart_tdm', function ($interaction) use ($civ13, $restart_tdm) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent('Attempted to kill, update, and bring up TDM <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Attempted to kill, update, and bring up TDM <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
         $restart_tdm($civ13);
     });
     
     $civ13->discord->listenCommand('ranking', function ($interaction) use ($civ13, $ranking) {
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($ranking($civ13)), true);
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking($civ13)), true);
     });
     $civ13->discord->listenCommand('rankme', function ($interaction) use ($civ13, $rankme) {
-        if (! $item = $civ13->verified->get('discord', $interaction->member->id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
+        if (! $item = $civ13->verified->get('discord', $interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
     });
     $civ13->discord->listenCommand('rank', function ($interaction) use ($civ13, $rankme) {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
     });
     $civ13->discord->listenCommand('medals', function ($interaction) use ($civ13, $medals) {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($medals($civ13, $item['ss13'])), true);
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent($medals($civ13, $item['ss13'])), true);
     });
     $civ13->discord->listenCommand('brmedals', function ($interaction) use ($civ13, $brmedals) {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        $interaction->respondWithMessage(\Discord\Builders\MessageBuilder::new()->setContent($brmedals($civ13, $item['ss13'])), true);
+        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent($brmedals($civ13, $item['ss13'])), true);
     });
     /*For deferred interactions
     $civ13->discord->listenCommand('',  function (Interaction $interaction) use ($civ13) {
@@ -1222,7 +1219,7 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, 
     */
 };
 
-$ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($ban): bool
+$ooc_relay = function (Civ13 $civ13, string $file_path, $channel) use ($ban): bool
 {     
     if (! $file = fopen($file_path, 'r+')) return false;
     while (($fp = fgets($file, 4096)) !== false) {
@@ -1242,7 +1239,7 @@ $ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($b
         if (! $item = $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
         else {
             $user = $civ13->discord->users->get('id', $item['discord']);
-            $embed = new \Discord\Parts\Embed\Embed($civ13->discord);
+            $embed = new Embed($civ13->discord);
             $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
             $embed->setDescription($fp);
             $channel->sendEmbed($embed);
@@ -1252,7 +1249,7 @@ $ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($b
     fclose($file);
     return true;
 };
-$timer_function = function (\Civ13\Civ13 $civ13) use ($ooc_relay): void
+$timer_function = function (Civ13 $civ13) use ($ooc_relay): void
 {
         if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) { 
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$ooc_relay($civ13, $civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
@@ -1261,12 +1258,12 @@ $timer_function = function (\Civ13\Civ13 $civ13) use ($ooc_relay): void
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $ooc_relay($civ13, $civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
     }
 };
-$on_ready = function (\Civ13\Civ13 $civ13) use ($timer_function): void
+$on_ready = function (Civ13 $civ13) use ($timer_function): void
 {
     $civ13->logger->info("logged in as {$civ13->discord->user->displayname} ({$civ13->discord->id})");
     $civ13->logger->info('------');
     
-    if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof React\EventLoop\Timer\Timer) ) {
+    if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof Timer) ) {
         $civ13->logger->info('chat relay timer started');
         $civ13->timers['relay_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(10, function() use ($timer_function, $civ13) { $timer_function($civ13); });
     }
