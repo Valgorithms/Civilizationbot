@@ -20,7 +20,7 @@ $whitelist_update = function (Civ13 $civ13, array $whitelists): bool
 };
 
 $civ_listeners = function (Civ13 $civ13) use ($whitelist_update): void //Handles Verified and Veteran cache and lists lists
-{
+{ //on ready
     $civ13->discord->on('message', function ($message) use ($civ13) {
         if ($message->channel_id == $civ13->verifier_feed_channel_id) return $civ13->getVerified();
     });

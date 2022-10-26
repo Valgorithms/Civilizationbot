@@ -38,7 +38,7 @@ $status_changer = function ($discord, $activity, $state = 'online'): void
     $discord->updatePresence($activity, false, $state);
 };
 $status_changer_random = function (Civ13 $civ13) use ($status_changer): bool
-{
+{ //on ready
     if (! $civ13->files['status_path']) {
         unset($civ13->timers['status_changer_timer']);
         $civ13->logger->warning('status_path is not defined');
@@ -1259,7 +1259,7 @@ $timer_function = function (Civ13 $civ13) use ($ooc_relay): void
     }
 };
 $on_ready = function (Civ13 $civ13) use ($timer_function): void
-{
+{//on ready
     $civ13->logger->info("logged in as {$civ13->discord->user->displayname} ({$civ13->discord->id})");
     $civ13->logger->info('------');
     
