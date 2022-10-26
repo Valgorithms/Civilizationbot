@@ -6,6 +6,17 @@
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
+use \Civ13\Civ13;
+use \Discord\Discord;
+use \React\EventLoop\Loop;
+use \WyriHaximus\React\Cache\Redis as RedisCache;
+use \Clue\React\Redis\Factory as Redis;
+use \React\Filesystem\Factory as Filesystem;
+use \Monolog\Logger;
+use \Monolog\Handler\StreamHandler;
+use \Discord\WebSockets\Intents;
+use \React\Http\Browser;
+
 set_time_limit(0);
 ignore_user_abort(1);
 ini_set('max_execution_time', 0);
@@ -14,11 +25,11 @@ define('MAIN_INCLUDED', 1); //Token and SQL credential files may be protected lo
 require getcwd(). '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
-$loop = \React\EventLoop\Loop::get();
-$redis = new \WyriHaximus\React\Cache\Redis((new Clue\React\Redis\Factory($loop))->createLazyClient('127.0.0.1:6379'), 'dphp:cache:'); // prefix is "dphp:cache"
-$logger = new \Monolog\Logger('New logger');
-$logger->pushHandler(new \Monolog\Handler\StreamHandler('php://stdout'));
-$discord = new \Discord\Discord([
+$loop = Loop::get();
+$redis = new RedisCache((new Redis($loop))->createLazyClient('127.0.0.1:6379'), 'dphp:cache:'); // prefix is "dphp:cache"
+$logger = new Logger('New logger');
+$logger->pushHandler(new StreamHandler('php://stdout'));
+$discord = new Discord([
     'loop' => $loop,
     'logger' => $logger,
     'cacheInterface' => $redis,
@@ -29,13 +40,13 @@ $discord = new \Discord\Discord([
     'token' => $token,
     'loadAllMembers' => true,
     'storeMessages' => true, //Because why not?
-    'intents' => \Discord\WebSockets\Intents::getDefaultIntents() | \Discord\WebSockets\Intents::GUILD_MEMBERS | \Discord\WebSockets\Intents::MESSAGE_CONTENT,
+    'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::MESSAGE_CONTENT,
 ]);
 include 'stats_object.php'; 
 $stats = new Stats();
 $stats->init($discord);
-$browser = new \React\Http\Browser($loop);
-$filesystem = \React\Filesystem\Factory::create($loop);
+$browser = new Browser($loop);
+$filesystem = Filesystem::create($loop);
 include 'functions.php'; //execInBackground(), portIsAvailable()
 include 'variable_functions.php';
 include 'verifier_functions.php';
@@ -163,6 +174,6 @@ $options = array(
     ),
 );
 if (include 'civ_token.php') $options['civ_token'] = $civ_token;
-$civ13 = new Civ13\Civ13($options);
+$civ13 = new Civ13($options);
 include 'webapi.php'; //$socket, $webapi, webapiFail(), webapiSnow();
 $civ13->run();

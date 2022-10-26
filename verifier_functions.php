@@ -1,5 +1,5 @@
 <?php
-use \Civ13\Civ13\
+use \Civ13\Civ13;
 use \Discord\Discord;
 use \Discord\Parts\User\Member;
 
