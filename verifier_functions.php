@@ -1,6 +1,9 @@
 <?php
+use \Civ13\Civ13\
+use \Discord\Discord;
+use \Discord\Parts\User\Member;
 
-$whitelist_update = function (\Civ13\Civ13 $civ13, array $whitelists): bool
+$whitelist_update = function (Civ13 $civ13, array $whitelists): bool
 {
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
     foreach ($whitelists as $whitelist) {
@@ -16,13 +19,13 @@ $whitelist_update = function (\Civ13\Civ13 $civ13, array $whitelists): bool
     return true;
 };
 
-$civ_listeners = function (\Civ13\Civ13 $civ13) use ($whitelist_update): void //Handles Verified and Veteran cache and lists lists
+$civ_listeners = function (Civ13 $civ13) use ($whitelist_update): void //Handles Verified and Veteran cache and lists lists
 {
     $civ13->discord->on('message', function ($message) use ($civ13) {
         if ($message->channel_id == $civ13->verifier_feed_channel_id) return $civ13->getVerified();
     });
     
-    $civ13->discord->on('GUILD_MEMBER_ADD', function (\Discord\Parts\User\Member $member) use ($civ13): void
+    $civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) use ($civ13): void
     {
         $civ13->timers["add_{$member->id}"] = $civ13->discord->getLoop()->addTimer(8640, function() use ($civ13, $member) { //Kick member if they have not verified
             if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return;
@@ -32,12 +35,12 @@ $civ_listeners = function (\Civ13\Civ13 $civ13) use ($whitelist_update): void //
         });
     });
     
-    $civ13->discord->on('GUILD_MEMBER_REMOVE', function (\Discord\Parts\User\Member $member) use ($civ13, $whitelist_update): void
+    $civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member) use ($civ13, $whitelist_update): void
     {
          if ($member->roles->has($civ13->role_ids['veteran'])) $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
     });
     
-    $civ13->discord->on('GUILD_MEMBER_UPDATE', function (\Discord\Parts\User\Member $member, \Discord\Discord $discord, ?\Discord\Parts\User\Member $member_old) use ($civ13, $whitelist_update): void
+    $civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old) use ($civ13, $whitelist_update): void
     {
         if ($member->roles->has($civ13->role_ids['veteran']) && ! $member_old->roles->has($civ13->role_ids['veteran'])) $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
         if (! $member->roles->has($civ13->role_ids['veteran']) && $member_old->roles->has($civ13->role_ids['veteran'])) $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
@@ -46,7 +49,7 @@ $civ_listeners = function (\Civ13\Civ13 $civ13) use ($whitelist_update): void //
     });
 };
 
-$verify_new = function (\Civ13\Civ13 $civ13, string $ckey, string $discord): bool
+$verify_new = function (Civ13 $civ13, string $ckey, string $discord): bool
 {
     if (! $browser_call = $civ13->functions['misc']['browser_call']) return false;
     if ($browser_call($civ13, 'http://www.valzargaming.com/verified/', 'POST', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey, 'discord' => $discord], true)) return true; //Check result, then add to $civ13->verified cache
@@ -61,7 +64,7 @@ $verify_new = function (\Civ13\Civ13 $civ13, string $ckey, string $discord): boo
 //e) They are currently Civ13 discord server
 //f) They have not received any infractions in the Civ13 discord. (NYI)
 //g) They have been *recently* active on any of the Civ13.com servers (Determined by admin review)
-$promotable_check = function (\Civ13\Civ13 $civ13, string $identifier): bool
+$promotable_check = function (Civ13 $civ13, string $identifier): bool
 {
     if (! $civ13->verified && ! $civ13->getVerified()) return false; //Unable to get info from DB
     if (! $bancheck = $civ13->functions['misc']['bancheck']) return false;
@@ -71,7 +74,7 @@ $promotable_check = function (\Civ13\Civ13 $civ13, string $identifier): bool
     if ($bancheck($civ13, $item['ss13'])) return false; //d, must not have active ban
     return true;
 };
-$mass_promotion_check = function (\Civ13\Civ13 $civ13, $message) use ($promotable_check): array|false
+$mass_promotion_check = function (Civ13 $civ13, $message) use ($promotable_check): array|false
 {
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
     if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;
@@ -79,7 +82,7 @@ $mass_promotion_check = function (\Civ13\Civ13 $civ13, $message) use ($promotabl
     foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [(string) $member, $member->displayname, $civ13->verified->get('discord', $member->id)['ss13']];
     return $promotables;
 };
-$mass_promotion_loop = function (\Civ13\Civ13 $civ13) use ($promotable_check): bool // Not implemented
+$mass_promotion_loop = function (Civ13 $civ13) use ($promotable_check): bool // Not implemented
 {
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
     if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;;
@@ -92,7 +95,7 @@ $mass_promotion_loop = function (\Civ13\Civ13 $civ13) use ($promotable_check): b
     }
     return true;
 };
-$mass_promotion_timer = function (\Civ13\Civ13 $civ13) use ($mass_promotion_loop): void //Not implemented
+$mass_promotion_timer = function (Civ13 $civ13) use ($mass_promotion_loop): void //Not implemented
 {
     $civ13->timers['mass_promotion_timer'] = $civ13->disacord->getLoop()->addPeriodicTimer(86400, function () use ($mass_promotion_loop) { $mass_promotion_loop; });
 };
