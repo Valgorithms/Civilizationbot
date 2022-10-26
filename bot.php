@@ -160,7 +160,6 @@ $options = array(
             'ooc_relay' => $ooc_relay,
             'timer_function' => $timer_function,
             'status_changer' => $status_changer,
-            'mapswap' => $mapswap,
             'ban' => $ban,
             'nomads_ban' => $nomads_ban,
             'tdm_ban' => $tdm_ban,
