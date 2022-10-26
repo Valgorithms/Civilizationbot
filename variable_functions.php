@@ -686,6 +686,49 @@ $guild_message = function (\Civ13\Civ13 $civ13, $message, string $message_conten
     }
     
 };
+
+$nomads_discord2ooc = function (\Civ13\Civ13 $civ13, $author, $string): bool
+{
+    if (! $file = fopen($civ13->files['nomads_discord2ooc'], 'a')) return false;
+    fwrite($file, "$author:::$string" . PHP_EOL);
+    fclose($file);
+    return true; 
+};
+$tdm_discord2ooc = function (\Civ13\Civ13 $civ13, $author, $string): bool
+{
+    if (! $file = fopen($civ13->files['tdm_discord2ooc'], 'a')) return false;
+    fwrite($file, "$author:::$string" . PHP_EOL);
+    fclose($file);
+    return true; 
+};
+$nomads_discord2admin = function (\Civ13\Civ13 $civ13, $author, $string): bool
+{
+    if (! $file = fopen($civ13->files['nomads_discord2admin'], 'a')) return false;
+    fwrite($file, "$author:::$string" . PHP_EOL);
+    fclose($file);
+    return true;
+};
+$tdm_discord2admin = function (\Civ13\Civ13 $civ13, $author, $string): bool
+{
+    if (! $file = fopen($civ13->files['tdm_discord2admin'], 'a')) return false;
+    fwrite($file, "$author:::$string" . PHP_EOL);
+    fclose($file);
+    return true;
+};
+$nomads_discord2dm = function (\Civ13\Civ13 $civ13, $author, $string): bool
+{
+    if (! $file = fopen($civ13->files['nomads_discord2dm'], 'a')) return false;
+    fwrite($file, "$author:::$string" . PHP_EOL);
+    fclose($file);
+    return true;
+};
+$tdm_discord2dm = function (\Civ13\Civ13 $civ13, $author, $string): bool
+{
+    if (! $file = fopen($civ13->files['tdm_discord2dm'], 'a')) return false;
+    fwrite($file, "$author:::$string" . PHP_EOL);
+    fclose($file);
+    return true;
+};
 $on_message = function (\Civ13\Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm)
 {
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
@@ -1193,49 +1236,6 @@ $slash_init = function (\Civ13\Civ13 $civ13, $commands) use ($bancheck, $unban, 
       });
     }
     */
-};
-
-$nomads_discord2ooc = function (\Civ13\Civ13 $civ13, $author, $string): bool
-{
-    if (! $file = fopen($civ13->files['nomads_discord2ooc'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true; 
-};
-$tdm_discord2ooc = function (\Civ13\Civ13 $civ13, $author, $string): bool
-{
-    if (! $file = fopen($civ13->files['tdm_discord2ooc'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true; 
-};
-$nomads_discord2admin = function (\Civ13\Civ13 $civ13, $author, $string): bool
-{
-    if (! $file = fopen($civ13->files['nomads_discord2admin'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true;
-};
-$tdm_discord2admin = function (\Civ13\Civ13 $civ13, $author, $string): bool
-{
-    if (! $file = fopen($civ13->files['tdm_discord2admin'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true;
-};
-$nomads_discord2dm = function (\Civ13\Civ13 $civ13, $author, $string): bool
-{
-    if (! $file = fopen($civ13->files['nomads_discord2dm'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true;
-};
-$tdm_discord2dm = function (\Civ13\Civ13 $civ13, $author, $string): bool
-{
-    if (! $file = fopen($civ13->files['tdm_discord2dm'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true;
 };
 
 $ooc_relay = function (\Civ13\Civ13 $civ13, string $file_path, $channel) use ($ban)
