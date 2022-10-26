@@ -413,7 +413,7 @@ $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
     $message->reply('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks) . '] rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $kill_nomads, $kill_tdm, $hostnomads, $hosttdm, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -566,12 +566,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'hostnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $hostnomads($civ13);
+        $host_nomads($civ13);
         return $message->channel->reply('Attempting to update and bring up Nomads <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
     }
     if (str_starts_with($message_content_lower, 'hosttdm')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $hosttdm($civ13);
+        $host_tdm($civ13);
         return $message->channel->reply('Attempting to update and bring up TDM <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
     }
     if (str_starts_with($message_content_lower, 'restartciv')) {
