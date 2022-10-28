@@ -458,7 +458,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             while (($fp = fgets($whitelist2, 4096)) !== false) foreach (explode(';', trim(str_replace(PHP_EOL, '', $fp))) as $split) if ($split == $ckey) $found = true;
             fclose($whitelist2);
         }
-        if ($found) return $message->channel->reply("$ckey is already in the whitelist!");
+        if ($found) return $message->reply("$ckey is already in the whitelist!");
         
         $txt = "$ckey = {$message->member->id}" . PHP_EOL;
         if ($whitelist1 = fopen($civ13->files['nomads_whitelist'], 'a')) {
@@ -469,7 +469,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             fwrite($whitelist2, $txt);
             fclose($whitelist2);
         }
-        return $message->channel->reply("$ckey has been added to the whitelist.");
+        return $message->reply("$ckey has been added to the whitelist.");
     }
     if (str_starts_with($message_content_lower, 'unwhitelistme')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran', 'infantry'])) return $message->react("❌");
@@ -508,7 +508,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
                 }
             fclose($wlist);
         }
-        return $message->channel->reply("Ckey $removed has been removed from the whitelist.");
+        return $message->reply("Ckey $removed has been removed from the whitelist.");
     }
     if (str_starts_with($message_content_lower, 'refresh')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -522,7 +522,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        if ($result = $ban($civ13, $split_message, $message)) return $message->channel->reply($result);
+        if ($result = $ban($civ13, $split_message, $message)) return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'nomadsban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -532,7 +532,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         if ($result = $nomads_ban($civ13, $split_message, $message))
-            return $message->channel->reply($result);
+            return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'tdmban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -541,7 +541,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        return $message->channel->reply($tdm_ban($civ13, $split_message, $message));
+        return $message->reply($tdm_ban($civ13, $split_message, $message));
     }
     if (str_starts_with($message_content_lower, 'unban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -559,20 +559,20 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             fwrite($file, $txt);
             fclose($file);
         }
-        return $message->channel->reply('**' . $message->author->username . '** unbanned **' . $split_message[0] . '**.');
+        return $message->reply('**' . $message->author->username . '** unbanned **' . $split_message[0] . '**.');
         */
         $unban($civ13, $split_message[0], $message->author->displayname);
-        return $message->channel->reply('**' . $message->author->displayname . '** unbanned **' . $split_message[0] . '**.');
+        return $message->reply('**' . $message->author->displayname . '** unbanned **' . $split_message[0] . '**.');
     }
     if (str_starts_with($message_content_lower, 'hostnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $host_nomads($civ13);
-        return $message->channel->reply('Attempting to update and bring up Nomads <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
+        return $message->reply('Attempting to update and bring up Nomads <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
     }
     if (str_starts_with($message_content_lower, 'hosttdm')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $host_tdm($civ13);
-        return $message->channel->reply('Attempting to update and bring up TDM <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
+        return $message->reply('Attempting to update and bring up TDM <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
     }
     if (str_starts_with($message_content_lower, 'restartciv')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
@@ -587,24 +587,24 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'killnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $kill_nomads($civ13);
-        return $message->channel->reply('Attempted to kill the Nomads server.');
+        return $message->reply('Attempted to kill the Nomads server.');
     }
     if (str_starts_with($message_content_lower, 'killtdm')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $kill_tdm($civ13);
-        return $message->channel->reply('Attempted to kill the TDM server.');
+        return $message->reply('Attempted to kill the TDM server.');
     }
     if (str_starts_with($message_content_lower, 'nomadsmapswap')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $split_message = explode('nomadsmapswap ', $message_content);
-        if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->channel->reply('You need to include the name of the map.');
+        if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
         if (! $nomads_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
     if (str_starts_with($message_content_lower, 'tdmmapswap')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $split_message = explode('tdmmapswap ', $message_content);
-        if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->channel->reply('You need to include the name of the map.');
+        if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
         if (! $tdm_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
@@ -614,7 +614,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'banlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        return $message->channel->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
+        return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
     }
     if (str_starts_with($message_content_lower, 'logs')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -639,17 +639,17 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             \execInBackground('cd ' . $civ13->files['typespess_path']);
             \execInBackground('git pull');
             \execInBackground('sh ' . $civ13->files['typespess_launch_server_path'] . '&');
-            return $message->channel->reply('Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
+            return $message->reply('Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
         } else {
             \execInBackground('killall index.js');
-            return $message->channel->reply('**TypeSpess Civ13** test server down.');
+            return $message->reply('**TypeSpess Civ13** test server down.');
         }
     }
 
     if (str_starts_with($message_content_lower, 'ranking')) {
         if (!$recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (!$msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
-        return $message->channel->reply($msg);
+        return $message->reply($msg);
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
@@ -763,14 +763,14 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                     $x++;
                 }
             }
-            return $message->channel->reply($load);
+            return $message->reply($load);
         } else { //Linux
             $cpu_load = '-1';
             if ($cpu_load_array = sys_getloadavg())
                 $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array);
-            return $message->channel->reply('CPU Usage: ' . $cpu_load . "%");
+            return $message->reply('CPU Usage: ' . $cpu_load . "%");
         }
-        return $message->channel->reply('Unrecognized operating system!');
+        return $message->reply('Unrecognized operating system!');
     }
     if (str_starts_with($message_content_lower, 'insult')) {
         $split_message = explode(' ', $message_content); //$split_target[1] is the target
@@ -839,7 +839,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                     $banreason = $linesplit[3];
                     $bandate = $linesplit[5];
                     $banner = $linesplit[4];
-                    $message->channel->reply("**$ckey** has been banned from **Nomads** on **$bandate** for **$banreason** by $banner.");
+                    $message->reply("**$ckey** has been banned from **Nomads** on **$bandate** for **$banreason** by $banner.");
                 }
             }
             fclose($filecheck1);
@@ -852,12 +852,12 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                     $banreason = $linesplit[3];
                     $bandate = $linesplit[5];
                     $banner = $linesplit[4];
-                    $message->channel->reply("**$ckey** has been banned from **TDM** on **$bandate** for **$banreason** by $banner.");
+                    $message->reply("**$ckey** has been banned from **TDM** on **$bandate** for **$banreason** by $banner.");
                 }
             }
             fclose($filecheck2);
         }
-        if (!$found) return $message->channel->reply("No bans were found for **$ckey**.");
+        if (!$found) return $message->reply("No bans were found for **$ckey**.");
         return;
     }
     if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
