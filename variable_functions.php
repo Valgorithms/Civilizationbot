@@ -594,16 +594,16 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $kill_tdm($civ13);
         return $message->reply('Attempted to kill the TDM server.');
     }
-    if (str_starts_with($message_content_lower, 'nomadsmapswap')) {
+    if (str_starts_with($message_content_lower, 'mapswapnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $split_message = explode('nomadsmapswap ', $message_content);
+        $split_message = explode('mapswapnomads ', $message_content);
         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
         if (! $nomads_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
-    if (str_starts_with($message_content_lower, 'tdmmapswap')) {
+    if (str_starts_with($message_content_lower, 'mapswaptdm')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $split_message = explode('tdmmapswap ', $message_content);
+        $split_message = explode('mapswaptdm ', $message_content);
         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
         if (! $tdm_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
@@ -739,7 +739,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     
     if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
-    if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostnomads, killnomads, restartnomads, nomadsmapswap, hosttdm, killtdm, restarttdm, tdmmapswap');
+    if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostnomads, killnomads, restartnomads, mapswapnomads, hosttdm, killtdm, restarttdm, mapswaptdm');
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
