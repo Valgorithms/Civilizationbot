@@ -731,13 +731,6 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     if (! $message_content) return;
     
-    //$author_user = $message->author;
-    if (/*$author_member =*/ $message->member) {
-        //$author_perms = $author_member->getPermissions($message->channel); //Populate permissions granted by roles
-        //$author_guild = $message->guild ?? $civ13->discord->guilds->get('id', $message->guild_id);
-        if ($guild_message($civ13, $message, $message_content, $message_content_lower)) return;
-    }
-    
     if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
     if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostnomads, killnomads, restartnomads, mapswapnomads, hosttdm, killtdm, restarttdm, mapswaptdm');
     if (str_starts_with($message_content_lower, 'cpu')) {
@@ -927,6 +920,8 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         if (! $item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`$ckey` is not registered to any discord id");
         return $message->reply("`$ckey` is registered to <@" . $item['discord'] . '>');
     }
+    
+    if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
 };
 
 $bancheck = function (Civ13 $civ13, string $ckey): bool
