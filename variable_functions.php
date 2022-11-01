@@ -215,7 +215,7 @@ $log_handler = function (Civ13 $civ13, $message, string $message_content) use ($
         $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
         if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-         if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
         return $message->reply("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
     if (trim(strtolower($tokens[0])) == 'tdm') {
@@ -223,8 +223,8 @@ $log_handler = function (Civ13 $civ13, $message, string $message_content) use ($
         $results = $filenav($civ13, $civ13->files['tdm_log_basedir'], $tokens);
         if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . "`{$results[1]})`"));
-        return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . "`{$results[1]})`"));
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        return $message->reply("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
 };
 $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lower)
