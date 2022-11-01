@@ -8,6 +8,17 @@
 
 namespace Civ13;
 
+use Discord\Discord;
+use Discord\Helpers\BigInt;
+use Discord\Helpers\Collection;
+use Discord\Parts\Guild\Guild;
+use Monolog\Logger;
+use Monolog\Level;
+use Monolog\Handler\StreamHandler;
+use React\EventLoop\Loop;
+use React\Http\Browser;
+use React\Filesystem\Factory as FilesystemFactory;
+
 class Civ13
 {
     public $loop;
@@ -52,14 +63,10 @@ class Civ13
      */
     public function __construct(array $options = [])
     {
-        if (php_sapi_name() !== 'cli') {
-            trigger_error('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.', E_USER_ERROR);
-        }
+        if (php_sapi_name() !== 'cli') trigger_error('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.', E_USER_ERROR);
 
         // x86 need gmp extension for big integer operation
-        if (PHP_INT_SIZE === 4 && ! \Discord\Helpers\BigInt::init()) {
-            trigger_error('ext-gmp is not loaded. Permissions will NOT work correctly!', E_USER_WARNING);
-        }
+        if (PHP_INT_SIZE === 4 && ! BigInt::init()) trigger_error('ext-gmp is not loaded. Permissions will NOT work correctly!', E_USER_WARNING);
         
         $options = $this->resolveOptions($options);
         
@@ -85,7 +92,7 @@ class Civ13
         if(isset($options['civ_token'])) $this->civ13_token = $options['civ_token'];
                 
         if(isset($options['discord'])) $this->discord = $options['discord'];
-        elseif(isset($options['discord_options'])) $this->discord = new \Discord\Discord($options['discord_options']);
+        elseif(isset($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
         
         if (isset($options['functions'])) foreach ($options['functions'] as $key1 => $key2) foreach ($options['functions'][$key1] as $key3 => $func) $this->functions[$key1][$key3] = $func;
         else $this->logger->warning('No functions passed in options!');
@@ -129,7 +136,7 @@ class Civ13
                     if(! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $guildmember);
                     else $this->logger->debug('No message functions found!');
                 });
-                $this->discord->on('GUILD_CREATE', function (\Discord\Parts\Guild\Guild $guild)
+                $this->discord->on('GUILD_CREATE', function (Guild $guild)
                 {
                     foreach ($this->discord->guilds as $guild) if (!isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
                 });
@@ -143,14 +150,14 @@ class Civ13
     protected function resolveOptions(array $options = []): array
     {
         if (is_null($options['logger'])) {
-            $logger = new \Monolog\Logger('Civ13');
-            $logger->pushHandler(new \Monolog\Handler\StreamHandler('php://stdout', \Monolog\Logger::DEBUG));
+            $logger = new Logger('Civ13');
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Debug));
             $options['logger'] = $logger;
         }
         
-        $options['loop'] = $options['loop'] ?? \React\EventLoop\Factory::create();
-        $options['browser'] = $options['browser'] ?? new \React\Http\Browser($options['loop']);
-        $options['filesystem'] = $options['filesystem'] ?? \React\Filesystem\Factory::create($options['loop']);
+        $options['loop'] = $options['loop'] ?? Loop::get();
+        $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
+        $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
         return $options;
     }
     
@@ -207,7 +214,7 @@ class Civ13
         return false;
     }
 
-    public function SetConfigTemplate(\Discord\Parts\Guild\Guild $guild, array &$discord_config): void
+    public function SetConfigTemplate(Guild $guild, array &$discord_config): void
     {
         $discord_config[$guild->id] = [
             'toggles' => [
@@ -220,17 +227,17 @@ class Civ13
             ],
         ];
         if ($this->VarSave('discord_config.json', $discord_config)) $this->logger->info("Created new config for guild {$guild->name}");
-        else $this->logger->warning("Failed top creat new config for guild {$guild->name}");
+        else $this->logger->warning("Failed top create new config for guild {$guild->name}");
     }
 
-    public function getVerified(): \Discord\Helpers\Collection
+    public function getVerified(): Collection
     {
-        $collection = new \Discord\Helpers\Collection([], 'discord');
+        $collection = new Collection([], 'discord');
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $collection;
         if (! $verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) return $collection;
     
         return $this->verified = $collection->fill($verified_array)->filter(function($v) use ($guild) {
-            return $guild->members->has($v['discord']);
+            return $guild->members->cache->has($v['discord']);
         });
     }
 }
