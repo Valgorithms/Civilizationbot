@@ -1118,7 +1118,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     });
     
     $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
-        if (!$data_json = json_decode(file_get_contents('http://' . $civ13->ips['vzg']. '/servers/serverinfo.json'),  true)) return $interaction->respondWithMessage('Unable to fetch serverinfo.json, webserver might be down', true);
+        if (!$data_json = json_decode(file_get_contents('http://' . $civ13->ips['vzg']. '/servers/serverinfo.json'),  true)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
         $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => '<byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'];
         $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => '<byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>'];
         $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => '<byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['persistence'] . '>'];
