@@ -46,7 +46,7 @@ $status_changer_random = function (Civ13 $civ13) use ($status_changer): bool
     }
     if (! $status_array = file($civ13->files['status_path'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
         unset($civ13->timers['status_changer_timer']);
-        $civ13->logger->warning('unable to open file ' . $civ13->files['status_path']);
+        $civ13->logger->warning("unable to open file `{$civ13->files['status_path']}`");
         return false;
     }
     
@@ -68,26 +68,26 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
 $nomads_ban = function (Civ13 $civ13, $array, $message = null): string
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
-    $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
+    $txt = "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL;
     $result = '';
     if ($file = fopen($civ13->files['nomads_discord2ban'], 'a')) {
         fwrite($file, $txt);
         fclose($file);
     } else {
-        $civ13->logger->warning('unable to open ' . $civ13->files['nomads_discord2ban']);
-        $result .= 'unable to open ' . $civ13->files['nomads_discord2ban'] . PHP_EOL;
+        $civ13->logger->warning("unable to open {$civ13->files['nomads_discord2ban']}");
+        $result .= "unable to open {$civ13->files['nomads_discord2ban']}" . PHP_EOL;
     }
-    $result .= '**' . $admin . '** banned **' . $array[0] . '** from **Nomads** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
+    $result .= "**$admin** banned **{$array[0]}** from **Nomads** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
     return $result;
 };
 $tdm_ban = function (Civ13 $civ13, $array, $message = null): string
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
-    $txt = $admin.':::'.$array[0].':::'.$array[1].':::'.$array[2].PHP_EOL;
-    if (! $file = fopen($civ13->files['tdm_discord2ban'], 'a')) return 'unable to open ' . $civ13->files['tdm_discord2ban'] . PHP_EOL;
+    $txt = "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL;
+    if (! $file = fopen($civ13->files['tdm_discord2ban'], 'a')) return "unable to open {$civ13->files['tdm_discord2ban']}" . PHP_EOL;
     fwrite($file, $txt);
     fclose($file);
-    return "**$admin** banned **" . $array[0] . '** from **TDM** for **' . $array[1] . '** with the reason **' . $array[2] . '**.' . PHP_EOL;
+    return "**$admin** banned **{$array[0]}** from **TDM** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
 };
 $ban = function (Civ13 $civ13, $array, $message = null) use ($nomads_ban, $tdm_ban): string
 {
@@ -132,16 +132,16 @@ $browser_call = function (Civ13 $civ13, string $url, string $method = 'GET', arr
 
 $host_nomads = function (Civ13 $civ13): void
 {
-    \execInBackground('python3 ' . $civ13->files['nomads_updateserverabspaths']);
-    \execInBackground('rm -f ' . $civ13->files['nomads_serverdata']);
-    \execInBackground('python3 ' . $civ13->files['nomads_killsudos']);
+    \execInBackground("python3 {$civ13->files['nomads_updateserverabspaths']}");
+    \execInBackground("rm -f {$civ13->files['nomads_serverdata']}");
+    \execInBackground("python3 {$civ13->files['nomads_killsudos']}");
     $civ13->discord->getLoop()->addTimer(30, function() use ($civ13) {
-        \execInBackground('DreamDaemon ' . $civ13->files['nomads_dmb'] . ' ' . $civ13->ports['nomads'] . ' -trusted -webclient -logself &');
+        \execInBackground("DreamDaemon {$civ13->files['nomads_dmb']} {$civ13->ports['nomads']} -trusted -webclient -logself &");
     });
 };
 $kill_nomads = function (Civ13 $civ13): void
 {
-    \execInBackground('python3 ' . $civ13->files['nomads_killciv13']);
+    \execInBackground("python3 {$civ13->files['nomads_killciv13']}");
 };
 $restart_nomads = function (Civ13 $civ13) use ($kill_nomads, $host_nomads): void
 {
@@ -150,16 +150,16 @@ $restart_nomads = function (Civ13 $civ13) use ($kill_nomads, $host_nomads): void
 };
 $host_tdm = function (Civ13 $civ13): void
 {
-    \execInBackground('python3 ' . $civ13->files['tdm_updateserverabspaths']);
-    \execInBackground('rm -f ' . $civ13->files['tdm_serverdata']);
-    \execInBackground('python3 ' . $civ13->files['tdm_killsudos']);
+    \execInBackground("python3 {$civ13->files['tdm_updateserverabspaths']}");
+    \execInBackground("rm -f {$civ13->files['tdm_serverdata']}");
+    \execInBackground("python3 {$civ13->files['tdm_killsudos']}");
     $civ13->discord->getLoop()->addTimer(30, function() use ($civ13) {
-        \execInBackground('DreamDaemon ' . $civ13->files['tdm_dmb'] . ' ' . $civ13->ports['tdm'] . ' -trusted -webclient -logself &');
+        \execInBackground("DreamDaemon {$civ13->files['tdm_dmb']} {$civ13->ports['tdm']} -trusted -webclient -logself &");
     });
 };
 $kill_tdm = function (Civ13 $civ13): void
 {
-    \execInBackground('python3 ' . $civ13->files['tdm_killciv13']);
+    \execInBackground("python3 {$civ13->files['tdm_killciv13']}");
 };
 $restart_tdm = function (Civ13 $civ13) use ($kill_tdm, $host_tdm): void
 {
@@ -178,7 +178,7 @@ $nomads_mapswap = function (Civ13 $civ13, string $mapto): bool
     fclose($file);
     if (! in_array($mapto, $maps)) return false;
     
-    \execInBackground('python3 ' . $civ13->files['nomads_mapswap'] . " $mapto");
+    \execInBackground("python3 {$civ13->files['nomads_mapswap']} $mapto");
     return true;
 };
 $tdm_mapswap = function (Civ13 $civ13, string $mapto): bool
@@ -193,7 +193,7 @@ $tdm_mapswap = function (Civ13 $civ13, string $mapto): bool
     fclose($file);
     if (! in_array($mapto, $maps)) return false;
     
-    \execInBackground('python3 ' . $civ13->files['tdm_mapswap'] . " $mapto");
+    \execInBackground("python3 {$civ13->files['tdm_mapswap']} $mapto");
     return true;
 };
 
@@ -215,16 +215,16 @@ $log_handler = function (Civ13 $civ13, $message, string $message_content) use ($
         $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
         if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-        return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . "`{$results[1]})`"));
+        return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . "`{$results[1]})`"));
     }
     if (trim(strtolower($tokens[0])) == 'tdm') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['tdm_log_basedir'], $tokens);
         if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-        return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . "`{$results[1]})`"));
+        return $message->reply($results[2] . 'is not an available option! Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . "`{$results[1]})`"));
     }
 };
 $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lower)
@@ -256,7 +256,7 @@ $recalculate_ranking = function (Civ13 $civ13): bool
         if ($duser[2] == "wounded gold badge") $medal_s += 1;
         if ($duser[2] == "iron cross 1st class") $medal_s += 3;
         if ($duser[2] == "iron cross 2nd class") $medal_s += 5;
-        $result[] = $medal_s . ';' . $duser[0];
+        $result[] = "$medal_s;{$duser[0]}";
         if (!in_array($duser[0], $ckeylist)) $ckeylist[] = $duser[0];
     }
     
@@ -271,7 +271,7 @@ $recalculate_ranking = function (Civ13 $civ13): bool
     usort($ranking, function($a, $b) { return $a[0] <=> $b[0]; });
     $sorted_list = array_reverse($ranking);
     if (! $search = fopen($civ13->files['ranking_path'], 'w')) return false;
-    foreach ($sorted_list as $i) fwrite($search, $i[0] . ';' . $i[1] . PHP_EOL);
+    foreach ($sorted_list as $i) fwrite($search, "{$i[0]};{$i[1]}" . PHP_EOL);
     fclose ($search);
     return true;
 };
@@ -287,9 +287,10 @@ $ranking = function (Civ13 $civ13): false|string
     for ($x=0;$x<count($line_array);$x++) {
         if ($topsum > 10) break;
         $line = trim(str_replace(PHP_EOL, '', $line_array[$x]));
-        $topsum += 1;
+        
         $sline = explode(';', $line);
-        $msg .= '('. ($topsum - 1) ."): **".$sline[1].'** with **'.$sline[0].'** points.' . PHP_EOL;
+        $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
+        $topsum += 1;
     }
     return $msg;
 };
@@ -306,7 +307,7 @@ $rankme = function (Civ13 $civ13, string $ckey): false|string
         $sline = explode(';', trim(str_replace(PHP_EOL, '', $line_array[$x])));
         if ($sline[1] == $ckey) {
             $found = 1;
-            $result .= "**" . $sline[1] . "**" . " has a total rank of **" . $sline[0] . "**.";
+            $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
         };
     }
     if (!$found) return "No medals found for ckey `$ckey`.";
@@ -345,7 +346,7 @@ $medals = function (Civ13 $civ13, string $ckey): false|string
                     $medal_s = "<:iron_cross1:705786458572587109>";
                 if ($duser[2] == "iron cross 2nd class")
                     $medal_s = "<:iron_cross2:705786458849673267>";
-                $result .= "**" . $duser[1] . ":**" . ' ' . $medal_s . " **" . $duser[2] . "**, *" . $duser[4] . "*, " . $duser[5] . PHP_EOL;
+                $result .= "**{$duser[1]}:** {$medal_s} **{$duser[2]}**, *{$duser[4]}*, {$duser[5]}" . PHP_EOL;
             }
         }
     }
@@ -362,7 +363,7 @@ $brmedals = function (Civ13 $civ13, string $ckey): string
         if (str_contains($line, $ckey)) {
             $found = true;
             $duser = explode(';', $line);
-            if ($duser[0] == $ckey) $result .= '**' . $duser[1] . ':** placed *' . $duser[2] . ' of  '. $duser[5] . ',* on ' . $duser[4] . ' (' . $duser[3] . ')' . PHP_EOL;
+            if ($duser[0] == $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
         }
     }
     if ($result != '') return $result;
@@ -387,7 +388,7 @@ $tests = function (Civ13 $civ13, $message, string $message_content)
     if ($tokens[1] == 'remove') {
         if (! is_numeric($tokens[2])) return $message->replay("Invalid format! Please use the format `tests test_key remove #`");
         if (! isset($civ13->tests[$test_key][$tokens[2]])) return $message->reply("Question not found in test $test_key! Please use the format `tests test_key remove #`");
-        $message->reply('Removed question ' . $tokens[2]  . ': '  . $civ13->tests[$test_key][$tokens[2]]);
+        $message->reply("Removed question {$tokens[2]}: {$civ13->tests[$test_key][$tokens[2]]}");
         unset($civ13->tests[$test_key][$tokens[2]]);
         return $civ13->VarSave('tests.json', $civ13->tests);
     }
@@ -548,41 +549,28 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $message_content_lower = substr($message_content_lower, 6);
         $split_message = explode('; ', $message_content_lower);
         
-        /*
-        if ($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
-            $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
-            fwrite($file, $txt);
-            fclose($file);
-        }
-        if ($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
-            $txt = $message->author->username . "#" . $message->author->discriminator . ':::'.$split_message[0];
-            fwrite($file, $txt);
-            fclose($file);
-        }
-        return $message->reply('**' . $message->author->username . '** unbanned **' . $split_message[0] . '**.');
-        */
         $unban($civ13, $split_message[0], $message->author->displayname);
-        return $message->reply('**' . $message->author->displayname . '** unbanned **' . $split_message[0] . '**.');
+        return $message->reply("**{$message->author->displayname}** unbanned **{$split_message[0]}**");
     }
     if (str_starts_with($message_content_lower, 'hostnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $host_nomads($civ13);
-        return $message->reply('Attempting to update and bring up Nomads <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
+        return $message->reply("Attempting to update and bring up Nomads <byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>");
     }
     if (str_starts_with($message_content_lower, 'hosttdm')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $host_tdm($civ13);
-        return $message->reply('Attempting to update and bring up TDM <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
+        return $message->reply("Attempting to update and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>");
     }
     if (str_starts_with($message_content_lower, 'restartciv')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $restart_nomads($civ13);
-        return $message->reply('Attempted to kill, update, and bring up Nomads <byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>');
+        return $message->reply("Attempted to kill, update, and bring up Nomads <byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>");
     }
     if (str_starts_with($message_content_lower, 'restarttdm')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $restart_tdm($civ13);
-        return $message->reply('Attempted to kill, update, and bring up TDM <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>');
+        return $message->reply("Attempted to kill, update, and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>");
     }
     if (str_starts_with($message_content_lower, 'killnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
@@ -636,9 +624,9 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral'])) return $message->react("❌");
         
         if ($state == 'on') {
-            \execInBackground('cd ' . $civ13->files['typespess_path']);
+            \execInBackground("cd {$civ13->files['typespess_path']}");
             \execInBackground('git pull');
-            \execInBackground('sh ' . $civ13->files['typespess_launch_server_path'] . '&');
+            \execInBackground("sh {$civ13->files['typespess_launch_server_path']}&");
             return $message->reply('Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
         } else {
             \execInBackground('killall index.js');
@@ -722,10 +710,10 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (str_starts_with($message->content, $civ13->command_symbol . ' ')) { //Add these as slash commands?
         $message_content = substr($message->content, strlen($civ13->command_symbol)+1);
         $message_content_lower = strtolower($message_content);
-    } elseif (str_starts_with($message->content, '<@!' . $civ13->discord->id . '>')) { //Add these as slash commands?
+    } elseif (str_starts_with($message->content, "<@!{$civ13->discord->id}>")) { //Add these as slash commands?
         $message_content = trim(substr($message->content, strlen($civ13->discord->id)+4));
         $message_content_lower = strtolower($message_content);
-    } elseif (str_starts_with($message->content, '<@' . $civ13->discord->id . '>')) { //Add these as slash commands?
+    } elseif (str_starts_with($message->content, "<@{$civ13->discord->id}>")) { //Add these as slash commands?
         $message_content = trim(substr($message->content, strlen($civ13->discord->id)+3));
         $message_content_lower = strtolower($message_content);
     }
@@ -761,7 +749,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             $cpu_load = '-1';
             if ($cpu_load_array = sys_getloadavg())
                 $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array);
-            return $message->reply('CPU Usage: ' . $cpu_load . "%");
+            return $message->reply("CPU Usage: $cpu_load%");
         }
         return $message->reply('Unrecognized operating system!');
     }
@@ -908,17 +896,17 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
         $id = trim(str_replace(['<@!', '<@', '>'], '', substr($message_content_lower, strlen('discord2ckey'))));
         if (! $item = $civ13->verified->get('discord', $id)) return $message->reply("`$id` is not registered to any byond username");
-        return $message->reply("`$id` is registered to " . $item['ss13']);
+        return $message->reply("`$id` is registered to `{$item['ss13']}`");
     }
     if (str_starts_with($message_content_lower, 'ckey2discord')) {
         $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('discord2ckey'))));
         if (! $item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`$ckey` is not registered to any discord id");
-        return $message->reply("`$ckey` is registered to <@" . $item['discord'] . '>');
+        return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
         $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('ckey'))));
         if (! $item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`$ckey` is not registered to any discord id");
-        return $message->reply("`$ckey` is registered to <@" . $item['discord'] . '>');
+        return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
     
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
@@ -934,7 +922,7 @@ $bancheck = function (Civ13 $civ13, string $ckey): bool
             if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) $return = true;
         }
         fclose($filecheck1);
-    } else $civ13->logger->warning('unable to open ' . $civ13->files['nomads_bans']);
+    } else $civ13->logger->warning("unable to open `{$civ13->files['nomads_bans']}`");
     if ($filecheck2 = fopen($civ13->files['tdm_bans'], 'r')) {
         while (($fp = fgets($filecheck2, 4096)) !== false) {
             //str_replace(PHP_EOL, '', $fp); // Is this necessary?
@@ -942,14 +930,14 @@ $bancheck = function (Civ13 $civ13, string $ckey): bool
             if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) $return = true;
         }
         fclose($filecheck2);
-    } else $civ13->logger->warning('unable to open ' . $civ13->files['tdm_bans']);
+    } else $civ13->logger->warning("unable to open `{$civ13->files['tdm_bans']}`");
     return $return;
 };
 $bancheck_join = function (Civ13 $civ13, $member) use ($bancheck): void
 { //on GUILD_MEMBER_ADD
     if ($member->guild_id == $civ13->civ13_guild_id) if ($item = $civ13->verified->get('discord', $member->id)) if ($bancheck($civ13, $item['ss13'])) {
         $civ13->discord->getLoop()->addTimer(30, function() use ($civ13, $member, $item) {
-            $member->setRoles([$civ13['role_ids']['banished']], 'bancheck join ' . $item['ss13']);
+            $member->setRoles([$civ13['role_ids']['banished']], "bancheck join {$item['ss13']}");
         });
     }
 };
@@ -1118,11 +1106,11 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     });
     
     $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
-        if (!$data_json = json_decode(file_get_contents('http://' . $civ13->ips['vzg']. '/servers/serverinfo.json'),  true)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
-        $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => '<byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'];
-        $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => '<byond://' . $civ13->ips['nomads'] . ':' . $civ13->ports['nomads'] . '>'];
-        $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => '<byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['persistence'] . '>'];
-        $server_info[3] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => '<byond://' . $civ13->ips['vzg'] . ':' . $civ13->ports['bc'] . '>'];
+        if (!$data_json = json_decode(file_get_contents("http://{$civ13->ips['vzg']}/servers/serverinfo.json"),  true)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
+        $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"];
+        $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>"];
+        $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['persistence']}>"];
+        $server_info[3] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['bc']}>"];
         
         $embed = new Embed($civ13->discord);
         foreach ($data_json as $server) {
@@ -1135,8 +1123,8 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
                 $rd = explode(":", urldecode($server['roundduration']));
                 $remainder = ($rd[0] % 24);
                 $rd[0] = floor($rd[0] / 24);
-                if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = $rd[0] . "d " . $remainder . "h " . $rd[1] . "m";
-                else $rt = "STARTING";
+                if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = "{$rd[0]}d {$remainder}h {$rd[1]}m";
+                else $rt = 'STARTING';
                 $embed->addFieldValues('Round Timer', $rt, true);
             }
             if (isset($server['map'])) $embed->addFieldValues('Map', urldecode($server['map']), true);
@@ -1159,7 +1147,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     
     $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13) {
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to " . $item['ss13']), true);
+        return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss13']}`"), true);
     });
     $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13, $bancheck) {
     if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
@@ -1169,16 +1157,16 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     
     $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13, $unban) {
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent("**{$interaction->user->displayname}** unbanned **`{$item['ss13']}`**."));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** unbanned **`{$item['ss13']}`**."));
         $unban($civ13, $item['ss13'], $interaction->user->displayname);
     });
     
     $civ13->discord->listenCommand('restart_nomads', function ($interaction) use ($civ13, $restart_nomads) {
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Attempted to kill, update, and bring up Nomads <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
+    $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up Nomads <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"));
         $restart_nomads($civ13);
     });
     $civ13->discord->listenCommand('restart_tdm', function ($interaction) use ($civ13, $restart_tdm) {
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Attempted to kill, update, and bring up TDM <byond://' . $civ13->ips['tdm'] . ':' . $civ13->ports['tdm'] . '>'));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"));
         $restart_tdm($civ13);
     });
     
