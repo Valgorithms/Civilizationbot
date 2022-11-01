@@ -1,4 +1,9 @@
 <?php
+
+use Discord\Discord;
+use Discord\Parts\Embed\Embed;
+use Carbon\Carbon;
+
 class Stats
 {
     /**
@@ -15,15 +20,15 @@ class Stats
      */
     private $lastReconnect;
     
-    private Discord\Discord $discord;
+    private Discord $discord;
 
     public function init(&$discord): void
     {
-        $this->startTime = $this->lastReconnect = Carbon\Carbon::now();
+        $this->startTime = $this->lastReconnect = Carbon::now();
         
         $this->discord = $discord;
         $this->discord->on('reconnect', function () {
-            $this->lastReconnect = Carbon\Carbon::now();
+            $this->lastReconnect = Carbon::now();
         });
     }
 
@@ -80,27 +85,9 @@ class Stats
         return @round($size / pow(1024, ($i = floor(log($size, 1024)))), 2).' '.$unit[$i];
     }
 
-    public function handleMessage($message): Discord\Parts\Embed\Embed
+    public function handle(): Embed
     {
-        $embed = new Discord\Parts\Embed\Embed($this->discord);
-        $embed
-            ->setTitle('DiscordPHP')
-            ->setDescription('This bot runs with DiscordPHP.')
-            ->addFieldValues('PHP Version', phpversion())
-            ->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
-            ->addFieldValues('Bot Version', $this->getBotVersion())
-            ->addFieldValues('Start time', $this->startTime->longRelativeToNowDiffForHumans(3))
-            ->addFieldValues('Last reconnected', $this->lastReconnect->longRelativeToNowDiffForHumans(3))
-            ->addFieldValues('Guild count', $this->discord->guilds->count())
-            ->addFieldValues('Channel count', $this->getChannelCount())
-            ->addFieldValues('User count', $this->discord->users->count())
-            ->addFieldValues('Memory usage', $this->getMemoryUsageFriendly());
-        return $embed;
-    }
-    
-    public function handleInteraction($interaction): Discord\Parts\Embed\Embed
-    {
-        $embed = new Discord\Parts\Embed\Embed($this->discord);
+        $embed = new Embed($this->discord);
         $embed
             ->setTitle('DiscordPHP')
             ->setDescription('This bot runs with DiscordPHP.')

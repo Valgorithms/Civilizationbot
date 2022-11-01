@@ -1110,7 +1110,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     });
     
     $civ13->discord->listenCommand('stats', function ($interaction) use ($civ13) {
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($civ13->stats->handleInteraction($interaction)));
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($civ13->stats->handle()));
     });
     
     $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {

@@ -6,9 +6,14 @@
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
+use React\Socket\Server as SocketServer;
+use React\Http\Server as HttpServer;
+use React\Http\Message\Response;
+use \Psr\Http\Message\ServerRequestInterface;
+
 function webapiFail($part, $id) {
     //logInfo('[webapi] Failed', ['part' => $part, 'id' => $id]);
-    return new \React\Http\Message\Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], ($id ? 'Invalid' : 'Missing').' '.$part);
+    return new Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], ($id ? 'Invalid' : 'Missing').' '.$part);
 }
 
 function webapiSnow($string) {
@@ -18,8 +23,8 @@ function webapiSnow($string) {
 $external_ip = file_get_contents('http://ipecho.net/plain');
 $valzargaming_ip = gethostbyname('www.valzargaming.com');
 
-$socket = new \React\Socket\Server(sprintf('%s:%s', '0.0.0.0', '55555'), $civ13->loop);
-$webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip)
+$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', '55555'), $civ13->loop);
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip)
 {
     /*
     $path = explode('/', $request->getUri()->getPath());
@@ -60,45 +65,45 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
             $return = '<meta http-equiv = \"refresh\" content = \"0; url = https://www.valzargaming.com/?login\" />'; //Redirect to the website to log in
-            return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], $return);
+            return new Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'github':
             $return = '<meta http-equiv = \"refresh\" content = \"0; url = https://github.com/VZGCoders/Civilizationbot\" />'; //Redirect to the website to log in
-            return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], $return);
+            return new Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'favicon.ico':
             if (!$whitelisted) {
                 $civ13->logger->info('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             $favicon = file_get_contents('favicon.ico');
-            return new \React\Http\Message\Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
+            return new Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
         
         case 'nohup.out':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('nohup.out')) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
-            else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `nohup.out`");
+            if ($return = file_get_contents('nohup.out')) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+            else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `nohup.out`");
             break;
         
         case 'botlog':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog.txt')) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], '<meta name="color-scheme" content="light dark"> <div class="checkpoint">' . str_replace('[' . date("Y"), '</div><div> [' . date("Y"), str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)) . "</div><script>var mainScrollArea=document.getElementsByClassName('checkpoint')[0];var scrollTimeout;window.onload=function(){if(window.location.href==localStorage.getItem('lastUrl')){mainScrollArea.scrollTop=localStorage.getItem('scrollTop');}else{localStorage.setItem('lastUrl',window.location.href);localStorage.setItem('scrollTop',0);}};mainScrollArea.addEventListener('scroll',function(){clearTimeout(scrollTimeout);scrollTimeout=setTimeout(function(){localStorage.setItem('scrollTop',mainScrollArea.scrollTop);},100);});setTimeout(locationreload,10000);function locationreload(){location.reload();}</script>");
-            else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog.txt`");
+            if ($return = file_get_contents('botlog.txt')) return new Response(200, ['Content-Type' => 'text/html'], '<meta name="color-scheme" content="light dark"> <div class="checkpoint">' . str_replace('[' . date("Y"), '</div><div> [' . date("Y"), str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)) . "</div><script>var mainScrollArea=document.getElementsByClassName('checkpoint')[0];var scrollTimeout;window.onload=function(){if(window.location.href==localStorage.getItem('lastUrl')){mainScrollArea.scrollTop=localStorage.getItem('scrollTop');}else{localStorage.setItem('lastUrl',window.location.href);localStorage.setItem('scrollTop',0);}};mainScrollArea.addEventListener('scroll',function(){clearTimeout(scrollTimeout);scrollTimeout=setTimeout(function(){localStorage.setItem('scrollTop',mainScrollArea.scrollTop);},100);});setTimeout(locationreload,10000);function locationreload(){location.reload();}</script>");
+            else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog.txt`");
             break;
             
         case 'botlog2':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog2.txt')) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/html'], '<meta name="color-scheme" content="light dark"> <div class="checkpoint">' . str_replace('[' . date("Y"), '</div><div> [' . date("Y"), str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)) . "</div><script>var mainScrollArea=document.getElementsByClassName('checkpoint')[0];var scrollTimeout;window.onload=function(){if(window.location.href==localStorage.getItem('lastUrl')){mainScrollArea.scrollTop=localStorage.getItem('scrollTop');}else{localStorage.setItem('lastUrl',window.location.href);localStorage.setItem('scrollTop',0);}};mainScrollArea.addEventListener('scroll',function(){clearTimeout(scrollTimeout);scrollTimeout=setTimeout(function(){localStorage.setItem('scrollTop',mainScrollArea.scrollTop);},100);});setTimeout(locationreload,10000);function locationreload(){location.reload();}</script>");
-            else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog2.txt`");
+            if ($return = file_get_contents('botlog2.txt')) return new Response(200, ['Content-Type' => 'text/html'], '<meta name="color-scheme" content="light dark"> <div class="checkpoint">' . str_replace('[' . date("Y"), '</div><div> [' . date("Y"), str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)) . "</div><script>var mainScrollArea=document.getElementsByClassName('checkpoint')[0];var scrollTimeout;window.onload=function(){if(window.location.href==localStorage.getItem('lastUrl')){mainScrollArea.scrollTop=localStorage.getItem('scrollTop');}else{localStorage.setItem('lastUrl',window.location.href);localStorage.setItem('scrollTop',0);}};mainScrollArea.addEventListener('scroll',function(){clearTimeout(scrollTimeout);scrollTimeout=setTimeout(function(){localStorage.setItem('scrollTop',mainScrollArea.scrollTop);},100);});setTimeout(locationreload,10000);function locationreload(){location.reload();}</script>");
+            else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog2.txt`");
             break;
         
         case 'channel':
@@ -149,7 +154,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         case 'reset':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             execInBackground('git reset --hard origin/main');
             $return = 'fixing git';
@@ -158,7 +163,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         case 'pull':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             execInBackground('git pull');
             $civ13->logger->info('[GIT PULL]');
@@ -169,7 +174,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         case 'update':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             execInBackground('composer update');
             $civ13->logger->info('[COMPOSER UPDATE]');
@@ -180,7 +185,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         case 'restart':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             $civ13->logger->info('[RESTART]');
             if ($channel = $civ13->discord->getChannel('712685552155230278')) $channel->sendMessage('Restarting...');
@@ -196,7 +201,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         case 'lookup':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
             break;
@@ -204,7 +209,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
         case 'owner':
             if (!$whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             if (!$id || !webapiSnow($id)) return webapiFail('user_id', $id); $return = false;
             if ($user = $civ13->discord->users->get('id', $id)) { //Search all guilds the bot is in and check if the user id exists as a guild owner
@@ -221,7 +226,7 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             if (!$id || !webapiSnow($id)) return webapiFail('user_id', $id);
             if (!$user = $civ13->discord->users->get('id', $id)) $return = 'https://cdn.discordapp.com/embed/avatars/'.rand(0,4).'.png';
             else $return = $user->avatar;
-            //if (!$return) return new \React\Http\Message\Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], (''));
+            //if (!$return) return new Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], (''));
             break;
 
         case 'avatars': //This needs to be optimized to not use async code
@@ -242,10 +247,10 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             }
 
             $promise->done(function () use ($results) {
-              return new \React\Http\Message\Response (200, ['Content-Type' => 'application/json'], json_encode($results));
+              return new Response (200, ['Content-Type' => 'application/json'], json_encode($results));
             }, function () use ($results) {
               // return with error ?
-              return new \React\Http\Message\Response(200, ['Content-Type' => 'application/json'], json_encode($results));
+              return new Response(200, ['Content-Type' => 'application/json'], json_encode($results));
             });
             */
             $return = '';
@@ -256,14 +261,14 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 case 'bans':
                     if (!$whitelisted) {
                         $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                        return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
                     $nomads_bans = $civ13->files['nomads_bans'];
-                    if ($return = file_get_contents($nomads_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
-                    else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`");
+                    if ($return = file_get_contents($nomads_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`");
                     break;
                 default:
-                    return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
+                    return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
             }
             break;
         case 'tdm':
@@ -271,14 +276,14 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
                 case 'bans':
                     if (!$whitelisted) {
                         $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                        return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
                     $tdm_bans = $civ13->files['tdm_bans'];
-                    if ($return = file_get_contents($tdm_bans)) return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
-                    else return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`");
+                    if ($return = file_get_contents($tdm_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`");
                     break;
                 default:
-                    return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
+                    return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
             }
             break;
         
@@ -286,17 +291,17 @@ $webapi = new \React\Http\Server($loop, function (\Psr\Http\Message\ServerReques
             if (!$id || !webapiSnow($id) || !is_numeric($id)) return webapiFail('user_id', $id);
             $discord2ckey = $civ13->functions['misc']['discord2ckey'];
             $return = $discord2ckey($civ13, $id);
-            return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], $return);
+            return new Response(200, ['Content-Type' => 'text/plain'], $return);
             break;
             
         case 'verified':
-            return new \React\Http\Message\Response(200, ['Content-Type' => 'text/plain'], json_encode($civ13->verified->toArray()));
+            return new Response(200, ['Content-Type' => 'text/plain'], json_encode($civ13->verified->toArray()));
             break;
             
         default:
-            return new \React\Http\Message\Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
+            return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
     }
-    return new \React\Http\Message\Response(200, ['Content-Type' => 'text/json'], json_encode($return));
+    return new Response(200, ['Content-Type' => 'text/json'], json_encode($return));
 });
 $webapi->listen($socket);
 $webapi->on('error', function ($e) use ($civ13) {
