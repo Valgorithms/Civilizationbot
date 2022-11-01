@@ -233,8 +233,8 @@ class Civ13
     public function getVerified(): Collection
     {
         $collection = new Collection([], 'discord');
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $collection;
-        if (! $verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) return $collection;
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified = $collection;
+        if (! $verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) return $this->verified = $collection;
     
         return $this->verified = $collection->fill($verified_array)->filter(function($v) use ($guild) {
             return $guild->members->cache->has($v['discord']);
