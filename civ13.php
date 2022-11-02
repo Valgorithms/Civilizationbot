@@ -223,7 +223,6 @@ class Civ13
             'roles' => [
                 'verified' => '', 
                 'promoted' => '', //Different servers may have different standards for getting promoted
-                //
             ],
         ];
         if ($this->VarSave('discord_config.json', $discord_config)) $this->logger->info("Created new config for guild {$guild->name}");
@@ -232,11 +231,13 @@ class Civ13
 
     public function getVerified(): Collection
     {
-        ($json = $this->VarLoad('verified.json')) ? ($collection = new Collection($json, 'discord')) : ($collection = new Collection([], 'discord'));
-        if (!($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) || !($verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true))) return $this->verified = $collection;
-        $this->VarSave('verified.json', $collection->toArray());
-        return $this->verified = $collection->fill($verified_array)->filter(function($v) use ($guild) {
-            return $guild->members->cache->has($v['discord']);
-        });
+        if ($verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) {
+            $this->VarSave('verified.json', $verified_array);
+            $collection = new Collection($verified_array, 'discord');
+        } elseif ($json = $this->VarLoad('verified.json')) $collection = new Collection($json, 'discord');
+        else $collection = new Collection([], 'discord');
+        
+        if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified = $collection->filter(function($v) use ($guild) { return $guild->members->cache->has($v['discord']); });
+        return $this->verified = $collection;
     }
 }
