@@ -1136,7 +1136,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
                 if (isset($p[1]) && is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
             }
             if (! empty($players)) $embed->addFieldValues('Players (' . count($players) . ')', implode(', ', $players), true);
-            if (isset($server['season'])) $embed->addFieldValues('Season', $server['season'], true);
+            if (isset($server['season'])) $embed->addFieldValues('Season', urldecode($server['season']), true);
         }
         $embed->setFooter(($civ13->github ?  "{$civ13->github}" . PHP_EOL : '') . "{$civ13->discord->username} by Valithor#5947");
         $embed->setColor(0xe1452d);
