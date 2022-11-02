@@ -237,7 +237,8 @@ class Civ13
         } elseif ($json = $this->VarLoad('verified.json')) $collection = new Collection($json, 'discord');
         else return $this->verified = new Collection([], 'discord');
         
-        if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified = $collection->filter(function($v) use ($guild) { return $guild->members->cache->has($v['discord']); });
+
+        if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified = $collection->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
         return $this->verified = $collection;
     }
 }
