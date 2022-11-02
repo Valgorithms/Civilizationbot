@@ -235,9 +235,9 @@ class Civ13
             $this->VarSave('verified.json', $verified_array);
             $collection = new Collection($verified_array, 'discord');
         } elseif ($json = $this->VarLoad('verified.json')) $collection = new Collection($json, 'discord');
-        else $collection = new Collection([], 'discord');
+        else return $this->verified = new Collection([], 'discord');
         
-        if ($guild = $this->discord->guilds->cache->get('id', $this->civ13_guild_id)) return $this->verified = $collection->filter(function($v) use ($guild) { return $guild->members->cache->has($v['discord']); });
+        if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified = $collection->filter(function($v) use ($guild) { return $guild->members->cache->has($v['discord']); });
         return $this->verified = $collection;
     }
 }
