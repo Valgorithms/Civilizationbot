@@ -210,8 +210,8 @@ class Civ13
         if ($filename === '') return false;
         if (!file_exists($this->filecache_path . $filename)) return false;
         if (($string = file_get_contents($this->filecache_path . $filename)) === false) return false;
-        if ($assoc_array = json_decode($string, TRUE)) return $assoc_array;
-        return false;
+        if (! $assoc_array = json_decode($string, TRUE)) return false;
+        return $assoc_array;
     }
 
     public function SetConfigTemplate(Guild $guild, array &$discord_config): void
@@ -237,7 +237,6 @@ class Civ13
         } elseif ($json = $this->VarLoad('verified.json')) $collection = new Collection($json, 'discord');
         else return $this->verified = new Collection([], 'discord');
         
-
         if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified = $collection->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
         return $this->verified = $collection;
     }

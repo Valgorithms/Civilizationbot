@@ -614,8 +614,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
 
     if (str_starts_with($message_content_lower, 'stop')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        return $civ13->stop();
+        if ($rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+            return $message->react("🛑")->done(function () use ($civ13) { $civ13->stop(); });
     }
 
     if (str_starts_with($message_content_lower, 'ts')) {
