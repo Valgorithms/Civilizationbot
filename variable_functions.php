@@ -411,7 +411,7 @@ $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
     $resolved_ranks = [];
     foreach ($allowed_ranks as $rank) $resolved_ranks[] = $civ13->role_ids[$rank];
     foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
-    $message->reply('Rejected! You need to have at least the [' . $message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks) . '] rank.');
+    $message->reply('Rejected! You need to have at least the [' . ($message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks)) . '] rank.');
     return false;
 };
 $guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
