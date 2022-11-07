@@ -528,7 +528,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        if ($result = $ban($civ13, $split_message, $message)) return $message->reply($result);
+        if ($result = $ban($civ13, $split_message, $message)) {
+            if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
+                if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
+                    $member->addRole($civ13->role_ids['banished'], $result);
+            return $message->reply($result);
+        }
     }
     if (str_starts_with($message_content_lower, 'nomadsban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
