@@ -37,7 +37,8 @@ $civ_listeners = function (Civ13 $civ13) use ($whitelist_update): void //Handles
     
     $civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member) use ($civ13, $whitelist_update): void
     {
-         if ($member->roles->has($civ13->role_ids['veteran'])) $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
+        $civ13->getVerified();
+        if ($member->roles->has($civ13->role_ids['veteran'])) $whitelist_update($civ13, [$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
     });
     
     $civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old) use ($civ13, $whitelist_update): void
