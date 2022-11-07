@@ -245,9 +245,8 @@ class Civ13
     /*
     * This function is used to refresh the bot's cache of verified users
     * It is called when the bot starts up, and when the bot receives a GUILD_MEMBER_ADD event
-    * It is also called when the bot receives a GUILD_MEMBER_UPDATE event, but only if the user's roles have changed
     * It is also called when the bot receives a GUILD_MEMBER_REMOVE event
-    * It is not called when the bot receives a GUILD_MEMBER_UPDATE event if the user's roles have not changed
+    * It is also called when the bot receives a GUILD_MEMBER_UPDATE event, but only if the user's roles have changed
     */
     public function getVerified(): Collection
     {
