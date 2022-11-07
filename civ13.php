@@ -279,7 +279,7 @@ class Civ13
 
     public function verifyProcess(string $ckey, string $discord_id): string
     {
-        //if ($this->verified->has($discord_id)) return 'You are already verified!';
+        if ($this->verified->has($discord_id)) return 'You are already verified!';
         if ($this->verified->has($ckey)) return "`$ckey` is already verified!";
         if (! $this->pending->get('discord', $discord_id)) return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         if ($result = $this->verifyNew($discord_id))
