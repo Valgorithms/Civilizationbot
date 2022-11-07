@@ -277,6 +277,12 @@ class Civ13
         return false;        
     }
 
+    /*
+    * This function is used to check if the user has verified their account
+    * If the have not, it will send a message to the user with instructions on how to verify
+    * If they have, it will check if they have the verified role, and if not, it will add it
+    * 
+    */
     public function verifyProcess(string $ckey, string $discord_id): string
     {
         if ($this->verified->has($discord_id)) return 'You are already verified!';
@@ -287,9 +293,13 @@ class Civ13
             else return $result[1];
     }
 
-    public function verifyNew(string $discord_id): array|false //[bool, string]
+    /*
+    * This function is called when a user still needs to set their token in their BYOND description and call the approveme prompt
+    * It will check if the token is valid, then add the user to the verified list
+    */
+    public function verifyNew(string $discord_id): array //[bool, string]
     { //Attempt to verify a user
-        if(! $item = $this->pending->get('discord', $discord_id)) return false;
+        if(! $item = $this->pending->get('discord', $discord_id)) return [false, 'This error should never happen'];
         if(! $this->checkToken($discord_id)) return [false, "You have not set your token yet! It needs to be set to {$item['token']}"];
         $result = $this->verifyCkey($item['ss13'], $discord_id);
         return $result;
