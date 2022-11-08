@@ -288,14 +288,15 @@ class Civ13
     public function checkToken(string $discord_id): bool
     { //Check if the user set their token
         if (! $item = $this->pending->get('discord', $discord_id)) return false;
-        if ($item['token'] != $this->getByondDesc($item['ss13'])) return false;
+        if (! $page = $this->getByondPage($item['ss13'])) return false;
+        if ($item['token'] != $this->getByondDesc($page)) return false;
         return true;
     }
     
     /*
      * This function is used to retrieve the 50 character token from the BYOND website
      */
-    public function getByondDesc(string $ckey): string|false 
+    public function getByondPage(string $ckey): string|false 
     { //Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and add the generated token to their description first!
         $url = 'http://www.byond.com/members/'.urlencode($ckey).'?format=text';
         $ch = curl_init(); //create curl resource
@@ -306,8 +307,25 @@ class Civ13
         curl_setopt($ch, CURLOPT_TIMEOUT, 3);
         $page = curl_exec($ch);
         curl_close($ch);
-        if($desc = substr($page, (strpos($page , 'desc')+8), 50)) return $desc; //PHP versions older than 8.0.0 will return false if the desc isn't found, otherwise an empty string will be returned
+        if ($page) return $page;
         return false;        
+    }
+    
+    public function getByondDesc(string $page): string|false 
+    {
+        if ($desc = substr($page, (strpos($page , 'desc')+8), 50)) return $desc; //PHP versions older than 8.0.0 will return false if the desc isn't found, otherwise an empty string will be returned
+        return false;
+    }
+    
+    public function getByondAge(string $page): string|false
+    {
+		if (preg_match("^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])^", $age = substr($page, (strpos($page , 'joined')+10), 10))) return $age;
+        return false;
+    }
+    
+    public function checkByondAge(string $age, string $minimum_age): bool
+    {
+        return (strtotime($age) > strtotime($minimum_age)) ? true : false;
     }
 
     /*
@@ -319,7 +337,15 @@ class Civ13
     {
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (!$member->roles->has($this->discord_config[$this->civ13_guild_id]['roles']['verified'])) $member->addRole($this->discord_config[$this->civ13_guild_id]['roles']['verified']); return 'You are already verified!';}
         if ($this->verified->has($ckey)) return "`$ckey` is already verified!";
-        if (! $this->pending->get('discord', $discord_id)) return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
+        if (! $this->pending->get('discord', $discord_id)) {
+            if (! $page = $this->getByondPage($ckey)) return "Ckey `$ckey` does not exist!";
+            if (! $this->checkByondAge($age = $this->getByondAge($page), '-21 days')) {
+                if ($ban = $this->functions['misc']['ban']) $this->discord->getChannel('712685552155230278')->sendMessage($ban($this, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+                return "Ckey `$ckey` is too new! ($age)";
+            }
+            //Check account age before attempting to verify     
+            return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
+        }
         if ($result = $this->verifyNew($discord_id))
             if ($result[0]) return $result[1];
             else return $result[1];
