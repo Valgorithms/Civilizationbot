@@ -397,6 +397,7 @@ class Civ13
                 $json = "{'ss13':'$ckey','discord':'$discord_id','create_time': '" . (new \DateTime())->format('Y-m-d H:i:s') . "','ss13_approved':'0','seen_tdm':'0','seen_nomads':'0','seen_pers':'0'}";
                 $array = json_decode($json, true);
                 $this->verified->pushItem($array);
+                $this->VarSave('verified.json', $this->verified->toArray());
                 $this->pending->offsetUnset($discord_id);
                 $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)->addRole($this->discord_config[$this->civ13_guild_id]['roles']['verified']);
                 break;
