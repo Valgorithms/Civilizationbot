@@ -311,21 +311,31 @@ class Civ13
         return false;        
     }
     
+    /*
+     * This function is used to retrieve the 50 character token from the BYOND website
+     */
     public function getByondDesc(string $page): string|false 
     {
         if ($desc = substr($page, (strpos($page , 'desc')+8), 50)) return $desc; //PHP versions older than 8.0.0 will return false if the desc isn't found, otherwise an empty string will be returned
         return false;
     }
     
+    /**
+     * This function is used to parse a BYOND account's age
+     * */
     public function getByondAge(string $page): string|false
     {
 		if (preg_match("^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])^", $age = substr($page, (strpos($page , 'joined')+10), 10))) return $age;
         return false;
     }
     
+    /**
+     * This function is used determine if a byond account is old enough to play on the server
+     * false is returned if the account is too young, true is returned if the account is old enough
+     * */
     public function checkByondAge(string $age, string $minimum_age): bool
     {
-        return (strtotime($age) > strtotime($minimum_age)) ? true : false;
+        return (strtotime($age) > strtotime($minimum_age)) ? false : true;
     }
 
     /*
