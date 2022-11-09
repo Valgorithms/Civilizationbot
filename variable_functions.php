@@ -914,9 +914,10 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
-        $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('ckey'))));
-        if (! $item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`$ckey` is not registered to any discord id");
-        return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
+        $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content, strlen('ckey'))));
+        if ($item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}>");
+        if ($item = $civ13->verified->get('discord', $ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}>");
+        return $message->reply("`$ckey` is not registered to any discord id");
     }
     
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
