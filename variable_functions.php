@@ -279,6 +279,7 @@ $recalculate_ranking = function (Civ13 $civ13): bool
         $result[] = "$medal_s;{$duser[0]}";
         if (!in_array($duser[0], $ckeylist)) $ckeylist[] = $duser[0];
     }
+    fclose ($search);
     
     foreach ($ckeylist as $i) {
         $sumc = 0;
