@@ -65,7 +65,7 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-$nomads_ban = function (Civ13 $civ13, $array, $message = null): string
+$ban_nomads = function (Civ13 $civ13, $array, $message = null): string
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL;
@@ -80,7 +80,7 @@ $nomads_ban = function (Civ13 $civ13, $array, $message = null): string
     $result .= "**$admin** banned **{$array[0]}** from **Nomads** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
     return $result;
 };
-$tdm_ban = function (Civ13 $civ13, $array, $message = null): string
+$ban_tdm = function (Civ13 $civ13, $array, $message = null): string
 {
     $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
     $txt = "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL;
@@ -89,9 +89,9 @@ $tdm_ban = function (Civ13 $civ13, $array, $message = null): string
     fclose($file);
     return "**$admin** banned **{$array[0]}** from **TDM** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
 };
-$ban = function (Civ13 $civ13, $array, $message = null) use ($nomads_ban, $tdm_ban): string
+$ban = function (Civ13 $civ13, $array, $message = null) use ($ban_nomads, $ban_tdm): string
 {
-    return $nomads_ban($civ13, $array, $message) . $tdm_ban($civ13, $array, $message);
+    return $ban_nomads($civ13, $array, $message) . $ban_tdm($civ13, $array, $message);
 };
 
 $unban_nomads = function (Civ13 $civ13, string $ckey, ?string $admin = null): void
@@ -177,7 +177,7 @@ $restart_tdm = function (Civ13 $civ13) use ($kill_tdm, $host_tdm): void
     $kill_tdm($civ13);
     $host_tdm($civ13);
 };
-$nomads_mapswap = function (Civ13 $civ13, string $mapto): bool
+$mapswap_nomads = function (Civ13 $civ13, string $mapto): bool
 {
     if (! $file = fopen($civ13->files['map_defines_path'], 'r')) return false;
     
@@ -189,10 +189,10 @@ $nomads_mapswap = function (Civ13 $civ13, string $mapto): bool
     fclose($file);
     if (! in_array($mapto, $maps)) return false;
     
-    \execInBackground("python3 {$civ13->files['nomads_mapswap']} $mapto");
+    \execInBackground("python3 {$civ13->files['mapswap_nomads']} $mapto");
     return true;
 };
-$tdm_mapswap = function (Civ13 $civ13, string $mapto): bool
+$mapswap_tdm = function (Civ13 $civ13, string $mapto): bool
 {
     if (! $file = fopen($civ13->files['map_defines_path'], 'r')) return false;
     
@@ -204,7 +204,7 @@ $tdm_mapswap = function (Civ13 $civ13, string $mapto): bool
     fclose($file);
     if (! in_array($mapto, $maps)) return false;
     
-    \execInBackground("python3 {$civ13->files['tdm_mapswap']} $mapto");
+    \execInBackground("python3 {$civ13->files['mapswap_tdm']} $mapto");
     return true;
 };
 
@@ -425,7 +425,7 @@ $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
     $message->reply('Rejected! You need to have at least the [' . ($message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks)) . '] rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $nomads_ban, $tdm_ban, $unban, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $nomads_mapswap, $tdm_mapswap, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $ban_nomads, $ban_tdm, $unban, $unban_nomads, $unban_tdm, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $mapswap_nomads, $mapswap_tdm, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -552,7 +552,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $nomads_ban($civ13, $split_message, $message);
+        $result = $ban_nomads($civ13, $split_message, $message);
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -565,7 +565,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $tdm_ban($civ13, $split_message, $message);
+        $result = $ban_tdm($civ13, $split_message, $message);
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -578,6 +578,30 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         
         $unban($civ13, $split_message[0], $message->author->displayname);
         $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}**";
+        if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
+            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
+                $member->removeRole($civ13->role_ids['banished'], $result);
+        return $message->reply($result);
+    }
+    if (str_starts_with($message_content_lower, 'unbannomads ')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        $message_content_lower = substr($message_content_lower, 6);
+        $split_message = explode('; ', $message_content_lower);
+        
+        $unban_nomads($civ13, $split_message[0], $message->author->displayname);
+        $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **Nomads**";
+        if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
+            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
+                $member->removeRole($civ13->role_ids['banished'], $result);
+        return $message->reply($result);
+    }
+    if (str_starts_with($message_content_lower, 'unbantdm ')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        $message_content_lower = substr($message_content_lower, 6);
+        $split_message = explode('; ', $message_content_lower);
+        
+        $unban_tdm($civ13, $split_message[0], $message->author->displayname);
+        $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **TDM**";
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
                 $member->removeRole($civ13->role_ids['banished'], $result);
@@ -617,14 +641,14 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $split_message = explode('mapswapnomads ', $message_content);
         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
-        if (! $nomads_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
+        if (! $mapswap_nomads($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
     if (str_starts_with($message_content_lower, 'mapswaptdm')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $split_message = explode('mapswaptdm ', $message_content);
         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
-        if (! $tdm_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
+        if (! $mapswap_tdm($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
     if (str_starts_with($message_content_lower, 'maplist')) {

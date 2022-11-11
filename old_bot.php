@@ -45,7 +45,7 @@ $tdm_serverdata = '/home/1713/civ13-tdm/serverdata.txt';
 $tdm_dmb = '/home/1713/civ13-tdm/civ13.dmb';
 $tdm_killsudos = '/home/1713/civ13-tdm/scripts/killsudos.py';
 $tdm_killciv13 = '/home/1713/civ13-tdm/scripts/killciv13.py';
-$tdm_mapswap = '/home/1713/civ13-tdm/scripts/mapswap.py';
+$mapswap_tdm = '/home/1713/civ13-tdm/scripts/mapswap.py';
 
 $typespess_path = '/home/1713/civ13-typespess';
 $typespess_launch_server_path = 'scripts/launch_server.sh';
@@ -246,7 +246,7 @@ $on_ready = function () use ($discord, $timer_function)
     }
 };
 
-$on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $captain, $knight, $veteran, $infantry, $insults_path, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm, $nomads_discord2ban, $tdm_discord2ban, $nomads_discord2unban, $tdm_discord2unban, $nomads_whitelist, $tdm_whitelist, $nomads_bans, $tdm_bans, $nomads_updateserverabspaths, $nomads_serverdata, $nomads_dmb, $nomads_killsudos, $nomads_killciv13, $nomads_mapswap, $tdm_mapswap, $tdm_updateserverabspaths, $tdm_serverdata, $tdm_dmb, $tdm_killsudos, $tdm_killciv13, $nomads_ip, $nomads_port, $tdm_ip, $tdm_port, $command_symbol)
+$on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $captain, $knight, $veteran, $infantry, $insults_path, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm, $nomads_discord2ban, $tdm_discord2ban, $nomads_discord2unban, $tdm_discord2unban, $nomads_whitelist, $tdm_whitelist, $nomads_bans, $tdm_bans, $nomads_updateserverabspaths, $nomads_serverdata, $nomads_dmb, $nomads_killsudos, $nomads_killciv13, $nomads_mapswap, $mapswap_tdm, $tdm_updateserverabspaths, $tdm_serverdata, $tdm_dmb, $tdm_killsudos, $tdm_killciv13, $nomads_ip, $nomads_port, $tdm_ip, $tdm_port, $command_symbol)
 {
     if ($message->guild->owner_id != $owner_id) return; //Only process commands from a guild that Taislin owns
     if (!$command_symbol) $command_symbol = '!s';
@@ -731,7 +731,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
                     $mapto = $split_message[1];
                     $mapto = strtoupper($mapto);
                     $message->channel->sendMessage("Changing map to $mapto...");
-                    execInBackground("sudo python3 $tdm_mapswap $mapto");
+                    execInBackground("sudo python3 $mapswap_tdm $mapto");
                     return $message->channel->sendMessage("Sucessfully changed map to $mapto.");
                 }
             } else return $message->channel->sendMessage("Denied!");
