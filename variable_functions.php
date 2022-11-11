@@ -377,8 +377,7 @@ $brmedals = function (Civ13 $civ13, string $ckey): string
     $search = fopen($civ13->files['tdm_awards_br_path'], 'r');
     $found = false;
     while (! feof($search)) {
-        $line = trim(str_replace(PHP_EOL, '', fgets($search))); # remove '\n' at end of line
-        if (str_contains($line, $ckey)) {
+        if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
             $found = true;
             $duser = explode(';', $line);
             if ($duser[0] == $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
