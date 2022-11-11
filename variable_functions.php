@@ -249,19 +249,33 @@ $recalculate_ranking = function (Civ13 $civ13): bool
     if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
     while (! feof($search)) {
         $medal_s = 0;
-        $line = fgets($search);
-        $line = trim(str_replace(PHP_EOL, '', $line)); # remove '\n' at end of line
-        $duser = explode(';', $line);
-        if ($duser[2] == "long service medal") $medal_s += 0.5;
-        if ($duser[2] == "combat medical badge") $medal_s += 2;
-        if ($duser[2] == "tank destroyer silver badge") $medal_s += 0.75;
-        if ($duser[2] == "tank destroyer gold badge") $medal_s += 1.5;
-        if ($duser[2] == "assault badge") $medal_s += 1.5;
-        if ($duser[2] == "wounded badge") $medal_s += 0.5;
-        if ($duser[2] == "wounded silver badge") $medal_s += 0.75;
-        if ($duser[2] == "wounded gold badge") $medal_s += 1;
-        if ($duser[2] == "iron cross 1st class") $medal_s += 3;
-        if ($duser[2] == "iron cross 2nd class") $medal_s += 5;
+        $duser = explode(';', trim(str_replace(PHP_EOL, '', fgets($search))));
+        switch ($duser[2]) {
+            case 'long service medal':
+            case 'wounded badge':
+                $medal_s += 0.5;
+                break;
+            case 'tank destroyer silver badge':
+            case 'wounded silver badge':
+                $medal_s += 0.75;
+                break;
+            case 'wounded gold badge':
+                $medal_s += 1;
+                break;
+            case 'assault badge':
+            case 'tank destroyer gold badge':
+                $medal_s += 1.5;
+                break;
+            case 'combat medical badge':
+                $medal_s += 2;
+                break;
+            case 'iron cross 1st class':
+                $medal_s += 3;
+                break;
+            case 'iron cross 2nd class':
+                $medal_s += 5;
+                break;
+        }
         $result[] = "$medal_s;{$duser[0]}";
         if (!in_array($duser[0], $ckeylist)) $ckeylist[] = $duser[0];
     }
