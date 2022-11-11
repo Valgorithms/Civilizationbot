@@ -953,8 +953,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
-        $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content, strlen('ckey'))));
-        if (is_numeric($ckey)) {
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content, strlen('ckey')))))) {
             if (! $item = $civ13->verified->get('discord', $ckey)) return $message->reply("`$ckey` is not registered to any ckey");
             if (! $age = $civ13->getByondAge($civ13->getByondPage($item['ss13']))) return $message->reply("`$ckey` does not exist");
             return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
