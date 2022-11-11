@@ -497,21 +497,17 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'unwhitelistme')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran', 'infantry'])) return $message->react("❌");
         
-        $removed = "N/A";
         $lines_array = array();
         if (! $wlist = fopen($civ13->files['nomads_whitelist'], 'r')) return $message->react("🔥");
         while (($fp = fgets($wlist, 4096)) !== false) $lines_array[] = $fp;
         fclose($wlist);
         
+        $removed = 'N/A';
         if (count($lines_array) > 0) {
             if (! $wlist = fopen($civ13->files['nomads_whitelist'], 'w')) return $message->react("🔥");
             foreach ($lines_array as $line)
-                if (!str_contains($line, $message->member->username)) {
-                    fwrite($wlist, $line);
-                } else {
-                    $removed = explode('=', $line);
-                    $removed = $removed[0];
-                }
+                if (!str_contains($line, $message->member->username)) fwrite($wlist, $line);
+                else $removed = explode('=', $line)[0];
             fclose($wlist);
         }
         
@@ -523,12 +519,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (count($lines_array) > 0) {
             if (! $wlist = fopen($civ13->files['tdm_whitelist'], 'w')) return $message->react("🔥");
             foreach ($lines_array as $line)
-                if (!str_contains($line, $message->member->username)) {
-                    fwrite($wlist, $line);
-                } else {
-                    $removed = explode('=', $line);
-                    $removed = $removed[0];
-                }
+                if (!str_contains($line, $message->member->username)) fwrite($wlist, $line);
+                else $removed = explode('=', $line)[0];
             fclose($wlist);
         }
         return $message->reply("Ckey $removed has been removed from the whitelist.");
