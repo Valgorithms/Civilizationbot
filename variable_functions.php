@@ -293,9 +293,7 @@ $ranking = function (Civ13 $civ13): false|string
     $msg = '';
     for ($x=0;$x<count($line_array);$x++) {
         if ($topsum > 10) break;
-        $line = trim(str_replace(PHP_EOL, '', $line_array[$x]));
-        
-        $sline = explode(';', $line);
+        $sline = explode(';', trim(str_replace(PHP_EOL, '', $line_array[$x])));
         $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
         $topsum += 1;
     }
