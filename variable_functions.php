@@ -224,8 +224,7 @@ $log_handler = function (Civ13 $civ13, $message, string $message_content) use ($
     if (trim($tokens[0]) == 'nomads') {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
-    }
-    if (trim($tokens[0]) == 'tdm') {
+    } else {
         unset($tokens[0]);
         $results = $filenav($civ13, $civ13->files['tdm_log_basedir'], $tokens);
     }
@@ -238,7 +237,7 @@ $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lowe
 {
     if (!in_array($message_content_lower, ['nomads', 'tdm'])) return $message->reply('Please use the format `bans nomads` or `bans tdm');
     if ($message_content_lower == 'nomads') return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_bans'], 'bans.txt'));
-    if ($message_content_lower == 'tdm') return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
+    return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
 };
 
 $recalculate_ranking = function (Civ13 $civ13): bool
