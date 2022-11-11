@@ -242,11 +242,8 @@ $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lowe
 
 $recalculate_ranking = function (Civ13 $civ13): bool
 {
-    $ranking = array();
-    $ckeylist = array();
-    $result = array();
-    
     if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
+    $result = array();
     while (! feof($search)) {
         $medal_s = 0;
         $duser = explode(';', trim(str_replace(PHP_EOL, '', fgets($search))));
@@ -276,23 +273,12 @@ $recalculate_ranking = function (Civ13 $civ13): bool
                 $medal_s += 5;
                 break;
         }
-        $result[] = "$medal_s;{$duser[0]}";
-        if (!in_array($duser[0], $ckeylist)) $ckeylist[] = $duser[0];
+        $result[$duser[0]] += $medal_s;
     }
     fclose ($search);
-    
-    foreach ($ckeylist as $i) {
-        $sumc = 0;
-        foreach ($result as $j) {
-            $sj = explode(';', $j);
-            if ($sj[1] == $i) $sumc += (float) $sj[0];
-        }
-        $ranking[] = [$sumc,$i];
-    }
-    usort($ranking, function($a, $b) { return $a[0] <=> $b[0]; });
-    $sorted_list = array_reverse($ranking);
+    arsort($result);
     if (! $search = fopen($civ13->files['ranking_path'], 'w')) return false;
-    foreach ($sorted_list as $i) fwrite($search, "{$i[0]};{$i[1]}" . PHP_EOL);
+    foreach ($result as $ckey => $score) fwrite($search, "$score;$ckey" . PHP_EOL);
     fclose ($search);
     return true;
 };
