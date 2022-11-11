@@ -93,17 +93,28 @@ $ban = function (Civ13 $civ13, $array, $message = null) use ($nomads_ban, $tdm_b
 {
     return $nomads_ban($civ13, $array, $message) . $tdm_ban($civ13, $array, $message);
 };
-$unban = function (Civ13 $civ13, string $ckey, ?string $admin = null): void
+
+$unban_nomads = function (Civ13 $civ13, string $ckey, ?string $admin = null): void
 {
     if (!$admin) $admin = $civ13->discord->user->displayname;
     if ($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
         fwrite($file, "$admin:::$ckey");
         fclose($file);
     }
+};
+$unban_tdm = function (Civ13 $civ13, string $ckey, ?string $admin = null): void
+{
+    if (!$admin) $admin = $civ13->discord->user->displayname;
     if ($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
         fwrite($file, "$admin:::$ckey");
         fclose($file);
     }
+};
+$unban = function (Civ13 $civ13, string $ckey, ?string $admin = null) use ($unban_nomads, $unban_tdm): void
+{
+    if (!$admin) $admin = $civ13->discord->user->displayname;
+    $unban_nomads($civ13, $ckey, $admin);
+    $unban_tdm($civ13, $ckey, $admin);
 };
 
 $browser_call = function (Civ13 $civ13, string $url, string $method = 'GET', array $headers = [], array|string $data = [], $curl = true): false|string|ExtendedPromiseInterface
@@ -635,7 +646,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
 
     if (str_starts_with($message_content_lower, 'stop')) {
         if ($rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-            return $message->react("🛑")->done(function () use ($civ13) { $civ13->stop(); });
+        return $message->react("🛑")->done(function () use ($civ13) { $civ13->stop(); });
     }
 
     if (str_starts_with($message_content_lower, 'ts')) {
