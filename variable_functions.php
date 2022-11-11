@@ -383,8 +383,8 @@ $brmedals = function (Civ13 $civ13, string $ckey): string
             if ($duser[0] == $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
         }
     }
-    if ($result != '') return $result;
-    if (!$found && ($result == '')) return 'No medals found for this ckey.';
+    if (!$found) return 'No medals found for this ckey.';
+    return $result;
 };
 
 $tests = function (Civ13 $civ13, $message, string $message_content)
