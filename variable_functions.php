@@ -954,8 +954,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
         $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content, strlen('ckey'))));
-        if (! $page = $civ13->getByondPage($ckey)) return $message->reply("`$ckey` does not exist");
-        $age = $civ13->getByondAge($page);
+        if (! $age = $civ13->getByondAge($civ13->getByondPage($ckey))) ;return $message->reply("`$ckey` does not exist");
         if ($item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
         if ($item = $civ13->verified->get('discord', $ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
         return $message->reply("`$ckey` is not registered to any discord id ($age)");
