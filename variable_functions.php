@@ -291,11 +291,10 @@ $ranking = function (Civ13 $civ13): false|string
 
     $topsum = 1;
     $msg = '';
-    for ($x=0;$x<count($line_array);$x++) {
-        if ($topsum > 10) break;
-        $sline = explode(';', trim(str_replace(PHP_EOL, '', $line_array[$x])));
+    foreach ($line_array as $line) {
+        $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
         $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
-        $topsum += 1;
+        if (($topsum += 1) > 10) break;
     }
     return $msg;
 };
@@ -306,12 +305,12 @@ $rankme = function (Civ13 $civ13, string $ckey): false|string
     while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
     fclose($search);
     
-    $found = 0;
+    $found = false;
     $result = '';
-    for ($x=0;$x<count($line_array);$x++) {
-        $sline = explode(';', trim(str_replace(PHP_EOL, '', $line_array[$x])));
+    foreach ($line_array as $line) {
+        $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
         if ($sline[1] == $ckey) {
-            $found = 1;
+            $found = true;
             $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
         };
     }
@@ -786,12 +785,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             $x=0;
             $load = '';
             foreach ($load_array as $line) {
-                if ($line != ' ' && $line != '') {
+                if (trim($line)) {
                     if ($x==0) {
                         $load = "CPU Usage: $line%" . PHP_EOL;
                         break;
-                    }
-                    if ($x!=0) {
+                    } else {
                         //$load = $load . "Core $x: $line%" . PHP_EOL; //No need to report individual cores right now
                     }
                     $x++;
@@ -800,8 +798,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             return $message->reply($load);
         } else { //Linux
             $cpu_load = '-1';
-            if ($cpu_load_array = sys_getloadavg())
-                $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array);
+            if ($cpu_load_array = sys_getloadavg()) $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array);
             return $message->reply("CPU Usage: $cpu_load%");
         }
         return $message->reply('Unrecognized operating system!');
@@ -858,7 +855,6 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                 return $message->react("📧");
             default:
                 return $message->reply('You need to be in either the #ahelp-nomads or #ahelp-tdm channel to use this command.');
-                return $message->react("📧");
         }
     }
     if (str_starts_with($message_content_lower, 'bancheck')) {
@@ -870,10 +866,10 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                     $found = true;
-                    $banreason = $linesplit[3];
-                    $bandate = $linesplit[5];
-                    $banner = $linesplit[4];
-                    $message->reply("**$ckey** has been banned from **Nomads** on **$bandate** for **$banreason** by $banner.");
+                    $reason = $linesplit[3];
+                    $admin = $linesplit[4];
+                    $date = $linesplit[5];
+                    $message->reply("**$ckey** has been banned from **Nomads** on **$date** for **$reason** by $admin.");
                 }
             }
             fclose($filecheck1);
@@ -883,10 +879,10 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                     $found = true;
-                    $banreason = $linesplit[3];
-                    $bandate = $linesplit[5];
-                    $banner = $linesplit[4];
-                    $message->reply("**$ckey** has been banned from **TDM** on **$bandate** for **$banreason** by $banner.");
+                    $reason = $linesplit[3];
+                    $admin = $linesplit[4];
+                    $date = $linesplit[5];
+                    $message->reply("**$ckey** has been banned from **TDM** on **$date** for **$reason** by $admin.");
                 }
             }
             fclose($filecheck2);
@@ -958,9 +954,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
         $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content, strlen('ckey'))));
-        if ($item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}>");
-        if ($item = $civ13->verified->get('discord', $ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}>");
-        return $message->reply("`$ckey` is not registered to any discord id");
+        if (! $page = $civ13->getByondPage($ckey)) return $message->reply("`$ckey` does not exist");
+        $age = $civ13->getByondAge($page);
+        if ($item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+        if ($item = $civ13->verified->get('discord', $ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+        return $message->reply("`$ckey` is not registered to any discord id ($age)");
     }
     
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
