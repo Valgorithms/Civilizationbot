@@ -943,13 +943,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         return $message->channel->sendEmbed($embed);
     }
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
-        $id = trim(str_replace(['<@!', '<@', '>'], '', substr($message_content_lower, strlen('discord2ckey'))));
-        if (! $item = $civ13->verified->get('discord', $id)) return $message->reply("`$id` is not registered to any byond username");
+        if (! $item = $civ13->verified->get('discord', $id = trim(str_replace(['<@!', '<@', '>'], '', substr($message_content_lower, strlen('discord2ckey')))))) return $message->reply("`$id` is not registered to any byond username");
         return $message->reply("`$id` is registered to `{$item['ss13']}`");
     }
     if (str_starts_with($message_content_lower, 'ckey2discord')) {
-        $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('discord2ckey'))));
-        if (! $item = $civ13->verified->get('ss13', $ckey)) return $message->reply("`$ckey` is not registered to any discord id");
+        if (! $item = $civ13->verified->get('ss13', $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content, strlen('discord2ckey')))))) return $message->reply("`$ckey` is not registered to any discord id");
         return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
