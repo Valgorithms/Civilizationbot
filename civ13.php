@@ -345,7 +345,7 @@ class Civ13
     */
     public function verifyProcess(string $ckey, string $discord_id): string
     {
-        if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (!$member->roles->has($this->discord_config[$this->civ13_guild_id]['roles']['verified'])) $member->addRole($this->discord_config[$this->civ13_guild_id]['roles']['verified']); return 'You are already verified!';}
+        if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->discord_config[$this->civ13_guild_id]['roles']['verified'])) $member->addRole($this->discord_config[$this->civ13_guild_id]['roles']['verified']); return 'You are already verified!';}
         if ($this->verified->has($ckey)) return "`$ckey` is already verified!";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $page = $this->getByondPage($ckey)) return "Ckey `$ckey` does not exist!";

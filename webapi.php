@@ -60,7 +60,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     foreach ($substr_whitelist as $substr) if (substr($request->getServerParams()['REMOTE_ADDR'], 0, strlen($substr)) == $substr) $whitelisted = true;
     if (in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist)) $whitelisted = true;
     
-    if (!$whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
+    if (! $whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
@@ -72,7 +72,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             return new Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'favicon.ico':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->info('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -80,7 +80,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             return new Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
         
         case 'nohup.out':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -89,7 +89,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
         
         case 'botlog':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -98,7 +98,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
             
         case 'botlog2':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -107,52 +107,52 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
         
         case 'channel':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->getChannel($id)) return webapiFail('channel_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->getChannel($id)) return webapiFail('channel_id', $id);
             break;
 
         case 'guild':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
             break;
 
         case 'bans':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->bans) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->bans) return webapiFail('guild_id', $id);
             break;
 
         case 'channels':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->channels) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->channels) return webapiFail('guild_id', $id);
             break;
 
         case 'members':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->members) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->members) return webapiFail('guild_id', $id);
             break;
 
         case 'emojis':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->emojis) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->emojis) return webapiFail('guild_id', $id);
             break;
 
         case 'invites':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->invites) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->invites) return webapiFail('guild_id', $id);
             break;
 
         case 'roles':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->roles) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->roles) return webapiFail('guild_id', $id);
             break;
 
         case 'guildMember':
-            if (!$id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
-            if (!$id2 || !webapiSnow($id2) || !$return = $guild->members->get('id', $id2)) return webapiFail('user_id', $id2);
+            if (! $id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
+            if (! $id2 || !webapiSnow($id2) || !$return = $guild->members->get('id', $id2)) return webapiFail('user_id', $id2);
             break;
 
         case 'user':
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
             break;
 
         case 'userName':
-            if (!$id || !$return = $civ13->discord->users->get('name', $id)) return webapiFail('user_name', $id);
+            if (! $id || !$return = $civ13->discord->users->get('name', $id)) return webapiFail('user_name', $id);
             break;
         
         case 'reset':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -161,7 +161,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
         
         case 'pull':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -172,7 +172,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
         
         case 'update':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -183,7 +183,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
         
         case 'restart':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
@@ -199,19 +199,19 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
 
         case 'lookup':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if (!$id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
+            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
             break;
 
         case 'owner':
-            if (!$whitelisted) {
+            if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if (!$id || !webapiSnow($id)) return webapiFail('user_id', $id); $return = false;
+            if (! $id || !webapiSnow($id)) return webapiFail('user_id', $id); $return = false;
             if ($user = $civ13->discord->users->get('id', $id)) { //Search all guilds the bot is in and check if the user id exists as a guild owner
                 foreach ($civ13->discord->guilds as $guild) {
                     if ($id == $guild->owner_id) {
@@ -223,10 +223,10 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
 
         case 'avatar':
-            if (!$id || !webapiSnow($id)) return webapiFail('user_id', $id);
-            if (!$user = $civ13->discord->users->get('id', $id)) $return = 'https://cdn.discordapp.com/embed/avatars/'.rand(0,4).'.png';
+            if (! $id || !webapiSnow($id)) return webapiFail('user_id', $id);
+            if (! $user = $civ13->discord->users->get('id', $id)) $return = 'https://cdn.discordapp.com/embed/avatars/'.rand(0,4).'.png';
             else $return = $user->avatar;
-            //if (!$return) return new Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], (''));
+            //if (! $return) return new Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], (''));
             break;
 
         case 'avatars': //This needs to be optimized to not use async code
@@ -259,7 +259,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
         case 'nomads':
             switch ($id) {
                 case 'bans':
-                    if (!$whitelisted) {
+                    if (! $whitelisted) {
                         $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                         return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
@@ -274,7 +274,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
         case 'tdm':
             switch ($id) {
                 case 'bans':
-                    if (!$whitelisted) {
+                    if (! $whitelisted) {
                         $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                         return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
@@ -288,7 +288,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
         
         case 'discord2ckey':
-            if (!$id || !webapiSnow($id) || !is_numeric($id)) return webapiFail('user_id', $id);
+            if (! $id || !webapiSnow($id) || !is_numeric($id)) return webapiFail('user_id', $id);
             $discord2ckey = $civ13->functions['misc']['discord2ckey'];
             $return = $discord2ckey($civ13, $id);
             return new Response(200, ['Content-Type' => 'text/plain'], $return);

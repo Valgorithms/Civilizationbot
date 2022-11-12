@@ -96,7 +96,7 @@ $ban = function (Civ13 $civ13, $array, $message = null) use ($ban_nomads, $ban_t
 
 $unban_nomads = function (Civ13 $civ13, string $ckey, ?string $admin = null): void
 {
-    if (!$admin) $admin = $civ13->discord->user->displayname;
+    if (! $admin) $admin = $civ13->discord->user->displayname;
     if ($file = fopen($civ13->files['nomads_discord2unban'], 'a')) {
         fwrite($file, "$admin:::$ckey");
         fclose($file);
@@ -104,7 +104,7 @@ $unban_nomads = function (Civ13 $civ13, string $ckey, ?string $admin = null): vo
 };
 $unban_tdm = function (Civ13 $civ13, string $ckey, ?string $admin = null): void
 {
-    if (!$admin) $admin = $civ13->discord->user->displayname;
+    if (! $admin) $admin = $civ13->discord->user->displayname;
     if ($file = fopen($civ13->files['tdm_discord2unban'], 'a')) {
         fwrite($file, "$admin:::$ckey");
         fclose($file);
@@ -112,7 +112,7 @@ $unban_tdm = function (Civ13 $civ13, string $ckey, ?string $admin = null): void
 };
 $unban = function (Civ13 $civ13, string $ckey, ?string $admin = null) use ($unban_nomads, $unban_tdm): void
 {
-    if (!$admin) $admin = $civ13->discord->user->displayname;
+    if (! $admin) $admin = $civ13->discord->user->displayname;
     $unban_nomads($civ13, $ckey, $admin);
     $unban_tdm($civ13, $ckey, $admin);
 };
@@ -314,13 +314,13 @@ $rankme = function (Civ13 $civ13, string $ckey): false|string
             $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
         };
     }
-    if (!$found) return "No medals found for ckey `$ckey`.";
+    if (! $found) return "No medals found for ckey `$ckey`.";
     return $result;
 };
 $medals = function (Civ13 $civ13, string $ckey): false|string
 {
     $result = '';
-    if (!$search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
+    if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
     $found = false;
     while (! feof($search)) {
         $line = fgets($search);
@@ -368,7 +368,7 @@ $medals = function (Civ13 $civ13, string $ckey): false|string
         }
     }
     if ($result != '') return $result;
-    if (!$found && ($result == '')) return 'No medals found for this ckey.';
+    if (! $found && ($result == '')) return 'No medals found for this ckey.';
 };
 $brmedals = function (Civ13 $civ13, string $ckey): string
 {
@@ -382,14 +382,14 @@ $brmedals = function (Civ13 $civ13, string $ckey): string
             if ($duser[0] == $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
         }
     }
-    if (!$found) return 'No medals found for this ckey.';
+    if (! $found) return 'No medals found for this ckey.';
     return $result;
 };
 
 $tests = function (Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(' ', $message_content);
-    if (!$tokens[0]) {
+    if (! $tokens[0]) {
         if (empty($civ13->tests)) return $message->reply("No tests have been created yet! Try creating one with `tests test_key add {Your Test's Question}`");
         return $message->reply('Available tests: `' . implode('`, `', array_keys($civ13->tests)) . '`');
     }
@@ -435,7 +435,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
     if (str_starts_with($message_content_lower, 'approveme')) {
-        if (!$ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
+        if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
 
@@ -687,13 +687,13 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
 
     if (str_starts_with($message_content_lower, 'ranking')) {
-        if (!$recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
-        if (!$msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
+        if (! $recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
+        if (! $msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         return $message->reply($msg);
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
-        if (!$recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
+        if (! $recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (! $msg = $rankme($civ13, $ckey)) return $message->reply('There was an error trying to get your ranking!');
         return $message->reply($msg);
     }
@@ -755,7 +755,7 @@ $tdm_discord2dm = function (Civ13 $civ13, $author, $string): bool
 $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm)
 { // on message
     if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
-    if (!$civ13->command_symbol) $civ13->command_symbol = '!s';
+    if (! $civ13->command_symbol) $civ13->command_symbol = '!s';
     
     $message_content = '';
     $message_content_lower = '';
@@ -887,19 +887,19 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             }
             fclose($filecheck2);
         }
-        if (!$found) return $message->reply("No bans were found for **$ckey**.");
+        if (! $found) return $message->reply("No bans were found for **$ckey**.");
         return;
     }
     if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
         $embed = new Embed($civ13->discord);
         $_1714 = !\portIsAvailable(1714);
         $server_is_up = $_1714;
-        if (!$server_is_up) {
+        if (! $server_is_up) {
             $embed->setColor(0x00ff00);
             $embed->addFieldValues('TDM Server Status', 'Offline');
         } else {
             if ($_1714) {
-                if (!$data = file_get_contents($civ13->files['tdm_serverdata'])) {
+                if (! $data = file_get_contents($civ13->files['tdm_serverdata'])) {
                     $embed->setColor(0x00ff00);
                     $embed->addFieldValues('TDM Server Status', 'Starting');
                 } else {
@@ -918,12 +918,12 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         }
         $_1715 = !\portIsAvailable(1715);
         $server_is_up = ($_1715);
-        if (!$server_is_up) {
+        if (! $server_is_up) {
             $embed->setColor(0x00ff00);
             $embed->addFieldValues('Nomads Server Status', 'Offline');
         } else {
             if ($_1714) {
-                if (!$data = file_get_contents($civ13->files['nomads_serverdata'])) {
+                if (! $data = file_get_contents($civ13->files['nomads_serverdata'])) {
                     $embed->setColor(0x00ff00);
                     $embed->addFieldValues('Nomads Server Status', 'Starting');
                 } else {
@@ -996,13 +996,13 @@ $bancheck_join = function (Civ13 $civ13, $member) use ($bancheck): void
 $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
 { //ready_slash
     //if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
-    if (!$commands->get('name', 'ping')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'ping')) $commands->save(new Command($civ13->discord, [
             'name' => 'ping',
             'description' => 'Replies with Pong!',
     ]));
     
     //if ($command = $commands->get('name', 'restart')) $commands->delete($command->id);
-    if (!$commands->get('name', 'restart')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'restart')) $commands->save(new Command($civ13->discord, [
             'name' => 'restart',
             'description' => 'Restart the bot',
             'dm_permission' => false,
@@ -1010,7 +1010,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     ]));
     
     //if ($command = $commands->get('name', 'pull')) $commands->delete($command->id);
-    if (!$commands->get('name', 'pull')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'pull')) $commands->save(new Command($civ13->discord, [
             'name' => 'pull',
             'description' => "Update the bot's code",
             'dm_permission' => false,
@@ -1018,7 +1018,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     ]));
     
     //if ($command = $commands->get('name', 'update')) $commands->delete($command->id);
-    if (!$commands->get('name', 'update')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'update')) $commands->save(new Command($civ13->discord, [
             'name' => 'update',
             'description' => "Update the bot's dependencies",
             'dm_permission' => false,
@@ -1026,7 +1026,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     ]));
 
     //if ($command = $commands->get('name', 'stats')) $commands->delete($command->id);
-    if (!$commands->get('name', 'stats')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'stats')) $commands->save(new Command($civ13->discord, [
         'name' => 'stats',
         'description' => 'Get runtime information about the bot',
         'dm_permission' => false,
@@ -1034,7 +1034,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     ]));
     
     //if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
-    if (!$commands->get('name', 'invite')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'invite')) $commands->save(new Command($civ13->discord, [
             'name' => 'invite',
             'description' => 'Bot invite link',
             'dm_permission' => false,
@@ -1048,7 +1048,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     ]));
     
     //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
-    if (!$commands->get('name', 'ckey')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'ckey')) $commands->save(new Command($civ13->discord, [
         'type' => Command::USER,
         'name' => 'ckey',
         'dm_permission' => false,
@@ -1056,7 +1056,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     ]));
     
      //if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
-    if (!$commands->get('name', 'bancheck')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'bancheck')) $commands->save(new Command($civ13->discord, [
         'type' => Command::USER,
         'name' => 'bancheck',
         'dm_permission' => false,
@@ -1076,21 +1076,21 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     ]));
     
     //if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
-    if (!$commands->get('name', 'rank')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'rank')) $commands->save(new Command($civ13->discord, [
         'type' => Command::USER,
         'name' => 'rank',
         'dm_permission' => false,
     ]));
     
     //if ($command = $commands->get('name', 'medals')) $commands->delete($command->id);
-    if (!$commands->get('name', 'medals')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'medals')) $commands->save(new Command($civ13->discord, [
         'type' => Command::USER,
         'name' => 'medals',
         'dm_permission' => false,
     ]));
     
     //if ($command = $commands->get('name', 'brmedals')) $commands->delete($command->id);
-    if (!$commands->get('name', 'brmedals')) $commands->save(new Command($civ13->discord, [
+    if (! $commands->get('name', 'brmedals')) $commands->save(new Command($civ13->discord, [
         'type' => Command::USER,
         'name' => 'brmedals',
         'dm_permission' => false,
@@ -1098,7 +1098,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     
     $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->commands->freshen()->done( function ($commands) use ($civ13) {
         //if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
-        if (!$commands->get('name', 'unban')) $commands->save(new Command($civ13->discord, [
+        if (! $commands->get('name', 'unban')) $commands->save(new Command($civ13->discord, [
             'type' => Command::USER,
             'name' => 'unban',
             'dm_permission' => false,
@@ -1106,7 +1106,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
         ]));
         
         //if ($command = $commands->get('name', 'restart_nomads')) $commands->delete($command->id);
-        if (!$commands->get('name', 'restart_nomads')) $commands->save(new Command($civ13->discord, [
+        if (! $commands->get('name', 'restart_nomads')) $commands->save(new Command($civ13->discord, [
             'type' => Command::CHAT_INPUT,
             'name' => 'restart_nomads',
             'description' => 'Restart the Nomads server',
@@ -1115,7 +1115,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
         ]));
         
         //if ($command = $commands->get('name', 'restart tdm')) $commands->delete($command->id);
-        if (!$commands->get('name', 'restart_tdm')) $commands->save(new Command($civ13->discord, [
+        if (! $commands->get('name', 'restart_tdm')) $commands->save(new Command($civ13->discord, [
             'type' => Command::CHAT_INPUT,
             'name' => 'restart_tdm',
             'description' => 'Restart the TDM server',
@@ -1158,7 +1158,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
     });
     
     $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
-        if (!$data_json = json_decode(file_get_contents("http://{$civ13->ips['vzg']}/servers/serverinfo.json"),  true)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
+        if (! $data_json = json_decode(file_get_contents("http://{$civ13->ips['vzg']}/servers/serverinfo.json"),  true)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
         $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"];
         $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>"];
         $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['persistence']}>"];

@@ -249,7 +249,7 @@ $on_ready = function () use ($discord, $timer_function)
 $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $captain, $knight, $veteran, $infantry, $insults_path, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm, $nomads_discord2ban, $tdm_discord2ban, $nomads_discord2unban, $tdm_discord2unban, $nomads_whitelist, $tdm_whitelist, $nomads_bans, $tdm_bans, $nomads_updateserverabspaths, $nomads_serverdata, $nomads_dmb, $nomads_killsudos, $nomads_killciv13, $nomads_mapswap, $mapswap_tdm, $tdm_updateserverabspaths, $tdm_serverdata, $tdm_dmb, $tdm_killsudos, $tdm_killciv13, $nomads_ip, $nomads_port, $tdm_ip, $tdm_port, $command_symbol)
 {
     if ($message->guild->owner_id != $owner_id) return; //Only process commands from a guild that Taislin owns
-    if (!$command_symbol) $command_symbol = '!s';
+    if (! $command_symbol) $command_symbol = '!s';
     
     $author_user = $message->author; //This will need to be updated in a future release of DiscordPHP
     if ($author_member = $message->member) {
@@ -469,7 +469,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
                         fclose($whitelist2);
                     }
                     
-                    if (!$found) {
+                    if (! $found) {
                         $found2 = false;
                         $whitelist1 = fopen($nomads_whitelist, "r") ?? NULL;
                         if ($whitelist1) {
@@ -801,7 +801,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
                 }
                 fclose($filecheck2);
             }
-            if (!$found) return $message->channel->sendMessage("No bans were found for **$ckey**.");
+            if (! $found) return $message->channel->sendMessage("No bans were found for **$ckey**.");
         } else return  $message->channel->sendMessage("Wrong format. Please try '!s bancheck [ckey].'");
         return;
     }
@@ -809,7 +809,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
         $embed = new \Discord\Parts\Embed\Embed($discord);
         $_1714 = !portIsAvailable(1714);
         $server_is_up = $_1714;
-        if (!$server_is_up) {
+        if (! $server_is_up) {
             $embed->setColor(0x00ff00);
             $embed->addFieldValues("TDM Server Status", "Offline");
             #$message->channel->sendEmbed($embed);
@@ -817,7 +817,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
         } else {
             $data = "None";
             if ($_1714) {
-                if (!$data = file_get_contents($tdm_serverdata))
+                if (! $data = file_get_contents($tdm_serverdata))
                     return $message->channel->sendMessage("Unable to access `$tdm_serverdata`");
             } else {
                 $embed->setColor(0x00ff00);
@@ -845,7 +845,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
         }
         $_1715 = !portIsAvailable(1715);
         $server_is_up = ($_1715);
-        if (!$server_is_up) {
+        if (! $server_is_up) {
             $embed->setColor(0x00ff00);
             $embed->addFieldValues("Nomads Server Status", "Offline");
             #$message->channel->sendEmbed($embed);
@@ -853,7 +853,7 @@ $on_message = function ($message) use ($discord, $loop, $owner_id, $admiral, $ca
         } else {
             $data = "None";
             if ($_1714) {
-                if (!$data = file_get_contents($nomads_serverdata))
+                if (! $data = file_get_contents($nomads_serverdata))
                     return $message->channel->sendMessage("Unable to access `$nomads_serverdata`");
             } else {
                 $embed->setColor(0x00ff00);
@@ -942,7 +942,7 @@ $recalculate_ranking = function () use ($tdm_awards_path, $ranking_path)
 $on_message2 = function ($message) use ($discord, $loop, $recalculate_ranking, $owner_id, $ranking_path, $tdm_awards_path, $tdm_awards_br_path, $typespess_path, $typespess_launch_server_path, $command_symbol, $admiral)
 {
     if ($message->guild->owner_id != $owner_id) return; //Only process commands from a guild that Taislin owns
-    if (!$command_symbol) $command_symbol = '!s';
+    if (! $command_symbol) $command_symbol = '!s';
     
     if (str_starts_with($message->content, $command_symbol . ' ')) { //Add these as slash commands?
         $message_content = substr($message->content, strlen($command_symbol)+1);
@@ -999,7 +999,7 @@ $on_message2 = function ($message) use ($discord, $loop, $recalculate_ranking, $
                     $result .= "**" . $sline[1] . "**" . " has a total rank of **" . $sline[0] . "**.";
                 };
             }
-            if (!$found) return $message->channel->sendMessage("No medals found for this ckey.");
+            if (! $found) return $message->channel->sendMessage("No medals found for this ckey.");
             return $message->channel->sendMessage($result);
         }
         if (str_starts_with($message_content_lower, 'medals')) {
@@ -1047,7 +1047,7 @@ $on_message2 = function ($message) use ($discord, $loop, $recalculate_ranking, $
                 }
             }
             if ($result != '') return $message->channel->sendMessage($result);
-            if (!$found && ($result == '')) return $message->channel->sendMessage("No medals found for this ckey.");
+            if (! $found && ($result == '')) return $message->channel->sendMessage("No medals found for this ckey.");
         }
         if (str_starts_with($message_content_lower, 'brmedals')) {
             $split_message = explode('brmedals ', $message_content);
@@ -1073,7 +1073,7 @@ $on_message2 = function ($message) use ($discord, $loop, $recalculate_ranking, $
                 }
             }
             if ($result != '') return $message->channel->sendMessage($result);
-            if (!$found && ($result == '')) return $message->channel->sendMessage("No medals found for this ckey.");
+            if (! $found && ($result == '')) return $message->channel->sendMessage("No medals found for this ckey.");
         }
         if (str_starts_with($message_content_lower, 'ts')) {
             $split_message = explode('ts ', $message_content);
