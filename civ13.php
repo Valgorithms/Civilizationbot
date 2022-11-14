@@ -30,8 +30,10 @@ class Civ13
     public $stats;
     
     protected $webapi;
+    
     public collection $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
+    public $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
     
     public $timers = [];
     
@@ -323,10 +325,16 @@ class Civ13
     /**
      * This function is used to parse a BYOND account's age
      * */
-    public function getByondAge(string $page): string|false
+    public function parseByondAge(string $page, ?string $ckey = null): string|false
     {
 		if (preg_match("^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])^", $age = substr($page, (strpos($page , 'joined')+10), 10))) return $age;
         return false;
+    }
+    
+    public function getByondAge($ckey): string|false
+    {
+        if (isset($this->ages[$ckey])) return $this->ages[$ckey];
+        return $this->ages[$ckey] = $this->parseByondAge($this->getByondPage($ckey));
     }
     
     /**
@@ -348,17 +356,15 @@ class Civ13
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->discord_config[$this->civ13_guild_id]['roles']['verified'])) $member->addRole($this->discord_config[$this->civ13_guild_id]['roles']['verified']); return 'You are already verified!';}
         if ($this->verified->has($ckey)) return "`$ckey` is already verified!";
         if (! $this->pending->get('discord', $discord_id)) {
-            if (! $page = $this->getByondPage($ckey)) return "Ckey `$ckey` does not exist!";
-            if (! $this->checkByondAge($age = $this->getByondAge($page), '-21 days')) {
+            if (! $age = $this->getByondAge($ckey)) return "Ckey `$ckey` does not exist!";
+            if (! $this->checkByondAge($age, '-21 days')) { //TODO: Declare the minimum time in the config file instead of hardcoded here
                 if ($ban = $this->functions['misc']['ban']) $this->discord->getChannel('712685552155230278')->sendMessage($ban($this, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
                 return "Ckey `$ckey` is too new! ($age)";
             }
             //Check account age before attempting to verify     
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
-        if ($result = $this->verifyNew($discord_id))
-            if ($result[0]) return $result[1];
-            else return $result[1];
+        return $this->verifyNew($discord_id)[1]; //TODO: There's supposed to be separate processing for $result[0] being false/true but I don't remember why...
     }
 
     /*
