@@ -435,9 +435,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
     if (str_starts_with($message_content_lower, 'approveme')) {
+        if ($message->member->roles->has($civ13->role_ids['infantry']) || $message->member->roles->has($civ13->role_ids['veteran'])) return $message->reply('You already have the verification role!');
         if ($item = $civ13->verified->get('discord', $message->member->id)) {
             $message->react("👍");
-            return $message->member->addRole($civ13->role_ids['infantry']);
+            return $message->member->setRoles([$civ13->role_ids['infantry']], "approveme {$item['ss13']}");
         }
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
@@ -993,7 +994,7 @@ $bancheck_join = function (Civ13 $civ13, $member) use ($bancheck): void
 { //on GUILD_MEMBER_ADD
     if ($member->guild_id == $civ13->civ13_guild_id) if ($item = $civ13->verified->get('discord', $member->id)) if ($bancheck($civ13, $item['ss13'])) {
         $civ13->discord->getLoop()->addTimer(30, function() use ($civ13, $member, $item) {
-            $member->setRoles([$civ13['role_ids']['banished']], "bancheck join {$item['ss13']}");
+            $member->setRoles([$civ13->role_ids['banished']], "bancheck join {$item['ss13']}");
         });
     }
 };
