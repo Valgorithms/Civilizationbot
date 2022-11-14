@@ -334,7 +334,8 @@ class Civ13
     public function getByondAge($ckey): string|false
     {
         if (isset($this->ages[$ckey])) return $this->ages[$ckey];
-        return $this->ages[$ckey] = $this->parseByondAge($this->getByondPage($ckey));
+        if ($age = $this->parseByondAge($this->getByondPage($ckey))) return $this->ages[$ckey] = $age;
+        return false;
     }
     
     /**
