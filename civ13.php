@@ -390,16 +390,13 @@ class Civ13
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]));
         $result = curl_exec($ch);
         $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); //Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
-        switch($http_status) {
+        switch ($http_status) {
             case 200: //Verified
                 $success = true;
-                $message = "`$ckey` has been verified and registered to $discord_id [$result]";
-                $json = "{'ss13':'$ckey','discord':'$discord_id','create_time': '" . (new \DateTime())->format('Y-m-d H:i:s') . "','ss13_approved':'0','seen_tdm':'0','seen_nomads':'0','seen_pers':'0'}";
-                $array = json_decode($json, true);
-                $this->verified->pushItem($array);
-                $this->VarSave('verified.json', $this->verified->toArray());
+                $message = "`$ckey` has been verified and registered to $discord_id";
                 $this->pending->offsetUnset($discord_id);
-                $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)->addRole($this->discord_config[$this->civ13_guild_id]['roles']['verified']);
+                $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)->addRole($this->role_ids['infantry']);
+                $this->getVerified();
                 break;
             case 403: //Already registered
                 $message = "Either `$ckey` or <@$discord_id> has already been verified and registered to a discord id"; //This should have been caught above. Need to run getVerified() again?
