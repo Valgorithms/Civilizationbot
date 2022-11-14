@@ -369,8 +369,7 @@ class Civ13
     { //Attempt to verify a user
         if(! $item = $this->pending->get('discord', $discord_id)) return [false, 'This error should never happen'];
         if(! $this->checkToken($discord_id)) return [false, "You have not set your token yet! It needs to be set to {$item['token']}"];
-        $result = $this->verifyCkey($item['ss13'], $discord_id);
-        return $result;
+        return $this->verifyCkey($item['ss13'], $discord_id);
     }
     
     /*

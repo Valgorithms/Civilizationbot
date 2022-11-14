@@ -435,6 +435,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
     if (str_starts_with($message_content_lower, 'approveme')) {
+        if ($item = $civ13->verified->get('discord', $message->member->id)) {
+            $message->react("👍");
+            return $message->member->addRole($civ13->role_ids['infantry']);
+        }
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
