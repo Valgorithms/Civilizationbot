@@ -122,6 +122,7 @@ $options = array(
         
          //Unused
         'nomads_playerlogs' => '/home/1713/civ13-rp/SQL/playerlogs.txt',
+        'tdm_playerlogs' => '/home/1713/civ13-tdm/SQL/playerlogs.txt'
     ),
     'channel_ids' => array(
         'nomads_ooc_channel' => '636644156923445269', //#ooc-nomads

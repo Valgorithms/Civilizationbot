@@ -67,7 +67,7 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
 
 $ban_nomads = function (Civ13 $civ13, $array, $message = null): string
 {
-    $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
+    $admin = ($message ? $message->author->displayname : $civ13->discord->user->username);
     $txt = "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL;
     $result = '';
     if ($file = fopen($civ13->files['nomads_discord2ban'], 'a')) {
@@ -82,7 +82,7 @@ $ban_nomads = function (Civ13 $civ13, $array, $message = null): string
 };
 $ban_tdm = function (Civ13 $civ13, $array, $message = null): string
 {
-    $admin = ($message ? $civ13->discord->user->username : $message->author->displayname);
+    $admin = ($message ? $message->author->displayname : $civ13->discord->user->username);
     $txt = "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL;
     if (! $file = fopen($civ13->files['tdm_discord2ban'], 'a')) return "unable to open {$civ13->files['tdm_discord2ban']}" . PHP_EOL;
     fwrite($file, $txt);
@@ -871,10 +871,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                     $found = true;
+                    $type = $linesplit[0];
                     $reason = $linesplit[3];
                     $admin = $linesplit[4];
                     $date = $linesplit[5];
-                    $message->reply("**$ckey** has been banned from **Nomads** on **$date** for **$reason** by $admin.");
+                    $message->reply("**$ckey** has been **$type** banned from **Nomads** on **$date** for **$reason** by $admin.");
                 }
             }
             fclose($filecheck1);
@@ -965,6 +966,32 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         if ($item = $civ13->verified->get('ss13', $id)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
         return $message->reply("`$id` is not registered to any discord id ($age)");
     }
+    
+    /*
+    if (str_starts_with($message_content_lower, 'update bans')) {
+        if (! $banlogs = file_get_contents($civ13->files['tdm_bans'])) return $message->react("🔥");
+        if (! $loglocs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
+        
+        $bans2update = [];
+        $oldlist = [];
+                
+        $bans_split = explode("|||\n", $banlogs);
+        foreach ($bans_split as $bsplit)
+            foreach ($arr = explode(';', $bsplit) as $ban) //position 10 is cid, 11 is ip, starting on 1
+                 if ($ban[10] == '0' || $ban[11] == '0') $bans2update[$ban[4]] = $bsplit;
+                 else $oldlist[] = $bsplit;
+        
+        foreach (explode("|||\n", $loglocs) as $lsplit)
+            foreach (explode(';', $lsplit) as $log)
+                foreach ($bans2update as $b2)
+                    if ($log[1] == $b2[1]) {
+                        $bans2update[$b2][10] = $log[2];
+                        $bans2update[$b2][11] = $log[3];
+                    }
+        file_put_contents($civ13->files['tdm_bans'], implode("|||\n", array_merge($oldlist, array_values($bans2update))));
+        return $message->react("👍");
+    }
+    */
     
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
 };
