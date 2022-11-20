@@ -22,7 +22,7 @@ ignore_user_abort(1);
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', '-1'); //Unlimited memory usage
 define('MAIN_INCLUDED', 1); //Token and SQL credential files may be protected locally and require this to be defined to access
-require getcwd(). '/token.php'; //$token
+require getcwd() . '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
 $loop = Loop::get();

@@ -29,7 +29,7 @@ $set_ips = function (Civ13 $civ13): void
         'tdm' => '1714',
         'persistence' => '7777',
         'bc' => '1717', 
-        'kepler' => '1718',
+        'df13' => '7778',
     ];
 };
 
@@ -974,7 +974,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         
         $bans2update = [];
         $oldlist = [];
-                
+        
         foreach (explode("|||\n", $banlogs) as $bsplit)
             foreach ($arr = explode(';', $bsplit) as $ban) //position 10 is cid, 11 is ip, starting on 1
                  if ($ban[10] == '0' || $ban[11] == '0') $bans2update[$ban[4]] = $bsplit;
@@ -1194,6 +1194,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
         $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>"];
         $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['persistence']}>"];
         $server_info[3] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['bc']}>"];
+        $server_info[3] = ['name' => 'Pokcet Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['df13']}>"];
         
         $embed = new Embed($civ13->discord);
         foreach ($data_json as $server) {
