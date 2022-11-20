@@ -712,6 +712,31 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $msg = $brmedals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
         return $msg;
     }
+
+    if (str_starts_with($message_content_lower, 'update bans')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
+        if (! $banlogs = file_get_contents($civ13->files['tdm_bans'])) return $message->react("🔥");
+        if (! $loglocs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
+        
+        $bans2update = [];
+        $oldlist = [];
+        
+        foreach (explode("|||\n", $banlogs) as $bsplit)
+            foreach ($arr = explode(';', $bsplit) as $ban) //position 10 is cid, 11 is ip, starting on 1
+                 if ($ban[10] == '0' || $ban[11] == '0') $bans2update[$ban[4]] = $bsplit;
+                 else $oldlist[] = $bsplit;
+        
+        foreach (explode("|||\n", $loglocs) as $lsplit)
+            foreach (explode(';', $lsplit) as $log)
+                if (isset($bans2update[$log[1]]))
+                    foreach ($bans2update as $b2)
+                        if($log[1] == $b2[1]) {
+                            $bans2update[$log[1]][10] = $log[2];
+                            $bans2update[$log[1]][11] = $log[3];
+                        }
+        file_put_contents($civ13->files['tdm_bans'], implode('|||' . PHP_EOL, array_merge($oldlist, array_values($bans2update))));
+        return $message->react("👍");
+    }
     
 };
 
@@ -965,31 +990,6 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         if (! $age = $civ13->getByondAge($id)) return $message->reply("`$id` does not exist");
         if ($item = $civ13->verified->get('ss13', $id)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
         return $message->reply("`$id` is not registered to any discord id ($age)");
-    }
-    
-    if (str_starts_with($message_content_lower, 'update bans')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
-        if (! $banlogs = file_get_contents($civ13->files['tdm_bans'])) return $message->react("🔥");
-        if (! $loglocs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
-        
-        $bans2update = [];
-        $oldlist = [];
-        
-        foreach (explode("|||\n", $banlogs) as $bsplit)
-            foreach ($arr = explode(';', $bsplit) as $ban) //position 10 is cid, 11 is ip, starting on 1
-                 if ($ban[10] == '0' || $ban[11] == '0') $bans2update[$ban[4]] = $bsplit;
-                 else $oldlist[] = $bsplit;
-        
-        foreach (explode("|||\n", $loglocs) as $lsplit)
-            foreach (explode(';', $lsplit) as $log)
-                if (isset($bans2update[$log[1])
-                    foreach ($bans2update as $b2)
-                        if($log[1] == $b2[1]) {
-                            $bans2update[$log[1]][10] = $log[2];
-                            $bans2update[$log[1]][11] = $log[3];
-                        }
-        file_put_contents($civ13->files['tdm_bans'], implode('|||' . PHP_EOL, array_merge($oldlist, array_values($bans2update))));
-        return $message->react("👍");
     }
     
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
