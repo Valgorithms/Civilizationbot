@@ -1321,10 +1321,11 @@ $ooc_relay = function (Civ13 $civ13, string $file_path, $channel) use ($ban): bo
         }
         if (! $item = $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
         else {
-            $user = $civ13->discord->users->get('id', $item['discord']);
             $embed = new Embed($civ13->discord);
-            $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-            $embed->setDescription($fp);
+            if ($user = $civ13->discord->users->get('id', $item['discord'])) {
+                $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                $embed->setDescription($fp);
+            } else $civ13->discord->users->fetch('id', $item['discord']);
             $channel->sendEmbed($embed);
         }
     }
