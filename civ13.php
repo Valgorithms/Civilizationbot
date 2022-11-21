@@ -58,6 +58,7 @@ class Civ13
     
     public array $discord_config = [];
     public array $tests = [];
+    public bool $panic_bunker = false;
     
     /**
      * Creates a Civ13 client instance.

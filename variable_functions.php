@@ -422,6 +422,18 @@ $tests = function (Civ13 $civ13, $message, string $message_content)
     }
 };
 
+$panic_bunker = function (Civ13 $civ13)
+{
+    if ($civ13->panic_bunker) {
+        //start a periodic timer and save it to$civ13->timers['panic_bunker'], get player list from TDM and Nomads servers
+        //Check all ckeys in player list against the getVerifiedUsers() list
+        //Issue temporary ban with notice to come to discord for verification
+    } else {
+        //stop the timer
+    }
+    $civ13->panic_bunker = ! $civ13->panic_bunker;
+};
+
 $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
 {
     $resolved_ranks = [];
@@ -430,7 +442,7 @@ $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
     $message->reply('Rejected! You need to have at least the [' . ($message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks)) . '] rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $ban_nomads, $ban_tdm, $unban, $unban_nomads, $unban_tdm, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $mapswap_nomads, $mapswap_tdm, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $ban_nomads, $ban_tdm, $unban, $unban_nomads, $unban_tdm, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $mapswap_nomads, $mapswap_tdm, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests, $panic_bunker)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -737,7 +749,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         file_put_contents($civ13->files['tdm_bans'], implode('|||' . PHP_EOL, array_merge($oldlist, array_values($bans2update))));
         return $message->react("👍");
     }
-    
+    if ($message_content_lower == 'panic bunker') {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+        $panic_bunker($civ13);
+        return $message->reply('Panic bunker is now ' . ($civ13->panic_bunker ? 'enabled' : 'disabled'));
+    }
 };
 
 $nomads_discord2ooc = function (Civ13 $civ13, $author, $string): bool
