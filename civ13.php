@@ -244,6 +244,12 @@ class Civ13
         else $this->logger->warning("Failed top create new config for guild {$guild->name}");
     }
 
+    public function getVerifiedUsers(): Collection
+    {
+        if ($guild = $this->discord->guilds->get('id', $this->DF13_guild_id)) return $this->verified->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
+        return $this->verified;
+    }
+    
     /*
     * This function is used to refresh the bot's cache of verified users
     * It is called when the bot starts up, and when the bot receives a GUILD_MEMBER_ADD event
@@ -254,12 +260,10 @@ class Civ13
     {
         if ($verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) {
             $this->VarSave('verified.json', $verified_array);
-            $collection = new Collection($verified_array, 'discord');
-        } elseif ($json = $this->VarLoad('verified.json')) $collection = new Collection($json, 'discord');
-        else return $this->verified = new Collection([], 'discord');
-        
-        if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified = $collection->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
-        return $this->verified = $collection;
+            return $this->verified = new Collection($verified_array, 'discord');
+        }
+        if ($json = $this->VarLoad('verified.json')) return $this->verified = new Collection($json, 'discord');
+        return $this->verified = new Collection([], 'discord');
     }
     
     /*
