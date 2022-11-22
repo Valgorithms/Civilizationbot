@@ -818,7 +818,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (! $message_content) return;
     
     if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
-    if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, hostnomads, killnomads, restartnomads, mapswapnomads, hosttdm, killtdm, restarttdm, mapswaptdm');
+    if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: ckey, bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, logs, hostnomads, killnomads, restartnomads, mapswapnomads, hosttdm, killtdm, restarttdm, mapswaptdm, panic bunker');
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
@@ -905,7 +905,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     if (str_starts_with($message_content_lower, 'bancheck')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
-        $banreason = "unknown";
+        $reason = "unknown";
         $found = false;
         if ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r')) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
