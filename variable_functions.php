@@ -1032,12 +1032,12 @@ $bancheck = function (Civ13 $civ13, string $ckey): bool
     } else $civ13->logger->warning("unable to open `{$civ13->files['tdm_bans']}`");
     return $return;
 };
-$bancheck_join = function (Civ13 $civ13, $member) use ($bancheck): void
-{ //on GUILD_MEMBER_ADD
-    if ($member->guild_id == $civ13->civ13_guild_id) if ($item = $civ13->verified->get('discord', $member->id)) if ($bancheck($civ13, $item['ss13'])) {
-        $civ13->discord->getLoop()->addTimer(30, function() use ($civ13, $member, $item) {
-            $member->setRoles([$civ13->role_ids['banished']], "bancheck join {$item['ss13']}");
-        });
+$join_roles = function (Civ13 $civ13, $member) use ($bancheck)
+{
+    if ($member->guild_id != $civ13->civ13_guild_id) return;
+    if ($item = $civ13->verified->get('discord', $member->id)) {
+        if ($bancheck($civ13, $item['ss13'])) return $member->setroles([$civ13->role_ids['infantry'], $civ13->role_ids['banished']], "bancheck join {$item['ss13']}");
+        return $member->setroles([$civ13->role_ids['infantry']], "verified join {$item['ss13']}");
     }
 };
 $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void

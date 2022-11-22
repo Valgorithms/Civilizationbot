@@ -154,7 +154,7 @@ $options = array(
             'on_message' => $on_message,
         ],
         'GUILD_MEMBER_ADD' => [
-            'bancheck_join' => $bancheck_join,
+            'join_roles' => $join_roles,
         ],
         'misc' => [ //Custom functions
             'recalculate_ranking' => $recalculate_ranking,
