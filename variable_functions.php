@@ -1210,7 +1210,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
         $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>"];
         $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['persistence']}>"];
         $server_info[3] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['bc']}>"];
-        $server_info[3] = ['name' => 'Pokcet Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['df13']}>"];
+        $server_info[3] = ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['df13']}>"];
         
         $embed = new Embed($civ13->discord);
         foreach ($data_json as $server) {
