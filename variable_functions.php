@@ -1309,7 +1309,7 @@ $ooc_relay = function (Civ13 $civ13, string $file_path, $channel) use ($ban): bo
         $fp = str_replace(PHP_EOL, '', $fp);
         //ban ckey if $fp contains a blacklisted word
         $string = substr($fp, strpos($fp, '/')+1);
-        $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'faggot', 'gook', 'kike', 'nigga', 'nigger', 'tranny'];
+        $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'faggot', 'gook', 'kike', 'nigga', 'nigger', 'nLggers', 'tranny'];
         $ckey = substr($string, 0, strpos($string, ':'));
         foreach ($badwords as $badword) {
             if (str_contains(strtolower($string), $badword)) {
