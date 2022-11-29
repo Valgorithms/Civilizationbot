@@ -677,6 +677,17 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if ($log_handler($civ13, $message, trim(substr($message_content, 4)))) return;
     }
+    if (str_starts_with($message_content_lower, 'playerlogs')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        $tokens = explode(';', trim(substr($message_content, 10)));
+        if (!in_array(trim($tokens[0]), ['nomads', 'tdm'])) return $message->reply('Please use the format `playerslogs nomads` or `playerlogs tdm`');
+        if ($tokens[0] == 'tdm') {
+            if (! $playerlogs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
+            return $message->reply(MessageBuilder::new()->addFile($playerlogs, 'playerlog.txt'));
+        }
+        if (! $playerlogs = file_get_contents($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
+        return $message->reply(MessageBuilder::new()->addFile($playerlogs, 'playerloglog.txt'));
+    }
     if (str_starts_with($message_content_lower, 'bans')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if ($banlog_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
