@@ -683,7 +683,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (!in_array(trim($tokens[0]), ['nomads', 'tdm'])) return $message->reply('Please use the format `playerslogs nomads` or `playerlogs tdm`');
         if ($tokens[0] == 'tdm') {
             if (! is_file($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
-            return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_playerlogs'], 'playerlogs.txt'));
+            return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_playerlogs'], 'playerlogs.txt'));
         }
         if (! is_file($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_playerlogs'], 'playerlogs.txt'));
