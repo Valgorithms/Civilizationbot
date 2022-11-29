@@ -1027,8 +1027,8 @@ $serverinfo_parse = function ($civ13): array
     if (empty($data_json = $civ13->serverinfo)) return []; //update this to pull from the cache
     $return = [];
 
-    $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['civ13']}:{$civ13->ports['tdm']}>"];
-    $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['civ13']}:{$civ13->ports['nomads']}>"];
+    $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"];
+    $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>"];
     $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['persistence']}>"];
     $server_info[3] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['bc']}>"];
     $server_info[4] = ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['ps13']}>"];
