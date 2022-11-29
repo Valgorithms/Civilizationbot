@@ -1011,6 +1011,63 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
 };
 
+
+$serverinfo_fetch = function ($civ13): array
+{
+    if (! $data_json = json_decode(file_get_contents("http://{$civ13->ips['vzg']}/servers/serverinfo.json"),  true)) return [];
+    return $civ13->serverinfo = $data_json;
+};
+$serverinfo_timer = function ($civ13) use ($serverinfo_fetch): void
+{
+    $serverinfo_fetch($civ13);
+    $civ13->timers['serverinfo_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(60, function() use ($civ13, $serverinfo_fetch) { $serverinfo_fetch($civ13); });
+};
+$serverinfo_parse = function ($civ13): array
+{
+    if (empty($data_json = $civ13->serverinfo)) return []; //update this to pull from the cache
+    $return = [];
+
+    $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['civ13']}:{$civ13->ports['tdm']}>"];
+    $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['civ13']}:{$civ13->ports['nomads']}>"];
+    $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['persistence']}>"];
+    $server_info[3] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['bc']}>"];
+    $server_info[4] = ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['ps13']}>"];
+    
+    $index = 0;
+    foreach ($data_json as $server) {
+        $server_info_hard = array_shift($server_info);
+        if (array_key_exists('ERROR', $server)) continue;
+        if (isset($server_info_hard['name'])) $return[$index]['Server'] = [false => $server_info_hard['name'] . PHP_EOL . $server_info_hard['link']];
+        if (isset($server_info_hard['host'])) $return[$index]['Host'] = [true => $server_info_hard['host']];
+        //Round time
+        if (isset($server['roundduration']) /*|| isset($server['round_duration'])*/) { //TODO
+            $rd = explode(":", urldecode($server['roundduration']));
+            $remainder = ($rd[0] % 24);
+            $rd[0] = floor($rd[0] / 24);
+            if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = "{$rd[0]}d {$remainder}h {$rd[1]}m";
+            else $rt = 'STARTING';
+            $return[$index]['Round Timer'] = [true => $rt];
+        }
+        if (isset($server['round_duration'])) {
+            //TODO
+        }
+        if (isset($server['map'])) $return[$index]['Map'] = [true => urldecode($server['map'])];
+        if (isset($server['age'])) $return[$index]['Epoch'] = [true => urldecode($server['age'])];
+        //Players
+        $players = [];
+        foreach (array_keys($server) as $key) {
+            $p = explode('player', $key); 
+            if (isset($p[1])) {
+                if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+            }
+        }
+        if ($server['players'] || ! empty($players)) $return[$index]['Players (' . (isset($server['players']) ? $server['players'] : count($players) ?? '?') . ')'] = [true => (empty($players) ? 'N/A' : implode(', ', $players))];
+        if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
+        $index++;
+    }
+    return $return;
+};
+
 $bancheck = function (Civ13 $civ13, string $ckey): bool
 {
     $return = false;
@@ -1040,7 +1097,8 @@ $join_roles = function (Civ13 $civ13, $member) use ($bancheck)
         return $member->setroles([$civ13->role_ids['infantry']], "verified join {$item['ss13']}");
     }
 };
-$slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
+
+$slash_init = function (Civ13 $civ13, $commands) use ($serverinfo_parse, $bancheck, $unban, $restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
 { //ready_slash
     //if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
     if (! $commands->get('name', 'ping')) $commands->save(new Command($civ13->discord, [
@@ -1204,40 +1262,13 @@ $slash_init = function (Civ13 $civ13, $commands) use ($bancheck, $unban, $restar
         $interaction->respondWithMessage(MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')), true);
     });
     
-    $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
-        if (! $data_json = json_decode(file_get_contents("http://{$civ13->ips['vzg']}/servers/serverinfo.json"),  true)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
-        $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"];
-        $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>"];
-        $server_info[2] = ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['persistence']}>"];
-        $server_info[3] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['bc']}>"];
-        $server_info[3] = ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$civ13->ips['vzg']}:{$civ13->ports['df13']}>"];
-        
+    $civ13->discord->listenCommand('players', function ($interaction) use ($civ13, $serverinfo_parse) {
+        if (empty($data = $serverinfo_parse($civ13))) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
         $embed = new Embed($civ13->discord);
-        foreach ($data_json as $server) {
-            $server_info_hard = array_shift($server_info);
-            if (array_key_exists('ERROR', $server)) continue;
-            if (isset($server_info_hard['name'])) $embed->addFieldValues('Server', $server_info_hard['name'] . PHP_EOL . $server_info_hard['link'], false);
-            if (isset($server_info_hard['host'])) $embed->addFieldValues('Host', $server_info_hard['host'], true);
-            //Round time
-            if (isset($server['roundduration'])) {
-                $rd = explode(":", urldecode($server['roundduration']));
-                $remainder = ($rd[0] % 24);
-                $rd[0] = floor($rd[0] / 24);
-                if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = "{$rd[0]}d {$remainder}h {$rd[1]}m";
-                else $rt = 'STARTING';
-                $embed->addFieldValues('Round Timer', $rt, true);
-            }
-            if (isset($server['map'])) $embed->addFieldValues('Map', urldecode($server['map']), true);
-            if (isset($server['age'])) $embed->addFieldValues('Epoch', urldecode($server['age']), true);
-            //Players
-            $players = [];
-            foreach (array_keys($server) as $key) {
-                $p = explode('player', $key); 
-                if (isset($p[1]) && is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
-            }
-            if (! empty($players)) $embed->addFieldValues('Players (' . count($players) . ')', implode(', ', $players), true);
-            if (isset($server['season'])) $embed->addFieldValues('Season', urldecode($server['season']), true);
-        }
+        foreach ($data as $server)
+             foreach ($server as $key => $array)
+                foreach ($array as $inline => $value)
+                    $embed->addFieldValues($key, $value, $inline);
         $embed->setFooter(($civ13->github ?  "{$civ13->github}" . PHP_EOL : '') . "{$civ13->discord->username} by Valithor#5947");
         $embed->setColor(0xe1452d);
         $embed->setTimestamp();

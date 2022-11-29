@@ -149,6 +149,7 @@ $options = array(
             'status_changer_random' => $status_changer_random,
             'set_ips' => $set_ips,
             'civ_listeners' => $civ_listeners,
+            'serverinfo_timer' => $serverinfo_timer,
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,
