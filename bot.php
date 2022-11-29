@@ -17,6 +17,9 @@ use \Monolog\Handler\StreamHandler;
 use \Discord\WebSockets\Intents;
 use \React\Http\Browser;
 
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 set_time_limit(0);
 ignore_user_abort(1);
 ini_set('max_execution_time', 0);
