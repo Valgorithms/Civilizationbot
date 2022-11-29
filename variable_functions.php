@@ -29,7 +29,7 @@ $set_ips = function (Civ13 $civ13): void
         'tdm' => '1714',
         'persistence' => '7777',
         'bc' => '1717', 
-        'df13' => '7778',
+        'ps13' => '7778',
     ];
 };
 
