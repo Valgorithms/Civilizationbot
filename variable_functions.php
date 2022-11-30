@@ -1053,7 +1053,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
 };
 
-$serverinfo_parseage = function ($civ13): array
+$serverinfo_players = function ($civ13): array
 {
     if (empty($data_json = $civ13->serverinfo)) return [];
     $civ13->players = [];
@@ -1072,11 +1072,11 @@ $serverinfo_fetch = function ($civ13): array
     if (! $data_json = json_decode(file_get_contents("http://{$civ13->ips['vzg']}/servers/serverinfo.json"),  true)) return [];
     return $civ13->serverinfo = $data_json;
 };
-$serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_parseage): void
+$serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_players): void
 {
-    $func = function() use ($civ13, $serverinfo_fetch, $serverinfo_parseage) {
+    $func = function() use ($civ13, $serverinfo_fetch, $serverinfo_players) {
         $serverinfo_fetch($civ13); 
-        foreach ($serverinfo_parseage($civ13) as $ckey) {
+        foreach ($serverinfo_players($civ13) as $ckey) {
             if ($civ13->verified->get('ss13', $ckey)) continue;
             if (isset($civ13->ages[$ckey])) continue;
             if (! $civ13->checkByondAge($age = $civ13->getByondAge($ckey)))
