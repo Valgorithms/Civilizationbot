@@ -132,6 +132,7 @@ $options = array(
         'nomads_admin_channel' => '637046890030170126', //#ahelp-nomads
         'tdm_ooc_channel' => '636644391095631872', //#ooc-tdm
         'tdm_admin_channel' => '637046904575885322', //#ahelp-tdm
+        'staff_bot' => '712685552155230278', //#staff-bot
     ),
     'role_ids' => array(
         'admiral' => '468980650914086913', //Host

@@ -1053,20 +1053,43 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
 };
 
-
+$serverinfo_parseage = function ($civ13): array
+{
+    if (empty($data_json = $civ13->serverinfo)) return [];
+    $civ13->players = [];
+    foreach ($data_json as $server) {
+        if (array_key_exists('ERROR', $server)) continue;
+        //Players
+        foreach (array_keys($server) as $key) {
+            $p = explode('player', $key); 
+            if (isset($p[1]) && is_numeric($p[1])) $civ13->players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+        }
+    }
+    return $civ13->players;
+};
 $serverinfo_fetch = function ($civ13): array
 {
     if (! $data_json = json_decode(file_get_contents("http://{$civ13->ips['vzg']}/servers/serverinfo.json"),  true)) return [];
     return $civ13->serverinfo = $data_json;
 };
-$serverinfo_timer = function ($civ13) use ($serverinfo_fetch): void
+$serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_parseage): void
 {
-    $serverinfo_fetch($civ13);
-    $civ13->timers['serverinfo_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(60, function() use ($civ13, $serverinfo_fetch) { $serverinfo_fetch($civ13); });
+    $func = function() use ($civ13, $serverinfo_fetch, $serverinfo_parseage) {
+        $serverinfo_fetch($civ13); 
+        foreach ($serverinfo_parseage() as $ckey) {
+            if ($civ13->verified->get('ss13', $ckey)) continue;
+            if (isset($civ13->ages[$ckey])) continue;
+            if (! $civ13->checkByondAge($age = $civ13->getByondAge($ckey)))
+                if ($ban = $civ13->functions['misc']['ban']) $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage($ban($civ13, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+                else $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage("<@[$civ13->role_ids['knight']]>, Unable to ban $ckey for agecheck failed, function not found");
+        }
+    };
+    $func();
+    $civ13->timers['serverinfo_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(60, function() use ($func) { $func(); });
 };
 $serverinfo_parse = function ($civ13): array
 {
-    if (empty($data_json = $civ13->serverinfo)) return []; //update this to pull from the cache
+    if (empty($data_json = $civ13->serverinfo)) return [];
     $return = [];
 
     $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"];
@@ -1103,6 +1126,7 @@ $serverinfo_parse = function ($civ13): array
                 if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
             }
         }
+        $civ13->players = $players;
         if ($server['players'] || ! empty($players)) $return[$index]['Players (' . (isset($server['players']) ? $server['players'] : count($players) ?? '?') . ')'] = [true => (empty($players) ? 'N/A' : implode(', ', $players))];
         if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
         $index++;

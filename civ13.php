@@ -34,9 +34,11 @@ class Civ13
     public collection $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
     public $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
-    
+    public $minimum_age = '-21 days'; //Minimum age of a ckey
+
     public $timers = [];
-    public $serverinfo = [];
+    public $serverinfo = []; //Collected automatically by serverinfo_timer
+    public $players = []; //Collected automatically by serverinfo_timer
     
     public $functions = array(
         'ready' => [],
@@ -348,9 +350,9 @@ class Civ13
      * This function is used determine if a byond account is old enough to play on the server
      * false is returned if the account is too young, true is returned if the account is old enough
      * */
-    public function checkByondAge(string $age, string $minimum_age): bool
+    public function checkByondAge(string $age): bool
     {
-        return (strtotime($age) > strtotime($minimum_age)) ? false : true;
+        return (strtotime($age) > strtotime($this->minimum_age)) ? false : true;
     }
 
     /*
@@ -364,8 +366,8 @@ class Civ13
         if ($this->verified->has($ckey)) return "`$ckey` is already verified!";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Ckey `$ckey` does not exist!";
-            if (! $this->checkByondAge($age, '-21 days')) { //TODO: Declare the minimum time in the config file instead of hardcoded here
-                if ($ban = $this->functions['misc']['ban']) $this->discord->getChannel('712685552155230278')->sendMessage($ban($this, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+            if (! $this->checkByondAge($age)) { //TODO: Declare the minimum time in the config file instead of hardcoded here
+                if ($ban = $this->functions['misc']['ban']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($ban($this, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
                 return "Ckey `$ckey` is too new! ($age)";
             }
             //Check account age before attempting to verify     
