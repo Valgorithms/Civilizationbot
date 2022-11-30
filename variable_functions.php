@@ -1076,7 +1076,7 @@ $serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_parsea
 {
     $func = function() use ($civ13, $serverinfo_fetch, $serverinfo_parseage) {
         $serverinfo_fetch($civ13); 
-        foreach ($serverinfo_parseage() as $ckey) {
+        foreach ($serverinfo_parseage($civ13) as $ckey) {
             if ($civ13->verified->get('ss13', $ckey)) continue;
             if (isset($civ13->ages[$ckey])) continue;
             if (! $civ13->checkByondAge($age = $civ13->getByondAge($ckey)))
