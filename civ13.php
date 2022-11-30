@@ -357,7 +357,9 @@ class Civ13
 
     /*
     * This function is used to check if the user has verified their account
-    * If the have not, it will send a message to the user with instructions on how to verify
+    * If the have not, it checks to see if they have ever played on the server before
+    * If they have not, it sends a message stating that they need to join the server first
+    * It will send a message to the user with instructions on how to verify
     * If they have, it will check if they have the verified role, and if not, it will add it
     */
     public function verifyProcess(string $ckey, string $discord_id): string
@@ -370,7 +372,13 @@ class Civ13
                 if ($ban = $this->functions['misc']['ban']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($ban($this, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
                 return "Ckey `$ckey` is too new! ($age)";
             }
-            //Check account age before attempting to verify     
+            $found = false;
+            foreach (explode('|', file_get_contents($this->files['tdm_playerlogs']) .  file_get_contents($this->files['nomads_playerlogs'])) as $line)
+                if (explode(';', trim($line))[0] == $ckey) {
+                    $found = true;
+                    break;
+                }
+            if (! $found) return "Ckey `$ckey` has never been seen on the server before! You'll need to join either Nomads or TDM at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
         return $this->verifyNew($discord_id)[1]; //TODO: There's supposed to be separate processing for $result[0] being false/true but I don't remember why...
