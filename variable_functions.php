@@ -434,6 +434,39 @@ $panic_bunker = function (Civ13 $civ13)
     $civ13->panic_bunker = ! $civ13->panic_bunker;
 };
 
+$banlog_update = function (string $banlog, array $playerlogs): string
+{
+    $temp = [];
+    $oldlist = [];
+    foreach (explode('|||', $banlog) as $bsplit) {
+        $ban = explode(';', trim($bsplit));
+        if (isset($ban[9]))
+            if (!isset($ban[9]) || !isset($ban[10]) || $ban[9] == '0' || $ban[10] == '0') $temp[$ban[8]][] = $bsplit;
+            else $oldlist[] = $bsplit;
+    }
+    foreach ($playerlogs as $playerlog)
+    foreach (explode('|', $playerlog) as $lsplit) {
+        $log = explode(';', trim($lsplit));
+        foreach (array_values($temp) as &$b2) foreach ($b2 as &$arr) {
+            $a = explode(';', $arr);
+            if($log[0] == $a[8]) {
+                $a[9] = $log[2];
+                $a[10] = $log[1];
+                $arr = implode(';', $a);
+            }
+        }
+    }
+
+    $updated = [];
+    foreach (array_values($temp) as $ban) {
+        if (is_array($ban)) foreach (array_values($ban) as $b) $updated[] = $b;
+        else $updated[] = $ban;
+    }
+    
+    if (empty($updated)) return implode('|||' . PHP_EOL, $oldlist) . '|||' . PHP_EOL;
+    return implode('|||' . PHP_EOL, array_merge($oldlist, $updated)) . '|||' . PHP_EOL;
+};
+
 $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
 {
     $resolved_ranks = [];
@@ -442,7 +475,7 @@ $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
     $message->reply('Rejected! You need to have at least the [' . ($message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks)) . '] rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $ban_nomads, $ban_tdm, $unban, $unban_nomads, $unban_tdm, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $mapswap_nomads, $mapswap_tdm, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests, $panic_bunker)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $ban, $ban_nomads, $ban_tdm, $unban, $unban_nomads, $unban_tdm, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $mapswap_nomads, $mapswap_tdm, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests, $panic_bunker, $banlog_update)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -683,7 +716,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (!in_array(trim($tokens[0]), ['nomads', 'tdm'])) return $message->reply('Please use the format `playerslogs nomads` or `playerlogs tdm`');
         if ($tokens[0] == 'tdm') {
             if (! is_file($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
-            return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_playerlogs'], 'playerlogs.txt'));
+            return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_playerlogs'], 'playerlogs.txt'));
         }
         if (! is_file($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_playerlogs'], 'playerlogs.txt'));
@@ -738,26 +771,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
 
     if (str_starts_with($message_content_lower, 'update bans')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
-        if (! $banlogs = file_get_contents($civ13->files['tdm_bans'])) return $message->react("🔥");
-        if (! $loglocs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
-        
-        $bans2update = [];
-        $oldlist = [];
-        
-        foreach (explode("|||\n", $banlogs) as $bsplit)
-            foreach ($arr = explode(';', $bsplit) as $ban) //position 10 is cid, 11 is ip, starting on 1
-                 if ($ban[10] == '0' || $ban[11] == '0') $bans2update[$ban[4]] = $bsplit;
-                 else $oldlist[] = $bsplit;
-        
-        foreach (explode("|||\n", $loglocs) as $lsplit)
-            foreach (explode(';', $lsplit) as $log)
-                if (isset($bans2update[$log[1]]))
-                    foreach ($bans2update as $b2)
-                        if($log[1] == $b2[1]) {
-                            $bans2update[$log[1]][10] = $log[2];
-                            $bans2update[$log[1]][11] = $log[3];
-                        }
-        file_put_contents($civ13->files['tdm_bans'], implode('|||' . PHP_EOL, array_merge($oldlist, array_values($bans2update))));
+        if (! $tdm_bans = file_get_contents($civ13->files['tdm_bans'])) return $message->react("🔥");
+        if (! $nomads_bans = file_get_contents($civ13->files['nomads_bans'])) return $message->react("🔥");
+        if (! $tdm_playerlogs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
+        if (! $nomads_playerlogs = file_get_contents($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
+        file_put_contents($civ13->files['tdm_bans'], $banlog_update($tdm_bans, [$nomads_playerlogs, $tdm_playerlogs]));
+        file_put_contents($civ13->files['nomads_bans'], $banlog_update($nomads_bans, [$nomads_playerlogs, $tdm_playerlogs]));
         return $message->react("👍");
     }
     if ($message_content_lower == 'panic bunker') {
