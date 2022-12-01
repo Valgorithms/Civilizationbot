@@ -1081,7 +1081,7 @@ $serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_player
             if (isset($civ13->ages[$ckey])) continue;
             if (! $civ13->checkByondAge($age = $civ13->getByondAge($ckey)))
                 if ($ban = $civ13->functions['misc']['ban']) $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage($ban($civ13, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
-                else $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage("<@[$civ13->role_ids['knight']]>, Unable to ban $ckey for agecheck failed, function not found");
+                else $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage("<@{$civ13->role_ids['knight']}>, Unable to ban $ckey for agecheck failed, function not found");
         }
     };
     $func();
