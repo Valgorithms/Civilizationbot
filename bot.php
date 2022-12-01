@@ -111,7 +111,7 @@ $options = array(
         'nomads_dmb' => '/home/1713/civ13-rp/civ13.dmb',
         'nomads_killsudos' => '/home/1713/civ13-rp/scripts/killsudos.py',
         'nomads_killciv13' => '/home/1713/civ13-rp/scripts/killciv13.py',
-        'nomads_mapswap' => '/home/1713/civ13-rp/scripts/mapswap.py',
+        'mapswap_nomads' => '/home/1713/civ13-rp/scripts/mapswap.py',
 
         'tdm_updateserverabspaths' => '/home/1713/civ13-tdm/scripts/updateserverabspaths.py',
         'tdm_serverdata' => '/home/1713/civ13-tdm/serverdata.txt',
