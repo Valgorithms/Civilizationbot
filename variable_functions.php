@@ -496,7 +496,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'unpermit')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 8)), false));
+        $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 8))), false);
         return $message->reply("$ckey is no longer permitted to bypass the Byond account age requirement.");
     }
     if (str_starts_with($message_content_lower, 'permited')) {
