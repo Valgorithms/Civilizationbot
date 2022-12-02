@@ -149,9 +149,7 @@ $options = array(
             'on_ready' => $on_ready,
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
-            'set_ips' => $set_ips,
             'civ_listeners' => $civ_listeners,
-            'serverinfo_timer' => $serverinfo_timer,
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,
@@ -160,7 +158,7 @@ $options = array(
             'on_message' => $on_message,
         ],
         'GUILD_MEMBER_ADD' => [
-            'join_roles' => $join_roles,
+            //
         ],
         'misc' => [ //Custom functions
             'recalculate_ranking' => $recalculate_ranking,

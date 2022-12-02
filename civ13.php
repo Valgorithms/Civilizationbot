@@ -128,6 +128,8 @@ class Civ13
     {
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
+                $this->setIPs();
+                $this->serverinfoTimer();
                 $this->getVerified(); //Populate verified property with data from DB
                 $this->pending = new Collection([], 'discord');
                 //Initialize configurations
@@ -156,6 +158,7 @@ class Civ13
                     else $this->logger->debug('No message functions found!');
                 });
                 $this->discord->on('GUILD_MEMBER_ADD', function ($guildmember) {
+                    $this->joinRoles($guildmember);
                     if(! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $guildmember);
                     else $this->logger->debug('No message functions found!');
                 });
@@ -348,14 +351,12 @@ class Civ13
 		if (preg_match("^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])^", $age = substr($page, (strpos($page , 'joined')+10), 10))) return $age;
         return false;
     }
-    
     public function getByondAge($ckey): string|false
     {
         if (isset($this->ages[$ckey])) return $this->ages[$ckey];
         if ($age = $this->parseByondAge($this->getByondPage($ckey))) return $this->ages[$ckey] = $age;
         return false;
     }
-    
     /**
      * This function is used determine if a byond account is old enough to play on the server
      * false is returned if the account is too young, true is returned if the account is old enough
@@ -445,15 +446,7 @@ class Civ13
         curl_close($ch);
         return [$success, $message];
     }
-
-    public function permitCkey(string $ckey, bool $allow = true): array
-    {
-        if ($allow) $this->permitted[$ckey] = true;
-        else unset($this->permitted[$ckey]);
-        $this->VarSave('permitted.json', $this->permitted);
-        return $this->permitted;
-    }
-
+    
     public function bancheck(string $ckey): bool
     {
         $return = false;
@@ -476,6 +469,13 @@ class Civ13
         return $return;
     }
 
+    public function permitCkey(string $ckey, bool $allow = true): array
+    {
+        if ($allow) $this->permitted[$ckey] = true;
+        else unset($this->permitted[$ckey]);
+        $this->VarSave('permitted.json', $this->permitted);
+        return $this->permitted;
+    }
     public function panicBan(string $ckey): void
     {
         if (! $this->bancheck($ckey)) {
@@ -484,7 +484,6 @@ class Civ13
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
     }
-    
     public function panicUnban(string $ckey): void
     {
         $this->unban($ckey);
@@ -540,5 +539,109 @@ class Civ13
         if (! $admin) $admin = $this->discord->user->displayname;
         $this->unbanNomads($ckey, $admin);
         $this->unbanTDM($ckey, $admin);
+    }
+    
+    public function setIPs(): void
+    { //on ready, move definitions into config/constructor?
+        $vzg_ip = gethostbyname('www.valzargaming.com');
+        $external_ip = file_get_contents('http://ipecho.net/plain');
+        $this->ips = [
+            'nomads' => $external_ip,
+            'tdm' => $external_ip,
+            'vzg' => $vzg_ip,
+        ];
+        $this->ports = [
+            'nomads' => '1715',
+            'tdm' => '1714',
+            'bc' => '1717', 
+            'ps13' => '7778',
+        ];
+    }
+    public function serverinfoPlayers(): array
+    { 
+        if (empty($data_json = $this->serverinfo)) return [];
+        $this->players = [];
+        foreach ($data_json as $server) {
+            if (array_key_exists('ERROR', $server)) continue;
+            //Players
+            foreach (array_keys($server) as $key) {
+                $p = explode('player', $key); 
+                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+            }
+        }
+        return $this->players;
+    }
+    public function serverinfoFetch(): array
+    {
+        if (! $data_json = json_decode(file_get_contents("http://{$this->ips['vzg']}/servers/serverinfo.json"),  true)) return [];
+        return $this->serverinfo = $data_json;
+    }
+    public function serverinfoTimer(): void
+    {
+        $func = function() {
+            $this->serverinfoFetch(); 
+            foreach ($this->serverinfoPlayers() as $ckey) {
+                if ($this->verified->get('ss13', $ckey)) continue;
+                if ($this->panic_bunker) return $this->panicBan($ckey);
+                if (isset($this->ages[$ckey])) continue;
+                if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
+                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+            }
+        };
+        $func();
+        $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function() use ($func) { $func(); });
+    }
+    public function serverinfoParse(): array
+    {
+        if (empty($data_json = $this->serverinfo)) return [];
+        $return = [];
+
+        $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"];
+        $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"];
+        $server_info[2] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"];
+        $server_info[3] = ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"];
+        
+        $index = 0;
+        foreach ($data_json as $server) {
+            $server_info_hard = array_shift($server_info);
+            if (array_key_exists('ERROR', $server)) continue;
+            if (isset($server_info_hard['name'])) $return[$index]['Server'] = [false => $server_info_hard['name'] . PHP_EOL . $server_info_hard['link']];
+            if (isset($server_info_hard['host'])) $return[$index]['Host'] = [true => $server_info_hard['host']];
+            //Round time
+            if (isset($server['roundduration']) /*|| isset($server['round_duration'])*/) { //TODO
+                $rd = explode(":", urldecode($server['roundduration']));
+                $remainder = ($rd[0] % 24);
+                $rd[0] = floor($rd[0] / 24);
+                if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = "{$rd[0]}d {$remainder}h {$rd[1]}m";
+                else $rt = 'STARTING';
+                $return[$index]['Round Timer'] = [true => $rt];
+            }
+            if (isset($server['round_duration'])) {
+                //TODO
+            }
+            if (isset($server['map'])) $return[$index]['Map'] = [true => urldecode($server['map'])];
+            if (isset($server['age'])) $return[$index]['Epoch'] = [true => urldecode($server['age'])];
+            //Players
+            $players = [];
+            foreach (array_keys($server) as $key) {
+                $p = explode('player', $key); 
+                if (isset($p[1])) {
+                    if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+                }
+            }
+            if ($server['players'] || ! empty($players)) $return[$index]['Players (' . (isset($server['players']) ? $server['players'] : count($players) ?? '?') . ')'] = [true => (empty($players) ? 'N/A' : implode(', ', $players))];
+            if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
+            $index++;
+        }
+        return $return;
+    }
+
+    public function joinRoles($member)
+    { //Move into class
+        if ($member->guild_id != $this->civ13_guild_id) return;
+        if ($item = $this->verified->get('discord', $member->id)) {
+            if ($this->bancheck($item['ss13'])) return $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
+            return $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
+        }
     }
 }
