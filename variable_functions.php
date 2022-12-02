@@ -16,7 +16,7 @@ use React\EventLoop\Timer\Timer;
 use React\Promise\ExtendedPromiseInterface;
 
 $set_ips = function (Civ13 $civ13): void
-{ //on ready
+{ //on ready, move into class
     $vzg_ip = gethostbyname('www.valzargaming.com');
     $external_ip = file_get_contents('http://ipecho.net/plain');
     $civ13->ips = [
@@ -526,7 +526,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $message_content_lower = substr($message_content_lower, 6);
         $split_message = explode('; ', $message_content_lower);
         
-        $civ13->unban($$split_message[0], $message->author->displayname);
+        $civ13->unban($split_message[0], $message->author->displayname);
         $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}**";
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
@@ -947,7 +947,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
 };
 
 $serverinfo_players = function ($civ13): array
-{
+{ //Move into class
     if (empty($data_json = $civ13->serverinfo)) return [];
     $civ13->players = [];
     foreach ($data_json as $server) {
@@ -961,12 +961,12 @@ $serverinfo_players = function ($civ13): array
     return $civ13->players;
 };
 $serverinfo_fetch = function ($civ13): array
-{
+{ //Move into class
     if (! $data_json = json_decode(file_get_contents("http://{$civ13->ips['vzg']}/servers/serverinfo.json"),  true)) return [];
     return $civ13->serverinfo = $data_json;
 };
 $serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_players): void
-{
+{ //Move into class
     $func = function() use ($civ13, $serverinfo_fetch, $serverinfo_players) {
         $serverinfo_fetch($civ13); 
         foreach ($serverinfo_players($civ13) as $ckey) {
@@ -981,7 +981,7 @@ $serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_player
     $civ13->timers['serverinfo_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(60, function() use ($func) { $func(); });
 };
 $serverinfo_parse = function ($civ13): array
-{
+{ //Move into class
     if (empty($data_json = $civ13->serverinfo)) return [];
     $return = [];
 
@@ -1026,10 +1026,10 @@ $serverinfo_parse = function ($civ13): array
 };
 
 $join_roles = function (Civ13 $civ13, $member)
-{
+{ //Move into class
     if ($member->guild_id != $civ13->civ13_guild_id) return;
     if ($item = $civ13->verified->get('discord', $member->id)) {
-        if ($$civ13->bancheck($item['ss13'])) return $member->setroles([$civ13->role_ids['infantry'], $civ13->role_ids['banished']], "bancheck join {$item['ss13']}");
+        if ($civ13->bancheck($item['ss13'])) return $member->setroles([$civ13->role_ids['infantry'], $civ13->role_ids['banished']], "bancheck join {$item['ss13']}");
         return $member->setroles([$civ13->role_ids['infantry']], "verified join {$item['ss13']}");
     }
 };
