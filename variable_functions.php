@@ -467,65 +467,6 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         return $message->react("👎");
     }
     
-    if (str_starts_with($message_content_lower, 'whitelistme')) {
-        $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 11)));
-        if (! $ckey = $civ13->verified->get('discord', $message->member->id)['ss13']) return $message->reply("I didn't find your ckey in the approved list! Please reach out to an administrator.");
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran'])) return $message->react("❌");         
-        $found = false;
-        $whitelist1 = fopen($civ13->files['nomads_whitelist'], 'r');
-        if ($whitelist1) {
-            while (($fp = fgets($whitelist1, 4096)) !== false) foreach (explode(';', trim(str_replace(PHP_EOL, '', $fp))) as $split) if ($split == $ckey) $found = true;
-            fclose($whitelist1);
-        }
-        $whitelist2 = fopen($civ13->files['tdm_whitelist'], 'r');
-        if ($whitelist2) {
-            while (($fp = fgets($whitelist2, 4096)) !== false) foreach (explode(';', trim(str_replace(PHP_EOL, '', $fp))) as $split) if ($split == $ckey) $found = true;
-            fclose($whitelist2);
-        }
-        if ($found) return $message->reply("$ckey is already in the whitelist!");
-        
-        $txt = "$ckey = {$message->member->id}" . PHP_EOL;
-        if ($whitelist1 = fopen($civ13->files['nomads_whitelist'], 'a')) {
-            fwrite($whitelist1, $txt);
-            fclose($whitelist1);
-        }
-        if ($whitelist2 = fopen($civ13->files['tdm_whitelist'], 'a')) {
-            fwrite($whitelist2, $txt);
-            fclose($whitelist2);
-        }
-        return $message->reply("$ckey has been added to the whitelist.");
-    }
-    if (str_starts_with($message_content_lower, 'unwhitelistme')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight', 'veteran', 'infantry'])) return $message->react("❌");
-        
-        $lines_array = array();
-        if (! $wlist = fopen($civ13->files['nomads_whitelist'], 'r')) return $message->react("🔥");
-        while (($fp = fgets($wlist, 4096)) !== false) $lines_array[] = $fp;
-        fclose($wlist);
-        
-        $removed = 'N/A';
-        if (count($lines_array) > 0) {
-            if (! $wlist = fopen($civ13->files['nomads_whitelist'], 'w')) return $message->react("🔥");
-            foreach ($lines_array as $line)
-                if (!str_contains($line, $message->member->username)) fwrite($wlist, $line);
-                else $removed = explode('=', $line)[0];
-            fclose($wlist);
-        }
-        
-        $lines_array = array();
-        if (! $wlist = fopen($civ13->files['tdm_whitelist'], 'r')) return $message->react("🔥");
-        while (($fp = fgets($wlist, 4096)) !== false) $lines_array[] = $fp;
-        fclose($wlist);
-        
-        if (count($lines_array) > 0) {
-            if (! $wlist = fopen($civ13->files['tdm_whitelist'], 'w')) return $message->react("🔥");
-            foreach ($lines_array as $line)
-                if (!str_contains($line, $message->member->username)) fwrite($wlist, $line);
-                else $removed = explode('=', $line)[0];
-            fclose($wlist);
-        }
-        return $message->reply("Ckey $removed has been removed from the whitelist.");
-    }
     if (str_starts_with($message_content_lower, 'refresh')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if ($civ13->getVerified()) return $message->react("👍");
@@ -929,6 +870,8 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         return;
     }
     if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
+        return; //deprecated
+        /*
         $embed = new Embed($civ13->discord);
         $_1714 = !\portIsAvailable(1714);
         $server_is_up = $_1714;
@@ -979,6 +922,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             }
         }
         return $message->channel->sendEmbed($embed);
+        */
     }
     if (str_starts_with($message_content_lower, 'discord2ckey')) {
         if (! $item = $civ13->verified->get('discord', $id = trim(str_replace(['<@!', '<@', '>'], '', substr($message_content_lower, strlen('discord2ckey')))))) return $message->reply("`$id` is not registered to any byond username");
@@ -1099,13 +1043,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($serverinfo_parse, $restar
             'description' => 'Replies with Pong!',
     ]));
     
-    //if ($command = $commands->get('name', 'restart')) $commands->delete($command->id);
-    if (! $commands->get('name', 'restart')) $commands->save(new Command($civ13->discord, [
-            'name' => 'restart',
-            'description' => 'Restart the bot',
-            'dm_permission' => false,
-            'default_member_permissions' => (string) new RolePermission($civ13->discord, ['view_audit_log' => true]),
-    ]));
+    if ($command = $commands->get('name', 'restart')) $commands->delete($command->id);
     
     //if ($command = $commands->get('name', 'pull')) $commands->delete($command->id);
     if (! $commands->get('name', 'pull')) $commands->save(new Command($civ13->discord, [
@@ -1224,15 +1162,6 @@ $slash_init = function (Civ13 $civ13, $commands) use ($serverinfo_parse, $restar
     
     $civ13->discord->listenCommand('ping', function ($interaction) use ($civ13) {
         $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
-    });
-    
-    $civ13->discord->listenCommand('restart', function ($interaction) use ($civ13) {
-        $civ13->logger->info('[RESTART]');
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Restarting...'));
-        $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
-            \restart();
-            $civ13->discord->close();
-        });
     });
     
     $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13) {
