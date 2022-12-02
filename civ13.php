@@ -379,7 +379,7 @@ class Civ13
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Ckey `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
-                if ($ban = $this->functions['misc']['ban']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($ban($this, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
                 return "Ckey `$ckey` is too new! ($age)";
             }
             $found = false;
@@ -454,22 +454,32 @@ class Civ13
         return $this->permitted;
     }
 
-    public function bancheck()
-    { //TODO
-        //
-    }
-
-    public function ban()
-    { //TODO
-        //
+    public function bancheck(string $ckey): bool
+    {
+        $return = false;
+        if ($filecheck1 = fopen($this->files['nomads_bans'], 'r')) {
+            while (($fp = fgets($filecheck1, 4096)) !== false) {
+                //str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) $return = true;
+            }
+            fclose($filecheck1);
+        } else $this->logger->warning("unable to open `{$this->files['nomads_bans']}`");
+        if ($filecheck2 = fopen($this->files['tdm_bans'], 'r')) {
+            while (($fp = fgets($filecheck2, 4096)) !== false) {
+                //str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) $return = true;
+            }
+            fclose($filecheck2);
+        } else $this->logger->warning("unable to open `{$this->files['tdm_bans']}`");
+        return $return;
     }
 
     public function panicBan(string $ckey): void
     {
-        $bancheck = $this->functions['misc']['bancheck']; //Move function to this class
-        $ban = $this->functions['misc']['ban']; //Move function to this class
-        if (! $bancheck($this, $ckey)) {
-            $ban($this, [$ckey], "Panic Bunker mode is currently turned on. You must come to Discord and register before you can play: {$this->banappeal}");
+        if (! $this->bancheck($ckey)) {
+            $this->ban([$ckey, '999 years', "Panic Bunker mode is currently turned on. You must come to Discord and register before you can play: {$this->banappeal}"]);
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
@@ -477,9 +487,58 @@ class Civ13
     
     public function panicUnban(string $ckey): void
     {
-        $unban = $this->functions['misc']['ban']; //Move function to this class
-        $unban($this, [$ckey]);
+        $this->unban($ckey);
         unset($this->panic_bans[$ckey]);
         $this->VarSave('panic_bans.json', $this->panic_bans);
+    }
+
+    public function banNomads($array, $message = null): string
+    {
+        $admin = ($message ? $message->author->displayname : $this->discord->user->username);
+        $result = '';
+        if ($file = fopen($this->files['nomads_discord2ban'], 'a')) {
+            fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
+            fclose($file);
+        } else {
+            $this->logger->warning("unable to open {$this->files['nomads_discord2ban']}");
+            $result .= "unable to open {$this->files['nomads_discord2ban']}" . PHP_EOL;
+        }
+        $result .= "**$admin** banned **{$array[0]}** from **Nomads** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+        return $result;
+    }
+    public function banTDM($array, $message = null): string
+    {
+        $admin = ($message ? $message->author->displayname : $this->discord->user->username);
+        if (! $file = fopen($this->files['tdm_discord2ban'], 'a')) return "unable to open {$this->files['tdm_discord2ban']}" . PHP_EOL;
+        fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
+        fclose($file);
+        return "**$admin** banned **{$array[0]}** from **TDM** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+    }
+    public function ban($array, $message = null):string
+    {
+        return $this->banNomads($array, $message) . $this->banTDM($array, $message);
+    }
+
+    public function unbanNomads(string $ckey, ?string $admin = null): void
+    {
+        if (! $admin) $admin = $this->discord->user->displayname;
+        if ($file = fopen($this->files['nomads_discord2unban'], 'a')) {
+            fwrite($file, "$admin:::$ckey");
+            fclose($file);
+        }
+    }
+    public function unbanTDM(string $ckey, ?string $admin = null): void
+    {
+        if (! $admin) $admin = $this->discord->user->displayname;
+        if ($file = fopen($this->files['tdm_discord2unban'], 'a')) {
+            fwrite($file, "$admin:::$ckey");
+            fclose($file);
+        }
+    }
+    public function unban(string $ckey, ?string $admin = null): void
+    {
+        if (! $admin) $admin = $this->discord->user->displayname;
+        $this->unbanNomads($ckey, $admin);
+        $this->unbanTDM($ckey, $admin);
     }
 }
