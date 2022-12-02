@@ -137,7 +137,7 @@ class Civ13
 
                 if (! $permitted = $this->VarLoad('permitted.json')) $permitted = [];
                 $this->permitted = $permitted;
-                register_shutdown_function([$this, "VarSave"], 'permitted.json', $this->permitted);
+                //register_shutdown_function([$this, "VarSave"], 'permitted.json', $this->permitted);
                 
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
