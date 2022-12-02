@@ -188,5 +188,25 @@ class Slash
                 $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed));
             }
         });
+
+        $this->civ13->discord->listenCommand('ckey', function ($interaction)
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss13']}`"), true);
+        });
+        
+        $this->civ13->discord->listenCommand('bancheck', function ($interaction)
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            if ($this->civ13->bancheck($item['ss13'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$item['ss13']}` is currently banned on one of the Civ13.com servers."), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$item['ss13']}` is not currently banned on one of the Civ13.com servers."), true);
+        });
+        
+        $this->civ13->discord->listenCommand('unban', function ($interaction)
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** unbanned **`{$item['ss13']}`**."));
+            $this->civ13->unban($item['ss13'], $interaction->user->displayname);
+        });
     }
 }

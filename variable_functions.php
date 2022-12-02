@@ -10,8 +10,6 @@ use Civ13\Civ13;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Activity;
-use Discord\Parts\Interactions\Command\Command;
-use Discord\Parts\Permissions\RolePermission;
 use React\EventLoop\Timer\Timer;
 use React\Promise\ExtendedPromiseInterface;
 
@@ -948,11 +946,6 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
 
 $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
 { //ready_slash
-    $civ13->discord->listenCommand('ping', function ($interaction): void
-    {
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
-    });
-    
     $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13): void
     {
         $civ13->logger->info('[GIT PULL]');
@@ -964,44 +957,6 @@ $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nom
         $civ13->logger->info('[COMPOSER UPDATE]');
         \execInBackground('composer update');
         $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
-    });
-    
-    $civ13->discord->listenCommand('stats', function ($interaction) use ($civ13) {
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($civ13->stats->handle()));
-    });
-    
-    $civ13->discord->listenCommand('invite', function ($interaction) use ($civ13) {
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent($civ13->discord->application->getInviteURLAttribute('8')), true);
-    });
-    
-    $civ13->discord->listenCommand('players', function ($interaction) use ($civ13) {
-        if (empty($data = $civ13->serverinfoParse())) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
-        $embed = new Embed($civ13->discord);
-        foreach ($data as $server)
-             foreach ($server as $key => $array)
-                foreach ($array as $inline => $value)
-                    $embed->addFieldValues($key, $value, $inline);
-        $embed->setFooter(($civ13->github ?  "{$civ13->github}" . PHP_EOL : '') . "{$civ13->discord->username} by Valithor#5947");
-        $embed->setColor(0xe1452d);
-        $embed->setTimestamp();
-        $embed->setURL('');
-        return $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed));
-    });
-    
-    $civ13->discord->listenCommand('ckey', function ($interaction) use ($civ13) {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss13']}`"), true);
-    });
-    $civ13->discord->listenCommand('bancheck', function ($interaction) use ($civ13) {
-    if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        if ($civ13->bancheck($item['ss13'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$item['ss13']}` is currently banned on one of the Civ13.com servers."), true);
-        return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$item['ss13']}` is not currently banned on one of the Civ13.com servers."), true);
-    });
-    
-    $civ13->discord->listenCommand('unban', function ($interaction) use ($civ13) {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** unbanned **`{$item['ss13']}`**."));
-        $civ13->unban($item['ss13'], $interaction->user->displayname);
     });
     
     $civ13->discord->listenCommand('restart_nomads', function ($interaction) use ($civ13, $restart_nomads) {
