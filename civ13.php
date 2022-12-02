@@ -129,11 +129,11 @@ class Civ13
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
                 $this->discord_config = $discord_config;
-                register_shutdown_function([$this, "VarSave"], 'discord_config.json', $this->discord_config);
+                //register_shutdown_function([$this, "VarSave"], 'discord_config.json', $this->discord_config);
                 
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
                 $this->tests = $tests;
-                register_shutdown_function([$this, "VarSave"], 'tests.json', $this->tests);
+                //register_shutdown_function([$this, "VarSave"], 'tests.json', $this->tests);
 
                 if (! $permitted = $this->VarLoad('permitted.json')) $permitted = [];
                 $this->permitted = $permitted;
