@@ -423,13 +423,6 @@ $tests = function (Civ13 $civ13, $message, string $message_content)
 
 $panic_bunker = function (Civ13 $civ13)
 {
-    if ($civ13->panic_bunker) {
-        //start a periodic timer and save it to$civ13->timers['panic_bunker'], get player list from TDM and Nomads servers
-        //Check all ckeys in player list against the getVerifiedUsers() list
-        //Issue temporary ban with notice to come to discord for verification
-    } else {
-        //stop the timer
-    }
     $civ13->panic_bunker = ! $civ13->panic_bunker;
 };
 
@@ -602,7 +595,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $ban($civ13, $split_message, $message);
+        $result = $ban($civ13, [$split_message[0], $split_message[1], $split_message[2] . "Appeal at {$civ13->banappeal}"], $message);
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -625,7 +618,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $ban_nomads($civ13, $split_message, $message);
+        $result = $ban_nomads($civ13, [$split_message[0], $split_message[1], $split_message[2] . "Appeal at {$civ13->banappeal}"], $message);
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -638,7 +631,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $ban_tdm($civ13, $split_message, $message);
+        $result = $ban_tdm($civ13, [$split_message[0], $split_message[1], $split_message[2] . "Appeal at {$civ13->banappeal}"], $message);
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -805,10 +798,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         file_put_contents($civ13->files['nomads_bans'], $banlog_update($nomads_bans, [$nomads_playerlogs, $tdm_playerlogs]));
         return $message->react("👍");
     }
-    if ($message_content_lower == 'panic bunker') {
+    if ($message_content_lower == 'panic') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $panic_bunker($civ13);
-        return $message->reply('Panic bunker is now ' . ($civ13->panic_bunker ? 'enabled' : 'disabled'));
+        return $message->reply('Panic bunker is now ' . ($civ13->panic_bunker ? 'enabled.' : 'disabled.'));
     }
 };
 
@@ -1092,10 +1085,11 @@ $serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_player
         $serverinfo_fetch($civ13); 
         foreach ($serverinfo_players($civ13) as $ckey) {
             if ($civ13->verified->get('ss13', $ckey)) continue;
+            if ($civ13->panic_bunker) return $civ13->panicBan($ckey);
             if (isset($civ13->ages[$ckey])) continue;
             if (! $civ13->checkByondAge($age = $civ13->getByondAge($ckey)) && ! isset($civ13->permitted[$ckey]))
                 if ($ban = $civ13->functions['misc']['ban']) $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage($ban($civ13, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
-                else $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage("<@{$civ13->role_ids['knight']}>, Unable to ban $ckey for agecheck failed, function not found");
+                else $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage("<@{$civ13->role_ids['knight']}>, Unable to ban $ckey due to agecheck failed, function not found");
         }
     };
     $func();
@@ -1426,7 +1420,7 @@ $ooc_relay = function (Civ13 $civ13, string $file_path, $channel) use ($ban): bo
                 $filtered = substr($badword, 0, 1);
                 for ($x=1;$x<strlen($badword)-2; $x++) $filtered .= '%';
                 $filtered  .= substr($badword, -1, 1);
-                $ban($civ13, [$ckey, '999 years', "Blacklisted word ($filtered), please appeal on our discord"]);
+                $ban($civ13, [$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$civ13->banappeal}"]);
             }
         }
         if (! $item = $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);

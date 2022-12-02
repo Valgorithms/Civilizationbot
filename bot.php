@@ -64,6 +64,7 @@ $options = array(
     'stats' => $stats,
     
     //Configurations
+    'banappeal' => 'https://civ13.com/discord',
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
     'command_symbol' => '!s',
     'owner_id' => '196253985072611328', //Taislin
@@ -169,6 +170,7 @@ $options = array(
             'ban' => $ban,
             'ban_nomads' => $ban_nomads,
             'ban_tdm' => $ban_tdm,
+            'unban' => $unban,
             'browser_call' => $browser_call,
             'bancheck' => $bancheck,
             'verify_new' => $verify_new,

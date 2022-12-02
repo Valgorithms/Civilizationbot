@@ -53,6 +53,9 @@ class Civ13
     public string $civ13_guild_id = '468979034571931648';
     public string $verifier_feed_channel_id = '1032411190695055440';
     public string $civ_token = '';
+
+    public string $github = 'https://github.com/VZGCoders/Civilizationbot';
+    public string $banappeal = 'https://civ13.com/discord/';
     
     public array $files = [];
     public array $ips = [];
@@ -63,6 +66,7 @@ class Civ13
     public array $discord_config = [];
     public array $tests = [];
     public bool $panic_bunker = false;
+    public array $panic_bans = [];
     
     /**
      * Creates a Civ13 client instance.
@@ -95,6 +99,7 @@ class Civ13
         
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
         if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
+        if(isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
         if(isset($options['github'])) $this->github = $options['github'];
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
         if(isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
@@ -135,6 +140,9 @@ class Civ13
 
                 if (! $permitted = $this->VarLoad('permitted.json')) $permitted = [];
                 $this->permitted = $permitted;
+
+                if (! $panic_bans = $this->VarLoad('panic_bans.json')) $panic_bans = [];
+                $this->panic_bans = $panic_bans;
                 
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
@@ -375,7 +383,7 @@ class Civ13
                 return "Ckey `$ckey` is too new! ($age)";
             }
             $found = false;
-            foreach (explode('|', file_get_contents($this->files['tdm_playerlogs']) .  file_get_contents($this->files['nomads_playerlogs'])) as $line)
+            foreach (explode('|', file_get_contents($this->files['tdm_playerlogs']) . file_get_contents($this->files['nomads_playerlogs'])) as $line)
                 if (explode(';', trim($line))[0] == $ckey) {
                     $found = true;
                     break;
@@ -421,6 +429,10 @@ class Civ13
                 $this->pending->offsetUnset($discord_id);
                 $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)->addRole($this->role_ids['infantry']);
                 $this->getVerified();
+                if (isset($this->panic_bans[$ckey])) {
+                    $this->panicUnban($ckey);
+                    $message .= ' and the panic bunker ban removed.';
+                }
                 break;
             case 403: //Already registered
                 $message = "Either `$ckey` or <@$discord_id> has already been verified and registered to a discord id"; //This should have been caught above. Need to run getVerified() again?
@@ -440,5 +452,34 @@ class Civ13
         else unset($this->permitted[$ckey]);
         $this->VarSave('permitted.json', $this->permitted);
         return $this->permitted;
+    }
+
+    public function bancheck()
+    { //TODO
+        //
+    }
+
+    public function ban()
+    { //TODO
+        //
+    }
+
+    public function panicBan(string $ckey): void
+    {
+        $bancheck = $this->functions['misc']['bancheck']; //Move function to this class
+        $ban = $this->functions['misc']['ban']; //Move function to this class
+        if (! $bancheck($this, $ckey)) {
+            $ban($this, [$ckey], "Panic Bunker mode is currently turned on. You must come to Discord and register before you can play: {$this->banappeal}");
+            $this->panic_bans[$ckey] = true;
+            $this->VarSave('panic_bans.json', $this->panic_bans);
+        }
+    }
+    
+    public function panicUnban(string $ckey): void
+    {
+        $unban = $this->functions['misc']['ban']; //Move function to this class
+        $unban($this, [$ckey]);
+        unset($this->panic_bans[$ckey]);
+        $this->VarSave('panic_bans.json', $this->panic_bans);
     }
 }
