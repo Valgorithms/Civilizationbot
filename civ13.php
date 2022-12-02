@@ -8,6 +8,7 @@
 
 namespace Civ13;
 
+use Civ13\Slash;
 use Discord\Discord;
 use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
@@ -22,6 +23,8 @@ use React\Filesystem\Factory as FilesystemFactory;
 
 class Civ13
 {
+    public Slash $slash;
+
     public StreamSelectLoop $loop;
     public Discord $discord;
     public Browser $browser;
@@ -107,6 +110,8 @@ class Civ13
                 
         if(isset($options['discord'])) $this->discord = $options['discord'];
         elseif(isset($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
+        require 'slash.php';
+        $this->slash = new Slash($this);
         
         if (isset($options['functions'])) foreach ($options['functions'] as $key1 => $key2) foreach ($options['functions'][$key1] as $key3 => $func) $this->functions[$key1][$key3] = $func;
         else $this->logger->warning('No functions passed in options!');
@@ -149,7 +154,8 @@ class Civ13
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
                 $this->discord->application->commands->freshen()->done( function ($commands) {
-                    if (!empty($this->functions['ready_slash'])) foreach ($this->functions['ready_slash'] as $key => $func) $func($this, $commands);
+                    $this->slash->updateCommands($commands);
+                    if (!empty($this->functions['ready_slash'])) foreach (array_values($this->functions['ready_slash']) as $func) $func($this, $commands);
                     else $this->logger->debug('No ready slash functions found!');
                 });
                 
