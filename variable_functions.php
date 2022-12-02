@@ -1018,7 +1018,6 @@ $serverinfo_parse = function ($civ13): array
                 if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
             }
         }
-        $civ13->players = $players;
         if ($server['players'] || ! empty($players)) $return[$index]['Players (' . (isset($server['players']) ? $server['players'] : count($players) ?? '?') . ')'] = [true => (empty($players) ? 'N/A' : implode(', ', $players))];
         if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
         $index++;
