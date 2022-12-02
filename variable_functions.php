@@ -489,6 +489,20 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
+    if (str_starts_with($message_content_lower, 'permit')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 6))));
+        return $message->reply("$ckey is now permitted to bypass the Byond account age requirement.");
+    }
+    if (str_starts_with($message_content_lower, 'unpermit')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 8)), false));
+        return $message->reply("$ckey is no longer permitted to bypass the Byond account age requirement.");
+    }
+    if (str_starts_with($message_content_lower, 'permited')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        return $message->reply('The following ckeys are permitted to bypass the Byond account age requirement:' . PHP_EOL . '`' . implode('`' . PHP_EOL, $civ13->permitted));
+    }
 
     if (str_starts_with($message_content_lower, 'tests')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
@@ -1078,7 +1092,7 @@ $serverinfo_timer = function ($civ13) use ($serverinfo_fetch, $serverinfo_player
         foreach ($serverinfo_players($civ13) as $ckey) {
             if ($civ13->verified->get('ss13', $ckey)) continue;
             if (isset($civ13->ages[$ckey])) continue;
-            if (! $civ13->checkByondAge($age = $civ13->getByondAge($ckey)))
+            if (! $civ13->checkByondAge($age = $civ13->getByondAge($ckey)) && ! isset($civ13->permitted[$ckey]))
                 if ($ban = $civ13->functions['misc']['ban']) $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage($ban($civ13, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
                 else $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage("<@{$civ13->role_ids['knight']}>, Unable to ban $ckey for agecheck failed, function not found");
         }

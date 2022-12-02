@@ -35,6 +35,7 @@ class Civ13
     public collection $pending;
     public $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
     public $minimum_age = '-21 days'; //Minimum age of a ckey
+    public $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum age requirement
 
     public $timers = [];
     public $serverinfo = []; //Collected automatically by serverinfo_timer
@@ -133,6 +134,10 @@ class Civ13
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
                 $this->tests = $tests;
                 register_shutdown_function([$this, "VarSave"], 'tests.json', $this->tests);
+
+                if (! $permitted = $this->VarLoad('permitted.json')) $permitted = [];
+                $this->permitted = $permitted;
+                register_shutdown_function([$this, "VarSave"], 'permitted.json', $this->permitted);
                 
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
@@ -368,7 +373,7 @@ class Civ13
         if ($this->verified->has($ckey)) return "`$ckey` is already verified!";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Ckey `$ckey` does not exist!";
-            if (! $this->checkByondAge($age)) { //TODO: Declare the minimum time in the config file instead of hardcoded here
+            if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
                 if ($ban = $this->functions['misc']['ban']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($ban($this, [$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
                 return "Ckey `$ckey` is too new! ($age)";
             }
@@ -430,5 +435,13 @@ class Civ13
         }
         curl_close($ch);
         return [$success, $message];
+    }
+
+    public function permitCkey(string $ckey, bool $allow = true): array
+    {
+        if ($allow) $this->permitted[$ckey] = true;
+        else unset($this->permitted[$ckey]);
+        $this->VarSave('permitted.json', $this->permitted);
+        return $this->permitted;
     }
 }
