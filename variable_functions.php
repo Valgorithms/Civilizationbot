@@ -489,9 +489,9 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
-    if ($message_content_lower == 'permited') {
+    if ($message_content_lower == 'permitted') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        return $message->reply('The following ckeys are permitted to bypass the Byond account age requirement:' . PHP_EOL . '`' . implode('`' . PHP_EOL, $civ13->permitted));
+        return $message->reply('The following ckeys are permitted to bypass the Byond account age requirement:' . PHP_EOL . '`' . implode('`' . PHP_EOL, array_key($civ13->permitted)));
     }
     if (str_starts_with($message_content_lower, 'permit')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
