@@ -6,14 +6,14 @@
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */ 
 
-use \Civ13\Civ13;
-use \Discord\Builders\MessageBuilder;
-use \Discord\Parts\Embed\Embed;
-use \Discord\Parts\User\Activity;
-use \Discord\Parts\Interactions\Command\Command;
-use \Discord\Parts\Permissions\RolePermission;
-use \React\EventLoop\Timer\Timer;
-use \React\Promise\ExtendedPromiseInterface;
+use Civ13\Civ13;
+use Discord\Builders\MessageBuilder;
+use Discord\Parts\Embed\Embed;
+use Discord\Parts\User\Activity;
+use Discord\Parts\Interactions\Command\Command;
+use Discord\Parts\Permissions\RolePermission;
+use React\EventLoop\Timer\Timer;
+use React\Promise\ExtendedPromiseInterface;
 
 $set_ips = function (Civ13 $civ13): void
 { //on ready
