@@ -133,9 +133,9 @@ class Civ13
     {
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
+                $this->getVerified(); //Populate verified property with data from DB
                 $this->setIPs();
                 $this->serverinfoTimer();
-                $this->getVerified(); //Populate verified property with data from DB
                 $this->pending = new Collection([], 'discord');
                 //Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
