@@ -92,7 +92,7 @@ class Slash
             'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
         ]));
 
-        if ($command = $commands->get('name', 'bancheck_ckey')) $commands->delete($command->id);
+        //if ($command = $commands->get('name', 'bancheck_ckey')) $commands->delete($command->id);
         if (! $commands->get('name', 'bancheck_ckey')) {
             $command = new \Discord\Parts\Interactions\Command\Command($this->civ13->discord, [
                 'name'                       => 'bancheck_ckey',
