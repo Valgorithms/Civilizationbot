@@ -451,7 +451,6 @@ class Civ13
     
     public function bancheck(string $ckey): bool
     {
-        $return = false;
         if ($filecheck1 = fopen($this->files['nomads_bans'], 'r')) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
