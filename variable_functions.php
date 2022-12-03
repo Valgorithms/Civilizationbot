@@ -855,10 +855,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                     $found = true;
+                    $type = $linesplit[0];
                     $reason = $linesplit[3];
                     $admin = $linesplit[4];
                     $date = $linesplit[5];
-                    $message->reply("**$ckey** has been banned from **TDM** on **$date** for **$reason** by $admin.");
+                    $message->reply("**$ckey** has been **$type** banned from **TDM** on **$date** for **$reason** by $admin.");
                 }
             }
             fclose($filecheck2);
