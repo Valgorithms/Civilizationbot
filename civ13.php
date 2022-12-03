@@ -461,8 +461,8 @@ class Civ13
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
-                    $return = true;
-                    break;
+                    fclose($filecheck1);
+                    return true;
                 }
             }
             fclose($filecheck1);
@@ -472,13 +472,13 @@ class Civ13
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
-                    $return = true;
-                    break;
+                    fclose($filecheck2);
+                    return true;
                 }
             }
             fclose($filecheck2);
         } else $this->logger->warning("unable to open `{$this->files['tdm_bans']}`");
-        return $return;
+        return false;
     }
 
     public function permitCkey(string $ckey, bool $allow = true): array
