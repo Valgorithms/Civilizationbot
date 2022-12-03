@@ -113,7 +113,7 @@ class Civ13
         require 'slash.php';
         $this->slash = new Slash($this);
         
-        if (isset($options['functions'])) foreach ($options['functions'] as $key1 => $key2) foreach ($options['functions'][$key1] as $key3 => $func) $this->functions[$key1][$key3] = $func;
+        if (isset($options['functions'])) foreach (array_values($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->logger->warning('No functions passed in options!');
         
         if(isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
@@ -140,7 +140,7 @@ class Civ13
                 //Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
-                $this->discord_config = $discord_config;
+                $this->discord_config = $discord_config; //Declared, but not currently used for anything
                 
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
                 $this->tests = $tests;
@@ -170,7 +170,7 @@ class Civ13
                 });
                 $this->discord->on('GUILD_CREATE', function (Guild $guild)
                 {
-                    foreach ($this->discord->guilds as $guild) if (!isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
+                    if (!isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
                 });
             });
         }

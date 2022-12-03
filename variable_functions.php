@@ -393,10 +393,9 @@ $banlog_update = function (string $banlog, array $playerlogs, $ckey = null): str
     }
 
     $updated = [];
-    foreach (array_values($temp) as $ban) {
+    foreach (array_values($temp) as $ban)
         if (is_array($ban)) foreach (array_values($ban) as $b) $updated[] = $b;
         else $updated[] = $ban;
-    }
     
     if (empty($updated)) return implode('|||' . PHP_EOL, $oldlist) . '|||' . PHP_EOL;
     return implode('|||' . PHP_EOL, array_merge($oldlist, $updated)) . '|||' . PHP_EOL;
