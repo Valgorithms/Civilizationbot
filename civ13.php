@@ -73,9 +73,8 @@ class Civ13
     
     /**
      * Creates a Civ13 client instance.
-     *
-     * @param  array           $options Array of options.
-     * @throws IntentException
+     * 
+     * @throws E_USER_ERROR
      */
     public function __construct(array $options = [])
     {
@@ -178,9 +177,6 @@ class Civ13
     
     /**
      * Attempt to catch errors with the user-provided $options early
-     *
-     * @param  array
-     * @return array
      */
     protected function resolveOptions(array $options = []): array
     {
