@@ -152,22 +152,25 @@ class Civ13
                 
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
-                $this->discord->application->commands->freshen()->done( function ($commands) {
+                $this->discord->application->commands->freshen()->done( function ($commands): void
+                {
                     $this->slash->updateCommands($commands);
                     if (!empty($this->functions['ready_slash'])) foreach (array_values($this->functions['ready_slash']) as $func) $func($this, $commands);
                     else $this->logger->debug('No ready slash functions found!');
                 });
                 
-                $this->discord->on('message', function ($message) {
+                $this->discord->on('message', function ($message): void
+                {
                     if(! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message);
                     else $this->logger->debug('No message functions found!');
                 });
-                $this->discord->on('GUILD_MEMBER_ADD', function ($guildmember) {
+                $this->discord->on('GUILD_MEMBER_ADD', function ($guildmember): void
+                {
                     $this->joinRoles($guildmember);
                     if(! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $guildmember);
                     else $this->logger->debug('No message functions found!');
                 });
-                $this->discord->on('GUILD_CREATE', function (Guild $guild)
+                $this->discord->on('GUILD_CREATE', function (Guild $guild): void
                 {
                     if (!isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
                 });
