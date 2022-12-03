@@ -92,24 +92,32 @@ class Slash
             'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
         ]));
 
-        //if ($command = $commands->get('name', 'bancheck_user')) $commands->delete($command->id);
+        if ($command = $commands->get('name', 'bancheck_user')) $commands->delete($command->id);
         if (! $commands->get('name', 'bancheck_ckey')) {
             $command = new \Discord\Parts\Interactions\Command\Command($this->civ13->discord, [
-                'name'			=> 'bancheck_ckey',
-                'description'	=> 'Ccheck if a ckey is banned on the server',
-                'dm_permission' => false,
+                'name'                       => 'bancheck_ckey',
+                'description'                => 'Check if a ckey is banned on the server',
+                'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
-                'options'		=> [
+                'options'                    => [
                     [
-                        'name'			=> 'ckey',
-                        'description'	=> 'Byond.com username',
-                        'type'			=>  3,
-                        'required'		=> true,
+                        'name'        => 'ckey',
+                        'description' => 'Byond.com username',
+                        'type'        =>  3,
+                        'required'    => true,
                     ]
                 ]
             ]);
             $commands->save($command);
         }
+        //if ($command = $commands->get('name', 'panic')) $commands->delete($command->id);
+        if (! $commands->get('name', 'panic')) $commands->save(new Command($this->civ13->discord, [
+            'name'                       => 'panic',
+            'description'                => 'Toggles the panic bunker',
+            'dm_permission'              => false,
+            'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['manage_guild' => true]),
+        ]));
+        
 
         //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
         if (! $commands->get('name', 'ranking')) $commands->save(new Command($this->civ13->discord, [
@@ -235,5 +243,11 @@ class Slash
                 $this->civ13->unban($item['ss13'], $interaction->user->displayname);
             }
         });
+        
+        $this->civ13->discord->listenCommand('panic', function ($interaction): void
+        {
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent('Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')));
+        });
     }
+    //
 }
