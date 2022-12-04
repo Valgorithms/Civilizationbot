@@ -648,8 +648,8 @@ class Civ13
                 $p = explode('player', $key); 
                 if (isset($p[1])) if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
             }
-            if ($index == 0) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'tdm-');
-            if ($index == 1) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'nomads-');
+            //if ($index == 0) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'tdm-'); //Permission error
+            //if ($index == 1) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'nomads-'); //Permission error
             if ($server['players'] || ! empty($players)) $return[$index]['Players (' . (isset($server['players']) ? $server['players'] : count($players) ?? '?') . ')'] = [true => (empty($players) ? 'N/A' : implode(', ', $players))];
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
             $index++;
