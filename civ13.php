@@ -602,7 +602,7 @@ class Civ13
     {
         $func = function() {
             $this->serverinfoFetch(); 
-            //$this->serverinfoParse(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
+            $this->serverinfoParse(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
             $this->serverinfoPlayers();
             $this->playercountChannelUpdate(count($this->players['TDM'], 'tdm-'));
             $this->playercountChannelUpdate(count($this->players['Nomads'], 'nomads-'));
