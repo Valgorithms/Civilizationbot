@@ -601,6 +601,14 @@ class Civ13
         $func();
         $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function() use ($func) { $func(); });
     }
+    private function playercountChannelUpdate($count = 0, $prefix = ''): void
+    {
+        if ($channel = $this->discord->getChannel($this->channel_ids["{$prefix}playercount"]))
+            if ( end(explode('-', $channel->name)) != $count) {
+                $channel->name = "{$prefix}players-$count";
+                $channel->guild->channels->save($channel);
+            }
+    }
     public function serverinfoParse(): array
     {
         if (empty($data_json = $this->serverinfo)) return [];
@@ -614,7 +622,10 @@ class Civ13
         $index = 0;
         foreach ($data_json as $server) {
             $server_info_hard = array_shift($server_info);
-            if (array_key_exists('ERROR', $server)) continue;
+            if (array_key_exists('ERROR', $server)) {
+                $index++;
+                continue;
+            }
             if (isset($server_info_hard['name'])) $return[$index]['Server'] = [false => $server_info_hard['name'] . PHP_EOL . $server_info_hard['link']];
             if (isset($server_info_hard['host'])) $return[$index]['Host'] = [true => $server_info_hard['host']];
             //Round time
@@ -635,10 +646,10 @@ class Civ13
             $players = [];
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
-                if (isset($p[1])) {
-                    if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
-                }
+                if (isset($p[1])) if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
             }
+            if ($index == 0) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'tdm-');
+            if ($index == 1) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'nomads-');
             if ($server['players'] || ! empty($players)) $return[$index]['Players (' . (isset($server['players']) ? $server['players'] : count($players) ?? '?') . ')'] = [true => (empty($players) ? 'N/A' : implode(', ', $players))];
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
             $index++;

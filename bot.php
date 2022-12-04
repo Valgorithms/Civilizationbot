@@ -134,6 +134,8 @@ $options = array(
         'tdm_ooc_channel' => '636644391095631872', //#ooc-tdm
         'tdm_admin_channel' => '637046904575885322', //#ahelp-tdm
         'staff_bot' => '712685552155230278', //#staff-bot
+        'nomads-playercount' => '1048777424894185484',
+        'tdm-playercount' => '1048777462898761789',
     ),
     'role_ids' => array(
         'admiral' => '468980650914086913', //Host
