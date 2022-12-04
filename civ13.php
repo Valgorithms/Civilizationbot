@@ -590,6 +590,7 @@ class Civ13
     {
         $func = function() {
             $this->serverinfoFetch(); 
+            $this->serverinfoParse(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
             foreach ($this->serverinfoPlayers() as $ckey) {
                 if ($this->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker) return $this->panicBan($ckey);
@@ -606,7 +607,11 @@ class Civ13
         if ($channel = $this->discord->getChannel($this->channel_ids["{$prefix}playercount"]))
             if ( end(explode('-', $channel->name)) != $count) {
                 $channel->name = "{$prefix}players-$count";
-                $channel->guild->channels->save($channel);
+                $http = $this->discord->getHttpClient(); //Permission workaround pending library fix for permission_overwrites
+                $http->patch(\Discord\Http\Endpoint::bind(\Discord\Http\Endpoint::CHANNEL, $channel->id), ['name' => $channel->name])->then(function ($response) use ($channel) {
+                    $channel->fill((array) $response);
+                    return $response;
+                });
             }
     }
     public function serverinfoParse(): array
