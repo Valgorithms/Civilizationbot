@@ -43,6 +43,7 @@ class Civ13
     public $timers = [];
     public $serverinfo = []; //Collected automatically by serverinfo_timer
     public $players = []; //Collected automatically by serverinfo_timer
+    public $serverinfo_hard = [];
     
     public $functions = array(
         'ready' => [],
@@ -134,6 +135,7 @@ class Civ13
             $this->discord->once('ready', function () {
                 $this->getVerified(); //Populate verified property with data from DB
                 $this->setIPs();
+                $this->setServerinfo();
                 $this->serverinfoTimer();
                 $this->pending = new Collection([], 'discord');
                 //Initialize configurations
@@ -567,17 +569,27 @@ class Civ13
             'ps13' => '7778',
         ];
     }
+    public function setServerinfo()
+    {
+        $serverinfo[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"];
+        $serverinfo[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"];
+        $serverinfo[2] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"];
+        $serverinfo[3] = ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"];
+        $this->serverinfo_hard = $serverinfo;
+    }
     public function serverinfoPlayers(): array
     { 
         if (empty($data_json = $this->serverinfo)) return [];
         $this->players = [];
+        $index = 0;
         foreach ($data_json as $server) {
             if (array_key_exists('ERROR', $server)) continue;
             //Players
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
-                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+                if (isset($p[1]) && is_numeric($p[1])) $this->players[$this->serverinfo_hard[$index]['name']] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
             }
+            $index++;
         }
         return $this->players;
     }
@@ -591,7 +603,10 @@ class Civ13
         $func = function() {
             $this->serverinfoFetch(); 
             $this->serverinfoParse(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
-            foreach ($this->serverinfoPlayers() as $ckey) {
+            $this->serverinfoPlayers();
+            $this->playercountChannelUpdate(count($this->players['TDM'], 'tdm-'));
+            $this->playercountChannelUpdate(count($this->players['Nomads'], 'nomads-'));
+            foreach ($this->players as $ckey) { //key should be the name of the server!
                 if ($this->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
@@ -618,15 +633,10 @@ class Civ13
     {
         if (empty($data_json = $this->serverinfo)) return [];
         $return = [];
-
-        $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"];
-        $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"];
-        $server_info[2] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"];
-        $server_info[3] = ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"];
         
         $index = 0;
-        foreach ($data_json as $server) {
-            $server_info_hard = array_shift($server_info);
+        foreach ($data_json as $index => $server) {
+            $server_info_hard = $this->server_info[$index];
             if (array_key_exists('ERROR', $server)) {
                 $index++;
                 continue;
@@ -653,8 +663,8 @@ class Civ13
                 $p = explode('player', $key); 
                 if (isset($p[1])) if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
             }
-            if ($index == 0) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'tdm-'); //Permission error
-            if ($index == 1) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'nomads-'); //Permission error
+            //if ($index == 0) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'tdm-'); //Permission error
+            //if ($index == 1) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'nomads-'); //Permission error
             if ($server['players'] || ! empty($players)) $return[$index]['Players (' . (isset($server['players']) ? $server['players'] : count($players) ?? '?') . ')'] = [true => (empty($players) ? 'N/A' : implode(', ', $players))];
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
             $index++;
