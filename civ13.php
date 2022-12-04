@@ -636,7 +636,7 @@ class Civ13
         
         $index = 0;
         foreach ($data_json as $index => $server) {
-            $server_info_hard = $this->server_info[$index];
+            $server_info_hard = $this->serverinfo_hard[$index];
             if (array_key_exists('ERROR', $server)) {
                 $index++;
                 continue;
