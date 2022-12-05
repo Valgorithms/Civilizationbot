@@ -589,11 +589,11 @@ class Civ13
     public function serverinfoTimer(): void
     {
         $func = function() {
-            $this->serverinfoFetch(); 
+            $this->serverinfoFetch();
+            if ($this->panic_bunker || $this->serverinfo[1]['admins'] == 0) $this->panicBan($ckey);
             $this->serverinfoParse(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
             foreach ($this->serverinfoPlayers() as $ckey) {
                 if ($this->verified->get('ss13', $ckey)) continue;
-                if ($this->panic_bunker || $this->serverinfo[1]['admins'] == 0) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
                 if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
                     $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
