@@ -489,14 +489,14 @@ class Civ13
     public function panicBan(string $ckey): void
     {
         if (! $this->bancheck($ckey)) {
-            $this->ban([$ckey, '999 years', "Panic Bunker mode is currently turned on. You must come to Discord and register before you can play: {$this->banappeal}"]);
+            $this->banNomads([$ckey, '1 hour', "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]);
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
     }
     public function panicUnban(string $ckey): void
     {
-        $this->unban($ckey);
+        $this->unbanNomads($ckey);
         unset($this->panic_bans[$ckey]);
         $this->VarSave('panic_bans.json', $this->panic_bans);
     }
@@ -593,7 +593,7 @@ class Civ13
             $this->serverinfoParse(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
             foreach ($this->serverinfoPlayers() as $ckey) {
                 if ($this->verified->get('ss13', $ckey)) continue;
-                if ($this->panic_bunker) return $this->panicBan($ckey);
+                if ($this->panic_bunker || $this->serverinfo[1]['admins'] == 0) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
                 if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
                     $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
