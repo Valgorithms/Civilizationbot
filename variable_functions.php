@@ -995,6 +995,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nom
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($brmedals($civ13, $item['ss13'])), true);
     });
+
     /*For deferred interactions
     $civ13->discord->listenCommand('',  function (Interaction $interaction) use ($civ13) {
       // code is expected to be slow, defer the interaction

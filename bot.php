@@ -8,6 +8,7 @@
 
 use \Civ13\Civ13;
 use \Discord\Discord;
+use \Discord\Helpers\CacheConfig;
 use \React\EventLoop\Loop;
 use \WyriHaximus\React\Cache\Redis as RedisCache;
 use \Clue\React\Redis\Factory as Redis;
@@ -35,8 +36,9 @@ $logger->pushHandler(new StreamHandler('php://stdout'));
 $discord = new Discord([
     'loop' => $loop,
     'logger' => $logger,
-    'cacheInterface' => $redis,
-    'cacheSweep' => false, //Don't periodically wipe the in-memory cache in case something happens to Redis
+    'cache' => new CacheConfig($interface = $redis, $compress = true, $sweep = false),
+    /*'cacheInterface' => $redis,
+    'cacheSweep' => false, //Don't periodically wipe the in-memory cache in case something happens to Redis*/
     /*'socket_options' => [
         'dns' => '8.8.8.8', // can change dns
     ],*/
