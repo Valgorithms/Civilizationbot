@@ -606,7 +606,7 @@ class Civ13
     {
         if ($channel = $this->discord->getChannel($this->channel_ids["{$prefix}playercount"]))
             $arr = explode('-', $channel->name);
-            if ( end($arr) != $count) {
+            if (end($arr) != $count) {
                 $channel->name = "{$prefix}players-$count";
                 $http = $this->discord->getHttpClient(); //Permission workaround pending library fix for permission_overwrites
                 $http->patch(\Discord\Http\Endpoint::bind(\Discord\Http\Endpoint::CHANNEL, $channel->id), ['name' => $channel->name])->then(function ($response) use ($channel) {
