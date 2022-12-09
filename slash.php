@@ -93,23 +93,21 @@ class Slash
         ]));
 
         //if ($command = $commands->get('name', 'bancheck_ckey')) $commands->delete($command->id);
-        if (! $commands->get('name', 'bancheck_ckey')) {
-            $command = new \Discord\Parts\Interactions\Command\Command($this->civ13->discord, [
-                'name'                       => 'bancheck_ckey',
-                'description'                => 'Check if a ckey is banned on the server',
-                'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
-                'options'                    => [
-                    [
-                        'name'        => 'ckey',
-                        'description' => 'Byond.com username',
-                        'type'        =>  3,
-                        'required'    => true,
-                    ]
+        if (! $commands->get('name', 'bancheck_ckey')) $commands->save(new Command($this->civ13->discord, [
+            'name'                       => 'bancheck_ckey',
+            'description'                => 'Check if a ckey is banned on the server',
+            'dm_permission'              => false,
+            'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+            'options'                    => [
+                [
+                    'name'        => 'ckey',
+                    'description' => 'Byond.com username',
+                    'type'        =>  3,
+                    'required'    => true,
                 ]
-            ]);
-            $commands->save($command);
-        }
+            ]
+        ]));
+
         //if ($command = $commands->get('name', 'panic')) $commands->delete($command->id);
         if (! $commands->get('name', 'panic')) $commands->save(new Command($this->civ13->discord, [
             'name'                       => 'panic',
@@ -117,7 +115,12 @@ class Slash
             'dm_permission'              => false,
             'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['manage_guild' => true]),
         ]));
-        
+
+        if (! $commands->get('name', 'join_campaign')) $commands->save(new Command($this->civ13->discord, [
+            'name'                       => 'join_campaign',
+            'description'                => 'Get a role to join the campaign',
+            'dm_permission'              => false,
+        ]));
 
         //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
         if (! $commands->get('name', 'ranking')) $commands->save(new Command($this->civ13->discord, [
@@ -248,6 +251,22 @@ class Slash
         {
             $interaction->respondWithMessage(MessageBuilder::new()->setContent('Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')));
         });
+
+        $this->civ13->discord->listenCommand('join_campaign', function ($interaction): void
+        {
+            if (! $this->civ13->verified->get('discord', $interaction->member->id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("You are either not currently verified with a byond username or do not exist in the cache yet"), true);
+            elseif ($interaction->member->roles->has($this->civ13->role_ids['red']) || $interaction->member->roles->has($this->civ13->role_ids['blue'])) $interaction->respondWithMessage(MessageBuilder::new()->setContent("You're already in a faction!"), true);
+            else {
+                $red_count = count($interaction->guild->members->filter(function ($member) { return $member->roles->has($this->civ13->role_ids['red']); } ));
+                $blue_count = count($interaction->guild->members->filter(function ($member) { return $member->roles->has($this->civ13->role_ids['blue']); } ));
+                if ($red_count > $blue_count) $interaction->member->addRole($this->civ13->role_ids['blue']);
+                elseif ($blue_count > $red_count) $interaction->member->addRole($this->civ13->role_ids['red']);
+                else {
+                    $array = [$this->civ13->role_ids['red'], $this->civ13->role_ids['blue']];
+                    $interaction->member->addRole($array[array_rand($array)]);
+                }
+                $interaction->respondWithMessage(MessageBuilder::new()->setContent('A faction has been assigned'), true);
+            }
+        });
     }
-    //
 }

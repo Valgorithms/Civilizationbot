@@ -145,6 +145,8 @@ $options = array(
         'infantry' => '468982790772228127', //Verified
         'banished' => '710328377210306641', //Banned in-game (unused)
         'paroled' => '745336314689355796', //On parole (unused)
+        'red' => '955869414622904320',
+        'blue' => '955869567035527208',
     ),
     'functions' => array(
         'ready' => [
