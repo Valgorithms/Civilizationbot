@@ -666,12 +666,12 @@ class Civ13
         return $return;
     }
 
-    public function joinRoles($member)
-    { //Move into class
-        if ($member->guild_id != $this->civ13_guild_id) return;
-        if ($item = $this->verified->get('discord', $member->id)) {
-            if ($this->bancheck($item['ss13'])) return $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
-            return $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
-        }
+    public function joinRoles($member): void
+    {
+        if ($member->guild_id == $this->civ13_guild_id) 
+            if ($item = $this->verified->get('discord', $member->id)) {
+                if ($this->bancheck($item['ss13'])) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
+                else $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
+            }
     }
 }
