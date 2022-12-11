@@ -397,8 +397,8 @@ $banlog_update = function (string $banlog, array $playerlogs, $ckey = null): str
         if (is_array($ban)) foreach (array_values($ban) as $b) $updated[] = $b;
         else $updated[] = $ban;
     
-    if (empty($updated)) return trim(implode('|||' . PHP_EOL, $oldlist)) . '|||' . PHP_EOL;
-    return trim(implode('|||' . PHP_EOL, array_merge($oldlist, $updated))) . '|||' . PHP_EOL;
+    if (empty($updated)) return preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
+    return trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
 };
 
 $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
