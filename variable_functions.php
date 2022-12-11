@@ -675,8 +675,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $nomads_bans = file_get_contents($civ13->files['nomads_bans'])) return $message->react("🔥");
         if (! $tdm_playerlogs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
         if (! $nomads_playerlogs = file_get_contents($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
-        file_put_contents($civ13->files['tdm_bans'], $banlog_update($tdm_bans, [$nomads_playerlogs, $tdm_playerlogs]));
-        file_put_contents($civ13->files['nomads_bans'], $banlog_update($nomads_bans, [$nomads_playerlogs, $tdm_playerlogs]));
+        $tdm = $banlog_update($tdm_bans, [$nomads_playerlogs, $tdm_playerlogs]);
+        preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $tdm)
+        file_put_contents($civ13->files['tdm_bans'], $tdm);
+        $nomads = $banlog_update($nomads_bans, [$nomads_playerlogs, $tdm_playerlogs]);
+        preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $nomads)
+        file_put_contents($civ13->files['nomads_bans'], $nomads);
         return $message->react("👍");
     }
     if ($message_content_lower == 'panic') {
