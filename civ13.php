@@ -593,7 +593,7 @@ class Civ13
     {
         $func = function() {
             $this->serverinfoFetch(); 
-            $this->serverinfoParsePlayers(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
+            $this->serverinfoParsePlayers();
             foreach ($this->serverinfoPlayers() as $ckey) {
                 if ($this->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
@@ -663,7 +663,7 @@ class Civ13
     }
 
     public function serverinfoParsePlayers(): void
-    {
+    { //Function needs optimizing
         if (! empty($data_json = $this->serverinfo)) {
             $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"];
             $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"];
