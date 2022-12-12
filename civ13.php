@@ -607,12 +607,13 @@ class Civ13
     }
     private function playercountChannelUpdate($count = 0, $prefix = ''): void
     {
-        if ($channel = $this->discord->getChannel($this->channel_ids["{$prefix}playercount"]))
+        if ($channel = $this->discord->getChannel($this->channel_ids["{$prefix}playercount"])) {
             $arr = explode('-', $channel->name);
             if (end($arr) != $count) {
                 $channel->name = "{$prefix}players-$count";
                 $channel->guild->channels->save($channel);
             }
+        }
     }
     public function serverinfoParse(): array
     {
