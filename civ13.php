@@ -444,6 +444,9 @@ class Civ13
                 $message = "Either `$ckey` or <@$discord_id> has already been verified and registered to a discord id"; //This should have been caught above. Need to run getVerified() again?
                 $this->getVerified();
                 break;
+            case 504: //Gateway timeout
+                $message = "The website timed out while attempting to process the request. Please try again later.";
+                break;
             default: 
                 $message = "There was an error attempting to process the request: [$http_status] $result";
                 break;

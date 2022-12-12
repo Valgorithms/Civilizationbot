@@ -384,7 +384,7 @@ $banlog_update = function (string $banlog, array $playerlogs, $ckey = null): str
         $log = explode(';', trim($lsplit));
         foreach (array_values($temp) as &$b2) foreach ($b2 as &$arr) {
             $a = explode(';', $arr);
-            if($log[0] == $a[8]) {
+            if($a[8] == $log[0]) {
                 $a[9] = $log[2];
                 $a[10] = $log[1];
                 $arr = implode(';', $a);
