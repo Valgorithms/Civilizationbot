@@ -663,14 +663,12 @@ class Civ13
     }
 
     public function serverinfoParsePlayers(): void
-    { //Function needs optimizing
+    {
         if (! empty($data_json = $this->serverinfo)) {
-            $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"];
-            $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"];
-
             $index = 0;
             foreach ($data_json as $server) {
-                if(! array_shift($server_info) || array_key_exists('ERROR', $server)) {
+                if($index > 1) break; //We only care about Nomads and TDM
+                if(array_key_exists('ERROR', $server)) {
                     $index++;
                     continue;
                 }
