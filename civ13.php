@@ -593,7 +593,7 @@ class Civ13
     {
         $func = function() {
             $this->serverinfoFetch(); 
-            $this->serverinfoParse(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
+            $this->serverinfoParsePlayers(); //lol this only needs to be here to update the channels, but it's not like it's a big deal. Update later maybe?
             foreach ($this->serverinfoPlayers() as $ckey) {
                 if ($this->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
@@ -660,6 +660,30 @@ class Civ13
             $index++;
         }
         return $return;
+    }
+
+    public function serverinfoParsePlayers(): void
+    {
+        if (! empty($data_json = $this->serverinfo)) {
+            $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"];
+            $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"];
+
+            $index = 0;
+            foreach ($data_json as $server) {
+                if(! array_shift($server_info) || array_key_exists('ERROR', $server)) {
+                    $index++;
+                    continue;
+                }
+                $players = [];
+                foreach (array_keys($server) as $key) {
+                    $p = explode('player', $key); 
+                    if (isset($p[1])) if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+                }
+                if ($index == 0) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'tdm-');
+                if ($index == 1) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'nomads-');        
+                $index++;
+            }
+        }
     }
 
     public function joinRoles($member): void
