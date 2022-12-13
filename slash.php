@@ -181,6 +181,21 @@ class Slash
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
             ]));
+
+            //if ($command = $commands->get('name', 'approveme')) $commands->delete($command->id);
+            if (! $commands->get('name', 'approveme')) $commands->save(new Command($this->civ13->discord, [
+                'name'                       => 'approveme',
+                'description'                => 'Verification process',
+                'dm_permission'              => false,
+                'options'                    => [
+                    [
+                        'name'        => 'ckey',
+                        'description' => 'Byond.com username',
+                        'type'        =>  3,
+                        'required'    => true,
+                    ]
+                ]
+            ]));
         });
 
         $this->declareListeners();
@@ -267,6 +282,15 @@ class Slash
                 }
                 $interaction->respondWithMessage(MessageBuilder::new()->setContent('A faction has been assigned'), true);
             }
+        });
+
+        $this->civ13->discord->listenCommand('approveme', function ($interaction): void
+        {
+            if ($interaction->member->roles->has($this->civ13->role_ids['infantry']) || $interaction->member->roles->has($this->civ13->role_ids['veteran'])) $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
+            elseif ($item = $this->civ13->verified->get('discord', $interaction->member->id)) {
+                $interaction->member->setRoles([$this->civ13->role_ids['infantry']], "approveme {$item['ss13']}");
+                $interaction->respondWithMessage(MessageBuilder::new()->setContent('Welcome to the Server! Your roles have been set and you should now have access to the rest of the server.'), true);
+            } else $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->verifyProcess($interaction->data->options['ckey']->value, $interaction->member->id)), true);
         });
     }
 }
