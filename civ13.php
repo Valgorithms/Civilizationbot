@@ -280,7 +280,7 @@ class Civ13
     */
     public function getVerified(): Collection
     {
-        if ($verified_array = json_decode(file_get_contents('http://valzargaming.com/verified/'), true)) {
+        if ($verified_array = json_decode(file_get_contents('http://valzargaming.com:8080/verified/'), true)) {
             $this->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
@@ -421,7 +421,7 @@ class Civ13
         $success = false;
         $message = '';
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'http://valzargaming.com/verified/');
+        curl_setopt($ch, CURLOPT_URL, 'http://valzargaming.com:8080/verified/');
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string    
         curl_setopt($ch, CURLOPT_POST, TRUE);
