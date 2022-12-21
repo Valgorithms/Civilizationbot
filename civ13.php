@@ -586,7 +586,7 @@ class Civ13
     }
     public function serverinfoFetch(): array
     {
-        if (! $data_json = json_decode(file_get_contents("http://{$this->ips['vzg']}/servers/serverinfo.json"),  true)) return [];
+        if (! $data_json = json_decode(file_get_contents("http://{$this->ips['vzg']}/servers/serverinfo.json", false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) return [];
         return $this->serverinfo = $data_json;
     }
     public function serverinfoTimer(): void
