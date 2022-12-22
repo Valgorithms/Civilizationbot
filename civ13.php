@@ -43,6 +43,7 @@ class Civ13
     public $timers = [];
     public $serverinfo = []; //Collected automatically by serverinfo_timer
     public $players = []; //Collected automatically by serverinfo_timer
+    public $playercount_ticker = 0;
     
     public $functions = array(
         'ready' => [],
@@ -607,6 +608,7 @@ class Civ13
     }
     private function playercountChannelUpdate($count = 0, $prefix = ''): void
     {
+        if (++$this->playercount_ticker % 5 != 0) return;
         if ($channel = $this->discord->getChannel($this->channel_ids["{$prefix}playercount"])) {
             $arr = explode('-', $channel->name);
             if (end($arr) != $count) {
