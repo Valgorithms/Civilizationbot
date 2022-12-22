@@ -157,8 +157,8 @@ $filenav = function (Civ13 $civ13, string $basedir, array $subdirs) use (&$filen
 {
     $scandir = scandir($basedir);
     unset($scandir[1], $scandir[0]);
-    if (! $subdir = trim(array_shift($subdirs))) return [false, $scandir];
-    if (! in_array($subdir, $scandir)) return [false, $scandir, $subdir];
+    if (! $subdir = array_shift($subdirs)) return [false, $scandir];
+    if (! in_array($subdir = trim($subdir), $scandir)) return [false, $scandir, $subdir];
     if (is_file("$basedir/$subdir")) return [true, "$basedir/$subdir"];
     return $filenav($civ13, "$basedir/$subdir", $subdirs);
 };
