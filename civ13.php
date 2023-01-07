@@ -60,6 +60,7 @@ class Civ13
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot';
     public string $banappeal = 'https://civ13.com/discord/';
+    public string $verifyurl = 'http://valzargaming.com:8080/verified/';
     
     public array $files = [];
     public array $ips = [];
@@ -281,7 +282,7 @@ class Civ13
     */
     public function getVerified(): Collection
     {
-        if ($verified_array = json_decode(file_get_contents('http://valzargaming.com:8080/verified/'), true)) {
+        if ($verified_array = json_decode(file_get_contents($this->verifyurl), true)) {
             $this->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
@@ -422,7 +423,7 @@ class Civ13
         $success = false;
         $message = '';
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'http://valzargaming.com:8080/verified/');
+        curl_setopt($ch, CURLOPT_URL, $this->verifyurl);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string    
         curl_setopt($ch, CURLOPT_POST, TRUE);
@@ -444,6 +445,9 @@ class Civ13
             case 403: //Already registered
                 $message = "Either `$ckey` or <@$discord_id> has already been verified and registered to a discord id"; //This should have been caught above. Need to run getVerified() again?
                 $this->getVerified();
+                break;
+            case 404:
+                $message = "The website could not be found or is misconfigured. Please try again later.";
                 break;
             case 504: //Gateway timeout
                 $message = "The website timed out while attempting to process the request. Please try again later.";
