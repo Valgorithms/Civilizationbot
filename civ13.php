@@ -31,6 +31,8 @@ class Civ13
     public $filesystem;
     public Logger $logger;
     public $stats;
+
+    public $filecache_path = '';
     
     protected $webapi;
     
@@ -270,7 +272,7 @@ class Civ13
 
     public function getVerifiedUsers(): Collection
     {
-        if ($guild = $this->discord->guilds->get('id', $this->DF13_guild_id)) return $this->verified->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
+        if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
         return $this->verified;
     }
     
