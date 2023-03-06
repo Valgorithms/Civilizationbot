@@ -167,7 +167,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             }
             execInBackground('git pull');
             $civ13->logger->info('[GIT PULL]');
-            if ($channel = $civ13->discord->getChannel('712685552155230278')) $channel->sendMessage('Updating code from GitHub...');
+            if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) $channel->sendMessage('Updating code from GitHub...');
             $return = 'updating code';
             break;
         
@@ -178,7 +178,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             }
             execInBackground('composer update');
             $civ13->logger->info('[COMPOSER UPDATE]');
-            if ($channel = $civ13->discord->getChannel('712685552155230278')) $channel->sendMessage('Updating dependencies...');
+            if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) $channel->sendMessage('Updating dependencies...');
             $return = 'updating dependencies';
             break;
         
@@ -188,7 +188,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             $civ13->logger->info('[RESTART]');
-            if ($channel = $civ13->discord->getChannel('712685552155230278')) $channel->sendMessage('Restarting...');
+            if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) $channel->sendMessage('Restarting...');
             $return = 'restarting';
             $socket->close();
             $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
