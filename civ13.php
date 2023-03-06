@@ -437,11 +437,21 @@ class Civ13
                 $success = true;
                 $message = "`$ckey` has been verified and registered to $discord_id";
                 $this->pending->offsetUnset($discord_id);
-                $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)->addRole($this->role_ids['infantry']);
                 $this->getVerified();
                 if (isset($this->panic_bans[$ckey])) {
                     $this->panicUnban($ckey);
                     $message .= ' and the panic bunker ban removed.';
+                    $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
+                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified and removed the panic bunker ban from $member.");
+                    $member->addRole($this->role_ids['infantry'], "approveme verified {$item['ss13']}");
+                } elseif ($this->bancheck($item['ss13'])) {
+                    $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
+                    $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "approveme verified {$item['ss13']}");
+                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Added the banished role to $member.");
+                } else {
+                    $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
+                    $member->addRole($this->role_ids['infantry'], "approveme verified {$item['ss13']}");
+                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified $member.");
                 }
                 break;
             case 403: //Already registered
