@@ -1044,22 +1044,36 @@ $ooc_relay = function (Civ13 $civ13, string $file_path, $channel): bool
     fclose($file);
     return true;
 };
-$timer_function = function (Civ13 $civ13) use ($ooc_relay): void
+$relay_timer_function = function (Civ13 $civ13) use ($ooc_relay): void
 {
-        if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) { 
+    if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) { 
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$ooc_relay($civ13, $civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_admin_channel'])) $ooc_relay($civ13, $civ13->files['nomads_admin_path'], $channel);  // #ahelp-nomads
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_ooc_channel'])) $ooc_relay($civ13, $civ13->files['tdm_ooc_path'], $channel);  // #ooc-tdm
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $ooc_relay($civ13, $civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
     }
 };
-$on_ready = function (Civ13 $civ13) use ($timer_function): void
+$unban_timer_function = function (Civ13 $civ13): void
+{
+    if (isset($civ13->role_ids['banished']) && $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id))
+        if ($members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['banished']); }))
+            foreach ($members as $member)
+                if ($item = $civ13->getVerifiedUsers()->get('discord', $member->id))
+                    if (! $civ13->bancheck($item['ss13']));
+                        $member->removeRole($civ13->role_ids['banished']);
+};
+$on_ready = function (Civ13 $civ13) use ($relay_timer_function, $unban_timer_function): void
 {//on ready
     $civ13->logger->info("logged in as {$civ13->discord->user->displayname} ({$civ13->discord->id})");
     $civ13->logger->info('------');
     
     if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof Timer) ) {
         $civ13->logger->info('chat relay timer started');
-        $civ13->timers['relay_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(10, function() use ($timer_function, $civ13) { $timer_function($civ13); });
+        $civ13->timers['relay_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(10, function() use ($relay_timer_function, $civ13) { $relay_timer_function($civ13); });
+    }
+    if (! (isset($civ13->timers['unban_timer'])) || (! $civ13->timers['unban_timer'] instanceof Timer) ) {
+        $civ13->logger->info('unban timer started');
+        $civ13->timers['unban_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(43200, function() use ($unban_timer_function, $civ13) { $unban_timer_function($civ13); });
+        $unban_timer_function($civ13);
     }
 };

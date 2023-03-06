@@ -68,11 +68,10 @@ $verify_new = function (Civ13 $civ13, string $ckey, string $discord): bool
 $promotable_check = function (Civ13 $civ13, string $identifier): bool
 {
     if (! $civ13->verified && ! $civ13->getVerified()) return false; //Unable to get info from DB
-    if (! $bancheck = $civ13->functions['misc']['bancheck']) return false;
     if (! $item = $civ13->getVerifiedUsers()->get('ss13', htmlspecialchars($identifier)) ?? $civ13->getVerifiedUsers()->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; //a&e, ckey and/or discord id exists in DB and member is in the Discord server
     if (strtotime($item['create_time']) > strtotime('-1 year')) return false; //b, 1 year
     if (($item['seen_tdm'] + $item['seen_nomads'] + $item['seen_pers'])<100) return false; //c, 100 seen
-    if ($bancheck($civ13, $item['ss13'])) return false; //d, must not have active ban
+    if ($civ13->bancheck($item['ss13'])) return false; //d, must not have active ban
     return true;
 };
 $mass_promotion_check = function (Civ13 $civ13, $message) use ($promotable_check): array|false
