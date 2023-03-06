@@ -1059,8 +1059,10 @@ $unban_timer_function = function (Civ13 $civ13): void
         if ($members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['banished']); }))
             foreach ($members as $member)
                 if ($item = $civ13->getVerifiedUsers()->get('discord', $member->id))
-                    if (! $civ13->bancheck($item['ss13']));
+                    if (! $civ13->bancheck($item['ss13'])) {
                         $member->removeRole($civ13->role_ids['banished']);
+                        if (isset($civ13->channel_ids['staff_bot'])) $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage("Removed the banished role from $member.");
+                    }
 };
 $on_ready = function (Civ13 $civ13) use ($relay_timer_function, $unban_timer_function): void
 {//on ready
