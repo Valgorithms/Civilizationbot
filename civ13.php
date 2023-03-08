@@ -19,6 +19,7 @@ use Monolog\Handler\StreamHandler;
 use React\EventLoop\Loop;
 use React\EventLoop\StreamSelectLoop;
 use React\Http\Browser;
+use React\Http\Server;
 use React\Filesystem\Factory as FilesystemFactory;
 
 class Civ13
@@ -34,18 +35,19 @@ class Civ13
 
     public $filecache_path = '';
     
-    protected $webapi;
+    protected Server $webapi;
     
     public collection $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
-    public $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
-    public $minimum_age = '-21 days'; //Minimum age of a ckey
-    public $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum age requirement
+    public array $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
+    public string $minimum_age = '-21 days'; //Minimum age of a ckey
+    public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum age requirement
 
-    public $timers = [];
-    public $serverinfo = []; //Collected automatically by serverinfo_timer
-    public $players = []; //Collected automatically by serverinfo_timer
-    public $playercount_ticker = 0;
+    public array $timers = [];
+    public array $serverinfo = []; //Collected automatically by serverinfo_timer
+    public array $players = []; //Collected automatically by serverinfo_timer
+    public int $playercount_ticker = 0;
+    public array $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'tranny']; //TODO: Retrieve from an API instead?
     
     public $functions = array(
         'ready' => [],
@@ -75,8 +77,7 @@ class Civ13
     public array $tests = []; //Staff application test templates
     public bool $panic_bunker = false; //If true, the bot will server ban anyone who is not verified when they join the server
     public array $panic_bans = []; //List of ckeys that have been banned by the panic bunker in the current runtime
-    
-    public array $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'tranny']; //TODO: Retrieve from an API instead?
+
     /**
      * Creates a Civ13 client instance.
      * 

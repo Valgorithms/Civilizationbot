@@ -1017,7 +1017,7 @@ $ooc_relay = function (Civ13 $civ13, string $file_path, $channel): bool
     return true;
 };
 */
-$relay_timer_function = function (Civ13 $civ13) use ($ooc_relay): void
+$relay_timer_function = function (Civ13 $civ13): void
 {
     if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) { 
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$civ13->gameChatRelay($civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
@@ -1026,7 +1026,7 @@ $relay_timer_function = function (Civ13 $civ13) use ($ooc_relay): void
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $civ13->gameChatRelay($civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
     }
 };
-$on_ready = function (Civ13 $civ13) use ($relay_timer_function, $unban_timer_function): void
+$on_ready = function (Civ13 $civ13) use ($relay_timer_function): void
 {//on ready
     $civ13->logger->info("logged in as {$civ13->discord->user->displayname} ({$civ13->discord->id})");
     $civ13->logger->info('------');

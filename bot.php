@@ -168,9 +168,7 @@ $options = array(
         ],
         'misc' => [ //Custom functions
             'recalculate_ranking' => $recalculate_ranking,
-            'ooc_relay' => $ooc_relay,
             'relay_timer_function' => $relay_timer_function,
-            'status_changer' => $status_changer,
             'browser_call' => $browser_call,
             'verify_new' => $verify_new,
             'promotable_check' => $promotable_check,
