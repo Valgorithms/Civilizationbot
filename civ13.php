@@ -12,6 +12,7 @@ use Civ13\Slash;
 use Discord\Discord;
 use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
+use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
 use Monolog\Logger;
 use Monolog\Level;
