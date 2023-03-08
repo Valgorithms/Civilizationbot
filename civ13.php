@@ -54,15 +54,16 @@ class Civ13
         'misc' => [],
     );
     
-    public string $command_symbol = '!s';
-    public string $owner_id = '196253985072611328';
-    public string $civ13_guild_id = '468979034571931648';
-    public string $verifier_feed_channel_id = '1032411190695055440';
-    public string $civ_token = '';
+    public string $command_symbol = '!s'; //The symbol that the bot will use to identify commands if it is not mentioned
+    public string $owner_id = '196253985072611328'; //Valithor Obsidion's Discord ID
+    public string $embed_footer = ''; //Footer for embeds, this is set in the ready event
+    public string $civ13_guild_id = '468979034571931648'; //Guild ID for the Civ13 server
+    public string $verifier_feed_channel_id = '1032411190695055440'; //Channel where the bot will listen for verification notices and then update its verified cache accordingly
+    public string $civ_token = ''; //Token for use with $verifyurl, this is not the same as the bot token and should be kept secret
 
-    public string $github = 'https://github.com/VZGCoders/Civilizationbot';
-    public string $banappeal = 'https://civ13.com/discord/';
-    public string $verifyurl = 'http://valzargaming.com:8080/verified/';
+    public string $github = 'https://github.com/VZGCoders/Civilizationbot'; //Link to the bot's github page
+    public string $banappeal = 'https://civ13.com/discord/'; //Players can appeal their bans here
+    public string $verifyurl = 'http://valzargaming.com:8080/verified/'; //This is the URL that the bot will use to verify a ckey and where it will retrieve the list of verified ckeys from
     
     public array $files = [];
     public array $ips = [];
@@ -70,11 +71,12 @@ class Civ13
     public array $channel_ids = [];
     public array $role_ids = [];
     
-    public array $discord_config = [];
-    public array $tests = [];
-    public bool $panic_bunker = false;
-    public array $panic_bans = [];
+    public array $discord_config = []; //This variable and its related function currently serve no purpose, but I'm keeping it in case I need it later
+    public array $tests = []; //Staff application test templates
+    public bool $panic_bunker = false; //If true, the bot will server ban anyone who is not verified when they join the server
+    public array $panic_bans = []; //List of ckeys that have been banned by the panic bunker in the current runtime
     
+    public array $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'tranny']; //TODO: Retrieve from an API instead?
     /**
      * Creates a Civ13 client instance.
      * 
@@ -136,6 +138,7 @@ class Civ13
     {
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
+                $this->embed_footer = ($this->civ13->github ?  $this->civ13->github . PHP_EOL : '') . "{$this->civ13->discord->username} by Valithor#5947";
                 $this->getVerified(); //Populate verified property with data from DB
                 $this->setIPs();
                 $this->serverinfoTimer();
@@ -785,5 +788,40 @@ class Civ13
     public function statusChanger($activity, $state = 'online'): void
     {
         $this->discord->updatePresence($activity, false, $state);
+    }
+
+    /*
+    * This function is used to relay the game chat to Discord
+    * It will also ban players if they say a blacklisted word
+    * Returns true if the file was successfully read, false otherwise
+    */
+    public function gameChatRelay(string $file_path, $channel): bool
+    {     
+        if (! $file = fopen($file_path, 'r+')) return false;
+        while (($fp = fgets($file, 4096)) !== false) {
+            $fp = str_replace(PHP_EOL, '', $fp);
+            $string = substr($fp, strpos($fp, '/')+1);
+            $ckey = substr($string, 0, strpos($string, ':'));
+            foreach ($this->badwords as $badword) { //ban ckey if $fp contains a blacklisted word
+                if (str_contains(strtolower($string), $badword)) {
+                    $filtered = substr($badword, 0, 1);
+                    for ($x=1;$x<strlen($badword)-2; $x++) $filtered .= '%';
+                    $filtered  .= substr($badword, -1, 1);
+                    $this->ban([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]);
+                }
+            }
+            if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
+            else {
+                $embed = new Embed($this->discord);
+                if ($user = $this->discord->users->get('id', $item['discord'])) {
+                    $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                    $embed->setDescription($fp);
+                } else $this->discord->users->fetch('id', $item['discord']);
+                $channel->sendEmbed($embed);
+            }
+        }
+        ftruncate($file, 0); //clear the file
+        fclose($file);
+        return true;
     }
 }

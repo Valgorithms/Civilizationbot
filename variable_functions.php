@@ -984,6 +984,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nom
     */
 };
 
+/*
 $ooc_relay = function (Civ13 $civ13, string $file_path, $channel): bool
 {     
     if (! $file = fopen($file_path, 'r+')) return false;
@@ -1015,13 +1016,14 @@ $ooc_relay = function (Civ13 $civ13, string $file_path, $channel): bool
     fclose($file);
     return true;
 };
+*/
 $relay_timer_function = function (Civ13 $civ13) use ($ooc_relay): void
 {
     if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) { 
-        if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$ooc_relay($civ13, $civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
-        if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_admin_channel'])) $ooc_relay($civ13, $civ13->files['nomads_admin_path'], $channel);  // #ahelp-nomads
-        if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_ooc_channel'])) $ooc_relay($civ13, $civ13->files['tdm_ooc_path'], $channel);  // #ooc-tdm
-        if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $ooc_relay($civ13, $civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
+        if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$civ13->gameChatRelay($civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
+        if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_admin_channel'])) $civ13->gameChatRelay($civ13->files['nomads_admin_path'], $channel);  // #ahelp-nomads
+        if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_ooc_channel'])) $civ13->gameChatRelay($civ13->files['tdm_ooc_path'], $channel);  // #ooc-tdm
+        if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $civ13->gameChatRelay($civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
     }
 };
 $on_ready = function (Civ13 $civ13) use ($relay_timer_function, $unban_timer_function): void
