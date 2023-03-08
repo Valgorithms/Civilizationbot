@@ -142,7 +142,7 @@ class Civ13
                 $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
                 $this->logger->info('------');
 
-                $this->embed_footer = ($this->civ13->github ?  $this->civ13->github . PHP_EOL : '') . "{$this->civ13->discord->username} by Valithor#5947";
+                $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username} by Valithor#5947";
                 $this->getVerified(); //Populate verified property with data from DB
                 $this->setIPs();
                 $this->serverinfoTimer();
