@@ -188,7 +188,8 @@ class Civ13
 
                 if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof Timer))) {
                     $this->logger->info('chat relay timer started');
-                    $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() use ($guild) {
+                    $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() {
+                        $guild = $this->discord->guilds->get('id', $this->civ13_guild_id);
                         if (isset($this->channel_ids['nomads_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_ooc_channel'])) $this->gameChatRelay($this->files['nomads_ooc_path'], $channel);  // #ooc-nomads
                         if (isset($this->channel_ids['nomads_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_admin_channel'])) $this->gameChatRelay($this->files['nomads_admin_path'], $channel);  // #ahelp-nomads
                         if (isset($this->channel_ids['tdm_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_channel'])) $this->gameChatRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
