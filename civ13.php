@@ -253,6 +253,23 @@ class Civ13
     }
 
     /*
+    * This function is used to navigate a file tree and find a file
+    * $basedir is the directory to start in
+    * $subdirs is an array of subdirectories to navigate
+    * $subdirs should be a 1d array of strings
+    * The first string in $subdirs should be the first subdirectory to navigate to, and so on    
+    */
+    public function FileNav(string $basedir, array $subdirs): array
+    {
+        $scandir = scandir($basedir);
+        unset($scandir[1], $scandir[0]);
+        if (! $subdir = array_shift($subdirs)) return [false, $scandir];
+        if (! in_array($subdir = trim($subdir), $scandir)) return [false, $scandir, $subdir];
+        if (is_file("$basedir/$subdir")) return [true, "$basedir/$subdir"];
+        return $this->FileNav("$basedir/$subdir", $subdirs);
+    }
+
+    /*
     * This function is used to set the default config for a guild if it does not already exist
     */
     public function SetConfigTemplate(Guild $guild, array &$discord_config): void
@@ -270,6 +287,9 @@ class Civ13
         else $this->logger->warning("Failed top create new config for guild {$guild->name}");
     }
 
+    /* This function is used to fetch the bot's cache of verified users that are currently found in the Civ13 Discord server
+    * If the bot is not in the Civ13 Discord server, it will return the bot's cache of verified users
+    */
     public function getVerifiedUsers(): Collection
     {
         if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
@@ -352,7 +372,7 @@ class Civ13
         return false;
     }
     
-    /**
+    /*
      * This function is used to parse a BYOND account's age
      * */
     public function parseByondAge(string $page, ?string $ckey = null): string|false
@@ -366,10 +386,10 @@ class Civ13
         if ($age = $this->parseByondAge($this->getByondPage($ckey))) return $this->ages[$ckey] = $age;
         return false;
     }
-    /**
+    /*
      * This function is used determine if a byond account is old enough to play on the server
      * false is returned if the account is too young, true is returned if the account is old enough
-     * */
+     */
     public function checkByondAge(string $age): bool
     {
         return (strtotime($age) > strtotime($this->minimum_age)) ? false : true;
@@ -472,6 +492,13 @@ class Civ13
         return [$success, $message];
     }
     
+    /*
+    * This function determines whether a ckey is currently banned from the server
+    * It is called when a user is verified to determine whether they should be given the banished role or have it taken away
+    * It will check the nomads_bans.txt and tdm_bans.txt files for the ckey
+    * If the ckey is found in either file, it will return true
+    * Otherwise it will return false
+    */
     public function bancheck(string $ckey): bool
     {
         if ($filecheck1 = fopen($this->files['nomads_bans'], 'r')) {
@@ -499,6 +526,9 @@ class Civ13
         return false;
     }
 
+    /*
+    * This function allows a ckey to bypass the panic bunker
+    */
     public function permitCkey(string $ckey, bool $allow = true): array
     {
         if ($allow) $this->permitted[$ckey] = true;
@@ -571,8 +601,13 @@ class Civ13
         $this->unbanTDM($ckey, $admin);
     }
     
+    /*
+    * This function defines the IPs and ports of the servers
+    * It is called on ready
+    * TODO: Move definitions into config/constructor?
+    */
     public function setIPs(): void
-    { //on ready, move definitions into config/constructor?
+    {
         $vzg_ip = gethostbyname('www.valzargaming.com');
         $external_ip = file_get_contents('http://ipecho.net/plain');
         $this->ips = [
@@ -587,13 +622,17 @@ class Civ13
             'ps13' => '7778',
         ];
     }
+    
+    /*
+    * This function returns the current ckeys playing on the servers as stored in the cache
+    * It returns an array of ckeys or an empty array if the cache is empty
+    */
     public function serverinfoPlayers(): array
     { 
         if (empty($data_json = $this->serverinfo)) return [];
         $this->players = [];
         foreach ($data_json as $server) {
             if (array_key_exists('ERROR', $server)) continue;
-            //Players
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
                 if (isset($p[1]) && is_numeric($p[1])) $this->players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
@@ -622,6 +661,11 @@ class Civ13
         $func();
         $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function() use ($func) { $func(); });
     }
+    /*
+    * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts
+    * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
+    * It is called on ready and every 5 minutes
+    */
     private function playercountChannelUpdate($count = 0, $prefix = ''): void
     {
         if (++$this->playercount_ticker % 5 != 0) return;
@@ -703,6 +747,10 @@ class Civ13
         }
     }
 
+    /*
+    * This function takes a member and checks if they have previously been verified
+    * If they have, it will assign them the appropriate roles
+    */
     public function joinRoles($member): void
     {
         if ($member->guild_id == $this->civ13_guild_id) 
@@ -710,5 +758,32 @@ class Civ13
                 if ($this->bancheck($item['ss13'])) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
                 else $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
             }
+    }
+    /*
+    * This function checks all Discord member's ckeys against the banlist
+    * If they are no longer banned, it will remove the banished role from them
+    */
+    public function unbanTimer(): void
+    {
+        $func = function() {
+            if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
+                if ($members = $guild->members->filter(function ($member){ return $member->roles->has($this->role_ids['banished']); }))
+                    foreach ($members as $member)
+                        if ($item = $this->getVerifiedUsers()->get('discord', $member->id))
+                            if (! $this->bancheck($item['ss13'])) {
+                                $member->removeRole($this->role_ids['banished']);
+                                if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Removed the banished role from $member.");
+                            }
+         };
+         $func();
+         $this->timers['unban_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function() use ($func) { $func(); });
+    }
+
+    /*
+    * This function is used to change the bot's status on Discord
+    */
+    public function statusChanger($activity, $state = 'online'): void
+    {
+        $this->discord->updatePresence($activity, false, $state);
     }
 }

@@ -13,28 +13,7 @@ use Discord\Parts\User\Activity;
 use React\EventLoop\Timer\Timer;
 use React\Promise\ExtendedPromiseInterface;
 
-$set_ips = function (Civ13 $civ13): void
-{ //on ready, move into class
-    $vzg_ip = gethostbyname('www.valzargaming.com');
-    $external_ip = file_get_contents('http://ipecho.net/plain');
-    $civ13->ips = [
-        'nomads' => $external_ip,
-        'tdm' => $external_ip,
-        'vzg' => $vzg_ip,
-    ];
-    $civ13->ports = [
-        'nomads' => '1715',
-        'tdm' => '1714',
-        'bc' => '1717', 
-        'ps13' => '7778',
-    ];
-};
-
-$status_changer = function ($discord, $activity, $state = 'online'): void
-{
-    $discord->updatePresence($activity, false, $state);
-};
-$status_changer_random = function (Civ13 $civ13) use ($status_changer): bool
+$status_changer_random = function (Civ13 $civ13): bool
 { //on ready
     if (! $civ13->files['status_path']) {
         unset($civ13->timers['status_changer_timer']);
@@ -53,7 +32,7 @@ $status_changer_random = function (Civ13 $civ13) use ($status_changer): bool
             'name' => $status,
             'type' => (int) $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
         ]);
-        $status_changer($civ13->discord, $activity, $state);
+        $civ13->statusChanger($activity, $state);
     }
     return true;
 };
@@ -153,25 +132,16 @@ $mapswap_tdm = function (Civ13 $civ13, string $mapto): bool
     return true;
 };
 
-$filenav = function (Civ13 $civ13, string $basedir, array $subdirs) use (&$filenav): array
-{
-    $scandir = scandir($basedir);
-    unset($scandir[1], $scandir[0]);
-    if (! $subdir = array_shift($subdirs)) return [false, $scandir];
-    if (! in_array($subdir = trim($subdir), $scandir)) return [false, $scandir, $subdir];
-    if (is_file("$basedir/$subdir")) return [true, "$basedir/$subdir"];
-    return $filenav($civ13, "$basedir/$subdir", $subdirs);
-};
-$log_handler = function (Civ13 $civ13, $message, string $message_content) use ($filenav)
+$log_handler = function (Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(';', $message_content);
     if (!in_array(trim($tokens[0]), ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
     if (trim($tokens[0]) == 'nomads') {
         unset($tokens[0]);
-        $results = $filenav($civ13, $civ13->files['nomads_log_basedir'], $tokens);
+        $results = $civ13->FileNav($civ13->files['nomads_log_basedir'], $tokens);
     } else {
         unset($tokens[0]);
-        $results = $filenav($civ13, $civ13->files['tdm_log_basedir'], $tokens);
+        $results = $civ13->FileNav($civ13->files['tdm_log_basedir'], $tokens);
     }
     if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
     if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
@@ -1054,17 +1024,6 @@ $relay_timer_function = function (Civ13 $civ13) use ($ooc_relay): void
         if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $ooc_relay($civ13, $civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
     }
 };
-$unban_timer_function = function (Civ13 $civ13): void
-{
-    if (isset($civ13->role_ids['banished']) && $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id))
-        if ($members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['banished']); }))
-            foreach ($members as $member)
-                if ($item = $civ13->getVerifiedUsers()->get('discord', $member->id))
-                    if (! $civ13->bancheck($item['ss13'])) {
-                        $member->removeRole($civ13->role_ids['banished']);
-                        if (isset($civ13->channel_ids['staff_bot'])) $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])->sendMessage("Removed the banished role from $member.");
-                    }
-};
 $on_ready = function (Civ13 $civ13) use ($relay_timer_function, $unban_timer_function): void
 {//on ready
     $civ13->logger->info("logged in as {$civ13->discord->user->displayname} ({$civ13->discord->id})");
@@ -1073,10 +1032,5 @@ $on_ready = function (Civ13 $civ13) use ($relay_timer_function, $unban_timer_fun
     if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof Timer) ) {
         $civ13->logger->info('chat relay timer started');
         $civ13->timers['relay_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(10, function() use ($relay_timer_function, $civ13) { $relay_timer_function($civ13); });
-    }
-    if (! (isset($civ13->timers['unban_timer'])) || (! $civ13->timers['unban_timer'] instanceof Timer) ) {
-        $civ13->logger->info('unban timer started');
-        $civ13->timers['unban_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(43200, function() use ($unban_timer_function, $civ13) { $unban_timer_function($civ13); });
-        $unban_timer_function($civ13);
     }
 };
