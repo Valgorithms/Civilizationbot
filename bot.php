@@ -168,7 +168,6 @@ $options = array(
         ],
         'misc' => [ //Custom functions
             'recalculate_ranking' => $recalculate_ranking,
-            'relay_timer_function' => $relay_timer_function,
             'browser_call' => $browser_call,
             'verify_new' => $verify_new,
             'promotable_check' => $promotable_check,

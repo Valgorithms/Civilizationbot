@@ -139,6 +139,9 @@ class Civ13
     {
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
+                $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
+                $this->logger->info('------');
+
                 $this->embed_footer = ($this->civ13->github ?  $this->civ13->github . PHP_EOL : '') . "{$this->civ13->discord->username} by Valithor#5947";
                 $this->getVerified(); //Populate verified property with data from DB
                 $this->setIPs();
@@ -182,7 +185,18 @@ class Civ13
                 {
                     if (!isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
                 });
+
+                if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof Timer))) {
+                    $this->logger->info('chat relay timer started');
+                    $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() use ($guild) {
+                        if (isset($this->channel_ids['nomads_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_ooc_channel'])) $this->gameChatRelay($this->files['nomads_ooc_path'], $channel);  // #ooc-nomads
+                        if (isset($this->channel_ids['nomads_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_admin_channel'])) $this->gameChatRelay($this->files['nomads_admin_path'], $channel);  // #ahelp-nomads
+                        if (isset($this->channel_ids['tdm_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_channel'])) $this->gameChatRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
+                        if (isset($this->channel_ids['tdm_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_admin_channel'])) $this->gameChatRelay($this->files['tdm_admin_path'], $channel);  // #ahelp-tdm
+                    });
+                }
             });
+
         }
     }
     

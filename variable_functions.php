@@ -983,56 +983,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nom
     }
     */
 };
-
-/*
-$ooc_relay = function (Civ13 $civ13, string $file_path, $channel): bool
-{     
-    if (! $file = fopen($file_path, 'r+')) return false;
-    while (($fp = fgets($file, 4096)) !== false) {
-        $fp = str_replace(PHP_EOL, '', $fp);
-        //ban ckey if $fp contains a blacklisted word
-        $string = substr($fp, strpos($fp, '/')+1);
-        $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'tranny'];
-        $ckey = substr($string, 0, strpos($string, ':'));
-        foreach ($badwords as $badword) {
-            if (str_contains(strtolower($string), $badword)) {
-                $filtered = substr($badword, 0, 1);
-                for ($x=1;$x<strlen($badword)-2; $x++) $filtered .= '%';
-                $filtered  .= substr($badword, -1, 1);
-                $civ13->ban([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$civ13->banappeal}"]);
-            }
-        }
-        if (! $item = $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
-        else {
-            $embed = new Embed($civ13->discord);
-            if ($user = $civ13->discord->users->get('id', $item['discord'])) {
-                $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-                $embed->setDescription($fp);
-            } else $civ13->discord->users->fetch('id', $item['discord']);
-            $channel->sendEmbed($embed);
-        }
-    }
-    ftruncate($file, 0); //clear the file
-    fclose($file);
-    return true;
-};
-*/
-$relay_timer_function = function (Civ13 $civ13): void
-{
-    if ($guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) { 
-        if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_ooc_channel']))$civ13->gameChatRelay($civ13->files['nomads_ooc_path'], $channel);  // #ooc-nomads
-        if ($channel = $guild->channels->get('id', $civ13->channel_ids['nomads_admin_channel'])) $civ13->gameChatRelay($civ13->files['nomads_admin_path'], $channel);  // #ahelp-nomads
-        if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_ooc_channel'])) $civ13->gameChatRelay($civ13->files['tdm_ooc_path'], $channel);  // #ooc-tdm
-        if ($channel = $guild->channels->get('id', $civ13->channel_ids['tdm_admin_channel'])) $civ13->gameChatRelay($civ13->files['tdm_admin_path'], $channel);  // #ahelp-tdm
-    }
-};
-$on_ready = function (Civ13 $civ13) use ($relay_timer_function): void
-{//on ready
-    $civ13->logger->info("logged in as {$civ13->discord->user->displayname} ({$civ13->discord->id})");
-    $civ13->logger->info('------');
-    
-    if (! (isset($civ13->timers['relay_timer'])) || (! $civ13->timers['relay_timer'] instanceof Timer) ) {
-        $civ13->logger->info('chat relay timer started');
-        $civ13->timers['relay_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(10, function() use ($relay_timer_function, $civ13) { $relay_timer_function($civ13); });
-    }
+$on_ready = function (Civ13 $civ13): void
+{    
+    //
 };
