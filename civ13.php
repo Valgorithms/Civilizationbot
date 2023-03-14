@@ -66,7 +66,7 @@ class Civ13
     public string $civ_token = ''; //Token for use with $verifyurl, this is not the same as the bot token and should be kept secret
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; //Link to the bot's github page
-    public string $banappeal = 'https://civ13.com/discord/'; //Players can appeal their bans here
+    public string $banappeal = 'civ13.com slash discord'; //Players can appeal their bans here
     public string $verifyurl = 'http://valzargaming.com:8080/verified/'; //This is the URL that the bot will use to verify a ckey and where it will retrieve the list of verified ckeys from
     
     public array $files = [];
