@@ -49,6 +49,7 @@ class Civ13
     public array $players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
     public array $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'tranny']; //TODO: Retrieve from an API instead?
+    public bool $legacy = true;
     
     public $functions = array(
         'ready' => [],
@@ -521,6 +522,10 @@ class Civ13
     */
     public function bancheck(string $ckey): bool
     {
+        return ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
+    }
+    public function legacyBancheck(string $ckey): bool
+    {
         if ($filecheck1 = fopen($this->files['nomads_bans'], 'r')) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
@@ -545,6 +550,11 @@ class Civ13
         } else $this->logger->warning("unable to open `{$this->files['tdm_bans']}`");
         return false;
     }
+    public function sqlBancheck(string $ckey): bool
+    {
+        //TODO
+        return false;
+    }
 
     /*
     * This function allows a ckey to bypass the panic bunker
@@ -559,19 +569,19 @@ class Civ13
     public function panicBan(string $ckey): void
     {
         if (! $this->bancheck($ckey)) {
-            $this->banNomads([$ckey, '1 hour', "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]);
+            ($this->legacy ? $this->legacyBanNomads([$ckey, '1 hour', "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) : $this->sqlBanNomads([$ckey, '1 hour', "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) );
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
     }
     public function panicUnban(string $ckey): void
     {
-        $this->unbanNomads($ckey);
+        ($this->legacy ? $this->legacyUnbanNomads($ckey) : $this->sqlUnbanNomads($ckey));
         unset($this->panic_bans[$ckey]);
         $this->VarSave('panic_bans.json', $this->panic_bans);
     }
 
-    public function banNomads($array, $message = null): string
+    public function legacyBanNomads($array, $message = null): string
     {
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         $result = '';
@@ -585,7 +595,11 @@ class Civ13
         $result .= "**$admin** banned **{$array[0]}** from **Nomads** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
         return $result;
     }
-    public function banTDM($array, $message = null): string
+    public function sqlBanNomads($array, $message = null): string
+    {
+        return "SQL methods are not yet implemented!" . PHP_EOL;
+    }
+    public function legacyBanTDM($array, $message = null): string
     {
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         if (! $file = fopen($this->files['tdm_discord2ban'], 'a')) return "unable to open {$this->files['tdm_discord2ban']}" . PHP_EOL;
@@ -593,18 +607,39 @@ class Civ13
         fclose($file);
         return "**$admin** banned **{$array[0]}** from **TDM** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
     }
-    public function ban($array, $message = null):string
+    public function sqlBanTDM($array, $message = null): string
     {
-        return $this->banNomads($array, $message) . $this->banTDM($array, $message);
+        return "SQL methods are not yet implemented!" . PHP_EOL;
     }
 
-    public function unbanNomads(string $ckey, ?string $admin = null): void
+    //File method
+    public function legacyBan($array, $message = null): string
+    {
+        return $this->legacyBanNomads($array, $message) . $this->legacyBanTDM($array, $message);
+    }
+    //SQL method
+    public function sqlBan($array, $message = null): string
+    {
+        return $this->sqlBanNomads($array, $message) . $this->sqlBanTDM($array, $message);
+    }
+
+    public function ban($array, $message = null):string
+    {
+        if ($this->legacy) return $this->legacyBan($array, $message);
+        return $this->sqlBan($array, $message);
+    }
+
+    public function legacyUnbanNomads(string $ckey, ?string $admin = null): void
     {
         if (! $admin) $admin = $this->discord->user->displayname;
         if ($file = fopen($this->files['nomads_discord2unban'], 'a')) {
             fwrite($file, "$admin:::$ckey");
             fclose($file);
         }
+    }
+    public function sqlUnbanNomads(string $ckey, ?string $admin = null): void
+    {
+        //TODO
     }
     public function unbanTDM(string $ckey, ?string $admin = null): void
     {
@@ -614,11 +649,20 @@ class Civ13
             fclose($file);
         }
     }
+    public function sqlUnbanTDM(string $ckey, ?string $admin = null): void
+    {
+        //TODO
+    }
     public function unban(string $ckey, ?string $admin = null): void
     {
         if (! $admin) $admin = $this->discord->user->displayname;
-        $this->unbanNomads($ckey, $admin);
-        $this->unbanTDM($ckey, $admin);
+        if ($this->legacy) {
+            $this->legacyUnbanNomads($ckey, $admin);
+            $this->legacyUnbanTDM($ckey, $admin);
+        } else {
+            $this->sqlUnbanNomads($ckey, $admin);
+            $this->sqlUnbanTDM($ckey, $admin);
+        }
     }
     
     /*
@@ -675,7 +719,7 @@ class Civ13
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
                 if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
-                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->legacy ? $this->legacyBan([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]) : $this->sqlBan([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"])));
             }
         };
         $func();
@@ -824,7 +868,7 @@ class Civ13
                     $filtered = substr($badword, 0, 1);
                     for ($x=1;$x<strlen($badword)-2; $x++) $filtered .= '%';
                     $filtered  .= substr($badword, -1, 1);
-                    $this->ban([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]);
+                    ($this->legacy ? $this->legacyBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]) : $this->sqlBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]));
                 }
             }
             if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
