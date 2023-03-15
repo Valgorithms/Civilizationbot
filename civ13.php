@@ -147,6 +147,7 @@ class Civ13
 
                 $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username} by Valithor#5947";
                 $this->getVerified(); //Populate verified property with data from DB
+                $this->unbanTimer(); //Start the unban timer and remove the role from anyone who has been unbanned
                 $this->setIPs();
                 $this->serverinfoTimer();
                 $this->pending = new Collection([], 'discord');
@@ -859,7 +860,7 @@ class Civ13
                     foreach ($members as $member)
                         if ($item = $this->getVerifiedUsers()->get('discord', $member->id))
                             if (! $this->bancheck($item['ss13'])) {
-                                $member->removeRole($this->role_ids['banished']);
+                                $member->removeRole($this->role_ids['banished'], 'unban timer');
                                 if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Removed the banished role from $member.");
                             }
          };
