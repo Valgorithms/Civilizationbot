@@ -66,7 +66,7 @@ $options = array(
     'stats' => $stats,
     
     //Configurations
-    'banappeal' => 'https://civ13.com/discord',
+    'banappeal' => 'civ13.com slash discord',
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
     'command_symbol' => '!s',
     'owner_id' => '196253985072611328', //Taislin
