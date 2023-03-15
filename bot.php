@@ -12,7 +12,7 @@ use \Discord\Helpers\CacheConfig;
 use \React\EventLoop\Loop;
 use \WyriHaximus\React\Cache\Redis as RedisCache;
 use \Clue\React\Redis\Factory as Redis;
-use \React\Filesystem\Factory as Filesystem;
+use \React\Filesystem\Factory as FilesystemFactory;
 use \Monolog\Logger;
 use \Monolog\Handler\StreamHandler;
 use \Discord\WebSockets\Intents;
@@ -51,7 +51,7 @@ include 'stats_object.php';
 $stats = new Stats();
 $stats->init($discord);
 $browser = new Browser($loop);
-$filesystem = Filesystem::create($loop);
+$filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; //execInBackground(), portIsAvailable()
 include 'variable_functions.php';
 include 'verifier_functions.php';

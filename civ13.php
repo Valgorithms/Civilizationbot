@@ -21,6 +21,7 @@ use React\EventLoop\Loop;
 use React\EventLoop\StreamSelectLoop;
 use React\Http\Browser;
 use React\Http\Server;
+use React\EventLoop\TimerInterface;
 use React\Filesystem\Factory as FilesystemFactory;
 
 class Civ13
@@ -188,7 +189,7 @@ class Civ13
                     if (!isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
                 });
 
-                if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof Timer))) {
+                if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
                     $this->logger->info('chat relay timer started');
                     $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() {
                         $guild = $this->discord->guilds->get('id', $this->civ13_guild_id);
