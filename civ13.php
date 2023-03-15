@@ -581,6 +581,10 @@ class Civ13
         $this->VarSave('panic_bans.json', $this->panic_bans);
     }
 
+    /*
+    * These Legacy and SQL functions should not be called directly
+    * Define $legacy = true/false and use ban/unban methods instead
+    */
     public function legacyBanNomads($array, $message = null): string
     {
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
@@ -611,29 +615,10 @@ class Civ13
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-
-    //File method
-    public function legacyBan($array, $message = null): string
-    {
-        return $this->legacyBanNomads($array, $message) . $this->legacyBanTDM($array, $message);
-    }
-    //SQL method
-    public function sqlBan($array, $message = null): string
-    {
-        return $this->sqlBanNomads($array, $message) . $this->sqlBanTDM($array, $message);
-    }
-
-    public function ban($array, $message = null):string
-    {
-        if ($this->legacy) return $this->legacyBan($array, $message);
-        return $this->sqlBan($array, $message);
-    }
-
     public function legacyUnbanNomads(string $ckey, ?string $admin = null): void
     {
-        if (! $admin) $admin = $this->discord->user->displayname;
         if ($file = fopen($this->files['nomads_discord2unban'], 'a')) {
-            fwrite($file, "$admin:::$ckey");
+            fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
             fclose($file);
         }
     }
@@ -641,17 +626,45 @@ class Civ13
     {
         //TODO
     }
-    public function unbanTDM(string $ckey, ?string $admin = null): void
+    public function legacyUnbanTDM(string $ckey, ?string $admin = null): void
     {
-        if (! $admin) $admin = $this->discord->user->displayname;
         if ($file = fopen($this->files['tdm_discord2unban'], 'a')) {
-            fwrite($file, "$admin:::$ckey");
+            fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
             fclose($file);
         }
     }
     public function sqlUnbanTDM(string $ckey, ?string $admin = null): void
     {
         //TODO
+    }
+    public function legacyBan($array, $message = null): string
+    {
+        return $this->legacyBanNomads($array, $message) . $this->legacyBanTDM($array, $message);
+    }
+    public function sqlBan($array, $message = null): string
+    {
+        return $this->sqlBanNomads($array, $message) . $this->sqlBanTDM($array, $message);
+    }
+
+    /*
+    * These functions determine which of the above methods should be used to process a ban or unban
+    * Ban functions will return a string containing the results of the ban
+    * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
+    */
+    public function ban($array, $message = null): string
+    {
+        if ($this->legacy) return $this->legacyBan($array, $message);
+        return $this->sqlBan($array, $message);
+    }
+    public function banNomads($array, $message = null): string
+    {
+        if ($this->legacy) return $this->legacyBanNomads($array, $message);
+        return $this->sqlBanTDM($array, $message);
+    }
+    public function banTDM($array, $message = null): string
+    {
+        if ($this->legacy) return $this->legacyBanTDM($array, $message);
+        return $this->sqlBanTDM($array, $message);
     }
     public function unban(string $ckey, ?string $admin = null): void
     {
@@ -663,6 +676,16 @@ class Civ13
             $this->sqlUnbanNomads($ckey, $admin);
             $this->sqlUnbanTDM($ckey, $admin);
         }
+    }
+    public function unbanNomads(string $ckey, ?string $admin = null)
+    {
+        if ($this->legacy) return $this->legacyUnbanNomads($ckey, $admin);
+        return $this->sqlUnbanNomads($ckey, $admin);
+    }
+    public function unbanTDM(string $ckey, ?string $admin = null)
+    {
+        if ($this->legacy) return $this->legacyUnbanTDM($ckey, $admin);
+        return $this->sqlUnbanTDM($ckey, $admin);
     }
     
     /*
