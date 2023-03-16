@@ -472,7 +472,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         $result = $civ13->banNomads([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $message);
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
-            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
+            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id))
                 $member->addRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }

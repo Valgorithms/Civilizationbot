@@ -136,6 +136,7 @@ $options = array(
         'tdm_ooc_channel' => '636644391095631872', //#ooc-tdm
         'tdm_admin_channel' => '637046904575885322', //#ahelp-tdm
         'staff_bot' => '712685552155230278', //#staff-bot
+        //'ban_appeals' => '1019718839749062687', //#ban-appeals (forum thread, unused by bot)
         'nomads-playercount' => '1048777424894185484',
         'tdm-playercount' => '1048777462898761789',
     ),

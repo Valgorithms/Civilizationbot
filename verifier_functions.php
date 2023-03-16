@@ -55,7 +55,6 @@ $verify_new = function (Civ13 $civ13, string $ckey, string $discord): bool
     if (! $browser_call = $civ13->functions['misc']['browser_call']) return false;
     if ($browser_call($civ13, 'http://www.valzargaming.com/verified/', 'POST', ['Content-Type' => 'application/x-www-form-urlencoded'], ['ckey' => $ckey, 'discord' => $discord], true)) return true; //Check result, then add to $civ13->verified cache
     return false;
-    
 };
 
 //a) They have completed the #get-approved process
