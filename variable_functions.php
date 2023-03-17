@@ -623,7 +623,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (strlen($msg)<=2000) return $message->reply($msg);
         if (strlen($msg)<=4096) {
-            $embed = new Embed($this->discord);
+            $embed = new Embed($civ13->discord);
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
@@ -635,7 +635,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $msg = $rankme($civ13, $ckey)) return $message->reply('There was an error trying to get your ranking!');
         if (strlen($msg)<=2000) return $message->reply($msg);
         if (strlen($msg)<=4096) {
-            $embed = new Embed($this->discord);
+            $embed = new Embed($civ13->discord);
             $embed->setAuthor($ckey);
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
@@ -647,7 +647,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $msg = $medals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
         if (strlen($msg)<=2000) return $message->reply($msg); //Try embed description? 4096 characters
         if (strlen($msg)<=4096) {
-            $embed = new Embed($this->discord);
+            $embed = new Embed($civ13->discord);
             $embed->setAuthor($ckey);
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
@@ -659,7 +659,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $msg = $brmedals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
         if (strlen($msg)<=2000) return $message->reply($msg);
         if (strlen($msg)<=4096) {
-            $embed = new Embed($this->discord);
+            $embed = new Embed($civ13->discord);
             $embed->setAuthor($ckey);
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
