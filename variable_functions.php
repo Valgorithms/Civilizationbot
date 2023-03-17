@@ -621,13 +621,15 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'ranking')) {
         if (! $recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (! $msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
-        return $message->reply($msg);
+        if (strlen($msg)<=2000) return $message->reply($msg);
+        return $message->reply("The ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
         if (! $recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (! $msg = $rankme($civ13, $ckey)) return $message->reply('There was an error trying to get your ranking!');
-        return $message->reply($msg);
+        if (strlen($msg)<=2000) return $message->reply($msg);
+        return $message->reply("Your ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'medals')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
