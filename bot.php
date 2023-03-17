@@ -30,15 +30,12 @@ require getcwd() . '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
 $loop = Loop::get();
-$redis = new RedisCache((new Redis($loop))->createLazyClient('127.0.0.1:6379'), 'dphp:cache:'); // prefix is "dphp:cache"
 $logger = new Logger('New logger');
 $logger->pushHandler(new StreamHandler('php://stdout'));
 $discord = new Discord([
     'loop' => $loop,
     'logger' => $logger,
-    'cache' => new CacheConfig($interface = $redis, $compress = true, $sweep = false),
-    /*'cacheInterface' => $redis,
-    'cacheSweep' => false, //Don't periodically wipe the in-memory cache in case something happens to Redis*/
+    //'cache' => new \Discord\Helpers\CacheConfig($interface = new WyriHaximus\React\Cache\Redis((new Clue\React\Redis\Factory($loop))->createLazyClient('127.0.0.1:6379'), 'dphp:cache:'), $compress = true, $sweep = false), //Disabled for debugging
     /*'socket_options' => [
         'dns' => '8.8.8.8', // can change dns
     ],*/
