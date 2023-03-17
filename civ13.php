@@ -494,7 +494,7 @@ class Civ13
                 } else {
                     $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
                     $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
-                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified $member.");
+                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified $member. ({$this->ages[$ckey]})");
                 }
                 break;
             case 403: //Already registered
