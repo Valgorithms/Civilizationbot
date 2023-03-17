@@ -632,12 +632,14 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'medals')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
         if (! $msg = $medals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
-        return $message->reply($msg);
+        if (strlen($msg)<=2000) return $message->reply($msg);
+        return $message->reply("Too many medals to display.");
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('brmedals'))))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
         if (! $msg = $brmedals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
-        return $msg;
+        if (strlen($msg)<=2000) return $message->reply($msg);
+        return $message->reply("Too many medals to display.");
     }
 
     if (str_starts_with($message_content_lower, 'update bans')) {
