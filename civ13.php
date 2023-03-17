@@ -485,16 +485,16 @@ class Civ13
                     $this->panicUnban($ckey);
                     $message .= ' and the panic bunker ban removed.';
                     $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
-                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified and removed the panic bunker ban from $member.");
+                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified and removed the panic bunker ban from $member ($ckey - {$this->ages[$ckey]}).");
                     $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
                 } elseif ($this->bancheck($ckey)) {
                     $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
                     $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "approveme verified ($ckey)");
-                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Added the banished role to $member.");
+                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Added the banished role to $member ($ckey - {$this->ages[$ckey]}).");
                 } else {
                     $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
                     $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
-                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified $member. ({$this->ages[$ckey]})");
+                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified $member. ($ckey - {$this->ages[$ckey]})");
                 }
                 break;
             case 403: //Already registered
