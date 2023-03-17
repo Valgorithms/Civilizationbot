@@ -622,6 +622,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (! $msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (strlen($msg)<=2000) return $message->reply($msg);
+        if (strlen($msg)<=4096) {
+            $embed = new Embed($this->discord);
+            $embed->setDescription($msg);
+            return $message->channel->sendEmbed($embed);
+        }
         return $message->reply("The ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
@@ -629,18 +634,36 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (! $msg = $rankme($civ13, $ckey)) return $message->reply('There was an error trying to get your ranking!');
         if (strlen($msg)<=2000) return $message->reply($msg);
+        if (strlen($msg)<=4096) {
+            $embed = new Embed($this->discord);
+            $embed->setAuthor($ckey);
+            $embed->setDescription($msg);
+            return $message->channel->sendEmbed($embed);
+        }
         return $message->reply("Your ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'medals')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
         if (! $msg = $medals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
-        if (strlen($msg)<=2000) return $message->reply($msg);
+        if (strlen($msg)<=2000) return $message->reply($msg); //Try embed description? 4096 characters
+        if (strlen($msg)<=4096) {
+            $embed = new Embed($this->discord);
+            $embed->setAuthor($ckey);
+            $embed->setDescription($msg);
+            return $message->channel->sendEmbed($embed);
+        }
         return $message->reply("Too many medals to display.");
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('brmedals'))))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
         if (! $msg = $brmedals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
         if (strlen($msg)<=2000) return $message->reply($msg);
+        if (strlen($msg)<=4096) {
+            $embed = new Embed($this->discord);
+            $embed->setAuthor($ckey);
+            $embed->setDescription($msg);
+            return $message->channel->sendEmbed($embed);
+        }
         return $message->reply("Too many medals to display.");
     }
 
