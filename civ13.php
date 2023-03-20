@@ -960,4 +960,25 @@ class Civ13
         fclose ($search);
         return true;
     }
+
+    /*
+    * This function is used to update the whitelist files
+    * Returns true if the whitelist files are successfully updated, false otherwise
+    */
+    public function whitelistUpdate(array $whitelists): bool
+    {
+        if (! isset($this->role_ids['veteran'])) return false;
+        if (! isset($this->civ13_guild_id) || ! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
+        foreach ($whitelists as $whitelist) {
+            if (! $file = fopen($whitelist, 'a')) continue;
+            ftruncate($file, 0);
+            foreach ($this->verified as $item) {
+                if (! $member = $guild->members->get('id', $item['discord'])) continue;
+                if (! $member->roles->has($this->role_ids['veteran'])) continue;
+                fwrite($file, "{$item['ss13']} = {$item['discord']}" . PHP_EOL);
+            }
+            fclose($file);
+        }
+        return true;
+    }
 }
