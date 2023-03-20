@@ -444,7 +444,7 @@ class Civ13
             if (! $found) return "Ckey `$ckey` has never been seen on the server before! You'll need to join either Nomads or TDM at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
-        return $this->verifyNew($discord_id)[1]; //TODO: There's supposed to be separate processing for $result[0] being false/true but I don't remember why...
+        return $this->verifyNew($discord_id)[1]; //[0] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, [1] will contain the error/success message and will be messaged to the user
     }
 
     /*
@@ -478,23 +478,22 @@ class Civ13
         switch ($http_status) {
             case 200: //Verified
                 $success = true;
-                $message = "`$ckey` has been verified and registered to $discord_id";
+                $message = "`$ckey` - {$this->ages[$ckey]} has been verified and registered to $discord_id";
                 $this->pending->offsetUnset($discord_id);
                 $this->getVerified();
+                if (isset($this->channel_ids['staff_bot'])) $channel = $this->discord->getChannel($this->channel_ids['staff_bot']);
+                if (! $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)) return [false, "$ckey - {$this->ages[$ckey]}) was verified but the member couldn't be found. This error shouldn't have happened, contact Valithor ASAP!"];
                 if (isset($this->panic_bans[$ckey])) {
                     $this->panicUnban($ckey);
                     $message .= ' and the panic bunker ban removed.';
-                    $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
-                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified and removed the panic bunker ban from $member ($ckey - {$this->ages[$ckey]}).");
                     $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
+                    if ($channel) $channel->sendMessage("Verified and removed the panic bunker ban from $member ($ckey - {$this->ages[$ckey]}).");
                 } elseif ($this->bancheck($ckey)) {
-                    $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
                     $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "approveme verified ($ckey)");
-                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Added the banished role to $member ($ckey - {$this->ages[$ckey]}).");
+                    if ($channel) $channel->sendMessage("Added the banished role to $member ($ckey - {$this->ages[$ckey]}).");
                 } else {
-                    $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id);
                     $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
-                    if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Verified $member. ($ckey - {$this->ages[$ckey]})");
+                    if ($channel) $channel->sendMessage("Verified $member. ($ckey - {$this->ages[$ckey]})");
                 }
                 break;
             case 403: //Already registered
@@ -502,13 +501,16 @@ class Civ13
                 $this->getVerified();
                 break;
             case 404:
-                $message = "The website could not be found or is misconfigured. Please try again later.";
+                $message = "The website could not be found or is misconfigured. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->owner_id}>.";
                 break;
             case 504: //Gateway timeout
-                $message = "The website timed out while attempting to process the request. Please try again later.";
+                $message = "The website timed out while attempting to process the request. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->owner_id}>.";
+                break;
+            case 0:
+                $message = "The website could not be reached. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->owner_id}>.";
                 break;
             default: 
-                $message = "There was an error attempting to process the request: [$http_status] $result";
+                $message = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->owner_id}>.";
                 break;
         }
         curl_close($ch);
@@ -888,13 +890,11 @@ class Civ13
             $fp = str_replace(PHP_EOL, '', $fp);
             $string = substr($fp, strpos($fp, '/')+1);
             $ckey = substr($string, 0, strpos($string, ':'));
-            foreach ($this->badwords as $badword) { //ban ckey if $fp contains a blacklisted word
-                if (str_contains(strtolower($string), $badword)) {
-                    $filtered = substr($badword, 0, 1);
-                    for ($x=1;$x<strlen($badword)-2; $x++) $filtered .= '%';
-                    $filtered  .= substr($badword, -1, 1);
-                    ($this->legacy ? $this->legacyBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]) : $this->sqlBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]));
-                }
+            foreach ($this->badwords as $badword) if (str_contains(strtolower($string), $badword)) { //ban ckey if $fp contains a blacklisted word
+                $filtered = substr($badword, 0, 1);
+                for ($x=1;$x<strlen($badword)-2; $x++) $filtered .= '%';
+                $filtered  .= substr($badword, -1, 1);
+                ($this->legacy ? $this->legacyBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]) : $this->sqlBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]));
             }
             if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
             else {
@@ -902,7 +902,7 @@ class Civ13
                 if ($user = $this->discord->users->get('id', $item['discord'])) {
                     $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
                     $embed->setDescription($fp);
-                } else $this->discord->users->fetch('id', $item['discord']);
+                } //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
                 $channel->sendEmbed($embed);
             }
         }

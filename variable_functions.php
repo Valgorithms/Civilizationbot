@@ -10,8 +10,6 @@ use Civ13\Civ13;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Activity;
-use React\EventLoop\Timer\Timer;
-use React\Promise\ExtendedPromiseInterface;
 
 $status_changer_random = function (Civ13 $civ13): bool
 { //on ready
@@ -39,30 +37,6 @@ $status_changer_random = function (Civ13 $civ13): bool
 $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
 { //on ready
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
-};
-
-$browser_call = function (Civ13 $civ13, string $url, string $method = 'GET', array $headers = [], array|string $data = [], $curl = true): false|string|ExtendedPromiseInterface
-{
-    if (! is_string($data)) $data = http_build_query($data);
-    if ( ! $curl && $browser = $civ13->browser) return $browser->{$method}($url, $headers, $data);
-    
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string
-    switch ($method) {
-        case 'GET':
-            break;
-        case 'POST':
-            curl_setopt($ch, CURLOPT_POST, TRUE);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-            break;
-        default:
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    }
-    $result = curl_exec($ch);
-    return $result;
 };
 
 $host_nomads = function (Civ13 $civ13): void
@@ -237,49 +211,45 @@ $medals = function (Civ13 $civ13, string $ckey): false|string
     $result = '';
     if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
     $found = false;
-    while (! feof($search)) {
-        $line = fgets($search);
-        $line = trim(str_replace(PHP_EOL, '', $line)); # remove '\n' at end of line
-        if (str_contains($line, $ckey)) {
-            $found = true;
-            $duser = explode(';', $line);
-            if ($duser[0] == $ckey) {
-                switch ($duser[2]) {
-                    case 'long service medal':
-                        $medal_s = '<:long_service:705786458874707978>';
-                        break;
-                    case 'combat medical badge':
-                        $medal_s = '<:combat_medical_badge:706583430141444126>';
-                        break;
-                    case 'tank destroyer silver badge':
-                        $medal_s = '<:tank_silver:705786458882965504>';
-                        break;
-                    case 'tank destroyer gold badge':
-                        $medal_s = '<:tank_gold:705787308926042112>';
-                        break;
-                    case 'assault badge':
-                        $medal_s = '<:assault:705786458581106772>';
-                        break;
-                    case 'wounded badge':
-                        $medal_s = '<:wounded:705786458677706904>';
-                        break;
-                    case 'wounded silver badge':
-                        $medal_s = '<:wounded_silver:705786458916651068>';
-                        break;
-                    case 'wounded gold badge':
-                        $medal_s = '<:wounded_gold:705786458845216848>';
-                        break;
-                    case 'iron cross 1st class':
-                        $medal_s = '<:iron_cross1:705786458572587109>';
-                        break;
-                    case 'iron cross 2nd class':
-                        $medal_s = '<:iron_cross2:705786458849673267>';
-                        break;
-                    default: 
-                        $medal_s = '<:long_service:705786458874707978>';
-                }
-                $result .= "**{$duser[1]}:** {$medal_s} **{$duser[2]}**, *{$duser[4]}*, {$duser[5]}" . PHP_EOL;
+    while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
+        $found = true;
+        $duser = explode(';', $line);
+        if ($duser[0] == $ckey) {
+            switch ($duser[2]) {
+                case 'long service medal':
+                    $medal_s = '<:long_service:705786458874707978>';
+                    break;
+                case 'combat medical badge':
+                    $medal_s = '<:combat_medical_badge:706583430141444126>';
+                    break;
+                case 'tank destroyer silver badge':
+                    $medal_s = '<:tank_silver:705786458882965504>';
+                    break;
+                case 'tank destroyer gold badge':
+                    $medal_s = '<:tank_gold:705787308926042112>';
+                    break;
+                case 'assault badge':
+                    $medal_s = '<:assault:705786458581106772>';
+                    break;
+                case 'wounded badge':
+                    $medal_s = '<:wounded:705786458677706904>';
+                    break;
+                case 'wounded silver badge':
+                    $medal_s = '<:wounded_silver:705786458916651068>';
+                    break;
+                case 'wounded gold badge':
+                    $medal_s = '<:wounded_gold:705786458845216848>';
+                    break;
+                case 'iron cross 1st class':
+                    $medal_s = '<:iron_cross1:705786458572587109>';
+                    break;
+                case 'iron cross 2nd class':
+                    $medal_s = '<:iron_cross2:705786458849673267>';
+                    break;
+                default: 
+                    $medal_s = '<:long_service:705786458874707978>';
             }
+            $result .= "**{$duser[1]}:** {$medal_s} **{$duser[2]}**, *{$duser[4]}*, {$duser[5]}" . PHP_EOL;
         }
     }
     if ($result != '') return $result;
@@ -290,12 +260,10 @@ $brmedals = function (Civ13 $civ13, string $ckey): string
     $result = '';
     $search = fopen($civ13->files['tdm_awards_br_path'], 'r');
     $found = false;
-    while (! feof($search)) {
-        if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
-            $found = true;
-            $duser = explode(';', $line);
-            if ($duser[0] == $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
-        }
+    while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
+        $found = true;
+        $duser = explode(';', $line);
+        if ($duser[0] == $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
     }
     if (! $found) return 'No medals found for this ckey.';
     return $result;
@@ -431,7 +399,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'mass_promotion_check')) {
         if (! $mass_promotion_check = $civ13->functions['misc']['mass_promotion_check']) return $message->react("🔥");
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
-        if ($promotables = $mass_promotion_check($civ13, $message)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));;
+        if ($promotables = $mass_promotion_check($civ13)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
         return $message->react("👎");
     }
     
@@ -1010,7 +978,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nom
     }
     */
 };
-$on_ready = function (Civ13 $civ13): void
+/*$on_ready = function (Civ13 $civ13): void
 {    
     //
-};
+};*/

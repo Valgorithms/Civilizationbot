@@ -150,10 +150,10 @@ $options = array(
     ),
     'functions' => array(
         'ready' => [
-            'on_ready' => $on_ready,
+            //'on_ready' => $on_ready,
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
-            'civ_listeners' => $civ_listeners,
+            'civ_listeners' => $civ_listeners, //TODO: Move into civ13.php
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,
@@ -165,9 +165,7 @@ $options = array(
             //
         ],
         'misc' => [ //Custom functions
-            'recalculate_ranking' => $recalculate_ranking,
-            'browser_call' => $browser_call,
-            'verify_new' => $verify_new,
+            'recalculate_ranking' => $recalculate_ranking, //TODO: Move into civ13.php
             'promotable_check' => $promotable_check,
             'mass_promotion_loop' => $mass_promotion_loop,
             'mass_promotion_check' => $mass_promotion_check,
