@@ -53,8 +53,8 @@ $civ_listeners = function (Civ13 $civ13) use ($whitelist_update): void //Handles
 //a) They have completed the #get-approved process
 //b) They have been registered for a while (current undisclosed period of time)
 //c) They have been a regular player (have played for an undisclosed period of time)
-//d) They have not received any bans on any of the Civ13.com servers (Particully implemented, not currently tracking bans for all time, only active bans)
-//e) They are currently Civ13 discord server
+//d) They have not received any bans on any of the Civ13.com servers (Partially implemented, not currently tracking bans for all time, only active bans)
+//e) They are currently in the Civ13 discord server
 //f) They have not received any infractions in the Civ13 discord. (NYI)
 //g) They have been *recently* active on any of the Civ13.com servers (Determined by admin review)
 $promotable_check = function (Civ13 $civ13, string $identifier): bool

@@ -911,6 +911,10 @@ class Civ13
         return true;
     }
 
+    /*
+    * This function calculates the player's ranking based on their medals
+    * Returns true if the required files are successfully read, false otherwise
+    */
     public function recalculateRanking(): bool
     {
         if (! isset($this->files['tdm_awards_path'])) return false;
