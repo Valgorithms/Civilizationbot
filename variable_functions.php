@@ -129,48 +129,6 @@ $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lowe
     return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
 };
 
-$recalculate_ranking = function (Civ13 $civ13): bool
-{
-    if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
-    $result = array();
-    while (! feof($search)) {
-        $medal_s = 0;
-        $duser = explode(';', trim(str_replace(PHP_EOL, '', fgets($search))));
-        switch ($duser[2]) {
-            case 'long service medal':
-            case 'wounded badge':
-                $medal_s += 0.5;
-                break;
-            case 'tank destroyer silver badge':
-            case 'wounded silver badge':
-                $medal_s += 0.75;
-                break;
-            case 'wounded gold badge':
-                $medal_s += 1;
-                break;
-            case 'assault badge':
-            case 'tank destroyer gold badge':
-                $medal_s += 1.5;
-                break;
-            case 'combat medical badge':
-                $medal_s += 2;
-                break;
-            case 'iron cross 1st class':
-                $medal_s += 3;
-                break;
-            case 'iron cross 2nd class':
-                $medal_s += 5;
-                break;
-        }
-        $result[$duser[0]] += $medal_s;
-    }
-    fclose ($search);
-    arsort($result);
-    if (! $search = fopen($civ13->files['ranking_path'], 'w')) return false;
-    foreach ($result as $ckey => $score) fwrite($search, "$score;$ckey" . PHP_EOL);
-    fclose ($search);
-    return true;
-};
 $ranking = function (Civ13 $civ13): false|string
 {
     $line_array = array();
@@ -348,7 +306,7 @@ $rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
     $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $mapswap_nomads, $mapswap_tdm, $log_handler, $banlog_handler, $recalculate_ranking, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $kill_nomads, $kill_tdm, $host_nomads, $host_tdm, $restart_nomads, $restart_tdm, $mapswap_nomads, $mapswap_tdm, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -587,7 +545,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
 
     if (str_starts_with($message_content_lower, 'ranking')) {
-        if (! $recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
+        if (! $civ13->recalculateRanking()) return $message->reply('There was an error trying to recalculate ranking!');
         if (! $msg = $ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
         if (strlen($msg)<=2000) return $message->reply($msg);
         if (strlen($msg)<=4096) {
@@ -599,7 +557,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
-        if (! $recalculate_ranking($civ13)) return $message->reply('There was an error trying to recalculate ranking!');
+        if (! $civ13->recalculateRanking()) return $message->reply('There was an error trying to recalculate ranking!');
         if (! $msg = $rankme($civ13, $ckey)) return $message->reply('There was an error trying to get your ranking!');
         if (strlen($msg)<=2000) return $message->reply($msg);
         if (strlen($msg)<=4096) {

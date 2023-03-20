@@ -165,7 +165,6 @@ $options = array(
             //
         ],
         'misc' => [ //Custom functions
-            'recalculate_ranking' => $recalculate_ranking, //TODO: Move into civ13.php
             'promotable_check' => $promotable_check,
             'mass_promotion_loop' => $mass_promotion_loop,
             'mass_promotion_check' => $mass_promotion_check,

@@ -910,4 +910,50 @@ class Civ13
         fclose($file);
         return true;
     }
+
+    public function recalculateRanking(): bool
+    {
+        if (! isset($this->files['tdm_awards_path'])) return false;
+        if (! isset($this->files['ranking_path'])) return false;
+
+        if (! $search = fopen($this->files['tdm_awards_path'], 'r')) return false;
+        $result = array();
+        while (! feof($search)) {
+            $medal_s = 0;
+            $duser = explode(';', trim(str_replace(PHP_EOL, '', fgets($search))));
+            switch ($duser[2]) {
+                case 'long service medal':
+                case 'wounded badge':
+                    $medal_s += 0.5;
+                    break;
+                case 'tank destroyer silver badge':
+                case 'wounded silver badge':
+                    $medal_s += 0.75;
+                    break;
+                case 'wounded gold badge':
+                    $medal_s += 1;
+                    break;
+                case 'assault badge':
+                case 'tank destroyer gold badge':
+                    $medal_s += 1.5;
+                    break;
+                case 'combat medical badge':
+                    $medal_s += 2;
+                    break;
+                case 'iron cross 1st class':
+                    $medal_s += 3;
+                    break;
+                case 'iron cross 2nd class':
+                    $medal_s += 5;
+                    break;
+            }
+            $result[$duser[0]] += $medal_s;
+        }
+        fclose ($search);
+        arsort($result);
+        if (! $search = fopen($this->files['ranking_path'], 'w')) return false;
+        foreach ($result as $ckey => $score) fwrite($search, "$score;$ckey" . PHP_EOL); //Is this the proper behavior, or should we truncate the file first?
+        fclose ($search);
+        return true;
+    }
 }
