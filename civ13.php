@@ -620,7 +620,7 @@ class Civ13
             $this->logger->warning("unable to open {$this->files['tdm_discord2ban']}");
             return "unable to open {$this->files['tdm_discord2ban']}" . PHP_EOL;
         }
-        $result .= "**$admin** banned **{$array[0]}** from **Nomads** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+        $result .= "**$admin** banned **{$array[0]}** from **TDM** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
         return $result;
     }
     public function sqlBanTDM($array, $message = null): string
