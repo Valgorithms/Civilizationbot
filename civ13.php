@@ -611,10 +611,17 @@ class Civ13
     public function legacyBanTDM($array, $message = null): string
     {
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
-        if (! $file = fopen($this->files['tdm_discord2ban'], 'a')) return "unable to open {$this->files['tdm_discord2ban']}" . PHP_EOL;
-        fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
-        fclose($file);
-        return "**$admin** banned **{$array[0]}** from **TDM** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+        $result = '';
+        if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
+        if ($file = fopen($this->files['tdm_discord2ban'], 'a')) {
+            fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
+            fclose($file);
+        } else {
+            $this->logger->warning("unable to open {$this->files['tdm_discord2ban']}");
+            return "unable to open {$this->files['tdm_discord2ban']}" . PHP_EOL;
+        }
+        $result .= "**$admin** banned **{$array[0]}** from **Nomads** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+        return $result;
     }
     public function sqlBanTDM($array, $message = null): string
     {
