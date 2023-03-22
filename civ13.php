@@ -593,6 +593,7 @@ class Civ13
     {
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         $result = '';
+        if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
         if ($file = fopen($this->files['nomads_discord2ban'], 'a')) {
             fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
             fclose($file);
