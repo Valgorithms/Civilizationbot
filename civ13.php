@@ -374,7 +374,7 @@ class Civ13
     public function getByondPage(string $ckey): string|false 
     { //Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and add the generated token to their description first!
         $url = 'http://www.byond.com/members/'.urlencode($ckey).'?format=text';
-        $ch = curl_init(); //create curl resource
+        $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); //return the page as a string
         curl_setopt($ch, CURLOPT_HTTPGET, true);
@@ -665,6 +665,8 @@ class Civ13
     */
     public function ban($array, $message = null): string
     {
+        if ( ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) && ($item = $this->verified->get('ss13', $array[0])))
+            if ($member = $guild->members->get('id', $item['discord'])) $member->addRole($this->role_ids['banished'], "Banned for {$array[1]} with the reason {$array[2]}");
         if ($this->legacy) return $this->legacyBan($array, $message);
         return $this->sqlBan($array, $message);
     }
