@@ -690,6 +690,8 @@ class Civ13
             $this->sqlUnbanNomads($ckey, $admin);
             $this->sqlUnbanTDM($ckey, $admin);
         }
+        if ( ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) && ($item = $this->verified->get('ss13', $ckey)))
+            if ($member = $guild->members->get('id', $item['discord'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
     }
     public function unbanNomads(string $ckey, ?string $admin = null)
     {

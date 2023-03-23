@@ -374,9 +374,6 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         $result = $civ13->ban([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $message);
-        if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
-            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
-                $member->addRole($civ13->role_ids['banished'], $result);
         
         if (! $tdm_playerlogs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
         if (! $nomads_playerlogs = file_get_contents($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
@@ -422,9 +419,6 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         
         $civ13->unban($split_message[0], $message->author->displayname);
         $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}**";
-        if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
-            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
-                $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'unbannomads ')) {
