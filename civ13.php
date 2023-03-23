@@ -20,7 +20,7 @@ use Monolog\Handler\StreamHandler;
 use React\EventLoop\Loop;
 use React\EventLoop\StreamSelectLoop;
 use React\Http\Browser;
-use React\Http\Server;
+use React\Http\HttpServer;
 use React\EventLoop\TimerInterface;
 use React\Filesystem\Factory as FilesystemFactory;
 
@@ -37,7 +37,7 @@ class Civ13
 
     public $filecache_path = '';
     
-    protected Server $webapi;
+    protected HttpServer $webapi;
     
     public collection $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
