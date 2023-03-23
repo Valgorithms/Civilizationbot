@@ -310,13 +310,28 @@ class Civ13
         else $this->logger->warning("Failed top create new config for guild {$guild->name}");
     }
 
-    /* This function is used to fetch the bot's cache of verified users that are currently found in the Civ13 Discord server
-    * If the bot is not in the Civ13 Discord server, it will return the bot's cache of verified users
+    /* This function is used to fetch the bot's cache of verified members that are currently found in the Civ13 Discord server
+    * If the bot is not in the Civ13 Discord server, it will return the bot's cache of verified members
     */
-    public function getVerifiedUsers(): Collection
+    public function getVerifiedMemberItems(): Collection
     {
         if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
         return $this->verified;
+    }
+
+    public function getVerifiedItem($id)
+    {
+        if (is_numeric($id) && $item = $this->verified->get('discord', $id)) return $item;
+        if ($item = $this->verified->get('ss13', $id)) return $item;
+        return false;
+    }
+
+    public function getVerifiedMember($item)
+    {
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
+        if ($item instanceof String) $item = $this->getVerifiedItem($item);
+        if ($item && $member = $guild->members->get('id', $item['discord'])) return $member;
+        return false;
     }
     
     /*
@@ -665,10 +680,9 @@ class Civ13
     */
     public function ban($array, $message = null): string
     {
-        if ( ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) && ($item = $this->verified->get('ss13', $array[0])))
-            if ($member = $guild->members->get('id', $item['discord']))
-                if (! $member->roles->has($this->role_ids['banished']))
-                    $member->addRole($this->role_ids['banished'], "Banned for {$array[1]} with the reason {$array[2]}");
+        if ($member = $this->getVerifiedMember($array[0]))
+            if (! $member->roles->has($this->role_ids['banished']))
+                $member->addRole($this->role_ids['banished'], "Banned for {$array[1]} with the reason {$array[2]}");
         if ($this->legacy) return $this->legacyBan($array, $message);
         return $this->sqlBan($array, $message);
     }
@@ -692,8 +706,8 @@ class Civ13
             $this->sqlUnbanNomads($ckey, $admin);
             $this->sqlUnbanTDM($ckey, $admin);
         }
-        if ( ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) && ($item = $this->verified->get('ss13', $ckey)))
-            if ($member = $guild->members->get('id', $item['discord']))
+        if ( $member = $this->getVerifiedMember($ckey))
+            
                 if ($member->roles->has($this->role_ids['banished']))
                     $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
     }
@@ -876,7 +890,7 @@ class Civ13
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
                 if ($members = $guild->members->filter(function ($member){ return $member->roles->has($this->role_ids['banished']); }))
                     foreach ($members as $member)
-                        if ($item = $this->getVerifiedUsers()->get('discord', $member->id))
+                        if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id))
                             if (! $this->bancheck($item['ss13'])) {
                                 $member->removeRole($this->role_ids['banished'], 'unban timer');
                                 if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Removed the banished role from $member.");

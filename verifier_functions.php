@@ -44,7 +44,7 @@ $civ_listeners = function (Civ13 $civ13): void //Handles Verified and Veteran ca
 $promotable_check = function (Civ13 $civ13, string $identifier): bool
 {
     if (! $civ13->verified && ! $civ13->getVerified()) return false; //Unable to get info from DB
-    if (! $item = $civ13->getVerifiedUsers()->get('ss13', htmlspecialchars($identifier)) ?? $civ13->getVerifiedUsers()->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; //a&e, ckey and/or discord id exists in DB and member is in the Discord server
+    if (! $item = $civ13->getVerifiedMemberItems()->get('ss13', htmlspecialchars($identifier)) ?? $civ13->getVerifiedMemberItems()->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; //a&e, ckey and/or discord id exists in DB and member is in the Discord server
     if (strtotime($item['create_time']) > strtotime('-1 year')) return false; //b, 1 year
     if (($item['seen_tdm'] + $item['seen_nomads'] + $item['seen_pers'])<100) return false; //c, 100 seen
     if ($civ13->bancheck($item['ss13'])) return false; //d, must not have active ban

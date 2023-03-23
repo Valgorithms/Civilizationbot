@@ -312,7 +312,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     
     if (str_starts_with($message_content_lower, 'approveme')) {
         if ($message->member->roles->has($civ13->role_ids['infantry']) || $message->member->roles->has($civ13->role_ids['veteran'])) return $message->reply('You already have the verification role!');
-        if ($item = $civ13->verified->get('discord', $message->member->id)) {
+        if ($item = $civ13->getVerifiedItem($message->member->id)) {
             $message->react("👍");
             return $message->member->setRoles([$civ13->role_ids['infantry']], "approveme {$item['ss13']}");
         }
@@ -394,10 +394,9 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         $result = $civ13->banNomads([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $message);
-        if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
-            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id))
-                if (! $member->roles->has($civ13->role_ids['banished']))
-                    $member->addRole($civ13->role_ids['banished'], $result);
+        if ($member = $civ13->getVerifiedMember('id', $split_message[0]))
+            if (! $member->roles->has($civ13->role_ids['banished']))
+                $member->addRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'tdmban ')) {
@@ -408,10 +407,9 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         $result = $civ13->banTDM([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $message);
-        if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
-            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
-                if (! $member->roles->has($civ13->role_ids['banished']))
-                    $member->addRole($civ13->role_ids['banished'], $result);
+        if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
+            if (! $member->roles->has($civ13->role_ids['banished']))
+                $member->addRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'unban ')) {
@@ -430,10 +428,9 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         
         $civ13->unbanNomads($split_message[0], $message->author->displayname);
         $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **Nomads**";
-        if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
-            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
-                if ($member->roles->has($civ13->role_ids['banished']))
-                    $member->removeRole($civ13->role_ids['banished'], $result);
+        if ($member = $civ13->getVerifiedMember('id', $split_message[0]))
+            if ($member->roles->has($civ13->role_ids['banished']))
+                $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'unbantdm ')) {
@@ -443,10 +440,9 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         
         $civ13->unbanTDM($split_message[0], $message->author->displayname);
         $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **TDM**";
-        if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
-            if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
-                if ($member->roles->has($civ13->role_ids['banished']))
-                    $member->removeRole($civ13->role_ids['banished'], $result);
+        if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
+            if ($member->roles->has($civ13->role_ids['banished']))
+                $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'hostnomads')) {
@@ -858,12 +854,12 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     if (str_starts_with($message_content_lower, 'ckey')) {
         if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckey')))))) {
-            if (! $item = $civ13->verified->get('discord', $id)) return $message->reply("`$id` is not registered to any ckey");
+            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("`$id` is not registered to any ckey");
             if (! $age = $civ13->getByondAge($item['ss13'])) return $message->reply("`{$item['ss13']}` does not exist");
             return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
         }
         if (! $age = $civ13->getByondAge($id)) return $message->reply("`$id` does not exist");
-        if ($item = $civ13->verified->get('ss13', $id)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+        if ($item = $civ13->getVerifiedItem($id)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
         return $message->reply("`$id` is not registered to any discord id ($age)");
     }
     
