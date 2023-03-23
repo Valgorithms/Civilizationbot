@@ -396,7 +396,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $result = $civ13->banNomads([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $message);
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id))
-                $member->addRole($civ13->role_ids['banished'], $result);
+                if (! $member->roles->has($civ13->role_ids['banished']))
+                    $member->addRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'tdmban ')) {
@@ -409,7 +410,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $result = $civ13->banTDM([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $message);
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
-                $member->addRole($civ13->role_ids['banished'], $result);
+                if (! $member->roles->has($civ13->role_ids['banished']))
+                    $member->addRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'unban ')) {
@@ -430,7 +432,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **Nomads**";
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
-                $member->removeRole($civ13->role_ids['banished'], $result);
+                if ($member->roles->has($civ13->role_ids['banished']))
+                    $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'unbantdm ')) {
@@ -442,7 +445,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **TDM**";
         if ($id = $civ13->verified->get('ss13', $split_message[0])['discord'])
             if ($member = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)->members->get('id', $id)) 
-                $member->removeRole($civ13->role_ids['banished'], $result);
+                if ($member->roles->has($civ13->role_ids['banished']))
+                    $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'hostnomads')) {

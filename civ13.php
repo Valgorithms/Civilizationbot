@@ -666,7 +666,9 @@ class Civ13
     public function ban($array, $message = null): string
     {
         if ( ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) && ($item = $this->verified->get('ss13', $array[0])))
-            if ($member = $guild->members->get('id', $item['discord'])) $member->addRole($this->role_ids['banished'], "Banned for {$array[1]} with the reason {$array[2]}");
+            if ($member = $guild->members->get('id', $item['discord']))
+                if (! $member->roles->has($this->role_ids['banished']))
+                    $member->addRole($this->role_ids['banished'], "Banned for {$array[1]} with the reason {$array[2]}");
         if ($this->legacy) return $this->legacyBan($array, $message);
         return $this->sqlBan($array, $message);
     }
@@ -691,7 +693,9 @@ class Civ13
             $this->sqlUnbanTDM($ckey, $admin);
         }
         if ( ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) && ($item = $this->verified->get('ss13', $ckey)))
-            if ($member = $guild->members->get('id', $item['discord'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
+            if ($member = $guild->members->get('id', $item['discord']))
+                if ($member->roles->has($this->role_ids['banished']))
+                    $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
     }
     public function unbanNomads(string $ckey, ?string $admin = null)
     {
