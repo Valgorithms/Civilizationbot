@@ -6,8 +6,8 @@
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
-use React\Socket\SocketServer;
-use React\Http\HttpServer;
+use React\Socket\Server as SocketServer;
+use React\Http\Server as HttpServer;
 use React\Http\Message\Response;
 use \Psr\Http\Message\ServerRequestInterface;
 
