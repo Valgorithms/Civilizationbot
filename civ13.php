@@ -14,6 +14,7 @@ use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
+use Discord\Parts\User\Member;
 use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Handler\StreamHandler;
@@ -326,7 +327,7 @@ class Civ13
         return false;
     }
 
-    public function getVerifiedMember($item)
+    public function getVerifiedMember($item): Member|false
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
         if ($item instanceof String) $item = $this->getVerifiedItem($item);
