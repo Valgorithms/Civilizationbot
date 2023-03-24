@@ -270,7 +270,7 @@ class Slash
         $this->civ13->discord->listenCommand('join_campaign', function ($interaction)
         {
             if (! $this->civ13->getVerifiedItem($interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You are either not currently verified with a byond username or do not exist in the cache yet"), true);
-            if ($interaction->member->roles->some(fn($role) => in_array($role->id, [$this->civ13->role_ids['red'], $this->civ13->role_ids['blue']]))) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You're already in a faction!"), true);
+            if ($interaction->member->roles->contains(fn($role) => in_array($role->id, [$this->civ13->role_ids['red'], $this->civ13->role_ids['blue']]))) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You're already in a faction!"), true);
 
             $redCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['red']))->count();
             $blueCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['blue']))->count();
