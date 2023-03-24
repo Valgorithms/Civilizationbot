@@ -331,6 +331,7 @@ class Civ13
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
         if ($item instanceof String) $item = $this->getVerifiedItem($item);
+        if ($item instanceof String) return false;
         if ($item && $member = $guild->members->get('id', $item['discord'])) return $member;
         return false;
     }
