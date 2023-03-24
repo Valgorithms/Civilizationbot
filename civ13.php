@@ -50,7 +50,7 @@ class Civ13
     public array $serverinfo = []; //Collected automatically by serverinfo_timer
     public array $players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
-    public array $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'tranny']; //TODO: Retrieve from an API instead?
+    public array $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'niqqa', 'tranny']; //TODO: Retrieve from an API instead?
     public bool $legacy = true;
     
     public $functions = array(
