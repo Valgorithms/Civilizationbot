@@ -270,7 +270,7 @@ class Slash
         $this->civ13->discord->listenCommand('join_campaign', function ($interaction)
         {
             if (! $this->civ13->getVerifiedItem($interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You are either not currently verified with a byond username or do not exist in the cache yet"), true);
-            if ($interaction->member->roles->has($this->civ13->role_ids['red']) || $interaction->member->roles->has($this->civ13->role_ids['blue'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You're already in a faction!"), true);
+            foreach ($interaction->member->roles as $role) if ($role->id === $this->civ13->role_ids['red'] || $role->id === $this->civ13->role_ids['blue']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You're already in a faction!"), true);
 
             $redCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['red']))->count();
             $blueCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['blue']))->count();
@@ -279,13 +279,12 @@ class Slash
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('A faction has been assigned'), true);
         });
 
-        $this->civ13->discord->listenCommand('approveme', function ($interaction): void
+        $this->civ13->discord->listenCommand('approveme', function ($interaction)
         {
-            if ($interaction->member->roles->has($this->civ13->role_ids['infantry']) || $interaction->member->roles->has($this->civ13->role_ids['veteran'])) $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
-            elseif ($item = $this->civ13->verified->get('discord', $interaction->member->id)) {
-                $interaction->member->setRoles([$this->civ13->role_ids['infantry']], "approveme {$item['ss13']}");
-                $interaction->respondWithMessage(MessageBuilder::new()->setContent('Welcome to the Server! Your roles have been set and you should now have access to the rest of the server.'), true);
-            } else $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->verifyProcess($interaction->data->options['ckey']->value, $interaction->member->id)), true);
+            if ($interaction->member->roles->has($this->civ13->role_ids['infantry']) || $interaction->member->roles->has($this->civ13->role_ids['veteran'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
+            if (! $item = $this->civ13->verified->get('discord', $interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->verifyProcess($interaction->data->options['ckey']->value, $interaction->member->id)), true);
+            $interaction->member->setRoles([$this->civ13->role_ids['infantry']], "approveme {$item['ss13']}");
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent('Welcome to the Server! Your roles have been set and you should now have access to the rest of the server.'), true);
         });
     }
 }
