@@ -330,8 +330,7 @@ class Civ13
     public function getVerifiedMember($item): Member|false
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
-        if ($item instanceof String) $item = $this->getVerifiedItem($item);
-        if ($item instanceof String) return false;
+        if (is_string($item) && is_string($item = $this->getVerifiedItem($item))) return false;
         if ($item && $member = $guild->members->get('id', $item['discord'])) return $member;
         return false;
     }
