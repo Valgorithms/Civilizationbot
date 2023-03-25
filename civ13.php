@@ -788,84 +788,110 @@ class Civ13
     * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
     * It is called on ready and every 5 minutes
     */
-    private function playercountChannelUpdate($count = 0, $prefix = ''): void
+    private function playercountChannelUpdate(int $count = 0, string $prefix = '')
     {
-        if (++$this->playercount_ticker % 5 != 0) return;
-        if ($channel = $this->discord->getChannel($this->channel_ids["{$prefix}playercount"])) {
-            $arr = explode('-', $channel->name);
-            if (end($arr) != $count) {
-                $channel->name = "{$prefix}players-$count";
-                $channel->guild->channels->save($channel);
-            }
+        if ($this->playercount_ticker++ % 5 !== 0) return;
+        if (! $channel = $this->discord->getChannel($this->channel_ids[$prefix . 'playercount'])) return;
+    
+        [$channelPrefix, $existingCount] = explode('-', $channel->name);
+    
+        if ((int)$existingCount !== $count) {
+            $channel->name = "{$channelPrefix}-{$count}";
+            $channel->guild->channels->save($channel);
         }
     }
     public function serverinfoParse(): array
     {
-        if (empty($data_json = $this->serverinfo)) return [];
+        if (empty($this->serverinfo)) return [];
+    
+        $server_info = [
+            ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"],
+            ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"],
+            ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"],
+            ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"],
+        ];
+    
         $return = [];
-
-        $server_info[0] = ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"];
-        $server_info[1] = ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"];
-        $server_info[2] = ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"];
-        $server_info[3] = ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"];
-        
-        $index = 0;
-        foreach ($data_json as $server) {
-            $server_info_hard = array_shift($server_info);
-            if (array_key_exists('ERROR', $server)) {
-                $index++;
-                continue;
-            }
-            if (isset($server_info_hard['name'])) $return[$index]['Server'] = [false => $server_info_hard['name'] . PHP_EOL . $server_info_hard['link']];
-            if (isset($server_info_hard['host'])) $return[$index]['Host'] = [true => $server_info_hard['host']];
-            //Round time
-            if (isset($server['roundduration']) /*|| isset($server['round_duration'])*/) { //TODO
+        foreach ($this->serverinfo as $index => $server) {
+            if (array_key_exists('ERROR', $server)) continue;
+    
+            $serverInfo = array_shift($server_info);
+            $return[$index]['Server'] = [false => $serverInfo['name'] . PHP_EOL . $serverInfo['link']];
+            $return[$index]['Host'] = [true => $serverInfo['host']];
+    
+            if (isset($server['roundduration'])) {
                 $rd = explode(":", urldecode($server['roundduration']));
-                $remainder = ($rd[0] % 24);
-                $rd[0] = floor($rd[0] / 24);
-                if ($rd[0] != 0 || $remainder != 0 || $rd[1] != 0) $rt = "{$rd[0]}d {$remainder}h {$rd[1]}m";
-                else $rt = 'STARTING';
+                $days = floor($rd[0] / 24);
+                $hours = $rd[0] % 24;
+                $minutes = $rd[1];
+                if ($days > 0) $rt = "{$days}d {$hours}h {$minutes}m";
+                else if ($hours > 0) $rt = "{$hours}h {$minutes}m";
+                else $rt = "{$minutes}m";
                 $return[$index]['Round Timer'] = [true => $rt];
             }
-            if (isset($server['round_duration'])) {
-                //TODO
-            }
+    
             if (isset($server['map'])) $return[$index]['Map'] = [true => urldecode($server['map'])];
+    
             if (isset($server['age'])) $return[$index]['Epoch'] = [true => urldecode($server['age'])];
-            //Players
-            $players = [];
-            foreach (array_keys($server) as $key) {
-                $p = explode('player', $key); 
-                if (isset($p[1])) if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+    
+            $players = array_filter(array_keys($server), function ($key) {
+                return strpos($key, 'player') === 0 && is_numeric(substr($key, 6));
+            });
+    
+            if (!empty($players)) {
+                $players = array_map(function ($key) use ($server) {
+                    return strtolower(str_replace(['.', '_', ' '], '', urldecode($server[$key])));
+                }, $players);
+                $playerCount = count($players);
             }
-            if ($index == 0) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'tdm-');
-            if ($index == 1) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'nomads-');        
-            if ($server['players'] || ! empty($players)) $return[$index]['Players (' . (isset($server['players']) ? $server['players'] : count($players) ?? '?') . ')'] = [true => (empty($players) ? 'N/A' : implode(', ', $players))];
+            elseif (isset($server['players'])) $playerCount = $server['players'];
+            else $playerCount = '?';
+    
+            $return[$index]['Players (' . $playerCount . ')'] = [true => empty($players) ? 'N/A' : implode(', ', $players)];
+    
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
-            $index++;
+    
+            if ($index === 0) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'tdm-');
+            elseif ($index === 1) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'nomads-');
         }
+    
         return $return;
     }
 
     public function serverinfoParsePlayers(): void
     {
-        if (! empty($data_json = $this->serverinfo)) {
-            $index = 0;
-            foreach ($data_json as $server) {
-                if($index > 1) break; //We only care about Nomads and TDM
-                if(array_key_exists('ERROR', $server)) {
-                    $index++;
-                    continue;
-                }
-                $players = [];
-                foreach (array_keys($server) as $key) {
-                    $p = explode('player', $key); 
-                    if (isset($p[1])) if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
-                }
-                if ($index == 0) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'tdm-');
-                if ($index == 1) $this->playercountChannelUpdate((isset($server['players']) ? $server['players'] : count($players) ?? 0), 'nomads-');        
-                $index++;
+        $server_info = [
+            0 => ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"],
+            1 => ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"],
+            2 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"],
+            3 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"],
+        ];
+        //$relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads'])); //We need to declare stationname in world.dm first
+
+        $index = 0;
+        //foreach ($relevant_servers as $server) //TODO: We need to declare stationname in world.dm first
+        foreach ($this->serverinfo as $server) {
+            if (array_key_exists('ERROR', $server) || $index > 1) { //We only care about Nomads and TDM
+                $index++; //TODO: Remove this once we have stationname in world.dm
+                continue;
             }
+            
+            $players = array_filter($server, function($key) {
+                return str_starts_with($key, 'player') && !str_starts_with($key, 'players');
+            }, ARRAY_FILTER_USE_KEY);
+            $players = array_map(fn($player) => str_replace(['.', '_', ' '], '', strtolower(urldecode($player))), $players);
+            /* Old method of getting players
+            $players = [];
+            foreach (array_keys($server) as $key) {
+                $p = explode('player', $key); 
+                if (isset($p[1])) if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+            }
+            */
+
+            $channel_prefix = strtolower($server_info[$index]['name']) . '-'; //TODO: This needs to be updated to use $server['stationname] once we have it
+            $player_count = isset($server['players']) ? $server['players'] : count($players);
+            $this->playercountChannelUpdate($player_count, $channel_prefix);
+            $index++; //TODO: Remove this once we have stationname in world.dm
         }
     }
 
@@ -889,13 +915,12 @@ class Civ13
     {
         $func = function() {
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
-                if ($members = $guild->members->filter(function ($member){ return $member->roles->has($this->role_ids['banished']); }))
-                    foreach ($members as $member)
-                        if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id))
-                            if (! $this->bancheck($item['ss13'])) {
-                                $member->removeRole($this->role_ids['banished'], 'unban timer');
-                                if (isset($this->channel_ids['staff_bot'])) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Removed the banished role from $member.");
-                            }
+                if ($members = $guild->members->filter(fn ($member) => $member->roles->has($this->role_ids['banished'])))
+                    foreach ($members as $member) if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id))
+                        if (! $this->bancheck($item['ss13'])) {
+                            $member->removeRole($this->role_ids['banished'], 'unban timer');
+                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("Removed the banished role from $member.");
+                        }
          };
          $func();
          $this->timers['unban_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function() use ($func) { $func(); });
