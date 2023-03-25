@@ -513,7 +513,7 @@ class Civ13
                 }
                 break;
             case 403: //Already registered
-                $message = "Either ckey `$ckey` or <@$discord_id has already been verified."; //This should have been caught above. Need to run getVerified() again?
+                $message = "Either ckey `$ckey` or <@$discord_id> has already been verified."; //This should have been caught above. Need to run getVerified() again?
                 $this->getVerified();
                 break;
             case 404:
