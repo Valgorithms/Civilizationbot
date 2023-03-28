@@ -267,6 +267,14 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if ($return = file_get_contents($nomads_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`");
                     break;
+                case 'playerlogs':
+                    if (! $whitelisted) {
+                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
+                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                    }
+                    $nomads_playerlogs = $civ13->files['nomads_playerlogs'];
+                    if ($return = file_get_contents($nomads_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_playerlogs`");
                 default:
                     return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
             }
@@ -282,6 +290,14 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if ($return = file_get_contents($tdm_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`");
                     break;
+                case 'playerlogs':
+                    if (! $whitelisted) {
+                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
+                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                    }
+                    $tdm_playerlogs = $civ13->files['tdm_playerlogs'];
+                    if ($return = file_get_contents($tdm_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_playerlogs`");
                 default:
                     return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
             }
