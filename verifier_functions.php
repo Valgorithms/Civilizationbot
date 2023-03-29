@@ -22,13 +22,13 @@ $civ_listeners = function (Civ13 $civ13): void //Handles Verified and Veteran ca
     $civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member) use ($civ13): void
     {
         $civ13->getVerified();
-        if ($member->roles->has($civ13->role_ids['veteran'])) $civ13->whitelistUpdate([$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
+        if ($member->roles->has($civ13->role_ids['veteran'])) $civ13->whitelistUpdate();
         if ($member->roles->has($civ13->role_ids['red']) || $member->roles->has($civ13->role_ids['blue'])) $civ13->factionlistUpdate();
     });
     
     $civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old) use ($civ13): void
     {
-        if ($member->roles->has($civ13->role_ids['veteran']) !== $member_old->roles->has($civ13->role_ids['veteran'])) $civ13->whitelistUpdate([$civ13->files['nomads_whitelist'], $civ13->files['tdm_whitelist']]);
+        if ($member->roles->has($civ13->role_ids['veteran']) !== $member_old->roles->has($civ13->role_ids['veteran'])) $civ13->whitelistUpdate();
         if ($member->roles->has($civ13->role_ids['infantry']) !== $member_old->roles->has($civ13->role_ids['infantry'])) $civ13->getVerified();
         if ($member->roles->has($civ13->role_ids['red']) !== $member_old->roles->has($civ13->role_ids['red'])) $civ13->factionlistUpdate();
         if ($member->roles->has($civ13->role_ids['blue']) !== $member_old->roles->has($civ13->role_ids['blue'])) $civ13->factionlistUpdate();

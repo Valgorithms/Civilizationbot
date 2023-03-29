@@ -1021,9 +1021,12 @@ class Civ13
     * This function is used to update the whitelist files
     * Returns true if the whitelist files are successfully updated, false otherwise
     */
-    public function whitelistUpdate(array $whitelists): bool
+    public function whitelistUpdate(array $whitelists = []): bool
     {
         if (! isset($this->role_ids['veteran'])) return false;
+        if (isset($this->files['nomads_whitelist']) && !in_array($whitelists, $this->files['nomads_whitelist'])) array_unshift($whitelists, $this->files['nomads_whitelist']);
+        if (isset($this->files['tdm_whitelist']) && !in_array($whitelists, $this->files['tdm_whitelist'])) array_unshift($whitelists, $this->files['tdm_whitelist']);
+        if (empty($whitelists)) return false;
         foreach ($whitelists as $whitelist) {
             if (! $file = fopen($whitelist, 'a')) return false;
             ftruncate($file, 0);
@@ -1044,7 +1047,7 @@ class Civ13
     public function factionlistUpdate(array $factionlists = []): bool
     {
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
-        if (isset($this->files['factionlist'])) array_unshift($factionlists, $this->files['factionlist']);
+        if (isset($this->files['factionlist']) && !in_array($factionlists, $this->files['factionlist'])) array_unshift($factionlists, $this->files['factionlist']);
         if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
             if (! $file = fopen($factionlist, 'a')) continue;
