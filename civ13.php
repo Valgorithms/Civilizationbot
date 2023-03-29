@@ -1047,7 +1047,7 @@ class Civ13
         if (isset($this->files['factionlist'])) array_unshift($factionlists, $this->files['factionlist']);
         if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
-            if (! $file = fopen($factionlist, 'a')) return false;
+            if (! $file = fopen($factionlist, 'a')) continue;
             ftruncate($file, 0);
             foreach ($this->verified as $item) {
                 if (! $member = $this->getVerifiedMember($item)) continue;
