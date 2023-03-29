@@ -1039,11 +1039,12 @@ class Civ13
     /*
     * This function is used to update the campaign whitelist files
     * Returns true if the whitelist files are successfully updated, false otherwise
+    * If an additional whitelist is provided, it will be added to the list of whitelists to update
     */
     public function factionlistUpdate(array $factionlists = []): bool
     {
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
-        if (isset($this->files['factionlist']) && empty($factionlists)) $factionlists = [$this->files['factionlist']];
+        if (isset($this->files['factionlist'])) array_unshift($factionlists, $this->files['factionlist']);
         if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
             if (! $file = fopen($factionlist, 'a')) return false;
