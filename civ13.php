@@ -1042,8 +1042,9 @@ class Civ13
     */
     public function factionlistUpdate(array $factionlists = []): bool
     {
-        if (empty($factionlists)) $factionlists = [$this->files['factionlist']];
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
+        if (isset($this->files['factionlist']) && empty($factionlists)) $factionlists = [$this->files['factionlist']];
+        if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
             if (! $file = fopen($factionlist, 'a')) return false;
             ftruncate($file, 0);
