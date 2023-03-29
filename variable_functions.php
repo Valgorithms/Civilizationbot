@@ -490,7 +490,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         return $message->reply("Attempting to change map to $mapto");
     }
     if (str_starts_with($message_content_lower, 'maplist')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         return $message->channel->sendFile($civ13->files['map_defines_path'], 'maps.txt');
     }
     if (str_starts_with($message_content_lower, 'banlist')) {
