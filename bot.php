@@ -104,6 +104,8 @@ $options = array(
         'tdm_bans' => '/home/1713/civ13-tdm/SQL/bans.txt',
         'tdm_awards_path' => '/home/1713/civ13-tdm/SQL/awards.txt',
         'tdm_awards_br_path' => '/home/1713/civ13-tdm/SQL/awards_br.txt',
+        //Campaign
+        'factionlist' => '/home/1713/civ13-tdm/SQL/factionlist.txt',
 
         //Script paths
         'nomads_updateserverabspaths' => '/home/1713/civ13-rp/scripts/updateserverabspaths.py',
