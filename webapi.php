@@ -6,8 +6,8 @@
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
-use React\Socket\Server as SocketServer;
-use React\Http\Server as HttpServer;
+use React\Socket\SocketServer;
+use React\Http\HttpServer;
 use React\Http\Message\Response;
 use \Psr\Http\Message\ServerRequestInterface;
 
@@ -23,7 +23,7 @@ function webapiSnow($string) {
 $external_ip = file_get_contents('http://ipecho.net/plain');
 $valzargaming_ip = gethostbyname('www.valzargaming.com');
 
-$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', '55555'), $civ13->loop);
+$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', '55555'), [], $civ13->loop);
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip)
 {
     /*
