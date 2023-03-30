@@ -995,7 +995,7 @@ class Civ13
     */
     public function gameChatRelay(string $file_path, $channel): bool
     {     
-        if (! $file = fopen($file_path, 'r+')) return false;
+        if (! $file = @fopen($file_path, 'r+')) return false;
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, '', $fp);
             $string = substr($fp, strpos($fp, '/')+1);
