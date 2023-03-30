@@ -955,8 +955,14 @@ class Civ13
     * This function checks all Discord member's ckeys against the banlist
     * If they are no longer banned, it will remove the banished role from them
     */
-    public function unbanTimer(): void
+    public function unbanTimer(): bool
     {
+        //We don't want the persistence server to do this function
+        if (! $file = fopen($this->files['nomads_bans'], 'r')) return false;
+        fclose($file);
+        if (! $file2 = fopen($this->files['tdm_bans'], 'r')) return false;
+        fclose($file2);
+
         $func = function() {
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
                 if ($members = $guild->members->filter(fn ($member) => $member->roles->has($this->role_ids['banished'])))
@@ -968,6 +974,7 @@ class Civ13
          };
          $func();
          $this->timers['unban_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function() use ($func) { $func(); });
+         return true;
     }
 
     /*
