@@ -576,6 +576,17 @@ class Civ13
             }
             fclose($filecheck2);
         } else $this->logger->warning("unable to open `{$this->files['tdm_bans']}`");
+        if ($filecheck3 = fopen($this->files['pers_bans'], 'r')) {
+            while (($fp = fgets($filecheck3, 4096)) !== false) {
+                //str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                    fclose($filecheck3);
+                    return true;
+                }
+            }
+            fclose($filecheck3);
+        } else $this->logger->warning("unable to open `{$this->files['pers_bans']}`");
         return false;
     }
     public function sqlBancheck(string $ckey): bool
@@ -651,6 +662,25 @@ class Civ13
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
+    public function legacyBanPers($array, $message = null): string
+    {
+        $admin = ($message ? $message->author->displayname : $this->discord->user->username);
+        $result = '';
+        if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
+        if ($file = fopen($this->files['pers_discord2ban'], 'a')) {
+            fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
+            fclose($file);
+        } else {
+            $this->logger->warning("unable to open {$this->files['pers_discord2ban']}");
+            return "unable to open {$this->files['pers_discord2ban']}" . PHP_EOL;
+        }
+        $result .= "**$admin** banned **{$array[0]}** from **Persistence** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+        return $result;
+    }
+    public function sqlBanPers($array, $message = null): string
+    {
+        return "SQL methods are not yet implemented!" . PHP_EOL;
+    }
     public function legacyUnbanNomads(string $ckey, ?string $admin = null): void
     {
         if ($file = fopen($this->files['nomads_discord2unban'], 'a')) {
@@ -705,6 +735,11 @@ class Civ13
         if ($this->legacy) return $this->legacyBanTDM($array, $message);
         return $this->sqlBanTDM($array, $message);
     }
+    public function banPers($array, $message = null): string
+    {
+        if ($this->legacy) return $this->legacyBanPers($array, $message);
+        return $this->sqlBanPers($array, $message);
+    }
     public function unban(string $ckey, ?string $admin = null): void
     {
         if (! $admin) $admin = $this->discord->user->displayname;
@@ -748,6 +783,7 @@ class Civ13
         $this->ports = [
             'nomads' => '1715',
             'tdm' => '1714',
+            'pers' => '1716',
             'bc' => '7777', 
             'ps13' => '7778',
         ];
