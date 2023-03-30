@@ -1167,11 +1167,8 @@ class Civ13
             foreach ($this->verified as $item) {
                 if (! $member = $this->getVerifiedMember($item)) continue; // If the member cannot be found, skip to the next member
                 // Write each verified member's SS13 ckey and associated role with its bitflag permission to the adminlist file
-                foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->role_ids[$role])) {
-                        $this->logger->info("Adding admin roles to {$item['ss13']} with role {$required_roles[$role][0]} and bitflag permission {$required_roles[$role][1]}");
-                        $file_contents .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL;
-                        break 1;
-                    }
+                foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->role_ids[$role]))
+                    { $file_contents .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL; break 1; }
             }
             fwrite($file, $file_contents);
             fclose($file);
