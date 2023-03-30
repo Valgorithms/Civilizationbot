@@ -582,7 +582,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'sportsteams')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        return $message->reply(MessageBuilder::new()->addFile($civ13->files['sportsteams'], 'sportsteams.txt'));
+        return $message->reply(MessageBuilder::new()->addFile($civ13->files['sportsteams'], 'sports_teams.txt'));
     }
     if (str_starts_with($message_content_lower, 'logs')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
