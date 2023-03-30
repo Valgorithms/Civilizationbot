@@ -108,6 +108,8 @@ $options = array(
         'tdm_awards_br_path' => '/home/1713/civ13-tdm/SQL/awards_br.txt',
         //Campaign
         'factionlist' => '/home/1713/civ13-tdm/SQL/factionlist.txt',
+        //Football
+        'sportsteams' => '/home/1713/civ13-tdm/SQL/sports_teams.txt',
 
         //Persistence
         'pers_log_basedir' => '/home/1713/civ13-pers/data/logs',
