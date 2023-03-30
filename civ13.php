@@ -200,6 +200,8 @@ class Civ13
                         if (isset($this->channel_ids['nomads_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_admin_channel'])) $this->gameChatRelay($this->files['nomads_admin_path'], $channel);  // #ahelp-nomads
                         if (isset($this->channel_ids['tdm_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_channel'])) $this->gameChatRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
                         if (isset($this->channel_ids['tdm_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_admin_channel'])) $this->gameChatRelay($this->files['tdm_admin_path'], $channel);  // #ahelp-tdm
+                        if (isset($this->channel_ids['pers_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_ooc_channel'])) $this->gameChatRelay($this->files['pers_ooc_path'], $channel);  // #ooc-tdm
+                        if (isset($this->channel_ids['pers_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_admin_channel'])) $this->gameChatRelay($this->files['pers_admin_path'], $channel);  // #ahelp-tdm
                     });
                 }
             });
@@ -778,6 +780,7 @@ class Civ13
         $this->ips = [
             'nomads' => $external_ip,
             'tdm' => $external_ip,
+            'pers' => $vzg_ip,
             'vzg' => $vzg_ip,
         ];
         $this->ports = [
