@@ -14,6 +14,7 @@ use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
+use Discord\Parts\Guild\Role;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
 use Monolog\Level;
@@ -332,6 +333,13 @@ class Civ13
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
         if (is_string($item) && is_string($item = $this->getVerifiedItem($item))) return false;
         if ($item && $member = $guild->members->get('id', $item['discord'])) return $member;
+        return false;
+    }
+
+    public function getRole($id): Role|false
+    {
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
+        if ($id && $role = $guild->roles->get('id', $id)) return $role;
         return false;
     }
     
@@ -1059,6 +1067,70 @@ class Civ13
             }
             fclose($file);
         }
+        return true;
+    }
+
+    /*
+    * This function is used to update the adminlist files
+    * Returns true if the adminlist files are successfully updated, false otherwise
+    * If an additional adminlist is provided, it will be added to the list of adminlists to update
+    */
+    public function adminlistUpdate(array $adminlists = [], $defaults = true): bool
+    {
+        $this->logger->info('Updating adminlists');
+        // Prepend default admin lists if they exist and haven't been added already
+        $defaultLists = ['tdm_admins', 'nomads_admins'];
+        if ($defaults) foreach ($defaultLists as $adminlist)
+            if (isset($this->files[$adminlist]) && !in_array($adminlist, $adminlists))
+                array_unshift($adminlists, $adminlist);
+
+        // Check that all required roles are properly declared in the bot's config and exist in the guild
+        $required_roles = [
+            'admiral' => ['Host', '65535'],
+            'bishop' => ['DebugHost', '65535'],
+            'host' => ['Host', '65535'],
+            'grandmaster' => ['Captain', '16382'],
+            'captain' => ['Captain', '16382'],
+            'marshall' => ['Lieutenant', '16382'],
+            'knightcommander' => ['MasterSergeant', '16254'],
+            'storyteller' => ['MasterSergeant', '16254'],
+            'knight' => ['Sergeant', '12158'],
+            'squire' => ['TrialSergeant', '8708'],
+            'mentor' => ['Mentor', '16384'],
+        ];
+        // If any required roles are missing, return false
+        if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) {
+            $this->logger->error('Required roles are missing from the bot\'s config');
+            var_dump($diff);
+            return false;
+        }
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) {
+            $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot');
+            return false;
+        }
+        foreach (array_keys($required_roles) as $role)
+            if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) {
+                $this->logger->error('Role ' . $role . ' is missing from the guild');
+                return false;
+            }
+        
+        foreach ($adminlists as $adminlist) {
+            if (! $file = fopen($this->files[$adminlist], 'a')) continue; // If the file cannot be opened, skip to the next adminlist
+            ftruncate($file, 0);
+            foreach ($this->verified as $item) {
+                if (! $member = $this->getVerifiedMember($item)) continue; // If the member cannot be found, skip to the next member
+                // Write each verified member's SS13 ckey and associated role with its bitflag permission to the adminlist file
+                foreach (array_keys($required_roles) as $role)
+                    if ($member->roles->has($this->role_ids[$role]))
+                        {
+                            $this->logger->info("Writing {$item['ss13']} to $adminlist with role {$required_roles[$role][0]} and bitflag permission {$required_roles[$role][1]}");
+                            fwrite($file, $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL);
+                            break 1;
+                        }
+            }
+            fclose($file);
+        }
+        $this->logger->info('Adminlists updated');
         return true;
     }
 }
