@@ -1133,15 +1133,15 @@ class Civ13
         // Check that all required roles are properly declared in the bot's config and exist in the guild
         $required_roles = [
             'admiral' => ['Host', '65535'],
-            'bishop' => ['DebugHost', '65535'],
-            'host' => ['Host', '65535'],
-            'grandmaster' => ['Captain', '16382'],
-            'captain' => ['Captain', '16382'],
-            'marshall' => ['Lieutenant', '16382'],
-            'knightcommander' => ['MasterSergeant', '16254'],
-            'storyteller' => ['MasterSergeant', '16254'],
-            'knight' => ['Sergeant', '12158'],
-            'squire' => ['TrialSergeant', '8708'],
+            'bishop' => ['Bishop', '65535'],
+            'host' => ['Host', '65535'], //Default Host permission, only used if another role is not found first
+            'grandmaster' => ['GrandMaster', '16382'],
+            'marshall' => ['Marshall', '16382'],
+            'knightcommander' => ['KnightCommander', '16382'],
+            'captain' => ['Captain', '16382'], //Default High Staff permission, only used if another role is not found first
+            'storyteller' => ['StoryTeller', '16254'],
+            'squire' => ['Squire', '8708'], //Squires will also have the Knight role, but it takes priority
+            'knight' => ['Knight', '12158'],
             'mentor' => ['Mentor', '16384'],
         ];
         // If any required roles are missing, return false
