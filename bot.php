@@ -87,6 +87,7 @@ $options = array(
         'nomads_discord2dm' => '/home/1713/civ13-rp/SQL/discord2dm.txt',
         'nomads_discord2ban' => '/home/1713/civ13-rp/SQL/discord2ban.txt',
         'nomads_discord2unban' => '/home/1713/civ13-rp/SQL/discord2unban.txt',
+        'nomads_admins' => '/home/1713/civ13-rp/SQL/admins.txt',
         'nomads_whitelist' => '/home/1713/civ13-rp/SQL/whitelist.txt',
         'nomads_bans' => '/home/1713/civ13-rp/SQL/bans.txt',
         
@@ -100,6 +101,7 @@ $options = array(
         'tdm_discord2ban' => '/home/1713/civ13-tdm/SQL/discord2ban.txt',
         'tdm_discord2unban' => '/home/1713/civ13-tdm/SQL/discord2unban.txt',
         'tdm_discord2ban' => '/home/1713/civ13-tdm/SQL/discord2ban.txt',
+        'tdm_admins' => '/home/1713/civ13-tdm/SQL/admins.txt',
         'tdm_whitelist' => '/home/1713/civ13-tdm/SQL/whitelist.txt',
         'tdm_bans' => '/home/1713/civ13-tdm/SQL/bans.txt',
         'tdm_awards_path' => '/home/1713/civ13-tdm/SQL/awards.txt',

@@ -497,6 +497,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
     }
+    if (str_starts_with($message_content_lower, 'adminlist')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        return $message->channel->sendFile(MessageBuilder::new()->addFile($civ13->files['nomads_admins'], 'nomads_admins.txt')->addFile($civ13->files['tdm_admins'], 'tdm_admins.txt'));
+    }
     if (str_starts_with($message_content_lower, 'factionlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['factionlist'], 'factionlist.txt'));
