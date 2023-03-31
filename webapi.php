@@ -23,7 +23,7 @@ function webapiSnow($string) {
 $external_ip = file_get_contents('http://ipecho.net/plain');
 $valzargaming_ip = gethostbyname('www.valzargaming.com');
 
-$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', '55555'), [], $civ13->loop);
+$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', '55556'), [], $civ13->loop);
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip)
 {
     /*
