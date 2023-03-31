@@ -50,6 +50,7 @@ class Civ13
     public array $timers = [];
     public array $serverinfo = []; //Collected automatically by serverinfo_timer
     public array $players = []; //Collected automatically by serverinfo_timer
+    public array $seen_players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
     public array $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'niqqa', 'tranny']; //TODO: Retrieve from an API instead?
     public bool $legacy = true;
@@ -556,7 +557,7 @@ class Civ13
     }
     public function legacyBancheck(string $ckey): bool
     {
-        if (file_exists($this->files['nomads_bans']) && $filecheck1 = fopen($this->files['nomads_bans'], 'r')) {
+        if (file_exists($this->files['nomads_bans']) && ($filecheck1 = fopen($this->files['nomads_bans'], 'r'))) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
@@ -567,7 +568,7 @@ class Civ13
             }
             fclose($filecheck1);
         } else $this->logger->warning("unable to open `{$this->files['nomads_bans']}`");
-        if (file_exists($this->files['tdm_bans']) && $filecheck2 = fopen($this->files['tdm_bans'], 'r')) {
+        if (file_exists($this->files['tdm_bans']) && ($filecheck2 = fopen($this->files['tdm_bans'], 'r'))) {
             while (($fp = fgets($filecheck2, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
@@ -578,7 +579,7 @@ class Civ13
             }
             fclose($filecheck2);
         } else $this->logger->warning("unable to open `{$this->files['tdm_bans']}`");
-        if (file_exists($this->files['pers_bans']) && $filecheck3 = @fopen($this->files['pers_bans'], 'r')) {
+        if (file_exists($this->files['pers_bans']) && ($filecheck3 = @fopen($this->files['pers_bans'], 'r'))) {
             while (($fp = fgets($filecheck3, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
@@ -814,17 +815,122 @@ class Civ13
         if (! $data_json = json_decode(file_get_contents("http://{$this->ips['vzg']}/servers/serverinfo.json", false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) return [];
         return $this->serverinfo = $data_json;
     }
+    public function bansToCollection(): Collection
+    {
+        // Get the contents of the file
+        $file_contents = '';
+        if (file_exists($this->files['tdm_bans'])) $file_contents .= file_get_contents($this->files['tdm_bans']);
+        if (file_exists($this->files['nomads_bans'])) $file_contents .= file_get_contents($this->files['nomads_bans']);
+        if (file_exists($this->files['pers_bans'])) $file_contents .= file_get_contents($this->files['pers_bans']);
+        $file_contents = str_replace(PHP_EOL, '', $file_contents);
+        
+        $ban_collection = new Collection([], 'uid');
+        foreach (explode('|||', $file_contents) as $item)
+            if ($ban = $this->banArrayToAssoc(explode(';', $item)))
+                $ban_collection->pushItem($ban);
+        return $ban_collection;
+    }
+    /*
+    * Creates a Collection from the bans file
+    * Player logs are formatting by the following:
+    *   0 => Ban Type
+    *   1 => Job
+    *   2 => Ban UID
+    *   3 => Reason
+    *   4 => Banning admin
+    *   5 => Date when banned
+    *   6 => timestamp?
+    *   7 => when expires
+    *   8 => banned ckey
+    *   9 => banned cid
+    *   10 =>ip
+    */
+    public function banArrayToAssoc(array $item)
+    {
+        // Invalid item format
+        if (count($item) !== 11) return null;
+
+        // Create a new ban record
+        $ban = [];
+        $ban['type'] = $item[0];
+        $ban['job'] = $item[1];
+        $ban['uid'] = $item[2];
+        $ban['reason'] = $item[3];
+        $ban['admin'] = $item[4];
+        $ban['date'] = $item[5];
+        $ban['timestamp'] = $item[6];
+        $ban['expires'] = $item[7];
+        $ban['ckey'] = $item[8];
+        $ban['cid'] = $item[9];
+        $ban['ip'] = $item[10];
+
+        // Add the ban record to the collection
+        return $ban;
+    }
+    public function playerlogsToCollection(): Collection
+    {
+        // Get the contents of the file
+        $file_contents = '';
+        if (file_exists($this->files['nomads_playerlogs'])) $file_contents .= file_get_contents($this->files['nomads_playerlogs']);
+        if (file_exists($this->files['tdm_playerlogs'])) $file_contents .= file_get_contents($this->files['tdm_playerlogs']);
+        if (file_exists($this->files['pers_playerlogs'])) $file_contents .= file_get_contents($this->files['pers_playerlogs']);
+        $file_contents = str_replace(PHP_EOL, '', $file_contents);
+
+        $arrays = [];
+        foreach (explode('|', $file_contents) as $item) {
+            if ($log = $this->playerlogArrayToAssoc(explode(';', $item)))
+                $arrays[] = $log;
+        }
+        return new Collection($arrays, 'uid');
+    }
+   /*
+    * Creates a Collection from the playerlogs file
+    * Player logs are formatting by the following:
+    *   0 => Ckey
+    *   1 => IP
+    *   2 => CID
+    *   3 => UID?
+    *   4 => Date
+    */
+    public function playerlogArrayToAssoc(array $item)
+    {
+        // Invalid item format
+        if (count($item) !== 5) return null;
+
+        // Create a new ban record
+        $playerlog = [];
+        $playerlog['ckey'] = $item[0];
+        $playerlog['ip'] = $item[1];
+        $playerlog['uid'] = $item[2];
+        $playerlog['cid'] = $item[3];
+        $playerlog['date'] = $item[4];
+
+        // Add the ban record to the collection
+        return $playerlog;
+    }
+    public function getCkeyLogCollections(string $ckey): ?array
+    {
+        if ($playerlog = $this->playerlogsToCollection()->filter( function($item) use ($ckey) { return $item['ckey'] === $ckey; }))
+            if ($bans = $this->bansToCollection()->filter(function($item) use ($playerlog) { return $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid']); }));
+                return [$playerlog, $bans];
+    }
     public function serverinfoTimer(): void
     {
         $func = function() {
             $this->serverinfoFetch(); 
             $this->serverinfoParsePlayers();
             foreach ($this->serverinfoPlayers() as $ckey) {
+                /*if (!in_array($ckey, $this->seen_players)) {
+                    $this->seen_players[] = $ckey;
+                    if ($collections = $this->getCkeyLogCollections($this->playerlogsToCollection()->get('ckey', $ckey)))
+                        if ($collections[1]->get('ip', $collections[0]['ip']) || $collections[1]->get('cid', $collections[0]['cid']))
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Byond account $ckey tried to ban evade"])));
+                }*/
                 if ($this->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
                 if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
-                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->legacy ? $this->legacyBan([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]) : $this->sqlBan([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"])));
+                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
             }
         };
         $func();

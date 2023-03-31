@@ -359,6 +359,111 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
+    if (str_starts_with($message_content_lower, 'byondinfo')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
+        if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
+        
+        $embed = new Embed($civ13->discord);
+        $embed->setTitle($ckey);
+        if ($item = $civ13->getVerifiedItem($ckey)) 
+            if ($member = $civ13->getVerifiedMember($item))
+                $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+        $ckeys = [$ckey];
+        $ips = [];
+        $cids = [];
+        $dates = [];
+        foreach ($collectionsArray[0] as $log) { //Get the ckey's primary identifiers
+            if (isset($log['ip'])) $ips[] = $log['ip'];
+            if (isset($log['cid'])) $cids[] = $log['cid'];
+            if (isset($log['date'])) $dates[] = $log['date'];
+        }
+        //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
+        $playerlogs = $civ13->playerlogsToCollection();
+        echo 'Starting playerlogs loop' . PHP_EOL;
+        $i = 0;
+        do { //Iterate through playerlogs to find all known ckeys, ips, and cids
+            echo 'Loops so far: ' . $i . PHP_EOL;
+            $found = false;
+            $found_ckeys = [];
+            $found_ips = [];
+            $found_cids = [];
+            $found_dates = [];
+            foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                if (!in_array($log['ckey'], $ckeys)) {
+                    $found_ckeys[] = $log['ckey'];
+                    $found = true;
+                }
+                if (!in_array($log['ip'], $ips)) {
+                    $found_ips[] = $log['ip'];
+                    $found = true;
+                }
+                if (!in_array($log['cid'], $cids)) {
+                    $found_cids[] = $log['cid'];
+                    $found = true;
+                }
+                if (!in_array($log['date'], $dates)) {
+                    $found_dates[] = $log['date'];
+                    $found = true;
+                }
+            }
+            $ckeys = array_merge($ckeys, $found_ckeys);
+            $ips = array_merge($ips, $found_ips);
+            $cids = array_merge($cids, $found_cids);
+            $dates = array_merge($dates, $found_dates);
+            $i++;
+        } while ($found); //Keep iterating until no new ckeys, ips, or cids are found
+        echo "Finished searching playerlogs after $i loops" . PHP_EOL;
+
+        $banCollection = $civ13->bansToCollection();
+        $civ13->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
+        $found = true;
+        $i = 0;
+        while ($found) { //Iterate through playerlogs to find all known ckeys, ips, and cids
+            echo 'Loops so far: ' . $i . PHP_EOL;
+            $found = false;
+            $found_ckeys = [];
+            $found_ips = [];
+            $found_cids = [];
+            $found_dates = [];
+            foreach ($banCollection as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                if (!in_array($log['ckey'], $ips)) {
+                    $found_ckeys[] = $log['ckey'];
+                    $found = true;
+                }
+                if (!in_array($log['ip'], $ips)) {
+                    $found_ips[] = $log['ip'];
+                    $found = true;
+                }
+                if (!in_array($log['cid'], $cids)) {
+                    $found_cids[] = $log['cid'];
+                    $found = true;
+                }
+                if (!in_array($log['date'], $dates)) {
+                    $found_dates[] = $log['date'];
+                    $found = true;
+                }
+            }
+            $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+            $ips = array_unique(array_merge($ips, $found_ips));
+            $cids = array_unique(array_merge($cids, $found_cids));
+            $dates = array_unique(array_merge($dates, $found_dates));
+            $i++;
+        } //Keep iterating until no new ckeys, ips, or cids are found
+        $altbanned = 'No';
+        foreach ($ckeys as $key) if ($key != $ckey) if ($civ13->bancheck($key)) {
+            $altbanned = 'Yes';
+            break;
+        }
+        echo "Finished searching banlogs after $i loops" . PHP_EOL;
+
+        $embed->addFieldValues('Ckeys', implode(', ', $ckeys));
+        $embed->addFieldValues('IPs', implode(', ', $ips));
+        $embed->addFieldValues('CIDs', implode(', ', $cids));
+        $embed->addfieldValues('Currently Banned', $banned);
+        $embed->addfieldValues('Alt Banned', $altbanned);
+        $message->reply(MessageBuilder::new()->addEmbed($embed));
+    }
     if ($message_content_lower == 'permitted') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (empty($civ13->permitted)) return $message->reply('No users have been permitted to bypass the Byond account age requirement.');
