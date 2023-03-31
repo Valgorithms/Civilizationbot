@@ -513,7 +513,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $host_pers($civ13);
         return $message->reply("Attempting to update and bring up Persistence <byond://{$civ13->ips['pers']}:{$civ13->ports['pers']}>");
     }
-    if (str_starts_with($message_content_lower, 'restartciv')) {
+    if (str_starts_with($message_content_lower, 'restartnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $restart_nomads($civ13);
         return $message->reply("Attempted to kill, update, and bring up Nomads <byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>");
