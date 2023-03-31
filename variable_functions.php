@@ -566,22 +566,27 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'maplist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        return $message->channel->sendFile($civ13->files['map_defines_path'], 'maps.txt');
+        if (! file_exists($civ13->files['map_defines_path'])) return $message->react("🔥");
+        return $message->reply(MessageBuilder::new()->addFile($civ13->files['map_defines_path'], 'maps.txt'));
     }
     if (str_starts_with($message_content_lower, 'banlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        if (! file_exists($civ13->files['tdm_bans'])) return $message->react("🔥");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
     }
     if (str_starts_with($message_content_lower, 'adminlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        if (! file_exists($civ13->files['nomads_admins'])) return $message->react("🔥");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_admins'], 'nomads_admins.txt')->addFile($civ13->files['tdm_admins'], 'tdm_admins.txt'));
     }
     if (str_starts_with($message_content_lower, 'factionlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        if (! file_exists($civ13->files['factionlist'])) return $message->react("🔥");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['factionlist'], 'factionlist.txt'));
     }
     if (str_starts_with($message_content_lower, 'sportsteams')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        if (! file_exists($civ13->files['sportsteams'])) return $message->react("🔥");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['sportsteams'], 'sports_teams.txt'));
     }
     if (str_starts_with($message_content_lower, 'logs')) {
