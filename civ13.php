@@ -556,7 +556,7 @@ class Civ13
     }
     public function legacyBancheck(string $ckey): bool
     {
-        if ($filecheck1 = fopen($this->files['nomads_bans'], 'r')) {
+        if (file_exists($this->files['nomads_bans']) && $filecheck1 = fopen($this->files['nomads_bans'], 'r')) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
@@ -567,7 +567,7 @@ class Civ13
             }
             fclose($filecheck1);
         } else $this->logger->warning("unable to open `{$this->files['nomads_bans']}`");
-        if ($filecheck2 = fopen($this->files['tdm_bans'], 'r')) {
+        if (file_exists($this->files['tdm_bans']) && $filecheck2 = fopen($this->files['tdm_bans'], 'r')) {
             while (($fp = fgets($filecheck2, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
@@ -578,7 +578,7 @@ class Civ13
             }
             fclose($filecheck2);
         } else $this->logger->warning("unable to open `{$this->files['tdm_bans']}`");
-        if ($filecheck3 = @fopen($this->files['pers_bans'], 'r')) {
+        if (file_exists($this->files['pers_bans']) && $filecheck3 = @fopen($this->files['pers_bans'], 'r')) {
             while (($fp = fgets($filecheck3, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
@@ -631,7 +631,7 @@ class Civ13
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         $result = '';
         if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
-        if ($file = fopen($this->files['nomads_discord2ban'], 'a')) {
+        if (file_exists($this->files['nomads_discord2ban']) && $file = fopen($this->files['nomads_discord2ban'], 'a')) {
             fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
             fclose($file);
         } else {
@@ -650,7 +650,7 @@ class Civ13
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         $result = '';
         if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
-        if ($file = fopen($this->files['tdm_discord2ban'], 'a')) {
+        if (file_exists($this->files['tdm_discord2ban']) && $file = fopen($this->files['tdm_discord2ban'], 'a')) {
             fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
             fclose($file);
         } else {
@@ -669,7 +669,7 @@ class Civ13
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         $result = '';
         if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
-        if ($file = fopen($this->files['pers_discord2ban'], 'a')) {
+        if (file_exists($this->files['pers_discord2ban']) && $file = fopen($this->files['pers_discord2ban'], 'a')) {
             fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
             fclose($file);
         } else {
@@ -685,7 +685,7 @@ class Civ13
     }
     public function legacyUnbanNomads(string $ckey, ?string $admin = null): void
     {
-        if ($file = fopen($this->files['nomads_discord2unban'], 'a')) {
+        if (file_exists($this->files['nomads_discord2unban']) && $file = fopen($this->files['nomads_discord2unban'], 'a')) {
             fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
             fclose($file);
         }
@@ -696,7 +696,7 @@ class Civ13
     }
     public function legacyUnbanTDM(string $ckey, ?string $admin = null): void
     {
-        if ($file = fopen($this->files['tdm_discord2unban'], 'a')) {
+        if (file_exists($this->files['tdm_discord2unban']) && $file = fopen($this->files['tdm_discord2unban'], 'a')) {
             fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
             fclose($file);
         }
@@ -961,9 +961,9 @@ class Civ13
     public function unbanTimer(): bool
     {
         //We don't want the persistence server to do this function
-        if (! $file = fopen($this->files['nomads_bans'], 'r')) return false;
+        if (file_exists($this->files['nomads_bans']) || ! ($file = fopen($this->files['nomads_bans'], 'r'))) return false;
         fclose($file);
-        if (! $file2 = fopen($this->files['tdm_bans'], 'r')) return false;
+        if (file_exists($this->files['tdm_bans']) || (! $file2 = fopen($this->files['tdm_bans'], 'r'))) return false;
         fclose($file2);
 
         $func = function() {
@@ -995,7 +995,7 @@ class Civ13
     */
     public function gameChatRelay(string $file_path, $channel): bool
     {     
-        if (! $file = @fopen($file_path, 'r+')) return false;
+        if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) return false;
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = str_replace(PHP_EOL, '', $fp);
             $string = substr($fp, strpos($fp, '/')+1);
@@ -1030,7 +1030,7 @@ class Civ13
         if (! isset($this->files['tdm_awards_path'])) return false;
         if (! isset($this->files['ranking_path'])) return false;
 
-        if (! $search = fopen($this->files['tdm_awards_path'], 'r')) return false;
+        if (! file_exists($this->files['tdm_awards_path']) || ! ($search = fopen($this->files['tdm_awards_path'], 'r'))) return false;
         $result = array();
         while (! feof($search)) {
             $medal_s = 0;
@@ -1065,7 +1065,7 @@ class Civ13
         }
         fclose ($search);
         arsort($result);
-        if (! $search = fopen($this->files['ranking_path'], 'w')) return false;
+        if (! file_exists($this->files['ranking_path']) || ! ($search = fopen($this->files['ranking_path'], 'w'))) return false;
         foreach ($result as $ckey => $score) fwrite($search, "$score;$ckey" . PHP_EOL); //Is this the proper behavior, or should we truncate the file first?
         fclose ($search);
         return true;
@@ -1082,7 +1082,7 @@ class Civ13
         if (isset($this->files['tdm_whitelist']) && !in_array($whitelists, $this->files['tdm_whitelist'])) array_unshift($whitelists, $this->files['tdm_whitelist']);
         if (empty($whitelists)) return false;
         foreach ($whitelists as $whitelist) {
-            if (! $file = fopen($whitelist, 'a')) return false;
+            if (! file_exists($whitelist) || ! ($file = fopen($whitelist, 'a'))) return false;
             ftruncate($file, 0);
             foreach ($this->verified as $item) {
                 if (! $member = $this->getVerifiedMember($item)) continue;
@@ -1104,7 +1104,7 @@ class Civ13
         if (isset($this->files['factionlist']) && !in_array($this->files['factionlist'], $factionlists)) array_unshift($factionlists, $this->files['factionlist']);
         if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
-            if (! $file = @fopen($factionlist, 'a')) continue;
+            if (! file_exists($factionlist) || ! ($file = @fopen($factionlist, 'a'))) continue;
             ftruncate($file, 0);
             foreach ($this->verified as $item) {
                 if (! $member = $this->getVerifiedMember($item)) continue;
@@ -1162,7 +1162,7 @@ class Civ13
         
         // Write each verified member's SS13 ckey and associated role with its bitflag permission to the adminlist file
         foreach ($adminlists as $adminlist) {
-            if (! $file = fopen($this->files[$adminlist], 'a')) continue; // If the file cannot be opened, skip to the next adminlist
+            if (file_exists($this->files[$adminlist]) || ! ($file = fopen($this->files[$adminlist], 'a'))) continue; // If the file cannot be opened, skip to the next adminlist
             ftruncate($file, 0);
             $file_contents = '';
             foreach ($this->verified as $item) {
