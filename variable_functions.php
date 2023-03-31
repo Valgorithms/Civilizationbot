@@ -95,7 +95,7 @@ $restart_pers = function (Civ13 $civ13) use ($kill_pers, $host_pers): void
 };
 $mapswap_nomads = function (Civ13 $civ13, string $mapto): bool
 {
-    if (! $file = fopen($civ13->files['map_defines_path'], 'r')) return false;
+    if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
     
     $maps = array();
     while (($fp = fgets($file, 4096)) !== false) {
@@ -110,7 +110,7 @@ $mapswap_nomads = function (Civ13 $civ13, string $mapto): bool
 };
 $mapswap_tdm = function (Civ13 $civ13, string $mapto): bool
 {
-    if (! $file = fopen($civ13->files['map_defines_path'], 'r')) return false;
+    if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
     
     $maps = array();
     while (($fp = fgets($file, 4096)) !== false) {
@@ -125,7 +125,7 @@ $mapswap_tdm = function (Civ13 $civ13, string $mapto): bool
 };
 $mapswap_pers = function (Civ13 $civ13, string $mapto): bool
 {
-    if (! $file = fopen($civ13->files['map_defines_path'], 'r')) return false;
+    if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
     
     $maps = array();
     while (($fp = fgets($file, 4096)) !== false) {
@@ -172,7 +172,7 @@ $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lowe
 $ranking = function (Civ13 $civ13): false|string
 {
     $line_array = array();
-    if (! $search = fopen($civ13->files['ranking_path'], 'r')) return false;
+    if (! file_exists($civ13->files['ranking_path']) || ! ($search = fopen($civ13->files['ranking_path'], 'r'))) return false;
     while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
     fclose($search);
 
@@ -188,7 +188,7 @@ $ranking = function (Civ13 $civ13): false|string
 $rankme = function (Civ13 $civ13, string $ckey): false|string
 {
     $line_array = array();
-    if (! $search = fopen($civ13->files['ranking_path'], 'r')) return false;
+    if (! file_exists($civ13->files['ranking_path']) || ! ($search = fopen($civ13->files['ranking_path'], 'r'))) return false;
     while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
     fclose($search);
     
@@ -207,7 +207,7 @@ $rankme = function (Civ13 $civ13, string $ckey): false|string
 $medals = function (Civ13 $civ13, string $ckey): false|string
 {
     $result = '';
-    if (! $search = fopen($civ13->files['tdm_awards_path'], 'r')) return false;
+    if (! file_exists($civ13->files['tdm_awards_path']) || ! ($search = fopen($civ13->files['tdm_awards_path'], 'r'))) return false;
     $found = false;
     while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
         $found = true;
@@ -256,7 +256,7 @@ $medals = function (Civ13 $civ13, string $ckey): false|string
 $brmedals = function (Civ13 $civ13, string $ckey): string
 {
     $result = '';
-    $search = fopen($civ13->files['tdm_awards_br_path'], 'r');
+    if (! file_exists($civ13->files['tdm_awards_br_path']) || ! ($search = fopen($civ13->files['tdm_awards_br_path'], 'r'))) return 'Error getting file.';
     $found = false;
     while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
         $found = true;
@@ -702,42 +702,42 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
 
 $nomads_discord2ooc = function (Civ13 $civ13, $author, $string): bool
 {
-    if (! $file = fopen($civ13->files['nomads_discord2ooc'], 'a')) return false;
+    if (! file_exists($civ13->files['nomads_discord2ooc']) || ! ($file = fopen($civ13->files['nomads_discord2ooc'], 'a'))) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true; 
 };
 $tdm_discord2ooc = function (Civ13 $civ13, $author, $string): bool
 {
-    if (! $file = fopen($civ13->files['tdm_discord2ooc'], 'a')) return false;
+    if (! file_exists($civ13->files['tdm_discord2ooc']) || ! ($file = fopen($civ13->files['tdm_discord2ooc'], 'a'))) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true; 
 };
 $nomads_discord2admin = function (Civ13 $civ13, $author, $string): bool
 {
-    if (! $file = fopen($civ13->files['nomads_discord2admin'], 'a')) return false;
+    if (! file_exists($civ13->files['nomads_discord2admin']) || ! ($file = fopen($civ13->files['nomads_discord2admin'], 'a'))) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
 $tdm_discord2admin = function (Civ13 $civ13, $author, $string): bool
 {
-    if (! $file = fopen($civ13->files['tdm_discord2admin'], 'a')) return false;
+    if (! file_exists($civ13->files['tdm_discord2admin']) || ! $file = fopen($civ13->files['tdm_discord2admin'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
 $nomads_discord2dm = function (Civ13 $civ13, $author, $string): bool
 {
-    if (! $file = fopen($civ13->files['nomads_discord2dm'], 'a')) return false;
+    if (! file_exists($civ13->files['nomads_discord2dm']) || ! $file = fopen($civ13->files['nomads_discord2dm'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
 $tdm_discord2dm = function (Civ13 $civ13, $author, $string): bool
 {
-    if (! $file = fopen($civ13->files['tdm_discord2dm'], 'a')) return false;
+    if (! file_exists($civ13->files['tdm_discord2dm']) || ! $file = fopen($civ13->files['tdm_discord2dm'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
@@ -799,7 +799,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             $incel = $split_message[1];
             $insults_array = array();
             
-            if (! $file = fopen($civ13->files['insults_path'], 'r')) return $message->react("🔥");
+            if (! file_exists($civ13->files['insults_path']) || ! ($file = fopen($civ13->files['insults_path'], 'r'))) return $message->react("🔥");
             while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
             if (count($insults_array) > 0) {
                 $insult = $insults_array[rand(0, count($insults_array)-1)];
@@ -851,7 +851,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
         $reason = "unknown";
         $found = false;
-        if ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r')) {
+        if (file_exists($civ13->files['nomads_bans']) && ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r'))) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
@@ -865,7 +865,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             }
             fclose($filecheck1);
         }
-        if ($filecheck2 = fopen($civ13->files['tdm_bans'], 'r')) {
+        if (file_exists($civ13->files['tdm_bans']) && ($filecheck2 = fopen($civ13->files['tdm_bans'], 'r'))) {
             while (($fp = fgets($filecheck2, 4096)) !== false) {
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
