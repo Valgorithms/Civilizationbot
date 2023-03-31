@@ -578,7 +578,7 @@ class Civ13
             }
             fclose($filecheck2);
         } else $this->logger->warning("unable to open `{$this->files['tdm_bans']}`");
-        if ($filecheck3 = fopen($this->files['pers_bans'], 'r')) {
+        if ($filecheck3 = @fopen($this->files['pers_bans'], 'r')) {
             while (($fp = fgets($filecheck3, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
@@ -1104,7 +1104,7 @@ class Civ13
         if (isset($this->files['factionlist']) && !in_array($this->files['factionlist'], $factionlists)) array_unshift($factionlists, $this->files['factionlist']);
         if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
-            if (! $file = fopen($factionlist, 'a')) continue;
+            if (! $file = @fopen($factionlist, 'a')) continue;
             ftruncate($file, 0);
             foreach ($this->verified as $item) {
                 if (! $member = $this->getVerifiedMember($item)) continue;
