@@ -415,7 +415,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         } while ($found); //Keep iterating until no new ckeys, ips, or cids are found
         echo "Finished searching playerlogs after $i loops" . PHP_EOL;
 
-        $banCollection = $civ13->bansToCollection();
+        $banlogs = $civ13->bansToCollection();
         $civ13->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
         $found = true;
         $i = 0;
@@ -426,7 +426,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_ips = [];
             $found_cids = [];
             $found_dates = [];
-            foreach ($banCollection as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+            foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 if (!in_array($log['ckey'], $ips)) {
                     $found_ckeys[] = $log['ckey'];
                     $found = true;
