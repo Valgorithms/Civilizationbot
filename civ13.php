@@ -1092,8 +1092,10 @@ class Civ13
     
         $return = [];
         foreach ($this->serverinfo as $index => $server) {
-            $return[$index] = [];
-            if (array_key_exists('ERROR', $server)) continue;
+            if (array_key_exists('ERROR', $server)) {
+                $return[$index] = [];
+                continue;
+            }
     
             $serverInfo = array_shift($server_info);
             $return[$index]['Server'] = [false => $serverInfo['name'] . PHP_EOL . $serverInfo['link']];
