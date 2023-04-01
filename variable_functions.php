@@ -462,9 +462,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         }
         echo "Finished searching banlogs after $i loops" . PHP_EOL;
 
-        $embed->addFieldValues('Ckeys', implode(', ', $ckeys));
-        $embed->addFieldValues('IPs', implode(', ', $ips));
-        $embed->addFieldValues('CIDs', implode(', ', $cids));
+        $verified = 'No';
+        if ($this->verified->get('ss13', $ckey)) $verified = 'Yes';
+        if (!empty($ckeys)) $embed->addFieldValues('Ckeys', implode(', ', $ckeys));
+        if (!empty($ips)) $embed->addFieldValues('IPs', implode(', ', $ips));
+        if (!empty($cids)) $embed->addFieldValues('CIDs', implode(', ', $cids));
+        $embed->addfieldValues('Verified', $verified);
         $embed->addfieldValues('Currently Banned', $banned);
         $embed->addfieldValues('Alt Banned', $altbanned);
         $message->reply(MessageBuilder::new()->addEmbed($embed));
