@@ -1068,7 +1068,7 @@ class Civ13
     */
     private function playercountChannelUpdate(int $count = 0, string $prefix = '')
     {
-        if ($this->playercount_ticker++ % 5 !== 0) return;
+        if ($this->playercount_ticker++ % 10 !== 0) return;
         if (! $channel = $this->discord->getChannel($this->channel_ids[$prefix . 'playercount'])) return;
     
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
