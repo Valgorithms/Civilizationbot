@@ -914,18 +914,132 @@ class Civ13
             if ($bans = $this->bansToCollection()->filter(function($item) use ($playerlog) { return $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid']); }));
                 return [$playerlog, $bans];
     }
+    /*
+    *
+    * @return array[array, array, array, bool, bool]
+    */
+    public function byondinfo(string $ckey): array
+    {
+        if (! $ckey = str_replace(['.', '_', ' '], '', trim($ckey))) return [null, null, null, false, false];
+        if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
+        
+        $embed = new Embed($this->discord);
+        $embed->setTitle($ckey);
+        if ($item = $this->getVerifiedItem($ckey)) 
+            if ($member = $this->getVerifiedMember($item))
+                $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+        $ckeys = [$ckey];
+        $ips = [];
+        $cids = [];
+        $dates = [];
+        foreach ($collectionsArray[0] as $log) { //Get the ckey's primary identifiers
+            if (isset($log['ip'])) $ips[] = $log['ip'];
+            if (isset($log['cid'])) $cids[] = $log['cid'];
+            if (isset($log['date'])) $dates[] = $log['date'];
+        }
+        foreach ($collectionsArray[1] as $log) { //Get the ckey's primary identifiers
+            if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+            if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
+            if (isset($log['date']) && !in_array($log['date'], $ips)) $dates[] = $log['date'];
+        }
+        //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
+        $playerlogs = $this->playerlogsToCollection();
+        echo 'Starting playerlogs loop' . PHP_EOL;
+        $i = 0;
+        do { //Iterate through playerlogs to find all known ckeys, ips, and cids
+            echo 'Loops so far: ' . $i . PHP_EOL;
+            $found = false;
+            $found_ckeys = [];
+            $found_ips = [];
+            $found_cids = [];
+            $found_dates = [];
+            foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                if (!in_array($log['ckey'], $ckeys)) {
+                    $found_ckeys[] = $log['ckey'];
+                    $found = true;
+                }
+                if (!in_array($log['ip'], $ips)) {
+                    $found_ips[] = $log['ip'];
+                    $found = true;
+                }
+                if (!in_array($log['cid'], $cids)) {
+                    $found_cids[] = $log['cid'];
+                    $found = true;
+                }
+                if (!in_array($log['date'], $dates)) {
+                    $found_dates[] = $log['date'];
+                    $found = true;
+                }
+            }
+            $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+            $ips = array_unique(array_merge($ips, $found_ips));
+            $cids = array_unique(array_merge($cids, $found_cids));
+            $dates = array_unique(array_merge($dates, $found_dates));
+            $i++;
+        } while ($found); //Keep iterating until no new ckeys, ips, or cids are found
+        echo "Finished searching playerlogs after $i loops" . PHP_EOL;
+    
+        $banlogs = $this->bansToCollection();
+        $this->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
+        $found = true;
+        $i = 0;
+        while ($found) { //Iterate through playerlogs to find all known ckeys, ips, and cids
+            echo 'Loops so far: ' . $i . PHP_EOL;
+            $found = false;
+            $found_ckeys = [];
+            $found_ips = [];
+            $found_cids = [];
+            $found_dates = [];
+            foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                if (!in_array($log['ckey'], $ips)) {
+                    $found_ckeys[] = $log['ckey'];
+                    $found = true;
+                }
+                if (!in_array($log['ip'], $ips)) {
+                    $found_ips[] = $log['ip'];
+                    $found = true;
+                }
+                if (!in_array($log['cid'], $cids)) {
+                    $found_cids[] = $log['cid'];
+                    $found = true;
+                }
+                if (!in_array($log['date'], $dates)) {
+                    $found_dates[] = $log['date'];
+                    $found = true;
+                }
+            }
+            $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+            $ips = array_unique(array_merge($ips, $found_ips));
+            $cids = array_unique(array_merge($cids, $found_cids));
+            $dates = array_unique(array_merge($dates, $found_dates));
+            $i++;
+        } //Keep iterating until no new ckeys, ips, or cids are found
+        $altbanned = 'No';
+        foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) {
+            $altbanned = 'Yes';
+            break;
+        }
+        echo "Finished searching banlogs after $i loops" . PHP_EOL;
+    
+        //var_dump('Ckeys', implode(', ', $ckeys));
+        //var_dump('IPs', implode(', ', $ips));
+        //var_dump('CIDs', implode(', ', $cids));
+        //var_dump('Currently Banned', $banned);
+        //var_dump('Alt Banned', $altbanned);
+        return [$ckeys, $ips, $cids, $banned, $altbanned];
+    }
     public function serverinfoTimer(): void
     {
         $func = function() {
             $this->serverinfoFetch(); 
             $this->serverinfoParsePlayers();
             foreach ($this->serverinfoPlayers() as $ckey) {
-                /*if (!in_array($ckey, $this->seen_players)) {
+                if (!in_array($ckey, $this->seen_players)) {
                     $this->seen_players[] = $ckey;
-                    if ($collections = $this->getCkeyLogCollections($this->playerlogsToCollection()->get('ckey', $ckey)))
-                        if ($collections[1]->get('ip', $collections[0]['ip']) || $collections[1]->get('cid', $collections[0]['cid']))
-                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Byond account $ckey tried to ban evade"])));
-                }*/
+                    $byondinfo = $this->byondinfo($ckey); //Automatically ban evaders
+                    if (! $byondinfo[3] && $byondinfo[4])
+                        $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Account under under investigation."])));
+                }
                 if ($this->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
