@@ -1092,14 +1092,14 @@ class Civ13
     
         $return = [];
         foreach ($this->serverinfo as $index => $server) {
+            $serverInfo = array_shift($server_info);
+            $return[$index]['Server'] = [false => $serverInfo['name'] . PHP_EOL . $serverInfo['link']];
+            $return[$index]['Host'] = [true => $serverInfo['host']];
+
             if (array_key_exists('ERROR', $server)) {
                 $return[$index] = [];
                 continue;
             }
-    
-            $serverInfo = array_shift($server_info);
-            $return[$index]['Server'] = [false => $serverInfo['name'] . PHP_EOL . $serverInfo['link']];
-            $return[$index]['Host'] = [true => $serverInfo['host']];
     
             if (isset($server['roundduration'])) {
                 $rd = explode(":", urldecode($server['roundduration']));
@@ -1135,7 +1135,7 @@ class Civ13
     
             if ($index === 0) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'tdm-');
             elseif ($index === 1) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'nomads-');
-            elseif ($index === 2) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'pers-');
+            elseif ($index === 2) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'persistence-');
         }
     
         return $return;
