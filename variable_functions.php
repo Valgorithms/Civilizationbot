@@ -463,7 +463,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         echo "Finished searching banlogs after $i loops" . PHP_EOL;
 
         $verified = 'No';
-        if ($this->verified->get('ss13', $ckey)) $verified = 'Yes';
+        if ($civ13->verified->get('ss13', $ckey)) $verified = 'Yes';
         if (!empty($ckeys)) $embed->addFieldValues('Ckeys', implode(', ', $ckeys));
         if (!empty($ips)) $embed->addFieldValues('IPs', implode(', ', $ips));
         if (!empty($cids)) $embed->addFieldValues('CIDs', implode(', ', $cids));
