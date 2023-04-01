@@ -939,11 +939,6 @@ class Civ13
         if (! $ckey = str_replace(['.', '_', ' '], '', trim($ckey))) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         
-        $embed = new Embed($this->discord);
-        $embed->setTitle($ckey);
-        if ($item = $this->getVerifiedItem($ckey)) 
-            if ($member = $this->getVerifiedMember($item))
-                $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
         $ckeys = [$ckey];
         $ips = [];
         $cids = [];
@@ -1152,7 +1147,7 @@ class Civ13
             3 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"],
             4 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"],
         ];
-        //$relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads'])); //We need to declare stationname in world.dm first
+        //$relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); //We need to declare stationname in world.dm first
 
         $index = 0;
         //foreach ($relevant_servers as $server) //TODO: We need to declare stationname in world.dm first
