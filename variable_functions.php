@@ -586,7 +586,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'unbannomads ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content_lower = substr($message_content_lower, 6);
+        $message_content_lower = substr($message_content_lower, 12);
         $split_message = explode('; ', $message_content_lower);
         
         $civ13->unbanNomads($split_message[0], $message->author->displayname);
@@ -598,11 +598,23 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'unbantdm ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content_lower = substr($message_content_lower, 6);
+        $message_content_lower = substr($message_content_lower, 9);
         $split_message = explode('; ', $message_content_lower);
         
         $civ13->unbanTDM($split_message[0], $message->author->displayname);
         $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **TDM**";
+        if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
+            if ($member->roles->has($civ13->role_ids['banished']))
+                $member->removeRole($civ13->role_ids['banished'], $result);
+        return $message->reply($result);
+    }
+    if (str_starts_with($message_content_lower, 'unbanpers ')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        $message_content_lower = substr($message_content_lower, 9);
+        $split_message = explode('; ', $message_content_lower);
+        
+        $civ13->unbanPers($split_message[0], $message->author->displayname);
+        $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **Persistence**";
         if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
             if ($member->roles->has($civ13->role_ids['banished']))
                 $member->removeRole($civ13->role_ids['banished'], $result);

@@ -706,6 +706,17 @@ class Civ13
     {
         //TODO
     }
+    public function legacyUnbanPers(string $ckey, ?string $admin = null): void
+    {
+        if (file_exists($this->files['pers_discord2unban']) && $file = fopen($this->files['pers_discord2unban'], 'a')) {
+            fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
+            fclose($file);
+        }
+    }
+    public function sqlUnbanPers(string $ckey, ?string $admin = null): void
+    {
+        //TODO
+    }
     public function legacyBan($array, $message = null): string
     {
         return $this->legacyBanNomads($array, $message) . $this->legacyBanTDM($array, $message);
@@ -767,6 +778,11 @@ class Civ13
     {
         if ($this->legacy) return $this->legacyUnbanTDM($ckey, $admin);
         return $this->sqlUnbanTDM($ckey, $admin);
+    }
+    public function unbanPers(string $ckey, ?string $admin = null)
+    {
+        if ($this->legacy) return $this->legacyUnbanPers($ckey, $admin);
+        return $this->sqlUnbanPers($ckey, $admin);
     }
     
     /*
