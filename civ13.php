@@ -1339,6 +1339,7 @@ class Civ13
     {
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
         if (isset($this->files['tdm_factionlist']) && !in_array($this->files['tdm_factionlist'], $factionlists)) array_unshift($factionlists, $this->files['tdm_factionlist']);
+        if (isset($this->files['nomads_factionlist']) && !in_array($this->files['nomads_factionlist'], $factionlists)) array_unshift($factionlists, $this->files['tdm_factionlist']);
         if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
             if (! file_exists($factionlist) || ! ($file = @fopen($factionlist, 'a'))) continue;

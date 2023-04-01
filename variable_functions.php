@@ -703,8 +703,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'factionlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (! file_exists($civ13->files['tdm_factionlist'])) return $message->react("🔥");
-        return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_factionlist'], 'factionlist.txt'));
+        
+        $builder = MessageBuilder::new()->setContent('Faction Lists');
+        if (file_exists($civ13->files['tdm_factionlist'])) $builder->addfile($civ13->files['tdm_factionlist'], 'tdm_factionlist.txt');
+        if (file_exists($civ13->files['nomads_factionlist'])) $builder->addfile($civ13->files['nomads_factionlist'], 'nomads_factionlist.txt');
+        return $message->reply($builder);
     }
     if (str_starts_with($message_content_lower, 'sportsteams')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
