@@ -1090,6 +1090,7 @@ class Civ13
         $server_info = [
             ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"],
             ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"],
+            ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['pers']}>"],
             ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"],
             ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"],
         ];
@@ -1136,6 +1137,7 @@ class Civ13
     
             if ($index === 0) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'tdm-');
             elseif ($index === 1) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'nomads-');
+            elseif ($index === 2) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'pers-');
         }
     
         return $return;
@@ -1146,15 +1148,16 @@ class Civ13
         $server_info = [
             0 => ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"],
             1 => ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"],
-            2 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"],
-            3 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"],
+            2 => ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['pers']}>"],
+            3 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"],
+            4 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"],
         ];
         //$relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads'])); //We need to declare stationname in world.dm first
 
         $index = 0;
         //foreach ($relevant_servers as $server) //TODO: We need to declare stationname in world.dm first
         foreach ($this->serverinfo as $server) {
-            if (array_key_exists('ERROR', $server) || $index > 1) { //We only care about Nomads and TDM
+            if (array_key_exists('ERROR', $server) || $index > 2) { //We only care about Nomads, TDM, and Persistence
                 $index++; //TODO: Remove this once we have stationname in world.dm
                 continue;
             }
