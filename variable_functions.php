@@ -378,6 +378,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (isset($log['cid'])) $cids[] = $log['cid'];
             if (isset($log['date'])) $dates[] = $log['date'];
         }
+        foreach ($collectionsArray[1] as $log) { //Get the ckey's primary identifiers
+            if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+            if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
+            if (isset($log['date']) && !in_array($log['date'], $ips)) $dates[] = $log['date'];
+        }
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $civ13->playerlogsToCollection();
         echo 'Starting playerlogs loop' . PHP_EOL;
