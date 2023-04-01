@@ -360,7 +360,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
     if (str_starts_with($message_content_lower, 'byondinfo')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
         
