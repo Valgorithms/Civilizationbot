@@ -1092,6 +1092,7 @@ class Civ13
     
         $return = [];
         foreach ($this->serverinfo as $index => $server) {
+            $return[$index] = [];
             if (array_key_exists('ERROR', $server)) continue;
     
             $serverInfo = array_shift($server_info);
