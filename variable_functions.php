@@ -412,10 +412,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
                     $found = true;
                 }
             }
-            $ckeys = array_merge($ckeys, $found_ckeys);
-            $ips = array_merge($ips, $found_ips);
-            $cids = array_merge($cids, $found_cids);
-            $dates = array_merge($dates, $found_dates);
+            $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+            $ips = array_unique(array_merge($ips, $found_ips));
+            $cids = array_unique(array_merge($cids, $found_cids));
+            $dates = array_unique(array_merge($dates, $found_dates));
             $i++;
         } while ($found); //Keep iterating until no new ckeys, ips, or cids are found
         echo "Finished searching playerlogs after $i loops" . PHP_EOL;
