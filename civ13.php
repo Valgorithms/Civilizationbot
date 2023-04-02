@@ -567,7 +567,7 @@ class Civ13
                 }
             }
             fclose($filecheck1);
-        } else $this->logger->warning("unable to open `{$this->files['nomads_bans']}`");
+        } else $this->logger->debug("unable to open `{$this->files['nomads_bans']}`");
         if (file_exists($this->files['tdm_bans']) && ($filecheck2 = fopen($this->files['tdm_bans'], 'r'))) {
             while (($fp = fgets($filecheck2, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
@@ -578,7 +578,7 @@ class Civ13
                 }
             }
             fclose($filecheck2);
-        } else $this->logger->warning("unable to open `{$this->files['tdm_bans']}`");
+        } else $this->logger->debug("unable to open `{$this->files['tdm_bans']}`");
         if (file_exists($this->files['pers_bans']) && ($filecheck3 = @fopen($this->files['pers_bans'], 'r'))) {
             while (($fp = fgets($filecheck3, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
@@ -589,7 +589,7 @@ class Civ13
                 }
             }
             fclose($filecheck3);
-        } else $this->logger->warning("unable to open `{$this->files['pers_bans']}`");
+        } else $this->logger->debug("unable to open `{$this->files['pers_bans']}`");
         return false;
     }
     public function sqlBancheck(string $ckey): bool
