@@ -955,10 +955,8 @@ class Civ13
         }
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $this->playerlogsToCollection();
-        echo 'Starting playerlogs loop' . PHP_EOL;
         $i = 0;
         do { //Iterate through playerlogs to find all known ckeys, ips, and cids
-            echo 'Loops so far: ' . $i . PHP_EOL;
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
@@ -988,14 +986,12 @@ class Civ13
             $dates = array_unique(array_merge($dates, $found_dates));
             $i++;
         } while ($found); //Keep iterating until no new ckeys, ips, or cids are found
-        echo "Finished searching playerlogs after $i loops" . PHP_EOL;
     
         $banlogs = $this->bansToCollection();
         $this->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
         $found = true;
         $i = 0;
         while ($found) { //Iterate through playerlogs to find all known ckeys, ips, and cids
-            echo 'Loops so far: ' . $i . PHP_EOL;
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
@@ -1030,7 +1026,6 @@ class Civ13
             $altbanned = 'Yes';
             break;
         }
-        echo "Finished searching banlogs after $i loops" . PHP_EOL;
     
         //var_dump('Ckeys', implode(', ', $ckeys));
         //var_dump('IPs', implode(', ', $ips));
