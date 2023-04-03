@@ -470,10 +470,7 @@ class Civ13
             }
             $found = false;
             foreach (explode('|', file_get_contents($this->files['tdm_playerlogs']) . file_get_contents($this->files['nomads_playerlogs'])) as $line)
-                if (explode(';', trim($line))[0] == $ckey) {
-                    $found = true;
-                    break;
-                }
+                if (explode(';', trim($line))[0] == $ckey) { $found = true; break; }
             if (! $found) return "Ckey `$ckey` has never been seen on the server before! You'll need to join either Nomads or TDM at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
@@ -488,6 +485,10 @@ class Civ13
     { //Attempt to verify a user
         if(! $item = $this->pending->get('discord', $discord_id)) return [false, 'This error should never happen'];
         if(! $this->checkToken($discord_id)) return [false, "You have not set your description yet! It needs to be set to {$item['token']}"];
+        if ($this->byondinfo($item['ss13'])[4] && ! isset($this->permitted[$item['ss13']])) {
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("<@&{$this->role_ids['knight']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
+            return [false, "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
+        }
         return $this->verifyCkey($item['ss13'], $discord_id);
     }
     
