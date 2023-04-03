@@ -1077,19 +1077,18 @@ class Civ13
         if (empty($this->serverinfo)) return [];
     
         $server_info = [
-            ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"],
-            ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"],
-            ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['pers']}:{$this->ports['pers']}>"],
-            ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"],
-            ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"],
+            ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>", 'prefix' => 'tdm-'],
+            ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>", 'prefix' => 'nomads-'],
+            ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['pers']}:{$this->ports['pers']}>", 'prefix' => 'persistence-'],
+            ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>", 'prefix' => 'bc-'],
+            ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>", 'prefix' => 'ps-'],
         ];
     
         $return = [];
         foreach ($this->serverinfo as $index => $server) {
-            $serverInfo = array_shift($server_info);
-            $return[$index]['Server'] = [false => $serverInfo['name'] . PHP_EOL . $serverInfo['link']];
-            $return[$index]['Host'] = [true => $serverInfo['host']];
-
+            $si = array_shift($server_info);
+            $return[$index]['Server'] = [false => $si['name'] . PHP_EOL . $si['link']];
+            $return[$index]['Host'] = [true => $si['host']];
             if (array_key_exists('ERROR', $server)) {
                 $return[$index] = [];
                 continue;
@@ -1105,15 +1104,11 @@ class Civ13
                 else $rt = "{$minutes}m";
                 $return[$index]['Round Timer'] = [true => $rt];
             }
-    
             if (isset($server['map'])) $return[$index]['Map'] = [true => urldecode($server['map'])];
-    
             if (isset($server['age'])) $return[$index]['Epoch'] = [true => urldecode($server['age'])];
-    
             $players = array_filter(array_keys($server), function ($key) {
                 return strpos($key, 'player') === 0 && is_numeric(substr($key, 6));
             });
-    
             if (!empty($players)) {
                 $players = array_map(function ($key) use ($server) {
                     return strtolower(str_replace(['.', '_', ' '], '', urldecode($server[$key])));
@@ -1127,9 +1122,7 @@ class Civ13
     
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
     
-            if ($index === 0) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'tdm-');
-            elseif ($index === 1) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'nomads-');
-            elseif ($index === 2) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, 'persistence-');
+            if ($index <= 2) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, $si['prefix']);
         }
     
         return $return;
@@ -1138,11 +1131,11 @@ class Civ13
     public function serverinfoParsePlayers(): void
     {
         $server_info = [
-            0 => ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>"],
-            1 => ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>"],
-            2 => ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['pers']}:{$this->ports['pers']}>"],
-            3 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>"],
-            4 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>"],
+            0 => ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>", 'prefix' => 'tdm-'],
+            1 => ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>", 'prefix' => 'nomads-'],
+            2 => ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['pers']}:{$this->ports['pers']}>", 'prefix' => 'persistence-'],
+            3 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc,']}>", 'prefix' => 'bc-'],
+            4 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>", 'prefix' => 'ps-']
         ];
         //$relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); //We need to declare stationname in world.dm first
 
@@ -1153,22 +1146,7 @@ class Civ13
                 $index++; //TODO: Remove this once we have stationname in world.dm
                 continue;
             }
-            
-            $players = array_filter($server, function($key) {
-                return str_starts_with($key, 'player') && !str_starts_with($key, 'players');
-            }, ARRAY_FILTER_USE_KEY);
-            $players = array_map(fn($player) => str_replace(['.', '_', ' '], '', strtolower(urldecode($player))), $players);
-            /* Old method of getting players
-            $players = [];
-            foreach (array_keys($server) as $key) {
-                $p = explode('player', $key); 
-                if (isset($p[1])) if(is_numeric($p[1])) $players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
-            }
-            */
-
-            $channel_prefix = strtolower($server_info[$index]['name']) . '-'; //TODO: This needs to be updated to use $server['stationname] once we have it
-            $player_count = isset($server['players']) ? $server['players'] : count($players);
-            $this->playercountChannelUpdate($player_count, $channel_prefix);
+            $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count(array_map(fn($player) => str_replace(['.', '_', ' '], '', strtolower(urldecode($player))), array_filter($server, function($key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))), $server_info[$index]['prefix']);
             $index++; //TODO: Remove this once we have stationname in world.dm
         }
     }
@@ -1238,10 +1216,9 @@ class Civ13
             if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
             else {
                 $embed = new Embed($this->discord);
-                if ($user = $this->discord->users->get('id', $item['discord'])) {
-                    $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-                    $embed->setDescription($fp);
-                } //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
+                if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
+                $embed->setDescription($fp);
                 $channel->sendEmbed($embed);
             }
         }
@@ -1353,12 +1330,12 @@ class Civ13
     */
     public function adminlistUpdate(array $adminlists = [], $defaults = true): bool
     {
-        $this->logger->info('Updating adminlists');
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
+        //$this->logger->debug('Updating admin lists');
         // Prepend default admin lists if they exist and haven't been added already
         $defaultLists = ['tdm_admins', 'nomads_admins'];
-        if ($defaults) foreach ($defaultLists as $adminlist)
-            if (isset($this->files[$adminlist]) && !in_array($adminlist, $adminlists))
-                array_unshift($adminlists, $adminlist);
+        if ($defaults) foreach ($defaultLists as $adminlist) if (isset($this->files[$adminlist]) && !in_array($adminlist, $adminlists))
+            array_unshift($adminlists, $adminlist);
 
         // Check that all required roles are properly declared in the bot's config and exist in the guild
         $required_roles = [
@@ -1375,34 +1352,20 @@ class Civ13
             'mentor' => ['Mentor', '16384'],
         ];
         // If any required roles are missing, return false
-        if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) {
-            $this->logger->error('Required roles are missing from the bot\'s config');
-            var_dump($diff);
-            return false;
-        }
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) {
-            $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot');
-            return false;
-        }
-        foreach (array_keys($required_roles) as $role)
-            if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) {
-                $this->logger->error('Role ' . $role . ' is missing from the guild');
-                return false;
-            }
+        if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the bot\'s config'); var_dump($diff); return false; }
+        foreach (array_keys($required_roles) as $role) if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
         
         // Write each verified member's SS13 ckey and associated role with its bitflag permission to the adminlist file
         foreach ($adminlists as $adminlist) {
-            if (file_exists($this->files[$adminlist]) || ! ($file = fopen($this->files[$adminlist], 'a'))) continue; // If the file cannot be opened, skip to the next adminlist
+            if (file_exists($this->files[$adminlist]) || ! ($file = fopen($this->files[$adminlist], 'a'))) continue; // If the file cannot be opened, skip to the next admin list
             ftruncate($file, 0);
             $file_contents = '';
-            foreach ($this->verified as $item) {
-                if ($member = $this->getVerifiedMember($item)) foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->role_ids[$role]))
-                    { $file_contents .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL; break 1; }
-            }
+            foreach ($this->verified as $item) if ($member = $this->getVerifiedMember($item)) foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->role_ids[$role]))
+                { $file_contents .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL; break 1; }
             fwrite($file, $file_contents);
             fclose($file);
         }
-        $this->logger->info('Adminlists updated');
+        //$this->logger->debug('Admin lists updated');
         return true;
     }
 }
