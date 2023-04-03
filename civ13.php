@@ -870,7 +870,7 @@ class Civ13
     *   7 => when expires
     *   8 => banned ckey
     *   9 => banned cid
-    *   10 =>ip
+    *   10 => ip
     */
     public function banArrayToAssoc(array $item)
     {
@@ -965,6 +965,7 @@ class Civ13
             if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
             if (isset($log['date']) && !in_array($log['date'], $ips)) $dates[] = $log['date'];
         }
+        var_dump($ckeys, $ips, $cids, $dates); echo PHP_EOL;
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $this->playerlogsToCollection();
         $i = 0;
@@ -976,6 +977,7 @@ class Civ13
             $found_cids = [];
             $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                $this->logger->debug('Found new match: ' . PHP_EOL); var_dump($log);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
