@@ -340,9 +340,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         
         $embed = new Embed($civ13->discord);
         $embed->setTitle($ckey);
-        if ($item = $civ13->getVerifiedItem($ckey)) 
+        if ($item = $civ13->getVerifiedItem($ckey)) {
+            $ckey = $item['ss13'];
             if ($member = $civ13->getVerifiedMember($item))
                 $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+        }
         $ckeys = [$ckey];
         $ips = [];
         $cids = [];

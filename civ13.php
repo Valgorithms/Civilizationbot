@@ -326,7 +326,8 @@ class Civ13
 
     public function getVerifiedItem($id)
     {
-        if (is_numeric($id) && $item = $this->verified->get('discord', $id)) return $item;
+        preg_match('/<@(\d+)>/', $id, $matches);
+        if (is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
         if ($item = $this->verified->get('ss13', $id)) return $item;
         return false;
     }
@@ -942,6 +943,7 @@ class Civ13
     {
         if (! $ckey = str_replace(['.', '_', ' '], '', trim($ckey))) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
+        if ($item = $this->getVerifiedItem($ckey)) $ckey = $item['ss13'];
         
         $ckeys = [$ckey];
         $ips = [];
