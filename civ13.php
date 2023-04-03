@@ -765,9 +765,8 @@ class Civ13
             $this->sqlUnbanTDM($ckey, $admin);
         }
         if ( $member = $this->getVerifiedMember($ckey))
-            
-                if ($member->roles->has($this->role_ids['banished']))
-                    $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
+            if ($member->roles->has($this->role_ids['banished']))
+                $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
     }
     public function unbanNomads(string $ckey, ?string $admin = null)
     {
