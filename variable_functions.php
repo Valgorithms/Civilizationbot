@@ -358,8 +358,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
         }
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
-        $playerlogs = $civ13->playerlogsToCollection();
-        var_dump('playerlogs: ', $playerlogs, PHP_EOL);
+        $playerlogs = $civ13->playerlogsToCollection(); //This is ALL players
         $i = 0;
         $break = false;
         do { //Iterate through playerlogs to find all known ckeys, ips, and cids
