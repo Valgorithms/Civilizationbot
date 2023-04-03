@@ -556,9 +556,8 @@ class Civ13
     {
         $banned = ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
         if (! $bypass && $member = $this->getVerifiedMember($ckey))
-            if ($banned)
-                if (! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], 'bancheck');
-                elseif ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], 'bancheck');
+            if ($banned && ! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], 'bancheck');
+            elseif (! $banned && $member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], 'bancheck');
         return $banned;
     }
     public function legacyBancheck(string $ckey): bool
@@ -1006,7 +1005,7 @@ class Civ13
             $i++;
             if ($i > 10) $break = true;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
-        
+
         $altbanned = 'No';
         foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = 'Yes'; break; }
         $verified = false;
