@@ -931,7 +931,7 @@ class Civ13
     }
     /*
     *
-    * @return array[array, array, array, bool, bool]
+    * @return array[array, array, array, bool, bool, bool]
     */
     public function byondinfo(string $ckey): array
     {
@@ -998,7 +998,9 @@ class Civ13
         } //Keep iterating until no new ckeys, ips, or cids are found
         $altbanned = 'No';
         foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = 'Yes'; break; }
-        return [$ckeys, $ips, $cids, $banned, $altbanned];
+        $verified = false;
+        if ($this->verified->get('ss13', $ckey)) $verified = true;
+        return [$ckeys, $ips, $cids, $banned, $altbanned, $verified];
     }
     public function serverinfoTimer(): void
     {

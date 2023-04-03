@@ -194,6 +194,14 @@ class Slash
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
             ]));
+
+            //if ($command = $commands->get('name', 'byondinfo')) $commands->delete($command->id);
+            if (! $commands->get('name', 'byondinfo')) $commands->save(new Command($this->civ13->discord, [
+                'type'                       => Command::USER,
+                'name'                       => 'byondinfo',
+                'dm_permission'              => false,
+                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+            ]));
             
             //if ($command = $commands->get('name', 'restart_nomads')) $commands->delete($command->id);
             if (! $commands->get('name', 'restart_nomads')) $commands->save(new Command($this->civ13->discord, [
@@ -296,6 +304,22 @@ class Slash
                 $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** unbanned **`{$item['ss13']}`**."));
                 $this->civ13->unban($item['ss13'], $interaction->user->displayname);
             }
+        });
+
+        $this->civ13->discord->listenCommand('byondinfo', function ($interaction): void
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            $data = $this->civ13->byondinfo($item['ss13']);
+            $embed = new Embed($this->civ13->discord);
+            $embed->setTitle($item['ss13']);
+            if ($member = $this->civ13->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+            if (!empty($data[0])) $embed->addFieldValues('Ckeys', implode(', ', $data[0]));
+            if (!empty($data[1])) $embed->addFieldValues('IPs', implode(', ', $data[1]));
+            if (!empty($data[2])) $embed->addFieldValues('CIDs', implode(', ', $data[2]));
+            $embed->addfieldValues('Verified', $data[5]);
+            $embed->addfieldValues('Currently Banned', $data[3]);
+            $embed->addfieldValues('Alt Banned', $data[4]);
+            $interaction->respondWithMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
         });
         
         $this->civ13->discord->listenCommand('panic', function ($interaction): void
