@@ -282,8 +282,61 @@ class Slash
         $this->civ13->discord->listenCommand('bancheck', function ($interaction): void
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            elseif ($this->civ13->bancheck($item['ss13'])) $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$item['ss13']}` is currently banned on one of the Civ13.com servers."), true);
-            else $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$item['ss13']}` is not currently banned on one of the Civ13.com servers."), true);
+            $response = '';
+            $reason = 'unknown';
+            $found = false;
+            if (file_exists($this->civ13->files['nomads_bans']) && ($filecheck1 = fopen($this->civ13->files['nomads_bans'], 'r'))) {
+                while (($fp = fgets($filecheck1, 4096)) !== false) {
+                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
+                        $found = true;
+                        $type = $linesplit[0];
+                        $reason = $linesplit[3];
+                        $admin = $linesplit[4];
+                        $date = $linesplit[5];
+                        $response .= "**{$item['ss13']}** has been **$type** banned from **Nomads** on **$date** for **$reason** by $admin." . PHP_EOL;
+                    }
+                }
+                fclose($filecheck1);
+            }
+            if (file_exists($this->civ13->files['tdm_bans']) && ($filecheck2 = fopen($this->civ13->files['tdm_bans'], 'r'))) {
+                while (($fp = fgets($filecheck2, 4096)) !== false) {
+                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
+                        $found = true;
+                        $type = $linesplit[0];
+                        $reason = $linesplit[3];
+                        $admin = $linesplit[4];
+                        $date = $linesplit[5];
+                        $response .= "**{$item['ss13']}** has been **$type** banned from **TDM** on **$date** for **$reason** by $admin." . PHP_EOL;
+                    }
+                }
+                fclose($filecheck2);
+            }
+            if (file_exists($this->civ13->files['pers_bans']) && ($filecheck3 = fopen($this->civ13->files['pers_bans'], 'r'))) {
+                while (($fp = fgets($filecheck3, 4096)) !== false) {
+                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
+                        $found = true;
+                        $type = $linesplit[0];
+                        $reason = $linesplit[3];
+                        $admin = $linesplit[4];
+                        $date = $linesplit[5];
+                        $response .= "**{$item['ss13']}** has been **$type** banned from **Persistence** on **$date** for **$reason** by $admin." . PHP_EOL;
+                    }
+                }
+                fclose($filecheck3);
+            }
+            if (! $found) $response .= "No bans were found for **{$item['ss13']}**." . PHP_EOL;
+            elseif ($member = $this->civ13->getVerifiedMember($item['ss13']))
+                if (! $member->roles->has($this->civ13->role_ids['banished']))
+                    $member->addRole($this->civ13->role_ids['banished']);
+            if (strlen($response)<=2000) $interaction->respondWithMessage(MessageBuilder::new()->setContent($response), true);
+            elseif (strlen($response)<=4096) {
+                $embed = new Embed($this->civ13->discord);
+                $embed->setDescription($response);
+                $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed));
+            } else $interaction->respondWithMessage(MessageBuilder::new()->setContent("The ranking is too long to display. Please use the chat command instead."), true);
         });
 
         $this->civ13->discord->listenCommand('bancheck_ckey', function ($interaction)

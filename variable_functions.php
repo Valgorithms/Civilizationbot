@@ -930,7 +930,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     if (str_starts_with($message_content_lower, 'bancheck')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
-        $reason = "unknown";
+        $reason = 'unknown';
         $found = false;
         if (file_exists($civ13->files['nomads_bans']) && ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r'))) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
@@ -960,11 +960,10 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             }
             fclose($filecheck2);
         }
-        if ($found) {
-            if ($member = $civ13->getVerifiedMember($ckey))
-                if (! $member->roles->has($civ13->role_ids['banished']))
-                    $member->addRole($civ13->role_ids['banished']);
-        } else return $message->reply("No bans were found for **$ckey**.");
+        if (! $found) return $message->reply("No bans were found for **$ckey**.");
+        if ($member = $civ13->getVerifiedMember($ckey))
+            if (! $member->roles->has($civ13->role_ids['banished']))
+                $member->addRole($civ13->role_ids['banished']);
         return;
     }
     if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
