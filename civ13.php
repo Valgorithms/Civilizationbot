@@ -329,7 +329,7 @@ class Civ13
         if (is_numeric($id) && $item = $this->verified->get('discord', $id)) return $item;
         if ($item = $this->verified->get('ss13', $id)) return $item;
         preg_match('/<@(\d+)>/', $id, $matches);
-        if (is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
+        if (isset($matches[1]) && is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
         return false;
     }
 
@@ -338,7 +338,7 @@ class Civ13
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
         if (is_string($item)) {
             preg_match('/<@(\d+)>/', $item, $matches);
-            if (is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
+            if (isset($matches[1]) && is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
             if (is_string($item = $this->getVerifiedItem($item))) return false;
         }
         if ($item && $member = $guild->members->get('id', $item['discord'])) return $member;
