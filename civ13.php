@@ -950,22 +950,20 @@ class Civ13
         if (! $ckey = str_replace(['.', '_', ' '], '', trim($ckey))) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->getVerifiedItem($ckey)) $ckey = $item['ss13'];
+        var_dump('Ckey Collections Array: ', $collectionsArray, PHP_EOL);
         
         $ckeys = [$ckey];
         $ips = [];
         $cids = [];
-        $dates = [];
         foreach ($collectionsArray[0] as $log) { //Get the ckey's primary identifiers
             if (isset($log['ip'])) $ips[] = $log['ip'];
             if (isset($log['cid'])) $cids[] = $log['cid'];
-            if (isset($log['date'])) $dates[] = $log['date'];
         }
         foreach ($collectionsArray[1] as $log) { //Get the ckey's primary identifiers
             if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
             if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
-            if (isset($log['date']) && !in_array($log['date'], $ips)) $dates[] = $log['date'];
         }
-        var_dump($ckeys, $ips, $cids, $dates); echo PHP_EOL;
+        var_dump('Searchable: ',  $ckeys, $ips, $cids, PHP_EOL);
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $this->playerlogsToCollection();
         $i = 0;
@@ -977,16 +975,14 @@ class Civ13
             $found_cids = [];
             $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                $this->logger->debug('Found new match: ' . PHP_EOL); var_dump($log);
+                $this->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
-            $dates = array_unique(array_merge($dates, $found_dates));
             if ($i > 10) $break = true;
             $i++;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
@@ -1001,17 +997,14 @@ class Civ13
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
-            $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
-            $dates = array_unique(array_merge($dates, $found_dates));
             $i++;
             if ($i > 10) $break = true;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
