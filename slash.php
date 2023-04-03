@@ -108,6 +108,37 @@ class Slash
             ]
         ]));
 
+        //if ($command = $commands->get('name', 'ban')) $commands->delete($command->id);
+        if (! $commands->get('name', 'ban')) {
+            $command = new \Discord\Parts\Interactions\Command\Command($this->civ13->discord, [
+                'name'			=> 'ban',
+                'description'	=> 'Ban a ckey from the Civ13.com servers',
+                'dm_permission' => false,
+                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'options'		=> [
+                    [
+                        'name'			=> 'ckey',
+                        'description'	=> 'The byond username being banned',
+                        'type'			=>  3,
+                        'required'		=> true,
+                    ],
+                    [
+                        'name'			=> 'duration',
+                        'description'	=> 'How long to ban the user for (e.g. 999 years)',
+                        'type'			=>  3,
+                        'required'		=> true,
+                    ],
+                    [
+                        'name'			=> 'reason',
+                        'description'	=> 'Why the user is being banned',
+                        'type'			=>  3,
+                        'required'		=> true,
+                    ],
+                ]
+            ]);
+            $commands->save($command);
+        }
+
         //if ($command = $commands->get('name', 'panic')) $commands->delete($command->id);
         if (! $commands->get('name', 'panic')) $commands->save(new Command($this->civ13->discord, [
             'name'                       => 'panic',
@@ -251,6 +282,11 @@ class Slash
         {
             if ($this->civ13->bancheck($interaction->data->options['ckey']->value)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is currently banned on one of the Civ13.com servers."), true);
             else $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is not currently banned on one of the Civ13.com servers."), true);
+        });
+
+        $this->civ13->discord->listenCommand('ban', function ($interaction)
+        {
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban([$interaction->data->options['ckey']->value, $interaction->data->options['duration']->value, $interaction->data->options['reason']->value])));
         });
         
         $this->civ13->discord->listenCommand('unban', function ($interaction): void
