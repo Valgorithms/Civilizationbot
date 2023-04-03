@@ -961,6 +961,7 @@ class Civ13
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $this->playerlogsToCollection();
         $i = 0;
+        $break = false;
         do { //Iterate through playerlogs to find all known ckeys, ips, and cids
             $found = false;
             $found_ckeys = [];
@@ -977,15 +978,16 @@ class Civ13
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
             $dates = array_unique(array_merge($dates, $found_dates));
+            if ($i > 10) $break = true;
             $i++;
-        } while ($found); //Keep iterating until no new ckeys, ips, or cids are found
+        } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
     
         $banlogs = $this->bansToCollection();
         $this->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
         $found = true;
         $break = false;
         $i = 0;
-        while ($found && ! $break) { //Iterate through playerlogs to find all known ckeys, ips, and cids
+        do { //Iterate through playerlogs to find all known ckeys, ips, and cids
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
@@ -1003,7 +1005,8 @@ class Civ13
             $dates = array_unique(array_merge($dates, $found_dates));
             $i++;
             if ($i > 10) $break = true;
-        } //Keep iterating until no new ckeys, ips, or cids are found
+        } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
+        
         $altbanned = 'No';
         foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = 'Yes'; break; }
         $verified = false;

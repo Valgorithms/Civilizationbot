@@ -385,7 +385,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $civ13->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
         $found = true;
         $i = 0;
-        while ($found) { //Iterate through playerlogs to find all known ckeys, ips, and cids
+        $break = false;
+        do { //Iterate through playerlogs to find all known ckeys, ips, and cids
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
@@ -401,8 +402,9 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
             $dates = array_unique(array_merge($dates, $found_dates));
+            if ($i > 10) $break = true;
             $i++;
-        } //Keep iterating until no new ckeys, ips, or cids are found
+        } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
         $altbanned = 'No';
         foreach ($ckeys as $key) if ($key != $ckey) if ($civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
 
