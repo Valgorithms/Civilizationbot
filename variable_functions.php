@@ -418,6 +418,13 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $embed->addfieldValues('Alt Banned', $altbanned);
         $message->reply(MessageBuilder::new()->addEmbed($embed));
     }
+    if (str_starts_with($message_content_lower, 'fullbancheck')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+        foreach ($message->guild->members as $member)
+            if ($item = $civ13->getVerifiedItem($member->id))
+                $civ13->bancheck($item['ss13']);
+        return $message->react("👍");
+    }
     if ($message_content_lower == 'permitted') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (empty($civ13->permitted)) return $message->reply('No users have been permitted to bypass the Byond account age requirement.');
