@@ -515,7 +515,7 @@ class Civ13
                     $message .= ' and the panic bunker ban removed.';
                     $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
                     if ($channel) $channel->sendMessage("Verified and removed the panic bunker ban from $member ($ckey - {$this->ages[$ckey]}).");
-                } elseif ($this->bancheck($ckey)) {
+                } elseif ($this->bancheck($ckey, true)) {
                     $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "approveme verified ($ckey)");
                     if ($channel) $channel->sendMessage("Added the banished role to $member ($ckey - {$this->ages[$ckey]}).");
                 } else {
@@ -550,10 +550,16 @@ class Civ13
     * It will check the nomads_bans.txt and tdm_bans.txt files for the ckey
     * If the ckey is found in either file, it will return true
     * Otherwise it will return false
+    * If the $bypass parameter is set to true, it will not add or remove the banished role from the user
     */
-    public function bancheck(string $ckey): bool
+    public function bancheck(string $ckey, $bypass = false): bool
     {
-        return ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
+        $banned = ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
+        if (! $bypass && $member = $this->getVerifiedMember($ckey))
+            if ($banned)
+                if (! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], 'bancheck');
+                elseif ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], 'bancheck');
+        return $banned;
     }
     public function legacyBancheck(string $ckey): bool
     {
@@ -610,7 +616,7 @@ class Civ13
     }
     public function panicBan(string $ckey): void
     {
-        if (! $this->bancheck($ckey)) {
+        if (! $this->bancheck($ckey, true)) {
             ($this->legacy ? $this->legacyBanNomads([$ckey, '1 hour', "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) : $this->sqlBanNomads([$ckey, '1 hour', "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) );
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
@@ -1128,7 +1134,7 @@ class Civ13
     {
         if ($member->guild_id == $this->civ13_guild_id) 
             if ($item = $this->verified->get('discord', $member->id)) {
-                if ($this->bancheck($item['ss13'])) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
+                if ($this->bancheck($item['ss13'], true)) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
                 else $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
             }
     }
@@ -1148,7 +1154,7 @@ class Civ13
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
                 if ($members = $guild->members->filter(fn ($member) => $member->roles->has($this->role_ids['banished'])))
                     foreach ($members as $member) if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id))
-                        if (! $this->bancheck($item['ss13'])) {
+                        if (! $this->bancheck($item['ss13'], true)) {
                             $member->removeRole($this->role_ids['banished'], 'unban timer');
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("Removed the banished role from $member.");
                         }
