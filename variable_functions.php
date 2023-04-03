@@ -937,7 +937,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             }
             fclose($filecheck2);
         }
-        if (! $found) return $message->reply("No bans were found for **$ckey**.");
+        if ($found) {
+            if ($member = $civ13->getVerifiedMember($ckey))
+                if (! $member->roles->has($civ13->role_ids['banished']))
+                    $member->addRole($civ13->role_ids['banished']);
+        } else return $message->reply("No bans were found for **$ckey**.");
         return;
     }
     if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
