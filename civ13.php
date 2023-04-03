@@ -326,9 +326,10 @@ class Civ13
 
     public function getVerifiedItem($id)
     {
+        if (is_numeric($id) && $item = $this->verified->get('discord', $id)) return $item;
+        if ($item = $this->verified->get('ss13', $id)) return $item;
         preg_match('/<@(\d+)>/', $id, $matches);
         if (is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
-        if ($item = $this->verified->get('ss13', $id)) return $item;
         return false;
     }
 
