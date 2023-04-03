@@ -1228,7 +1228,7 @@ class Civ13
     {     
         if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) return false;
         while (($fp = fgets($file, 4096)) !== false) {
-            $fp = str_replace(PHP_EOL, '', $fp);
+            $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
             $string = substr($fp, strpos($fp, '/')+1);
             $ckey = substr($string, 0, strpos($string, ':'));
             foreach ($this->badwords as $badword) if (str_contains(strtolower($string), $badword)) { //ban ckey if $fp contains a blacklisted word
