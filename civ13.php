@@ -962,22 +962,10 @@ class Civ13
             $found_cids = [];
             $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                if (!in_array($log['ckey'], $ckeys)) {
-                    $found_ckeys[] = $log['ckey'];
-                    $found = true;
-                }
-                if (!in_array($log['ip'], $ips)) {
-                    $found_ips[] = $log['ip'];
-                    $found = true;
-                }
-                if (!in_array($log['cid'], $cids)) {
-                    $found_cids[] = $log['cid'];
-                    $found = true;
-                }
-                if (!in_array($log['date'], $dates)) {
-                    $found_dates[] = $log['date'];
-                    $found = true;
-                }
+                if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
@@ -997,22 +985,10 @@ class Civ13
             $found_cids = [];
             $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                if (!in_array($log['ckey'], $ips)) {
-                    $found_ckeys[] = $log['ckey'];
-                    $found = true;
-                }
-                if (!in_array($log['ip'], $ips)) {
-                    $found_ips[] = $log['ip'];
-                    $found = true;
-                }
-                if (!in_array($log['cid'], $cids)) {
-                    $found_cids[] = $log['cid'];
-                    $found = true;
-                }
-                if (!in_array($log['date'], $dates)) {
-                    $found_dates[] = $log['date'];
-                    $found = true;
-                }
+                if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
@@ -1021,16 +997,7 @@ class Civ13
             $i++;
         } //Keep iterating until no new ckeys, ips, or cids are found
         $altbanned = 'No';
-        foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) {
-            $altbanned = 'Yes';
-            break;
-        }
-    
-        //var_dump('Ckeys', implode(', ', $ckeys));
-        //var_dump('IPs', implode(', ', $ips));
-        //var_dump('CIDs', implode(', ', $cids));
-        //var_dump('Currently Banned', $banned);
-        //var_dump('Alt Banned', $altbanned);
+        foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = 'Yes'; break; }
         return [$ckeys, $ips, $cids, $banned, $altbanned];
     }
     public function serverinfoTimer(): void

@@ -23,15 +23,13 @@ $status_changer_random = function (Civ13 $civ13): bool
         $civ13->logger->warning("unable to open file `{$civ13->files['status_path']}`");
         return false;
     }
-    
     list($status, $type, $state) = explode('; ', $status_array[array_rand($status_array)]);
-    if ($status) {
-        $activity = new Activity($civ13->discord, [ //Discord status            
-            'name' => $status,
-            'type' => (int) $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
-        ]);
-        $civ13->statusChanger($activity, $state);
-    }
+    if (! $status) return false;
+    $activity = new Activity($civ13->discord, [ //Discord status            
+        'name' => $status,
+        'type' => (int) $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
+    ]);
+    $civ13->statusChanger($activity, $state);
     return true;
 };
 $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
@@ -160,12 +158,9 @@ $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lowe
     if (!in_array($message_content_lower, ['nomads', 'tdm', 'pers'])) return $message->reply('Please use the format `bans nomads` or `bans tdm');
     switch ($message_content_lower)
     {
-        case 'nomads':
-            return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_bans'], 'bans.txt'));
-        case 'tdm':
-            return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
-        case 'pers':
-            return $message->reply(MessageBuilder::new()->addFile($civ13->files['pers_bans'], 'bans.txt'));
+        case 'nomads': return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_bans'], 'bans.txt'));
+        case 'tdm': return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
+        case 'pers': return $message->reply(MessageBuilder::new()->addFile($civ13->files['pers_bans'], 'bans.txt'));
     }
 };
 
@@ -214,38 +209,17 @@ $medals = function (Civ13 $civ13, string $ckey): false|string
         $duser = explode(';', $line);
         if ($duser[0] == $ckey) {
             switch ($duser[2]) {
-                case 'long service medal':
-                    $medal_s = '<:long_service:705786458874707978>';
-                    break;
-                case 'combat medical badge':
-                    $medal_s = '<:combat_medical_badge:706583430141444126>';
-                    break;
-                case 'tank destroyer silver badge':
-                    $medal_s = '<:tank_silver:705786458882965504>';
-                    break;
-                case 'tank destroyer gold badge':
-                    $medal_s = '<:tank_gold:705787308926042112>';
-                    break;
-                case 'assault badge':
-                    $medal_s = '<:assault:705786458581106772>';
-                    break;
-                case 'wounded badge':
-                    $medal_s = '<:wounded:705786458677706904>';
-                    break;
-                case 'wounded silver badge':
-                    $medal_s = '<:wounded_silver:705786458916651068>';
-                    break;
-                case 'wounded gold badge':
-                    $medal_s = '<:wounded_gold:705786458845216848>';
-                    break;
-                case 'iron cross 1st class':
-                    $medal_s = '<:iron_cross1:705786458572587109>';
-                    break;
-                case 'iron cross 2nd class':
-                    $medal_s = '<:iron_cross2:705786458849673267>';
-                    break;
-                default: 
-                    $medal_s = '<:long_service:705786458874707978>';
+                case 'long service medal': $medal_s = '<:long_service:705786458874707978>'; break;
+                case 'combat medical badge': $medal_s = '<:combat_medical_badge:706583430141444126>'; break;
+                case 'tank destroyer silver badge': $medal_s = '<:tank_silver:705786458882965504>'; break;
+                case 'tank destroyer gold badge': $medal_s = '<:tank_gold:705787308926042112>'; break;
+                case 'assault badge': $medal_s = '<:assault:705786458581106772>'; break;
+                case 'wounded badge': $medal_s = '<:wounded:705786458677706904>'; break;
+                case 'wounded silver badge': $medal_s = '<:wounded_silver:705786458916651068>'; break;
+                case 'wounded gold badge': $medal_s = '<:wounded_gold:705786458845216848>'; break;
+                case 'iron cross 1st class': $medal_s = '<:iron_cross1:705786458572587109>'; break;
+                case 'iron cross 2nd class': $medal_s = '<:iron_cross2:705786458849673267>'; break;
+                default:  $medal_s = '<:long_service:705786458874707978>';
             }
             $result .= "**{$duser[1]}:** {$medal_s} **{$duser[2]}**, *{$duser[4]}*, {$duser[5]}" . PHP_EOL;
         }
@@ -353,8 +327,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'approveme')) {
         if ($message->member->roles->has($civ13->role_ids['infantry']) || $message->member->roles->has($civ13->role_ids['veteran'])) return $message->reply('You already have the verification role!');
         if ($item = $civ13->getVerifiedItem($message->member->id)) {
-            $message->react("👍");
-            return $message->member->setRoles([$civ13->role_ids['infantry']], "approveme {$item['ss13']}");
+            $message->member->setRoles([$civ13->role_ids['infantry']], "approveme {$item['ss13']}");
+            return $message->react("👍");
         }
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
@@ -385,32 +359,18 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         }
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $civ13->playerlogsToCollection();
-        echo 'Starting playerlogs loop' . PHP_EOL;
         $i = 0;
         do { //Iterate through playerlogs to find all known ckeys, ips, and cids
-            echo 'Loops so far: ' . $i . PHP_EOL;
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
             $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                if (!in_array($log['ckey'], $ckeys)) {
-                    $found_ckeys[] = $log['ckey'];
-                    $found = true;
-                }
-                if (!in_array($log['ip'], $ips)) {
-                    $found_ips[] = $log['ip'];
-                    $found = true;
-                }
-                if (!in_array($log['cid'], $cids)) {
-                    $found_cids[] = $log['cid'];
-                    $found = true;
-                }
-                if (!in_array($log['date'], $dates)) {
-                    $found_dates[] = $log['date'];
-                    $found = true;
-                }
+                if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
@@ -418,36 +378,22 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $dates = array_unique(array_merge($dates, $found_dates));
             $i++;
         } while ($found); //Keep iterating until no new ckeys, ips, or cids are found
-        echo "Finished searching playerlogs after $i loops" . PHP_EOL;
 
         $banlogs = $civ13->bansToCollection();
         $civ13->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
         $found = true;
         $i = 0;
         while ($found) { //Iterate through playerlogs to find all known ckeys, ips, and cids
-            echo 'Loops so far: ' . $i . PHP_EOL;
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
             $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                if (!in_array($log['ckey'], $ips)) {
-                    $found_ckeys[] = $log['ckey'];
-                    $found = true;
-                }
-                if (!in_array($log['ip'], $ips)) {
-                    $found_ips[] = $log['ip'];
-                    $found = true;
-                }
-                if (!in_array($log['cid'], $cids)) {
-                    $found_cids[] = $log['cid'];
-                    $found = true;
-                }
-                if (!in_array($log['date'], $dates)) {
-                    $found_dates[] = $log['date'];
-                    $found = true;
-                }
+                if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
@@ -456,11 +402,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $i++;
         } //Keep iterating until no new ckeys, ips, or cids are found
         $altbanned = 'No';
-        foreach ($ckeys as $key) if ($key != $ckey) if ($civ13->bancheck($key)) {
-            $altbanned = 'Yes';
-            break;
-        }
-        echo "Finished searching banlogs after $i loops" . PHP_EOL;
+        foreach ($ckeys as $key) if ($key != $ckey) if ($civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
 
         $verified = 'No';
         if ($civ13->verified->get('ss13', $ckey)) $verified = 'Yes';
@@ -907,39 +849,22 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
 
             $x=0;
             $load = '';
-            foreach ($load_array as $line) {
-                if (trim($line)) {
-                    if ($x==0) {
-                        $load = "CPU Usage: $line%" . PHP_EOL;
-                        break;
-                    } else {
-                        //$load = $load . "Core $x: $line%" . PHP_EOL; //No need to report individual cores right now
-                    }
-                    $x++;
-                }
-            }
+            foreach ($load_array as $line) if (trim($line) && $x == 0) { $load = "CPU Usage: $line%" . PHP_EOL; break; }
             return $message->reply($load);
         } else { //Linux
-            $cpu_load = '-1';
-            if ($cpu_load_array = sys_getloadavg()) $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array);
+            $cpu_load = ($cpu_load_array = sys_getloadavg()) ? $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array) : '-1';
             return $message->reply("CPU Usage: $cpu_load%");
         }
         return $message->reply('Unrecognized operating system!');
     }
     if (str_starts_with($message_content_lower, 'insult')) {
         $split_message = explode(' ', $message_content); //$split_target[1] is the target
-        if ((count($split_message) > 1 ) && strlen($split_message[1] > 0)) {
-            $incel = $split_message[1];
-            $insults_array = array();
-            
-            if (! file_exists($civ13->files['insults_path']) || ! ($file = fopen($civ13->files['insults_path'], 'r'))) return $message->react("🔥");
-            while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
-            if (count($insults_array) > 0) {
-                $insult = $insults_array[rand(0, count($insults_array)-1)];
-                return $message->channel->sendMessage(MessageBuilder::new()->setContent("$incel, $insult")->setAllowedMentions(['parse'=>[]]));
-            }
-        }
-        return;
+        if ((count($split_message) <= 1 ) || ! strlen($split_message[1] === 0)) return;
+        if (! file_exists($civ13->files['insults_path']) || ! ($file = @fopen($civ13->files['insults_path'], 'r'))) return $message->react("🔥");
+        $insults_array = array();
+        while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
+        if (count($insults_array) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $insults_array[rand(0, count($insults_array)-1)])->setAllowedMentions(['parse'=>[]]));
+        return $message->reply('No insults found!');
     }
     if (str_starts_with($message_content_lower, 'ooc ')) {
         $message_filtered = substr($message_content, 4);
