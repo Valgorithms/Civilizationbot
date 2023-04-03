@@ -950,7 +950,7 @@ class Civ13
         if (! $ckey = str_replace(['.', '_', ' '], '', trim($ckey))) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->getVerifiedItem($ckey)) $ckey = $item['ss13'];
-        var_dump('Ckey Collections Array: ', $collectionsArray, PHP_EOL);
+        //var_dump('Ckey Collections Array: ', $collectionsArray, PHP_EOL);
         
         $ckeys = [$ckey];
         $ips = [];
@@ -963,7 +963,7 @@ class Civ13
             if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
             if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
         }
-        var_dump('Searchable: ',  $ckeys, $ips, $cids, PHP_EOL);
+        //var_dump('Searchable: ',  $ckeys, $ips, $cids, PHP_EOL);
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $this->playerlogsToCollection();
         $i = 0;
@@ -973,9 +973,8 @@ class Civ13
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
-            $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                $this->logger->debug('Found new match: ', $log, PHP_EOL);
+                //$this->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }

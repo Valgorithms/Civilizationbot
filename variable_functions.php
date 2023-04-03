@@ -337,7 +337,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
-        
+        var_dump('Collections array:', $collectionsArray, PHP_EOL);
+
         $embed = new Embed($civ13->discord);
         $embed->setTitle($ckey);
         if ($item = $civ13->getVerifiedItem($ckey)) {
@@ -348,19 +349,17 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $ckeys = [$ckey];
         $ips = [];
         $cids = [];
-        $dates = [];
         foreach ($collectionsArray[0] as $log) { //Get the ckey's primary identifiers
             if (isset($log['ip'])) $ips[] = $log['ip'];
             if (isset($log['cid'])) $cids[] = $log['cid'];
-            if (isset($log['date'])) $dates[] = $log['date'];
         }
         foreach ($collectionsArray[1] as $log) { //Get the ckey's primary identifiers
             if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
             if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
-            if (isset($log['date']) && !in_array($log['date'], $ips)) $dates[] = $log['date'];
         }
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $civ13->playerlogsToCollection();
+        var_dump('playerlogs: ', $playerlogs, PHP_EOL);
         $i = 0;
         $break = false;
         do { //Iterate through playerlogs to find all known ckeys, ips, and cids
@@ -368,17 +367,15 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
-            $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                var_dump('Found new match:', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
-            $dates = array_unique(array_merge($dates, $found_dates));
             if ($i > 10) $break = true;
             $i++;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
@@ -393,17 +390,15 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
-            $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                $this->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
-            $dates = array_unique(array_merge($dates, $found_dates));
             if ($i > 10) $break = true;
             $i++;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
