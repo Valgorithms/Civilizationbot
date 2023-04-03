@@ -316,7 +316,7 @@ class Slash
             if (!empty($data[0])) $embed->addFieldValues('Ckeys', implode(', ', $data[0]));
             if (!empty($data[1])) $embed->addFieldValues('IPs', implode(', ', $data[1]));
             if (!empty($data[2])) $embed->addFieldValues('CIDs', implode(', ', $data[2]));
-            $embed->addfieldValues('Verified', $data[5]);
+            $embed->addfieldValues('Verified', $data[5] ? 'Yes' : 'No');
             $embed->addfieldValues('Currently Banned', $data[3]);
             $embed->addfieldValues('Alt Banned', $data[4]);
             $interaction->respondWithMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
