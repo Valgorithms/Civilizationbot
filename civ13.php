@@ -1232,9 +1232,7 @@ class Civ13
             $string = substr($fp, strpos($fp, '/')+1);
             $ckey = substr($string, 0, strpos($string, ':'));
             foreach ($this->badwords as $badword) if (str_contains(strtolower($string), $badword)) { //ban ckey if $fp contains a blacklisted word
-                $filtered = substr($badword, 0, 1);
-                for ($x=1;$x<strlen($badword)-2; $x++) $filtered .= '%';
-                $filtered  .= substr($badword, -1, 1);
+                $filtered = substr($badword, 0, 1) . str_repeat('%', strlen($badword)-2) . substr($badword, -1, 1);
                 ($this->legacy ? $this->legacyBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]) : $this->sqlBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]));
             }
             if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
