@@ -337,7 +337,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
-        var_dump('Collections array:', $collectionsArray, PHP_EOL);
+        $civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
 
         $embed = new Embed($civ13->discord);
         $embed->setTitle($ckey);
@@ -367,7 +367,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_ips = [];
             $found_cids = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                var_dump('Found new match:', $log, PHP_EOL);
+                $civ13->logger->debug('Found new match:', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
