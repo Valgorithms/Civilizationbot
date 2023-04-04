@@ -52,7 +52,20 @@ class Civ13
     public array $players = []; //Collected automatically by serverinfo_timer
     public array $seen_players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
-    public array $badwords = ['beaner', 'chink', 'chink', 'coon', 'fag', 'gook', 'kike', 'nigg', 'nlgg', 'niqq', 'retard', 'tranny']; //TODO: Retrieve from an API instead?
+    public array $badwords = [
+        ['beaner', '999 years', 'Racism and Discrimination.'],
+        ['chink', '999 years', 'Racism and Discrimination.'],
+        ['chink', '999 years', 'Racism and Discrimination.'],
+        ['coon', '999 years', 'Racism and Discrimination.'],
+        ['fag', '999 years', 'Racism and Discrimination.'],
+        ['gook', '999 years', 'Racism and Discrimination.'],
+        ['kike', '999 years', 'Racism and Discrimination.'],
+        ['nigg', '999 years', 'Racism and Discrimination.'],
+        ['nlgg', '999 years', 'Racism and Discrimination.'],
+        ['niqq', '999 years', 'Racism and Discrimination.'],
+        ['tranny', '999 years', 'Racism and Discrimination.'],
+        ['retard', '1 minute', 'Racism and Discrimination.'],
+    ];
     public bool $legacy = true;
     
     public $functions = array(
@@ -1189,9 +1202,9 @@ class Civ13
             $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
             $string = substr($fp, strpos($fp, '/')+1);
             $ckey = substr($string, 0, strpos($string, ':'));
-            foreach ($this->badwords as $badword) if (str_contains(strtolower($string), $badword)) { //ban ckey if $fp contains a blacklisted word
-                $filtered = substr($badword, 0, 1) . str_repeat('%', strlen($badword)-2) . substr($badword, -1, 1);
-                ($this->legacy ? $this->legacyBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]) : $this->sqlBan([$ckey, '999 years', "Blacklisted word ($filtered). Appeal at {$this->banappeal}"]));
+            foreach ($this->badwords as $badwords_array) if (str_contains(strtolower($string), $badwords_array[0])) { //ban ckey if $fp contains a blacklisted word
+                $filtered = substr($badwords_array[0], 0, 1) . str_repeat('%', strlen($badwords_array[0])-2) . substr($badwords_array[0], -1, 1);
+                ($this->legacy ? $this->legacyBan([$ckey, $badwords_array[1], "Blacklisted word ($filtered). {$badwords_array[2]} Appeal at {$this->banappeal}"]) : $this->sqlBan([$ckey, $badwords_array[1], "Blacklisted word ($filtered). {$badwords_array[2]} Appeal at {$this->banappeal}"]));
             }
             if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
             else {
