@@ -64,7 +64,8 @@ class Civ13
         ['nlgg', '999 years', 'Racism and Discrimination.'],
         ['niqq', '999 years', 'Racism and Discrimination.'],
         ['tranny', '999 years', 'Racism and Discrimination.'],
-        ['retard', '1 minute', 'Racism and Discrimination.'],
+        ['retard', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.'],
+        ['fuck you', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.'],
     ];
     public bool $legacy = true;
     
