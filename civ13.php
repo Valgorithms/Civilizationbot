@@ -943,7 +943,7 @@ class Civ13
     }
     /*
     *
-    * @return array[array, array, array, bool, bool, bool]
+    * @return array[array, array, array, bool, string, bool]
     */
     public function byondinfo(string $ckey): array
     {
@@ -987,7 +987,7 @@ class Civ13
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
     
         $banlogs = $this->bansToCollection();
-        $this->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
+        $banned = $this->bancheck($ckey);
         $found = true;
         $break = false;
         $i = 0;
@@ -1008,8 +1008,8 @@ class Civ13
             if ($i > 10) $break = true;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
 
-        $altbanned = 'No';
-        foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = 'Yes'; break; }
+        $altbanned = false;
+        foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = true; break; }
         $verified = false;
         if ($this->verified->get('ss13', $ckey)) $verified = true;
         return [$ckeys, $ips, $cids, $banned, $altbanned, $verified];
