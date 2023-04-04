@@ -371,8 +371,8 @@ class Slash
                 if (!empty($data[1])) $embed->addFieldValues('IPs', implode(', ', $data[1]));
                 if (!empty($data[2])) $embed->addFieldValues('CIDs', implode(', ', $data[2]));
                 $embed->addfieldValues('Verified', $data[5] ? 'Yes' : 'No');
-                $embed->addfieldValues('Currently Banned', $data[3]);
-                $embed->addfieldValues('Alt Banned', $data[4]);
+                $embed->addfieldValues('Currently Banned', $data[3] ? 'Yes' : 'No');
+                $embed->addfieldValues('Alt Banned', $data[4] ? 'Yes' : 'No');
                 $interaction->respondWithMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
             }
         });
