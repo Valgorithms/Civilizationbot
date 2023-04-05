@@ -349,14 +349,23 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $ckeys = [$ckey];
         $ips = [];
         $cids = [];
+        $dates = [];
         foreach ($collectionsArray[0] as $log) { //Get the ckey's primary identifiers
-            if (isset($log['ip'])) $ips[] = $log['ip'];
-            if (isset($log['cid'])) $cids[] = $log['cid'];
+            if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+            if (isset($log['cid']) && !in_array($log['cid'], $cids)) $cids[] = $log['cid'];
+            if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
         foreach ($collectionsArray[1] as $log) { //Get the ckey's primary identifiers
             if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-            if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
+            if (isset($log['cid']) && !in_array($log['cid'], $cids)) $cids[] = $log['cid'];
+            if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
+        $civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
+        if (!empty($ckeys)) $embed->addFieldValues('Primary Ckeys', implode(', ', $ckeys));
+        if (!empty($ips)) $embed->addFieldValues('Primary IPs', implode(', ', $ips));
+        if (!empty($cids)) $embed->addFieldValues('Primary CIDs', implode(', ', $cids));
+        if (!empty($dates)) $embed->addFieldValues('Primary Dates', implode(', ', $dates));
+
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $civ13->playerlogsToCollection(); //This is ALL players
         $i = 0;
@@ -366,15 +375,18 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
+            $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 $civ13->logger->debug('Found new match:', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
+            $dates = array_unique(array_merge($dates, $found_dates));
             if ($i > 10) $break = true;
             $i++;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
@@ -389,15 +401,18 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
+            $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 $this->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
+            $dates = array_unique(array_merge($dates, $found_dates));
             if ($i > 10) $break = true;
             $i++;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
@@ -406,9 +421,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
 
         $verified = 'No';
         if ($civ13->verified->get('ss13', $ckey)) $verified = 'Yes';
-        if (!empty($ckeys)) $embed->addFieldValues('Ckeys', implode(', ', $ckeys));
-        if (!empty($ips)) $embed->addFieldValues('IPs', implode(', ', $ips));
-        if (!empty($cids)) $embed->addFieldValues('CIDs', implode(', ', $cids));
+        if (!empty($ckeys)) $embed->addFieldValues('Matched Ckeys', implode(', ', $ckeys));
+        if (!empty($ips)) $embed->addFieldValues('Matched IPs', implode(', ', $ips));
+        if (!empty($cids)) $embed->addFieldValues('Matched CIDs', implode(', ', $cids));
+        if (!empty($dates) && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
         $embed->addfieldValues('Verified', $verified);
         $embed->addfieldValues('Currently Banned', $banned);
         $embed->addfieldValues('Alt Banned', $altbanned);
@@ -436,7 +452,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if ($message_content_lower == 'permitted') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (empty($civ13->permitted)) return $message->reply('No users have been permitted to bypass the Byond account age requirement.');
-        return $message->reply('The following ckeys are now permitted to bypass the Byond account limit and age requirements:' . PHP_EOL . '`' . implode('`' . PHP_EOL, array_keys($civ13->permitted)) . '`');
+        return $message->reply('The following ckeys are now permitted to bypass the Byond account limit and age requirements: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', array_keys($civ13->permitted)) . '`');
     }
     if (str_starts_with($message_content_lower, 'permit')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");

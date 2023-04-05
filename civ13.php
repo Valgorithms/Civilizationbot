@@ -942,8 +942,8 @@ class Civ13
         $playerlog = [];
         $playerlog['ckey'] = $item[0];
         $playerlog['ip'] = $item[1];
-        $playerlog['uid'] = $item[2];
-        $playerlog['cid'] = $item[3];
+        $playerlog['cid'] = $item[2];
+        $playerlog['uid'] = $item[3];
         $playerlog['date'] = $item[4];
 
         // Add the ban record to the collection
@@ -1033,7 +1033,7 @@ class Civ13
             $this->serverinfoFetch(); 
             $this->serverinfoParsePlayers();
             foreach ($this->serverinfoPlayers() as $ckey) {
-                if (!in_array($ckey, $this->seen_players)) {
+                if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
                     $byondinfo = $this->byondinfo($ckey); //Automatically ban evaders
                     if (! $byondinfo[3] && $byondinfo[4])
