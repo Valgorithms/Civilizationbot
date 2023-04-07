@@ -334,7 +334,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
     if (str_starts_with($message_content_lower, 'byondinfo')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+        $high_staff = $rank_check($civ13, $message, ['admiral', 'captain']);
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('byondinfo')))))) {
             if ($item = $civ13->getVerifiedItem($id)) $ckey = $item['ss13'];
             else return $message->reply("No data found for Discord ID `$id`.");
@@ -365,8 +366,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         }
         $civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
         if (!empty($ckeys)) $embed->addFieldValues('Primary Ckeys', implode(', ', $ckeys));
-        if (!empty($ips)) $embed->addFieldValues('Primary IPs', implode(', ', $ips));
-        if (!empty($cids)) $embed->addFieldValues('Primary CIDs', implode(', ', $cids));
+        if ($high_staff) {
+            if (!empty($ips)) $embed->addFieldValues('Primary IPs', implode(', ', $ips));
+            if (!empty($cids)) $embed->addFieldValues('Primary CIDs', implode(', ', $cids));
+        }
         if (!empty($dates)) $embed->addFieldValues('Primary Dates', implode(', ', $dates));
 
         //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
@@ -425,8 +428,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $verified = 'No';
         if ($civ13->verified->get('ss13', $ckey)) $verified = 'Yes';
         if (!empty($ckeys)) $embed->addFieldValues('Matched Ckeys', implode(', ', $ckeys));
-        if (!empty($ips)) $embed->addFieldValues('Matched IPs', implode(', ', $ips));
-        if (!empty($cids)) $embed->addFieldValues('Matched CIDs', implode(', ', $cids));
+        if ($high_staff) {
+            if (!empty($ips)) $embed->addFieldValues('Matched IPs', implode(', ', $ips));
+            if (!empty($cids)) $embed->addFieldValues('Matched CIDs', implode(', ', $cids));
+        }
         if (!empty($dates) && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
         $embed->addfieldValues('Verified', $verified);
         $embed->addfieldValues('Currently Banned', $banned);
