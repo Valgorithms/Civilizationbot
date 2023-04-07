@@ -336,7 +336,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'byondinfo')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('byondinfo')))))) {
-            if ($item = $this->getVerifiedItem($id)) $ckey = $item['ss13'];
+            if ($item = $civ13->getVerifiedItem($id)) $ckey = $item['ss13'];
             else return $message->reply("No data found for Discord ID `$id`.");
         } elseif (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
@@ -406,7 +406,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_cids = [];
             $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                $this->logger->debug('Found new match: ', $log, PHP_EOL);
+                $civ13->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
@@ -561,7 +561,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'unban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unban'))))))
-            if (! $item = $this->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
+            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         $civ13->unban($ckey, $message->author->displayname);
         return $message->reply("**{$message->author->displayname}** unbanned **$ckey**");
@@ -569,7 +569,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'unbannomads ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbannomads'))))))
-            if (! $item = $this->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
+            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
         $civ13->unbanNomads($ckey, $message->author->displayname);
@@ -582,7 +582,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'unbantdm ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbantdm'))))))
-            if (! $item = $this->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
+            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
         $civ13->unbanTDM($ckey, $message->author->displayname);
@@ -595,7 +595,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'unbanpers ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbanpers'))))))
-            if (! $item = $this->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
+            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
         $civ13->unbanPers($ckey, $message->author->displayname);
