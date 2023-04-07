@@ -335,7 +335,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'byondinfo')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
+        if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('byondinfo')))))) {
+            if ($item = $this->getVerifiedItem($id)) $ckey = $item['ss13'];
+            else return $message->reply("No data found for Discord ID `$id`.");
+        } elseif (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
         $civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
 
@@ -557,45 +560,47 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'unban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content_lower = substr($message_content_lower, 6);
-        $split_message = explode('; ', $message_content_lower);
-        
-        $civ13->unban($split_message[0], $message->author->displayname);
-        $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}**";
-        return $message->reply($result);
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unban'))))))
+            if (! $item = $this->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
+            else $ckey = $item['ckey'];
+        $civ13->unban($ckey, $message->author->displayname);
+        return $message->reply("**{$message->author->displayname}** unbanned **$ckey**");
     }
     if (str_starts_with($message_content_lower, 'unbannomads ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content_lower = substr($message_content_lower, 12);
-        $split_message = explode('; ', $message_content_lower);
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbannomads'))))))
+            if (! $item = $this->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
+            else $ckey = $item['ckey'];
         
-        $civ13->unbanNomads($split_message[0], $message->author->displayname);
-        $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **Nomads**";
-        if ($member = $civ13->getVerifiedMember('id', $split_message[0]))
+        $civ13->unbanNomads($ckey, $message->author->displayname);
+        $result = "**{$message->author->displayname}** unbanned **{$ckey}** from **Nomads**";
+        if ($member = $civ13->getVerifiedMember('id', $ckey))
             if ($member->roles->has($civ13->role_ids['banished']))
                 $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'unbantdm ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content_lower = substr($message_content_lower, 9);
-        $split_message = explode('; ', $message_content_lower);
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbantdm'))))))
+            if (! $item = $this->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
+            else $ckey = $item['ckey'];
         
-        $civ13->unbanTDM($split_message[0], $message->author->displayname);
-        $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **TDM**";
-        if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
+        $civ13->unbanTDM($ckey, $message->author->displayname);
+        $result = "**{$message->author->displayname}** unbanned **{$ckey}** from **TDM**";
+        if ($member = $civ13->getVerifiedMember('id', $ckey)) 
             if ($member->roles->has($civ13->role_ids['banished']))
                 $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
     if (str_starts_with($message_content_lower, 'unbanpers ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content_lower = substr($message_content_lower, 9);
-        $split_message = explode('; ', $message_content_lower);
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbanpers'))))))
+            if (! $item = $this->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
+            else $ckey = $item['ckey'];
         
-        $civ13->unbanPers($split_message[0], $message->author->displayname);
-        $result = "**{$message->author->displayname}** unbanned **{$split_message[0]}** from **Persistence**";
-        if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
+        $civ13->unbanPers($ckey, $message->author->displayname);
+        $result = "**{$message->author->displayname}** unbanned **{$ckey}** from **Persistence**";
+        if ($member = $civ13->getVerifiedMember('id', $ckey)) 
             if ($member->roles->has($civ13->role_ids['banished']))
                 $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
