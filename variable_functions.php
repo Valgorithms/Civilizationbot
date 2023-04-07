@@ -311,13 +311,13 @@ $banlog_update = function (string $banlog, array $playerlogs, $ckey = null): str
     return trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
 };
 
-$rank_check = function (Civ13 $civ13, $message, array $allowed_ranks): bool
+$rank_check = function (Civ13 $civ13, $message, array $allowed_ranks, $verbose = true): bool
 {
     $resolved_ranks = [];
     foreach ($allowed_ranks as $rank) $resolved_ranks[] = $civ13->role_ids[$rank];
     foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
     //$message->reply('Rejected! You need to have at least the [' . ($message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks)) . '] rank.');
-    $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
+    if ($verbose) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
 $guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $kill_nomads, $kill_tdm, $kill_pers, $host_nomads, $host_tdm, $host_pers, $restart_nomads, $restart_tdm, $restart_pers, $mapswap_nomads, $mapswap_tdm, $mapswap_pers, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
@@ -334,7 +334,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
     if (str_starts_with($message_content_lower, 'byondinfo')) {
-        $high_staff = $rank_check($civ13, $message, ['admiral', 'captain']);
+        $high_staff = $rank_check($civ13, $message, ['admiral', 'captain'], false);
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('byondinfo')))))) {
             if ($item = $civ13->getVerifiedItem($id)) $ckey = $item['ss13'];
@@ -436,7 +436,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $embed->addfieldValues('Verified', $verified);
         $embed->addfieldValues('Currently Banned', $banned);
         $embed->addfieldValues('Alt Banned', $altbanned);
-        $message->reply(MessageBuilder::new()->addEmbed($embed));
+        $builder = MessageBuilder::new();
+        if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
+        $builder->addEmbed($embed);
+        $message->reply($builder);
     }
     if (str_starts_with($message_content_lower, 'fullbancheck')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
