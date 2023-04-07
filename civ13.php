@@ -1161,9 +1161,9 @@ class Civ13
     public function unbanTimer(): bool
     {
         //We don't want the persistence server to do this function
-        if (file_exists($this->files['nomads_bans']) || ! ($file = fopen($this->files['nomads_bans'], 'r'))) return false;
+        if (! file_exists($this->files['nomads_bans']) || ! ($file = fopen($this->files['nomads_bans'], 'r'))) return false;
         fclose($file);
-        if (file_exists($this->files['tdm_bans']) || (! $file2 = fopen($this->files['tdm_bans'], 'r'))) return false;
+        if (! file_exists($this->files['tdm_bans']) || (! $file2 = fopen($this->files['tdm_bans'], 'r'))) return false;
         fclose($file2);
 
         $func = function() {
@@ -1348,7 +1348,7 @@ class Civ13
         
         // Write each verified member's SS13 ckey and associated role with its bitflag permission to the adminlist file
         foreach ($adminlists as $adminlist) {
-            if (file_exists($this->files[$adminlist]) || ! ($file = fopen($this->files[$adminlist], 'a'))) continue; // If the file cannot be opened, skip to the next admin list
+            if (! file_exists($this->files[$adminlist]) || ! ($file = fopen($this->files[$adminlist], 'a'))) continue; // If the file cannot be opened, skip to the next admin list
             ftruncate($file, 0);
             $file_contents = '';
             foreach ($this->verified as $item) if ($member = $this->getVerifiedMember($item)) foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->role_ids[$role]))
