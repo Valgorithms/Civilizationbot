@@ -148,7 +148,7 @@ $options = array(
 
         'pers_updateserverabspaths' => '/home/1713/civ13-pers/scripts/updateserverabspaths.py',
         'pers_serverdata' => '/home/1713/civ13-pers/serverdata.txt',
-        'pers_dmb' => '/home/1713/civ13-pers/civ13.dmb',
+        'pers_dmb' => '/home/1713/civ13-pers/civ13-pers.dmb',
         'pers_killsudos' => '/home/1713/civ13-pers/scripts/killsudos.py',
         'pers_killciv13' => '/home/1713/civ13-pers/scripts/killciv13.py',
         'mapswap_pers' => '/home/1713/civ13-pers/scripts/mapswap.py',
