@@ -161,6 +161,12 @@ class Civ13
             $this->discord->once('ready', function () {
                 $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
                 $this->logger->info('------');
+                if (! $tests = $this->VarLoad('tests.json')) $tests = [];
+                $this->tests = $tests;
+                if (! $permitted = $this->VarLoad('permitted.json')) $permitted = [];
+                $this->permitted = $permitted;
+                if (! $panic_bans = $this->VarLoad('panic_bans.json')) $panic_bans = [];
+                $this->panic_bans = $panic_bans;
 
                 $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username} by Valithor#5947";
                 $this->getVerified(); //Populate verified property with data from DB
@@ -172,15 +178,6 @@ class Civ13
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
                 $this->discord_config = $discord_config; //Declared, but not currently used for anything
-                
-                if (! $tests = $this->VarLoad('tests.json')) $tests = [];
-                $this->tests = $tests;
-
-                if (! $permitted = $this->VarLoad('permitted.json')) $permitted = [];
-                $this->permitted = $permitted;
-
-                if (! $panic_bans = $this->VarLoad('panic_bans.json')) $panic_bans = [];
-                $this->panic_bans = $panic_bans;
                 
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
@@ -352,7 +349,7 @@ class Civ13
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
         if (is_string($item)) {
             preg_match('/<@(\d+)>/', $item, $matches);
-            if (isset($matches[1]) && is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
+            if (isset($matches[1]) && is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item; // 
             if (is_string($item = $this->getVerifiedItem($item))) return false;
         }
         if ($item && $member = $guild->members->get('id', $item['discord'])) return $member;
