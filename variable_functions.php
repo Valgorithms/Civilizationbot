@@ -641,7 +641,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'restartpers')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $restart_pers($civ13);
-        return $message->reply("Attempted to kill, update, and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>");
+        return $message->reply("Attempted to kill, update, and bring up pers <byond://{$civ13->ips['pers']}:{$civ13->ports['pers']}>");
     }
     if (str_starts_with($message_content_lower, 'killnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
