@@ -119,12 +119,11 @@ class Civ13
         $this->logger = $options['logger'];
         $this->stats = $options['stats'];
         
-        if (isset($options['filecache_path'])) {
-            if (is_string($options['filecache_path'])) {
-                if (! str_ends_with($options['filecache_path'], '/')) $options['filecache_path'] .= '/';
-                $this->filecache_path = $options['filecache_path'];
-            } else $this->filecache_path = getcwd() . '/json/';
-        } else $this->filecache_path = getcwd() . '/json/';
+        $this->filecache_path = getcwd() . '/json/';
+        if (isset($options['filecache_path']) && is_string($options['filecache_path'])) {
+            if (! str_ends_with($options['filecache_path'], '/')) $options['filecache_path'] .= '/';
+            $this->filecache_path = $options['filecache_path'];
+        }
         if (!file_exists($this->filecache_path)) mkdir($this->filecache_path, 0664, true);
         
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
