@@ -20,6 +20,7 @@ use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Handler\StreamHandler;
 use React\EventLoop\Loop;
+use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\Http\Browser;
 use React\Http\Server;
@@ -135,8 +136,9 @@ class Civ13
         if(isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if(isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
                 
-        if(isset($options['discord'])) $this->discord = $options['discord'];
-        elseif(isset($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
+        if(isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
+        elseif(isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
+        else $this->logger->error('No Discord instance or options passed in options!');
         require 'slash.php';
         $this->slash = new Slash($this);
         
@@ -227,13 +229,13 @@ class Civ13
      */
     protected function resolveOptions(array $options = []): array
     {
-        if (is_null($options['logger'])) {
+        if (! isset($options['logger']) || ! ($options['logger'] instanceof Logger)) {
             $logger = new Logger('Civ13');
             $logger->pushHandler(new StreamHandler('php://stdout', Level::Debug));
             $options['logger'] = $logger;
         }
         
-        $options['loop'] = $options['loop'] ?? Loop::get();
+        if (! isset($options['loop']) || ! ($options['loop'] instanceof LoopInterface)) $options['loop'] = Loop::get();
         $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
         return $options;
