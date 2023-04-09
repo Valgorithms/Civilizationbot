@@ -77,7 +77,8 @@ class Civ13
     );
     
     public string $command_symbol = '!s'; //The symbol that the bot will use to identify commands if it is not mentioned
-    public string $owner_id = '196253985072611328'; //Valithor Obsidion's Discord ID
+    public string $owner_id = '196253985072611328'; //Taislin's Discord ID
+    public string $technician_id = '116927250145869826'; //Valithor Obsidion's Discord ID
     public string $embed_footer = ''; //Footer for embeds, this is set in the ready event
     public string $civ13_guild_id = '468979034571931648'; //Guild ID for the Civ13 server
     public string $verifier_feed_channel_id = '1032411190695055440'; //Channel where the bot will listen for verification notices and then update its verified cache accordingly
@@ -128,6 +129,7 @@ class Civ13
         
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
         if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
+        if(isset($options['technician_id'])) $this->technician_id = $options['technician_id'];
         if(isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
         if(isset($options['github'])) $this->github = $options['github'];
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
@@ -546,16 +548,16 @@ class Civ13
                 $this->getVerified();
                 break;
             case 404:
-                $message = "The website could not be found or is misconfigured. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->owner_id}>.";
+                $message = "The website could not be found or is misconfigured. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 504: //Gateway timeout
-                $message = "The website timed out while attempting to process the request. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->owner_id}>.";
+                $message = "The website timed out while attempting to process the request. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 0:
-                $message = "The website could not be reached. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->owner_id}>.";
+                $message = "The website could not be reached. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             default: 
-                $message = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->owner_id}>.";
+                $message = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
         }
         curl_close($ch);

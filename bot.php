@@ -67,6 +67,7 @@ $options = array(
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
     'command_symbol' => '!s',
     'owner_id' => '196253985072611328', //Taislin
+    'technician_id' => '116927250145869826', //Valithor
     'civ13_guild_id' => '468979034571931648', //Civ13
     'verifier_feed_channel_id' => '1032411190695055440', //Channel VZG Verifier webhooks verification messages to
     'files' => array(
