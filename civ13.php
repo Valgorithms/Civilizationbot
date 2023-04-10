@@ -653,7 +653,7 @@ class Civ13
     * These Legacy and SQL functions should not be called directly
     * Define $legacy = true/false and use ban/unban methods instead
     */
-    public function legacyBanNomads($array, $message = null): string
+    public function legacyBanNomads(array $array, $message = null): string
     {
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         $result = '';
@@ -668,11 +668,11 @@ class Civ13
         $result .= "**$admin** banned **{$array[0]}** from **Nomads** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
         return $result;
     }
-    public function sqlBanNomads($array, $message = null): string
+    public function sqlBanNomads(array $array, $message = null): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-    public function legacyBanTDM($array, $message = null): string
+    public function legacyBanTDM(array $array, $message = null): string
     {
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         $result = '';
@@ -691,7 +691,7 @@ class Civ13
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-    public function legacyBanPers($array, $message = null): string
+    public function legacyBanPers(array $array, $message = null): string
     {
         $admin = ($message ? $message->author->displayname : $this->discord->user->username);
         $result = '';
@@ -706,7 +706,7 @@ class Civ13
         $result .= "**$admin** banned **{$array[0]}** from **Persistence** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
         return $result;
     }
-    public function sqlBanPers($array, $message = null): string
+    public function sqlBanPers(array $array, $message = null): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
@@ -743,11 +743,11 @@ class Civ13
     {
         //TODO
     }
-    public function legacyBan($array, $message = null): string
+    public function legacyBan(array $array, $message = null): string
     {
         return $this->legacyBanNomads($array, $message) . $this->legacyBanTDM($array, $message);
     }
-    public function sqlBan($array, $message = null): string
+    public function sqlBan(array $array, $message = null): string
     {
         return $this->sqlBanNomads($array, $message) . $this->sqlBanTDM($array, $message);
     }
@@ -757,7 +757,7 @@ class Civ13
     * Ban functions will return a string containing the results of the ban
     * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
     */
-    public function ban($array, $message = null): string
+    public function ban(array $array, $message = null): string
     {
         if ($member = $this->getVerifiedMember($array[0]))
             if (! $member->roles->has($this->role_ids['banished']))
@@ -765,17 +765,17 @@ class Civ13
         if ($this->legacy) return $this->legacyBan($array, $message);
         return $this->sqlBan($array, $message);
     }
-    public function banNomads($array, $message = null): string
+    public function banNomads(array $array, $message = null): string
     {
         if ($this->legacy) return $this->legacyBanNomads($array, $message);
         return $this->sqlBanTDM($array, $message);
     }
-    public function banTDM($array, $message = null): string
+    public function banTDM(array $array, $message = null): string
     {
         if ($this->legacy) return $this->legacyBanTDM($array, $message);
         return $this->sqlBanTDM($array, $message);
     }
-    public function banPers($array, $message = null): string
+    public function banPers(array $array, $message = null): string
     {
         if ($this->legacy) return $this->legacyBanPers($array, $message);
         return $this->sqlBanPers($array, $message);
