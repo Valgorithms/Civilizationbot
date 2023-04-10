@@ -347,7 +347,7 @@ class Slash
 
         $this->civ13->discord->listenCommand('ban', function ($interaction)
         {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban([$interaction->data->options['ckey']->value, $interaction->data->options['duration']->value, $interaction->data->options['reason']->value] . " Appeal at {$this->civ13->banappeal}")));
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban([$interaction->data->options['ckey']->value, $interaction->data->options['duration']->value, $interaction->data->options['reason']->value . " Appeal at {$this->civ13->banappeal}"])));
         });
         
         $this->civ13->discord->listenCommand('unban', function ($interaction): void
