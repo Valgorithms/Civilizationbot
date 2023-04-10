@@ -53,20 +53,20 @@ class Civ13
     public array $players = []; //Collected automatically by serverinfo_timer
     public array $seen_players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
-    public array $badwords = [
-        ['beaner', '999 years', 'Racism and Discrimination.'],
-        ['chink', '999 years', 'Racism and Discrimination.'],
-        ['chink', '999 years', 'Racism and Discrimination.'],
-        ['coon', '999 years', 'Racism and Discrimination.'],
-        ['fag', '999 years', 'Racism and Discrimination.'],
-        ['gook', '999 years', 'Racism and Discrimination.'],
-        ['kike', '999 years', 'Racism and Discrimination.'],
-        ['nigg', '999 years', 'Racism and Discrimination.'],
-        ['nlgg', '999 years', 'Racism and Discrimination.'],
-        ['niqq', '999 years', 'Racism and Discrimination.'],
-        ['tranny', '999 years', 'Racism and Discrimination.'],
-        ['retard', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.'],
-        ['fuck you', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.'],
+    public array $badwords = [ //Formatted [badword, duration, reason, whole word regex]
+        ['beaner', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['chink', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['coon', '999 years', 'Racism and Discrimination.', 'exact'],
+        ['fag', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['gook', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['kike', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['nigg', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['nlgg', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['niqq', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['tranny', '999 years', 'Racism and Discrimination.', 'contains'],
+        ['cunt', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.', 'exact'],
+        ['fuck you', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.', 'exact'],
+        ['retard', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.', 'exact'],
     ];
     public bool $legacy = true;
     
@@ -1203,9 +1203,19 @@ class Civ13
             $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
             $string = substr($fp, strpos($fp, '/')+1);
             $ckey = substr($string, 0, strpos($string, ':'));
-            foreach ($this->badwords as $badwords_array) if (str_contains(strtolower($string), $badwords_array[0])) { //ban ckey if $fp contains a blacklisted word
-                $filtered = substr($badwords_array[0], 0, 1) . str_repeat('%', strlen($badwords_array[0])-2) . substr($badwords_array[0], -1, 1);
-                $this->ban([$ckey, $badwords_array[1], "Blacklisted word ($filtered). {$badwords_array[2]} Appeal at {$this->banappeal}"]);
+            foreach ($this->badwords as $badwords_array) switch ($badwords_array[3]) {
+                case 'exact': //ban ckey if $string contains a blacklisted phrase exactly as it is defined
+                    if (preg_match("\b{$badwords_array[0]}\b", $string)) { 
+                        $filtered = substr($badwords_array[0], 0, 1) . str_repeat('%', strlen($badwords_array[0])-2) . substr($badwords_array[0], -1, 1);
+                        $this->ban([$ckey, $badwords_array[1], "Blacklisted phrase ($filtered). {$badwords_array[2]} Appeal at {$this->banappeal}"]);
+                    }
+                    break;
+                case 'contains': //ban ckey if $string contains a blacklisted word
+                default: //default to 'contains'
+                    if (str_contains(strtolower($string), $badwords_array[0])) {
+                        $filtered = substr($badwords_array[0], 0, 1) . str_repeat('%', strlen($badwords_array[0])-2) . substr($badwords_array[0], -1, 1);
+                        $this->ban([$ckey, $badwords_array[1], "Blacklisted word ($filtered). {$badwords_array[2]} Appeal at {$this->banappeal}"]);
+                    }
             }
             if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
             else {
