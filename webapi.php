@@ -157,6 +157,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             execInBackground('git reset --hard origin/main');
+            if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) $channel->sendMessage('Forcefully moving the HEAD back to origin/main...');
             $return = 'fixing git';
             break;
         
