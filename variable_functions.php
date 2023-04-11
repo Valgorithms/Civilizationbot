@@ -330,7 +330,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $message->member->setRoles([$civ13->role_ids['infantry']], "approveme {$item['ss13']}");
             return $message->react("👍");
         }
-        if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
+        if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('approveme'))))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
     if (str_starts_with($message_content_lower, 'byondinfo')) {
@@ -339,7 +339,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('byondinfo')))))) {
             if ($item = $civ13->getVerifiedItem($id)) $ckey = $item['ss13'];
             else return $message->reply("No data found for Discord ID `$id`.");
-        } elseif (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, 9)))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
+        } elseif (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('byondinfo'))))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
         $civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
 
@@ -735,7 +735,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'bans')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if ($banlog_handler($civ13, $message, trim(substr($message_content_lower, 4)))) return;
+        if ($banlog_handler($civ13, $message, trim(substr($message_content_lower, strlen('bans'))))) return;
     }
 
     if (str_starts_with($message_content_lower, 'stop')) {
