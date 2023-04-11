@@ -604,13 +604,13 @@ class Civ13
                 if (isset($this->panic_bans[$ckey])) {
                     $this->panicUnban($ckey);
                     $message .= ' and the panic bunker ban removed.';
-                    $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
+                    if (! $member->roles->has($this->role_ids['infantry'])) $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
                     if ($channel) $channel->sendMessage("Verified and removed the panic bunker ban from $member ($ckey - {$this->ages[$ckey]}).");
                 } elseif ($this->bancheck($ckey, true)) {
-                    $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "approveme verified ($ckey)");
+                    if (! $member->roles->has($this->role_ids['infantry'])) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "approveme verified ($ckey)");
                     if ($channel) $channel->sendMessage("Added the banished role to $member ($ckey - {$this->ages[$ckey]}).");
                 } else {
-                    $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
+                    if (! $member->roles->has($this->role_ids['infantry'])) $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
                     if ($channel) $channel->sendMessage("Verified $member. ($ckey - {$this->ages[$ckey]})");
                 }
                 break;
