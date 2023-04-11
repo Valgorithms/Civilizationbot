@@ -193,17 +193,18 @@ class Civ13
                     $this->VarSave('badwords_warnings.json', $badwords_warnings);
                 }
                 $this->badwords_warnings = $badwords_warnings;
+                $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username} by Valithor#5947";
+
+                $this->getVerified(); //Populate verified property with data from DB
                 if (! $provisional = $this->VarLoad('provisional.json')) {
                     $provisional = [];
                     $this->VarSave('provisional.json', $provisional);
                 }
                 $this->provisional = $provisional;
-
-                $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username} by Valithor#5947";
-                $this->getVerified(); //Populate verified property with data from DB
+                foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); //Attempt to register all provisional users
                 $this->unbanTimer(); //Start the unban timer and remove the role from anyone who has been unbanned
                 $this->setIPs();
-                $this->serverinfoTimer();
+                $this->serverinfoTimer(); //Start the serverinfo timer and update the serverinfo channel
                 $this->pending = new Collection([], 'discord');
                 //Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
