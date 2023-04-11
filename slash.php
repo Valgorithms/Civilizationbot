@@ -203,6 +203,14 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
             ]));
 
+            //if ($command = $commands->get('name', 'revoke')) $commands->delete($command->id);
+            if (! $commands->get('name', 'revoke')) $commands->save(new Command($this->civ13->discord, [
+                'type'                       => Command::USER,
+                'name'                       => 'revoke',
+                'dm_permission'              => false,
+                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+            ]));
+
             //if ($command = $commands->get('name', 'byondinfo')) $commands->delete($command->id);
             if (! $commands->get('name', 'byondinfo')) $commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
@@ -373,6 +381,15 @@ class Slash
             else {
                 $this->civ13->permitCkey($item['ss13']);
                 $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** has permitted **`{$item['ss13']}`** to bypass Byond account restrictions."));
+            }
+        });
+
+        $this->civ13->discord->listenCommand('revoke', function ($interaction): void
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            else {
+                $this->civ13->permitCkey($item['ss13'], false);
+                $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** has removed permission from **`{$item['ss13']}`** to bypass Byond account restrictions."));
             }
         });
 
