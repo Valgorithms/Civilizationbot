@@ -53,21 +53,32 @@ class Civ13
     public array $players = []; //Collected automatically by serverinfo_timer
     public array $seen_players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
-    public array $badwords = [ //Formatted [badword, duration, reason, whole word regex]
-        ['beaner', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['chink', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['coon', '999 years', 'Racism and Discrimination.', 'exact'],
-        ['fag', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['gook', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['kike', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['nigg', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['nlgg', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['niqq', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['tranny', '999 years', 'Racism and Discrimination.', 'contains'],
-        ['cunt', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.', 'exact'],
-        ['fuck you', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.', 'exact'],
-        ['retard', '1 minute', 'You must not be toxic or too agitated in any OOC communication channels.', 'exact'],
+    public array $badwords = [
+        /* Format:
+            'word' => 'bad word' //Bad word to look for
+            'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] //Duration of the ban
+            'reason' => 'reason' //Reason for the ban
+            'category' => rule category ['racism/discrimination', 'toxic'] //Used to group bad words together by category
+            'method' => detection method ['exact', 'contains'] //Exact ignores partial matches, contains matches partial matchesq
+            'warnings' => 1 //Number of warnings before a ban
+        */
+        ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'contains', 'warnings' => 1], //Used to test the system
+        
+        ['word' => 'beaner', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'chink', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'coon', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'exact', 'warnings' => 1],
+        ['word' => 'fag', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'gook', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'kike', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'nigg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'nlgg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'niqq', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'tranny', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'cunt', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
+        ['word' => 'fuck you', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
+        ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
     ];
+    public array $badwords_warnings = []; //Collection of $ckey => ['category' => string, 'badword' => string, 'count' => integer] for how many times a user has recently infringed
     public bool $legacy = true;
     
     public $functions = array(
@@ -166,10 +177,21 @@ class Civ13
                 $this->logger->info('------');
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
                 $this->tests = $tests;
-                if (! $permitted = $this->VarLoad('permitted.json')) $permitted = [];
+                if (! $permitted = $this->VarLoad('permitted.json')) {
+                    $permitted = [];
+                    $this->VarSave('permitted.json', $permitted);
+                }
                 $this->permitted = $permitted;
-                if (! $panic_bans = $this->VarLoad('panic_bans.json')) $panic_bans = [];
+                if (! $panic_bans = $this->VarLoad('panic_bans.json')) {
+                    $panic_bans = [];
+                    $this->VarSave('panic_bans.json', $panic_bans);
+                }
                 $this->panic_bans = $panic_bans;
+                if (! $badwords_warnings = $this->VarLoad('badwords_warnings.json')) {
+                    $badwords_warnings = [];
+                    $this->VarSave('badwords_warnings.json', $badwords_warnings);
+                }
+                $this->badwords_warnings = $badwords_warnings;
 
                 $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username} by Valithor#5947";
                 $this->getVerified(); //Populate verified property with data from DB
@@ -810,6 +832,21 @@ class Civ13
         return $this->sqlUnbanPers($ckey, $admin);
     }
     
+    public function DirectMessageNomads($author, $string): bool
+    {
+        if (! file_exists($this->files['nomads_discord2dm']) || ! $file = fopen($this->files['nomads_discord2dm'], 'a')) return false;
+        fwrite($file, "$author:::$string" . PHP_EOL);
+        fclose($file);
+        return true;
+    }
+    public function DirectMessageTDM($author, $string): bool
+    {
+        if (! file_exists($this->files['tdm_discord2dm']) || ! $file = fopen($this->files['tdm_discord2dm'], 'a')) return false;
+        fwrite($file, "$author:::$string" . PHP_EOL);
+        fclose($file);
+        return true;
+    }
+
     /*
     * This function defines the IPs and ports of the servers
     * It is called on ready
@@ -1192,10 +1229,32 @@ class Civ13
     }
 
     /*
-    * This function is used to relay the game chat to Discord
-    * It will also ban players if they say a blacklisted word
-    * Returns true if the file was successfully read, false otherwise
+    * These functions handle in-game chat moderation and relay those messages to Discord
+    * Players will receive warnings and bans for using blacklisted words
     */
+    
+    /*
+    * This function determines if a player has been warned too many times for a specific category of bad words
+    * If they have, it will return false to indicate they should be banned
+    * If they have not, it will return true to indicate they should be warned
+    */
+    private function relayWarningCounter(string $ckey, array $badwords_array): bool
+    {
+        if (!isset($this->badwords_warnings[$ckey][$badwords_array['category']])) $this->badwords_warnings[$ckey][$badwords_array['category']] = 1;
+        else ++$this->badwords_warnings[$ckey][$badwords_array['category']];
+        $this->VarSave('badwords_warnings.json', $this->badwords_warnings);
+        if ($this->badwords_warnings[$ckey][$badwords_array['category']] > $this->badwords[$badwords_array['warnings']]) return false;
+        return true;
+    }
+    // This function is called from the game's chat hook if a player says something that contains a blacklisted word
+    private function relayViolation(string $file_path, string $ckey, array $badwords_array)
+    {
+        $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
+        if (! $this->relayWarningCounter($ckey, $badwords_array)) return $this->ban([$ckey, $badwords_array['duration'], "Blacklisted phrase ($filtered). Appeal at {$this->banappeal}"]);
+        $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
+        if (str_starts_with($file_path, 'nomads')) return $this->DirectMessageNomads($ckey, $warning);
+        if (str_starts_with($file_path, 'tdm')) return $this->DirectMessageTDM($ckey, $warning);
+    }
     public function gameChatRelay(string $file_path, $channel): bool
     {     
         if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) return false;
@@ -1203,19 +1262,13 @@ class Civ13
             $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
             $string = substr($fp, strpos($fp, '/')+1);
             $ckey = substr($string, 0, strpos($string, ':'));
-            foreach ($this->badwords as $badwords_array) switch ($badwords_array[3]) {
+            foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
                 case 'exact': //ban ckey if $string contains a blacklisted phrase exactly as it is defined
-                    if (preg_match("\b{$badwords_array[0]}\b", $string)) { 
-                        $filtered = substr($badwords_array[0], 0, 1) . str_repeat('%', strlen($badwords_array[0])-2) . substr($badwords_array[0], -1, 1);
-                        $this->ban([$ckey, $badwords_array[1], "Blacklisted phrase ($filtered). {$badwords_array[2]} Appeal at {$this->banappeal}"]);
-                    }
+                    if (preg_match("\b{$badwords_array['word']}\b", $string)) $this->relayViolation($file_path, $ckey, $badwords_array);
                     break;
                 case 'contains': //ban ckey if $string contains a blacklisted word
                 default: //default to 'contains'
-                    if (str_contains(strtolower($string), $badwords_array[0])) {
-                        $filtered = substr($badwords_array[0], 0, 1) . str_repeat('%', strlen($badwords_array[0])-2) . substr($badwords_array[0], -1, 1);
-                        $this->ban([$ckey, $badwords_array[1], "Blacklisted word ($filtered). {$badwords_array[2]} Appeal at {$this->banappeal}"]);
-                    }
+                    if (str_contains(strtolower($string), $badwords_array['word'])) $this->relayViolation($file_path, $ckey, $badwords_array);
             }
             if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
             else {
