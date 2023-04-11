@@ -195,6 +195,14 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
             ]));
             
+            //if ($command = $commands->get('name', 'permitted')) $commands->delete($command->id);
+            if (! $commands->get('name', 'permitted')) $commands->save(new Command($this->civ13->discord, [
+                'type'                       => Command::USER,
+                'name'                       => 'permitted',
+                'dm_permission'              => false,
+                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+            ]));
+
             //if ($command = $commands->get('name', 'permit')) $commands->delete($command->id);
             if (! $commands->get('name', 'permit')) $commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
@@ -375,6 +383,16 @@ class Slash
             }
         });
 
+        $this->civ13->discord->listenCommand('permitted', function ($interaction): void
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            else {
+                $response = "**`{$item['ss13']}`** is not currently permitted to bypass Byond account restrictions.";
+                if (in_array($item['ss13'], $this->civ13->permitted)) $response = "**`{$item['ss13']}`** is currently permitted to bypass Byond account restrictions.";
+                $interaction->respondWithMessage(MessageBuilder::new()->setContent($response));
+            }
+        });
+        
         $this->civ13->discord->listenCommand('permit', function ($interaction): void
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
