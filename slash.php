@@ -425,6 +425,7 @@ class Slash
                 $embed->addfieldValues('Verified', $data[5] ? 'Yes' : 'No');
                 $embed->addfieldValues('Currently Banned', $data[3] ? 'Yes' : 'No');
                 $embed->addfieldValues('Alt Banned', $data[4] ? 'Yes' : 'No');
+                $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$item['ss13']]) ? 'Yes' : 'No');
                 $interaction->respondWithMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
             }
         });

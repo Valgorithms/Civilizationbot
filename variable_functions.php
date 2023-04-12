@@ -436,6 +436,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $embed->addfieldValues('Verified', $verified);
         $embed->addfieldValues('Currently Banned', $banned);
         $embed->addfieldValues('Alt Banned', $altbanned);
+        $embed->addfieldValues('Ignoring banned alts or new account age', isset($civ13->permitted[$ckey]) ? 'Yes' : 'No');
         $builder = MessageBuilder::new();
         if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
         $builder->addEmbed($embed);

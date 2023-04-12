@@ -106,6 +106,7 @@ class Civ13
     public array $ports = [];
     public array $channel_ids = [];
     public array $role_ids = [];
+    public array $permissions = []; //NYI, used to store rank_check array for each command
     
     public array $discord_config = []; //This variable and its related function currently serve no purpose, but I'm keeping it in case I need it later
     public array $tests = []; //Staff application test templates
