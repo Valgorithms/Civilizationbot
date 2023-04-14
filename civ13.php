@@ -61,7 +61,7 @@ class Civ13
             'reason' => 'reason' //Reason for the ban
             'category' => rule category ['racism/discrimination', 'toxic'] //Used to group bad words together by category
             'method' => detection method ['exact', 'contains'] //Exact ignores partial matches, contains matches partial matchesq
-            'warnings' => 1 //Number of warnings before a ban
+            'warnings' => 1 //Number of warnings before a ban            
         */
         ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'contains', 'warnings' => 1], //Used to test the system
         
@@ -550,12 +550,10 @@ class Civ13
                 $this->discord->getLoop()->addTimer(1800, function() use ($func, $ckey, $discord_id) {
                     $func($ckey, $discord_id);
                 });
-                $this->provisional[$ckey] = $discord_id;
-                $this->VarSave('provisional.json', $this->provisional);
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if (! $member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify ckey `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes...");
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify ckey `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... Reason: {$result[1]}");
                 return true;
             }
             if (! $result[0] && isset($result[1])) {
@@ -570,7 +568,8 @@ class Civ13
             if ($result[0]) {
                 unset($this->provisional[$ckey]);
                 $this->VarSave('provisional.json', $this->provisional);
-                return $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Successfully verified `$ckey` with Discord ID <@$discord_id>.");
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Successfully verified `$ckey` with Discord ID <@$discord_id>.");
+                return true;
             }
             $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Something went wrong trying to process the provisional registration for ckey `$ckey` with Discord ID <@$discord_id>. If this error persists, contact <@{$this->technician_id}>.");
             return false;
@@ -627,8 +626,14 @@ class Civ13
                 break;
             case 0: //TODO: Allow provisional registration if the website is down, then try to verify when it comes back up
                 $message = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";    
-                if (! $provisional) {
-                    if ($this->provisionalRegistration($ckey, $discord_id)) $message = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
+                if (! $provisional) { //
+                    if (! isset($this->provisional[$ckey])) {
+                        $this->provisional[$ckey] = $discord_id;
+                        $this->VarSave('provisional.json', $this->provisional);
+                    }
+                    if ($this->provisionalRegistration($ckey, $discord_id)) {
+                        $message = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
+                    }
                     else $message .= PHP_EOL . 'Provisional registration is already pending and a new provisional role will not be provided at this time.';
                 }
                 break;
