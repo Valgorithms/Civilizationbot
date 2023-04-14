@@ -545,6 +545,10 @@ class Civ13
     public function provisionalRegistration(string $ckey, string $discord_id): bool
     {
         $func = function($ckey, $discord_id) use (&$func) {
+            if ($item = $this->verified->get('discord', $discord_id)) { //User already verified
+                if (isset($this->provisional[$ckey])) unset($this->provisional[$ckey]);
+                return false;
+            }
             $result = $this->verifyCkey($ckey, $discord_id, true);
             if (! $result[0] || (! $result[0] && isset($result[1]) && str_starts_with('The website', $result[1]))) {
                 $this->discord->getLoop()->addTimer(1800, function() use ($func, $ckey, $discord_id) {
@@ -633,8 +637,7 @@ class Civ13
                     }
                     if ($this->provisionalRegistration($ckey, $discord_id)) {
                         $message = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
-                    }
-                    else $message .= PHP_EOL . 'Provisional registration is already pending and a new provisional role will not be provided at this time.';
+                    } else $message .= 'Provisional registration is already pending and a new provisional role will not be provided at this time.' . PHP_EOL . $message;
                 }
                 break;
             default: 
