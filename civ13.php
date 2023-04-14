@@ -61,7 +61,7 @@ class Civ13
             'reason' => 'reason' //Reason for the ban
             'category' => rule category ['racism/discrimination', 'toxic'] //Used to group bad words together by category
             'method' => detection method ['exact', 'contains'] //Exact ignores partial matches, contains matches partial matchesq
-            'warnings' => 1 //Number of warnings before a ban            
+            'warnings' => 1 //Number of warnings before a ban
         */
         ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'contains', 'warnings' => 1], //Used to test the system
         
@@ -557,7 +557,7 @@ class Civ13
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if (! $member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify ckey `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... Reason: {$result[1]}");
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify ckey `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result[1]);
                 return true;
             }
             if (! $result[0] && isset($result[1])) {
@@ -573,7 +573,7 @@ class Civ13
                 unset($this->provisional[$ckey]);
                 $this->VarSave('provisional.json', $this->provisional);
                 $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Successfully verified `$ckey` with Discord ID <@$discord_id>.");
-                return true;
+                return false;
             }
             $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Something went wrong trying to process the provisional registration for ckey `$ckey` with Discord ID <@$discord_id>. If this error persists, contact <@{$this->technician_id}>.");
             return false;
