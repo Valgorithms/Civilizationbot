@@ -1305,6 +1305,7 @@ class Civ13
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
         if (! $this->relayWarningCounter($ckey, $badwords_array)) return $this->ban([$ckey, $badwords_array['duration'], "Blacklisted phrase ($filtered). Appeal at {$this->banappeal}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
+        if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
         if (str_starts_with($file_path, 'nomads')) return $this->DirectMessageNomads($ckey, $warning);
         if (str_starts_with($file_path, 'tdm')) return $this->DirectMessageTDM($ckey, $warning);
     }
