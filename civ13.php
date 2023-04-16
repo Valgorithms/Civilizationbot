@@ -80,7 +80,7 @@ class Civ13
         ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
     ];
     public array $badwords_warnings = []; //Collection of $ckey => ['category' => string, 'badword' => string, 'count' => integer] for how many times a user has recently infringed
-    public bool $legacy = true;
+    public bool $legacy = true; //If true, the bot will use the file methods instead of the SQL ones
     
     public $functions = array(
         'ready' => [],
