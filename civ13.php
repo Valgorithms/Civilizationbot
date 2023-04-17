@@ -1357,7 +1357,7 @@ class Civ13
             $ckey = substr($string, 0, strpos($string, ':'));
             foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
                 case 'exact': //ban ckey if $string contains a blacklisted phrase exactly as it is defined
-                    if (preg_match('\b' . $badwords_array['word'] . '\b', $string)) $this->relayViolation($file_path, $ckey, $badwords_array);
+                    if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->relayViolation($file_path, $ckey, $badwords_array);
                     break;
                 case 'contains': //ban ckey if $string contains a blacklisted word
                 default: //default to 'contains'
