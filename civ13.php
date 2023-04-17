@@ -30,6 +30,9 @@ use React\Filesystem\Factory as FilesystemFactory;
 class Civ13
 {
     public Slash $slash;
+    public $vzg_ip = '';
+    public $civ13_ip = '';
+    public $external_ip = '';
 
     public StreamSelectLoop $loop;
     public Discord $discord;
@@ -173,6 +176,9 @@ class Civ13
     */
     protected function afterConstruct()
     {
+        $this->vzg_ip = gethostbyname('http://www.valzargaming.com');
+        $this->civ13_ip = gethostbyname('http://www.civ13.com');
+        $this->external_ip = file_get_contents('http://ipecho.net/plain');
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
                 $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
@@ -914,13 +920,11 @@ class Civ13
     */
     public function setIPs(): void
     {
-        $vzg_ip = gethostbyname('www.valzargaming.com');
-        $external_ip = file_get_contents('http://ipecho.net/plain');
         $this->ips = [
-            'nomads' => $external_ip,
-            'tdm' => $external_ip,
-            'pers' => $vzg_ip,
-            'vzg' => $vzg_ip,
+            'nomads' => $this->external_ip,
+            'tdm' => $this->external_ip,
+            'pers' => $this->vzg_ip,
+            'vzg' => $this->vzg_ip,
         ];
         $this->ports = [
             'nomads' => '1715',
@@ -1351,9 +1355,7 @@ class Civ13
     */
     public function recalculateRanking(): bool
     {
-        if (! isset($this->files['tdm_awards_path'])) return false;
-        if (! isset($this->files['ranking_path'])) return false;
-
+        if (! isset($this->files['tdm_awards_path']) || ! isset($this->files['ranking_path'])) return false;
         if (! file_exists($this->files['tdm_awards_path']) || ! ($search = fopen($this->files['tdm_awards_path'], 'r'))) return false;
         $result = array();
         while (! feof($search)) {
