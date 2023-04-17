@@ -341,7 +341,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             else return $message->reply("No data found for Discord ID `$id`.");
         } elseif (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('byondinfo'))))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
-        $civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
+        //$civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
 
         $embed = new Embed($civ13->discord);
         $embed->setTitle($ckey);
@@ -364,7 +364,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (isset($log['cid']) && !in_array($log['cid'], $cids)) $cids[] = $log['cid'];
             if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
-        $civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
+        //$civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
         if (!empty($ckeys)) $embed->addFieldValues('Primary Ckeys', implode(', ', $ckeys));
         if ($high_staff) {
             if (!empty($ips)) $embed->addFieldValues('Primary IPs', implode(', ', $ips));
@@ -383,7 +383,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_cids = [];
             $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                $civ13->logger->debug('Found new match:', $log, PHP_EOL);
+                //$civ13->logger->debug('Found new match:', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
@@ -409,7 +409,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_cids = [];
             $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                $civ13->logger->debug('Found new match: ', $log, PHP_EOL);
+                //$civ13->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
