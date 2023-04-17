@@ -90,14 +90,13 @@ class ServerInstance
         else $this->civ13->logger->warning('No name passed in options!');
         if (isset($options['alias'])) $this->alias = $options['alias'];
         else $this->civ13->logger->warning('No alias passed in options!');
-
         if (isset($options['port']) && isset($options['ip'])) $this->setIP($options['port'], $options['ip']);
         else $this->civ13->logger->warning('No IP and/or port passed in options!');
 
         if (isset($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
         else $this->minimum_age &= $this->civ13->minimum_age;
         if (isset($options['legacy'])) $this->legacy = $options['legacy'];
-
+        else $this->legacy &= $this->civ13->legacy;
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
         else $this->command_symbol =& $this->civ13->command_symbol;
         if (isset($options['guild_id'])) $this->guild_id = $options['guild_id'];
@@ -111,13 +110,11 @@ class ServerInstance
         if(isset($options['panic_bunker'])) $this->panic_bunker = $options['panic_bunker'];
         else $this->panic_bunker =& $this->civ13->panic_bunker;
 
-        
         //require 'slash.php';
         //$this->civ13->slash = new Slash($this);
         
         if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->civ13->logger->warning('No functions passed in options!');
-        
         if(isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $id) $this->channel_ids[$key] = $id;
         else $this->civ13->logger->warning('No channel_ids passed in options!');
         if(isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
@@ -559,7 +556,7 @@ class ServerInstance
     */
     public function serverinfoPlayers(): array
     { 
-        if (empty($data_json = $this->serverinfo)) return [];
+        if (empty($data_json = $this->civ13->serverinfo)) return [];
         $this->players = [];
         foreach ($data_json as $server) {
             if (array_key_exists('ERROR', $server)) continue;
@@ -569,11 +566,6 @@ class ServerInstance
             }
         }
         return $this->players;
-    }
-    public function serverinfoFetch(): array
-    {
-        if (! $data_json = json_decode(file_get_contents("http://{$this->ips['vzg']}/servers/serverinfo.json", false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) return [];
-        return $this->serverinfo = $data_json;
     }
     public function bansToCollection(): Collection
     {
@@ -745,8 +737,8 @@ class ServerInstance
     public function serverinfoTimer(): void
     {
         $func = function() {
-            $this->serverinfoFetch(); 
-            $this->serverinfoParsePlayers();
+            $this->civ13->serverinfoFetch(); 
+            $this->civ13->serverinfoParsePlayers();
             foreach ($this->serverinfoPlayers() as $ckey) {
                 if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
@@ -791,11 +783,11 @@ class ServerInstance
     public function serverinfoParsePlayers(): void
     {
         $server_info = [
-            0 => ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>", 'prefix' => 'tdm-'],
-            1 => ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>", 'prefix' => 'nomads-'],
-            2 => ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['pers']}:{$this->ports['pers']}>", 'prefix' => 'persistence-'],
-            3 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>", 'prefix' => 'bc-'],
-            4 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>", 'prefix' => 'ps-']
+            0 => ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->civ13->ips['tdm']}:{$this->ports['tdm']}>", 'prefix' => 'tdm-'],
+            1 => ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->civ13->ips['nomads']}:{$this->ports['nomads']}>", 'prefix' => 'nomads-'],
+            2 => ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->civ13->ips['pers']}:{$this->ports['pers']}>", 'prefix' => 'persistence-'],
+            3 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->civ13->ips['vzg']}:{$this->ports['bc']}>", 'prefix' => 'bc-'],
+            4 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->civ13->ips['vzg']}:{$this->ports['ps13']}>", 'prefix' => 'ps-']
         ];
         //$relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); //We need to declare stationname in world.dm first
 
