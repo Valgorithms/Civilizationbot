@@ -850,7 +850,7 @@ class Civ13
     public function banNomads(array $array, $message = null): string
     {
         if ($this->legacy) return $this->legacyBanNomads($array, $message);
-        return $this->sqlBanTDM($array, $message);
+        return $this->sqlBanNomads($array, $message);
     }
     public function banTDM(array $array, $message = null): string
     {
