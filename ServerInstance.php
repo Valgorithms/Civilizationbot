@@ -744,7 +744,7 @@ class ServerInstance
                     $this->seen_players[] = $ckey;
                     $byondinfo = $this->byondinfo($ckey); //Automatically ban evaders
                     if (! $byondinfo[3] && $byondinfo[4])
-                        $this->civ13->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under under investigation. '])));
+                        $this->civ13->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
                 }
                 if ($this->civ13->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
