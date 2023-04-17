@@ -179,8 +179,8 @@ class Civ13
     */
     protected function afterConstruct(array $server_options = [])
     {
-        $this->vzg_ip = gethostbyname('http://www.valzargaming.com');
-        $this->civ13_ip = gethostbyname('http://www.civ13.com');
+        $this->vzg_ip = gethostbyname('www.valzargaming.com');
+        $this->civ13_ip = gethostbyname('www.civ13.com');
         $this->external_ip = file_get_contents('http://ipecho.net/plain');
 
         /*
