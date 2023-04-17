@@ -121,7 +121,7 @@ class Civ13
      * 
      * @throws E_USER_ERROR
      */
-    public function __construct(array $options = [])
+    public function __construct(array $options = [], array $server_options = [])
     {
         if (php_sapi_name() !== 'cli') trigger_error('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.', E_USER_ERROR);
 
