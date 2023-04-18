@@ -1415,6 +1415,7 @@ class Civ13
                     $medal_s += 5;
                     break;
             }
+            if (!isset($result[$duser[0]])) $result[$duser[0]] = 0;
             $result[$duser[0]] += $medal_s;
         }
         fclose ($search);
