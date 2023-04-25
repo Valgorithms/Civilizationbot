@@ -149,7 +149,7 @@ class ServerInstance
                 }
                 $this->badwords_warnings = $badwords_warnings;
                 $this->unbanTimer(); //Start the unban timer and remove the role from anyone who has been unbanned
-                //$this->serverinfoTimer(); //Start the serverinfo timer and update the serverinfo channel
+                //$this->serverinfoTimer(); //Start the serverinfo timer and update the serverinfo channel (Call this from civ13.php])
                 //Initialize configurations
                 
                 if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);

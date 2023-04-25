@@ -18,6 +18,7 @@ use Discord\Parts\Guild\Role;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
 use Monolog\Level;
+use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
@@ -294,8 +295,9 @@ class Civ13
     protected function resolveOptions(array $options = []): array
     {
         if (! isset($options['logger']) || ! ($options['logger'] instanceof Logger)) {
-            $logger = new Logger('Civ13');
-            $logger->pushHandler(new StreamHandler('php://stdout', Level::Debug));
+            $streamHandler = new StreamHandler('php://stdout', Level::Debug);
+            $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
+            $logger = new Logger('Civ13', [$streamHandler]);
             $options['logger'] = $logger;
         }
         

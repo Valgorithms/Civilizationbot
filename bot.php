@@ -14,6 +14,8 @@ use \WyriHaximus\React\Cache\Redis as RedisCache;
 use \Clue\React\Redis\Factory as Redis;
 use \React\Filesystem\Factory as FilesystemFactory;
 use \Monolog\Logger;
+use \Monolog\Level;
+use \Monolog\Formatter\LineFormatter;
 use \Monolog\Handler\StreamHandler;
 use \Discord\WebSockets\Intents;
 use \React\Http\Browser;
@@ -30,8 +32,9 @@ require getcwd() . '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
 $loop = Loop::get();
-$logger = new Logger('New logger');
-$logger->pushHandler(new StreamHandler('php://stdout'));
+$streamHandler = new StreamHandler('php://stdout', Level::Debug);
+$streamHandler->setFormatter(new LineFormatter(null, null, true, true));
+$logger = new Logger('Civ13', [$streamHandler]);
 $discord = new Discord([
     'loop' => $loop,
     'logger' => $logger,
