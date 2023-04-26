@@ -960,7 +960,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         }
     }
     if (str_starts_with($message_content_lower, 'bancheck')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
+        if (! $ckey = trim(str_replace(['.', '_', ' ', '<@!', '<@', '>'], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
+        if (is_numeric($ckey)) {
+            if (! $item = $civ13->verified->get('discord', $ckey)) return $message->reply("No ckey found for Discord ID `$ckey`.");
+            $ckey = $item['ss13'];
+        }
         $reason = 'unknown';
         $found = false;
         if (file_exists($civ13->files['nomads_bans']) && ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r'))) {
