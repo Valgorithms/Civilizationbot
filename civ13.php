@@ -636,7 +636,7 @@ class Civ13
         switch ($http_status) {
             case 200: //Verified
                 $success = true;
-                $message = "`$ckey` - ($this->ages[$ckey]) has been verified and registered to $discord_id";
+                $message = "`$ckey` - (" . $this->ages[$ckey] . ") has been verified and registered to $discord_id";
                 $this->pending->offsetUnset($discord_id);
                 $this->getVerified();
                 if (isset($this->channel_ids['staff_bot'])) $channel = $this->discord->getChannel($this->channel_ids['staff_bot']);
