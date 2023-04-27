@@ -664,7 +664,7 @@ class Civ13
             case 504: //Gateway timeout
                 $message = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
-            case 0: //TODO: Allow provisional registration if the website is down, then try to verify when it comes back up
+            case 0: //The website is down, so allow provisional registration, then try to verify when it comes back up
                 $message = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";    
                 if (! $provisional) { //
                     if (! isset($this->provisional[$ckey])) {
