@@ -1435,8 +1435,8 @@ class Civ13
     public function whitelistUpdate(array $whitelists = []): bool
     {
         if (! isset($this->role_ids['veteran'])) return false;
-        if (isset($this->files['nomads_whitelist']) && !in_array($whitelists, $this->files['nomads_whitelist'])) array_unshift($whitelists, $this->files['nomads_whitelist']);
-        if (isset($this->files['tdm_whitelist']) && !in_array($whitelists, $this->files['tdm_whitelist'])) array_unshift($whitelists, $this->files['tdm_whitelist']);
+        if (isset($this->files['nomads_whitelist']) && !in_array($this->files['nomads_whitelist'], $whitelists)) array_unshift($whitelists, $this->files['nomads_whitelist']);
+        if (isset($this->files['tdm_whitelist']) && !in_array($this->files['tdm_whitelist'], $whitelists)) array_unshift($whitelists, $this->files['tdm_whitelist']);
         if (empty($whitelists)) return false;
         foreach ($whitelists as $whitelist) {
             if (! file_exists($whitelist) || ! ($file = fopen($whitelist, 'a'))) return false;
