@@ -53,6 +53,7 @@ class Civ13
     public array $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
     public string $minimum_age = '-21 days'; //Minimum age of a ckey
     public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum age requirement
+    public array $blacklisted_regions = ['77.'];
 
     public array $timers = [];
     public array $serverinfo = []; //Collected automatically by serverinfo_timer
@@ -155,6 +156,9 @@ class Civ13
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
         if(isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if(isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
+
+        if(isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
+        if(isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
                 
         if(isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
         elseif(isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
@@ -1167,8 +1171,13 @@ class Civ13
                 if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
                     $byondinfo = $this->byondinfo($ckey); //Automatically ban evaders
-                    if (! $byondinfo[3] && $byondinfo[4])
-                        $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
+                    if (! $byondinfo[3]) {
+                        if ($byondinfo[4]) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
+                        else foreach ($byondinfo[1] as $ip) foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
+                            break;
+                        }
+                    }
                 }
                 if ($this->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
