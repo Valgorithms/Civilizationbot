@@ -458,13 +458,11 @@ class Civ13
      * The token is then stored in the pending collection, which is a collection of arrays with the keys 'discord', 'ss13', and 'token'
      * The token is then returned to the user
      */
-    public function generateByondToken(string $ckey, string $discord_id): string
+    public function generateByondToken(string $ckey, string $discord_id, string $charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', int $length = 50): string
     {
         if ($item = $this->pending->get('ss13', $ckey)) return $item['token'];
-        
-        $charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         $token = '';
-        while (strlen($token)<50) $token .= $charset[(mt_rand(0,(strlen($charset)-1)))];
+        while (strlen($token)<$length) $token .= $charset[(mt_rand(0,(strlen($charset)-1)))];
         $this->pending->pushItem(['discord' => $discord_id, 'ss13' => $ckey, 'token' => $token]);
         return $token;
     }
