@@ -219,10 +219,10 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
             ]));
 
-            //if ($command = $commands->get('name', 'byondinfo')) $commands->delete($command->id);
-            if (! $commands->get('name', 'byondinfo')) $commands->save(new Command($this->civ13->discord, [
+            //if ($command = $commands->get('name', 'ckeyinfo')) $commands->delete($command->id);
+            if (! $commands->get('name', 'ckeyinfo')) $commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
-                'name'                       => 'byondinfo',
+                'name'                       => 'ckeyinfo',
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
             ]));
@@ -411,11 +411,11 @@ class Slash
             }
         });
 
-        $this->civ13->discord->listenCommand('byondinfo', function ($interaction): void
+        $this->civ13->discord->listenCommand('ckeyinfo', function ($interaction): void
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             else {
-                $data = $this->civ13->byondinfo($item['ss13']);
+                $data = $this->civ13->ckeyinfo($item['ss13']);
                 $embed = new Embed($this->civ13->discord);
                 $embed->setTitle($item['ss13']);
                 if ($member = $this->civ13->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);

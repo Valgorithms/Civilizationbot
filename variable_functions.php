@@ -333,13 +333,13 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('approveme'))))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
-    if (str_starts_with($message_content_lower, 'byondinfo')) {
+    if (str_starts_with($message_content_lower, 'ckeyinfo')) {
         $high_staff = $rank_check($civ13, $message, ['admiral', 'captain'], false);
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('byondinfo')))))) {
+        if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckeyinfo')))))) {
             if ($item = $civ13->getVerifiedItem($id)) $ckey = $item['ss13'];
             else return $message->reply("No data found for Discord ID `$id`.");
-        } elseif (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('byondinfo'))))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
+        } elseif (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('ckeyinfo'))))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
         //$civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
 
@@ -455,7 +455,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $members = $message->guild->members->filter(function ($member) use ($civ13) { return !$member->roles->has($civ13->role_ids['banished']); });
         foreach ($members as $member)
             if ($item = $civ13->getVerifiedItem($member->id)) {
-                $array = $civ13->byondinfo($item['ss13']);
+                $array = $civ13->ckeyinfo($item['ss13']);
                 if (count($array[0]) > 1)
                     $ckeys = array_unique(array_merge($ckeys, $array[0]));
             }

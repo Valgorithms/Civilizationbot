@@ -287,7 +287,7 @@ class ServerInstance
     { //Attempt to verify a user
         if(! $item = $this->civ13->pending->get('discord', $discord_id)) return [false, 'This error should never happen'];
         if(! $this->civ13->checkToken($discord_id)) return [false, "You have not set your description yet! It needs to be set to {$item['token']}"];
-        if ($this->byondinfo($item['ss13'])[4] && ! isset($this->permitted[$item['ss13']])) {
+        if ($this->ckeyinfo($item['ss13'])[4] && ! isset($this->permitted[$item['ss13']])) {
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("<@&{$this->role_ids['knight']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
             return [false, "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
         }
@@ -666,7 +666,7 @@ class ServerInstance
     *
     * @return array[array, array, array, bool, bool, bool]
     */
-    public function byondinfo(string $ckey): array
+    public function ckeyinfo(string $ckey): array
     {
         if (! $ckey = str_replace(['.', '_', ' '], '', trim($ckey))) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
@@ -742,8 +742,8 @@ class ServerInstance
             foreach ($this->serverinfoPlayers() as $ckey) {
                 if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
-                    $byondinfo = $this->byondinfo($ckey); //Automatically ban evaders
-                    if (! $byondinfo[3] && $byondinfo[4])
+                    $ckeyinfo = $this->ckeyinfo($ckey); //Automatically ban evaders
+                    if (! $ckeyinfo[3] && $ckeyinfo[4])
                         $this->civ13->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
                 }
                 if ($this->civ13->verified->get('ss13', $ckey)) continue;
