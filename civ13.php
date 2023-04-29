@@ -1168,13 +1168,11 @@ class Civ13
             foreach ($this->serverinfoPlayers() as $ckey) {
                 if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
-                    $ckeyinfo = $this->ckeyinfo($ckey); //Automatically ban evaders
-                    if (! $ckeyinfo[3]) {
-                        if ($ckeyinfo[4]) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
-                        else foreach ($ckeyinfo[1] as $ip) foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
-                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
-                            break;
-                        }
+                    $ckeyinfo = $this->ckeyinfo($ckey);
+                    if ($ckeyinfo[4]) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. ']))); //Automatically ban evaders
+                    else foreach ($ckeyinfo[1] as $ip) foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
+                        $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
+                        break;
                     }
                 }
                 if ($this->verified->get('ss13', $ckey)) continue;
