@@ -336,10 +336,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'ckeyinfo')) {
         $high_staff = $rank_check($civ13, $message, ['admiral', 'captain'], false);
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckeyinfo')))))) {
-            if ($item = $civ13->getVerifiedItem($id)) $ckey = $item['ss13'];
-            else return $message->reply("No data found for Discord ID `$id`.");
-        } elseif (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('ckeyinfo'))))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
+        if (! $id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckeyinfo'))))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
+        if (is_numeric($id)) {
+            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$id`.");
+            $ckey = $item['ss13'];
+        } else $ckey = $id;
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
         //$civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
 
@@ -1064,7 +1065,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         if (! $item = $civ13->verified->get('ss13', $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('discord2ckey')))))) return $message->reply("`$ckey` is not registered to any discord id");
         return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
-    if (str_starts_with($message_content_lower, 'ckey')) {
+    if (! str_starts_with($message_content_lower, 'ckeyinfo') && str_starts_with($message_content_lower, 'ckey')) {
         if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckey')))))) {
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("`$id` is not registered to any ckey");
             if (! $age = $civ13->getByondAge($item['ss13'])) return $message->reply("`{$item['ss13']}` does not exist");
