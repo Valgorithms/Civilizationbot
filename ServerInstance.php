@@ -267,7 +267,7 @@ class ServerInstance
         if (! $this->civ13->pending->get('discord', $discord_id)) {
             if (! $age = $this->civ13->getByondAge($ckey)) return "Ckey `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
-                $this->civ13->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+                $this->civ13->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
                 return "Ckey `$ckey` is too new! ($age)";
             }
             $found = false;
@@ -750,7 +750,7 @@ class ServerInstance
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
                 if (isset($this->civ13->ages[$ckey])) continue;
                 if (! $this->checkByondAge($age = $this->civ13->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
-                    $this->civ13->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+                    $this->civ13->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
             }
         };
         $func();

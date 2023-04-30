@@ -513,7 +513,7 @@ class Civ13
     /*
      * This function is used to parse a BYOND account's age
      * */
-    public function parseByondAge(string $page, ?string $ckey = null): string|false
+    public function parseByondAge(string $page): string|false
     {
 		if (preg_match("^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])^", $age = substr($page, (strpos($page , 'joined')+10), 10))) return $age;
         return false;
@@ -545,15 +545,15 @@ class Civ13
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
         if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, please ask Valithor to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
-            if (! $age = $this->getByondAge($ckey)) return "Ckey `$ckey` does not exist!";
+            if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
                 return "Ckey `$ckey` is too new! ($age)";
             }
             $found = false;
             foreach (explode('|', file_get_contents($this->files['tdm_playerlogs']) . file_get_contents($this->files['nomads_playerlogs'])) as $line)
                 if (explode(';', trim($line))[0] == $ckey) { $found = true; break; }
-            if (! $found) return "Ckey `$ckey` has never been seen on the server before! You'll need to join either Nomads or TDM at least once before verifying."; 
+            if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join either Nomads or TDM at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
         return $this->verifyNew($discord_id)[1]; //[0] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, [1] will contain the error/success message and will be messaged to the user
@@ -595,7 +595,7 @@ class Civ13
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if (! $member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify ckey `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result[1]);
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result[1]);
                 return true;
             }
             if (! $result[0] && isset($result[1])) {
@@ -604,16 +604,16 @@ class Civ13
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if ($member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([], 'Provisional verification failed');
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify ckey `$ckey` with Discord ID <@$discord_id>: {$result[1]}");
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result[1]}");
                 return false;
             }
             if ($result[0]) {
                 unset($this->provisional[$ckey]);
                 $this->VarSave('provisional.json', $this->provisional);
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Successfully verified `$ckey` with Discord ID <@$discord_id>.");
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Successfully verified Byond account `$ckey` with Discord ID <@$discord_id>.");
                 return false;
             }
-            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Something went wrong trying to process the provisional registration for ckey `$ckey` with Discord ID <@$discord_id>. If this error persists, contact <@{$this->technician_id}>.");
+            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Something went wrong trying to process the provisional registration for Byond account `$ckey` with Discord ID <@$discord_id>. If this error persists, contact <@{$this->technician_id}>.");
             return false;
         };
         return $func($ckey, $discord_id);
@@ -657,7 +657,7 @@ class Civ13
                 }
                 break;
             case 403: //Already registered
-                $message = "Either ckey `$ckey` or <@$discord_id> has already been verified."; //This should have been caught above. Need to run getVerified() again?
+                $message = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; //This should have been caught above. Need to run getVerified() again?
                 $this->getVerified();
                 break;
             case 404:
@@ -1186,7 +1186,7 @@ class Civ13
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
                 if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
-                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account $ckey does not meet the requirements to be approved. ($age)"]));
+                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
             }
         };
         $func();
