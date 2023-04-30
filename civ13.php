@@ -567,7 +567,7 @@ class Civ13
     { //Attempt to verify a user
         if(! $item = $this->pending->get('discord', $discord_id)) return [false, 'This error should never happen'];
         if(! $this->checkToken($discord_id)) return [false, "You have not set your description yet! It needs to be set to {$item['token']}"];
-        if ($this->ckeyinfo($item['ss13'])[4] && ! isset($this->permitted[$item['ss13']])) {
+        if ($this->ckeyinfo($item['ss13'])['altbanned'] && ! isset($this->permitted[$item['ss13']])) {
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("<@&{$this->role_ids['knight']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
             return [false, "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
         }
@@ -1158,7 +1158,14 @@ class Civ13
         foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = true; break; }
         $verified = false;
         if ($this->verified->get('ss13', $ckey)) $verified = true;
-        return [$ckeys, $ips, $cids, $this->bancheck($ckey), $altbanned, $verified];
+        return [
+            'ckeys' => $ckeys,
+            'ips' => $ips,
+            'cids' => $cids,
+            'banned' => $this->bancheck($ckey),
+            'altbanned' => $altbanned,
+            'verified' => $verified
+        ];
     }
     public function serverinfoTimer(): void
     {
@@ -1169,8 +1176,8 @@ class Civ13
                 if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
-                    if ($ckeyinfo[4]) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. ']))); //Automatically ban evaders
-                    else foreach ($ckeyinfo[1] as $ip) foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
+                    if ($ckeyinfo['altbanned']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. ']))); //Automatically ban evaders
+                    else foreach ($ckeyinfo['ips'] as $ip) foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
                         $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
                         break;
                     }

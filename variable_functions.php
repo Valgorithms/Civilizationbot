@@ -456,11 +456,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $members = $message->guild->members->filter(function ($member) use ($civ13) { return !$member->roles->has($civ13->role_ids['banished']); });
         foreach ($members as $member)
             if ($item = $civ13->getVerifiedItem($member->id)) {
-                $array = $civ13->ckeyinfo($item['ss13']);
-                if (count($array[0]) > 1)
-                    $ckeys = array_unique(array_merge($ckeys, $array[0]));
+                $ckeyinfo = $civ13->ckeyinfo($item['ss13']);
+                if (count($ckeyinfo['ckeys']) > 1)
+                    $ckeys = array_unique(array_merge($ckeys, $ckeyinfo['ckeys']));
             }
-        return $message->reply("The following ckeys are alt accounts of unbanned verified players:" . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $ckeys) . '`');
+        return $message->reply("The following ckeys are alt accounts of verified players:" . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $ckeys) . '`');
     }
     if ($message_content_lower == 'permitted') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
