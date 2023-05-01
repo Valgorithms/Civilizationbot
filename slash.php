@@ -419,12 +419,12 @@ class Slash
                 $embed = new Embed($this->civ13->discord);
                 $embed->setTitle($item['ss13']);
                 if ($member = $this->civ13->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
-                if (!empty($data[0])) $embed->addFieldValues('Ckeys', implode(', ', $data[0]));
-                if (!empty($data[1])) $embed->addFieldValues('IPs', implode(', ', $data[1]));
-                if (!empty($data[2])) $embed->addFieldValues('CIDs', implode(', ', $data[2]));
-                $embed->addfieldValues('Verified', $data[5] ? 'Yes' : 'No');
-                $embed->addfieldValues('Currently Banned', $data[3] ? 'Yes' : 'No');
-                $embed->addfieldValues('Alt Banned', $data[4] ? 'Yes' : 'No');
+                if (!empty($data['ckeys'])) $embed->addFieldValues('Ckeys', implode(', ', $data['ckeys']));
+                if (!empty($data['ips'])) $embed->addFieldValues('IPs', implode(', ', $data['ids']));
+                if (!empty($data['cids'])) $embed->addFieldValues('CIDs', implode(', ', $data['cids']));
+                $embed->addfieldValues('Verified', $data['verified'] ? 'Yes' : 'No');
+                $embed->addfieldValues('Currently Banned', $data['banned'] ? 'Yes' : 'No');
+                $embed->addfieldValues('Alt Banned', $data['altbanned'] ? 'Yes' : 'No');
                 $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$item['ss13']]) ? 'Yes' : 'No');
                 $interaction->respondWithMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
             }

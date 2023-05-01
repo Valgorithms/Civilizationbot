@@ -599,11 +599,11 @@ class Civ13
                 return true;
             }
             if (! $result[0] && isset($result[1])) {
-                unset($this->provisional[$ckey]);
-                $this->VarSave('provisional.json', $this->provisional);
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if ($member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([], 'Provisional verification failed');
+                unset($this->provisional[$ckey]);
+                $this->VarSave('provisional.json', $this->provisional);
                 $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result[1]}");
                 return false;
             }
@@ -663,7 +663,7 @@ class Civ13
             case 404:
                 $message = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
-            case 503: //Datbase unavailable
+            case 503: //Database unavailable
                 $message = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 504: //Gateway timeout
