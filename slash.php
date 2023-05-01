@@ -420,7 +420,7 @@ class Slash
                 $embed->setTitle($item['ss13']);
                 if ($member = $this->civ13->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
                 if (!empty($ckeyinfo['ckeys'])) $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
-                if (!empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ids']));
+                if (!empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']));
                 if (!empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']));
                 $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
                 $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
