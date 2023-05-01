@@ -415,16 +415,16 @@ class Slash
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             else {
-                $data = $this->civ13->ckeyinfo($item['ss13']);
+                $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
                 $embed = new Embed($this->civ13->discord);
                 $embed->setTitle($item['ss13']);
                 if ($member = $this->civ13->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
-                if (!empty($data['ckeys'])) $embed->addFieldValues('Ckeys', implode(', ', $data['ckeys']));
-                if (!empty($data['ips'])) $embed->addFieldValues('IPs', implode(', ', $data['ids']));
-                if (!empty($data['cids'])) $embed->addFieldValues('CIDs', implode(', ', $data['cids']));
-                $embed->addfieldValues('Verified', $data['verified'] ? 'Yes' : 'No');
-                $embed->addfieldValues('Currently Banned', $data['banned'] ? 'Yes' : 'No');
-                $embed->addfieldValues('Alt Banned', $data['altbanned'] ? 'Yes' : 'No');
+                if (!empty($ckeyinfo['ckeys'])) $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
+                if (!empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ids']));
+                if (!empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']));
+                $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
+                $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
+                $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');
                 $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$item['ss13']]) ? 'Yes' : 'No');
                 $interaction->respondWithMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
             }
