@@ -95,7 +95,7 @@ class Civ13
         'misc' => [],
     );
     
-    public string $command_symbol = '!s'; //The symbol that the bot will use to identify commands if it is not mentioned
+    public string $command_symbol = '@Civilizationbot'; //The symbol that the bot will use to identify commands if it is not mentioned
     public string $owner_id = '196253985072611328'; //Taislin's Discord ID
     public string $technician_id = '116927250145869826'; //Valithor Obsidion's Discord ID
     public string $embed_footer = ''; //Footer for embeds, this is set in the ready event

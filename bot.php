@@ -68,7 +68,7 @@ $options = array(
     //Configurations
     'banappeal' => 'civ13.com slash discord',
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
-    'command_symbol' => '!s',
+    'command_symbol' => '@Civilizationbot',
     'owner_id' => '196253985072611328', //Taislin
     'technician_id' => '116927250145869826', //Valithor
     'civ13_guild_id' => '468979034571931648', //Civ13
