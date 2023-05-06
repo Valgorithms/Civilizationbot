@@ -1066,14 +1066,14 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
     if (! str_starts_with($message_content_lower, 'ckeyinfo') && str_starts_with($message_content_lower, 'ckey')) {
-        if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckey')))))) {
-            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("`$id` is not registered to any ckey");
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckey')))))) {
+            if (! $item = $civ13->getVerifiedItem($ckey)) return $message->reply("`$ckey` is not registered to any ckey");
             if (! $age = $civ13->getByondAge($item['ss13'])) return $message->reply("`{$item['ss13']}` does not exist");
             return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
         }
-        if (! $age = $civ13->getByondAge($id)) return $message->reply("`$id` does not exist");
-        if ($item = $civ13->getVerifiedItem($id)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
-        return $message->reply("`$id` is not registered to any discord id ($age)");
+        if (! $age = $civ13->getByondAge($ckey)) return $message->reply("`$ckey` does not exist");
+        if ($item = $civ13->getVerifiedItem($ckey)) return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+        return $message->reply("`$ckey` is not registered to any discord id ($age)");
     }
     
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
