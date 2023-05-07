@@ -422,6 +422,11 @@ class Slash
                 if (!empty($ckeyinfo['ckeys'])) $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
                 if (!empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']));
                 if (!empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']));
+                if (!empty($ckeyinfo['ips'])) {
+                    $regions = [];
+                    foreach ($ckeyinfo['ips'] as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
+                    $embed->addFieldValues('Regions', implode(', ', $regions));
+                }
                 $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
                 $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
                 $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');

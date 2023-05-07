@@ -54,6 +54,7 @@ class Civ13
     public string $minimum_age = '-21 days'; //Minimum age of a ckey
     public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum age requirement
     public array $blacklisted_regions = ['77.124', '77.125', '77.126', '77.127', '77.137.', '77.138.', '77.139.', '77.238.175', '77.91.69', '77.91.71', '77.91.74', '77.91.79', '77.91.88'];
+    public array $blacklisted_countries = ['IL', 'ISR'];
 
     public array $timers = [];
     public array $serverinfo = []; //Collected automatically by serverinfo_timer
@@ -159,6 +160,7 @@ class Civ13
 
         if(isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
         if(isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
+        if(isset($options['blacklsited_countries']) && is_array($options['blacklisted_countries'])) $this->blacklisted_countries = $options['blacklisted_countries'];
                 
         if(isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
         elseif(isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
@@ -1170,6 +1172,18 @@ class Civ13
             'verified' => $verified
         ];
     }
+    function IP2Country(string $ip): string
+    {
+        $numbers = explode('.', $ip);
+        if (! include('ip_files/'.$numbers[0].'.php')) return 'unknown'; //$ranges is defined in the included file
+        $code = ($numbers[0] * 16777216) + ($numbers[1] * 65536) + ($numbers[2] * 256) + ($numbers[3]);    
+        foreach (array_keys($ranges) as $key) if ($key<=$code) if ($ranges[$key][0]>=$code) {
+            $country = $ranges[$key][1];
+            break;
+        }
+        if ($country == '') $country = 'unknown';
+        return $country;
+    }
     public function serverinfoTimer(): void
     {
         $func = function() {
@@ -1180,9 +1194,14 @@ class Civ13
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
                     if ($ckeyinfo['altbanned']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. ']))); //Automatically ban evaders
-                    else foreach ($ckeyinfo['ips'] as $ip) foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
-                        $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
-                        break;
+                    else foreach ($ckeyinfo['ips'] as $ip) {
+                        if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) {
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
+                            break;
+                        } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
+                            break 2;
+                        }
                     }
                 }
                 if ($this->verified->get('ss13', $ckey)) continue;

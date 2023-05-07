@@ -433,6 +433,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (!empty($ips)) $embed->addFieldValues('Matched IPs', implode(', ', $ips));
             if (!empty($cids)) $embed->addFieldValues('Matched CIDs', implode(', ', $cids));
         }
+        if (!empty($ips)) {
+            $regions = [];
+            foreach ($ips as $ip) if (! in_array($region = $civ13->IP2Country($ip), $regions)) $regions[] = $region;
+            $embed->addFieldValues('Regions', implode(', ', $regions));
+        }
         if (!empty($dates) && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
         $embed->addfieldValues('Verified', $verified);
         $embed->addfieldValues('Currently Banned', $banned);
