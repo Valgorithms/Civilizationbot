@@ -1172,6 +1172,25 @@ class Civ13
             'verified' => $verified
         ];
     }
+    /*
+    * This function is used to get the country code of an IP address using the ip-api API
+    * The site will return a JSON object with the country code, region, and city of the IP address
+    * The site will return a status of 429 if the request limit is exceeded (45 requests per minute)
+    * Returns a string in the format of 'CC->REGION->CITY'
+    */
+    function __IP2Country(string $ip): string
+    {
+        //TODO: Add caching and error handling for 429s
+        $ch = curl_init(); 
+        curl_setopt($ch, CURLOPT_URL, "http://ip-api.com/json/$ip"); 
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 1); //The site is usually really fast, so we don't want to wait too long
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $json = json_decode($response, true);
+        if (! $json) return ''; //If the request timed out or if the service 429'd us
+        if ($json['status'] == 'success') return $json['countryCode'] . '->' . $json['region'] . '->' . $json['city'];
+    }
     function IP2Country(string $ip): string
     {
         $numbers = explode('.', $ip);
