@@ -6,10 +6,13 @@
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
+use Discord\Parts\Embed\Embed;
 use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use \Psr\Http\Message\ServerRequestInterface;
+
+if (! include 'webhook_key.php') $webhook_key = 'CHANGEME'; //The token is used to verify that the sender is legitimate and not a malicious actor
 
 function webapiFail($part, $id) {
     //logInfo('[webapi] Failed', ['part' => $part, 'id' => $id]);
@@ -24,7 +27,7 @@ $external_ip = file_get_contents('http://ipecho.net/plain');
 $valzargaming_ip = gethostbyname('www.valzargaming.com');
 
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', '55555'), [], $civ13->loop);
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip)
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip, $webhook_key)
 {
     /*
     $path = explode('/', $request->getUri()->getPath());
@@ -256,7 +259,91 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             */
             $return = '';
             break;
-        
+
+        case 'webhook':
+            $server =& $method; //alias for readability
+            if (!isset($civ13->channel_ids[$server.'_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+            $channel_id = $civ13->channel_ids[$server.'_webhook_channel'];
+            $params = $request->getQueryParams();
+            var_dump($params);
+            if (! $whitelisted && (!isset($params['key']) || $params['key'] != $webhook_key)) return new Response(401, ['Content-Type' => 'text/plain'], 'Unauthorized');
+            if (!isset($params['method']) || !isset($params['data'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Missing Parameters');
+            $data = json_decode($params['data'], true);
+            $time = '['.date('H:i:s', time()).']';
+            $message = '';
+            $ckey = '';
+            switch ($params['method']) {
+                case 'ahelpmessage':
+                    $message .= "**__{$time} AHELP__ {$data['ckey']}**: " . urldecode($data['message']);
+                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    break;
+                case 'asaymessage':
+                    $message .= "**__{$time} ASAY__ {$data['ckey']}**: " . urldecode($data['message']);
+                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    break;
+                case 'lobbymessage':
+                    $message .= "**__{$time} LOBBY__ {$data['ckey']}**: " . urldecode($data['message']);
+                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    break;
+                case 'oocmessage':
+                    $message .= "**__{$time} OOC__ {$data['ckey']}**: " . urldecode($data['message']);
+                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    break;
+                case 'memessage':
+                    if (isset($data['message'])) $message .= "**__{$time} EMOTE__ {$data['ckey']}** " . urldecode($data['message']);
+                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    break;
+                case 'garbage':
+                    $message .= "**__{$time} GARBAGE__ {$data['ckey']}**: " . strip_tags($data['message']);
+                    //$ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    $arr = explode(' ', strip_tags($data['message']));
+                    $trigger = $arr[3];
+                    if ($trigger == 'logout:') $ckey = explode('/', $arr[4])[0];
+                    elseif ($trigger == 'login:') $ckey = explode('/', $arr[4])[0];
+                    else $ckey = explode('/', substr(strip_tags($data['message']), 4))[0];
+                    break;
+                case 'respawn_notice':
+                    //if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
+                    $message .= urldecode($data['message']);
+                    break;
+                case 'login':
+                    $message .= "{$data['ckey']} logged in.";
+                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    break;
+                case 'logout':
+                    $message .= "{$data['ckey']} logged out.";
+                    $ckey = strtolower(str_replace(['.', '_', ' '], '', explode('[DC]', $data['ckey'])[0]));
+                    break;
+                case 'token':
+                case 'roundstatus':
+                case 'status_update':
+                    echo "[DATA FOR {$params['method']}]: "; var_dump($params['data']); echo PHP_EOL;
+                    break;
+                case 'runtimemessage':
+                    $message .= "**__{$time} RUNTIME__**: " . strip_tags($data['message']);
+                    $trigger = explode(' ', $data['message'])[1];
+                    if ($trigger == 'ListVarEdit') $ckey = str_replace(['.', '_', ' '], '', explode(':', strtolower(substr($data['message'], 8+strlen('ListVarEdit'))))[0]);
+                    elseif ($trigger == 'VarEdit') $ckey = str_replace(['.', '_', ' '], '', explode('/', strtolower(substr($data['message'], 8+strlen('VarEdit'))))[0]);
+                    break;
+                default:
+                    return new Response(400, ['Content-Type' => 'text/plain'], 'Invalid Parameter');
+            }
+            if ($message && $channel = $civ13->discord->getChannel($channel_id)) {
+                if (! $ckey || ! $item = $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', explode('/', $ckey)[0])))) $channel->sendMessage($message);
+                elseif ($user = $civ13->discord->users->get('id', $item['discord'])) {
+                    $embed = new Embed($civ13->discord);
+                    $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                    $embed->setDescription($message);
+                    $channel->sendEmbed($embed);
+                } elseif($item) {
+                    $civ13->discord->users->fetch('id', $item['discord']);
+                    $channel->sendMessage($message);
+                } else {
+                    $channel->sendMessage($message);
+                }
+            }
+            return new Response(200, ['Content-Type' => 'text/html'], 'Done');
+
         case 'nomads':
             switch ($id) {
                 case 'bans':
@@ -276,8 +363,6 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $nomads_playerlogs = $civ13->files['nomads_playerlogs'];
                     if ($return = file_get_contents($nomads_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_playerlogs`");
-                default:
-                    return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
             }
             break;
         case 'tdm':
