@@ -184,7 +184,7 @@ $options = array(
         'tdm_ooc_webhook_channel' => '1107016184328622233', //#ooc-tdm (New)
         'tdm_asay_webhook_channel' => '1107016769169801216', //#asay-tdm 
         'tdm_debug_webhook_channel' => '1106248157798600715', //#debug-tdm, debugging
-        'tdm_garbage_webhook_channel' => '1107014570922483752', //#garbage-tdm
+        'tdm_garbage_webhook_channel' => '1107018726307528735', //#garbage-tdm
         'tdm_runtime_webhook_channel' => '1107017103883632792', //#runtime-tdm
         'tdm_attack_webhook_channel' => '1107017830160936980', //#attack-tdm
 
