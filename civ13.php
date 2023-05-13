@@ -105,8 +105,9 @@ class Civ13
     public string $civ_token = ''; //Token for use with $verifyurl, this is not the same as the bot token and should be kept secret
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; //Link to the bot's github page
-    public string $banappeal = 'civ13.com slash discord'; //Players can appeal their bans here
-    public string $verifyurl = 'http://valzargaming.com:8080/verified/'; //This is the URL that the bot will use to verify a ckey and where it will retrieve the list of verified ckeys from
+    public string $banappeal = 'civ13.com slash discord'; //Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
+    public string $verifyurl = 'http://valzargaming.com:8080/verified/'; //Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
+    public string $serverinfourl = ''; //Where the bot will retrieve server information from
     public bool $webserver_online = false;
     
     public array $files = [];
@@ -158,6 +159,7 @@ class Civ13
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
         if(isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if(isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
+        if(isset($options['serverinfourl'])) $this->serverinfourl = $options['serverinfourl'];
 
         if(isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
         if(isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
@@ -971,6 +973,7 @@ class Civ13
             'bc' => '7777', 
             'ps13' => '7778',
         ];
+        if(! $this->serverinfourl) $this->serverinfourl = "http://{$this->ips['vzg']}/servers/serverinfo.json"; //Default to VZG unless passed manually in config
     }
     
     /*
@@ -1004,7 +1007,7 @@ class Civ13
     }
     public function serverinfoFetch(): array
     {
-        if (! $data_json = json_decode(file_get_contents("http://{$this->ips['vzg']}/servers/serverinfo.json", false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) {
+        if (! $data_json = json_decode(file_get_contents($this->serverinfourl, false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) {
             $this->webserverStatusChannelUpdate($this->webserver_online = false);
             return [];
         }
