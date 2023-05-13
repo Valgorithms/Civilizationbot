@@ -274,31 +274,31 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             $ckey = '';
             switch ($params['method']) {
                 case 'ahelpmessage':
-                    $message .= "**__{$time} AHELP__ {$data['ckey']}**: " . urldecode($data['message']);
+                    $message .= "**__{$time} AHELP__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'asaymessage':
                     if (!isset($civ13->channel_ids[$server.'_asay_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_asay_webhook_channel'];
-                    $message .= "**__{$time} ASAY__ {$data['ckey']}**: " . urldecode($data['message']);
+                    $message .= "**__{$time} ASAY__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'lobbymessage':
-                    $message .= "**__{$time} LOBBY__ {$data['ckey']}**: " . urldecode($data['message']);
+                    $message .= "**__{$time} LOBBY__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'oocmessage':
                     if (!isset($civ13->channel_ids[$server.'_ooc_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_ooc_webhook_channel'];
-                    $message .= "**__{$time} OOC__ {$data['ckey']}**: " . urldecode($data['message']);
+                    $message .= "**__{$time} OOC__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'memessage':
-                    if (isset($data['message'])) $message .= "**__{$time} EMOTE__ {$data['ckey']}** " . urldecode($data['message']);
+                    if (isset($data['message'])) $message .= "**__{$time} EMOTE__ {$data['ckey']}** " . html_entity_decode(urldecode($data['message']));
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'garbage':
-                    $message .= "**__{$time} GARBAGE__ {$data['ckey']}**: " . strip_tags($data['message']);
+                    $message .= "**__{$time} GARBAGE__ {$data['ckey']}**: " . html_entity_decode(strip_tags($data['message']));
                     //$ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     $arr = explode(' ', strip_tags($data['message']));
                     $trigger = $arr[3];
@@ -308,7 +308,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     break;
                 case 'respawn_notice':
                     //if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
-                    $message .= urldecode($data['message']);
+                    $message .= html_entity_decode(urldecode($data['message']));
                     break;
                 case 'login':
                     $message .= "{$data['ckey']} logged in.";
