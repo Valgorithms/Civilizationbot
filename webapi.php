@@ -294,6 +294,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'garbage':
+                    return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Don't output this, for now
                     $message .= "**__{$time} GARBAGE__ {$data['ckey']}**: " . strip_tags($data['message']);
                     //$ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     $arr = explode(' ', strip_tags($data['message']));
