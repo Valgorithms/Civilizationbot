@@ -187,6 +187,7 @@ $options = array(
         'tdm_garbage_webhook_channel' => '1107018726307528735', //#garbage-tdm
         'tdm_runtime_webhook_channel' => '1107017103883632792', //#runtime-tdm
         'tdm_attack_webhook_channel' => '1107017830160936980', //#attack-tdm
+        'tdm_transit_webhook_channel' => '1107020747622326313', //#transit-tdm
 
         /* Persistence */
         'persistence-playercount' => '1090788345082298369', //persistence-#

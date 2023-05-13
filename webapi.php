@@ -315,6 +315,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'logout':
+                    if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_transit_webhook_channel'];
                     $message .= "{$data['ckey']} logged out.";
                     $ckey = strtolower(str_replace(['.', '_', ' '], '', explode('[DC]', $data['ckey'])[0]));
                     break;
