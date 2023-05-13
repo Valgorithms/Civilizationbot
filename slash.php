@@ -294,8 +294,8 @@ class Slash
                 $embed->setTimestamp();
                 $embed->setURL('');
                 $messagebuilder = MessageBuilder::new();
-                if ($this->civ13->webserver_offline) $messagebuilder->setContent('Webserver Status: **Offline**, data is stale.');
-                else $messagebuilder->setContent('Webserver Status: **Online**');
+                if ($this->civ13->webserver_online) $messagebuilder->setContent('Webserver Status: **Online**');
+                else $messagebuilder->setContent('Webserver Status: **Offline**, data is stale.');
                 $messagebuilder->addEmbed($embed);
                 $interaction->respondWithMessage($messagebuilder);
             }

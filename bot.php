@@ -177,6 +177,7 @@ $options = array(
         'pers_ooc_channel' => '1090863947579658320', //#ooc-pers
         'pers_admin_channel' => '1090863837730848798', //#ahelp-pers
         'persistence-playercount' => '1090788345082298369', //persistence-#
+        'webserver-status' => '1106967195092783104', #webserver-status
         'staff_bot' => '712685552155230278', //#staff-bot
         //'ban_appeals' => '1019718839749062687', //#ban-appeals (forum thread, unused by bot)        
     ),

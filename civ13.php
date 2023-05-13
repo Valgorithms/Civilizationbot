@@ -107,7 +107,7 @@ class Civ13
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; //Link to the bot's github page
     public string $banappeal = 'civ13.com slash discord'; //Players can appeal their bans here
     public string $verifyurl = 'http://valzargaming.com:8080/verified/'; //This is the URL that the bot will use to verify a ckey and where it will retrieve the list of verified ckeys from
-    public bool $webserver_offline = false;
+    public bool $webserver_online = false;
     
     public array $files = [];
     public array $ips = [];
@@ -990,13 +990,24 @@ class Civ13
         }
         return $this->players;
     }
+    public function webserverStatusChannelUpdate(bool $status)
+    {
+        if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return;
+        [$webserver_name, $reported_status] = explode('-', $channel->name);
+        if ($this->webserver_online) $status = 'online';
+        else $status = 'offline';
+        if ($reported_status != $status) {
+            $channel->name = "{$webserver_name}-{$status}";
+            $channel->guild->channels->save($channel);
+        }
+    }
     public function serverinfoFetch(): array
     {
         if (! $data_json = json_decode(file_get_contents("http://{$this->ips['vzg']}/servers/serverinfo.json", false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) {
-            $this->webserver_offline = true;
+            $this->webserverStatusChannelUpdate($this->webserver_online = false);
             return [];
         }
-        $this->webserver_offline = false;
+        $this->webserverStatusChannelUpdate($this->webserver_online = true);
         return $this->serverinfo = $data_json;
     }
     public function bansToCollection(): Collection
