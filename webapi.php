@@ -325,6 +325,12 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if ($trigger == 'ListVarEdit') $ckey = str_replace(['.', '_', ' '], '', explode(':', strtolower(substr($data['message'], 8+strlen('ListVarEdit'))))[0]);
                     elseif ($trigger == 'VarEdit') $ckey = str_replace(['.', '_', ' '], '', explode('/', strtolower(substr($data['message'], 8+strlen('VarEdit'))))[0]);
                     break;
+                case 'alogmessage':
+                    $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
+                    break;
+                case 'attacklogmessage':
+                    $message .= "**__{$time} ATTACK LOG__**: " . strip_tags($data['message']);
+                    break;
                 default:
                     return new Response(400, ['Content-Type' => 'text/plain'], 'Invalid Parameter');
             }
