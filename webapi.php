@@ -339,6 +339,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     break;
                 case 'alogmessage':
                     if (!isset($civ13->channel_ids[$server.'_adminlog_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    if (isset($data['ckey'])) $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     $channel_id = $civ13->channel_ids[$server.'_adminlog_webhook_channel'];
                     $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
                     break;
