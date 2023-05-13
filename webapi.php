@@ -262,8 +262,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 
         case 'webhook':
             $server =& $method; //alias for readability
-            if (!isset($civ13->channel_ids[$server.'_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-            $channel_id = $civ13->channel_ids[$server.'_webhook_channel'];
+            if (!isset($civ13->channel_ids[$server.'_debug_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+            $channel_id = $civ13->channel_ids[$server.'_debug_webhook_channel'];
             $params = $request->getQueryParams();
             var_dump($params);
             if (! $whitelisted && (!isset($params['key']) || $params['key'] != $webhook_key)) return new Response(401, ['Content-Type' => 'text/plain'], 'Unauthorized');
