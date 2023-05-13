@@ -293,7 +293,11 @@ class Slash
                 $embed->setColor(0xe1452d);
                 $embed->setTimestamp();
                 $embed->setURL('');
-                $interaction->respondWithMessage(MessageBuilder::new()->addEmbed($embed));
+                $messagebuilder = MessageBuilder::new();
+                if ($this->civ13->webserver_offline) $messagebuilder->setContent('Webserver Status: **Offline**, data is stale.');
+                else $messagebuilder->setContent('Webserver Status: **Online**');
+                $messagebuilder->addEmbed($embed);
+                $interaction->respondWithMessage($messagebuilder);
             }
         });
 
