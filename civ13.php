@@ -1216,6 +1216,7 @@ class Civ13
         $numbers = explode('.', $ip);
         if (! include('ip_files/'.$numbers[0].'.php')) return 'unknown'; //$ranges is defined in the included file
         $code = ($numbers[0] * 16777216) + ($numbers[1] * 65536) + ($numbers[2] * 256) + ($numbers[3]);    
+        $country = '';
         foreach (array_keys($ranges) as $key) if ($key<=$code) if ($ranges[$key][0]>=$code) {
             $country = $ranges[$key][1];
             break;
