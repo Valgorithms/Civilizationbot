@@ -265,7 +265,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             if (!isset($civ13->channel_ids[$server.'_debug_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
             $channel_id = $civ13->channel_ids[$server.'_debug_webhook_channel'];
             $params = $request->getQueryParams();
-            var_dump($params);
+            //var_dump($params);
             if (! $whitelisted && (!isset($params['key']) || $params['key'] != $webhook_key)) return new Response(401, ['Content-Type' => 'text/plain'], 'Unauthorized');
             if (!isset($params['method']) || !isset($params['data'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Missing Parameters');
             $data = json_decode($params['data'], true);
