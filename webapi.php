@@ -283,7 +283,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "**__{$time} ASAY__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
-                case 'lobbymessage':
+                case 'lobbymessage': //Might overlap with deadchat
+                    if (!isset($civ13->channel_ids[$server.'_lobby_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_lobby_webhook_channel'];
                     $message .= "**__{$time} LOBBY__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;

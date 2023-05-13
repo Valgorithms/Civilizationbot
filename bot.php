@@ -182,6 +182,7 @@ $options = array(
         'tdm_admin_channel' => '637046904575885322', //#ahelp-tdm
         //Webhook relays
         'tdm_ooc_webhook_channel' => '1107016184328622233', //#ooc-tdm (New)
+        'tdm_lobby_webhook_channel' => '1107021760483831988', //#lobby-tdm
         'tdm_asay_webhook_channel' => '1107016769169801216', //#asay-tdm 
         'tdm_debug_webhook_channel' => '1106248157798600715', //#debug-tdm, debugging
         'tdm_garbage_webhook_channel' => '1107018726307528735', //#garbage-tdm
