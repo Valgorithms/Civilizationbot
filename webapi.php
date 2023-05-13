@@ -312,7 +312,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     //if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
                     $message .= html_entity_decode(urldecode($data['message']));
                     break;
-                case 'login':
+                case 'login': //Temporerarily disabled pending bug fix server-side
+                    return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_transit_webhook_channel'];
                     $message .= "{$data['ckey']} logged in.";
