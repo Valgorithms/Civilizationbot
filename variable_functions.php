@@ -1071,7 +1071,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
     if (! str_starts_with($message_content_lower, 'ckeyinfo') && str_starts_with($message_content_lower, 'ckey')) {
-        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckey')))))) {
+        if (! $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckey'))))) {
+            if (! $item = $civ13->getVerifiedItem($id = $message->member->id)) return $message->reply("You are not registered to any byond username");
+            return $message->reply("You are registered to `{$item['ss13']}`");
+        }
+        if (is_numeric($ckey)) {
             if (! $item = $civ13->getVerifiedItem($ckey)) return $message->reply("`$ckey` is not registered to any ckey");
             if (! $age = $civ13->getByondAge($item['ss13'])) return $message->reply("`{$item['ss13']}` does not exist");
             return $message->reply("`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
