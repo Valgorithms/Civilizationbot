@@ -166,17 +166,35 @@ $options = array(
         'pers_playerlogs' => '/home/1713/civ13-pers/SQL/playerlogs.txt',
     ),
     'channel_ids' => array(
+        /* Nomad */
+        'nomads-playercount' => '1048777424894185484', //nomads-#
+        //File read relays
         'nomads_ooc_channel' => '636644156923445269', //#ooc-nomads
         'nomads_admin_channel' => '637046890030170126', //#ahelp-nomads
-        'nomads-playercount' => '1048777424894185484', //nomads-#
-        'nomads_webhook_channel' => '1106248132779593758', //#webhook-nomads
+        //Webhook relays
+        'nomads_debug_webhook_channel' => '1106248132779593758', //#debug-nomads, debugging
+        'nomads_garbage_channel' => '1106248132779593758', //#debug-nomads, debugging
+
+        /* TDM */
+        'tdm-playercount' => '1048777462898761789', //tdm-#
+        //File read relays
         'tdm_ooc_channel' => '636644391095631872', //#ooc-tdm
         'tdm_admin_channel' => '637046904575885322', //#ahelp-tdm
-        'tdm-playercount' => '1048777462898761789', //tdm-#
-        'tdm_webhook_channel' => '1106248157798600715', //#webhook-tdm
+        //Webhook relays
+        'tdm_ooc_webhook_channel' => '1107016184328622233', //#ooc-tdm (New)
+        'tdm_asay_webhook_channel' => '1107016769169801216', //#asay-tdm 
+        'tdm_debug_webhook_channel' => '1106248157798600715', //#debug-tdm, debugging
+        'tdm_garbage_webhook_channel' => '1107014570922483752', //#garbage-tdm
+        'tdm_runtime_webhook_channel' => '1107017103883632792', //#runtime-tdm
+        'tdm_attack_webhook_channel' => '1107017830160936980', //#attack-tdm
+
+        /* Persistence */
+        'persistence-playercount' => '1090788345082298369', //persistence-#
+        //File read relays
         'pers_ooc_channel' => '1090863947579658320', //#ooc-pers
         'pers_admin_channel' => '1090863837730848798', //#ahelp-pers
-        'persistence-playercount' => '1090788345082298369', //persistence-#
+
+        //Misc
         'webserver-status' => '1106967195092783104', #webserver-status
         'staff_bot' => '712685552155230278', //#staff-bot
         //'ban_appeals' => '1019718839749062687', //#ban-appeals (forum thread, unused by bot)        

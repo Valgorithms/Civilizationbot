@@ -278,6 +278,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'asaymessage':
+                    if (!isset($civ13->channel_ids[$server.'_asay_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_asay_webhook_channel'];
                     $message .= "**__{$time} ASAY__ {$data['ckey']}**: " . urldecode($data['message']);
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
@@ -286,6 +288,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'oocmessage':
+                    if (!isset($civ13->channel_ids[$server.'_ooc_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_ooc_webhook_channel'];
                     $message .= "**__{$time} OOC__ {$data['ckey']}**: " . urldecode($data['message']);
                     $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
@@ -329,6 +333,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
                     break;
                 case 'attacklogmessage':
+                    if (!isset($civ13->channel_ids[$server.'_attack_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_attack_webhook_channel'];
                     $message .= "**__{$time} ATTACK LOG__**: " . strip_tags($data['message']);
                     break;
                 default:
