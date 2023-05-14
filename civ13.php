@@ -1001,7 +1001,7 @@ class Civ13
         else $status = 'offline';
         if ($reported_status != $status) {
             $msg = "Webserver is now **{$status}**.";
-            if ($status == 'offline') $msg .= " Webserver technician <@{$this->technician_id}> has be notified.";
+            if ($status == 'offline') $msg .= " Webserver technician <@{$this->technician_id}> has been notified.";
             $channel->sendMessage($msg);
             $channel->name = "{$webserver_name}-{$status}";
             $channel->guild->channels->save($channel);
