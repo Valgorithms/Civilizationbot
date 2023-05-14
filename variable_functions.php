@@ -775,7 +775,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
-        return $message->reply("The ranking is too long to display.");
+        return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'ranking.txt'));
+        //return $message->reply("The ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
@@ -788,7 +789,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
-        return $message->reply("Your ranking is too long to display.");
+        return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'rank.txt'));
+        //return $message->reply("Your ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'medals')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
@@ -800,7 +802,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
-        return $message->reply("Too many medals to display.");
+        return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'medals.txt'));
+        //return $message->reply("Too many medals to display.");
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
         if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('brmedals'))))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
@@ -812,7 +815,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
-        return $message->reply("Too many medals to display.");
+        return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'brmedals.txt'));
+        //return $message->reply("Too many medals to display.");
     }
 
     if (str_starts_with($message_content_lower, 'update bans')) {
