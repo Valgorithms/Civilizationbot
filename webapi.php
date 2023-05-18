@@ -324,7 +324,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     }
                     if (isset($data['cid'])) {
                         $computer_id = $data['cid'];
-                        $message .= "and CID of $computer_id";
+                        $message .= " and CID of $computer_id";
                     }
                     $message .= '.';
                     
