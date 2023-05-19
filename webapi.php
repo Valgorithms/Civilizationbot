@@ -93,13 +93,23 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                                     }
                                 }, 300);
                                 loadingBar.style.backgroundColor = 'white';
-                                loadingBar.style.height = '100%';
-                                loadingBar.style.position = 'absolute';
-                                loadingBar.style.top = '0';
-                                loadingBar.style.left = '0';
+                                loadingBar.style.height = '20px';
+                                loadingBar.style.position = 'fixed';
+                                loadingBar.style.top = '50%';
+                                loadingBar.style.left = '50%';
+                                loadingBar.style.transform = 'translate(-50%, -50%)';
                                 loadingBar.style.zIndex = '9999';
                                 loadingBar.style.borderRadius = '5px';
                                 loadingBar.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+                                var backdrop = document.createElement('div');
+                                backdrop.style.position = 'fixed';
+                                backdrop.style.top = '0';
+                                backdrop.style.left = '0';
+                                backdrop.style.width = '100%';
+                                backdrop.style.height = '100%';
+                                backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                                backdrop.style.zIndex = '9998';
+                                document.body.appendChild(backdrop);
                                 setTimeout(function() {
                                     clearInterval(interval);
                                     if (!document.readyState || document.readyState === 'complete') {
