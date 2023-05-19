@@ -47,6 +47,22 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     <button onclick='location.reload()'>Reload</button>
                 </div>
                 <script>
+                    var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
+                    var scrollTimeout;
+                    window.onload=function(){
+                        if(window.location.href==localStorage.getItem('lastUrl')){
+                            mainScrollArea.scrollTop=localStorage.getItem('scrollTop');
+                        }else{
+                            localStorage.setItem('lastUrl',window.location.href);
+                            localStorage.setItem('scrollTop',0);
+                        }
+                    };
+                    mainScrollArea.addEventListener('scroll',function(){
+                        clearTimeout(scrollTimeout);
+                        scrollTimeout=setTimeout(function(){
+                            localStorage.setItem('scrollTop',mainScrollArea.scrollTop);
+                        },100);
+                    });
                     function sendGetRequest(endpoint) {
                         var xhr = new XMLHttpRequest();
                         xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':" . $port . "/' + endpoint, true);
