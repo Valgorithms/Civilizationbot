@@ -88,10 +88,18 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                                         clearInterval(interval);
                                         location.reload();
                                     } else {
-                                        width += 10;
+                                        width += 2;
                                         loadingBar.style.width = width + '%';
                                     }
-                                }, 1000);
+                                }, 3000);
+                                loadingBar.style.backgroundColor = 'white';
+                                loadingBar.style.height = '100%';
+                                loadingBar.style.position = 'absolute';
+                                loadingBar.style.top = '0';
+                                loadingBar.style.left = '0';
+                                loadingBar.style.zIndex = '9999';
+                                loadingBar.style.borderRadius = '5px';
+                                loadingBar.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
                             }
                         };
                         xhr.send();
