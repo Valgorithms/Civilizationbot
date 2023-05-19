@@ -25,18 +25,24 @@ function webapiSnow($string) {
 
 $external_ip = file_get_contents('http://ipecho.net/plain');
 $valzargaming_ip = gethostbyname('www.valzargaming.com');
+$port = '55555';
 
-$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', '55555'), [], $civ13->loop);
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip, $webhook_key)
+$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $external_ip, $valzargaming_ip, $webhook_key)
 {
-    $refresh_content = function ($return) {
+    $webpage_content = function ($return) use ($external_ip, $port) {
         return '<meta name="color-scheme" content="light dark"> 
                 <div class="checkpoint">' . 
                     str_replace('[' . date("Y"), '</div><div> [' . date("Y"), 
                         str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)
                     ) . 
                 "</div>
-                <button onclick='locationreload()' class='reload-button'>Reload</button>
+                <div class='button-container'>
+                    <button onclick='locationreload()' class='reload-button'>Reload</button>
+                    <button onclick='sendGetRequest(\"pull\")' class='pull-button'>Pull</button>
+                    <button onclick='sendGetRequest(\"reset\")' class='reset-button'>Reset</button>
+                    <button onclick='sendGetRequest(\"restart\")' class='restart-button'>Restart</button>
+                </div>
                 <script>
                     var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
                     var scrollTimeout;
@@ -57,6 +63,11 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     function locationreload(){
                         location.reload();
                     }
+                    function sendGetRequest(endpoint) {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('GET', 'http://".$external_ip.":".$port."/' + endpoint, true);
+                        xhr.send();
+                    }
                 </script>
                 <style>
                     .reload-button {
@@ -64,6 +75,28 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         bottom: 10px;
                         left: 50%;
                         transform: translateX(-50%);
+                    }
+                    .button-container {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        background-color: #f1f1f1;
+                        overflow: hidden;
+                    }
+                    .pull-button, .reset-button, .restart-button {
+                        float: left;
+                        display: block;
+                        color: black;
+                        text-align: center;
+                        padding: 14px 16px;
+                        text-decoration: none;
+                        font-size: 17px;
+                        border: none;
+                        cursor: pointer;
+                    }
+                    .pull-button:hover, .reset-button:hover, .restart-button:hover {
+                        background-color: #ddd;
                     }
                 </style>";
     };
@@ -135,7 +168,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog.txt')) return new Response(200, ['Content-Type' => 'text/html'], $refresh_content($return));
+            if ($return = file_get_contents('botlog.txt')) return new Response(200, ['Content-Type' => 'text/html'], $webpage_content($return));
             else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog.txt`");
             break;
             
@@ -144,7 +177,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog2.txt')) return new Response(200, ['Content-Type' => 'text/html'], $refresh_content($return));
+            if ($return = file_get_contents('botlog2.txt')) return new Response(200, ['Content-Type' => 'text/html'], $webpage_content($return));
             else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog2.txt`");
             break;
         
