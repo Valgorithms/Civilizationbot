@@ -313,7 +313,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                             }
                         });
                     </script>";
-                                        };
+    };
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
