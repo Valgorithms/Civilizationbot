@@ -30,7 +30,7 @@ $port = '55555';
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $external_ip, $valzargaming_ip, $webhook_key)
 {
-    $webpage_content = function ($return) use ($external_ip, $port) {
+    $webpage_content = function ($return) use ($port) {
         return '<meta name="color-scheme" content="light dark"> 
                 <div class="button-container">
                     <button onclick="sendGetRequest(\'pull\')">Pull</button>
@@ -46,7 +46,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 <script>
                     function sendGetRequest(endpoint) {
                         var xhr = new XMLHttpRequest();
-                        xhr.open('GET', 'http://".$external_ip.":".$port."/' + endpoint, true);
+                        xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':" . $port . "/' + endpoint, true);
                         xhr.onload = function() {
                             var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
                             var alertContainer = document.getElementById('alert-container');
