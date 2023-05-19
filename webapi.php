@@ -29,6 +29,37 @@ $valzargaming_ip = gethostbyname('www.valzargaming.com');
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', '55555'), [], $civ13->loop);
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $socket, $external_ip, $valzargaming_ip, $webhook_key)
 {
+    $refresh_content = function ($return) {
+        return '<meta name="color-scheme" content="light dark"> 
+                <div class="checkpoint">' . 
+                    str_replace('[' . date("Y"), '</div><div> [' . date("Y"), 
+                        str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)
+                    ) . 
+                "</div>
+                <script>
+                    var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
+                    var scrollTimeout;
+                    window.onload=function(){
+                        if(window.location.href==localStorage.getItem('lastUrl')){
+                            mainScrollArea.scrollTop=localStorage.getItem('scrollTop');
+                        }else{
+                            localStorage.setItem('lastUrl',window.location.href);
+                            localStorage.setItem('scrollTop',0);
+                        }
+                    };
+                    mainScrollArea.addEventListener('scroll',function(){
+                        clearTimeout(scrollTimeout);
+                        scrollTimeout=setTimeout(function(){
+                            localStorage.setItem('scrollTop',mainScrollArea.scrollTop);
+                        },100);
+                    });
+                    setTimeout(locationreload,10000);
+                    function locationreload(){
+                        location.reload();
+                    }
+                </script>";
+    }
+
     /*
     $path = explode('/', $request->getUri()->getPath());
     $sub = (isset($path[1]) ? (string) $path[1] : false);
@@ -96,7 +127,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog.txt')) return new Response(200, ['Content-Type' => 'text/html'], '<meta name="color-scheme" content="light dark"> <div class="checkpoint">' . str_replace('[' . date("Y"), '</div><div> [' . date("Y"), str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)) . "</div><script>var mainScrollArea=document.getElementsByClassName('checkpoint')[0];var scrollTimeout;window.onload=function(){if(window.location.href==localStorage.getItem('lastUrl')){mainScrollArea.scrollTop=localStorage.getItem('scrollTop');}else{localStorage.setItem('lastUrl',window.location.href);localStorage.setItem('scrollTop',0);}};mainScrollArea.addEventListener('scroll',function(){clearTimeout(scrollTimeout);scrollTimeout=setTimeout(function(){localStorage.setItem('scrollTop',mainScrollArea.scrollTop);},100);});setTimeout(locationreload,10000);function locationreload(){location.reload();}</script>");
+            if ($return = file_get_contents('botlog.txt')) return new Response(200, ['Content-Type' => 'text/html'], $refresh_content($return));
             else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog.txt`");
             break;
             
@@ -105,7 +136,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog2.txt')) return new Response(200, ['Content-Type' => 'text/html'], '<meta name="color-scheme" content="light dark"> <div class="checkpoint">' . str_replace('[' . date("Y"), '</div><div> [' . date("Y"), str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)) . "</div><script>var mainScrollArea=document.getElementsByClassName('checkpoint')[0];var scrollTimeout;window.onload=function(){if(window.location.href==localStorage.getItem('lastUrl')){mainScrollArea.scrollTop=localStorage.getItem('scrollTop');}else{localStorage.setItem('lastUrl',window.location.href);localStorage.setItem('scrollTop',0);}};mainScrollArea.addEventListener('scroll',function(){clearTimeout(scrollTimeout);scrollTimeout=setTimeout(function(){localStorage.setItem('scrollTop',mainScrollArea.scrollTop);},100);});setTimeout(locationreload,10000);function locationreload(){location.reload();}</script>");
+            if ($return = file_get_contents('botlog2.txt')) return new Response(200, $refresh_content($return));
             else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog2.txt`");
             break;
         
