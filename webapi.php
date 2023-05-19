@@ -36,6 +36,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)
                     ) . 
                 "</div>
+                <button onclick='locationreload()'>Reload</button>
                 <script>
                     var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
                     var scrollTimeout;
@@ -53,7 +54,6 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                             localStorage.setItem('scrollTop',mainScrollArea.scrollTop);
                         },100);
                     });
-                    setTimeout(locationreload,10000);
                     function locationreload(){
                         location.reload();
                     }
