@@ -46,6 +46,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 <div class='reload-container'>
                     <button onclick='location.reload()'>Reload</button>
                 </div>
+                <div class='loading-container'>
+                    <div class='loading-bar'></div>
+                </div>
                 <script>
                     var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
                     var scrollTimeout;
@@ -75,6 +78,21 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                             setTimeout(function() {
                                 alert.remove();
                             }, 15000);
+                            if (endpoint === 'restart') {
+                                var loadingBar = document.querySelector('.loading-bar');
+                                var loadingContainer = document.querySelector('.loading-container');
+                                loadingContainer.style.display = 'block';
+                                var width = 0;
+                                var interval = setInterval(function() {
+                                    if (width >= 100) {
+                                        clearInterval(interval);
+                                        location.reload();
+                                    } else {
+                                        width += 10;
+                                        loadingBar.style.width = width + "%";
+                                    }
+                                }, 1000);
+                            }
                         };
                         xhr.send();
                     }
@@ -143,6 +161,24 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     }
                     .reload-container button:hover {
                         background-color: #ddd;
+                    }
+                    .loading-container {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        display: none;
+                    }
+                    .loading-bar {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 0%;
+                        height: 20px;
+                        background-color: white;
                     }
                 </style>";
     };
