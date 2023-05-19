@@ -72,6 +72,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                             var alert = document.createElement('div');
                             alert.innerHTML = response;
                             alertContainer.appendChild(alert);
+                            setTimeout(function() {
+                                alert.remove();
+                            }, 15000);
                         };
                         xhr.send();
                     }
