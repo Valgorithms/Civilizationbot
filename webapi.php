@@ -91,7 +91,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                                         width += 2;
                                         loadingBar.style.width = width + '%';
                                     }
-                                }, 3000);
+                                }, 300);
                                 loadingBar.style.backgroundColor = 'white';
                                 loadingBar.style.height = '100%';
                                 loadingBar.style.position = 'absolute';
