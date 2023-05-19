@@ -30,7 +30,43 @@ $port = '55555';
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $external_ip, $valzargaming_ip, $webhook_key)
 {
-    $webpage_content = function ($return) use ($port) {
+    /*
+    $path = explode('/', $request->getUri()->getPath());
+    $sub = (isset($path[1]) ? (string) $path[1] : false);
+    $id = (isset($path[2]) ? (string) $path[2] : false);
+    $id2 = (isset($path[3]) ? (string) $path[3] : false);
+    $ip = (isset($path[4]) ? (string) $path[4] : false);
+    $idarray = array(); //get from post data (NYI)
+    */
+    
+    $echo = 'API ';
+    $sub = 'index.';
+    $path = explode('/', $request->getUri()->getPath());
+    $repository = $sub = (isset($path[1]) ? (string) strtolower($path[1]) : false); if ($repository) $echo .= "$repository";
+    $method = $id = (isset($path[2]) ? (string) strtolower($path[2]) : false); if ($method) $echo .= "/$method";
+    $id2 = $repository2 = (isset($path[3]) ? (string) strtolower($path[3]) : false); if ($id2) $echo .= "/$id2";
+    $ip = $partial = $method2 = (isset($path[4]) ? (string) strtolower($path[4]) : false); if ($partial) $echo .= "/$partial";
+    $id3 = (isset($path[5]) ? (string) strtolower($path[5]) : false); if ($id3) $echo .= "/$id3";
+    $id4 = (isset($path[6]) ? (string) strtolower($path[6]) : false); if ($id4) $echo .= "/$id4";
+    $idarray = array(); //get from post data (NYI)
+    //$civ13->logger->info($echo);
+    
+    if ($ip) $civ13->logger->info('API IP ' . $ip);
+    $whitelist = [
+        '127.0.0.1',
+        $external_ip,
+        $valzargaming_ip,
+        '51.254.161.128',
+        '69.244.83.231',
+    ];
+    $substr_whitelist = ['10.0.0.', '192.168.']; 
+    $whitelisted = false;
+    foreach ($substr_whitelist as $substr) if (substr($request->getServerParams()['REMOTE_ADDR'], 0, strlen($substr)) == $substr) $whitelisted = true;
+    if (in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist)) $whitelisted = true;
+    
+    if (! $whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
+
+    $webpage_content = function ($return) use ($port, $sub) {
         return '<meta name="color-scheme" content="light dark"> 
                 <div class="button-container">
                     <button onclick="sendGetRequest(\'pull\')">Pull</button>
@@ -232,45 +268,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         }
                     </style>
                     <div class='nav-container'>"
-                        . ($_SERVER['REQUEST_URI'] == '/botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
+                        . ($sub == 'botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
                     . "</div>";
-        };
-
-    /*
-    $path = explode('/', $request->getUri()->getPath());
-    $sub = (isset($path[1]) ? (string) $path[1] : false);
-    $id = (isset($path[2]) ? (string) $path[2] : false);
-    $id2 = (isset($path[3]) ? (string) $path[3] : false);
-    $ip = (isset($path[4]) ? (string) $path[4] : false);
-    $idarray = array(); //get from post data (NYI)
-    */
-    
-    $echo = 'API ';
-    $sub = 'index.';
-    $path = explode('/', $request->getUri()->getPath());
-    $repository = $sub = (isset($path[1]) ? (string) strtolower($path[1]) : false); if ($repository) $echo .= "$repository";
-    $method = $id = (isset($path[2]) ? (string) strtolower($path[2]) : false); if ($method) $echo .= "/$method";
-    $id2 = $repository2 = (isset($path[3]) ? (string) strtolower($path[3]) : false); if ($id2) $echo .= "/$id2";
-    $ip = $partial = $method2 = (isset($path[4]) ? (string) strtolower($path[4]) : false); if ($partial) $echo .= "/$partial";
-    $id3 = (isset($path[5]) ? (string) strtolower($path[5]) : false); if ($id3) $echo .= "/$id3";
-    $id4 = (isset($path[6]) ? (string) strtolower($path[6]) : false); if ($id4) $echo .= "/$id4";
-    $idarray = array(); //get from post data (NYI)
-    //$civ13->logger->info($echo);
-    
-    if ($ip) $civ13->logger->info('API IP ' . $ip);
-    $whitelist = [
-        '127.0.0.1',
-        $external_ip,
-        $valzargaming_ip,
-        '51.254.161.128',
-        '69.244.83.231',
-    ];
-    $substr_whitelist = ['10.0.0.', '192.168.']; 
-    $whitelisted = false;
-    foreach ($substr_whitelist as $substr) if (substr($request->getServerParams()['REMOTE_ADDR'], 0, strlen($substr)) == $substr) $whitelisted = true;
-    if (in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist)) $whitelisted = true;
-    
-    if (! $whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
+    };
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
