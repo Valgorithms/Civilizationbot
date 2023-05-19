@@ -95,6 +95,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         font-size: 17px;
                         border: none;
                         cursor: pointer;
+                        color: white;
                         background-color: black;
                     }
                     .button-container button:hover {
@@ -111,6 +112,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         height: 100%;
                         overflow-y: scroll;
                         padding: 20px;
+                        color: black;
                         background-color: black;
                     }
                     .alert-container div {
