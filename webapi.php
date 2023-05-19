@@ -266,11 +266,54 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         .nav-container button:hover {
                             background-color: #ddd;
                         }
+                        .checkbox-container {
+                            display: inline-block;
+                            margin-right: 10px;
+                        }
+                        .checkbox-container input[type=checkbox] {
+                            display: none;
+                        }
+                        .checkbox-container label {
+                            display: inline-block;
+                            background-color: #ddd;
+                            padding: 5px 10px;
+                            cursor: pointer;
+                        }
+                        .checkbox-container input[type=checkbox]:checked + label {
+                            background-color: #bbb;
+                        }
                     </style>
                     <div class='nav-container'>"
                         . ($sub == 'botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
-                    . "</div>";
-    };
+                    . "</div>
+                    <div class='reload-container'>
+                        <div class='checkbox-container'>
+                            <input type='checkbox' id='auto-reload-checkbox'>
+                            <label for='auto-reload-checkbox'>Auto Reload</label>
+                        </div>
+                        <button id='reload-button'>Reload</button>
+                    </div>
+                    <script>
+                        var reloadButton = document.getElementById('reload-button');
+                        var autoReloadCheckbox = document.getElementById('auto-reload-checkbox');
+                        var interval;
+
+                        reloadButton.addEventListener('click', function() {
+                            clearInterval(interval);
+                            location.reload();
+                        });
+
+                        autoReloadCheckbox.addEventListener('change', function() {
+                            if (this.checked) {
+                                interval = setInterval(function() {
+                                    location.reload();
+                                }, 15000);
+                            } else {
+                                clearInterval(interval);
+                            }
+                        });
+                    </script>";
+                                        };
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
