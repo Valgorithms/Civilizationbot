@@ -208,7 +208,32 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                             height: 20px;
                             background-color: white;
                         }
-                    </style>";
+                        .nav-container {
+                            position: fixed;
+                            bottom: 0;
+                            right: 0;
+                            margin-bottom: 20px;
+                        }
+                        .nav-container button {
+                            display: block;
+                            color: black;
+                            text-align: center;
+                            padding: 14px 16px;
+                            text-decoration: none;
+                            font-size: 17px;
+                            border: none;
+                            cursor: pointer;
+                            color: white;
+                            background-color: black;
+                            margin-right: 10px;
+                        }
+                        .nav-container button:hover {
+                            background-color: #ddd;
+                        }
+                    </style>
+                    <div class='nav-container'>"
+                        . ($_SERVER['REQUEST_URI'] == '/botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
+                    . "</div>";
         };
 
     /*
