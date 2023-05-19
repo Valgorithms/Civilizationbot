@@ -144,7 +144,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog2.txt')) return new Response(200, $refresh_content($return));
+            if ($return = file_get_contents('botlog2.txt')) return new Response(200, ['Content-Type' => 'text/html'], $refresh_content($return));
             else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog2.txt`");
             break;
         
