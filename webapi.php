@@ -89,7 +89,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                                         location.reload();
                                     } else {
                                         width += 10;
-                                        loadingBar.style.width = width + "%";
+                                        loadingBar.style.width = width + '%';
                                     }
                                 }, 1000);
                             }
