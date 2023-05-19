@@ -288,7 +288,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     . "</div>
                     <div class='reload-container'>
                         <div class='checkbox-container'>
-                            <input type='checkbox' id='auto-reload-checkbox'>
+                            <input type='checkbox' id='auto-reload-checkbox' " . (isset($_COOKIE['auto-reload']) && $_COOKIE['auto-reload'] == 'true' ? 'checked' : '') . ">
                             <label for='auto-reload-checkbox'>Auto Reload</label>
                         </div>
                         <button id='reload-button'>Reload</button>
@@ -308,10 +308,19 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                                 interval = setInterval(function() {
                                     location.reload();
                                 }, 15000);
+                                localStorage.setItem('auto-reload', 'true');
                             } else {
                                 clearInterval(interval);
+                                localStorage.setItem('auto-reload', 'false');
                             }
                         });
+
+                        if (localStorage.getItem('auto-reload') == 'true') {
+                            autoReloadCheckbox.checked = true;
+                            interval = setInterval(function() {
+                                location.reload();
+                            }, 15000);
+                        }
                     </script>";
     };
 
