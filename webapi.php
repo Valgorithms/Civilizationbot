@@ -100,96 +100,106 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                                 loadingBar.style.zIndex = '9999';
                                 loadingBar.style.borderRadius = '5px';
                                 loadingBar.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+                                setTimeout(function() {
+                                    clearInterval(interval);
+                                    if (!document.readyState || document.readyState === 'complete') {
+                                        location.reload();
+                                    } else {
+                                        setTimeout(function() {
+                                            location.reload();
+                                        }, 5000);
+                                    }
+                                }, 5000);
                             }
                         };
                         xhr.send();
                     }
-                </script>
-                <style>
-                    .button-container {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        background-color: #f1f1f1;
-                        overflow: hidden;
-                    }
-                    .button-container button {
-                        float: left;
-                        display: block;
-                        color: black;
-                        text-align: center;
-                        padding: 14px 16px;
-                        text-decoration: none;
-                        font-size: 17px;
-                        border: none;
-                        cursor: pointer;
-                        color: white;
-                        background-color: black;
-                    }
-                    .button-container button:hover {
-                        background-color: #ddd;
-                    }
-                    .checkpoint {
-                        margin-top: 100px;
-                    }
-                    .alert-container {
-                        position: fixed;
-                        top: 0;
-                        right: 0;
-                        width: 300px;
-                        height: 100%;
-                        overflow-y: scroll;
-                        padding: 20px;
-                        color: black;
-                        background-color: black;
-                    }
-                    .alert-container div {
-                        margin-bottom: 10px;
-                        padding: 10px;
-                        background-color: #fff;
-                        border: 1px solid #ddd;
-                    }
-                    .reload-container {
-                        position: fixed;
-                        bottom: 0;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        margin-bottom: 20px;
-                    }
-                    .reload-container button {
-                        display: block;
-                        color: black;
-                        text-align: center;
-                        padding: 14px 16px;
-                        text-decoration: none;
-                        font-size: 17px;
-                        border: none;
-                        cursor: pointer;
-                    }
-                    .reload-container button:hover {
-                        background-color: #ddd;
-                    }
-                    .loading-container {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background-color: rgba(0, 0, 0, 0.5);
-                        display: none;
-                    }
-                    .loading-bar {
-                        position: absolute;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        width: 0%;
-                        height: 20px;
-                        background-color: white;
-                    }
-                </style>";
-    };
+                    </script>
+                    <style>
+                        .button-container {
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            background-color: #f1f1f1;
+                            overflow: hidden;
+                        }
+                        .button-container button {
+                            float: left;
+                            display: block;
+                            color: black;
+                            text-align: center;
+                            padding: 14px 16px;
+                            text-decoration: none;
+                            font-size: 17px;
+                            border: none;
+                            cursor: pointer;
+                            color: white;
+                            background-color: black;
+                        }
+                        .button-container button:hover {
+                            background-color: #ddd;
+                        }
+                        .checkpoint {
+                            margin-top: 100px;
+                        }
+                        .alert-container {
+                            position: fixed;
+                            top: 0;
+                            right: 0;
+                            width: 300px;
+                            height: 100%;
+                            overflow-y: scroll;
+                            padding: 20px;
+                            color: black;
+                            background-color: black;
+                        }
+                        .alert-container div {
+                            margin-bottom: 10px;
+                            padding: 10px;
+                            background-color: #fff;
+                            border: 1px solid #ddd;
+                        }
+                        .reload-container {
+                            position: fixed;
+                            bottom: 0;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            margin-bottom: 20px;
+                        }
+                        .reload-container button {
+                            display: block;
+                            color: black;
+                            text-align: center;
+                            padding: 14px 16px;
+                            text-decoration: none;
+                            font-size: 17px;
+                            border: none;
+                            cursor: pointer;
+                        }
+                        .reload-container button:hover {
+                            background-color: #ddd;
+                        }
+                        .loading-container {
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background-color: rgba(0, 0, 0, 0.5);
+                            display: none;
+                        }
+                        .loading-bar {
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            width: 0%;
+                            height: 20px;
+                            background-color: white;
+                        }
+                    </style>";
+        };
 
     /*
     $path = explode('/', $request->getUri()->getPath());
