@@ -32,50 +32,32 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 {
     $webpage_content = function ($return) use ($external_ip, $port) {
         return '<meta name="color-scheme" content="light dark"> 
+                <div class="button-container">
+                    <button onclick="sendGetRequest(\'pull\')">Pull</button>
+                    <button onclick="sendGetRequest(\'reset\')">Reset</button>
+                    <button onclick="sendGetRequest(\'restart\')">Restart</button>
+                </div>
                 <div class="checkpoint">' . 
                     str_replace('[' . date("Y"), '</div><div> [' . date("Y"), 
                         str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)
                     ) . 
                 "</div>
-                <div class='button-container'>
-                    <button onclick='locationreload()' class='reload-button'>Reload</button>
-                    <button onclick='sendGetRequest(\"pull\")' class='pull-button'>Pull</button>
-                    <button onclick='sendGetRequest(\"reset\")' class='reset-button'>Reset</button>
-                    <button onclick='sendGetRequest(\"restart\")' class='restart-button'>Restart</button>
-                </div>
+                <div id='alert-container'></div>
                 <script>
-                    var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
-                    var scrollTimeout;
-                    window.onload=function(){
-                        if(window.location.href==localStorage.getItem('lastUrl')){
-                            mainScrollArea.scrollTop=localStorage.getItem('scrollTop');
-                        }else{
-                            localStorage.setItem('lastUrl',window.location.href);
-                            localStorage.setItem('scrollTop',0);
-                        }
-                    };
-                    mainScrollArea.addEventListener('scroll',function(){
-                        clearTimeout(scrollTimeout);
-                        scrollTimeout=setTimeout(function(){
-                            localStorage.setItem('scrollTop',mainScrollArea.scrollTop);
-                        },100);
-                    });
-                    function locationreload(){
-                        location.reload();
-                    }
                     function sendGetRequest(endpoint) {
                         var xhr = new XMLHttpRequest();
                         xhr.open('GET', 'http://".$external_ip.":".$port."/' + endpoint, true);
+                        xhr.onload = function() {
+                            var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
+                            var alertContainer = document.getElementById('alert-container');
+                            var alert = document.createElement('div');
+                            alert.innerHTML = response;
+                            alertContainer.appendChild(alert);
+                        };
                         xhr.send();
                     }
                 </script>
                 <style>
-                    .reload-button {
-                        position: fixed;
-                        bottom: 10px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                    }
                     .button-container {
                         position: fixed;
                         top: 0;
@@ -84,7 +66,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         background-color: #f1f1f1;
                         overflow: hidden;
                     }
-                    .pull-button, .reset-button, .restart-button {
+                    .button-container button {
                         float: left;
                         display: block;
                         color: black;
@@ -95,8 +77,11 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         border: none;
                         cursor: pointer;
                     }
-                    .pull-button:hover, .reset-button:hover, .restart-button:hover {
+                    .button-container button:hover {
                         background-color: #ddd;
+                    }
+                    .checkpoint {
+                        margin-top: 100px;
                     }
                 </style>";
     };
