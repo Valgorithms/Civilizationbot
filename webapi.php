@@ -58,7 +58,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         location.reload();
                     }
                 </script>";
-    }
+    };
 
     /*
     $path = explode('/', $request->getUri()->getPath());
