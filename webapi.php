@@ -37,19 +37,22 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     <button onclick="sendGetRequest(\'reset\')">Reset</button>
                     <button onclick="sendGetRequest(\'restart\')">Restart</button>
                 </div>
+                <div class="alert-container"></div>
                 <div class="checkpoint">' . 
                     str_replace('[' . date("Y"), '</div><div> [' . date("Y"), 
                         str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)
                     ) . 
                 "</div>
-                <div id='alert-container'></div>
+                <div class='reload-container'>
+                    <button onclick='location.reload()'>Reload</button>
+                </div>
                 <script>
                     function sendGetRequest(endpoint) {
                         var xhr = new XMLHttpRequest();
                         xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':" . $port . "/' + endpoint, true);
                         xhr.onload = function() {
                             var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
-                            var alertContainer = document.getElementById('alert-container');
+                            var alertContainer = document.querySelector('.alert-container');
                             var alert = document.createElement('div');
                             alert.innerHTML = response;
                             alertContainer.appendChild(alert);
@@ -82,6 +85,42 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     }
                     .checkpoint {
                         margin-top: 100px;
+                    }
+                    .alert-container {
+                        position: fixed;
+                        top: 0;
+                        right: 0;
+                        width: 300px;
+                        height: 100%;
+                        overflow-y: scroll;
+                        padding: 20px;
+                        background-color: #f1f1f1;
+                    }
+                    .alert-container div {
+                        margin-bottom: 10px;
+                        padding: 10px;
+                        background-color: #fff;
+                        border: 1px solid #ddd;
+                    }
+                    .reload-container {
+                        position: fixed;
+                        bottom: 0;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        margin-bottom: 20px;
+                    }
+                    .reload-container button {
+                        display: block;
+                        color: black;
+                        text-align: center;
+                        padding: 14px 16px;
+                        text-decoration: none;
+                        font-size: 17px;
+                        border: none;
+                        cursor: pointer;
+                    }
+                    .reload-container button:hover {
+                        background-color: #ddd;
                     }
                 </style>";
     };
