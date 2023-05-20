@@ -49,7 +49,7 @@ class Civ13
     
     public collection $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
-    public array $provisional; //TODO:  Allow provisional registration if the website is down, then try to verify when it comes back up
+    public array $provisional; //Allow provisional registration if the website is down, then try to verify when it comes back up
     public array $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
     public string $minimum_age = '-21 days'; //Minimum age of a ckey
     public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum age requirement
@@ -492,7 +492,7 @@ class Civ13
      * This function is used to retrieve the 50 character token from the BYOND website
      */
     public function getByondPage(string $ckey): string|false 
-    { //Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and add the generated token to their description first!
+    { //Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and added the generated token to their description first!
         $url = 'http://www.byond.com/members/'.urlencode($ckey).'?format=text';
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -579,7 +579,6 @@ class Civ13
         return $this->verifyCkey($item['ss13'], $discord_id);
     }
     
-    //TODO: Allow provisional registration if the website is down, then try to verify when it comes back up
     /* 
     * This function is called when a user has set their token in their BYOND description but the website is down
     * It will add the user to the provisional list and set a timer to try to verify them again in 30 minutes
