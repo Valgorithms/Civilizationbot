@@ -1181,14 +1181,17 @@ class Civ13
             if ($i > 10) $break = true;
         } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
 
-        $altbanned = false;
-        foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = true; break; }
         $verified = false;
+        $altbanned = false;
         $discords = [];
-        if ($item = $this->verified->get('ss13', $ckey)) {
-            $verified = true;
-            $discords[] = $item['discord'];
+        foreach ($ckeys as $key) {
+            if ($item = $this->verified->get('ss13', $key)) {
+                $discords[] = $item['discord'];
+                $verified = true;
+            }
+            if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = true; break; }
         }
+
         return [
             'ckeys' => $ckeys,
             'ips' => $ips,
