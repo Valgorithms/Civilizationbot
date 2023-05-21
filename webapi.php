@@ -73,7 +73,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     <button style="width:8%" onclick="sendGetRequest(\'reset\')">Reset</button>
                     <button style="width:8%" onclick="sendGetRequest(\'update\')">Update</button>
                     <button style="width:8%" onclick="sendGetRequest(\'restart\')">Restart</button>
-                    <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open("'. str_replace('/', '\\', $civ13->github) .'")">' . $civ13->discord->user->displayname . '</button>
+                    <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open("'. trim(str_replace('/', '\\', str_replace('\\', '\\\\' $civ13->github))) .'")">' . $civ13->discord->user->displayname . '</button>
                 </div>
                 <div class="alert-container"></div>
                 <div class="checkpoint">' . 
