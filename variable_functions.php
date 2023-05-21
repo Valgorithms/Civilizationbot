@@ -440,6 +440,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         }
         if (!empty($dates) && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
         $embed->addfieldValues('Verified', $verified);
+        $discords = [];
+        foreach ($ckeys as $c) if ($item = $civ13->verified->get('ss13', $c)) $discords[] = $item['discord'];
+        if ($discords) {
+            foreach ($discords as &$id) $id = "<@{$id}>";
+            $embed->addfieldValues('Discord', implode(', ', $discords));
+        }
         $embed->addfieldValues('Currently Banned', $banned);
         $embed->addfieldValues('Alt Banned', $altbanned);
         $embed->addfieldValues('Ignoring banned alts or new account age', isset($civ13->permitted[$ckey]) ? 'Yes' : 'No');

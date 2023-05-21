@@ -1183,14 +1183,19 @@ class Civ13
         $altbanned = false;
         foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = true; break; }
         $verified = false;
-        if ($this->verified->get('ss13', $ckey)) $verified = true;
+        $discords = [];
+        if ($item = $this->verified->get('ss13', $ckey)) {
+            $verified = true;
+            $discords[] = $item['discord'];
+        }
         return [
             'ckeys' => $ckeys,
             'ips' => $ips,
             'cids' => $cids,
             'banned' => $this->bancheck($ckey),
             'altbanned' => $altbanned,
-            'verified' => $verified
+            'verified' => $verified,
+            'discords' => $discords
         ];
     }
     /*

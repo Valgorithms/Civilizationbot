@@ -432,6 +432,10 @@ class Slash
                     $embed->addFieldValues('Regions', implode(', ', $regions));
                 }
                 $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
+                if ($ckeyinfo['discords']) {
+                    foreach ($ckeyinfo['discords'] as &$id) $id = "<@{$id}>";
+                    $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']));
+                }
                 $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
                 $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');
                 $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$item['ss13']]) ? 'Yes' : 'No');
