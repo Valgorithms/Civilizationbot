@@ -71,6 +71,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 <div class="button-container">
                     <button onclick="sendGetRequest(\'pull\')">Pull</button>
                     <button onclick="sendGetRequest(\'reset\')">Reset</button>
+                    <button onclick="sendGetRequest(\'update\')">Update</button>
                     <button onclick="sendGetRequest(\'restart\')">Restart</button>
                 </div>
                 <div class="alert-container"></div>
