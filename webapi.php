@@ -73,8 +73,18 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     <button onclick="sendGetRequest(\'reset\')">Reset</button>
                     <button onclick="sendGetRequest(\'update\')">Update</button>
                     <button onclick="sendGetRequest(\'restart\')">Restart</button>
-                    <div style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; flex: 1;">' . $civ13->discord->user->displayname . '</div>
+                    <div style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; flex: 1;" id="user-displayname">' . $civ13->discord->user->displayname . '</div>
                 </div>
+                <script>
+                    var buttons = document.querySelectorAll(".button-container button");
+                    var userDisplayname = document.getElementById("user-displayname");
+                    for (var i = 0; i < buttons.length; i++) {
+                        var button = buttons[i];
+                        button.addEventListener("click", function() {
+                            userDisplayname.style.height = this.offsetHeight + "px";
+                        });
+                    }
+                </script>
                 <div class="alert-container"></div>
                 <div class="checkpoint">' . 
                     str_replace('[' . date("Y"), '</div><div> [' . date("Y"), 
