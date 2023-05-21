@@ -66,13 +66,14 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     
     if (! $whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
 
-    $webpage_content = function ($return) use ($port, $sub) {
+    $webpage_content = function ($return) use ($civ13, $port, $sub) {
         return '<meta name="color-scheme" content="light dark"> 
                 <div class="button-container">
                     <button onclick="sendGetRequest(\'pull\')">Pull</button>
                     <button onclick="sendGetRequest(\'reset\')">Reset</button>
                     <button onclick="sendGetRequest(\'update\')">Update</button>
                     <button onclick="sendGetRequest(\'restart\')">Restart</button>
+                    <div style="display:block">' . $civ13->discord->user->displayname . '#' . $civ13->discord->user->discriminator . '</div>
                 </div>
                 <div class="alert-container"></div>
                 <div class="checkpoint">' . 
