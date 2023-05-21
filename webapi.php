@@ -69,11 +69,11 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     $webpage_content = function ($return) use ($civ13, $port, $sub) {
         return '<meta name="color-scheme" content="light dark"> 
                 <div class="button-container">
-                    <button onclick="sendGetRequest(\'pull\')">Pull</button>
-                    <button onclick="sendGetRequest(\'reset\')">Reset</button>
-                    <button onclick="sendGetRequest(\'update\')">Update</button>
-                    <button onclick="sendGetRequest(\'restart\')">Restart</button>
-                    <div style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; flex: 1;">' . $civ13->discord->user->displayname . '</div>
+                    <button style="width:8%" onclick="sendGetRequest(\'pull\')">Pull</button>
+                    <button style="width:8%" onclick="sendGetRequest(\'reset\')">Reset</button>
+                    <button style="width:8%" onclick="sendGetRequest(\'update\')">Update</button>
+                    <button style="width:8%" onclick="sendGetRequest(\'restart\')">Restart</button>
+                    <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;">' . $civ13->discord->user->displayname . '</button>
                 </div>
                 <div class="alert-container"></div>
                 <div class="checkpoint">' . 
