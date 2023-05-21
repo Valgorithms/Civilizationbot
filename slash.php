@@ -375,14 +375,14 @@ class Slash
 
         $this->civ13->discord->listenCommand('ban', function ($interaction)
         {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban([$interaction->data->options['ckey']->value, $interaction->data->options['duration']->value, $interaction->data->options['reason']->value . " Appeal at {$this->civ13->banappeal}"])));
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban([$interaction->data->options['ckey']->value, $interaction->data->options['duration']->value, $interaction->data->options['reason']->value . " Appeal at {$this->civ13->banappeal}"], $this->civ13->getVerifiedItem($interaction->user)['ss13'])));
         });
         
         $this->civ13->discord->listenCommand('unban', function ($interaction): void
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             else {
-                $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** unbanned **`{$item['ss13']}`**."));
+                $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$this->civ13->getVerifiedItem($interaction->user)['ss13']}`** unbanned **`{$item['ss13']}`**."));
                 $this->civ13->unban($item['ss13'], $interaction->user->displayname);
             }
         });

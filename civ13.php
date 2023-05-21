@@ -781,9 +781,9 @@ class Civ13
     * These Legacy and SQL functions should not be called directly
     * Define $legacy = true/false and use ban/unban methods instead
     */
-    public function legacyBanNomads(array $array, $message = null): string
+    public function legacyBanNomads(array $array, $admin = null): string
     {
-        $admin = ($message ? $message->author->displayname : $this->discord->user->username);
+        $admin = $admin ?? $this->discord->user->username;
         $result = '';
         if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
         if (file_exists($this->files['nomads_discord2ban']) && $file = fopen($this->files['nomads_discord2ban'], 'a')) {
@@ -800,9 +800,9 @@ class Civ13
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-    public function legacyBanTDM(array $array, $message = null): string
+    public function legacyBanTDM(array $array, $admin = null): string
     {
-        $admin = ($message ? $message->author->displayname : $this->discord->user->username);
+        $admin = $admin ?? $this->discord->user->username;
         $result = '';
         if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
         if (file_exists($this->files['tdm_discord2ban']) && $file = fopen($this->files['tdm_discord2ban'], 'a')) {
@@ -815,13 +815,13 @@ class Civ13
         $result .= "**$admin** banned **{$array[0]}** from **TDM** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
         return $result;
     }
-    public function sqlBanTDM($array, $message = null): string
+    public function sqlBanTDM($array, $admin = null): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-    public function legacyBanPers(array $array, $message = null): string
+    public function legacyBanPers(array $array, $admin = null): string
     {
-        $admin = ($message ? $message->author->displayname : $this->discord->user->username);
+        $admin = $admin ?? $this->discord->user->username;
         $result = '';
         if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
         if (file_exists($this->files['pers_discord2ban']) && $file = fopen($this->files['pers_discord2ban'], 'a')) {
@@ -871,13 +871,13 @@ class Civ13
     {
         //TODO
     }
-    public function legacyBan(array $array, $message = null): string
+    public function legacyBan(array $array, $admin = null): string
     {
-        return $this->legacyBanNomads($array, $message) . $this->legacyBanTDM($array, $message);
+        return $this->legacyBanNomads($array, $admin) . $this->legacyBanTDM($array, $admin);
     }
-    public function sqlBan(array $array, $message = null): string
+    public function sqlBan(array $array, $admin = null): string
     {
-        return $this->sqlBanNomads($array, $message) . $this->sqlBanTDM($array, $message);
+        return $this->sqlBanNomads($array, $admin) . $this->sqlBanTDM($array, $admin);
     }
 
     /*
@@ -885,32 +885,32 @@ class Civ13
     * Ban functions will return a string containing the results of the ban
     * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
     */
-    public function ban(array $array, $message = null): string
+    public function ban(array $array, ?string $admin = null): string
     {
         if ($member = $this->getVerifiedMember($array[0]))
             if (! $member->roles->has($this->role_ids['banished']))
                 $member->addRole($this->role_ids['banished'], "Banned for {$array[1]} with the reason {$array[2]}");
-        if ($this->legacy) return $this->legacyBan($array, $message);
-        return $this->sqlBan($array, $message);
+        if ($this->legacy) return $this->legacyBan($array, $admin);
+        return $this->sqlBan($array, $admin);
     }
-    public function banNomads(array $array, $message = null): string
+    public function banNomads(array $array, ?string $admin = null): string
     {
-        if ($this->legacy) return $this->legacyBanNomads($array, $message);
-        return $this->sqlBanNomads($array, $message);
+        if ($this->legacy) return $this->legacyBanNomads($array, $admin);
+        return $this->sqlBanNomads($array, $admin);
     }
-    public function banTDM(array $array, $message = null): string
+    public function banTDM(array $array, ?string $admin = null): string
     {
-        if ($this->legacy) return $this->legacyBanTDM($array, $message);
-        return $this->sqlBanTDM($array, $message);
+        if ($this->legacy) return $this->legacyBanTDM($array, $admin);
+        return $this->sqlBanTDM($array, $admin);
     }
-    public function banPers(array $array, $message = null): string
+    public function banPers(array $array, ?string $admin = null): string
     {
-        if ($this->legacy) return $this->legacyBanPers($array, $message);
-        return $this->sqlBanPers($array, $message);
+        if ($this->legacy) return $this->legacyBanPers($array, $admin);
+        return $this->sqlBanPers($array, $admin);
     }
     public function unban(string $ckey, ?string $admin = null): void
     {
-        if (! $admin) $admin = $this->discord->user->displayname;
+        $admin ??= $this->discord->user->displayname;
         if ($this->legacy) {
             $this->legacyUnbanNomads($ckey, $admin);
             $this->legacyUnbanTDM($ckey, $admin);
@@ -938,14 +938,14 @@ class Civ13
         return $this->sqlUnbanPers($ckey, $admin);
     }
     
-    public function DirectMessageNomads($author, $string): bool
+    public function DirectMessageNomads($author, string $string): bool
     {
         if (! file_exists($this->files['nomads_discord2dm']) || ! $file = fopen($this->files['nomads_discord2dm'], 'a')) return false;
         fwrite($file, "$author:::$string" . PHP_EOL);
         fclose($file);
         return true;
     }
-    public function DirectMessageTDM($author, $string): bool
+    public function DirectMessageTDM($author, string $string): bool
     {
         if (! file_exists($this->files['tdm_discord2dm']) || ! $file = fopen($this->files['tdm_discord2dm'], 'a')) return false;
         fwrite($file, "$author:::$string" . PHP_EOL);
