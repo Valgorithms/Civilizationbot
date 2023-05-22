@@ -181,8 +181,15 @@ $options = array(
         'nomads_ooc_channel' => '636644156923445269', //#ooc-nomads
         'nomads_admin_channel' => '637046890030170126', //#ahelp-nomads
         //Webhook relays
-        'nomads_debug_webhook_channel' => '1106248132779593758', //#debug-nomads, debugging
-        'nomads_garbage_channel' => '1106248132779593758', //#debug-nomads, debugging
+        'nomads_ooc_webhook_channel' => '1110001963405418616', //#ooc-nomads (New)
+        'nomads_transit_webhook_channel' => '1110002027469221989', //#transit-nomads
+        'nomads_lobby_webhook_channel' => '1110001986134347856', //#lobby-nomads
+        'nomads_asay_webhook_channel' => '1110002005977604186', //#asay-nomads
+        'nomads_adminlog_webhook_channel' => '1110002047123738624', //#adminlog-nomads
+        'nomads_debug_webhook_channel' => '1106248132779593758', //#debug-nomads (debugging)
+        'nomads_garbage_webhook_channel' => '1110002493259251752', //#garbage-nomads
+        'nomads_runtime_webhook_channel' => '1110002671936602132', //#runtime-nomads
+        'nomads_attack_webhook_channel' => '1110002697383448648', //#attack-nomads
 
         /* TDM */
         'tdm-playercount' => '1048777462898761789', //tdm-#
@@ -200,15 +207,6 @@ $options = array(
         'tdm_runtime_webhook_channel' => '1107017103883632792', //#runtime-tdm
         'tdm_attack_webhook_channel' => '1107017830160936980', //#attack-tdm
 
-        'nomads_ooc_webhook_channel' => '1110001963405418616', //#ooc-nomads (New)
-        'nomads_transit_webhook_channel' => '1110002027469221989', //#transit-nomads
-        'nomads_lobby_webhook_channel' => '1110001986134347856', //#lobby-nomads
-        'nomads_asay_webhook_channel' => '1110002005977604186', //#asay-nomads
-        'nomads_adminlog_webhook_channel' => '1110002047123738624', //#adminlog-nomads
-        'nomads_debug_webhook_channel' => '1106248132779593758', //#debug-nomads (debugging)
-        'nomads_garbage_webhook_channel' => '1110002493259251752', //#garbage-nomads
-        'nomads_runtime_webhook_channel' => '1110002671936602132', //#runtime-nomads
-        'nomads_attack_webhook_channel' => '1110002697383448648', //#attack-nomads
         
 
         /* Persistence */
