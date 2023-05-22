@@ -533,41 +533,37 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             $time = '['.date('H:i:s', time()).']';
             $message = '';
             $ckey = '';
+            if (isset($data['ckey'])) $ckey = str_replace(['.', '_', ' ', '/', '\\', '*'], '', strtolower($data['ckey']));
             switch ($params['method']) {
                 case 'ahelpmessage':
-                    $message .= "**__{$time} AHELP__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
-                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    $message .= "**__{$time} AHELP__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'asaymessage':
                     if (!isset($civ13->channel_ids[$server.'_asay_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_asay_webhook_channel'];
-                    $message .= "**__{$time} ASAY__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
-                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'lobbymessage': //Might overlap with deadchat
                     if (!isset($civ13->channel_ids[$server.'_lobby_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_lobby_webhook_channel'];
-                    $message .= "**__{$time} LOBBY__ {$data['ckey']}**: " . html_entity_decode(urldecode($data['message']));
-                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    $message .= "**__{$time} LOBBY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'oocmessage':
                     if (!isset($civ13->channel_ids[$server.'_ooc_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_ooc_webhook_channel'];
                     $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
-                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'memessage':
-                    if (isset($data['message'])) $message .= "**__{$time} EMOTE__ {$data['ckey']}** " . html_entity_decode(urldecode($data['message']));
-                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    if (isset($data['message'])) $message .= "**__{$time} EMOTE__ $ckey** " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'garbage':
-                    $message .= "**__{$time} GARBAGE__ {$data['ckey']}**: " . html_entity_decode(strip_tags($data['message']));
-                    //$ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
+                    $message .= "**__{$time} GARBAGE__ $ckey**: " . html_entity_decode(strip_tags($data['message']));
+                    //$ckey = str_replace(['.', '_', ' '], '', strtolower($ckey));
                     $arr = explode(' ', strip_tags($data['message']));
                     $trigger = $arr[3];
                     if ($trigger == 'logout:') $ckey = explode('/', $arr[4])[0];
                     elseif ($trigger == 'login:') $ckey = explode('/', $arr[4])[0];
-                    else $ckey = explode('/', substr(strip_tags($data['message']), 4))[0];
+                    else $ckey ??= explode('/', substr(strip_tags($data['message']), 4))[0];
                     break;
                 case 'respawn_notice':
                     //if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
@@ -576,7 +572,6 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 case 'login':
                     if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_transit_webhook_channel'];
-                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     $message .= "$ckey logged in";
                     if (isset($data['ip'])) {
                         $address = $data['ip'];
@@ -587,15 +582,13 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         $message .= " and CID of $computer_id";
                     }
                     $message .= '.';
-                    
-                    $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     break;
                 case 'logout': //Temporerarily disabled pending bug fix server-side
                     return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_transit_webhook_channel'];
-                    $message .= "{$data['ckey']} logged out.";
-                    $ckey = strtolower(str_replace(['.', '_', ' '], '', explode('[DC]', $data['ckey'])[0]));
+                    $message .= "$ckey logged out.";
+                    $ckey ??= strtolower(str_replace(['.', '_', ' '], '', explode('[DC]', $ckey)[0]));
                     break;
                 case 'token':
                 case 'roundstatus':
@@ -605,12 +598,11 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 case 'runtimemessage':
                     $message .= "**__{$time} RUNTIME__**: " . strip_tags($data['message']);
                     $trigger = explode(' ', $data['message'])[1];
-                    if ($trigger == 'ListVarEdit') $ckey = str_replace(['.', '_', ' '], '', explode(':', strtolower(substr($data['message'], 8+strlen('ListVarEdit'))))[0]);
-                    elseif ($trigger == 'VarEdit') $ckey = str_replace(['.', '_', ' '], '', explode('/', strtolower(substr($data['message'], 8+strlen('VarEdit'))))[0]);
+                    if ($trigger == 'ListVarEdit') $ckey ??= str_replace(['.', '_', ' '], '', explode(':', strtolower(substr($data['message'], 8+strlen('ListVarEdit'))))[0]);
+                    elseif ($trigger == 'VarEdit') $ckey ??= str_replace(['.', '_', ' '], '', explode('/', strtolower(substr($data['message'], 8+strlen('VarEdit'))))[0]);
                     break;
                 case 'alogmessage':
                     if (!isset($civ13->channel_ids[$server.'_adminlog_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    if (isset($data['ckey'])) $ckey = str_replace(['.', '_', ' '], '', strtolower($data['ckey']));
                     $channel_id = $civ13->channel_ids[$server.'_adminlog_webhook_channel'];
                     $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
                     break;
@@ -633,9 +625,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 } elseif($item) {
                     $civ13->discord->users->fetch('id', $item['discord']);
                     $channel->sendMessage($message);
-                } else {
-                    $channel->sendMessage($message);
-                }
+                } else $channel->sendMessage($message);
             }
             return new Response(200, ['Content-Type' => 'text/html'], 'Done');
 
