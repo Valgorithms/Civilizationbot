@@ -1243,13 +1243,13 @@ class Civ13
                 if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
-                    if ($ckeyinfo['altbanned']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. ']))); //Automatically ban evaders
+                    if ($ckeyinfo['altbanned']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Account under investigation. Appeal at {$this->banappeal}"]))); //Automatically ban evaders
                     else foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) {
-                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Account under investigation. Appeal at {$this->banappeal}"])));
                             break;
                         } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
-                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', 'Account under investigation. '])));
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Account under investigation. Appeal at {$this->banappeal}"])));
                             break 2;
                         }
                     }
