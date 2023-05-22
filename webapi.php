@@ -607,7 +607,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
                     break;
                 case 'attacklogmessage': //Disabled for spam
-                    return new Response(200, ['Content-Type' => 'text/html'], 'Done');
+                    if ($server == 'tdm') return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     if (!isset($civ13->channel_ids[$server.'_attack_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_attack_webhook_channel'];
                     $message .= "**__{$time} ATTACK LOG__**: " . strip_tags($data['message']);
