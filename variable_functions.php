@@ -368,7 +368,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         //$civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
         $ckey_age = [];
         if (!empty($ckeys)) {
-            foreach ($ckeys as $c) ($age = $civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "(N/A)";
+            foreach ($ckeys as $c) ($age = $civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
             $ckey_age_string = '';
             foreach ($ckey_age as $key => $value) $ckey_age_string .= " $key ($value) ";
             $embed->addFieldValues('Primary Ckeys', trim($ckey_age_string));
