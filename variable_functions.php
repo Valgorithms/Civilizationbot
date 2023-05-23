@@ -486,23 +486,23 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if ($message_content_lower == 'permitted') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (empty($civ13->permitted)) return $message->reply('No users have been permitted to bypass the Byond account age requirement.');
-        return $message->reply('The following ckeys are now permitted to bypass the Byond account limit and age requirements: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', array_keys($civ13->permitted)) . '`');
+        if (empty($civ13->permitted)) return $message->reply('No users have been permitted to bypass the Byond account restrictions.');
+        return $message->reply('The following ckeys are now permitted to bypass the Byond account limit and restrictions: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', array_keys($civ13->permitted)) . '`');
     }
     if (str_starts_with($message_content_lower, 'permit')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('permit')))));
-        return $message->reply("$ckey is now permitted to bypass the Byond account age requirement.");
+        return $message->reply("$ckey is now permitted to bypass the Byond account restrictions.");
     }
     if (str_starts_with($message_content_lower, 'unpermit')) { //Alias for revoke
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('unpermit')))), false);
-        return $message->reply("$ckey is no longer permitted to bypass the Byond account age requirement.");
+        return $message->reply("$ckey is no longer permitted to bypass the Byond account restrictions.");
     }
     if (str_starts_with($message_content_lower, 'revoke')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('revoke')))), false);
-        return $message->reply("$ckey is no longer permitted to bypass the Byond account age requirement.");
+        return $message->reply("$ckey is no longer permitted to bypass the Byond account restrictions.");
     }
 
     if (str_starts_with($message_content_lower, 'tests')) {
