@@ -366,7 +366,13 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
         //$civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
-        if (!empty($ckeys)) $embed->addFieldValues('Primary Ckeys', implode(', ', $ckeys));
+        if (!empty($ckeys)) {
+            $ckey_age = [];
+            foreach ($ckeys as $c) {
+                ($age = $civ13->getByondAge($ckey)) ? $ckey_age[] = "$c ($age)" : $ckey_age[] = "$c (N/A)";
+            }
+            $embed->addFieldValues('Primary Ckeys', implode(', ', $ckey_age));
+        }
         if ($high_staff) {
             if (!empty($ips)) $embed->addFieldValues('Primary IPs', implode(', ', $ips));
             if (!empty($cids)) $embed->addFieldValues('Primary CIDs', implode(', ', $cids));
@@ -430,8 +436,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if ($civ13->verified->get('ss13', $ckey)) $verified = 'Yes';
         if (!empty($ckeys)) $embed->addFieldValues('Matched Ckeys', implode(', ', $ckeys));
         if ($high_staff) {
-            if (!empty($ips)) $embed->addFieldValues('Matched IPs', implode(', ', $ips));
-            if (!empty($cids)) $embed->addFieldValues('Matched CIDs', implode(', ', $cids));
+            if (!empty($ips)) $embed->addFieldValues('Matched IPs', implode(', ', $ips), true);
+            if (!empty($cids)) $embed->addFieldValues('Matched CIDs', implode(', ', $cids), true);
         }
         if (!empty($ips)) {
             $regions = [];
@@ -439,16 +445,16 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->addFieldValues('Regions', implode(', ', $regions));
         }
         if (!empty($dates) && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
-        $embed->addfieldValues('Verified', $verified);
+        $embed->addfieldValues('Verified', $verified, true);
         $discords = [];
         foreach ($ckeys as $c) if ($item = $civ13->verified->get('ss13', $c)) $discords[] = $item['discord'];
         if ($discords) {
             foreach ($discords as &$id) $id = "<@{$id}>";
             $embed->addfieldValues('Discord', implode(', ', $discords));
         }
-        $embed->addfieldValues('Currently Banned', $banned);
-        $embed->addfieldValues('Alt Banned', $altbanned);
-        $embed->addfieldValues('Ignoring banned alts or new account age', isset($civ13->permitted[$ckey]) ? 'Yes' : 'No');
+        $embed->addfieldValues('Currently Banned', $banned, true);
+        $embed->addfieldValues('Alt Banned', $altbanned, true);
+        $embed->addfieldValues('Ignoring banned alts or new account age', isset($civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
         $builder = MessageBuilder::new();
         if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
         $builder->addEmbed($embed);
