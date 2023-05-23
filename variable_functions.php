@@ -437,7 +437,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (!empty($ckeys)) {
             foreach ($ckeys as $c) if (! isset($ckey_age[$c])) ($age = $civ13->getByondAge($ckey)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "(N/A)";
             $ckey_age_string = '';
-            foreach ($ckey_age as $key => $value) $ckey_age_string .= "$ckey_age_string $key ($value) ";
+            foreach ($ckey_age as $key => $value) $ckey_age_string .= "$key ($value) ";
             $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
         }
         if ($high_staff) {
