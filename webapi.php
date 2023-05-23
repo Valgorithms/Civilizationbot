@@ -573,7 +573,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 case 'login':
                     if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_transit_webhook_channel'];
-                    $message .= "$ckey logged in";
+                    $message .= "$ckey spawned in";
                     if (isset($data['ip'])) {
                         $address = $data['ip'];
                         $message .=  " with IP of $address";
