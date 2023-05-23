@@ -588,8 +588,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_transit_webhook_channel'];
-                    $message .= "$ckey logged out.";
-                    $ckey ??= strtolower(str_replace(['.', '_', ' '], '', explode('[DC]', $ckey)[0]));
+                    $message .= "$ckey disconnected from the server.";
                     break;
                 case 'token':
                 case 'roundstatus':
@@ -597,18 +596,17 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     echo "[DATA FOR {$params['method']}]: "; var_dump($params['data']); echo PHP_EOL;
                     break;
                 case 'runtimemessage':
+                    if (!isset($civ13->channel_ids[$server.'_runtime_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_runtime_webhook_channel'];
                     $message .= "**__{$time} RUNTIME__**: " . strip_tags($data['message']);
-                    $trigger = explode(' ', $data['message'])[1];
-                    if ($trigger == 'ListVarEdit') $ckey ??= str_replace(['.', '_', ' '], '', explode(':', strtolower(substr($data['message'], 8+strlen('ListVarEdit'))))[0]);
-                    elseif ($trigger == 'VarEdit') $ckey ??= str_replace(['.', '_', ' '], '', explode('/', strtolower(substr($data['message'], 8+strlen('VarEdit'))))[0]);
                     break;
                 case 'alogmessage':
                     if (!isset($civ13->channel_ids[$server.'_adminlog_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_adminlog_webhook_channel'];
                     $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
                     break;
-                case 'attacklogmessage': //Disabled for spam
-                    if ($server == 'tdm') return new Response(200, ['Content-Type' => 'text/html'], 'Done');
+                case 'attacklogmessage':
+                    if ($server == 'tdm') return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Disabled on TDM, use manual checking of log files instead
                     if (!isset($civ13->channel_ids[$server.'_attack_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_attack_webhook_channel'];
                     $message .= "**__{$time} ATTACK LOG__**: " . strip_tags($data['message']);
