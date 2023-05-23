@@ -366,16 +366,16 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
         //$civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
+        $ckey_age = [];
         if (!empty($ckeys)) {
-            $ckey_age = [];
-            foreach ($ckeys as $c) {
-                ($age = $civ13->getByondAge($ckey)) ? $ckey_age[] = "$c ($age)" : $ckey_age[] = "$c (N/A)";
-            }
-            $embed->addFieldValues('Primary Ckeys', implode(', ', $ckey_age));
+            foreach ($ckeys as $c) ($age = $civ13->getByondAge($ckey)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "(N/A)";
+            $ckey_age_string = '';
+            foreach ($ckey_age as $key => $value) $ckey_age_string .= " $key ($value) ";
+            $embed->addFieldValues('Primary Ckeys', trim($ckey_age_string));
         }
         if ($high_staff) {
-            if (!empty($ips)) $embed->addFieldValues('Primary IPs', implode(', ', $ips));
-            if (!empty($cids)) $embed->addFieldValues('Primary CIDs', implode(', ', $cids));
+            if (!empty($ips)) $embed->addFieldValues('Primary IPs', implode(', ', $ips), true);
+            if (!empty($cids)) $embed->addFieldValues('Primary CIDs', implode(', ', $cids), true);
         }
         if (!empty($dates)) $embed->addFieldValues('Primary Dates', implode(', ', $dates));
 
@@ -434,7 +434,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
 
         $verified = 'No';
         if ($civ13->verified->get('ss13', $ckey)) $verified = 'Yes';
-        if (!empty($ckeys)) $embed->addFieldValues('Matched Ckeys', implode(', ', $ckeys));
+        if (!empty($ckeys)) {
+            foreach ($ckeys as $c) if (! isset($ckey_age[$c])) ($age = $civ13->getByondAge($ckey)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "(N/A)";
+            $ckey_age_string = '';
+            foreach ($ckey_age as $key => $value) $ckey_age_string .= "$ckey_age_string $key ($value) ";
+            $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
+        }
         if ($high_staff) {
             if (!empty($ips)) $embed->addFieldValues('Matched IPs', implode(', ', $ips), true);
             if (!empty($cids)) $embed->addFieldValues('Matched CIDs', implode(', ', $cids), true);
