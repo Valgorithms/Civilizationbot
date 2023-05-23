@@ -40,7 +40,7 @@ class ServerInstance
     public string $port = '';
     
     public string $minimum_age = '-21 days'; //Minimum age of a ckey
-    public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum age requirement
+    public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum account age requirement or are banned with another ckey
 
     public array $timers = [];
     public array $serverinfo = []; //Collected automatically by serverinfo_timer

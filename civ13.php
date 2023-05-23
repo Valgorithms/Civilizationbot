@@ -52,7 +52,7 @@ class Civ13
     public array $provisional; //Allow provisional registration if the website is down, then try to verify when it comes back up
     public array $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
     public string $minimum_age = '-21 days'; //Minimum age of a ckey
-    public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum age requirement
+    public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum account age requirement or are banned with another ckey
     public array $blacklisted_regions = ['77.124', '77.125', '77.126', '77.127', '77.137.', '77.138.', '77.139.', '77.238.175', '77.91.69', '77.91.71', '77.91.74', '77.91.79', '77.91.88'];
     public array $blacklisted_countries = ['IL', 'ISR'];
 
