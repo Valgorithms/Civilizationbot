@@ -175,7 +175,15 @@ $options = array(
         'pers_playerlogs' => '/home/1713/civ13-pers/SQL/playerlogs.txt',
     ),
     'channel_ids' => array(
+        /* Persistence */
+        'pers' => '799951945346711552', #persistence
+        'persistence-playercount' => '1090788345082298369', //persistence-#
+        //File read relays
+        'pers_ooc_channel' => '1090863947579658320', //#ooc-pers
+        'pers_admin_channel' => '1090863837730848798', //#ahelp-pers
+
         /* Nomad */
+        'nomads' => '799952084505067581', #nomads
         'nomads-playercount' => '1048777424894185484', //nomads-#
         //File read relays
         'nomads_ooc_channel' => '636644156923445269', //#ooc-nomads
@@ -192,6 +200,7 @@ $options = array(
         'nomads_attack_webhook_channel' => '1110002697383448648', //#attack-nomads
 
         /* TDM */
+        'tdm' => '799952134426591273', #tdm
         'tdm-playercount' => '1048777462898761789', //tdm-#
         //File read relays
         'tdm_ooc_channel' => '636644391095631872', //#ooc-tdm
@@ -207,18 +216,10 @@ $options = array(
         'tdm_runtime_webhook_channel' => '1107017103883632792', //#runtime-tdm
         'tdm_attack_webhook_channel' => '1107017830160936980', //#attack-tdm
 
-        
-
-        /* Persistence */
-        'persistence-playercount' => '1090788345082298369', //persistence-#
-        //File read relays
-        'pers_ooc_channel' => '1090863947579658320', //#ooc-pers
-        'pers_admin_channel' => '1090863837730848798', //#ahelp-pers
-
         //Misc
         'webserver-status' => '1106967195092783104', #webserver-status
         'staff_bot' => '712685552155230278', //#staff-bot
-        //'ban_appeals' => '1019718839749062687', //#ban-appeals (forum thread, unused by bot)        
+        //'ban_appeals' => '1019718839749062687', //#ban-appeals (forum thread, unused by bot)   
     ),
     'role_ids' => array(
         'admiral' => '468980650914086913', //Civ13 Discord Server Owner
@@ -238,6 +239,7 @@ $options = array(
         'paroled' => '745336314689355796', //On parole (unused)
         'red' => '955869414622904320',
         'blue' => '955869567035527208',
+        'round_start' => '1110597830403424328',
     ),
     'functions' => array(
         'ready' => [
