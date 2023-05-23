@@ -455,7 +455,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         foreach ($ckeys as $c) if ($item = $civ13->verified->get('ss13', $c)) $discords[] = $item['discord'];
         if ($discords) {
             foreach ($discords as &$id) $id = "<@{$id}>";
-            $embed->addfieldValues('Discord', implode(', ', $discords), true);
+            $embed->addfieldValues('Discord', implode(', ', $discords));
         }
         $embed->addfieldValues('Currently Banned', $banned, true);
         $embed->addfieldValues('Alt Banned', $altbanned, true);
