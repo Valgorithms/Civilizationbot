@@ -102,11 +102,11 @@ class Civ13
     public string $embed_footer = ''; //Footer for embeds, this is set in the ready event
     public string $civ13_guild_id = '468979034571931648'; //Guild ID for the Civ13 server
     public string $verifier_feed_channel_id = '1032411190695055440'; //Channel where the bot will listen for verification notices and then update its verified cache accordingly
-    public string $civ_token = ''; //Token for use with $verifyurl, this is not the same as the bot token and should be kept secret
+    public string $civ_token = ''; //Token for use with $verify_url, this is not the same as the bot token and should be kept secret
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; //Link to the bot's github page
     public string $banappeal = 'civ13.com slash discord'; //Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
-    public string $verifyurl = 'http://valzargaming.com:8080/verified/'; //Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
+    public string $verify_url = 'http://valzargaming.com:8080/verified/'; //Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
     public string $serverinfo_url = ''; //Where the bot will retrieve server information from
     public bool $webserver_online = false;
     
@@ -449,7 +449,7 @@ class Civ13
     */
     public function getVerified(): Collection
     {
-        if ($verified_array = json_decode(file_get_contents($this->verifyurl), true)) {
+        if ($verified_array = json_decode(file_get_contents($this->verify_url), true)) {
             $this->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
@@ -634,7 +634,7 @@ class Civ13
         $success = false;
         $message = '';
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->verifyurl);
+        curl_setopt($ch, CURLOPT_URL, $this->verify_url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string    
         curl_setopt($ch, CURLOPT_POST, TRUE);
