@@ -558,17 +558,11 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (isset($data['message'])) $message .= "**__{$time} EMOTE__ $ckey** " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'garbage':
-                    $message .= "**__{$time} GARBAGE__ $ckey**: " . html_entity_decode(strip_tags($data['message']));
-                    //$ckey = str_replace(['.', '_', ' '], '', strtolower($ckey));
-                    $arr = explode(' ', strip_tags($data['message']));
-                    $trigger = $arr[3];
-                    if ($trigger == 'logout:') $ckey = explode('/', $arr[4])[0];
-                    elseif ($trigger == 'login:') $ckey = explode('/', $arr[4])[0];
-                    else $ckey ??= explode('/', substr(strip_tags($data['message']), 4))[0];
+                    if (isset($data['message'])) $message .= "**__{$time} GARBAGE__ $ckey**: " . html_entity_decode(strip_tags($data['message']));
                     break;
                 case 'respawn_notice':
                     //if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
-                    $message .= html_entity_decode(urldecode($data['message']));
+                    if (isset($data['message'])) $message .= html_entity_decode(urldecode($data['message']));
                     break;
                 case 'login':
                     if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
@@ -584,8 +578,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     }
                     $message .= '.';
                     break;
-                case 'logout': //Temporerarily disabled pending bug fix server-side
-                    return new Response(200, ['Content-Type' => 'text/html'], 'Done');
+                case 'logout':
+                    //return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_transit_webhook_channel'];
                     $message .= "$ckey disconnected from the server.";
