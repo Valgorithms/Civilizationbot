@@ -547,7 +547,7 @@ class Civ13
     */
     public function verifyProcess(string $ckey, string $discord_id): string
     {
-        $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', $ckey));
+        $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $ckey));
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
         if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, please ask Valithor to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {

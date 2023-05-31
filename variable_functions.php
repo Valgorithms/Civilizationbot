@@ -336,7 +336,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'ckeyinfo')) {
         $high_staff = $rank_check($civ13, $message, ['admiral', 'captain'], false);
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (! $id = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckeyinfo'))))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
+        if (! $id = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('ckeyinfo'))))) return $message->reply('Invalid format! Please use the format: ckeyinfo `ckey`');
         if (is_numeric($id)) {
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$id`.");
             $ckey = $item['ss13'];
@@ -597,7 +597,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'unban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unban'))))))
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('unban'))))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
@@ -605,7 +605,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'unbannomads ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbannomads'))))))
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('unbannomads'))))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
@@ -618,7 +618,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'unbantdm ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbantdm'))))))
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('unbantdm'))))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
@@ -631,7 +631,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'unbanpers ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('unbanpers'))))))
+        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('unbanpers'))))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
@@ -796,7 +796,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         //return $message->reply("The ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
+        if (! $ckey = trim(str_replace(['.', '_', '-', ' '], '', substr($message_content_lower, strlen('rankme'))))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
         if (! $civ13->recalculateRanking()) return $message->reply('There was an error trying to recalculate ranking! The bot may be misconfigured.');
         if (! $msg = $rankme($civ13, $ckey)) return $message->reply('There was an error trying to get your ranking!');
         if (strlen($msg)<=2000) return $message->reply($msg);
@@ -810,7 +810,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         //return $message->reply("Your ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'medals')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
+        if (! $ckey = trim(str_replace(['.', '_', '-', ' '], '', substr($message_content_lower, strlen('medals'))))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
         if (! $msg = $medals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
         if (strlen($msg)<=2000) return $message->reply($msg); //Try embed description? 4096 characters
         if (strlen($msg)<=4096) {
@@ -823,7 +823,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         //return $message->reply("Too many medals to display.");
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('brmedals'))))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
+        if (! $ckey = trim(str_replace(['.', '_', '-', ' '], '', substr($message_content_lower, strlen('brmedals'))))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
         if (! $msg = $brmedals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
         if (strlen($msg)<=2000) return $message->reply($msg);
         if (strlen($msg)<=4096) {
@@ -987,7 +987,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         }
     }
     if (str_starts_with($message_content_lower, 'bancheck')) {
-        if (! $ckey = trim(str_replace(['.', '_', ' ', '<@!', '<@', '>'], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
+        if (! $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
         if (is_numeric($ckey)) {
             if (! $item = $civ13->verified->get('discord', $ckey)) return $message->reply("No ckey found for Discord ID `$ckey`.");
             $ckey = $item['ss13'];
@@ -1088,11 +1088,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         return $message->reply("`$id` is registered to `{$item['ss13']}`");
     }
     if (str_starts_with($message_content_lower, 'ckey2discord')) {
-        if (! $item = $civ13->verified->get('ss13', $ckey = trim(str_replace(['.', '_', ' '], '', substr($message_content_lower, strlen('discord2ckey')))))) return $message->reply("`$ckey` is not registered to any discord id");
+        if (! $item = $civ13->verified->get('ss13', $ckey = trim(str_replace(['.', '_', '-', ' '], '', substr($message_content_lower, strlen('discord2ckey')))))) return $message->reply("`$ckey` is not registered to any discord id");
         return $message->reply("`$ckey` is registered to <@{$item['discord']}>");
     }
     if (! str_starts_with($message_content_lower, 'ckeyinfo') && str_starts_with($message_content_lower, 'ckey')) {
-        if (! $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', ' '], '', substr($message_content_lower, strlen('ckey'))))) {
+        if (! $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('ckey'))))) {
             if (! $item = $civ13->getVerifiedItem($id = $message->member->id)) return $message->reply("You are not registered to any byond username");
             return $message->reply("You are registered to `{$item['ss13']}`");
         }
