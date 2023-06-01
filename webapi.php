@@ -615,8 +615,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
                     $embed->setDescription($message);
                     $channel->sendEmbed($embed);
-                } elseif($item) {
-                    if ($item['discord']) $civ13->discord->users->fetch('id', $item['discord']);
+                } elseif ($item) {
+                    $civ13->discord->users->fetch($item['discord']);
                     $channel->sendMessage($message);
                 } else $channel->sendMessage($message);
             }

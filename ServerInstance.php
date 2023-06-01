@@ -882,7 +882,7 @@ class ServerInstance
             else {
                 $embed = new Embed($this->civ13->discord);
                 if ($user = $this->civ13->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-                //else $this->civ13->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
+                //else $this->civ13->discord->users->fetch($item['discord']); //disabled to prevent rate limiting
                 $embed->setDescription($fp);
                 $channel->sendEmbed($embed);
             }
