@@ -382,8 +382,9 @@ class Slash
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             else {
-                $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$this->civ13->getVerifiedItem($interaction->user)['ss13']}`** unbanned **`{$item['ss13']}`**."));
-                $this->civ13->unban($item['ss13'], $interaction->user->displayname);
+                $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
+                $interaction->respondWithMessage(MessageBuilder::new()->setContent('**`' . ($admin ?? $interaction->user->displayname) . "`** unbanned **`{$item['ss13']}`**."));
+                $this->civ13->unban($item['ss13'], ($admin ?? $interaction->user->displayname));
             }
         });
 
