@@ -238,7 +238,7 @@ class Civ13
                     $this->VarSave('badwords_warnings.json', $badwords_warnings);
                 }
                 $this->badwords_warnings = $badwords_warnings;
-                $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username} by Valithor#5947";
+                $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username}#{$this->discord->discriminator} by Valithor#5947";
 
                 $this->getVerified(); //Populate verified property with data from DB
                 if (! $provisional = $this->VarLoad('provisional.json')) {
