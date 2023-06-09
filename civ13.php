@@ -974,7 +974,7 @@ class Civ13
             'bc' => '7777', 
             'ps13' => '7778',
         ];
-        if(! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->ips['vzg']}/servers/serverinfo.json"; //Default to VZG unless passed manually in config
+        if(! $this->serverinfo_url) $this->serverinfo_url = 'http://' . (isset($this->ips['vzg']) ? $this->ips['vzg'] : $this->vzg_ip) . '/servers/serverinfo.json'; //Default to VZG unless passed manually in config
     }
     
     /*

@@ -289,7 +289,7 @@ class Slash
                     foreach ($server as $key => $array)
                         foreach ($array as $inline => $value)
                             $embed->addFieldValues($key, $value, $inline);
-                $embed->setFooter(($this->civ13->github ?  $this->civ13->github . PHP_EOL : '') . "{$this->civ13->discord->username} by Valithor#5947");
+                $embed->setFooter(($this->civ13->github ?  $this->civ13->github . PHP_EOL : '') . "{$this->civ13->discord->username}#{$this->civ13->discord->discriminator} by Valithor#5947");
                 $embed->setColor(0xe1452d);
                 $embed->setTimestamp();
                 $embed->setURL('');
