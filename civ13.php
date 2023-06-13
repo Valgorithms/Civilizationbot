@@ -1272,11 +1272,9 @@ class Civ13
     */
     private function playercountChannelUpdate(int $count = 0, string $prefix = '')
     {
-        if ($this->playercount_ticker++ % 10 !== 0) return;
         if (! $channel = $this->discord->getChannel($this->channel_ids[$prefix . 'playercount'])) return;
-    
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
-    
+        if ($this->playercount_ticker % 10 !== 0) return;
         if ((int)$existingCount !== $count) {
             $channel->name = "{$channelPrefix}-{$count}";
             $channel->guild->channels->save($channel);
@@ -1332,9 +1330,13 @@ class Civ13
     
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
     
-            if ($index <= 2) $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count($players) ?? 0, $si['prefix']);
+            if ($index <= 2) {
+                $p1 = (isset($server['players']) ? $server['players'] : count($players) ?? 0);
+                $p2 = $si['prefix'];
+                $this->playercountChannelUpdate($p1, $p2);
+            }
         }
-    
+        $this->playercount_ticker++;
         return $return;
     }
 
@@ -1356,9 +1358,12 @@ class Civ13
                 $index++; //TODO: Remove this once we have stationname in world.dm
                 continue;
             }
-            $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count(array_map(fn($player) => str_replace(['.', '_', ' '], '', strtolower(urldecode($player))), array_filter($server, function($key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))), $server_info[$index]['prefix']);
+            $p1 = (isset($server['players']) ? $server['players'] : count(array_map(fn($player) => str_replace(['.', '_', ' '], '', strtolower(urldecode($player))), array_filter($server, function($key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))));
+            $p2 = $server_info[$index]['prefix'];
+            $this->playercountChannelUpdate($p1, $p2);
             $index++; //TODO: Remove this once we have stationname in world.dm
         }
+        $this->playercount_ticker++;
     }
 
     /*
