@@ -600,7 +600,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
                     break;
                 case 'attacklogmessage':
-                    if ($server == 'tdm' && ! (! isset($data['ckey2']) || ($data['ckey'] !== $data['ckey2']))) return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Disabled on TDM, use manual checking of log files instead
+                    if ($server == 'tdm' && ! (! isset($data['ckey2']) || ! $data['ckey2'] || ($data['ckey'] !== $data['ckey2']))) return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Disabled on TDM, use manual checking of log files instead
                     if (!isset($civ13->channel_ids[$server.'_attack_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_attack_webhook_channel'];
                     $message .= "**__{$time} ATTACK LOG__**: " . strip_tags($data['message']);
