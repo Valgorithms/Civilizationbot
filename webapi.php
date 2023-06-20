@@ -533,7 +533,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             $time = '['.date('H:i:s', time()).']';
             $message = '';
             $ckey = '';
-            if (isset($data['ckey'])) $ckey = str_replace(['.', '_', ' ', '/', '\\', '*'], '', strtolower($data['ckey']));
+            if (isset($data['ckey'])) $ckey = str_replace(['.', '_', '-', ' ', '/', '\\', '*'], '', strtolower($data['ckey']));
             switch ($params['method']) {
                 case 'ahelpmessage':
                     $message .= "**__{$time} AHELP__ $ckey**: " . html_entity_decode(urldecode($data['message']));
@@ -610,7 +610,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     return new Response(400, ['Content-Type' => 'text/plain'], 'Invalid Parameter');
             }
             if ($message && $channel = $civ13->discord->getChannel($channel_id)) {
-                if (! $ckey || ! $item = $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', explode('/', $ckey)[0])))) $channel->sendMessage($message);
+                if (! $ckey || ! $item = $civ13->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', explode('/', $ckey)[0])))) $channel->sendMessage($message);
                 elseif ($user = $civ13->discord->users->get('id', $item['discord'])) {
                     $embed = new Embed($civ13->discord);
                     $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);

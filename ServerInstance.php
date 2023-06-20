@@ -562,7 +562,7 @@ class ServerInstance
             if (array_key_exists('ERROR', $server)) continue;
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
-                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = str_replace(['.', '_', ' '], '', strtolower(urldecode($server[$key])));
+                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = str_replace(['.', '_', '-', ' '], '', strtolower(urldecode($server[$key])));
             }
         }
         return $this->players;
@@ -668,7 +668,7 @@ class ServerInstance
     */
     public function ckeyinfo(string $ckey): array
     {
-        if (! $ckey = str_replace(['.', '_', ' '], '', trim($ckey))) return [null, null, null, false, false];
+        if (! $ckey = str_replace(['.', '_', '-', ' '], '', trim($ckey))) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->civ13->getVerifiedItem($ckey)) $ckey = $item['ss13'];
         //var_dump('Ckey Collections Array: ', $collectionsArray, PHP_EOL);
@@ -798,7 +798,7 @@ class ServerInstance
                 $index++; //TODO: Remove this once we have stationname in world.dm
                 continue;
             }
-            $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count(array_map(fn($player) => str_replace(['.', '_', ' '], '', strtolower(urldecode($player))), array_filter($server, function($key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))), $server_info[$index]['prefix']);
+            $this->playercountChannelUpdate(isset($server['players']) ? $server['players'] : count(array_map(fn($player) => str_replace(['.', '_', '-', ' '], '', strtolower(urldecode($player))), array_filter($server, function($key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))), $server_info[$index]['prefix']);
             $index++; //TODO: Remove this once we have stationname in world.dm
         }
     }
@@ -878,7 +878,7 @@ class ServerInstance
                 default: //default to 'contains'
                     if (str_contains(strtolower($string), $badwords_array['word'])) $this->relayViolation($ckey, $badwords_array);
             }
-            if (! $item = $this->civ13->verified->get('ss13', strtolower(str_replace(['.', '_', ' '], '', $ckey)))) $channel->sendMessage($fp);
+            if (! $item = $this->civ13->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', $ckey)))) $channel->sendMessage($fp);
             else {
                 $embed = new Embed($this->civ13->discord);
                 if ($user = $this->civ13->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);

@@ -330,7 +330,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $message->member->setRoles([$civ13->role_ids['infantry']], "approveme {$item['ss13']}");
             return $message->react("👍");
         }
-        if (! $ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('approveme'))))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
+        if (! $ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('approveme'))))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
     if (str_starts_with($message_content_lower, 'ckeyinfo')) {
@@ -491,17 +491,17 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'permit')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('permit')))));
+        $civ13->permitCkey($ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('permit')))));
         return $message->reply("$ckey is now permitted to bypass the Byond account restrictions.");
     }
     if (str_starts_with($message_content_lower, 'unpermit')) { //Alias for revoke
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('unpermit')))), false);
+        $civ13->permitCkey($ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('unpermit')))), false);
         return $message->reply("$ckey is no longer permitted to bypass the Byond account restrictions.");
     }
     if (str_starts_with($message_content_lower, 'revoke')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $civ13->permitCkey($ckey = str_replace(['.', '_', ' '], '', trim(substr($message_content_lower, strlen('revoke')))), false);
+        $civ13->permitCkey($ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('revoke')))), false);
         return $message->reply("$ckey is no longer permitted to bypass the Byond account restrictions.");
     }
 
@@ -539,8 +539,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'ban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $message_content = substr($message_content, 4);
-        $split_message = explode('; ', $message_content); //$split_target[1] is the target
-        if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+        $split_message = explode('; ', $message_content);
+        if (! $split_message[0] = str_replace(['.', '_', '-', ' '], '', $split_message[0])) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         $result = $civ13->ban([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
