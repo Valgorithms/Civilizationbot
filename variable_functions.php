@@ -520,7 +520,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $admin = $civ13->getVerifiedItem($message->member->id)['ss13'];
         if ($member = $civ13->getVerifiedMember($item))
             if (! $member->roles->has($civ13->role_ids['paroled']))
-                $member->addRole($civ13->role_ids['paroled'], "`$admin` paroled `$ckey`");
+                $member->addRole($civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
         if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` has been placed on parole by `$admin` (<@{$message->member->id}>).");
         return $message->react("👍");
     }
@@ -533,7 +533,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $admin = $civ13->getVerifiedItem($message->member->id)['ss13'];
         if ($member = $civ13->getVerifiedMember($item))
             if ($member->roles->has($civ13->role_ids['paroled']))
-                $member->removeRole($civ13->role_ids['paroled'], "`$admin` released `$ckey`");
+                $member->removeRole($civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
         if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` has been released from parole by `$admin` (<@{$message->member->id}>).");
         return $message->react("👍");
     }
