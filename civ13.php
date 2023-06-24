@@ -754,6 +754,15 @@ class Civ13
     }
 
     /*
+    * This function allows a ckey to bypass the verification process entirely
+    * NOTE: This function is only authorized to be used by the database administrator
+    */
+   public function registerCkey(string $ckey, string $discord_id)
+   {
+        $this->permitCkey($ckey, true);
+        return $this->verifyCkey($ckey, $discord_id);
+   }
+    /*
     * This function allows a ckey to bypass the panic bunker
     */
     public function permitCkey(string $ckey, bool $allow = true): array
