@@ -517,10 +517,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('parole'))))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$id`.");
         $civ13->paroleCkey($ckey = $item['ss13'], $message->member->id, true);
+        $admin = $civ13->getVerifiedItem($message->member->id)['ss13'];
         if ($member = $civ13->getVerifiedMember($item))
             if (! $member->roles->has($civ13->role_ids['paroled']))
-                $member->addRole($civ13->role_ids['paroled'], "$ckey paroled by {$message->member->displayName} ({$message->member->id})");
-        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` has been placed on parole by <@{$message->member->id}>.");
+                $member->addRole($civ13->role_ids['paroled'], "`$admin` paroled `$ckey`");
+        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` has been placed on parole by `$admin` (<@{$message->member->id}>).");
         return $message->react("👍");
     }
     if (str_starts_with($message_content_lower, 'release')) {
@@ -529,10 +530,11 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('release'))))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$id`.");
         $civ13->paroleCkey($ckey = $item['ss13'], $message->member->id, false);
+        $admin = $civ13->getVerifiedItem($message->member->id)['ss13'];
         if ($member = $civ13->getVerifiedMember($item))
             if ($member->roles->has($civ13->role_ids['paroled']))
-                $member->removeRole($civ13->role_ids['paroled'], "$ckey released from parole by {$message->member->displayName} ({$message->member->id})");
-        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` has been released from parole by <@{$message->member->id}>.");
+                $member->removeRole($civ13->role_ids['paroled'], "`$admin` released `$ckey`");
+        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` has been released from parole by `$admin` (<@{$message->member->id}>).");
         return $message->react("👍");
     }
 
