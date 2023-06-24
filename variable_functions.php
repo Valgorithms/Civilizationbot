@@ -514,26 +514,24 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'parole')) {
         if (! isset($civ13->role_ids['paroled'])) return $message->react("🔥");
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $civ13->paroleCkey($ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('parole')))), $message->member->id, true);
-        if ($item = $civ13->getVerifiedItem($ckey)) {
-            $ckey = $item['ss13'];
-            if ($member = $civ13->getVerifiedMember($item))
-                if (! $member->roles->has($civ13->role_ids['paroled']))
-                    $member->addRole($civ13->role_ids['paroled'], "$ckey paroled by {$message->member->displayName} ({$message->member->id})");
-        }
+        if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('parole'))))))
+            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$id`.");
+        $civ13->paroleCkey($ckey = $item['ss13'], $message->member->id, true);
+        if ($member = $civ13->getVerifiedMember($item))
+            if (! $member->roles->has($civ13->role_ids['paroled']))
+                $member->addRole($civ13->role_ids['paroled'], "$ckey paroled by {$message->member->displayName} ({$message->member->id})");
         if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $channel->sendMessage("$ckey has been placed on parole by <@{$message->member->id}>.");
         return $message->react("👍");
     }
     if (str_starts_with($message_content_lower, 'release')) {
         if (! isset($civ13->role_ids['paroled'])) return $message->react("🔥");
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $civ13->paroleCkey($ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('release')))), $message->member->id, false);
-        if ($item = $civ13->getVerifiedItem($ckey)) {
-            $ckey = $item['ss13'];
-            if ($member = $civ13->getVerifiedMember($item))
-                if ($member->roles->has($civ13->role_ids['paroled']))
-                    $member->removeRole($civ13->role_ids['paroled'], "$ckey released from parole by {$message->member->displayName} ({$message->member->id})");
-        }
+        if (is_numeric($id = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('release'))))))
+            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$id`.");
+        $civ13->paroleCkey($ckey = $item['ss13'], $message->member->id, false);
+        if ($member = $civ13->getVerifiedMember($item))
+            if ($member->roles->has($civ13->role_ids['paroled']))
+                $member->removeRole($civ13->role_ids['paroled'], "$ckey released from parole by {$message->member->displayName} ({$message->member->id})");
         if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $channel->sendMessage("$ckey has been released from parole by <@{$message->member->id}>.");
         return $message->react("👍");
     }

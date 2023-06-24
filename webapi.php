@@ -580,7 +580,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 
                     if (isset($civ13->paroled[$ckey]))
                         if ($parole_log_channel = $civ13->getChannel($civ13->channel_ids['parole_notif']))
-                            $parole_log_channel->sendMessage("<@{$civ13->paroled[$ckey]}>, $ckey has logged into $server");
+                            $parole_log_channel->sendMessage("<@&{$civ13->role_ids['parolemin']}>, `$ckey` has logged into `$server`");
                     break;
                 case 'logout':
                     //return new Response(200, ['Content-Type' => 'text/html'], 'Done');
@@ -590,7 +590,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 
                     if (isset($civ13->paroled[$ckey]))
                         if ($parole_log_channel = $civ13->getChannel($civ13->channel_ids['parole_notif']))
-                            $parole_log_channel->sendMessage("<@{$civ13->paroled[$ckey]}>, $ckey has logged out of $server");
+                            $parole_log_channel->sendMessage("<@&{$civ13->role_ids['parolemin']}>, `$ckey` has logged out of `$server`");
                     break;
                 case 'token':
                 case 'roundstatus':
