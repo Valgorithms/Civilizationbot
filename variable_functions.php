@@ -520,7 +520,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if ($member = $civ13->getVerifiedMember($item))
             if (! $member->roles->has($civ13->role_ids['paroled']))
                 $member->addRole($civ13->role_ids['paroled'], "$ckey paroled by {$message->member->displayName} ({$message->member->id})");
-        if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $channel->sendMessage("$ckey has been placed on parole by <@{$message->member->id}>.");
+        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("$ckey has been placed on parole by <@{$message->member->id}>.");
         return $message->react("👍");
     }
     if (str_starts_with($message_content_lower, 'release')) {
@@ -532,7 +532,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if ($member = $civ13->getVerifiedMember($item))
             if ($member->roles->has($civ13->role_ids['paroled']))
                 $member->removeRole($civ13->role_ids['paroled'], "$ckey released from parole by {$message->member->displayName} ({$message->member->id})");
-        if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $channel->sendMessage("$ckey has been released from parole by <@{$message->member->id}>.");
+        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("$ckey has been released from parole by <@{$message->member->id}>.");
         return $message->react("👍");
     }
 
