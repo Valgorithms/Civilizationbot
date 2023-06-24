@@ -226,7 +226,9 @@ $options = array(
         //Misc
         'webserver-status' => '1106967195092783104', #webserver-status
         'staff_bot' => '712685552155230278', //#staff-bot
-        //'ban_appeals' => '1019718839749062687', //#ban-appeals (forum thread, unused by bot)   
+        //'ban_appeals' => '1019718839749062687', //#ban-appeals (forum thread, unused by bot)
+        'parole_logs' => '985606778916048966', //#parole-logs (for tracking)
+        'parole_log' => '977715818731294790', //#parole-log (for login/logout notifications) (NYI)
     ),
     'role_ids' => array(
         'admiral' => '468980650914086913', //Civ13 Discord Server Owner

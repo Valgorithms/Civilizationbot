@@ -577,12 +577,20 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         $message .= " and CID of $computer_id";
                     }
                     $message .= '.';
+
+                    if (isset($civ13->paroled[$ckey]))
+                        if ($parole_log_channel = $civ13->getChannel($civ13->channel_ids['parole_notif']))
+                            $parole_log_channel->sendMessage("<@{$civ13->paroled[$ckey]}>, $ckey has logged into $server");
                     break;
                 case 'logout':
                     //return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     if (!isset($civ13->channel_ids[$server.'_transit_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_transit_webhook_channel'];
                     $message .= "$ckey disconnected from the server.";
+
+                    if (isset($civ13->paroled[$ckey]))
+                        if ($parole_log_channel = $civ13->getChannel($civ13->channel_ids['parole_notif']))
+                            $parole_log_channel->sendMessage("<@{$civ13->paroled[$ckey]}>, $ckey has logged out of $server");
                     break;
                 case 'token':
                 case 'roundstatus':

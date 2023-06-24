@@ -50,6 +50,7 @@ class Civ13
     public collection $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
     public array $provisional; //Allow provisional registration if the website is down, then try to verify when it comes back up
+    public array $paroled = []; //List of ckeys that are no longer banned but have been paroled
     public array $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
     public string $minimum_age = '-21 days'; //Minimum age of a ckey
     public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum account age requirement or are banned with another ckey
@@ -224,6 +225,11 @@ class Civ13
                 $this->logger->info('------');
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
                 $this->tests = $tests;
+                if (! $paroled = $this->VarLoad('paroled.json')) {
+                    $paroled = [];
+                    $this->VarSave('paroled.json', $paroled);
+                }
+                $this->paroled = $paroled;
                 if (! $permitted = $this->VarLoad('permitted.json')) {
                     $permitted = [];
                     $this->VarSave('permitted.json', $permitted);
@@ -754,15 +760,23 @@ class Civ13
         return false;
     }
 
+    public function paroleCkey(string $ckey, string $admin, bool $state = true): array
+    {
+        if ($state) $this->paroled[$ckey] = $admin;
+        else unset($this->paroled[$ckey]);
+        $this->VarSave('paroled.json', $this->paroled);
+        return $this->paroled;
+    }
+
     /*
     * This function allows a ckey to bypass the verification process entirely
     * NOTE: This function is only authorized to be used by the database administrator
     */
-   public function registerCkey(string $ckey, string $discord_id)
-   {
+    public function registerCkey(string $ckey, string $discord_id)
+    {
         $this->permitCkey($ckey, true);
         return $this->verifyCkey($ckey, $discord_id);
-   }
+    }
     /*
     * This function allows a ckey to bypass the panic bunker
     */
@@ -1384,7 +1398,11 @@ class Civ13
     {
         if ($member->guild_id == $this->civ13_guild_id) 
             if ($item = $this->verified->get('discord', $member->id)) {
-                if ($this->bancheck($item['ss13'], true)) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
+                $banned = $this->bancheck($item['ss13'], true);
+                $paroled = isset($this->paroled[$item['ss13']]);
+                if ($banned && $paroled) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished'], $this->role_ids['paroled']], "bancheck join {$item['ss13']}");
+                elseif ($banned) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
+                elseif ($paroled) $member->setroles([$this->role_ids['infantry'], $this->role_ids['paroled']], "parole join {$item['ss13']}");
                 else $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
             }
     }
