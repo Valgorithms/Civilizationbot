@@ -75,6 +75,13 @@ $options = array(
     'stats' => $stats,
     
     //Configurations
+
+
+    //The Verify URL is where verification requests are send to and where the verification list is retrieved from
+    //The website must return valid json when no parameters are passed to it and must allow POST requests including token', 'ckey', and 'discord'
+    //Reach out to Valithor if you need help setting up your website
+    'verify_url' => 'http://valzargaming.com:8080/verified/', 
+
     'banappeal' => 'civ13.com slash discord',
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
     'command_symbol' => '@Civilizationbot',

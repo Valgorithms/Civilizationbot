@@ -154,6 +154,7 @@ class Civ13
         if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
         if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
         if(isset($options['technician_id'])) $this->technician_id = $options['technician_id'];
+        if(isset($options['verify_url'])) $this->verify_url = $options['verify_url'];
         if(isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
         if(isset($options['github'])) $this->github = $options['github'];
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
