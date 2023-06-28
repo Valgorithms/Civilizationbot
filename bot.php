@@ -111,7 +111,7 @@ $options = array(
         'nomads_whitelist' => '/home/1713/civ13-rp/SQL/whitelist.txt',
         'nomads_bans' => '/home/1713/civ13-rp/SQL/bans.txt',
         //Campaign
-        'nomads_factionlist' => '/home/1713/civ13-tdm/SQL/factionlist.txt',
+        'nomads_factionlist' => '/home/1713/civ13-rp/SQL/factionlist.txt',
         
         //TDM
         'tdm_log_basedir' => '/home/1713/civ13-tdm/data/logs',
