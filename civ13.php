@@ -1576,8 +1576,9 @@ class Civ13
     public function factionlistUpdate(array $factionlists = []): bool
     {
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
+        $factionlists2 = $factionlists;
         if (isset($this->files['tdm_factionlist']) && !in_array($this->files['tdm_factionlist'], $factionlists)) array_unshift($factionlists, $this->files['tdm_factionlist']);
-        if (isset($this->files['nomads_factionlist']) && !in_array($this->files['nomads_factionlist'], $factionlists)) array_unshift($factionlists, $this->files['tdm_factionlist']);
+        if (isset($this->files['nomads_factionlist']) && !in_array($this->files['nomads_factionlist'], $factionlists)) array_unshift($factionlists2, $this->files['nomads_factionlist']);
         if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
             if (! file_exists($factionlist) || ! ($file = @fopen($factionlist, 'a'))) continue;
