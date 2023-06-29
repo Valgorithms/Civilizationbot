@@ -258,6 +258,11 @@ class Civ13
                     $this->VarSave('provisional.json', $provisional);
                 }
                 $this->provisional = $provisional;
+                if (! $ages = $this->VarLoad('ages.json')) {
+                    $ages = [];
+                    $this->VarSave('ages.json', $ages);
+                }
+                $this->ages = $ages;
                 foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); //Attempt to register all provisional users
                 $this->unbanTimer(); //Start the unban timer and remove the role from anyone who has been unbanned
                 $this->setIPs();
@@ -538,7 +543,11 @@ class Civ13
     public function getByondAge($ckey): string|false
     {
         if (isset($this->ages[$ckey])) return $this->ages[$ckey];
-        if ($age = $this->parseByondAge($this->getByondPage($ckey))) return $this->ages[$ckey] = $age;
+        if ($age = $this->parseByondAge($this->getByondPage($ckey))) {
+            $this->ages[$ckey] = $age;
+            $this->VarSave('ages.json', $this->ages);
+            return $this->ages[$ckey];
+        }
         return false;
     }
     /*
