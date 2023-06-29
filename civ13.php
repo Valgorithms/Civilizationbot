@@ -68,7 +68,7 @@ class Civ13
             'word' => 'bad word' //Bad word to look for
             'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] //Duration of the ban
             'reason' => 'reason' //Reason for the ban
-            'category' => rule category ['racism/discrimination', 'toxic'] //Used to group bad words together by category
+            'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] //Used to group bad words together by category
             'method' => detection method ['exact', 'contains'] //Exact ignores partial matches, contains matches partial matchesq
             'warnings' => 1 //Number of warnings before a ban
         */
@@ -84,9 +84,13 @@ class Civ13
         ['word' => 'nlgg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
         ['word' => 'niqq', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
         ['word' => 'tranny', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        
         ['word' => 'cunt', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
         ['word' => 'fuck you', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
         ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
+        
+        ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthortized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
+        ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthortized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
     ];
     public array $badwords_warnings = []; //Collection of $ckey => ['category' => string, 'badword' => string, 'count' => integer] for how many times a user has recently infringed
     public bool $legacy = true; //If true, the bot will use the file methods instead of the SQL ones
