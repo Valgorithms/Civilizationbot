@@ -552,6 +552,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (!isset($civ13->channel_ids[$server.'_ooc_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_ooc_webhook_channel'];
                     $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
+                    if ($ckey && $message && $channel_id) $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id));
                     if (isset($civ13->role_ids['round_start']) && !$ckey && str_contains($message, 'New round starting!')) $message = "<@{$civ13->role_ids['round_start']}>, New round starting!";
                     break;
                 case 'memessage':

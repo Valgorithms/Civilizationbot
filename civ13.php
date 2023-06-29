@@ -62,6 +62,7 @@ class Civ13
     public array $players = []; //Collected automatically by serverinfo_timer
     public array $seen_players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
+    public bool $moderate = true; //Whether or not to moderate the servers using the badwords list
     public array $badwords = [
         /* Format:
             'word' => 'bad word' //Bad word to look for
@@ -292,12 +293,12 @@ class Civ13
                     $this->logger->info('chat relay timer started');
                     $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() {
                         $guild = $this->discord->guilds->get('id', $this->civ13_guild_id);
-                        if (isset($this->channel_ids['nomads_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_ooc_channel'])) $this->gameChatRelay($this->files['nomads_ooc_path'], $channel);  // #ooc-nomads
-                        if (isset($this->channel_ids['nomads_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_admin_channel'])) $this->gameChatRelay($this->files['nomads_admin_path'], $channel);  // #ahelp-nomads
-                        if (isset($this->channel_ids['tdm_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_channel'])) $this->gameChatRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
-                        if (isset($this->channel_ids['tdm_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_admin_channel'])) $this->gameChatRelay($this->files['tdm_admin_path'], $channel);  // #ahelp-tdm
-                        if (isset($this->channel_ids['pers_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_ooc_channel'])) $this->gameChatRelay($this->files['pers_ooc_path'], $channel);  // #ooc-tdm
-                        if (isset($this->channel_ids['pers_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_admin_channel'])) $this->gameChatRelay($this->files['pers_admin_path'], $channel);  // #ahelp-tdm
+                        if (isset($this->channel_ids['nomads_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_ooc_channel'])) $this->gameChatFileRelay($this->files['nomads_ooc_path'], $channel);  // #ooc-nomads
+                        if (isset($this->channel_ids['nomads_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_admin_channel'])) $this->gameChatFileRelay($this->files['nomads_admin_path'], $channel);  // #ahelp-nomads
+                        if (isset($this->channel_ids['tdm_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_channel'])) $this->gameChatFileRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
+                        if (isset($this->channel_ids['tdm_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_admin_channel'])) $this->gameChatFileRelay($this->files['tdm_admin_path'], $channel);  // #ahelp-tdm
+                        if (isset($this->channel_ids['pers_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_ooc_channel'])) $this->gameChatFileRelay($this->files['pers_ooc_path'], $channel);  // #ooc-tdm
+                        if (isset($this->channel_ids['pers_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_admin_channel'])) $this->gameChatFileRelay($this->files['pers_admin_path'], $channel);  // #ahelp-tdm
                     });
                 }
             });
@@ -1443,59 +1444,88 @@ class Civ13
     /*
     * These functions handle in-game chat moderation and relay those messages to Discord
     * Players will receive warnings and bans for using blacklisted words
+    * TODO: Add a toggle to choose between either File or Webhook
     */
-    
+    public function gameChatFileRelay(string $file_path, $channel): bool
+    { // The file function needs to be replaced with the new Webhook system
+        if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) {
+            $this->logger->warning("gameChatFileRelay() was called with an invalid file path: $file_path");
+            return false;
+        }
+        $relay_array = [];
+        while (($fp = fgets($file, 4096)) !== false) {
+            $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
+            $string = substr($fp, strpos($fp, '/')+1);
+            if ($string && $ckey = strtolower(str_replace(['.', '_', '-', ' '], '', substr($string, 0, strpos($string, ':')))))
+                $relay_array[] = ['ckey' => $ckey, 'message' => $fp, 'server' => array_pop(explode('-', $channel->name))];
+        }
+        ftruncate($file, 0);
+        fclose($file);
+        return $this->__gameChatRelay($relay_array, $channel, false); //Disabled moderation as it is now done quicker using the Webhook system
+    }
+    public function gameChatWebhookRelay(string $ckey, string $message, $channel): bool
+    {
+        if (! $ckey || ! $message || ! $channel) {
+            $this->logger->warning('gameChatWebhookRelay() was called with an empty array.');
+            return false;
+        }
+        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => array_pop(explode('-', $channel->name))], $channel);
+    }
+    public function __gameChatRelay(array $array = ['ckey' => '', 'message' => '', 'server' => ''], $channel, $moderate = true): bool
+    {
+        if (! $array) {
+            $this->logger->warning('__gameChatRelay() was called with an empty array.');
+            return false;
+        }
+        foreach ($array as $arr) {
+            if (! isset($arr['ckey']) || ! isset($arr['message']) || ! $arr['ckey'] || ! $arr['message']) continue;
+            if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $array['server']);
+            if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', $arr['ckey'])))) $channel->sendMessage($arr['message']);
+            else {
+                $embed = new Embed($this->discord);
+                if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
+                $embed->setDescription($arr['message']);
+                $channel->sendEmbed($embed);
+            }
+        }
+        return true;
+    }
+    private function __gameChatModerate(string $ckey, string $string, string $server = 'nomads'): string
+    {
+        foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
+            case 'exact': //ban ckey if $string contains a blacklisted phrase exactly as it is defined
+                if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
+                break;
+            case 'contains': //ban ckey if $string contains a blacklisted word
+            default: //default to 'contains'
+                if (str_contains(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
+        }
+        return $string;
+    }
+    // This function is called from the game's chat hook if a player says something that contains a blacklisted word
+    private function __relayViolation(string $server, string $ckey, array $badwords_array)
+    {
+        $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
+        if (! $this->__relayWarningCounter($ckey, $badwords_array)) return $this->ban([$ckey, $badwords_array['duration'], "Blacklisted phrase ($filtered). Appeal at {$this->banappeal}"]);
+        $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
+        if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
+        if (str_contains($server, 'nomads')) return $this->DirectMessageNomads($ckey, $warning);
+        if (str_contains($server, 'tdm')) return $this->DirectMessageTDM($ckey, $warning);
+    }
     /*
     * This function determines if a player has been warned too many times for a specific category of bad words
     * If they have, it will return false to indicate they should be banned
     * If they have not, it will return true to indicate they should be warned
     */
-    private function relayWarningCounter(string $ckey, array $badwords_array): bool
-    {
-        if (!isset($this->badwords_warnings[$ckey][$badwords_array['category']])) $this->badwords_warnings[$ckey][$badwords_array['category']] = 1;
-        else ++$this->badwords_warnings[$ckey][$badwords_array['category']];
-        $this->VarSave('badwords_warnings.json', $this->badwords_warnings);
-        if ($this->badwords_warnings[$ckey][$badwords_array['category']] > $this->badwords[$badwords_array['warnings']]) return false;
-        return true;
-    }
-    // This function is called from the game's chat hook if a player says something that contains a blacklisted word
-    private function relayViolation(string $file_path, string $ckey, array $badwords_array)
-    {
-        $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
-        if (! $this->relayWarningCounter($ckey, $badwords_array)) return $this->ban([$ckey, $badwords_array['duration'], "Blacklisted phrase ($filtered). Appeal at {$this->banappeal}"]);
-        $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
-        if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
-        if (str_starts_with($file_path, 'nomads')) return $this->DirectMessageNomads($ckey, $warning);
-        if (str_starts_with($file_path, 'tdm')) return $this->DirectMessageTDM($ckey, $warning);
-    }
-    public function gameChatRelay(string $file_path, $channel): bool
-    {     
-        if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) return false;
-        while (($fp = fgets($file, 4096)) !== false) {
-            $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
-            $string = substr($fp, strpos($fp, '/')+1);
-            $ckey = substr($string, 0, strpos($string, ':'));
-            foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
-                case 'exact': //ban ckey if $string contains a blacklisted phrase exactly as it is defined
-                    if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->relayViolation($file_path, $ckey, $badwords_array);
-                    break;
-                case 'contains': //ban ckey if $string contains a blacklisted word
-                default: //default to 'contains'
-                    if (str_contains(strtolower($string), $badwords_array['word'])) $this->relayViolation($file_path, $ckey, $badwords_array);
-            }
-            if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', $ckey)))) $channel->sendMessage($fp);
-            else {
-                $embed = new Embed($this->discord);
-                if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-                //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
-                $embed->setDescription($fp);
-                $channel->sendEmbed($embed);
-            }
-        }
-        ftruncate($file, 0); //clear the file
-        fclose($file);
-        return true;
-    }
+   private function __relayWarningCounter(string $ckey, array $badwords_array): bool
+   {
+       if (!isset($this->badwords_warnings[$ckey][$badwords_array['category']])) $this->badwords_warnings[$ckey][$badwords_array['category']] = 1;
+       else ++$this->badwords_warnings[$ckey][$badwords_array['category']];
+       $this->VarSave('badwords_warnings.json', $this->badwords_warnings);
+       if ($this->badwords_warnings[$ckey][$badwords_array['category']] > $this->badwords[$badwords_array['warnings']]) return false;
+       return true;
+   }
 
     /*
     * This function calculates the player's ranking based on their medals
