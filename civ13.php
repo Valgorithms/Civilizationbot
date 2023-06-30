@@ -1488,7 +1488,7 @@ class Civ13
         }
         return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => array_pop(explode('-', $channel->name))], $channel);
     }
-    public function __gameChatRelay(array $array = ['ckey' => '', 'message' => '', 'server' => ''], $channel, $moderate = true): bool
+    public function __gameChatRelay(array $array, $channel, $moderate = true): bool
     {
         if (! $array) {
             $this->logger->warning('__gameChatRelay() was called with an empty array.');
