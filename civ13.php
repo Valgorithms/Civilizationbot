@@ -600,7 +600,7 @@ class Civ13
         if(! $this->checkToken($discord_id)) return [false, "You have not set your description yet! It needs to be set to {$item['token']}"];
         if ($this->ckeyinfo($item['ss13'])['altbanned'] && ! isset($this->permitted[$item['ss13']])) {
             //TODO: add to pending list
-            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("<@&{$this->role_ids['knight']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("<@&{$this->role_ids['captain']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
             return [false, "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
         }
         return $this->verifyCkey($item['ss13'], $discord_id);
