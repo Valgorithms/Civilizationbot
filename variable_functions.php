@@ -501,6 +501,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (! $ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('discard'))))) return $message->reply('Byond username was not passed. Please use the format `discard <byond username>`.');
         if (isset($civ13->provisional[$ckey])) {
+            if ($member = $message->guild->members->get($civ13->provisional[$ckey])) $member->removeRole($civ13->role_ids['infantry']);
             unset($civ13->provisional[$ckey]);
             $civ13->VarSave('provisional.json', $civ13->provisional);
         }
