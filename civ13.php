@@ -1465,6 +1465,7 @@ class Civ13
     */
     public function gameChatFileRelay(string $file_path, $channel): bool
     { // The file function needs to be replaced with the new Webhook system
+        if (! $this->relay_method === 'file') return false;
         if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) {
             $this->logger->warning("gameChatFileRelay() was called with an invalid file path: $file_path");
             return false;
@@ -1482,13 +1483,14 @@ class Civ13
     }
     public function gameChatWebhookRelay(string $ckey, string $message, $channel): bool
     {
+        if (! $this->relay_method === 'webhook') return false;
         if (! $ckey || ! $message || ! $channel) {
             $this->logger->warning('gameChatWebhookRelay() was called with an empty array.');
             return false;
         }
         return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => array_pop(explode('-', $channel->name))], $channel);
     }
-    public function __gameChatRelay(array $array, $channel, $moderate = true): bool
+    private function __gameChatRelay(array $array, $channel, $moderate = true): bool
     {
         if (! $array || ! isset($array['ckey']) || ! isset($array['message']) || ! isset($array['server']) || ! $array['ckey'] || ! $array['message'] || ! $array['server']) {
             $this->logger->warning('__gameChatRelay() was called with an empty array or invalid content.');
