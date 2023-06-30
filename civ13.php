@@ -619,6 +619,15 @@ class Civ13
                 return false;
             }
             $result = $this->verifyCkey($ckey, $discord_id, true);
+            if (isset($results[1]) && str_starts_with('Either Byond account', $result[1])) {
+                if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
+                    if ($member->roles->has($this->role_ids['infantry']))
+                        $member->setRoles([], 'Provisional verification failed');
+                unset($this->provisional[$ckey]);
+                $this->VarSave('provisional.json', $this->provisional);
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>. " . $result[1]);
+                return false;
+            }
             if (! $result[0] || (! $result[0] && isset($result[1]) && str_starts_with('The website', $result[1]))) {
                 $this->discord->getLoop()->addTimer(1800, function() use ($func, $ckey, $discord_id) {
                     $func($ckey, $discord_id);
