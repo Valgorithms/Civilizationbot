@@ -62,6 +62,8 @@ class Civ13
     public array $players = []; //Collected automatically by serverinfo_timer
     public array $seen_players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
+
+    public string $relay_method = 'webhook'; //Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = true; //Whether or not to moderate the servers using the badwords list
     public array $badwords = [
         /* Format:
@@ -167,6 +169,7 @@ class Civ13
         if(isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if(isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
         if(isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
+        if(isset($options['relay_method']) && in_array(strtolower($options['relay_method']), ['file', 'webhook'])) $this->relay_method = $options['relay_method'];
 
         if(isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
         if(isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
@@ -301,13 +304,14 @@ class Civ13
                 if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
                     $this->logger->info('chat relay timer started');
                     $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() {
-                        $guild = $this->discord->guilds->get('id', $this->civ13_guild_id);
-                        if (isset($this->channel_ids['nomads_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_ooc_channel'])) $this->gameChatFileRelay($this->files['nomads_ooc_path'], $channel);  // #ooc-nomads
-                        if (isset($this->channel_ids['nomads_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_admin_channel'])) $this->gameChatFileRelay($this->files['nomads_admin_path'], $channel);  // #ahelp-nomads
-                        if (isset($this->channel_ids['tdm_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_channel'])) $this->gameChatFileRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
-                        if (isset($this->channel_ids['tdm_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_admin_channel'])) $this->gameChatFileRelay($this->files['tdm_admin_path'], $channel);  // #ahelp-tdm
-                        if (isset($this->channel_ids['pers_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_ooc_channel'])) $this->gameChatFileRelay($this->files['pers_ooc_path'], $channel);  // #ooc-tdm
-                        if (isset($this->channel_ids['pers_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_admin_channel'])) $this->gameChatFileRelay($this->files['pers_admin_path'], $channel);  // #ahelp-tdm
+                        if ($this->relay_method !== 'file') return;
+                        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
+                        if (isset($this->channel_ids['nomads_ooc_webhook_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_ooc_webhook_channel'])) $this->gameChatFileRelay($this->files['nomads_ooc_path'], $channel);  // #ooc-nomads
+                        if (isset($this->channel_ids['nomads_asay_webhook_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_asay_webhook_channel'])) $this->gameChatFileRelay($this->files['nomads_admin_path'], $channel);  // #asay-nomads
+                        if (isset($this->channel_ids['tdm_ooc_webhook_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_webhook_channel'])) $this->gameChatFileRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
+                        if (isset($this->channel_ids['tdm_asay_webhook_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_asay_webhook_channel'])) $this->gameChatFileRelay($this->files['tdm_admin_path'], $channel);  // #asay-tdm
+                        if (isset($this->channel_ids['pers_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_ooc_channel'])) $this->gameChatFileRelay($this->files['pers_ooc_path'], $channel);  // #ooc-pers
+                        if (isset($this->channel_ids['pers_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_admin_channel'])) $this->gameChatFileRelay($this->files['pers_admin_path'], $channel);  // #asay-pers
                     });
                 }
             });

@@ -539,6 +539,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "**__{$time} AHELP__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'asaymessage':
+                    if ($civ13->relay_method !== 'webhook') return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     if (!isset($civ13->channel_ids[$server.'_asay_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_asay_webhook_channel'];
                     $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
@@ -549,6 +550,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "**__{$time} LOBBY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'oocmessage':
+                    if ($civ13->relay_method !== 'webhook') return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     if (!isset($civ13->channel_ids[$server.'_ooc_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_ooc_webhook_channel'];
                     $message .= html_entity_decode(strip_tags(urldecode($data['message'])));

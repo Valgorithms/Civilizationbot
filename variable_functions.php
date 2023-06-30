@@ -333,6 +333,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('approveme'))))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
         return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
     }
+    if (str_starts_with($message_content_lower, 'relay') || str_starts_with($message_content_lower, 'relay')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+        $civ13->relay_method === 'file' ? $method = 'webhook' : $method = 'file';
+        $civ13->relay_method = $method;
+        return $message->reply("Relay method changed to `$method`.");
+    }
     if (str_starts_with($message_content_lower, 'ckeyinfo')) {
         $high_staff = $rank_check($civ13, $message, ['admiral', 'captain'], false);
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -988,35 +994,42 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                 if (! $tdm_discord2ooc($civ13, $message->author->displayname, $message_filtered)) return $message->react("🔥");
                 return $message->react("📧");
             default:
-                return $message->reply('You need to be in either the #ooc-nomads or #ooc-tdm channel to use this command.');
+                return $message->reply('You need to be in any of the #ooc channels to use this command.');
         }
     }
     if (str_starts_with($message_content_lower, 'asay ')) {
         $message_filtered = substr($message_content, 5);
         switch (strtolower($message->channel->name)) {
-            case 'ahelp-nomads':
+            //case 'ahelp-nomads': //Deprecated
+            case 'asay-nomads':
                 if (! $nomads_discord2admin($civ13, $message->author->displayname, $message_filtered)) return $message->react("🔥");
                 return $message->react("📧");
-            case 'ahelp-tdm':
+            //case 'ahelp-tdm': //Deprecated
+            case 'asay-tdm':
                 if (! $tdm_discord2admin($civ13, $message->author->displayname, $message_filtered)) return $message->react("🔥");
                 return $message->react("📧");
             default:
-                return $message->reply('You need to be in either the #ahelp-nomads or #ahelp-tdm channel to use this command.');
+                return $message->reply('You need to be in any of the #asay channels to use this command.');
         }
     }
     if (str_starts_with($message_content_lower, 'dm ') || str_starts_with($message_content_lower, 'pm ')) {
         $split_message = explode(': ', substr($message_content, 3));
         switch (strtolower($message->channel->name)) {
-            case 'ahelp-nomads':
+            //case 'ahelp-nomads': //Deprecated
+            case 'asay-nomads':
+            case 'ooc-nomads':
                 if (! $nomads_discord2dm($civ13, $message->author->displayname, $split_message)) return $message->react("🔥");
                 return $message->react("📧");
-            case 'ahelp-tdm':
+            //case 'ahelp-tdm': //Deprecated
+            case 'asay-tdm':
+            case 'ooc-tdm':
                 if (! $tdm_discord2dm($civ13, $message->author->displayname, $split_message)) return $message->react("🔥");
                 return $message->react("📧");
             default:
-                return $message->reply('You need to be in either the #ahelp-nomads or #ahelp-tdm channel to use this command.');
+                return $message->reply('You need to be in any of the #ooc or #asay channels to use this command.');
         }
     }
+
     if (str_starts_with($message_content_lower, 'bancheck')) {
         if (! $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('bancheck'))))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
         if (is_numeric($ckey)) {

@@ -89,6 +89,8 @@ $options = array(
     'technician_id' => '116927250145869826', //Valithor
     'civ13_guild_id' => '468979034571931648', //Civ13
     'verifier_feed_channel_id' => '1032411190695055440', //Channel VZG Verifier webhooks verification messages to
+    //'serverinfo_url' => '',
+    'relay_method' => 'webhook',
     'files' => array(
         //Fun
         'insults_path' => 'insults.txt',
@@ -186,15 +188,15 @@ $options = array(
         'pers' => '799951945346711552', #persistence
         'persistence-playercount' => '1090788345082298369', //persistence-#
         //File read relays
-        'pers_ooc_channel' => '1090863947579658320', //#ooc-pers
-        'pers_admin_channel' => '1090863837730848798', //#ahelp-pers
+        //'pers_ooc_channel' => '1090863947579658320', //#ooc-pers
+        //'pers_admin_channel' => '1090863837730848798', //#ahelp-pers
 
         /* Nomad */
         'nomads' => '799952084505067581', #nomads
         'nomads-playercount' => '1048777424894185484', //nomads-#
         //File read relays
-        'nomads_ooc_channel' => '636644156923445269', //#ooc-nomads
-        'nomads_admin_channel' => '637046890030170126', //#ahelp-nomads
+        //'nomads_ooc_channel' => '636644156923445269', //#ooc-nomads
+        //'nomads_admin_channel' => '637046890030170126', //#ahelp-nomads
         //Webhook relays
         'nomads_ooc_webhook_channel' => '1110001963405418616', //#ooc-nomads (New)
         'nomads_transit_webhook_channel' => '1110002027469221989', //#transit-nomads
@@ -210,8 +212,8 @@ $options = array(
         'tdm' => '799952134426591273', #tdm
         'tdm-playercount' => '1048777462898761789', //tdm-#
         //File read relays
-        'tdm_ooc_channel' => '636644391095631872', //#ooc-tdm
-        'tdm_admin_channel' => '637046904575885322', //#ahelp-tdm
+        //'tdm_ooc_channel' => '636644391095631872', //#ooc-tdm
+        //'tdm_admin_channel' => '637046904575885322', //#ahelp-tdm
         //Webhook relays
         'tdm_ooc_webhook_channel' => '1107016184328622233', //#ooc-tdm (New)
         'tdm_transit_webhook_channel' => '1107020747622326313', //#transit-tdm
