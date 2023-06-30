@@ -1490,21 +1490,18 @@ class Civ13
     }
     public function __gameChatRelay(array $array, $channel, $moderate = true): bool
     {
-        if (! $array) {
-            $this->logger->warning('__gameChatRelay() was called with an empty array.');
+        if (! $array || ! isset($array['ckey']) || ! isset($array['message']) || ! isset($array['server']) || ! $array['ckey'] || ! $array['message'] || ! $array['server']) {
+            $this->logger->warning('__gameChatRelay() was called with an empty array or invalid content.');
             return false;
         }
-        foreach ($array as $arr) {
-            if (! isset($arr['ckey']) || ! isset($arr['message']) || ! $arr['ckey'] || ! $arr['message']) continue;
-            if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $array['server']);
-            if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', $arr['ckey'])))) $channel->sendMessage($arr['message']);
-            else {
-                $embed = new Embed($this->discord);
-                if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-                //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
-                $embed->setDescription($arr['message']);
-                $channel->sendEmbed($embed);
-            }
+        if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $array['server']);
+        if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', $array['ckey'])))) $channel->sendMessage($array['message']);
+        else {
+            $embed = new Embed($this->discord);
+            if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+            //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
+            $embed->setDescription($array['message']);
+            $channel->sendEmbed($embed);
         }
         return true;
     }
