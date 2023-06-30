@@ -497,6 +497,15 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! is_numeric($discord_id = str_replace(['<@', '>'], '', $split_message[1]))) return $message->reply("Discord id `$discord_id` must be numeric.");
         return $message->reply($civ13->registerCkey($ckey, $discord_id));
     }
+    if (str_starts_with($message_content_lower, 'discard')) {
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+        if (! $ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('discard'))))) return $message->reply('Byond username was not passed. Please use the format `discard <byond username>`.');
+        if (isset($civ13->provisional[$ckey])) {
+            unset($civ13->provisional[$ckey]);
+            $civ13->VarSave('provisional.json', $civ13->provisional);
+        }
+        return $message->reply("`$ckey` will no longer attempt to be automatically registered.");
+    }
     if ($message_content_lower == 'permitted') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (empty($civ13->permitted)) return $message->reply('No users have been permitted to bypass the Byond account restrictions.');
