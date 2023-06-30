@@ -500,12 +500,16 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'discard')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (! $ckey = str_replace(['.', '_', '-', ' '], '', trim(substr($message_content_lower, strlen('discard'))))) return $message->reply('Byond username was not passed. Please use the format `discard <byond username>`.');
+        $string = "`$ckey` will no longer attempt to be automatically registered.";
         if (isset($civ13->provisional[$ckey])) {
-            if ($member = $message->guild->members->get($civ13->provisional[$ckey])) $member->removeRole($civ13->role_ids['infantry']);
+            if ($member = $message->guild->members->get($civ13->provisional[$ckey])) {
+                $member->removeRole($civ13->role_ids['infantry']);
+                $string .= " The <@&{$civ13->role_ids['infantry']}> role has been removed from $member.";
+            }
             unset($civ13->provisional[$ckey]);
             $civ13->VarSave('provisional.json', $civ13->provisional);
         }
-        return $message->reply("`$ckey` will no longer attempt to be automatically registered.");
+        return $message->reply($string);
     }
     if ($message_content_lower == 'permitted') {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
