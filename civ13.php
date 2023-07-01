@@ -598,8 +598,9 @@ class Civ13
     { //Attempt to verify a user
         if(! $item = $this->pending->get('discord', $discord_id)) return [false, 'This error should never happen'];
         if(! $this->checkToken($discord_id)) return [false, "You have not set your description yet! It needs to be set to {$item['token']}"];
-        if ($this->ckeyinfo($item['ss13'])['altbanned'] && ! isset($this->permitted[$item['ss13']])) {
-            //TODO: add to pending list
+        $ckeyinfo = $this->ckeyinfo($item['ss13']);
+        if (($ckeyinfo['altbanned'] || count($ckeyinfo['discords']) > 1) && ! isset($this->permitted[$item['ss13']])) {
+            //TODO: add to pending list?
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("<@&{$this->role_ids['captain']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
             return [false, "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
         }
@@ -1470,7 +1471,6 @@ class Civ13
     /*
     * These functions handle in-game chat moderation and relay those messages to Discord
     * Players will receive warnings and bans for using blacklisted words
-    * TODO: Add a toggle to choose between either File or Webhook
     */
     public function gameChatFileRelay(string $file_path, $channel): bool
     { // The file function needs to be replaced with the new Webhook system
