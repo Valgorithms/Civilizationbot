@@ -566,6 +566,15 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 case 'garbage':
                     if (isset($data['message'])) $message .= "**__{$time} GARBAGE__ $ckey**: " . html_entity_decode(strip_tags($data['message']));
                     break;
+                case 'round_start':
+                    if (!isset($civ13->channel_ids[$server])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server];
+                    if (isset($civ13->role_ids['round_start'])) $message .= "<@{$civ13->role_ids['round_start']}>, ";
+                    $message .= 'New round ';
+                    if (isset($data['round'])) $message .= "`{$data['round']}` ";
+                    $message .= 'has started!';
+                    // A future update should include a way to call a $civ13 function using the server and round id
+                    break;
                 case 'respawn_notice':
                     //if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
                     if (isset($data['message'])) $message .= html_entity_decode(urldecode($data['message']));
