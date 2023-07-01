@@ -558,7 +558,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id));
                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     }
-                    if (isset($civ13->role_ids['round_start']) && !$ckey && str_contains($message, 'New round starting!')) $message = "<@{$civ13->role_ids['round_start']}>, New round starting!";
+                    //if (isset($civ13->role_ids['round_start']) && !$ckey && str_contains($message, 'New round starting!')) $message = "<@{$civ13->role_ids['round_start']}>, New round starting!"; // This should be handled by round_start now
                     break;
                 case 'memessage':
                     if (isset($data['message'])) $message .= "**__{$time} EMOTE__ $ckey** " . html_entity_decode(urldecode($data['message']));
