@@ -114,6 +114,7 @@ class Civ13
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; //Link to the bot's github page
     public string $banappeal = 'civ13.com slash discord'; //Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
+    public string $rules = 'civ13.com slash rules'; //Link to the server rules
     public string $verify_url = 'http://valzargaming.com:8080/verified/'; //Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
     public string $serverinfo_url = ''; //Where the bot will retrieve server information from
     public bool $webserver_online = false;
@@ -162,6 +163,7 @@ class Civ13
         if(isset($options['technician_id'])) $this->technician_id = $options['technician_id'];
         if(isset($options['verify_url'])) $this->verify_url = $options['verify_url'];
         if(isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
+        if(isset($options['rules'])) $this->rules = $options['rules'];
         if(isset($options['github'])) $this->github = $options['github'];
         if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
         if(isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
@@ -1279,7 +1281,7 @@ class Civ13
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) {
                             $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"])));
                             break;
-                        } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
+                        } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) {
                             $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"])));
                             break 2;
                         }
@@ -1510,8 +1512,8 @@ class Civ13
     private function __relayViolation(string $server, string $ckey, array $badwords_array)
     {
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
-        if (! $this->__relayWarningCounter($ckey, $badwords_array)) return $this->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Appeal at {$this->banappeal}"]);
-        $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
+        if (! $this->__relayWarningCounter($ckey, $badwords_array)) return $this->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->banappeal}"]);
+        $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
         if (str_contains($server, 'nomads')) return $this->DirectMessageNomads($ckey, $warning);
         if (str_contains($server, 'tdm')) return $this->DirectMessageTDM($ckey, $warning);

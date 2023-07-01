@@ -83,6 +83,7 @@ $options = array(
     'verify_url' => 'http://valzargaming.com:8080/verified/', 
 
     'banappeal' => 'civ13.com slash discord',
+    'rules' => 'civ13.com slash rules',
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
     'command_symbol' => '@Civilizationbot',
     'owner_id' => '196253985072611328', //Taislin
@@ -230,7 +231,7 @@ $options = array(
         'staff_bot' => '712685552155230278', //#staff-bot
         //'ban_appeals' => '1019718839749062687', //#ban-appeals (forum thread, unused by bot)
         'parole_logs' => '985606778916048966', //#parole-logs (for tracking)
-        'parole_notif' => '977715818731294790', //#parole-notif (for login/logout notifications) (NYI)
+        'parole_notif' => '977715818731294790', //#parole-notif (for login/logout notifications)
     ),
     'role_ids' => array(
         'admiral' => '468980650914086913', //Civ13 Discord Server Owner
