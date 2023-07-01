@@ -503,10 +503,10 @@ class Civ13
      */
     public function checkToken(string $discord_id): bool
     { //Check if the user set their token
-        if (! $item = $this->pending->get('discord', $discord_id)) return false;
-        if (! $page = $this->getByondPage($item['ss13'])) return false;
-        if ($item['token'] != $this->getByondDesc($page)) return false;
-        return true;
+        if (! $item = $this->pending->get('discord', $discord_id)) return false; // User is not in pending collection (This should never happen and is probably a programming error)
+        if (! $page = $this->getByondPage($item['ss13'])) return false; // Website could not be retrieved or the description wasn't found
+        if ($item['token'] != $this->getByondDesc($page)) return false; // Token does not match the description
+        return true; // Token matches
     }
     
     /*
@@ -574,7 +574,7 @@ class Civ13
     {
         $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $ckey));
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
-        if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, please ask Valithor to delete this entry.";
+        if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
@@ -596,7 +596,7 @@ class Civ13
     */
     public function verifyNew(string $discord_id): array // ['success' => bool, 'error' => string]
     { //Attempt to verify a user
-        if(! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => 'This error should never happen'];
+        if(! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->technician_id}>."];
         if(! $this->checkToken($discord_id)) return ['success' => false, 'error' => "You have not set your description yet! It needs to be set to {$item['token']}"];
         $ckeyinfo = $this->ckeyinfo($item['ss13']);
         if (($ckeyinfo['altbanned'] || count($ckeyinfo['discords']) > 1) && ! isset($this->permitted[$item['ss13']])) {
@@ -687,7 +687,7 @@ class Civ13
                 $this->pending->offsetUnset($discord_id);
                 $this->getVerified();
                 if (isset($this->channel_ids['staff_bot'])) $channel = $this->discord->getChannel($this->channel_ids['staff_bot']);
-                if (! $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)) return ['success' => false, 'error' => "$ckey - {$this->ages[$ckey]}) was verified but the member couldn't be found. This error shouldn't have happened, contact <@{$this->technician_id}> ASAP!"];
+                if (! $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)) return ['success' => false, 'error' => "$ckey - {$this->ages[$ckey]}) was verified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>."];
                 if (isset($this->panic_bans[$ckey])) {
                     $this->panicUnban($ckey);
                     $error .= ' and the panic bunker ban removed.';

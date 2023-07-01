@@ -495,7 +495,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $split_message = explode('; ', trim(substr($message_content_lower, strlen('register'))));
         $ckey = str_replace(['.', '_', '-', ' '], '', $split_message[0]); return $message->reply('Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
         if (! is_numeric($discord_id = str_replace(['<@', '>'], '', $split_message[1]))) return $message->reply("Discord id `$discord_id` must be numeric.");
-        return $message->reply($civ13->registerCkey($ckey, $discord_id));
+        return $message->reply($civ13->registerCkey($ckey, $discord_id)['error']);
     }
     if (str_starts_with($message_content_lower, 'discard')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
