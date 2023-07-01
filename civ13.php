@@ -1241,7 +1241,7 @@ class Civ13
                 $discords[] = $item['discord'];
                 $verified = true;
             }
-            if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = true; break; }
+            if ($key != $ckey && $this->bancheck($key)) $altbanned = true;
         }
 
         return [
