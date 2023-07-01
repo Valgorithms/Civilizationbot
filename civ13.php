@@ -587,29 +587,30 @@ class Civ13
             if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join either Nomads or TDM at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
-        return $this->verifyNew($discord_id)[1]; //[0] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, [1] will contain the error/success message and will be messaged to the user
+        return $this->verifyNew($discord_id)['error']; //['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
     }
 
     /*
     * This function is called when a user still needs to set their token in their BYOND description and call the approveme prompt
     * It will check if the token is valid, then add the user to the verified list
     */
-    public function verifyNew(string $discord_id): array //[bool, string]
+    public function verifyNew(string $discord_id): array // ['success' => bool, 'error' => string]
     { //Attempt to verify a user
-        if(! $item = $this->pending->get('discord', $discord_id)) return [false, 'This error should never happen'];
-        if(! $this->checkToken($discord_id)) return [false, "You have not set your description yet! It needs to be set to {$item['token']}"];
+        if(! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => 'This error should never happen'];
+        if(! $this->checkToken($discord_id)) return ['success' => false, 'error' => "You have not set your description yet! It needs to be set to {$item['token']}"];
         $ckeyinfo = $this->ckeyinfo($item['ss13']);
         if (($ckeyinfo['altbanned'] || count($ckeyinfo['discords']) > 1) && ! isset($this->permitted[$item['ss13']])) {
             //TODO: add to pending list?
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("<@&{$this->role_ids['captain']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
-            return [false, "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
+            return ['success' => false, 'error' => "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
         }
         return $this->verifyCkey($item['ss13'], $discord_id);
     }
     
     /* 
-    * This function is called when a user has set their token in their BYOND description but the website is down
-    * It will add the user to the provisional list and set a timer to try to verify them again in 30 minutes
+    * This function is called when a user has set their token in their BYOND description and attempts to verify
+    * It is also used to handle errors coming from the webserver
+    * If the website is down, it will add the user to the provisional list and set a timer to try to verify them again in 30 minutes
     * If the user is allowed to be granted a provisional role, it will return true
     */
     public function provisionalRegistration(string $ckey, string $discord_id): bool
@@ -620,40 +621,43 @@ class Civ13
                 return false;
             }
             $result = $this->verifyCkey($ckey, $discord_id, true);
-            if (isset($results[1]) && str_starts_with('Either Byond account', $result[1])) {
-                if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
-                    if ($member->roles->has($this->role_ids['infantry']))
-                        $member->setRoles([], 'Provisional verification failed');
+
+            if ($result['success']) {
                 unset($this->provisional[$ckey]);
                 $this->VarSave('provisional.json', $this->provisional);
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>. " . $result[1]);
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Successfully verified Byond account `$ckey` with Discord ID <@$discord_id>.");
                 return false;
             }
-            if (! $result[0] || (! $result[0] && isset($result[1]) && str_starts_with('The website', $result[1]))) {
+            
+            if ($result['error'] && str_starts_with('The website', $result['error'])) {
                 $this->discord->getLoop()->addTimer(1800, function() use ($func, $ckey, $discord_id) {
                     $func($ckey, $discord_id);
                 });
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if (! $member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result[1]);
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result['error']);
                 return true;
             }
-            if (! $result[0] && isset($result[1])) {
+            if ($result['error'] && str_starts_with('Either Byond account', $result['error'])) {
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if ($member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([], 'Provisional verification failed');
                 unset($this->provisional[$ckey]);
                 $this->VarSave('provisional.json', $this->provisional);
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result[1]}");
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>. " . $result['error']);
                 return false;
             }
-            if ($result[0]) {
+            if ($result['error']) {
+                if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
+                    if ($member->roles->has($this->role_ids['infantry']))
+                        $member->setRoles([], 'Provisional verification failed');
                 unset($this->provisional[$ckey]);
                 $this->VarSave('provisional.json', $this->provisional);
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Successfully verified Byond account `$ckey` with Discord ID <@$discord_id>.");
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}");
                 return false;
             }
+            // The code should only get this far if $result['error'] wasn't set correctly. This should never happen and is probably a programming error.
             $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage("Something went wrong trying to process the provisional registration for Byond account `$ckey` with Discord ID <@$discord_id>. If this error persists, contact <@{$this->technician_id}>.");
             return false;
         };
@@ -664,10 +668,10 @@ class Civ13
     * If the Discord ID or ckey is already in the SQL database, it will return an error message stating that the ckey is already verified
     * otherwise it will add the user to the SQL database and the verified list, remove them from the pending list, and give them the verified role
     */
-    public function verifyCkey(string $ckey, string $discord_id, $provisional = false): array //[bool, string]
+    public function verifyCkey(string $ckey, string $discord_id, $provisional = false): array // ['success' => bool, 'error' => string]
     { //Send $_POST information to the website. Only call this function after the getByondDesc() verification process has been completed!
         $success = false;
-        $message = '';
+        $error = '';
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->verify_url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
@@ -679,14 +683,14 @@ class Civ13
         switch ($http_status) {
             case 200: //Verified
                 $success = true;
-                $message = "`$ckey` - (" . $this->ages[$ckey] . ") has been verified and registered to $discord_id";
+                $error = "`$ckey` - (" . $this->ages[$ckey] . ") has been verified and registered to $discord_id";
                 $this->pending->offsetUnset($discord_id);
                 $this->getVerified();
                 if (isset($this->channel_ids['staff_bot'])) $channel = $this->discord->getChannel($this->channel_ids['staff_bot']);
-                if (! $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)) return [false, "$ckey - {$this->ages[$ckey]}) was verified but the member couldn't be found. This error shouldn't have happened, contact Valithor ASAP!"];
+                if (! $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)) return ['success' => false, 'error' => "$ckey - {$this->ages[$ckey]}) was verified but the member couldn't be found. This error shouldn't have happened, contact <@{$this->technician_id}> ASAP!"];
                 if (isset($this->panic_bans[$ckey])) {
                     $this->panicUnban($ckey);
-                    $message .= ' and the panic bunker ban removed.';
+                    $error .= ' and the panic bunker ban removed.';
                     if (! $member->roles->has($this->role_ids['infantry'])) $member->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
                     if ($channel) $channel->sendMessage("Verified and removed the panic bunker ban from $member ($ckey - {$this->ages[$ckey]}).");
                 } elseif ($this->bancheck($ckey, true)) {
@@ -698,35 +702,35 @@ class Civ13
                 }
                 break;
             case 403: //Already registered
-                $message = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; //This should have been caught above. Need to run getVerified() again?
+                $error = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; //This should have been caught above. Need to run getVerified() again?
                 $this->getVerified();
                 break;
             case 404:
-                $message = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 503: //Database unavailable
-                $message = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 504: //Gateway timeout
-                $message = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 0: //The website is down, so allow provisional registration, then try to verify when it comes back up
-                $message = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";    
+                $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";    
                 if (! $provisional) { //
                     if (! isset($this->provisional[$ckey])) {
                         $this->provisional[$ckey] = $discord_id;
                         $this->VarSave('provisional.json', $this->provisional);
                     }
-                    if ($this->provisionalRegistration($ckey, $discord_id)) $message = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
-                    else $message .= 'Provisional registration is already pending and a new provisional role will not be provided at this time.' . PHP_EOL . $message;
+                    if ($this->provisionalRegistration($ckey, $discord_id)) $error = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
+                    else $error .= 'Provisional registration is already pending and a new provisional role will not be provided at this time.' . PHP_EOL . $error;
                 }
                 break;
             default: 
-                $message = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                $error = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
         }
         curl_close($ch);
-        return [$success, $message];
+        return ['success' => $success, 'error' => $error];
     }
     
     /*
@@ -800,7 +804,7 @@ class Civ13
     * This function allows a ckey to bypass the verification process entirely
     * NOTE: This function is only authorized to be used by the database administrator
     */
-    public function registerCkey(string $ckey, string $discord_id)
+    public function registerCkey(string $ckey, string $discord_id): array // ['success' => bool, 'error' => string]
     {
         $this->permitCkey($ckey, true);
         return $this->verifyCkey($ckey, $discord_id);
