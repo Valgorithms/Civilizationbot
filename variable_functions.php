@@ -594,7 +594,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0] = str_replace(['.', '_', '-', ' '], '', $split_message[0])) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->ban([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
         
         if (! $tdm_playerlogs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
         if (! $nomads_playerlogs = file_get_contents($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
@@ -614,7 +614,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->banNomads([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->banNomads(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
         if ($member = $civ13->getVerifiedMember('id', $split_message[0]))
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -627,7 +627,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->banTDM([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->banTDM(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
         if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -640,7 +640,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->banPers([$split_message[0], $split_message[1], $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->banPers(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
         if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -1054,7 +1054,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         $found = false;
         if (file_exists($civ13->files['nomads_bans']) && ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r'))) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp)));
                 if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                     $found = true;
                     $type = $linesplit[0];
@@ -1068,7 +1068,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         }
         if (file_exists($civ13->files['tdm_bans']) && ($filecheck2 = fopen($civ13->files['tdm_bans'], 'r'))) {
             while (($fp = fgets($filecheck2, 4096)) !== false) {
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp)));
                 if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                     $found = true;
                     $type = $linesplit[0];

@@ -578,7 +578,7 @@ class Civ13
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
                 return "Ckey `$ckey` is too new! ($age)";
             }
             $found = false;
@@ -822,7 +822,7 @@ class Civ13
     public function panicBan(string $ckey): void
     {
         if (! $this->bancheck($ckey, true)) {
-            ($this->legacy ? $this->legacyBanNomads([$ckey, '1 hour', "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) : $this->sqlBanNomads([$ckey, '1 hour', "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) );
+            ($this->legacy ? $this->legacyBanNomads(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) : $this->sqlBanNomads(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) );
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
@@ -842,15 +842,15 @@ class Civ13
     {
         $admin = $admin ?? $this->discord->user->username;
         $result = '';
-        if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
+        if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
         if (file_exists($this->files['nomads_discord2ban']) && $file = fopen($this->files['nomads_discord2ban'], 'a')) {
-            fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
+            fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
             fclose($file);
         } else {
             $this->logger->warning("unable to open {$this->files['nomads_discord2ban']}");
             $result .= "unable to open {$this->files['nomads_discord2ban']}" . PHP_EOL;
         }
-        $result .= "**$admin** banned **{$array[0]}** from **Nomads** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+        $result .= "**$admin** banned **{$array['ckey']}** from **Nomads** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
         return $result;
     }
     public function sqlBanNomads(array $array, $message = null): string
@@ -861,15 +861,15 @@ class Civ13
     {
         $admin = $admin ?? $this->discord->user->username;
         $result = '';
-        if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
+        if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
         if (file_exists($this->files['tdm_discord2ban']) && $file = fopen($this->files['tdm_discord2ban'], 'a')) {
-            fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
+            fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
             fclose($file);
         } else {
             $this->logger->warning("unable to open {$this->files['tdm_discord2ban']}");
             return "unable to open {$this->files['tdm_discord2ban']}" . PHP_EOL;
         }
-        $result .= "**$admin** banned **{$array[0]}** from **TDM** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+        $result .= "**$admin** banned **{$array['ckey']}** from **TDM** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
         return $result;
     }
     public function sqlBanTDM($array, $admin = null): string
@@ -880,15 +880,15 @@ class Civ13
     {
         $admin = $admin ?? $this->discord->user->username;
         $result = '';
-        if (str_starts_with(strtolower($array[1]), 'perm')) $array[1] = '999 years';
+        if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
         if (file_exists($this->files['pers_discord2ban']) && $file = fopen($this->files['pers_discord2ban'], 'a')) {
-            fwrite($file, "$admin:::{$array[0]}:::{$array[1]}:::{$array[2]}" . PHP_EOL);
+            fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
             fclose($file);
         } else {
             $this->logger->warning("unable to open {$this->files['pers_discord2ban']}");
             return "unable to open {$this->files['pers_discord2ban']}" . PHP_EOL;
         }
-        $result .= "**$admin** banned **{$array[0]}** from **Persistence** for **{$array[1]}** with the reason **{$array[2]}**" . PHP_EOL;
+        $result .= "**$admin** banned **{$array['ckey']}** from **Persistence** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
         return $result;
     }
     public function sqlBanPers(array $array, $message = null): string
@@ -942,11 +942,11 @@ class Civ13
     * Ban functions will return a string containing the results of the ban
     * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
     */
-    public function ban(array $array, ?string $admin = null): string
+    public function ban(array $array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null): string
     {
-        if ($member = $this->getVerifiedMember($array[0]))
+        if ($member = $this->getVerifiedMember($array['ckey']))
             if (! $member->roles->has($this->role_ids['banished']))
-                $member->addRole($this->role_ids['banished'], "Banned for {$array[1]} with the reason {$array[2]}");
+                $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
         if ($this->legacy) return $this->legacyBan($array, $admin);
         return $this->sqlBan($array, $admin);
     }
@@ -1300,13 +1300,13 @@ class Civ13
                 if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
-                    if ($ckeyinfo['altbanned']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Account under investigation. Appeal at {$this->banappeal}"]))); //Automatically ban evaders
+                    if ($ckeyinfo['altbanned']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"]))); //Automatically ban evaders
                     else foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) {
-                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Account under investigation. Appeal at {$this->banappeal}"])));
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"])));
                             break;
                         } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //Blacklisted regions
-                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban([$ckey, '999 years', "Account under investigation. Appeal at {$this->banappeal}"])));
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"])));
                             break 2;
                         }
                     }
@@ -1315,7 +1315,7 @@ class Civ13
                 if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
                 if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
-                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban([$ckey, '999 years', "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
+                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban(['ckey' => $ckey, 'reason' => '999 years', 'duration' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
             }
         };
         $func();
@@ -1536,7 +1536,7 @@ class Civ13
     private function __relayViolation(string $server, string $ckey, array $badwords_array)
     {
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
-        if (! $this->__relayWarningCounter($ckey, $badwords_array)) return $this->ban([$ckey, $badwords_array['duration'], "Blacklisted phrase ($filtered). Appeal at {$this->banappeal}"]);
+        if (! $this->__relayWarningCounter($ckey, $badwords_array)) return $this->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Appeal at {$this->banappeal}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
         if (str_contains($server, 'nomads')) return $this->DirectMessageNomads($ckey, $warning);
