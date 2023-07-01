@@ -130,8 +130,6 @@ class Civ13
     public bool $panic_bunker = false; //If true, the bot will server ban anyone who is not verified when they join the server
     public array $panic_bans = []; //List of ckeys that have been banned by the panic bunker in the current runtime
 
-    public array $server_instances = []; //TODO
-
     /**
      * Creates a Civ13 client instance.
      * 
@@ -202,30 +200,6 @@ class Civ13
         $this->vzg_ip = gethostbyname('www.valzargaming.com');
         $this->civ13_ip = gethostbyname('www.civ13.com');
         $this->external_ip = file_get_contents('http://ipecho.net/plain');
-
-        /*
-        foreach ($server_options as $server) $this->server_instances[] = new ServerInstance($civ13, [
-            //Required for construction
-            $server['hosted'],
-            $server['name'],
-            $server['alias'],
-            $server['ip'],
-            $server['port'],
-            //Required for functionality
-            $server['functions'],
-            $server['channel_ids'],
-            $server['role_ids'],
-            //Optional but recommended, otherwise inherits from this ojbect
-            $server['minimum_age'],
-            $server['legacy'],
-            $server['command_symbol'],
-            $server['guild_id'],
-            $server['server_owner_id'],
-            $server['banappeal'],
-            $server['verifier_feed_channel_id'],
-            $server['panic_bunker'],
-        ]);
-        */   
 
         if(isset($this->discord)) {
             $this->discord->once('ready', function () {
