@@ -558,15 +558,15 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id));
                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     }
-                    if ( !$ckey && str_ends_with($message, 'starting!') && $strpos = strpos($message, 'New round ')) {
-                        if ($civ13->relay_method === 'file') {
-                            $new_message = '';
-                            if (isset($civ13->role_ids['round_start'])) $new_message .= "<@&{$civ13->role_ids['round_start']}>, ";
-                            $new_message .= substr($message, $strpos);
-                            $message = $new_message;
-                            if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
-                                if ($existingCount = explode('-', $playercount_channel->name)[1]) $message .= " There are currently $existingCount players on the server.";
-                        }
+                    if ($civ13->relay_method === 'file' && !$ckey && str_ends_with($message, 'starting!') && $strpos = strpos($message, 'New round ')) {
+                        $new_message = '';
+                        if (isset($civ13->role_ids['round_start'])) $new_message .= "<@&{$civ13->role_ids['round_start']}>, ";
+                        $new_message .= substr($message, $strpos);
+                        $message = $new_message;
+                        if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
+                            if ($existingCount = explode('-', $playercount_channel->name)[1])
+                                if ($existingCount > 1) $message .= " There are currently $existingCount players on the server.";
+                                else $message .= " There is currently $existingCount player on the server.";
                     }
                     break;
                 case 'memessage':
@@ -584,7 +584,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (isset($data['round'])) $message .= "`{$data['round']}` ";
                     $message .= 'has started!';
                     if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
-                        if ($existingCount = explode('-', $playercount_channel->name)[1]) $message .= " There are currently $existingCount players on the server.";
+                        if ($existingCount = explode('-', $playercount_channel->name)[1])
+                            if ($existingCount > 1) $message .= " There are currently $existingCount players on the server.";
+                            else $message .= " There is currently $existingCount player on the server.";
                     // A future update should include a way to call a $civ13 function using the server and round id
                     break;
                 case 'respawn_notice':
