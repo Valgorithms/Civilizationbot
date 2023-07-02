@@ -565,7 +565,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                             $new_message .= substr($message, $strpos);
                             $message = $new_message;
                             if (! $playercount_channel = $this->discord->getChannel($this->channel_ids[$server . '-playercount']))
-                                if ($existingCount = end(explode('-', $playercount_channel->name))) $message .= " There are currently $existingCount players on the server.";
+                                if ($existingCount = explode('-', $playercount_channel->name)[1]) $message .= " There are currently $existingCount players on the server.";
                         }
                     }
                     break;
@@ -584,7 +584,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (isset($data['round'])) $message .= "`{$data['round']}` ";
                     $message .= 'has started!';
                     if (! $playercount_channel = $this->discord->getChannel($this->channel_ids[$server . '-playercount']))
-                        if ($existingCount = end(explode('-', $playercount_channel->name))) $message .= " There are currently $existingCount players on the server.";
+                        if ($existingCount = explode('-', $playercount_channel->name)[1]) $message .= " There are currently $existingCount players on the server.";
                     // A future update should include a way to call a $civ13 function using the server and round id
                     break;
                 case 'respawn_notice':

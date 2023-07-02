@@ -1477,7 +1477,7 @@ class Civ13
             $this->logger->warning('gameChatWebhookRelay() was called with an empty array.');
             return false;
         }
-        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => array_pop(explode('-', $channel->name))], $channel);
+        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel);
     }
     private function __gameChatRelay(array $array, $channel, $moderate = true): bool
     {
