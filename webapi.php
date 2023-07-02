@@ -558,7 +558,14 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id));
                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     }
-                    //if (isset($civ13->role_ids['round_start']) && !$ckey && str_contains($message, 'New round starting!')) $message = "<@{$civ13->role_ids['round_start']}>, New round starting!"; // This should be handled by round_start now
+                    if ( !$ckey && str_ends_with($message, 'starting!') && $strpos = strpos($message, 'New round ')) {
+                        if ($civ13->relay_method === 'file') {
+                            $new_message = '';
+                            if (isset($civ13->role_ids['round_start'])) $new_message .= "<@&{$civ13->role_ids['round_start']}>, ";
+                            $new_message .= substr($message, $strpos);
+                            $message = $new_message;
+                        }
+                    }
                     break;
                 case 'memessage':
                     if (isset($data['message'])) $message .= "**__{$time} EMOTE__ $ckey** " . html_entity_decode(urldecode($data['message']));
@@ -568,8 +575,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     break;
                 case 'round_start':
                     if (!isset($civ13->channel_ids[$server])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    if ($civ13->relay_method !== 'webhook') return new Response(200, ['Content-Type' => 'text/html'], 'Done');
                     $channel_id = $civ13->channel_ids[$server];
-                    if (isset($civ13->role_ids['round_start'])) $message .= "<@{$civ13->role_ids['round_start']}>, ";
+                    if (isset($civ13->role_ids['round_start'])) $message .= "<@&{$civ13->role_ids['round_start']}>, ";
                     $message .= 'New round ';
                     if (isset($data['round'])) $message .= "`{$data['round']}` ";
                     $message .= 'has started!';
