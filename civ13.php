@@ -1472,7 +1472,7 @@ class Civ13
     }
     public function gameChatWebhookRelay(string $ckey, string $message, $channel): bool
     {
-        if (! $this->relay_method === 'webhook') return false;
+        if ($this->relay_method !== 'webhook') return false;
         if (! $ckey || ! $message || ! $channel) {
             $this->logger->warning('gameChatWebhookRelay() was called with an empty array.');
             return false;
