@@ -371,48 +371,48 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
         
         case 'channel':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->getChannel($id)) return webapiFail('channel_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->getChannel($id)) return webapiFail('channel_id', $id);
             break;
 
         case 'guild':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
             break;
 
         case 'bans':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->bans) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->guilds->get('id', $id)->bans) return webapiFail('guild_id', $id);
             break;
 
         case 'channels':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->channels) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->guilds->get('id', $id)->channels) return webapiFail('guild_id', $id);
             break;
 
         case 'members':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->members) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->guilds->get('id', $id)->members) return webapiFail('guild_id', $id);
             break;
 
         case 'emojis':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->emojis) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->guilds->get('id', $id)->emojis) return webapiFail('guild_id', $id);
             break;
 
         case 'invites':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->invites) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->guilds->get('id', $id)->invites) return webapiFail('guild_id', $id);
             break;
 
         case 'roles':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->guilds->get('id', $id)->roles) return webapiFail('guild_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->guilds->get('id', $id)->roles) return webapiFail('guild_id', $id);
             break;
 
         case 'guildMember':
-            if (! $id || !webapiSnow($id) || !$guild = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
-            if (! $id2 || !webapiSnow($id2) || !$return = $guild->members->get('id', $id2)) return webapiFail('user_id', $id2);
+            if (! $id || !webapiSnow($id) || ! $guild = $civ13->discord->guilds->get('id', $id)) return webapiFail('guild_id', $id);
+            if (! $id2 || !webapiSnow($id2) || ! $return = $guild->members->get('id', $id2)) return webapiFail('user_id', $id2);
             break;
 
         case 'user':
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
             break;
 
         case 'userName':
-            if (! $id || !$return = $civ13->discord->users->get('name', $id)) return webapiFail('user_name', $id);
+            if (! $id || ! $return = $civ13->discord->users->get('name', $id)) return webapiFail('user_name', $id);
             break;
         
         case 'reset':
@@ -468,7 +468,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if (! $id || !webapiSnow($id) || !$return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
+            if (! $id || !webapiSnow($id) || ! $return = $civ13->discord->users->get('id', $id)) return webapiFail('user_id', $id);
             break;
 
         case 'owner':
@@ -539,34 +539,30 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "**__{$time} AHELP__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'asaymessage':
-                    if (!isset($civ13->channel_ids[$server.'_asay_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    $channel_id = $civ13->channel_ids[$server.'_asay_webhook_channel'];
+                    if (!isset($civ13->channel_ids[$server.'_asay_webhook_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_asay_webhook_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    ;
                     $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     if ($channel = $civ13->getChannel($channel_id))
                         if ($civ13->gameChatWebhookRelay($ckey, $message, $channel))
                             return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     break;
                 case 'lobbymessage': //Might overlap with deadchat
-                    if (!isset($civ13->channel_ids[$server.'_lobby_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    $channel_id = $civ13->channel_ids[$server.'_lobby_webhook_channel'];
+                    if (!isset($civ13->channel_ids[$server.'_lobby_webhook_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_lobby_webhook_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $message .= "**__{$time} LOBBY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     break;
                 case 'oocmessage':
-                    if (!isset($civ13->channel_ids[$server.'_ooc_webhook_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    $channel_id = $civ13->channel_ids[$server.'_ooc_webhook_channel'];
+                    if (!isset($civ13->channel_ids[$server.'_ooc_webhook_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_ooc_webhook_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
-                    if ($ckey && $message && $channel_id) {
-                        $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id));
+                    if ($ckey && $message && $channel_id && $civ13->relay_method === 'webhook' && $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id)))
                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
-                    }
-                    if ($civ13->relay_method === 'file' && !$ckey && str_ends_with($message, 'starting!') && $strpos = strpos($message, 'New round ')) {
+                    if ($civ13->relay_method === 'file' && ! $ckey && str_ends_with($message, 'starting!') && $strpos = strpos($message, 'New round ')) {
                         $new_message = '';
                         if (isset($civ13->role_ids['round_start'])) $new_message .= "<@&{$civ13->role_ids['round_start']}>, ";
                         $new_message .= substr($message, $strpos);
                         $message = $new_message;
-                        if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
+                        if (isset($civ13->channel_ids[$server . '-playercount']) && $playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
                             if ($existingCount = explode('-', $playercount_channel->name)[1])
-                                if ($existingCount > 1) $message .= " There are currently $existingCount players on the server.";
+                                if (intval($existingCount) > 1) $message .= " There are currently $existingCount players on the server.";
                                 else $message .= " There is currently $existingCount player on the server.";
                     }
                     break;
@@ -577,9 +573,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (isset($data['message'])) $message .= "**__{$time} GARBAGE__ $ckey**: " . html_entity_decode(strip_tags($data['message']));
                     break;
                 case 'round_start':
-                    if (!isset($civ13->channel_ids[$server])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    if ($civ13->relay_method !== 'webhook') return new Response(200, ['Content-Type' => 'text/html'], 'Done');
-                    $channel_id = $civ13->channel_ids[$server];
+                    if (!isset($civ13->channel_ids[$server]) || ! $channel_id = $civ13->channel_ids[$server]) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    if ($civ13->relay_method !== 'webhook') return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Only relay if using webhook
                     if (isset($civ13->role_ids['round_start'])) $message .= "<@&{$civ13->role_ids['round_start']}>, ";
                     $message .= 'New round ';
                     if (isset($data['round'])) $message .= "`{$data['round']}` ";
@@ -619,7 +614,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "$ckey disconnected from the server.";
 
                     if (isset($civ13->paroled[$ckey]))
-                        if ($parole_log_channel = $civ13->getChannel($civ13->channel_ids['parole_notif']))
+                        if (isset($civ13->role_ids['parolemin']) && isset($civ13->channel_ids['parole_notif']) && $parole_log_channel = $civ13->getChannel($civ13->channel_ids['parole_notif']))
                             $parole_log_channel->sendMessage("<@&{$civ13->role_ids['parolemin']}>, `$ckey` has logged out of `$server`");
                     break;
                 case 'token':
@@ -724,5 +719,5 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 });
 $webapi->listen($socket);
 $webapi->on('error', function ($e) use ($civ13) {
-    $civ13->logger->error('API ' . $e->getMessage());
+    $civ13->logger->error('API ' . $e->getMessage() . ' ' . $e->getTraceAsString());
 });
