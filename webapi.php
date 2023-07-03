@@ -640,6 +640,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (isset($data['ckey']) && isset($data['ckey2'])) if ($data['ckey'] && $data['ckey2']) if ($data['ckey'] === $data['ckey2']) $message .= " (Self-Attack)";
                     break;
                 default:
+                    $civ13->logger->alert("API UNKNOWN METHOD `{$params['method']}` FROM " . $request->getServerParams()['REMOTE_ADDR']);
                     return new Response(400, ['Content-Type' => 'text/plain'], 'Invalid Parameter');
             }
             if ($message && $channel = $civ13->discord->getChannel($channel_id)) {
