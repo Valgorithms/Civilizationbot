@@ -719,5 +719,5 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 });
 $webapi->listen($socket);
 $webapi->on('error', function ($e) use ($civ13) {
-    $civ13->logger->error('API ' . $e->getMessage() . ' ' . $e->getTraceAsString());
+    $civ13->logger->error('API ' . $e->getMessage() . ' ' . str_replace('\n', PHP_EOL, $e->getTraceAsString()));
 });
