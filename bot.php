@@ -195,36 +195,34 @@ $options = array(
         /* Nomad */
         'nomads' => '799952084505067581', #nomads
         'nomads-playercount' => '1048777424894185484', //nomads-#
-        //File read relays
-        //'nomads_ooc_channel' => '636644156923445269', //#ooc-nomads
-        //'nomads_admin_channel' => '637046890030170126', //#ahelp-nomads
-        //Webhook relays
-        'nomads_ooc_webhook_channel' => '1110001963405418616', //#ooc-nomads (New)
-        'nomads_transit_webhook_channel' => '1110002027469221989', //#transit-nomads
-        'nomads_lobby_webhook_channel' => '1110001986134347856', //#lobby-nomads
-        'nomads_asay_webhook_channel' => '1110002005977604186', //#asay-nomads
-        'nomads_adminlog_webhook_channel' => '1110002047123738624', //#adminlog-nomads
-        'nomads_debug_webhook_channel' => '1106248132779593758', //#debug-nomads (debugging)
-        'nomads_garbage_webhook_channel' => '1110002493259251752', //#garbage-nomads
-        'nomads_runtime_webhook_channel' => '1110002671936602132', //#runtime-nomads
-        'nomads_attack_webhook_channel' => '1110002697383448648', //#attack-nomads
+
+        'nomads_ooc_channel' => '1110001963405418616', //#ooc-nomads (New)
+        'nomads_lobby_channel' => '1110001986134347856', //#lobby-nomads
+        'nomads_asay_channel' => '1110002005977604186', //#asay-nomads
+        'nomads_ic_channel' => '1121531739114852432', //#ic-nomads
+
+        'nomads_transit_channel' => '1110002027469221989', //#transit-nomads
+        'nomads_adminlog_channel' => '1110002047123738624', //#adminlog-nomads
+        'nomads_debug_channel' => '1106248132779593758', //#debug-nomads (debugging)
+        'nomads_garbage_channel' => '1110002493259251752', //#garbage-nomads
+        'nomads_runtime_channel' => '1110002671936602132', //#runtime-nomads
+        'nomads_attack_channel' => '1110002697383448648', //#attack-nomads
 
         /* TDM */
         'tdm' => '799952134426591273', #tdm
         'tdm-playercount' => '1048777462898761789', //tdm-#
-        //File read relays
-        //'tdm_ooc_channel' => '636644391095631872', //#ooc-tdm
-        //'tdm_admin_channel' => '637046904575885322', //#ahelp-tdm
-        //Webhook relays
-        'tdm_ooc_webhook_channel' => '1107016184328622233', //#ooc-tdm (New)
-        'tdm_transit_webhook_channel' => '1107020747622326313', //#transit-tdm
-        'tdm_lobby_webhook_channel' => '1107021760483831988', //#lobby-tdm
-        'tdm_asay_webhook_channel' => '1107016769169801216', //#asay-tdm 
-        'tdm_adminlog_webhook_channel' => '1107024305927225455', //#adminlog-tdm
-        'tdm_debug_webhook_channel' => '1106248157798600715', //#debug-tdm (debugging)
-        'tdm_garbage_webhook_channel' => '1107018726307528735', //#garbage-tdm
-        'tdm_runtime_webhook_channel' => '1107017103883632792', //#runtime-tdm
-        'tdm_attack_webhook_channel' => '1107017830160936980', //#attack-tdm
+
+        'tdm_ooc_channel' => '1107016184328622233', //#ooc-tdm (New)
+        'tdm_lobby_channel' => '1107021760483831988', //#lobby-tdm
+        'tdm_asay_channel' => '1107016769169801216', //#asay-tdm
+        'tdm_ic_channel' => '1121531682198138920', //#ic-tdm
+
+        'tdm_transit_channel' => '1107020747622326313', //#transit-tdm
+        'tdm_adminlog_channel' => '1107024305927225455', //#adminlog-tdm
+        'tdm_debug_channel' => '1106248157798600715', //#debug-tdm (debugging)
+        'tdm_garbage_channel' => '1107018726307528735', //#garbage-tdm
+        'tdm_runtime_channel' => '1107017103883632792', //#runtime-tdm
+        'tdm_attack_channel' => '1107017830160936980', //#attack-tdm
 
         //Misc
         'webserver-status' => '1106967195092783104', #webserver-status
