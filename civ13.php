@@ -63,7 +63,7 @@ class Civ13
     public array $seen_players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
 
-    public array $current_round = [];
+    public array $current_rounds = [];
     public array $rounds = [];
 
     public string $relay_method = 'webhook'; //Method to use for relaying messages to Discord, either 'webhook' or 'file'
@@ -218,19 +218,22 @@ class Civ13
                     $this->VarSave('rounds.json', $rounds);
                 }
                 $this->rounds = $rounds;
-                if (! $current_round = $this->VarLoad('current_round.json')) {
-                    $current_round = [];
-                    $this->VarSave('current_round.json', $current_round);
+                if (! $current_rounds = $this->VarLoad('current_rounds.json')) {
+                    $current_rounds = [];
+                    $this->VarSave('current_rounds.json', $current_rounds);
                 }
-                $this->current_round = $current_round;
+                $this->current_rounds = $current_rounds;
                 // If the bot was restarted during a round, mark it as interrupted and do not continue tracking the current round
-                if ($this->current_round) foreach ($this->current_round as $server => $game_id) {
-                    if (! is_string($server) || ! is_string($game_id)) continue;
-                    if (isset($this->rounds[$server]) && isset($this->rounds[$server][$game_id])) {
+                if ($this->current_rounds) {
+                    $updated = false;
+                    foreach ($this->current_rounds as $server => $game_id) if (isset($this->rounds[$server]) && isset($this->rounds[$server][$game_id])) {
                         $this->rounds[$server][$game_id]['interrupted'] = true;
                         $this->rounds[$server][$game_id]['end'] = null;
-                        $this->current_round = [];
-                        $this->VarSave('current_round.json', $this->current_round);
+                        $this->current_rounds[$server] = '';
+                        $updated = true;
+                    }
+                    if ($updated) {
+                        $this->VarSave('current_rounds.json', $this->current_rounds);
                         $this->VarSave('rounds.json', $this->rounds);
                     }
                 }
@@ -497,6 +500,37 @@ class Civ13
         return $collections_array;
     }
     
+    public function logNewRound(string $server, string $game_id, string $time): void
+    {
+        if (isset($this->current_rounds[$server]) && $game_id !== $this->current_rounds[$server]) $this->rounds[$server][$this->current_rounds[$server]]['end'] = $time; //Set end time of previous round
+        $this->current_rounds[$server] = $game_id; //Update current round
+        $this->VarSave('current_rounds.json', $this->current_rounds); //Update log of currently running game_ids
+        $this->rounds[$server][$game_id] = []; //Initialize round array
+        $this->rounds[$server][$game_id]['start'] = $time; //Set start time of current round
+        $this->VarSave('rounds.json', $this->rounds); //Update log of rounds
+    }
+    public function logPlayerLogin(string $server, string $ckey, string $time, string $ip = '', string $cid = ''): void
+    {
+        if ($game_id = $this->current_rounds[$server]) {
+            if (! isset($this->rounds[$server][$game_id]['players'])) $this->rounds[$server][$game_id]['players'] = [];
+            if (! isset($this->rounds[$server][$game_id]['players'][$ckey])) $this->rounds[$server][$game_id]['players'][$ckey] = [];
+            if (! isset($this->rounds[$server][$game_id]['players'][$ckey]['login'])) $this->rounds[$server][$game_id]['players'][$ckey]['login'] = $time;
+            if ($ip && (! isset($this->rounds[$server][$game_id]['players'][$ckey]['ip']) || ! in_array($ip, $this->rounds[$server][$game_id]['players'][$ckey]['ip']))) $this->rounds[$server][$game_id]['players'][$ckey]['ip'][] = $ip; 
+            if ($cid && (! isset($this->rounds[$server][$game_id]['players'][$ckey]['cid']) || ! in_array($cid, $this->rounds[$server][$game_id]['players'][$ckey]['cid']))) $this->rounds[$server][$game_id]['players'][$ckey]['cid'][] = $cid;
+            $this->VarSave('rounds.json', $this->rounds);
+        }
+    }
+    public function logPlayerLogout(string $server, string $ckey, string $time): void
+    {
+        if ($game_id = $this->current_rounds[$server]) {
+            if (isset($this->rounds[$server][$game_id]['players'])
+                && isset($this->rounds[$server][$game_id]['players'][$ckey])
+                && isset($this->rounds[$server][$game_id]['players'][$ckey]['login'])
+            ) $this->rounds[$server][$game_id]['players'][$ckey]['logout'] = $time;
+            $this->VarSave('rounds.json', $this->rounds);
+        }
+    }
+
     /*
      * This function is used to generate a token that can be used to verify a BYOND account
      * The token is generated by generating a random string of 50 characters from the set of all alphanumeric characters
