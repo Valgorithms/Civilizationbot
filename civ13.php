@@ -1552,6 +1552,7 @@ class Civ13
     }
     public function gameChatWebhookRelay(string $ckey, string $message, $channel, $moderate = true): bool
     {
+        if (is_string($channel)) $channel = $this->discord->getChannel($channel);
         if ($this->relay_method !== 'webhook') return false;
         if (! $ckey || ! $message || ! $channel) {
             $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters.');

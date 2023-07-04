@@ -540,9 +540,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 case 'asaymessage':
                     if (! isset($civ13->channel_ids[$server.'_asay_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_asay_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     if (isset($data['message'])) $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
-                    if ($civ13->relay_method === 'webhook' && $ckey && $message)
-                        if ($civ13->gameChatWebhookRelay($ckey, $message, $civ13->getChannel($channel_id))) 
-                            return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
+                    if ($ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id))) 
+                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     break;
                 case 'lobbymessage': //Might overlap with deadchat
                     if (! isset($civ13->channel_ids[$server.'_lobby_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_lobby_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
@@ -600,7 +599,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     //Move this to a function in civ13.php
                     if (isset($civ13->paroled[$ckey])
                         && isset($civ13->channel_ids['parole_notif'])
-                        && $parole_log_channel = $civ13->getChannel($civ13->channel_ids['parole_notif'])
+                        && $parole_log_channel = $civ13->discord->getChannel($civ13->channel_ids['parole_notif'])
                     ) {
                         $message2 = '';
                         if (isset($civ13->role_ids['parolemin'])) $message2 .= "<@&{$civ13->role_ids['parolemin']}>, ";
@@ -627,7 +626,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     //Move this to a function in civ13.php    
                     if (isset($civ13->paroled[$ckey])
                         && isset($civ13->channel_ids['parole_notif'])
-                        && $parole_log_channel = $civ13->getChannel($civ13->channel_ids['parole_notif'])
+                        && $parole_log_channel = $civ13->discord->getChannel($civ13->channel_ids['parole_notif'])
                     ) {
                         $message2 = '';
                         if (isset($civ13->role_ids['parolemin'])) $message2 .= "<@&{$civ13->role_ids['parolemin']}>, ";
