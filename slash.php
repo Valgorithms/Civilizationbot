@@ -479,8 +479,18 @@ class Slash
                     if (isset($p[$item['ss13']])) {
                         if ($game_id && ! in_array($game_id, $game_ids)) $game_ids[] = $game_id;
                         if (isset($p[$item['ss13']]['ip']) && $p[$item['ss13']]['ip']) foreach ($p[$item['ss13']]['ip'] as $ip) if (! in_array($ip, $ips)) $ips[] = $ip;
+                        $start_time = $p[$item['ss13']]['login']; //Formatted as [H:i:s]
+                        $end_time = isset($p[$item['ss13']]['logout']) ? $p[$item['ss13']]['logout'] : NULL;
                         //if (isset($p[$item['ss13']]['cid']) && $p[$item['ss13']]['cid']) foreach ($p[$item['ss13']]['cid'] as $cid) if (! in_array($cid, $cids)) $cids[] = $cid;
-                        foreach (array_keys($p) as $ckey) if ($ckey !== $item['ss13'] && ! in_array($ckey, $p)) $p[] = $ckey;
+
+                        // Get players played with
+                        foreach (array_keys($p) as $ckey) {
+                            if ($ckey === $item['ss13']) continue;
+                            $s_t = $p[$ckey]['login'];
+                            $e_t = isset($p[$ckey]['logout']) ? $p[$ckey]['logout'] : NULL;
+                            // TODO
+                            $p[] = $ckey;
+                        }
                     }
                 }
             }
