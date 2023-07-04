@@ -474,8 +474,10 @@ class Slash
             foreach ($this->civ13->getRoundsCollections() as $server => $collection) {
                 if (! in_array($server, $servers)) $servers[] = $server;
                 foreach ($collection as $round) {
-                    $game_id = $round['game_id'] ?? '';
+                    $game_id = $round['game_id'] ?? null;
                     $p = $round['players'] ?? [];
+                    $s = $round['start'] ?? null;
+                    $e = $round['end'] ?? null;
                     if (isset($p[$item['ss13']])) {
                         if ($game_id && ! in_array($game_id, $game_ids)) $game_ids[] = $game_id;
                         if (isset($p[$item['ss13']]['ip']) && $p[$item['ss13']]['ip']) foreach ($p[$item['ss13']]['ip'] as $ip) if (! in_array($ip, $ips)) $ips[] = $ip;
@@ -485,7 +487,7 @@ class Slash
 
                         // Get players played with
                         foreach (array_keys($p) as $ckey) {
-                            if ($ckey === $item['ss13']) continue;
+                            if ($ckey === $item['ss13']) continue 1;
                             $s_t = $p[$ckey]['login'];
                             $e_t = isset($p[$ckey]['logout']) ? $p[$ckey]['logout'] : NULL;
                             // TODO: Only add if the player was online at the same time
