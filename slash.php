@@ -478,7 +478,6 @@ class Slash
                         if (isset($p[$item['ss13']]['cid']) && $p[$item['ss13']]['cid']) foreach ($p[$item['ss13']]['cid'] as $cid) if (! in_array($cid, $cids)) $cids[] = $cid;
                         foreach (array_keys($p) as $ckey) if ($ckey !== $item['ss13'] && ! in_array($ckey, $p)) $p[] = $ckey;
                     }
-                        
                 }
             }
             $embed->addFieldValues('Rounds', count($game_ids));
@@ -492,7 +491,7 @@ class Slash
             $embed->setURL('');
 
             $messagebuilder = MessageBuilder::new();
-            $messagebuilder->setContent("Statistics for `{$item['ss13']}` as of <t:1688456400:F>");
+            $messagebuilder->setContent("Statistics for `{$item['ss13']}` as of <t:1688462940:f>");
             $messagebuilder->addEmbed($embed);
             return $interaction->respondWithMessage($messagebuilder, true);
         });
