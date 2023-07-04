@@ -488,20 +488,20 @@ class Slash
                             if ($ckey === $item['ss13']) continue;
                             $s_t = $p[$ckey]['login'];
                             $e_t = isset($p[$ckey]['logout']) ? $p[$ckey]['logout'] : NULL;
-                            // TODO
+                            // TODO: Only add if the player was online at the same time
                             $p[] = $ckey;
                         }
                     }
                 }
             }
             
-            if(isset($this->civ13->ages[$ckey])) $embed->addFieldValues('Account created', $this->civ13->ages[$ckey], true);
+            if(isset($this->civ13->ages[$ckey])) $embed->addFieldValues('Created', $this->civ13->ages[$ckey], true);
             foreach ($ips as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
-            if (! empty($regions)) $embed->addFieldValues('Known Region Codes', implode(', ', $regions), true);
+            if (! empty($regions)) $embed->addFieldValues('Region Codes', implode(', ', $regions), true);
             //$embed->addFieldValues('Known IP addresses', count($ips));
             //$embed->addFieldValues('Known Computer IDs', count($cids));
-            $embed->addFieldValues('Games played', count($game_ids), true);
-            $embed->addFieldValues('Unique players played with', count($players), true);
+            $embed->addFieldValues('Games Played', count($game_ids), true);
+            $embed->addFieldValues('Unique Players Played With', count($players), true);
 
             $embed->setFooter($this->civ13->embed_footer);
             $embed->setColor(0xe1452d);
