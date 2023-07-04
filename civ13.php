@@ -228,7 +228,6 @@ class Civ13
                     $updated = false;
                     foreach ($this->current_rounds as $server => $game_id) if (isset($this->rounds[$server]) && isset($this->rounds[$server][$game_id])) {
                         $this->rounds[$server][$game_id]['interrupted'] = true;
-                        $this->rounds[$server][$game_id]['end'] = null;
                         $this->current_rounds[$server] = '';
                         $updated = true;
                     }
@@ -507,7 +506,10 @@ class Civ13
         $this->current_rounds[$server] = $game_id; //Update current round
         $this->VarSave('current_rounds.json', $this->current_rounds); //Update log of currently running game_ids
         $this->rounds[$server][$game_id] = []; //Initialize round array
-        $this->rounds[$server][$game_id]['start'] = $time; //Set start time of current round
+        $this->rounds[$server][$game_id]['start'] = $time; //Set start time
+        $this->rounds[$server][$game_id]['end'] = null;
+        $this->rounds[$server][$game_id]['players'] = [];
+        $this->rounds[$server][$game_id]['interrupted'] = false;
         $this->VarSave('rounds.json', $this->rounds); //Update log of rounds
     }
     public function logPlayerLogin(string $server, string $ckey, string $time, string $ip = '', string $cid = ''): void
