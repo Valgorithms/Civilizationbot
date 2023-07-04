@@ -509,7 +509,7 @@ class Slash
             $embed->setURL('');
 
             $messagebuilder = MessageBuilder::new();
-            $messagebuilder->setContent("Statistics for `{$item['ss13']}` as of <t:1688464620:D>");
+            $messagebuilder->setContent("Statistics for `{$item['ss13']}` starting from <t:1688464620:D>");
             $messagebuilder->addEmbed($embed);
             return $interaction->respondWithMessage($messagebuilder, true);
         });
