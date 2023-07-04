@@ -485,13 +485,13 @@ class Slash
                 }
             }
             
-            if(isset($this->civ13->ages[$ckey])) $embed->addFieldValues('Account created', $this->civ13->ages[$ckey]);
-            $embed->addFieldValues('Games played', count($game_ids));
+            if(isset($this->civ13->ages[$ckey])) $embed->addFieldValues('Account created', $this->civ13->ages[$ckey], true);
             foreach ($ips as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
-            if (! empty($regions)) $embed->addFieldValues('Known Region Codes', implode(', ', $regions));
+            if (! empty($regions)) $embed->addFieldValues('Known Region Codes', implode(', ', $regions), true);
             //$embed->addFieldValues('Known IP addresses', count($ips));
             //$embed->addFieldValues('Known Computer IDs', count($cids));
-            $embed->addFieldValues('Unique players played with', count($players));
+            $embed->addFieldValues('Games played', count($game_ids), true);
+            $embed->addFieldValues('Unique players played with', count($players), true);
 
             $embed->setFooter($this->civ13->embed_footer);
             $embed->setColor(0xe1452d);
