@@ -465,6 +465,7 @@ class Slash
             $game_ids = [];
             $servers = [];
             $ips = [];
+            $regions = [];
             $cids = [];
             $players = [];
             $embed = new Embed($this->civ13->discord);
@@ -483,10 +484,14 @@ class Slash
                     }
                 }
             }
-            $embed->addFieldValues('Rounds', count($game_ids));
-            $embed->addFieldValues('IPs', count($ips));
-            $embed->addFieldValues('CIDs', count($cids));
-            $embed->addFieldValues('Players played with', count($players));
+            
+            if(isset($this->civ13->ages[$ckey])) $embed->addFieldValues('Account created', $this->civ13->ages[$ckey]);
+            $embed->addFieldValues('Games played', count($game_ids));
+            foreach ($ips as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
+            if (! empty($regions)) $embed->addFieldValues('Known Region Codes', implode(', ', $regions));
+            $embed->addFieldValues('Known IP addresses', count($ips));
+            $embed->addFieldValues('Known Computer IDs', count($cids));
+            $embed->addFieldValues('Unique players played with', count($players));
 
             $embed->setFooter($this->civ13->embed_footer);
             $embed->setColor(0xe1452d);
