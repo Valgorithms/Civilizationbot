@@ -501,7 +501,7 @@ class Civ13
     
     public function logNewRound(string $server, string $game_id, string $time): void
     {
-        if (isset($this->current_rounds[$server]) && $game_id !== $this->current_rounds[$server]) //If the round already exists and is not the current round
+        if (isset($this->rounds[$server][$this->current_rounds[$server]]) && isset($this->current_rounds[$server]) && $game_id !== $this->current_rounds[$server]) //If the round already exists and is not the current round
             $this->rounds[$server][$this->current_rounds[$server]]['end'] = $time; //Set end time of previous round
         $this->current_rounds[$server] = $game_id; //Update current round
         $this->VarSave('current_rounds.json', $this->current_rounds); //Update log of currently running game_ids
