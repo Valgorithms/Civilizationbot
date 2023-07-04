@@ -466,7 +466,7 @@ class Slash
             $servers = [];
             $ips = [];
             $regions = [];
-            $cids = [];
+            //$cids = [];
             $players = [];
             $embed = new Embed($this->civ13->discord);
             $embed->setTitle($item['ss13']);
@@ -479,7 +479,7 @@ class Slash
                     if (isset($p[$item['ss13']])) {
                         if ($game_id && ! in_array($game_id, $game_ids)) $game_ids[] = $game_id;
                         if (isset($p[$item['ss13']]['ip']) && $p[$item['ss13']]['ip']) foreach ($p[$item['ss13']]['ip'] as $ip) if (! in_array($ip, $ips)) $ips[] = $ip;
-                        if (isset($p[$item['ss13']]['cid']) && $p[$item['ss13']]['cid']) foreach ($p[$item['ss13']]['cid'] as $cid) if (! in_array($cid, $cids)) $cids[] = $cid;
+                        //if (isset($p[$item['ss13']]['cid']) && $p[$item['ss13']]['cid']) foreach ($p[$item['ss13']]['cid'] as $cid) if (! in_array($cid, $cids)) $cids[] = $cid;
                         foreach (array_keys($p) as $ckey) if ($ckey !== $item['ss13'] && ! in_array($ckey, $p)) $p[] = $ckey;
                     }
                 }
@@ -489,8 +489,8 @@ class Slash
             $embed->addFieldValues('Games played', count($game_ids));
             foreach ($ips as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
             if (! empty($regions)) $embed->addFieldValues('Known Region Codes', implode(', ', $regions));
-            $embed->addFieldValues('Known IP addresses', count($ips));
-            $embed->addFieldValues('Known Computer IDs', count($cids));
+            //$embed->addFieldValues('Known IP addresses', count($ips));
+            //$embed->addFieldValues('Known Computer IDs', count($cids));
             $embed->addFieldValues('Unique players played with', count($players));
 
             $embed->setFooter($this->civ13->embed_footer);
