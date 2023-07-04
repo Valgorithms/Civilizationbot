@@ -63,6 +63,9 @@ class Civ13
     public array $seen_players = []; //Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
 
+    public array $current_round = [];
+    public array $rounds = [];
+
     public string $relay_method = 'webhook'; //Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = true; //Whether or not to moderate the servers using the badwords list
     public array $badwords = [
@@ -92,8 +95,8 @@ class Civ13
         ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
         ['word' => 'kys', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1],
         
-        ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthortized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
-        ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthortized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
+        ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
+        ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
     ];
     public array $badwords_warnings = []; //Collection of $ckey => ['category' => string, 'badword' => string, 'count' => integer] for how many times a user has recently infringed
     public bool $legacy = true; //If true, the bot will use the file methods instead of the SQL ones
@@ -210,6 +213,27 @@ class Civ13
                 $this->logger->info('------');
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
                 $this->tests = $tests;
+                if (! $rounds = $this->VarLoad('rounds.json')) {
+                    $rounds = [];
+                    $this->VarSave('rounds.json', $rounds);
+                }
+                $this->rounds = $rounds;
+                if (! $current_round = $this->VarLoad('current_round.json')) {
+                    $current_round = [];
+                    $this->VarSave('current_round.json', $current_round);
+                }
+                $this->current_round = $current_round;
+                // If the bot was restarted during a round, mark it as interrupted and do not continue tracking the current round
+                if ($this->current_round) foreach ($this->current_round as $server => $game_id) {
+                    if (! is_string($server) || ! is_string($game_id)) continue;
+                    if (isset($this->rounds[$server]) && isset($this->rounds[$server][$game_id])) {
+                        $this->rounds[$server][$game_id]['interrupted'] = true;
+                        $this->rounds[$server][$game_id]['end'] = null;
+                        $this->current_round = [];
+                        $this->VarSave('current_round.json', $this->current_round);
+                        $this->VarSave('rounds.json', $this->rounds);
+                    }
+                }
                 if (! $paroled = $this->VarLoad('paroled.json')) {
                     $paroled = [];
                     $this->VarSave('paroled.json', $paroled);
@@ -453,6 +477,24 @@ class Civ13
         }
         if ($json = $this->VarLoad('verified.json')) return $this->verified = new Collection($json, 'discord');
         return $this->verified = new Collection([], 'discord');
+    }
+
+    public function getRoundsCollections(): array
+    {
+        $collections_array = [];
+        foreach ($this->rounds as $server => $rounds) {
+            $r = [];
+            foreach (array_keys($rounds) as $game_id) {
+                $round = [];
+                $round['game_id'] = $game_id;
+                $round['start'] = isset($this->rounds[$server][$game_id]['start']) ? $this->rounds[$server][$game_id]['start'] : null;
+                $round['end'] = isset($this->rounds[$server][$game_id]['end']) ? $this->rounds[$server][$game_id]['end'] : null;
+                $round['players'] = isset($this->rounds[$server][$game_id]['players']) ? $this->rounds[$server][$game_id]['players'] : [];
+                $r = $round;
+            }
+            $collections_array[] = [$server => new Collection($r, 'game_id')];
+        }
+        return $collections_array;
     }
     
     /*

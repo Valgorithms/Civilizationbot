@@ -9,6 +9,7 @@
 namespace Civ13;
 
 use Discord\Builders\MessageBuilder;
+use Discord\Helpers\Collection;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\Permissions\RolePermission;
@@ -195,13 +196,14 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
             ]));
             
-            //if ($command = $commands->get('name', 'permitted')) $commands->delete($command->id);
+            /*Deprecated
+            if ($command = $commands->get('name', 'permitted')) $commands->delete($command->id);
             if (! $commands->get('name', 'permitted')) $commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permitted',
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
-            ]));
+            ]));*/
 
             //if ($command = $commands->get('name', 'permit')) $commands->delete($command->id);
             if (! $commands->get('name', 'permit')) $commands->save(new Command($this->civ13->discord, [
@@ -225,6 +227,14 @@ class Slash
                 'name'                       => 'ckeyinfo',
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+            ]));
+
+            //if ($command = $commands->get('name', 'statistics')) $commands->delete($command->id);
+            if (! $commands->get('name', 'statistics')) $commands->save(new Command($this->civ13->discord, [
+                'type'                       => Command::USER,
+                'name'                       => 'statistics',
+                'dm_permission'              => false,
+                //'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
             ]));
             
             //if ($command = $commands->get('name', 'restart_nomads')) $commands->delete($command->id);
@@ -388,6 +398,7 @@ class Slash
             }
         });
 
+        /* Deprecated
         $this->civ13->discord->listenCommand('permitted', function ($interaction): void
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
@@ -397,6 +408,7 @@ class Slash
                 $interaction->respondWithMessage(MessageBuilder::new()->setContent($response));
             }
         });
+        */
         
         $this->civ13->discord->listenCommand('permit', function ($interaction): void
         {
@@ -442,6 +454,47 @@ class Slash
                 $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$item['ss13']]) ? 'Yes' : 'No');
                 $interaction->respondWithMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
             }
+        });
+
+        $this->civ13->discord->listenCommand('statistics', function ($interaction)
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            $game_ids = [];
+            $servers = [];
+            $ips = [];
+            $cids = [];
+            $players = [];
+            $embed = new Embed($this->civ13->discord);
+            $embed->setTitle($item['ss13']);
+            if ($member = $this->civ13->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+            foreach ($this->civ13->getRoundsCollections() as $server => $collection) {
+                if (! in_array($server, $servers)) $servers[] = $server;
+                foreach ($collection as $round) {
+                    $game_id = $round['game_id'] ?? '';
+                    $p = $round['players'] ?? [];
+                    if (isset($p[$item['ss13']])) {
+                        if ($game_id && ! in_array($game_id, $game_ids)) $game_ids[] = $game_id;
+                        if (isset($p[$item['ss13']]['ip']) && $p[$item['ss13']]['ip']) foreach ($p[$item['ss13']]['ip'] as $ip) if (! in_array($ip, $ips)) $ips[] = $ip;
+                        if (isset($p[$item['ss13']]['cid']) && $p[$item['ss13']]['cid']) foreach ($p[$item['ss13']]['cid'] as $cid) if (! in_array($cid, $cids)) $cids[] = $cid;
+                        foreach (array_keys($p) as $ckey) if ($ckey !== $item['ss13'] && ! in_array($ckey, $p)) $p[] = $ckey;
+                    }
+                        
+                }
+            }
+            $embed->addFieldValues('Rounds', count($game_ids));
+            $embed->addFieldValues('IPs', count($ips));
+            $embed->addFieldValues('CIDs', count($cids));
+            $embed->addFieldValues('Players played with', count($players));
+
+            $embed->setFooter($this->civ13->embed_footer);
+            $embed->setColor(0xe1452d);
+            $embed->setTimestamp();
+            $embed->setURL('');
+
+            $messagebuilder = MessageBuilder::new();
+            $messagebuilder->setContent("Statistics for `{$item['ss13']}` as of <t:1688456400:F>");
+            $messagebuilder->addEmbed($embed);
+            return $interaction->respondWithMessage($messagebuilder, true);
         });
         
         $this->civ13->discord->listenCommand('panic', function ($interaction): void
