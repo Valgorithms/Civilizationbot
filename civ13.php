@@ -1471,14 +1471,14 @@ class Civ13
         fclose($file);
         return $this->__gameChatRelay($relay_array, $channel, false); //Disabled moderation as it is now done quicker using the Webhook system
     }
-    public function gameChatWebhookRelay(string $ckey, string $message, $channel): bool
+    public function gameChatWebhookRelay(string $ckey, string $message, $channel, $moderate = true): bool
     {
         if ($this->relay_method !== 'webhook') return false;
         if (! $ckey || ! $message || ! $channel) {
             $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters.');
             return false;
         }
-        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel);
+        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
     }
     private function __gameChatRelay(array $array, $channel, $moderate = true): bool
     {
