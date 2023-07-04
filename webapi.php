@@ -540,11 +540,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     break;
                 case 'asaymessage':
                     if (!isset($civ13->channel_ids[$server.'_asay_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_asay_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    ;
                     $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
-                    if ($channel = $civ13->getChannel($channel_id))
-                        if ($civ13->gameChatWebhookRelay($ckey, $message, $channel))
-                            return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
+                    if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel = $civ13->getChannel($channel_id)))
+                        return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     break;
                 case 'lobbymessage': //Might overlap with deadchat
                     if (!isset($civ13->channel_ids[$server.'_lobby_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_lobby_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
@@ -553,7 +551,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 case 'oocmessage':
                     if (!isset($civ13->channel_ids[$server.'_ooc_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_ooc_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
-                    if ($ckey && $message && $civ13->relay_method === 'webhook' && $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id)))
+                    if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id)))
                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     if ($civ13->relay_method === 'file' && ! $ckey && str_ends_with($message, 'starting!') && $strpos = strpos($message, 'New round ')) {
                         $new_message = '';
@@ -569,7 +567,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 case 'icmessage':
                     if (!isset($civ13->channel_ids[$server.'_ic_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_ic_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
-                    if ($ckey && $message && $civ13->relay_method === 'webhook' && $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id)))
+                    if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $civ13->discord->getChannel($channel_id)))
                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     break;
                 case 'memessage':
