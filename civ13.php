@@ -481,7 +481,7 @@ class Civ13
         return $this->verified = new Collection([], 'discord');
     }
 
-    public function getRoundsCollections(): array
+    public function getRoundsCollections(): array // [string $server, collection $rounds]
     {
         $collections_array = [];
         foreach ($this->rounds as $server => $rounds) {
@@ -492,7 +492,7 @@ class Civ13
                 $round['start'] = isset($this->rounds[$server][$game_id]['start']) ? $this->rounds[$server][$game_id]['start'] : null;
                 $round['end'] = isset($this->rounds[$server][$game_id]['end']) ? $this->rounds[$server][$game_id]['end'] : null;
                 $round['players'] = isset($this->rounds[$server][$game_id]['players']) ? $this->rounds[$server][$game_id]['players'] : [];
-                $r = $round;
+                $r[] = $round;
             }
             $collections_array[] = [$server => new Collection($r, 'game_id')];
         }
@@ -501,7 +501,7 @@ class Civ13
     
     public function logNewRound(string $server, string $game_id, string $time): void
     {
-        if (isset($this->rounds[$server][$this->current_rounds[$server]]) && isset($this->current_rounds[$server]) && $game_id !== $this->current_rounds[$server]) //If the round already exists and is not the current round
+        if (isset($this->current_rounds[$server]) && isset($this->rounds[$server][$this->current_rounds[$server]]) && $this->rounds[$server][$this->current_rounds[$server]] && $game_id !== $this->current_rounds[$server]) //If the round already exists and is not the current round
             $this->rounds[$server][$this->current_rounds[$server]]['end'] = $time; //Set end time of previous round
         $this->current_rounds[$server] = $game_id; //Update current round
         $this->VarSave('current_rounds.json', $this->current_rounds); //Update log of currently running game_ids
@@ -1368,7 +1368,7 @@ class Civ13
                     }
                 }
                 if ($this->verified->get('ss13', $ckey)) continue;
-                if ($this->panic_bunker || ($this->serverinfo[1]['admins'] == 0 && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
+                if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
                 if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
                     $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban(['ckey' => $ckey, 'reason' => '999 years', 'duration' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
@@ -1737,7 +1737,7 @@ class Civ13
             'mentor' => ['Mentor', '16384'],
         ];
         // If any required roles are missing, return false
-        if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the bot\'s config'); var_dump($diff); return false; }
+        if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the bot\'s config', $diff); return false; }
         foreach (array_keys($required_roles) as $role) if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
         
         // Write each verified member's SS13 ckey and associated role with its bitflag permission to the adminlist file

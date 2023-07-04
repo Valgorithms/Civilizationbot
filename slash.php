@@ -471,7 +471,7 @@ class Slash
             $embed = new Embed($this->civ13->discord);
             $embed->setTitle($item['ss13']);
             if ($member = $this->civ13->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
-            foreach ($this->civ13->getRoundsCollections() as $server => $collection) {
+            foreach ($this->civ13->getRoundsCollections() as $server => $arr) foreach ($arr as $collection) {
                 if (! in_array($server, $servers)) $servers[] = $server;
                 foreach ($collection as $round) {
                     $game_id = $round['game_id'] ?? null;
@@ -497,7 +497,7 @@ class Slash
                 }
             }
             
-            if(isset($this->civ13->ages[$ckey])) $embed->addFieldValues('Created', $this->civ13->ages[$ckey], true);
+            if(isset($this->civ13->ages[$item['ss13']])) $embed->addFieldValues('Created', $this->civ13->ages[$item['ss13']], true);
             foreach ($ips as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
             if (! empty($regions)) $embed->addFieldValues('Region Codes', implode(', ', $regions), true);
             //$embed->addFieldValues('Known IP addresses', count($ips));

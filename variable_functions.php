@@ -951,7 +951,7 @@ $tdm_discord2dm = function (Civ13 $civ13, $author, $string): bool
 };
 $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm)
 { // on message
-    if ($message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
+    if (! $message->guild || $message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (! $civ13->command_symbol) $civ13->command_symbol = '!s';
     
     $message_content = '';

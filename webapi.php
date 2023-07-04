@@ -539,9 +539,10 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     break;
                 case 'asaymessage':
                     if (! isset($civ13->channel_ids[$server.'_asay_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_asay_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
-                    if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel = $civ13->getChannel($channel_id)))
-                        return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
+                    if (isset($data['message'])) $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
+                    if ($civ13->relay_method === 'webhook' && $ckey && $message)
+                        if ($civ13->gameChatWebhookRelay($ckey, $message, $civ13->getChannel($channel_id))) 
+                            return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
                     break;
                 case 'lobbymessage': //Might overlap with deadchat
                     if (! isset($civ13->channel_ids[$server.'_lobby_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_lobby_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
@@ -699,6 +700,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $nomads_playerlogs = $civ13->files['nomads_playerlogs'];
                     if ($return = file_get_contents($nomads_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_playerlogs`");
+                default:
+                    return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
             }
             break;
         case 'tdm':
@@ -739,7 +742,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
         default:
             return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
     }
-    return new Response(200, ['Content-Type' => 'text/json'], json_encode($return));
+    return new Response(200, ['Content-Type' => 'text/json'], json_encode($return ?? ''));
 });
 $webapi->listen($socket);
 $webapi->on('error', function ($e) use ($civ13) {
