@@ -1609,7 +1609,7 @@ class Civ13
        if (!isset($this->badwords_warnings[$ckey][$badwords_array['category']])) $this->badwords_warnings[$ckey][$badwords_array['category']] = 1;
        else ++$this->badwords_warnings[$ckey][$badwords_array['category']];
        $this->VarSave('badwords_warnings.json', $this->badwords_warnings);
-       if ($this->badwords_warnings[$ckey][$badwords_array['category']] > $this->badwords[$badwords_array['warnings']]) return false;
+       if ($this->badwords_warnings[$ckey][$badwords_array['category']] > $badwords_array['warnings']) return false;
        return true;
    }
 
