@@ -328,7 +328,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
-            $return = '<meta http-equiv = \"refresh\" content = \"0; url = https://www.valzargaming.com/?login\" />'; //Redirect to the website to log in
+            $return = '<meta http-equiv="refresh" content="0 url=\'https://www.valzargaming.com/?login\'" />'; //Redirect to the website to log in
             return new Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'github':
