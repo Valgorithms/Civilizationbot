@@ -12,7 +12,8 @@ use React\Http\HttpServer;
 use React\Http\Message\Response;
 use \Psr\Http\Message\ServerRequestInterface;
 
-if (! include 'webhook_key.php') $webhook_key = 'CHANGEME'; //The token is used to verify that the sender is legitimate and not a malicious actor
+@include getcwd() . '/webapi_token_env.php'; //putenv("WEBAPI_TOKEN='YOUR_TOKEN_HERE'");
+$webhook_key = getenv('WEBAPI_TOKEN') ?? 'CHANGEME'; //The token is used to verify that the sender is legitimate and not a malicious actor
 
 function webapiFail($part, $id) {
     //logInfo('[webapi] Failed', ['part' => $part, 'id' => $id]);
@@ -27,9 +28,116 @@ $external_ip = file_get_contents('http://ipecho.net/plain');
 $valzargaming_ip = gethostbyname('www.valzargaming.com');
 $port = '55555';
 
+$portknock = false;
+$max_attempts = 3;
+$portknock_ips = []; // ['ip' => ['step' => 0, 'authed' = false]]
+$portknock_servers = [];
+@include getcwd() . '/webapi_portknocks.php'; //putenv("DOORS=['port1', 'port2', 'port1', 'port3', 'port2' 'port1']"); (not a real example)
+if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { // The port knocks are used to prevent malicious port scanners from spamming the webapi
+    $validatePort = function($value) use ($port) {
+        return (
+            $value > 0 // Port numbers are positive
+            && $value < 65536 // Port numbers are between 0 and 65535
+            && $value != $port // If the webapi port is in the port knocks list it is misconfigured and should be disabled
+        );
+    };
+    $valid_config = true;
+    foreach ($portknock_ports as $p) {
+        if (! $validatePort($p)) {
+            $valid_config = false;
+            break;
+        }
+    }
+    if ($valid_config) {
+        $portknock = true;
+        $initialized_ports = [];
+        foreach ($portknock_ports as $p) {
+            if (! in_array($p, $initialized_ports)) { //Don't listen on the same port as the webapi or any other port
+                $s = new SocketServer(sprintf('%s:%s', '0.0.0.0', $p), [], $civ13->loop);
+                $w = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $p, $portknock_ips, $portknock_ports, $max_attempts) {
+                    // Initialize variables
+                    $ip = $request->getServerParams()['REMOTE_ADDR'];
+                    $step = 0;
+                    if (! isset($portknock_ips[$ip])) $portknock_ips[$ip] = ['step' => 0, 'authed' => false, 'failed' => 0, 'knocks' => 1]; //First time knocking
+                    elseif (isset($portknock_ips[$ip]['step'])) { //Already knocked
+                        $step = $portknock_ips[$ip]['step'];
+                        $portknock_ips[$ip]['knocks']++; //Useful for detecting spam, but not functionally used (yet)
+                    }
+
+                    // Too many failed attempts
+                    if ($portknock_ips[$ip]['failed'] > $max_attempts) {
+                        $civ13->logger->warning('[webapi] Blocked Port Scanner', [
+                            'ip' => $ip,
+                            'step' => $portknock_ips[$ip]['step'],
+                            'authed' => $portknock_ips[$ip]['authed'],
+                            'failed' => $portknock_ips[$ip]['failed'],
+                            'knocks' => $portknock_ips[$ip]['knocks'],
+                        ]);
+                        return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
+                    }
+
+                    // Already authed, so deauth
+                    if ($portknock_ips[$ip]['authed']) {
+                        $portknock_ips[$ip]['authed'] = false;
+                        return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
+                    }
+
+                    // Check if knock is valid
+                    // Authenticate if all steps are completed
+                    // Reset knocks and log failed attempt if the step is invalid
+                    $valid_steps = [];
+                    foreach ($portknock_ports as $value) if ($value == $p) $valid_steps[] = $p;
+                    if (in_array($step, $valid_steps)) {
+                        $portknock_ips[$ip]['step']++;
+                        if ($portknock_ips[$ip]['step'] > count($valid_steps)) $portknock_ips[$ip]['authed'] = true;
+                    } else {
+                        $portknock_ips[$ip]['step'] = 0;
+                        $portknock_ips[$ip]['failed']++;
+                    }
+                    
+                    // Log the knock
+                    $civ13->logger->debug('[webapi] Knock', [
+                        'ip' => $ip,
+                        'step' => $portknock_ips[$ip]['step'],
+                        'authed' => $portknock_ips[$ip]['authed'],
+                        'failed' => $portknock_ips[$ip]['failed'],
+                        'knocks' => $portknock_ips[$ip]['knocks'],
+                    ]);
+
+                    return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
+                });
+                $w->listen($s);
+                $w->on('error', function ($e) use ($civ13) {
+                    $civ13->logger->error('KNOCK ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString()));
+                });
+                $portknock_servers[] = $w;
+            }
+            $initialized_ports[] = $p;
+        }
+    }
+}
+
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $external_ip, $valzargaming_ip, $webhook_key)
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $external_ip, $valzargaming_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts)
 {
+    // Port knocking security check
+    $authed_ips = [];
+    if ($portknock && isset($portknock_ips[$request->getServerParams()['REMOTE_ADDR']])) {
+        if ($portknock_ips[$request->getServerParams()['REMOTE_ADDR']]['failed'] > $max_attempts) {// Malicious port scanner
+            $civ13->logger->warning('[webapi] Blocked Port Scanner', [
+                'ip' => $request->getServerParams()['REMOTE_ADDR'],
+                'step' => $portknock_ips[$request->getServerParams()['REMOTE_ADDR']]['step'],
+                'authed' => $portknock_ips[$request->getServerParams()['REMOTE_ADDR']]['authed'],
+                'failed' => $portknock_ips[$request->getServerParams()['REMOTE_ADDR']]['failed'],
+                'knocks' => $portknock_ips[$request->getServerParams()['REMOTE_ADDR']]['knocks'],
+            ]);
+            return new Response(401, ['Content-Type' => 'text/plain'], 'Unauthorized');
+        }
+        /* // Port knocking to obtain a valid session is not implemented for security reasons
+        if ($portknock_ips[$request->getServerParams()['REMOTE_ADDR']]['authed']) 
+            $authed_ips[] = $request->getServerParams()['REMOTE_ADDR'];
+        */
+    }
     /*
     $path = explode('/', $request->getUri()->getPath());
     $sub = (isset($path[1]) ? (string) $path[1] : false);
@@ -59,6 +167,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
         '51.254.161.128',
         '69.244.83.231',
     ];
+    $whitelist = array_merge($whitelist, $authed_ips);
     $substr_whitelist = ['10.0.0.', '192.168.']; 
     $whitelisted = false;
     foreach ($substr_whitelist as $substr) if (substr($request->getServerParams()['REMOTE_ADDR'], 0, strlen($substr)) == $substr) $whitelisted = true;
