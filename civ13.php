@@ -655,7 +655,7 @@ class Civ13
         if (! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->technician_id}>."];
         if (! $this->checkToken($discord_id)) return ['success' => false, 'error' => "You have not set your description yet! It needs to be set to {$item['token']}"];
         $ckeyinfo = $this->ckeyinfo($item['ss13']);
-        if (($ckeyinfo['altbanned'] || count($ckeyinfo['discords']) > 1) && ! isset($this->permitted[$item['ss13']])) {
+        if (($ckeyinfo['altbanned'] || count($ckeyinfo['discords']) > 1) && ! isset($this->permitted[$item['ss13']])) { //TODO: Add check for permaban
             //TODO: add to pending list?
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("<@&{$this->role_ids['captain']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
             return ['success' => false, 'error' => "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
@@ -1567,8 +1567,12 @@ class Civ13
             return false;
         }
         if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $array['server']);
-        if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', $array['ckey'])))) $channel->sendMessage($array['message']);
-        else {
+        if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', $array['ckey'])))) {
+            $builder = \Discord\Builders\MessageBuilder::new()
+                ->setContent($array['message'])
+                ->setAllowedMentions(['parse'=>[]]);
+            $channel->sendMessage($builder);
+        } else {
             $embed = new Embed($this->discord);
             if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
             //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
