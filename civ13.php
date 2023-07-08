@@ -162,25 +162,25 @@ class Civ13
         }
         if (!file_exists($this->filecache_path)) mkdir($this->filecache_path, 0664, true);
         
-        if(isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
-        if(isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
-        if(isset($options['technician_id'])) $this->technician_id = $options['technician_id'];
-        if(isset($options['verify_url'])) $this->verify_url = $options['verify_url'];
-        if(isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
-        if(isset($options['rules'])) $this->rules = $options['rules'];
-        if(isset($options['github'])) $this->github = $options['github'];
-        if(isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
-        if(isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
-        if(isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
-        if(isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
-        if(isset($options['relay_method']) && in_array(strtolower($options['relay_method']), ['file', 'webhook'])) $this->relay_method = strtolower($options['relay_method']);
+        if (isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
+        if (isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
+        if (isset($options['technician_id'])) $this->technician_id = $options['technician_id'];
+        if (isset($options['verify_url'])) $this->verify_url = $options['verify_url'];
+        if (isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
+        if (isset($options['rules'])) $this->rules = $options['rules'];
+        if (isset($options['github'])) $this->github = $options['github'];
+        if (isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
+        if (isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
+        if (isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
+        if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
+        if (isset($options['relay_method']) && in_array(strtolower($options['relay_method']), ['file', 'webhook'])) $this->relay_method = strtolower($options['relay_method']);
 
-        if(isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
-        if(isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
-        if(isset($options['blacklsited_countries']) && is_array($options['blacklisted_countries'])) $this->blacklisted_countries = $options['blacklisted_countries'];
+        if (isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
+        if (isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
+        if (isset($options['blacklsited_countries']) && is_array($options['blacklisted_countries'])) $this->blacklisted_countries = $options['blacklisted_countries'];
                 
-        if(isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
-        elseif(isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
+        if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
+        elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
         else $this->logger->error('No Discord instance or options passed in options!');
         require 'slash.php';
         $this->slash = new Slash($this);
@@ -188,11 +188,11 @@ class Civ13
         if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->logger->warning('No functions passed in options!');
         
-        if(isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
+        if (isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
         else $this->logger->warning('No files passed in options!');
-        if(isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $id) $this->channel_ids[$key] = $id;
+        if (isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $id) $this->channel_ids[$key] = $id;
         else $this->logger->warning('No channel_ids passed in options!');
-        if(isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
+        if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
         else $this->logger->warning('No role_ids passed in options!');
         $this->afterConstruct($server_options);
     }
@@ -207,7 +207,7 @@ class Civ13
         $this->civ13_ip = gethostbyname('www.civ13.com');
         $this->external_ip = file_get_contents('http://ipecho.net/plain');
 
-        if(isset($this->discord)) {
+        if (isset($this->discord)) {
             $this->discord->once('ready', function () {
                 $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
                 $this->logger->info('------');
@@ -279,7 +279,7 @@ class Civ13
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
                 $this->discord_config = $discord_config; //Declared, but not currently used for anything
                 
-                if(! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
+                if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
                 $this->discord->application->commands->freshen()->done( function ($commands): void
                 {
@@ -290,13 +290,13 @@ class Civ13
                 
                 $this->discord->on('message', function ($message): void
                 {
-                    if(! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message);
+                    if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message);
                     else $this->logger->debug('No message functions found!');
                 });
                 $this->discord->on('GUILD_MEMBER_ADD', function ($guildmember): void
                 {
                     $this->joinRoles($guildmember);
-                    if(! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $guildmember);
+                    if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $guildmember);
                     else $this->logger->debug('No message functions found!');
                 });
                 $this->discord->on('GUILD_CREATE', function (Guild $guild): void
@@ -343,14 +343,14 @@ class Civ13
     public function run(): void
     {
         $this->logger->info('Starting Discord loop');
-        if(!(isset($this->discord))) $this->logger->warning('Discord not set!');
+        if (!(isset($this->discord))) $this->logger->warning('Discord not set!');
         else $this->discord->run();
     }
 
     public function stop(): void
     {
         $this->logger->info('Shutting down');
-        if((isset($this->discord))) $this->discord->stop();
+        if ((isset($this->discord))) $this->discord->stop();
     }
     
     /**
@@ -652,8 +652,8 @@ class Civ13
     */
     public function verifyNew(string $discord_id): array // ['success' => bool, 'error' => string]
     { //Attempt to verify a user
-        if(! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->technician_id}>."];
-        if(! $this->checkToken($discord_id)) return ['success' => false, 'error' => "You have not set your description yet! It needs to be set to {$item['token']}"];
+        if (! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->technician_id}>."];
+        if (! $this->checkToken($discord_id)) return ['success' => false, 'error' => "You have not set your description yet! It needs to be set to {$item['token']}"];
         $ckeyinfo = $this->ckeyinfo($item['ss13']);
         if (($ckeyinfo['altbanned'] || count($ckeyinfo['discords']) > 1) && ! isset($this->permitted[$item['ss13']])) {
             //TODO: add to pending list?
@@ -1086,7 +1086,7 @@ class Civ13
             'bc' => '7777', 
             'ps13' => '7778',
         ];
-        if(! $this->serverinfo_url) $this->serverinfo_url = 'http://' . (isset($this->ips['vzg']) ? $this->ips['vzg'] : $this->vzg_ip) . '/servers/serverinfo.json'; //Default to VZG unless passed manually in config
+        if (! $this->serverinfo_url) $this->serverinfo_url = 'http://' . (isset($this->ips['vzg']) ? $this->ips['vzg'] : $this->vzg_ip) . '/servers/serverinfo.json'; //Default to VZG unless passed manually in config
     }
     
     /*

@@ -437,7 +437,7 @@ class Slash
                 $embed->setTitle($item['ss13']);
                 if ($member = $this->civ13->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
                 if (!empty($ckeyinfo['ckeys'])) {
-                    foreach ($ckeyinfo['ckeys'] as &$ckey) if(isset($this->civ13->ages[$ckey])) $ckey = "$ckey ({$this->civ13->ages[$ckey]})";
+                    foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->civ13->ages[$ckey])) $ckey = "$ckey ({$this->civ13->ages[$ckey]})";
                     $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
                 }
                 if (!empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']));
@@ -497,7 +497,7 @@ class Slash
                 }
             }
             
-            if(isset($this->civ13->ages[$item['ss13']])) $embed->addFieldValues('Created', $this->civ13->ages[$item['ss13']], true);
+            if (isset($this->civ13->ages[$item['ss13']])) $embed->addFieldValues('Created', $this->civ13->ages[$item['ss13']], true);
             foreach ($ips as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
             if (! empty($regions)) $embed->addFieldValues('Region Codes', implode(', ', $regions), true);
             //$embed->addFieldValues('Known IP addresses', count($ips));
