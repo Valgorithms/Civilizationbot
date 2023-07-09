@@ -1203,21 +1203,24 @@ $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nom
         if (! $item = $civ13->verified->get('discord', $interaction->member->id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
     });
+    /* Deprecated
     $civ13->discord->listenCommand('rank', function ($interaction) use ($civ13, $rankme): void
     {
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
-    });
+    });*/
+    /* Deprecated
     $civ13->discord->listenCommand('medals', function ($interaction) use ($civ13, $medals): void
     {
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($medals($civ13, $item['ss13'])), true);
-    });
+    });*/
+    /* Deprecated
     $civ13->discord->listenCommand('brmedals', function ($interaction) use ($civ13, $brmedals): void
     {
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($brmedals($civ13, $item['ss13'])), true);
-    });
+    });*/
 
     /*For deferred interactions
     $civ13->discord->listenCommand('',  function (Interaction $interaction) use ($civ13) {

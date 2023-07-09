@@ -166,26 +166,30 @@ class Slash
             'description' => 'See your ranking on the Civ13 server'
         ]));
 
-        //if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
+        /* Deprecated, use the /rankme or chat command instead
+        if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
         if (! $commands->get('name', 'rank')) $commands->save(new Command($this->civ13->discord, [
             'type'          => Command::USER,
             'name'          => 'rank',
             'dm_permission' => false,
-        ]));
+        ]));*/
 
-        //if ($command = $commands->get('name', 'medals')) $commands->delete($command->id);
+        /* Deprecated, use the chat command instead
+        if ($command = $commands->get('name', 'medals')) $commands->delete($command->id);
         if (! $commands->get('name', 'medals')) $commands->save(new Command($this->civ13->discord, [
             'type'          => Command::USER,
             'name'          => 'medals',
             'dm_permission' => false,
         ]));
+        */
 
-        //if ($command = $commands->get('name', 'brmedals')) $commands->delete($command->id);
+        /* Deprecated, use the chat command instead
+        if ($command = $commands->get('name', 'brmedals')) $commands->delete($command->id);
         if (! $commands->get('name', 'brmedals')) $commands->save(new Command($this->civ13->discord, [
             'type'          => Command::USER,
             'name'          => 'brmedals',
             'dm_permission' => false,
-        ]));
+        ]));*/
 
         $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->done( function ($commands) {
             //if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
@@ -196,7 +200,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
             ]));
             
-            /*Deprecated
+            /* Deprecated
             if ($command = $commands->get('name', 'permitted')) $commands->delete($command->id);
             if (! $commands->get('name', 'permitted')) $commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
