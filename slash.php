@@ -199,6 +199,14 @@ class Slash
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
             ]));
+
+            //if ($command = $commands->get('name', 'parole')) $commands->delete($command->id);
+            if (! $commands->get('name', 'parole')) $commands->save(new Command($this->civ13->discord, [
+                'type'                       => Command::USER,
+                'name'                       => 'permit',
+                'dm_permission'              => false,
+                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+            ]));
             
             /* Deprecated
             if ($command = $commands->get('name', 'permitted')) $commands->delete($command->id);
@@ -399,6 +407,34 @@ class Slash
                 $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
                 $interaction->respondWithMessage(MessageBuilder::new()->setContent('**`' . ($admin ?? $interaction->user->displayname) . "`** unbanned **`{$item['ss13']}`**."));
                 $this->civ13->unban($item['ss13'], ($admin ?? $interaction->user->displayname));
+            }
+        });
+
+        $this->civ13->discord->listenCommand('parole', function ($interaction): void
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            else {
+                $this->civ13->paroleCkey($ckey = $item['ss13'], $interaction->user->id, true);
+                $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
+                if ($member = $this->civ13->getVerifiedMember($item))
+                    if (! $member->roles->has($this->civ13->role_ids['paroled']))
+                        $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->displayname}) paroled `$ckey`");
+                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$interaction->user->id}>).");
+                $interaction->respondWithMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole.", true);
+            }
+        });
+
+        $this->civ13->discord->listenCommand('release', function ($interaction): void
+        {
+            if (! $item = $this->civ13->getVerifiedItem($interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            else {
+                $this->civ13->paroleCkey($ckey = $item['ss13'], $interaction->user->id, false);
+                $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
+                if ($member = $this->civ13->getVerifiedMember($item))
+                    if ($member->roles->has($this->civ13->role_ids['paroled']))
+                        $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->displayname}) released `$ckey`");
+                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$interaction->user->id}>).");
+                $interaction->respondWithMessage("`$ckey` (<@{$item['discord']}>) has been released on parole.", true);
             }
         });
 
