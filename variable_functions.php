@@ -935,21 +935,7 @@ $tdm_discord2admin = function (Civ13 $civ13, $author, $string): bool
     fclose($file);
     return true;
 };
-$nomads_discord2dm = function (Civ13 $civ13, $author, $string): bool
-{
-    if (! file_exists($civ13->files['nomads_discord2dm']) || ! $file = fopen($civ13->files['nomads_discord2dm'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true;
-};
-$tdm_discord2dm = function (Civ13 $civ13, $author, $string): bool
-{
-    if (! file_exists($civ13->files['tdm_discord2dm']) || ! $file = fopen($civ13->files['tdm_discord2dm'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true;
-};
-$on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin, $nomads_discord2dm, $tdm_discord2dm)
+$on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin)
 { // on message
     if (! $message->guild || $message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
     if (! $civ13->command_symbol) $civ13->command_symbol = '!s';
@@ -1027,17 +1013,20 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         }
     }
     if (str_starts_with($message_content_lower, 'dm ') || str_starts_with($message_content_lower, 'pm ')) {
-        $split_message = explode(': ', substr($message_content, 3));
+        $message_content = substr($message_content, 3);
+        $explode = explode(';', $message_content);
+        $recipient = array_shift($explode);
+        $msg = implode(' ', $explode);
         switch (strtolower($message->channel->name)) {
             //case 'ahelp-nomads': //Deprecated
             case 'asay-nomads':
             case 'ooc-nomads':
-                if (! $nomads_discord2dm($civ13, $message->author->displayname, $split_message)) return $message->react("🔥");
+                if (! $civ13->DirectMessageNomads($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'])) return $message->react("🔥");
                 return $message->react("📧");
             //case 'ahelp-tdm': //Deprecated
             case 'asay-tdm':
             case 'ooc-tdm':
-                if (! $tdm_discord2dm($civ13, $message->author->displayname, $split_message)) return $message->react("🔥");
+                if (! $civ13->DirectMessageTDM($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'])) return $message->react("🔥");
                 return $message->react("📧");
             default:
                 return $message->reply('You need to be in any of the #ooc or #asay channels to use this command.');

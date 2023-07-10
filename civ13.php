@@ -1051,17 +1051,17 @@ class Civ13
         return $this->sqlUnbanPers($ckey, $admin);
     }
     
-    public function DirectMessageNomads($author, string $string): bool
+    public function DirectMessageNomads(string $recipient, string $message, string $sender): bool
     {
         if (! file_exists($this->files['nomads_discord2dm']) || ! $file = fopen($this->files['nomads_discord2dm'], 'a')) return false;
-        fwrite($file, "$author:::$string" . PHP_EOL);
+        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
         fclose($file);
         return true;
     }
-    public function DirectMessageTDM($author, string $string): bool
+    public function DirectMessageTDM(string $recipient, string $message, string $sender): bool
     {
         if (! file_exists($this->files['tdm_discord2dm']) || ! $file = fopen($this->files['tdm_discord2dm'], 'a')) return false;
-        fwrite($file, "$author:::$string" . PHP_EOL);
+        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
         fclose($file);
         return true;
     }
@@ -1600,8 +1600,8 @@ class Civ13
         if (! $this->__relayWarningCounter($ckey, $badwords_array)) return $this->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->banappeal}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
-        if (str_contains($server, 'nomads')) return $this->DirectMessageNomads($ckey, $warning);
-        if (str_contains($server, 'tdm')) return $this->DirectMessageTDM($ckey, $warning);
+        if (str_contains($server, 'nomads')) return $this->DirectMessageNomads('AUTOMOD', $warning, $ckey);
+        if (str_contains($server, 'tdm')) return $this->DirectMessageTDM('AUTOMOD', $warning, $ckey);
     }
     /*
     * This function determines if a player has been warned too many times for a specific category of bad words
