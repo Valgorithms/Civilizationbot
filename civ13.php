@@ -1556,6 +1556,7 @@ class Civ13
         if ($this->relay_method !== 'webhook') return false;
         if (! $ckey || ! $message || ! $channel) {
             $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters.');
+            var_dump($ckey, $message, $channel);
             return false;
         }
         return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
