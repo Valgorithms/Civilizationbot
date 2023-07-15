@@ -413,12 +413,12 @@ class Civ13
         if (file_put_contents($this->filecache_path . $filename, json_encode($assoc_array)) === false) return false;
         return true;
     }
-    public function VarLoad(string $filename = ''): false|array
+    public function VarLoad(string $filename = ''): ?array
     {
-        if ($filename === '') return false;
-        if (!file_exists($this->filecache_path . $filename)) return false;
-        if (($string = file_get_contents($this->filecache_path . $filename)) === false) return false;
-        if (! $assoc_array = json_decode($string, TRUE)) return false;
+        if ($filename === '') return null;
+        if (!file_exists($this->filecache_path . $filename)) return null;
+        if (($string = file_get_contents($this->filecache_path . $filename)) === false) return null;
+        if (! $assoc_array = json_decode($string, TRUE)) return null;
         return $assoc_array;
     }
 
