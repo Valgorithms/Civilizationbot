@@ -92,6 +92,9 @@ $options = array(
     'verifier_feed_channel_id' => '1032411190695055440', //Channel VZG Verifier webhooks verification messages to
     //'serverinfo_url' => '',
     'relay_method' => 'webhook',
+    'folders' => array(
+        'typespess_path' => '/home/1713/civ13-typespess',
+    ),
     'files' => array(
         //Fun
         'insults_path' => 'insults.txt',
@@ -176,8 +179,7 @@ $options = array(
         'pers_killciv13' => '/home/1713/civ13-pers/scripts/killciv13.py',
         'mapswap_pers' => '/home/1713/civ13-pers/scripts/mapswap.py',
 
-        'typespess_path' => '/home/1713/civ13-typespess',
-        'typespess_launch_server_path' => 'scripts/launch_server.sh',
+        'typespess_launch_server_path' => '/home/1713/civ13-typespess/scripts/launch_server.sh',
         
          //Unused
         'nomads_playerlogs' => '/home/1713/civ13-rp/SQL/playerlogs.txt',

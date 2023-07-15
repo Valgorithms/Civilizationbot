@@ -12,6 +12,7 @@ use Civ13\Slash;
 use Discord\Discord;
 use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
+use Discord\Parts\Channel\Channel;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Guild\Role;
@@ -38,6 +39,7 @@ class Civ13
 
     public StreamSelectLoop $loop;
     public Discord $discord;
+    public bool $ready = false;
     public Browser $browser;
     public $filesystem;
     public Logger $logger;
@@ -123,6 +125,7 @@ class Civ13
     public string $serverinfo_url = ''; //Where the bot will retrieve server information from
     public bool $webserver_online = false;
     
+    public array $folders = [];
     public array $files = [];
     public array $ips = [];
     public array $ports = [];
@@ -152,7 +155,6 @@ class Civ13
         $this->loop = $options['loop'];
         $this->browser = $options['browser'];
         $this->filesystem = $options['filesystem'];
-        $this->logger = $options['logger'];
         $this->stats = $options['stats'];
         
         $this->filecache_path = getcwd() . '/json/';
@@ -209,6 +211,7 @@ class Civ13
 
         if (isset($this->discord)) {
             $this->discord->once('ready', function () {
+                $this->ready = true;
                 $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
                 $this->logger->info('------');
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
@@ -328,10 +331,36 @@ class Civ13
     protected function resolveOptions(array $options = []): array
     {
         if (! isset($options['logger']) || ! ($options['logger'] instanceof Logger)) {
-            $streamHandler = new StreamHandler('php://stdout', Level::Debug);
+            $streamHandler = new StreamHandler('php://stdout', Level::Info);
             $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
-            $logger = new Logger('Civ13', [$streamHandler]);
-            $options['logger'] = $logger;
+            $options['logger'] = new Logger(self::class, [$streamHandler]);
+        }
+        $this->logger = $options['logger'];
+
+        foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! file_exists($value) || ! is_dir($value)) {
+            $this->logger->warning("`$value` is not a valid folder path!");
+            unset($options['folders'][$key]);
+        }
+        foreach ($options['files'] as $key => $value) if (! is_string($value) || ! file_exists($value)) {
+            $this->logger->warning("`$value` is not a valid file path!");
+            unset($options['files'][$key]);
+        }
+        foreach ($options['channel_ids'] as $key => $value) if (! is_numeric($value)) {
+            $this->logger->warning("`$value` is not a valid channel id!");
+            unset($options['channel_ids'][$key]);
+        }
+        foreach ($options['role_ids'] as $key => $value) if (! is_numeric($value)) {
+            $this->logger->warning("`$value` is not a valid role id!");
+            unset($options['role_ids'][$key]);
+        }
+        foreach ($options['functions'] as $key => $array) {
+            if (! is_array($array)) {
+                $this->logger->warning("`$key` is not a valid function array!");
+                unset($options['functions'][$key]);
+            } else foreach ($array as $func) if (! is_callable($func)) {
+                $this->logger->warning("`$func` is not a valid function!");
+                unset($options['functions'][$key]);
+            }
         }
         
         if (! isset($options['loop']) || ! ($options['loop'] instanceof LoopInterface)) $options['loop'] = Loop::get();
@@ -829,7 +858,7 @@ class Civ13
             }
             fclose($filecheck2);
         }// else $this->logger->debug("unable to open `{$this->files['tdm_bans']}`");
-        if (file_exists($this->files['pers_bans']) && ($filecheck3 = @fopen($this->files['pers_bans'], 'r'))) {
+        if (isset($this->files['pers_bans']) && file_exists($this->files['pers_bans']) && ($filecheck3 = @fopen($this->files['pers_bans'], 'r'))) {
             while (($fp = fgets($filecheck3, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
@@ -1133,9 +1162,9 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        if (file_exists($this->files['tdm_bans'])) $file_contents .= file_get_contents($this->files['tdm_bans']);
-        if (file_exists($this->files['nomads_bans'])) $file_contents .= file_get_contents($this->files['nomads_bans']);
-        if (file_exists($this->files['pers_bans'])) $file_contents .= file_get_contents($this->files['pers_bans']);
+        if (isset($this->files['tdm_bans']) && file_exists($this->files['tdm_bans'])) $file_contents .= file_get_contents($this->files['tdm_bans']);
+        if (isset($this->files['nomads_bans']) && file_exists($this->files['nomads_bans'])) $file_contents .= file_get_contents($this->files['nomads_bans']);
+        if (isset($this->files['pers_bans']) && file_exists($this->files['pers_bans'])) $file_contents .= file_get_contents($this->files['pers_bans']);
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
         
         $ban_collection = new Collection([], 'uid');
@@ -1185,9 +1214,9 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        if (file_exists($this->files['nomads_playerlogs'])) $file_contents .= file_get_contents($this->files['nomads_playerlogs']);
-        if (file_exists($this->files['tdm_playerlogs'])) $file_contents .= file_get_contents($this->files['tdm_playerlogs']);
-        if (file_exists($this->files['pers_playerlogs'])) $file_contents .= file_get_contents($this->files['pers_playerlogs']);
+        if (isset($this->files['nomads_playerlogs']) && file_exists($this->files['nomads_playerlogs'])) $file_contents .= file_get_contents($this->files['nomads_playerlogs']);
+        if (isset($this->files['tdm_playerlogs']) && file_exists($this->files['tdm_playerlogs'])) $file_contents .= file_get_contents($this->files['tdm_playerlogs']);
+        if (isset($this->files['pers_playerlogs']) && file_exists($this->files['pers_playerlogs'])) $file_contents .= file_get_contents($this->files['pers_playerlogs']);
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
 
         $arrays = [];
@@ -1532,13 +1561,19 @@ class Civ13
     * These functions handle in-game chat moderation and relay those messages to Discord
     * Players will receive warnings and bans for using blacklisted words
     */
-    public function gameChatFileRelay(string $file_path, $channel): bool
+    public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false): bool
     { // The file function needs to be replaced with the new Webhook system
         if ($this->relay_method !== 'file') return false;
         if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) {
-            $this->logger->warning("gameChatFileRelay() was called with an invalid file path: $file_path");
+            $this->relay_method = 'webhook'; //Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
+            $this->logger->warning("gameChatFileRelay() was called with an invalid file path: `$file_path`, falling back to using webhooks for relaying instead.");
             return false;
         }
+        if (! $channel = $this->discord->getChannel($channel_id)) {
+            $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
+            return false;
+        }
+
         $relay_array = [];
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
@@ -1548,18 +1583,31 @@ class Civ13
         }
         ftruncate($file, 0);
         fclose($file);
-        return $this->__gameChatRelay($relay_array, $channel, false); //Disabled moderation as it is now done quicker using the Webhook system
+        return $this->__gameChatRelay($relay_array, $channel, $moderate); //Disabled moderation as it is now done quicker using the Webhook system
     }
-    public function gameChatWebhookRelay(string $ckey, string $message, $channel, $moderate = true): bool
+    public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $moderate = true): bool
     {
-        if (is_string($channel)) $channel = $this->discord->getChannel($channel);
         if ($this->relay_method !== 'webhook') return false;
-        if (! $ckey || ! $message || ! $channel) {
-            $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters.');
-            var_dump($ckey, $message, $channel);
+        if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
+            $this->logger->warning('gameChatWebhookRelay() gameChatWebhookRelay() was called with invalid parameters');
+            $this->logger->warning(json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
             return false;
         }
-        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
+        
+        if ( $channel = $this->discord->getChannel($channel_id)) return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
+        
+        if (! $this->ready) {
+            $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
+            $listener = function() use ($ckey, $message, $channel_id, $moderate, &$listener) {
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id, $moderate);
+                $this->discord->removeListener('ready', $listener);
+            };
+            $this->discord->on('ready', $listener);
+            return true; // Assume that the function will succeed when the bot is ready
+        }
+        
+        $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
+        return false;
     }
     private function __gameChatRelay(array $array, $channel, $moderate = true): bool
     {

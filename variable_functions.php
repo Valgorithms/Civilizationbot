@@ -824,7 +824,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral'])) return $message->react("❌");
         
         if ($state == 'on') {
-            \execInBackground("cd {$civ13->files['typespess_path']}");
+            \execInBackground("cd {$civ13->folders['typespess_path']}");
             \execInBackground('git pull');
             \execInBackground("sh {$civ13->files['typespess_launch_server_path']}&");
             return $message->reply('Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
