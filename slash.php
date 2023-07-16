@@ -335,7 +335,7 @@ class Slash
             $response = '';
             $reason = 'unknown';
             $found = false;
-            if (file_exists($this->civ13->files['nomads_bans']) && ($filecheck1 = fopen($this->civ13->files['nomads_bans'], 'r'))) {
+            if (isset($this->civ13->files['nomads_bans']) && file_exists($this->civ13->files['nomads_bans']) && ($filecheck1 = fopen($this->civ13->files['nomads_bans'], 'r'))) {
                 while (($fp = fgets($filecheck1, 4096)) !== false) {
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                     if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
@@ -349,7 +349,7 @@ class Slash
                 }
                 fclose($filecheck1);
             }
-            if (file_exists($this->civ13->files['tdm_bans']) && ($filecheck2 = fopen($this->civ13->files['tdm_bans'], 'r'))) {
+            if (isset($this->civ13->files['tdm_bans']) && file_exists($this->civ13->files['tdm_bans']) && ($filecheck2 = fopen($this->civ13->files['tdm_bans'], 'r'))) {
                 while (($fp = fgets($filecheck2, 4096)) !== false) {
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                     if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
@@ -363,7 +363,7 @@ class Slash
                 }
                 fclose($filecheck2);
             }
-            if (file_exists($this->civ13->files['pers_bans']) && ($filecheck3 = fopen($this->civ13->files['pers_bans'], 'r'))) {
+            if (isset($this->civ13->files['pers_bans']) && file_exists($this->civ13->files['pers_bans']) && ($filecheck3 = fopen($this->civ13->files['pers_bans'], 'r'))) {
                 while (($fp = fgets($filecheck3, 4096)) !== false) {
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                     if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
