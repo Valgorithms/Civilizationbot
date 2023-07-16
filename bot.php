@@ -92,11 +92,11 @@ $options = array(
     'verifier_feed_channel_id' => '1032411190695055440', //Channel VZG Verifier webhooks verification messages to
     //'serverinfo_url' => '',
     'server_settings' => [ //Server specific settings (NYI), this will replace most individual variables
-        'nomads' => [
+        'Nomads' => [
             'moderate' => true,
             'relay_method' => 'webhook',
         ],
-        'tdm' => [
+        'TDM' => [
             'moderate' => true,
             'relay_method' => 'webhook',
         ],
@@ -309,7 +309,7 @@ $options = array(
             //'on_ready' => $on_ready,
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
-            'civ_listeners' => $civ_listeners, //TODO: Move into civ13.php
+            'civ_listeners' => $civ_listeners, // TODO: Move into civ13.php
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,

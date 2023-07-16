@@ -614,7 +614,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->banNomads(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], 'Nomads');
         if ($member = $civ13->getVerifiedMember('id', $split_message[0]))
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -627,7 +627,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->banTDM(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], 'TDM');
         if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -640,7 +640,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->banPers(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], 'Pers');
         if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -660,7 +660,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->unbanNomads($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'Nomads');
         $result = "**$admin** unbanned **$ckey** from **Nomads**";
         if ($member = $civ13->getVerifiedMember('id', $ckey))
             if ($member->roles->has($civ13->role_ids['banished']))
@@ -673,7 +673,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->unbanTDM($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'TDM');
         $result = "**$admin** unbanned **$ckey** from **TDM**";
         if ($member = $civ13->getVerifiedMember('id', $ckey)) 
             if ($member->roles->has($civ13->role_ids['banished']))
@@ -686,7 +686,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->unbanPers($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'Pers');
         $result = "**$admin** unbanned **{$ckey}** from **Persistence**";
         if ($member = $civ13->getVerifiedMember('id', $ckey)) 
             if ($member->roles->has($civ13->role_ids['banished']))
@@ -1021,12 +1021,12 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             //case 'ahelp-nomads': //Deprecated
             case 'asay-nomads':
             case 'ooc-nomads':
-                if (! $civ13->DirectMessageNomads($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'])) return $message->react("🔥");
+                if (! $civ13->__DirectMessage($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'], 'Nomads')) return $message->react("🔥");
                 return $message->react("📧");
             //case 'ahelp-tdm': //Deprecated
             case 'asay-tdm':
             case 'ooc-tdm':
-                if (! $civ13->DirectMessageTDM($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'])) return $message->react("🔥");
+                if (! $civ13->__DirectMessage($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'], 'TDM')) return $message->react("🔥");
                 return $message->react("📧");
             default:
                 return $message->reply('You need to be in any of the #ooc or #asay channels to use this command.');
