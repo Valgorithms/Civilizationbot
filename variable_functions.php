@@ -11,6 +11,23 @@ use Discord\Builders\MessageBuilder;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Activity;
 
+$server_settings = [ //Server specific settings (NYI), this will replace most individual variables
+    'Nomads' => [
+        'moderate' => true,
+        'relay_method' => 'webhook',
+    ],
+    'TDM' => [
+        'moderate' => true,
+        'relay_method' => 'webhook',
+    ],
+    /*
+    'Pers' => [
+        'moderate' => true,
+        'relay_method' => 'webhook',
+    ],
+    */
+];
+
 $status_changer_random = function (Civ13 $civ13): bool
 { //on ready
     if (! $civ13->files['status_path']) {
@@ -37,59 +54,85 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-$host_nomads = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['nomads_updateserverabspaths']}");
-    \execInBackground("rm -f {$civ13->files['nomads_serverdata']}");
-    \execInBackground("python3 {$civ13->files['nomads_killsudos']}");
-    $civ13->discord->getLoop()->addTimer(30, function() use ($civ13) {
-        \execInBackground("DreamDaemon {$civ13->files['nomads_dmb']} {$civ13->ports['nomads']} -trusted -webclient -logself &");
-    });
+//TODO: Declare a list of functions that are valid and setup a config option to enable/disable them
+
+//Initialize null variables for each server, for each anonymous function
+$anonFuncNames[] = 'host_[NAME]';
+$anonFuncs = [];
+foreach (array_keys($server_settings) as $server) {
+    $server_lower = strtolower($server);
+    foreach ($anonFuncNames as $name) {
+        $name = str_replace('[NAME]', strtolower($server_lower), $name);
+        $anonFuncs[$name] = null;
+    }
+}
+
+$declareAnonVariableFunctions = function (Civ13 $civ13) use ($server_settings, $anonFuncs) {
+    foreach (array_keys($server_settings) as $server ) {
+        $server_lower = strtolower($server);
+        $func_name = "{$server_lower}_host";
+        if (! isset($anonFuncs[$func_name])) {
+            $civ13->logger->warning("{$func_name} was not declared in anonFuncs array");
+            continue;
+        }
+        $func = function (Civ13 $civ13) use ($func_name, $server_lower): void
+        {
+            $files = [
+                $civ13->files[$server_lower.'_updateserverabspaths'],
+                $civ13->files[$server_lower.'_serverdata'],
+                $civ13->files[$server_lower.'_killsudos'],
+                $civ13->files[$server_lower.'_dmb']
+            ];
+            $numerics = [
+                $civ13->ports[$server_lower]
+            ];
+            foreach ($files as $file) if (! isset ($file) || ! file_exists($file)) {
+                $civ13->logger->warning("{$func_name} file dependency `{$file}` was either not set or does not exist");
+                return;
+            }
+            foreach ($numerics as $number) if (! isset ($number) || ! is_numeric($number)) {
+                $civ13->logger->warning("{$func_name} numeric dependency `{$number}` was either not set or was not numeric");
+                return;
+            }
+    
+            \execInBackground("python3 {$civ13->files[$server_lower.'_updateserverabspaths']}");
+            \execInBackground("rm -f {$civ13->files[$server_lower.'_serverdata']}");
+            \execInBackground("python3 {$civ13->files[$server_lower.'_killsudos']}");
+            $civ13->discord->getLoop()->addTimer(30, function() use ($civ13, $server_lower) {
+                \execInBackground("DreamDaemon {$civ13->files[$server_lower.'_dmb']} {$civ13->ports[$server_lower]} -trusted -webclient -logself &");
+            });
+    
+            $civ13->logger->debug("{$func_name} ran successfully");
+        };
+        $anonFuncs[$func_name] = $func;
+    }
 };
 $kill_nomads = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['nomads_killciv13']}");
 };
-$restart_nomads = function (Civ13 $civ13) use ($kill_nomads, $host_nomads): void
+$restart_nomads = function (Civ13 $civ13) use ($kill_nomads, $anonFuncs): void
 {
     $kill_nomads($civ13);
-    $host_nomads($civ13);
-};
-$host_tdm = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['tdm_updateserverabspaths']}");
-    \execInBackground("rm -f {$civ13->files['tdm_serverdata']}");
-    \execInBackground("python3 {$civ13->files['tdm_killsudos']}");
-    $civ13->discord->getLoop()->addTimer(30, function() use ($civ13) {
-        \execInBackground("DreamDaemon {$civ13->files['tdm_dmb']} {$civ13->ports['tdm']} -trusted -webclient -logself &");
-    });
+    $anonFuncs['host_nomads']($civ13);
 };
 $kill_tdm = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['tdm_killciv13']}");
 };
-$restart_tdm = function (Civ13 $civ13) use ($kill_tdm, $host_tdm): void
+$restart_tdm = function (Civ13 $civ13) use ($kill_tdm, $anonFuncs): void
 {
     $kill_tdm($civ13);
-    $host_tdm($civ13);
-};
-$host_pers = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['pers_updateserverabspaths']}");
-    \execInBackground("rm -f {$civ13->files['pers_serverdata']}");
-    \execInBackground("python3 {$civ13->files['pers_killsudos']}");
-    $civ13->discord->getLoop()->addTimer(30, function() use ($civ13) {
-        \execInBackground("DreamDaemon {$civ13->files['pers_dmb']} {$civ13->ports['pers']} -trusted -webclient -logself &");
-    });
+    $anonFuncs['host_tdm']($civ13);
 };
 $kill_pers = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['pers_killciv13']}");
 };
-$restart_pers = function (Civ13 $civ13) use ($kill_pers, $host_pers): void
+$restart_pers = function (Civ13 $civ13) use ($kill_pers, $anonFuncs): void
 {
     $kill_pers($civ13);
-    $host_pers($civ13);
+    $anonFuncs['host_pers']($civ13);
 };
 $mapswap_nomads = function (Civ13 $civ13, string $mapto): bool
 {
@@ -320,7 +363,7 @@ $rank_check = function (Civ13 $civ13, $message = null, array $allowed_ranks = []
     if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $kill_nomads, $kill_tdm, $kill_pers, $host_nomads, $host_tdm, $host_pers, $restart_nomads, $restart_tdm, $restart_pers, $mapswap_nomads, $mapswap_tdm, $mapswap_pers, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($server_settings, $rank_check, $kill_nomads, $kill_tdm, $kill_pers, $restart_nomads, $restart_tdm, $restart_pers, $mapswap_nomads, $mapswap_tdm, $mapswap_pers, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -607,44 +650,22 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         
         return $message->reply($result);
     }
-    if (str_starts_with($message_content_lower, 'nomadsban ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content = substr($message_content, 10);
-        $split_message = explode('; ', $message_content); //$split_target[1] is the target
-        if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
-        if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
-        if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], 'Nomads');
-        if ($member = $civ13->getVerifiedMember('id', $split_message[0]))
-            if (! $member->roles->has($civ13->role_ids['banished']))
-                $member->addRole($civ13->role_ids['banished'], $result);
-        return $message->reply($result);
-    }
-    if (str_starts_with($message_content_lower, 'tdmban ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content = substr($message_content, 7);
-        $split_message = explode('; ', $message_content); //$split_target[1] is the target
-        if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
-        if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
-        if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], 'TDM');
-        if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
-            if (! $member->roles->has($civ13->role_ids['banished']))
-                $member->addRole($civ13->role_ids['banished'], $result);
-        return $message->reply($result);
-    }
-    if (str_starts_with($message_content_lower, 'persban ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $message_content = substr($message_content, 7);
-        $split_message = explode('; ', $message_content); //$split_target[1] is the target
-        if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
-        if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
-        if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], 'Pers');
-        if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
-            if (! $member->roles->has($civ13->role_ids['banished']))
-                $member->addRole($civ13->role_ids['banished'], $result);
-        return $message->reply($result);
+    foreach (array_keys($server_settings) as $server ) {
+        $server_lower = strtolower($server);
+        $command = "{$server_lower}ban ";
+        if (str_starts_with($message_content_lower, $command)) {
+            if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+            $message_content = substr($message_content, strlen($command));
+            $split_message = explode('; ', $message_content); //$split_target[1] is the target
+            if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+            if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
+            if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
+            $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], $server);
+            if ($member = $civ13->getVerifiedMember('id', $split_message[0]))
+                if (! $member->roles->has($civ13->role_ids['banished']))
+                    $member->addRole($civ13->role_ids['banished'], $result);
+            return $message->reply($result);
+        }
     }
     if (str_starts_with($message_content_lower, 'unban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -654,59 +675,32 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
         return $message->reply("**$admin** unbanned **$ckey**");
     }
-    if (str_starts_with($message_content_lower, 'unbannomads ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('unbannomads'))))))
-            if (! $item = $civ13->getVerifiedItem($ckey)) return $message->reply("No data found for Discord ID `$ckey`.");
-            else $ckey = $item['ckey'];
-        
-        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'Nomads');
-        $result = "**$admin** unbanned **$ckey** from **Nomads**";
-        if ($member = $civ13->getVerifiedMember('id', $ckey))
-            if ($member->roles->has($civ13->role_ids['banished']))
-                $member->removeRole($civ13->role_ids['banished'], $result);
-        return $message->reply($result);
+    foreach (array_keys($server_settings) as $server ) {
+        $server_lower = strtolower($server);
+        $command = "{$server_lower}unban ";
+        if (str_starts_with($message_content_lower, $command)) {
+            if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+            if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen($command))))))
+                if (! $item = $civ13->getVerifiedItem($ckey)) return $message->reply("No data found for Discord ID `$ckey`.");
+                else $ckey = $item['ckey'];
+            
+            $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], $server);
+            $result = "**$admin** unbanned **$ckey** from **$server**";
+            if ($member = $civ13->getVerifiedMember('id', $ckey))
+                if ($member->roles->has($civ13->role_ids['banished']))
+                    $member->removeRole($civ13->role_ids['banished'], $result);
+            return $message->reply($result);
+        }
     }
-    if (str_starts_with($message_content_lower, 'unbantdm ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('unbantdm'))))))
-            if (! $item = $civ13->getVerifiedItem($ckey)) return $message->reply("No data found for Discord ID `$ckey`.");
-            else $ckey = $item['ckey'];
-        
-        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'TDM');
-        $result = "**$admin** unbanned **$ckey** from **TDM**";
-        if ($member = $civ13->getVerifiedMember('id', $ckey)) 
-            if ($member->roles->has($civ13->role_ids['banished']))
-                $member->removeRole($civ13->role_ids['banished'], $result);
-        return $message->reply($result);
-    }
-    if (str_starts_with($message_content_lower, 'unbanpers ')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', substr($message_content_lower, strlen('unbanpers'))))))
-            if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
-            else $ckey = $item['ckey'];
-        
-        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'Pers');
-        $result = "**$admin** unbanned **{$ckey}** from **Persistence**";
-        if ($member = $civ13->getVerifiedMember('id', $ckey)) 
-            if ($member->roles->has($civ13->role_ids['banished']))
-                $member->removeRole($civ13->role_ids['banished'], $result);
-        return $message->reply($result);
-    }
-    if (str_starts_with($message_content_lower, 'hostnomads')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $host_nomads($civ13);
-        return $message->reply("Attempting to update and bring up Nomads <byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>");
-    }
-    if (str_starts_with($message_content_lower, 'hosttdm')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $host_tdm($civ13);
-        return $message->reply("Attempting to update and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>");
-    }
-    if (str_starts_with($message_content_lower, 'hostpers')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $host_pers($civ13);
-        return $message->reply("Attempting to update and bring up Persistence <byond://{$civ13->ips['pers']}:{$civ13->ports['pers']}>");
+    foreach (array_keys($server_settings) as $server ) {
+        $server_lower = strtolower($server);
+        $command = "{$server_lower}host";
+        if (str_starts_with($message_content_lower, $command)) {
+            if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+            $func_string = "{$server_lower}_host";
+            $$func_string($civ13);
+            return $message->reply("Attempting to update and bring up $server <byond://{$civ13->ips[$server_lower]}:{$civ13->ports[$server_lower]}>");
+        }
     }
     if (str_starts_with($message_content_lower, 'restartnomads')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");

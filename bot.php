@@ -62,6 +62,22 @@ $stats->init($discord);
 $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; //execIn ckground(), portIsAvailable()
+$server_settings = [ //Server specific settings (NYI), this will replace most individual variables
+    'Nomads' => [
+        'moderate' => true,
+        'relay_method' => 'webhook',
+    ],
+    'TDM' => [
+        'moderate' => true,
+        'relay_method' => 'webhook',
+    ],
+    /*
+    'Pers' => [
+        'moderate' => true,
+        'relay_method' => 'webhook',
+    ],
+    */
+];
 include 'variable_functions.php';
 include 'verifier_functions.php';
 include 'civ13.php';
@@ -91,16 +107,7 @@ $options = array(
     'civ13_guild_id' => '468979034571931648', //Civ13
     'verifier_feed_channel_id' => '1032411190695055440', //Channel VZG Verifier webhooks verification messages to
     //'serverinfo_url' => '',
-    'server_settings' => [ //Server specific settings (NYI), this will replace most individual variables
-        'Nomads' => [
-            'moderate' => true,
-            'relay_method' => 'webhook',
-        ],
-        'TDM' => [
-            'moderate' => true,
-            'relay_method' => 'webhook',
-        ],
-    ],
+    'server_settings' => $server_settings,
     'legacy' => true,
     'relay_method' => 'webhook',
     'moderate' => true,
@@ -315,6 +322,7 @@ $options = array(
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
             'civ_listeners' => $civ_listeners, // TODO: Move into civ13.php
+            'declareAnonVariableFunctions' => $declareAnonVariableFunctions,
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,
