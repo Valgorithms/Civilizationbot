@@ -63,7 +63,7 @@ foreach (array_keys($server_settings) as $server) {
     $server_lower = strtolower($server);
     foreach ($anon_func_names as $name) {
         $name = str_replace('[NAME]', strtolower($server_lower), $name);
-        $anon_funcs[$name] = null;
+        $anon_funcs[$name] = function (Civ13 $civ13):void {};
     }
 }
 
