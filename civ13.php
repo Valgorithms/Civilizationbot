@@ -964,7 +964,7 @@ class Civ13
         if (is_array($server)) foreach ($server as $s) $legacyUnban($s, $ckey, $admin);
         if (is_string($server)) $legacyUnban($server, $ckey, $admin);
     }
-    public function __sqlBan(array $array, $admin = null, string|array|null $server): string
+    public function __sqlBan(array $array, $admin = null, string|array|null $server = ''): string
     {
         return 'SQL methods are not yet implemented!' . PHP_EOL;
     }
