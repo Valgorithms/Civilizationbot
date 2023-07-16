@@ -68,7 +68,7 @@ class Civ13
     public array $current_rounds = [];
     public array $rounds = [];
 
-    public array $server_settings = []; //NYI, this will replace most individual variables
+    public array $server_settings = ['Nomads' => [], 'TDM' => []]; //NYI, this will replace most individual variables
     public bool $legacy = true; //If true, the bot will use the file methods instead of the SQL ones
     public string $relay_method = 'webhook'; //Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = false; //Whether or not to moderate the servers using the badwords list
