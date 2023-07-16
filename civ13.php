@@ -167,7 +167,7 @@ class Civ13
         require 'slash.php';
         $this->slash = new Slash($this);
         
-        if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) if ($key1 && $key2) $this->functions[$key1][$key2] &= $func;
+        if (isset($options['functions'])) foreach (array_keys($options['functions']) as &$key1) foreach ($options['functions'][$key1] as $key2 => &$func) if ($key1 && $key2) $this->functions[$key1][$key2] &= $func;
         else $this->logger->warning('No functions passed in options!');
         
         if (isset($options['folders'])) foreach ($options['folders'] as $key => $path) $this->folders[$key] = $path;
