@@ -62,22 +62,6 @@ $stats->init($discord);
 $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; //execIn ckground(), portIsAvailable()
-$server_settings = [ //Server specific settings (NYI), this will replace most individual variables
-    'Nomads' => [
-        'moderate' => true,
-        'relay_method' => 'webhook',
-    ],
-    'TDM' => [
-        'moderate' => true,
-        'relay_method' => 'webhook',
-    ],
-    /*
-    'Pers' => [
-        'moderate' => true,
-        'relay_method' => 'webhook',
-    ],
-    */
-];
 include 'variable_functions.php';
 include 'verifier_functions.php';
 include 'civ13.php';
