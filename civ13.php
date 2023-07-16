@@ -1543,10 +1543,10 @@ class Civ13
         }
         
         if ( $channel = $this->discord->getChannel($channel_id)) return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
-        
-        if (! $this->ready) {
+
+        if (! $this->ready) { // TODO: This does not currently work as intended and the WEBAPI breaks when trying to use this
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
-            $listener = function() use ($ckey, $message, $channel_id, $moderate, &$listener) {
+            $listener = function() use ($ckey, $message, $channel_id, $moderate) {
                 $this->gameChatWebhookRelay($ckey, $message, $channel_id, $moderate);
             };
             $this->discord->once('ready', $listener);
