@@ -158,6 +158,7 @@ $options = array(
         'nomads_admins' => '/home/1713/civ13-rp/SQL/admins.txt',
         'nomads_whitelist' => '/home/1713/civ13-rp/SQL/whitelist.txt',
         'nomads_bans' => '/home/1713/civ13-rp/SQL/bans.txt',
+        'nomads_playerlogs' => '/home/1713/civ13-rp/SQL/playerlogs.txt',
         //Campaign
         'nomads_factionlist' => '/home/1713/civ13-rp/SQL/factionlist.txt',
         
@@ -174,6 +175,7 @@ $options = array(
         'tdm_admins' => '/home/1713/civ13-tdm/SQL/admins.txt',
         'tdm_whitelist' => '/home/1713/civ13-tdm/SQL/whitelist.txt',
         'tdm_bans' => '/home/1713/civ13-tdm/SQL/bans.txt',
+        'tdm_playerlogs' => '/home/1713/civ13-tdm/SQL/playerlogs.txt',
         'tdm_awards_path' => '/home/1713/civ13-tdm/SQL/awards.txt',
         'tdm_awards_br_path' => '/home/1713/civ13-tdm/SQL/awards_br.txt',
         //Campaign
@@ -182,6 +184,7 @@ $options = array(
         'sportsteams' => '/home/1713/civ13-tdm/SQL/sports_teams.txt',
 
         //Persistence
+        /*
         'pers_log_basedir' => '/home/1713/civ13-pers/data/logs',
         'pers_ooc_path' => '/home/1713/civ13-pers/ooc.log',
         'pers_admin_path' => '/home/1713/civ13-pers/admin.log',
@@ -194,10 +197,12 @@ $options = array(
         'pers_admins' => '/home/1713/civ13-pers/SQL/admins.txt',
         'pers_whitelist' => '/home/1713/civ13-pers/SQL/whitelist.txt',
         'pers_bans' => '/home/1713/civ13-pers/SQL/bans.txt',
+        'pers_playerlogs' => '/home/1713/civ13-pers/SQL/playerlogs.txt',
         'pers_awards_path' => '/home/1713/civ13-pers/SQL/awards.txt',
         'pers_awards_br_path' => '/home/1713/civ13-pers/SQL/awards_br.txt',
         //Campaign
         'pers_factionlist' => '/home/1713/civ13-pers/SQL/factionlist.txt',
+        */
 
         //Script paths
         'nomads_updateserverabspaths' => '/home/1713/civ13-rp/scripts/updateserverabspaths.py',
@@ -214,19 +219,19 @@ $options = array(
         'tdm_killciv13' => '/home/1713/civ13-tdm/scripts/killciv13.py',
         'mapswap_tdm' => '/home/1713/civ13-tdm/scripts/mapswap.py',
 
+        /*
         'pers_updateserverabspaths' => '/home/1713/civ13-pers/scripts/updateserverabspaths.py',
         'pers_serverdata' => '/home/1713/civ13-pers/serverdata.txt',
         'pers_dmb' => '/home/1713/civ13-pers/civ13.dmb',
         'pers_killsudos' => '/home/1713/civ13-pers/scripts/killsudos.py',
         'pers_killciv13' => '/home/1713/civ13-pers/scripts/killciv13.py',
         'mapswap_pers' => '/home/1713/civ13-pers/scripts/mapswap.py',
+        */
 
         'typespess_launch_server_path' => '/home/1713/civ13-typespess/scripts/launch_server.sh',
         
          //Unused
-        'nomads_playerlogs' => '/home/1713/civ13-rp/SQL/playerlogs.txt',
-        'tdm_playerlogs' => '/home/1713/civ13-tdm/SQL/playerlogs.txt',
-        'pers_playerlogs' => '/home/1713/civ13-pers/SQL/playerlogs.txt',
+        
     ),
     'channel_ids' => array(
         /* Persistence */
