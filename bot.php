@@ -315,7 +315,7 @@ $options = array(
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
             'civ_listeners' => $civ_listeners, // TODO: Move into civ13.php
-            'declareAnonVariableFunctions' => $declareAnonVariableFunctions,
+            //'declareAnonVariableFunctions' => $declareAnonVariableFunctions,
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,
@@ -332,7 +332,7 @@ $options = array(
             'mass_promotion_check' => $mass_promotion_check,
             
         ],
-        'anon_funcs' => $anon_funcs, //Anonymous functions
+        //'anon_funcs' => $anon_funcs, //Anonymous functions
     ),
 );
 if (include 'civ_token.php') $options['civ_token'] = $civ_token;
