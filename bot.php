@@ -135,7 +135,7 @@ $options = array(
         ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
     ],
     'folders' => array(
-        'typespess_path' => '/home/1713/civ13-typespess',
+        //'typespess_path' => '/home/1713/civ13-typespess',
     ),
     'files' => array(
         //Fun
@@ -228,7 +228,7 @@ $options = array(
         'mapswap_pers' => '/home/1713/civ13-pers/scripts/mapswap.py',
         */
 
-        'typespess_launch_server_path' => '/home/1713/civ13-typespess/scripts/launch_server.sh',
+        //'typespess_launch_server_path' => '/home/1713/civ13-typespess/scripts/launch_server.sh',
         
          //Unused
         
