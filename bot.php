@@ -321,6 +321,7 @@ $options = array(
             'promotable_check' => $promotable_check,
             'mass_promotion_loop' => $mass_promotion_loop,
             'mass_promotion_check' => $mass_promotion_check,
+            'anon_funcs' => $anon_funcs,
         ],
     ),
 );

@@ -57,22 +57,22 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
 //TODO: Declare a list of functions that are valid and setup a config option to enable/disable them
 
 //Initialize null variables for each server, for each anonymous function
-$anonFuncNames[] = 'host_[NAME]';
-$anonFuncs = [];
+$anon_func_names[] = 'host_[NAME]';
+$anon_funcs = [];
 foreach (array_keys($server_settings) as $server) {
     $server_lower = strtolower($server);
-    foreach ($anonFuncNames as $name) {
+    foreach ($anon_func_names as $name) {
         $name = str_replace('[NAME]', strtolower($server_lower), $name);
-        $anonFuncs[$name] = null;
+        $anon_funcs[$name] = null;
     }
 }
 
-$declareAnonVariableFunctions = function (Civ13 $civ13) use ($server_settings, $anonFuncs) {
+$declareAnonVariableFunctions = function (Civ13 $civ13) use ($server_settings, $anon_funcs) {
     foreach (array_keys($server_settings) as $server ) {
         $server_lower = strtolower($server);
         $func_name = "{$server_lower}_host";
-        if (! isset($anonFuncs[$func_name])) {
-            $civ13->logger->warning("{$func_name} was not declared in anonFuncs array");
+        if (! isset($anon_funcs[$func_name])) {
+            $civ13->logger->warning("{$func_name} was not declared in anon_funcs array");
             continue;
         }
         $func = function (Civ13 $civ13) use ($func_name, $server_lower): void
@@ -104,35 +104,35 @@ $declareAnonVariableFunctions = function (Civ13 $civ13) use ($server_settings, $
     
             $civ13->logger->debug("{$func_name} ran successfully");
         };
-        $anonFuncs[$func_name] = $func;
+        $anon_funcs[$func_name] = $func;
     }
 };
 $kill_nomads = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['nomads_killciv13']}");
 };
-$restart_nomads = function (Civ13 $civ13) use ($kill_nomads, $anonFuncs): void
+$restart_nomads = function (Civ13 $civ13) use ($kill_nomads, $anon_funcs): void
 {
     $kill_nomads($civ13);
-    $anonFuncs['host_nomads']($civ13);
+    $anon_funcs['host_nomads']($civ13);
 };
 $kill_tdm = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['tdm_killciv13']}");
 };
-$restart_tdm = function (Civ13 $civ13) use ($kill_tdm, $anonFuncs): void
+$restart_tdm = function (Civ13 $civ13) use ($kill_tdm, $anon_funcs): void
 {
     $kill_tdm($civ13);
-    $anonFuncs['host_tdm']($civ13);
+    $anon_funcs['host_tdm']($civ13);
 };
 $kill_pers = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['pers_killciv13']}");
 };
-$restart_pers = function (Civ13 $civ13) use ($kill_pers, $anonFuncs): void
+$restart_pers = function (Civ13 $civ13) use ($kill_pers, $anon_funcs): void
 {
     $kill_pers($civ13);
-    $anonFuncs['host_pers']($civ13);
+    $anon_funcs['host_pers']($civ13);
 };
 $mapswap_nomads = function (Civ13 $civ13, string $mapto): bool
 {
