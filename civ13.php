@@ -80,6 +80,7 @@ class Civ13
         'ready_slash' => [],
         'messages' => [],
         'misc' => [],
+        'anon_functions' => [],
     );
     
     public string $command_symbol = '@Civilizationbot'; //The symbol that the bot will use to identify commands if it is not mentioned
@@ -166,7 +167,7 @@ class Civ13
         require 'slash.php';
         $this->slash = new Slash($this);
         
-        if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
+        if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] &= $func;
         else $this->logger->warning('No functions passed in options!');
         
         if (isset($options['folders'])) foreach ($options['folders'] as $key => $path) $this->folders[$key] = $path;
