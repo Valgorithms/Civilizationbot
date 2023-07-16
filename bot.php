@@ -91,7 +91,16 @@ $options = array(
     'civ13_guild_id' => '468979034571931648', //Civ13
     'verifier_feed_channel_id' => '1032411190695055440', //Channel VZG Verifier webhooks verification messages to
     //'serverinfo_url' => '',
-    'server_settings' => $server_settings,
+    'server_settings' => [ //Server specific settings (NYI), this will replace most individual variables
+        'Nomads' => [
+            'moderate' => true,
+            'relay_method' => 'webhook',
+        ],
+        'TDM' => [
+            'moderate' => true,
+            'relay_method' => 'webhook',
+        ],
+    ],
     'legacy' => true,
     'relay_method' => 'webhook',
     'moderate' => true,

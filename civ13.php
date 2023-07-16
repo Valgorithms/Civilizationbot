@@ -69,18 +69,46 @@ class Civ13
     public array $rounds = [];
 
     public array $server_settings = ['Nomads' => [], 'TDM' => []]; //NYI, this will replace most individual variables
-    public bool $legacy = true; //If true, the bot will use the file methods instead of the SQL ones
     public string $relay_method = 'webhook'; //Method to use for relaying messages to Discord, either 'webhook' or 'file'
-    public bool $moderate = false; //Whether or not to moderate the servers using the badwords list
-    public array $badwords = [];
+    public bool $moderate = true; //Whether or not to moderate the servers using the badwords list
+    public array $badwords = [
+        /* Format:
+            'word' => 'bad word' //Bad word to look for
+            'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] //Duration of the ban
+            'reason' => 'reason' //Reason for the ban
+            'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] //Used to group bad words together by category
+            'method' => detection method ['exact', 'contains'] //Exact ignores partial matches, contains matches partial matchesq
+            'warnings' => 1 //Number of warnings before a ban
+        */
+        ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'contains', 'warnings' => 1], //Used to test the system
+        
+        ['word' => 'beaner', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'chink', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'coon', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'exact', 'warnings' => 1],
+        ['word' => 'fag', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'gook', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'kike', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'nigg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'nlgg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'niqq', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        ['word' => 'tranny', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
+        
+        ['word' => 'cunt', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
+        ['word' => 'fuck you', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
+        ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
+        ['word' => 'kys', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], //This is more severe than the others, so ban after only one warning
+        
+        ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
+        ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
+    ];
     public array $badwords_warnings = []; //Collection of $ckey => ['category' => string, 'badword' => string, 'count' => integer] for how many times a user has recently infringed
+    public bool $legacy = true; //If true, the bot will use the file methods instead of the SQL ones
     
     public $functions = array(
         'ready' => [],
         'ready_slash' => [],
         'messages' => [],
         'misc' => [],
-        'anon_functions' => [],
     );
     
     public string $command_symbol = '@Civilizationbot'; //The symbol that the bot will use to identify commands if it is not mentioned
@@ -148,12 +176,14 @@ class Civ13
         if (isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if (isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
         if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
-
-        if (isset($options['server_settings']) && is_array($options['server_settings'])) $this->server_settings = $options['server_settings'];
-        else $this->logger->warning('No server settings passed in options!');
-        
         if (isset($options['legacy']) && is_bool($options['legacy'])) $this->legacy = $options['legacy'];
-        if (isset($options['relay_method']) && in_array($relay_method = strtolower($options['relay_method']), ['file', 'webhook'])) $this->relay_method = $relay_method;
+        if (isset($options['relay_method'])) {
+            if (is_string($options['relay_method'])) {
+                $relay_method = strtolower($options['relay_method']);
+                if (in_array($relay_method, ['file', 'webhook']))
+                    $this->relay_method = $relay_method;
+            }
+        }
         if (isset($options['moderate']) && is_bool($options['moderate'])) $this->moderate = $options['moderate'];
         if (isset($options['badwords']) && is_array($options['badwords'])) $this->badwords = $options['badwords'];
 
@@ -167,11 +197,9 @@ class Civ13
         require 'slash.php';
         $this->slash = new Slash($this);
         
-        if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) if ($key1 && $key2) $this->functions[$key1][$key2] = $func;
+        if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->logger->warning('No functions passed in options!');
         
-        if (isset($options['folders'])) foreach ($options['folders'] as $key => $path) $this->folders[$key] = $path;
-        else $this->logger->warning('No folders passed in options!');
         if (isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
         else $this->logger->warning('No files passed in options!');
         if (isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $id) $this->channel_ids[$key] = $id;
@@ -294,11 +322,12 @@ class Civ13
                     $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() {
                         if ($this->relay_method !== 'file') return;
                         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
-                        foreach (array_keys($this->server_settings) as $server) {
-                            $server = strtolower($server);
-                            if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_ooc_channel'])) $this->gameChatFileRelay($this->files[$server.'_ooc_path'], $channel);  // #ooc-server
-                            if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_asay_channel'])) $this->gameChatFileRelay($this->files[$server.'_admin_path'], $channel);  // #asay-server
-                        }
+                        if (isset($this->channel_ids['nomads_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_ooc_channel'])) $this->gameChatFileRelay($this->files['nomads_ooc_path'], $channel);  // #ooc-nomads
+                        if (isset($this->channel_ids['nomads_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_asay_channel'])) $this->gameChatFileRelay($this->files['nomads_admin_path'], $channel);  // #asay-nomads
+                        if (isset($this->channel_ids['tdm_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_channel'])) $this->gameChatFileRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
+                        if (isset($this->channel_ids['tdm_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_asay_channel'])) $this->gameChatFileRelay($this->files['tdm_admin_path'], $channel);  // #asay-tdm
+                        if (isset($this->channel_ids['pers_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_ooc_channel'])) $this->gameChatFileRelay($this->files['pers_ooc_path'], $channel);  // #ooc-pers
+                        if (isset($this->channel_ids['pers_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_admin_channel'])) $this->gameChatFileRelay($this->files['pers_admin_path'], $channel);  // #asay-pers
                     });
                 }
             });
@@ -318,18 +347,6 @@ class Civ13
         }
         $this->logger = $options['logger'];
 
-        if (isset($options['server_settings'])) foreach ($options['server_settings'] as $key => $array) {
-            if (! is_string($key) || ! is_array($array)) {
-                $this->logger->warning('Server settings array is not a valid key=>value array of server settings!');
-                unset($options['server_settings']);
-                break;
-            }
-            foreach (array_keys($array) as $k) if (! is_string($k)) {
-                $this->logger->warning('Server settings array is not a valid key=>value array of server settings!');
-                unset($options['server_settings']);
-                break 2;
-            }
-        }
         if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! file_exists($value) || ! is_dir($value)) {
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
@@ -662,14 +679,9 @@ class Civ13
                 return "Ckey `$ckey` is too new! ($age)";
             }
             $found = false;
-            $contents = '';
-            foreach (array_keys($this->server_settings) as $server) {
-                if (isset($this->files[$server . '_playerlogs']) && is_file($this->files[$server . '_playerlogs'])) $contents .= file_get_contents($this->files[$server . '_playerlogs']);
-                else $this->logger->error("Unable to open `{$server}_playerlogs`");
-            }
-            foreach (explode('|', $contents) as $line)
+            foreach (explode('|', file_get_contents($this->files['tdm_playerlogs']) . file_get_contents($this->files['nomads_playerlogs'])) as $line)
                 if (explode(';', trim($line))[0] == $ckey) { $found = true; break; }
-            if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
+                if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
         return $this->verifyNew($discord_id)['error']; //['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
@@ -828,38 +840,50 @@ class Civ13
     */
     public function bancheck(string $ckey, $bypass = false): bool
     {
-        $banned = ($this->legacy ? $this->__legacyBancheck($ckey) : $this->__sqlBancheck($ckey));
+        $banned = ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
         if (! $bypass && $member = $this->getVerifiedMember($ckey))
             if ($banned && ! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
             elseif (! $banned && $member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "bancheck ($ckey)");
         return $banned;
     }
-    public function __legacyBancheck(string $ckey): bool
+    public function legacyBancheck(string $ckey): bool
     {
-        $legacyBancheck = function(string $ckey, string $server): bool
-        {
-            $server = strtolower($server);
-            if (! file_exists($this->files[$server.'_bans']) || (! $filecheck = fopen($this->files[$server.'_bans'], 'r'))) {
-                $this->logger->warning("unable to open `{$server}_bans`");
-                return false;
-            }
-            while (($fp = fgets($filecheck, 4096)) !== false) {
+        if (file_exists($this->files['nomads_bans']) && ($filecheck1 = fopen($this->files['nomads_bans'], 'r'))) {
+            while (($fp = fgets($filecheck1, 4096)) !== false) {
                 //str_replace(PHP_EOL, '', $fp); // Is this necessary?
                 $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
-                    fclose($filecheck);
+                    fclose($filecheck1);
                     return true;
                 }
             }
-            fclose($filecheck);
-        };
-        foreach (array_keys($this->server_settings) as $server) {
-            $server = strtolower($server);
-            if ($legacyBancheck($ckey, $server)) return true;
-        }
+            fclose($filecheck1);
+        }// else $this->logger->debug("unable to open `{$this->files['nomads_bans']}`");
+        if (file_exists($this->files['tdm_bans']) && ($filecheck2 = fopen($this->files['tdm_bans'], 'r'))) {
+            while (($fp = fgets($filecheck2, 4096)) !== false) {
+                //str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                    fclose($filecheck2);
+                    return true;
+                }
+            }
+            fclose($filecheck2);
+        }// else $this->logger->debug("unable to open `{$this->files['tdm_bans']}`");
+        if (isset($this->files['pers_bans']) && file_exists($this->files['pers_bans']) && ($filecheck3 = @fopen($this->files['pers_bans'], 'r'))) {
+            while (($fp = fgets($filecheck3, 4096)) !== false) {
+                //str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                    fclose($filecheck3);
+                    return true;
+                }
+            }
+            fclose($filecheck3);
+        }// else $this->logger->debug("unable to open `{$this->files['pers_bans']}`");
         return false;
     }
-    public function __sqlBancheck(string $ckey): bool
+    public function sqlBancheck(string $ckey): bool
     {
         // TODO
         return false;
@@ -892,89 +916,122 @@ class Civ13
         $this->VarSave('permitted.json', $this->permitted);
         return $this->permitted;
     }
-    public function __panicBan(string $ckey, string|array|null $server = ''): void
+    public function __panicBan(string $ckey): void
     {
-        if (! $server) $server = array_keys($this->server_settings);
-
-        $panicban = function (string $ckey, string $server): void
-        {
-            if (! $this->bancheck($ckey, true)) {
-                ($this->legacy ? $this->__legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) : $this->__sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"], null, $server) );
-                $this->panic_bans[$ckey] = true;
-                $this->VarSave('panic_bans.json', $this->panic_bans);
-            }
-        };
-
-        if (is_array($server)) foreach ($server as $s) $panicban($ckey, $s);
-        if (is_string($server)) $panicban($ckey, $server);
-        
-    }
-    public function __panicUnban(string $ckey, string|array|null $server = ''): void
-    {
-        $panicunban = function(string $ckey, string|array|null $server): void
-        {
-            ($this->legacy ? $this->__legacyUnban($server, $ckey) : $this->__sqlUnban($server, $ckey));
-            unset($this->panic_bans[$ckey]);
+        if (! $this->bancheck($ckey, true)) {
+            ($this->legacy ? $this->legacyBanNomads(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) : $this->sqlBanNomads(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"]) );
+            $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
-        };
-        if (! $server) $server = array_keys($this->server_settings);
-        if (is_array($server)) foreach ($server as $s) $panicunban($ckey, $s);
-        if (is_string($server)) $panicunban($ckey, $server);
+        }
+    }
+    public function __panicUnban(string $ckey): void
+    {
+        ($this->legacy ? $this->legacyUnbanNomads($ckey) : $this->sqlUnbanNomads($ckey));
+        unset($this->panic_bans[$ckey]);
+        $this->VarSave('panic_bans.json', $this->panic_bans);
     }
 
     /*
     * These Legacy and SQL functions should not be called directly
     * Define $legacy = true/false and use ban/unban methods instead
     */
-    public function __legacyBan(array $array, $admin = null, string|array|null $server = ''): string
+    public function legacyBanNomads(array $array, $admin = null): string
     {
         $admin = $admin ?? $this->discord->user->username;
         $result = '';
-
-        $legacyban = function (string $server, array $array, $admin = null): string
-        {
-            $server = strtolower($server);
-            $result = '';
-            if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
-            if (file_exists($this->files[$server.'_discord2ban']) && $file = fopen($this->files[$server.'_discord2ban'], 'a')) {
-                fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
-                fclose($file);
-            } else {
-                $this->logger->warning("unable to open {$this->files[$server.'_discord2ban']}");
-                $result .= "unable to open {$this->files[$server.'_discord2ban']}" . PHP_EOL;
-            }
-            $result .= "**$admin** banned **{$array['ckey']}** from **$server** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
-            return $result;
-        };
-
-        if (! $server) $server = array_keys($this->server_settings);
-        if (is_array($server)) foreach ($server as $s) $result .= $legacyban($s, $array, $admin);
-        if (is_string($server)) $result .= $legacyban($server, $array, $admin);
+        if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
+        if (file_exists($this->files['nomads_discord2ban']) && $file = fopen($this->files['nomads_discord2ban'], 'a')) {
+            fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
+            fclose($file);
+        } else {
+            $this->logger->warning("unable to open {$this->files['nomads_discord2ban']}");
+            $result .= "unable to open {$this->files['nomads_discord2ban']}" . PHP_EOL;
+        }
+        $result .= "**$admin** banned **{$array['ckey']}** from **Nomads** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
         return $result;
     }
-    public function __legacyUnban(string $server, string $ckey, ?string $admin = null): void
+    public function sqlBanNomads(array $array, $message = null): string
+    {
+        return "SQL methods are not yet implemented!" . PHP_EOL;
+    }
+    public function legacyBanTDM(array $array, $admin = null): string
     {
         $admin = $admin ?? $this->discord->user->username;
-
-        $legacyUnban = function(string $server, string $ckey, ?string $admin = null): void
-        {
-            $server = strtolower($server);
-            if (file_exists($this->files[$server.'_discord2unban']) && $file = fopen($this->files[$server.'_discord2unban'], 'a')) {
-                fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
-                fclose($file);
-            } else $this->logger->warning("unable to open {$this->files[$server.'_discord2unban']}");
-        };
-        if (! $server) $server = array_keys($this->server_settings);
-        if (is_array($server)) foreach ($server as $s) $legacyUnban($s, $ckey, $admin);
-        if (is_string($server)) $legacyUnban($server, $ckey, $admin);
+        $result = '';
+        if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
+        if (file_exists($this->files['tdm_discord2ban']) && $file = fopen($this->files['tdm_discord2ban'], 'a')) {
+            fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
+            fclose($file);
+        } else {
+            $this->logger->warning("unable to open {$this->files['tdm_discord2ban']}");
+            return "unable to open {$this->files['tdm_discord2ban']}" . PHP_EOL;
+        }
+        $result .= "**$admin** banned **{$array['ckey']}** from **TDM** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
+        return $result;
     }
-    public function __sqlBan(array $array, $admin = null, string|array|null $server = ''): string
+    public function sqlBanTDM($array, $admin = null): string
     {
-        return 'SQL methods are not yet implemented!' . PHP_EOL;
+        return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-    public function __sqlUnban(string $server, string $ckey, ?string $admin = null): void
+    public function legacyBanPers(array $array, $admin = null): string
+    {
+        $admin = $admin ?? $this->discord->user->username;
+        $result = '';
+        if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
+        if (file_exists($this->files['pers_discord2ban']) && $file = fopen($this->files['pers_discord2ban'], 'a')) {
+            fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
+            fclose($file);
+        } else {
+            $this->logger->warning("unable to open {$this->files['pers_discord2ban']}");
+            return "unable to open {$this->files['pers_discord2ban']}" . PHP_EOL;
+        }
+        $result .= "**$admin** banned **{$array['ckey']}** from **Persistence** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
+        return $result;
+    }
+    public function sqlBanPers(array $array, $message = null): string
+    {
+        return "SQL methods are not yet implemented!" . PHP_EOL;
+    }
+    public function legacyUnbanNomads(string $ckey, ?string $admin = null): void
+    {
+        if (file_exists($this->files['nomads_discord2unban']) && $file = fopen($this->files['nomads_discord2unban'], 'a')) {
+            fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
+            fclose($file);
+        }
+    }
+    public function sqlUnbanNomads(string $ckey, ?string $admin = null): void
     {
         // TODO
+    }
+    public function legacyUnbanTDM(string $ckey, ?string $admin = null): void
+    {
+        if (file_exists($this->files['tdm_discord2unban']) && $file = fopen($this->files['tdm_discord2unban'], 'a')) {
+            fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
+            fclose($file);
+        }
+    }
+    public function sqlUnbanTDM(string $ckey, ?string $admin = null): void
+    {
+        // TODO
+    }
+    public function legacyUnbanPers(string $ckey, ?string $admin = null): void
+    {
+        if (file_exists($this->files['pers_discord2unban']) && $file = fopen($this->files['pers_discord2unban'], 'a')) {
+            fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
+            fclose($file);
+        }
+    }
+    public function sqlUnbanPers(string $ckey, ?string $admin = null): void
+    {
+        // TODO
+    }
+    public function legacyBan(array $array, $admin = null): string
+    {
+        return $this->legacyBanNomads($array, $admin) . $this->legacyBanTDM($array, $admin);
+    }
+    public function sqlBan(array $array, $admin = null): string
+    {
+        return $this->sqlBanNomads($array, $admin) . $this->sqlBanTDM($array, $admin);
     }
 
     /*
@@ -982,61 +1039,72 @@ class Civ13
     * Ban functions will return a string containing the results of the ban
     * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
     */
-    public function ban(array $array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, string|array|null $server = ''): string
+    public function ban(array $array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null): string
     {
-        $ban = function (string $server, array $array, ?string $admin = null): string
-        {
-            $server = strtolower($server);
-            if ($member = $this->getVerifiedMember($array['ckey']))
+        if ($member = $this->getVerifiedMember($array['ckey']))
             if (! $member->roles->has($this->role_ids['banished']))
                 $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
-            if ($this->legacy) return $this->__legacyBan($array, $admin, $server);
-            return $this->__sqlBan($array, $admin, $server);
-        };
-
-        if (! $server) $server = array_keys($this->server_settings);
-        if (is_array($server)) {
-            $result = '';
-            foreach ($server as $s) $result .= $ban($s, $array, $admin);
-            return $result;
-        }
-        return $ban($server, $array, $admin);
+        if ($this->legacy) return $this->legacyBan($array, $admin);
+        return $this->sqlBan($array, $admin);
     }
-    public function unban(string $ckey, ?string $admin = null, string|array|null $server = ''): void
+    public function banNomads(array $array, ?string $admin = null): string
     {
-        $unban = function (string $server, string $ckey, ?string $admin = null): void
-        {
-            if ($this->legacy) $this->__legacyUnban($server, $ckey, $admin);
-            else $this->__sqlUnban($server, $ckey, $admin);
-            if ( $member = $this->getVerifiedMember($ckey))
-                if ($member->roles->has($this->role_ids['banished']))
-                    $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
-        };
-
+        if ($this->legacy) return $this->legacyBanNomads($array, $admin);
+        return $this->sqlBanNomads($array, $admin);
+    }
+    public function banTDM(array $array, ?string $admin = null): string
+    {
+        if ($this->legacy) return $this->legacyBanTDM($array, $admin);
+        return $this->sqlBanTDM($array, $admin);
+    }
+    public function banPers(array $array, ?string $admin = null): string
+    {
+        if ($this->legacy) return $this->legacyBanPers($array, $admin);
+        return $this->sqlBanPers($array, $admin);
+    }
+    public function unban(string $ckey, ?string $admin = null): void
+    {
         $admin ??= $this->discord->user->displayname;
-        if (! $server) $server = array_keys($this->server_settings);
-        if (is_array($server)) foreach ($server as $s) $unban($s, $ckey, $admin);
-        elseif (is_string($server)) $unban($server, $ckey, $admin);
+        if ($this->legacy) {
+            $this->legacyUnbanNomads($ckey, $admin);
+            $this->legacyUnbanTDM($ckey, $admin);
+        } else {
+            $this->sqlUnbanNomads($ckey, $admin);
+            $this->sqlUnbanTDM($ckey, $admin);
+        }
+        if ( $member = $this->getVerifiedMember($ckey))
+            if ($member->roles->has($this->role_ids['banished']))
+                $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
+    }
+    public function unbanNomads(string $ckey, ?string $admin = null)
+    {
+        if ($this->legacy) return $this->legacyUnbanNomads($ckey, $admin);
+        return $this->sqlUnbanNomads($ckey, $admin);
+    }
+    public function unbanTDM(string $ckey, ?string $admin = null)
+    {
+        if ($this->legacy) return $this->legacyUnbanTDM($ckey, $admin);
+        return $this->sqlUnbanTDM($ckey, $admin);
+    }
+    public function unbanPers(string $ckey, ?string $admin = null)
+    {
+        if ($this->legacy) return $this->legacyUnbanPers($ckey, $admin);
+        return $this->sqlUnbanPers($ckey, $admin);
     }
     
-    public function __DirectMessage(string $recipient, string $message, string $sender, string|array|null $server): bool
+    public function DirectMessageNomads(string $recipient, string $message, string $sender): bool
     {
-        if (! $server) $server = array_keys($this->server_settings);
-        $dm = function (string $recipient, string $message, string $sender, string $server): bool
-        {
-            $server = strtolower($server);
-            if (! isset($this->files[$server . '_discord2dm']) || ! file_exists($this->files[$server . '_discord2dm']) || ! $file = fopen($this->files[$server . '_discord2dm'], 'a')) {
-                $this->logger->warning("unable to open `{$server}_discord2dm' or it does not exist!");
-                return false;
-            }
-            fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
-            fclose($file);
-            return true;
-        };
-        $result = false;
-        if (is_array($server)) foreach ($server as $s) $result = $dm($recipient, $message, $sender, $s);
-        if (is_string($server)) $result = $dm($recipient, $message, $sender, $server);
-        return $result;
+        if (! file_exists($this->files['nomads_discord2dm']) || ! $file = fopen($this->files['nomads_discord2dm'], 'a')) return false;
+        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
+        fclose($file);
+        return true;
+    }
+    public function DirectMessageTDM(string $recipient, string $message, string $sender): bool
+    {
+        if (! file_exists($this->files['tdm_discord2dm']) || ! $file = fopen($this->files['tdm_discord2dm'], 'a')) return false;
+        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
+        fclose($file);
+        return true;
     }
 
     /*
@@ -1106,11 +1174,9 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach (array_keys($this->server_settings) as $server) {
-            $server = strtolower($server);
-            if (isset($this->files[$server . '_bans']) && file_exists($this->files[$server . '_bans'])) $file_contents .= file_get_contents($this->files[$server . '_bans']);
-            else $this->logger->warning("unable to open `{$server}_bans' or it does not exist!");
-        }
+        if (isset($this->files['tdm_bans']) && file_exists($this->files['tdm_bans'])) $file_contents .= file_get_contents($this->files['tdm_bans']);
+        if (isset($this->files['nomads_bans']) && file_exists($this->files['nomads_bans'])) $file_contents .= file_get_contents($this->files['nomads_bans']);
+        if (isset($this->files['pers_bans']) && file_exists($this->files['pers_bans'])) $file_contents .= file_get_contents($this->files['pers_bans']);
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
         
         $ban_collection = new Collection([], 'uid');
@@ -1160,11 +1226,9 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach (array_keys($this->server_settings) as $server) {
-            $server = strtolower($server);
-            if (isset($this->files[$server . '_playerlogs']) && file_exists($this->files[$server . '_playerlogs'])) $file_contents .= file_get_contents($this->files[$server . '_playerlogs']);
-            else $this->logger->warning("unable to open `{$server}_playerlogs' or it does not exist!");
-        }
+        if (isset($this->files['nomads_playerlogs']) && file_exists($this->files['nomads_playerlogs'])) $file_contents .= file_get_contents($this->files['nomads_playerlogs']);
+        if (isset($this->files['tdm_playerlogs']) && file_exists($this->files['tdm_playerlogs'])) $file_contents .= file_get_contents($this->files['tdm_playerlogs']);
+        if (isset($this->files['pers_playerlogs']) && file_exists($this->files['pers_playerlogs'])) $file_contents .= file_get_contents($this->files['pers_playerlogs']);
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
 
         $arrays = [];
@@ -1478,14 +1542,10 @@ class Civ13
     public function unbanTimer(): bool
     {
         //We don't want the persistence server to do this function
-        foreach (array_keys($this->server_settings) as $server) {
-            $server = strtolower($server);
-            if (! file_exists($this->files[$server.'_bans']) || ! ($file = fopen($this->files[$server.'_bans'], 'r'))) {
-                $this->logger->warning("unable to open `{$server}_bans' or it does not exist!");
-                return false;
-            }
-            fclose($file);
-        }
+        if (! file_exists($this->files['nomads_bans']) || ! ($file = fopen($this->files['nomads_bans'], 'r'))) return false;
+        fclose($file);
+        if (! file_exists($this->files['tdm_bans']) || (! $file2 = fopen($this->files['tdm_bans'], 'r'))) return false;
+        fclose($file2);
 
         $unbanTimer = function() {
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
@@ -1514,7 +1574,7 @@ class Civ13
     * Players will receive warnings and bans for using blacklisted words
     */
     public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false): bool
-    { // TODO: Update server to use the new server_settings keys
+    { // The file function needs to be replaced with the new Webhook system
         if ($this->relay_method !== 'file') return false;
         if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) {
             $this->relay_method = 'webhook'; //Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
@@ -1538,7 +1598,7 @@ class Civ13
         return $this->__gameChatRelay($relay_array, $channel, $moderate); //Disabled moderation as it is now done quicker using the Webhook system
     }
     public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $moderate = true): bool
-    { // TODO: Update server to use the new server_settings keys
+    {
         if ($this->relay_method !== 'webhook') return false;
         if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
             $this->logger->warning('gameChatWebhookRelay() gameChatWebhookRelay() was called with invalid parameters');
@@ -1547,14 +1607,14 @@ class Civ13
         }
         
         if ( $channel = $this->discord->getChannel($channel_id)) return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
-
-        if (! $this->ready) { // TODO: This may not currently work as intended and the WEBAPI sometimes breaks when trying to use this
+        
+        if (! $this->ready) {
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
-            /*$listener = function() use ($ckey, $message, $channel_id, $moderate, &$listener) {
+            $listener = function() use ($ckey, $message, $channel_id, $moderate, &$listener) {
                 $this->gameChatWebhookRelay($ckey, $message, $channel_id, $moderate);
                 $this->discord->removeListener('ready', $listener);
             };
-            $this->discord->on('ready', $listener);*/
+            $this->discord->on('ready', $listener);
             return true; // Assume that the function will succeed when the bot is ready
         }
         
@@ -1582,31 +1642,27 @@ class Civ13
         }
         return true;
     }
-    private function __gameChatModerate(string $ckey, string $string, string|array|null $server = ''): string
+    private function __gameChatModerate(string $ckey, string $string, string $server = 'nomads'): string
     {
         foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
             case 'exact': //ban ckey if $string contains a blacklisted phrase exactly as it is defined
-                if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->__relayViolation($ckey, $badwords_array, $server);
+                if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
                 break;
             case 'contains': //ban ckey if $string contains a blacklisted word
             default: //default to 'contains'
-                if (str_contains(strtolower($string), $badwords_array['word'])) $this->__relayViolation($ckey, $badwords_array, $server);
+                if (str_contains(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
         }
         return $string;
     }
     // This function is called from the game's chat hook if a player says something that contains a blacklisted word
-    private function __relayViolation(string $ckey, array $badwords_array, string|array|null $server)
+    private function __relayViolation(string $server, string $ckey, array $badwords_array)
     {
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
         if (! $this->__relayWarningCounter($ckey, $badwords_array)) return $this->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->banappeal}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
-
-        if (! $server) $server = array_keys($this->server_settings);
-        $result = '';
-        if (is_array($server)) foreach ($server as $s) $result .= $this->__DirectMessage('AUTOMOD', $warning, $ckey, $s);
-        elseif (is_string($server)) $result .= $this->__DirectMessage('AUTOMOD', $warning, $ckey, $server);
-        return $result;
+        if (str_contains($server, 'nomads')) return $this->DirectMessageNomads('AUTOMOD', $warning, $ckey);
+        if (str_contains($server, 'tdm')) return $this->DirectMessageTDM('AUTOMOD', $warning, $ckey);
     }
     /*
     * This function determines if a player has been warned too many times for a specific category of bad words
@@ -1678,12 +1734,8 @@ class Civ13
     public function whitelistUpdate(array $whitelists = []): bool
     {
         if (! isset($this->role_ids['veteran'])) return false;
-        foreach (array_keys($this->server_settings) as $server) {
-            $server = strtolower($server);
-            if (isset($this->files[$server.'_whitelist'])) {
-                if (!in_array($this->files[$server.'_whitelist'], $whitelists)) array_unshift($whitelists, $this->files[$server.'_whitelist']);
-            } else $this->logger->warning("Unable to open `{$server}_whitelist`");
-        }
+        if (isset($this->files['nomads_whitelist']) && !in_array($this->files['nomads_whitelist'], $whitelists)) array_unshift($whitelists, $this->files['nomads_whitelist']);
+        if (isset($this->files['tdm_whitelist']) && !in_array($this->files['tdm_whitelist'], $whitelists)) array_unshift($whitelists, $this->files['tdm_whitelist']);
         if (empty($whitelists)) return false;
         foreach ($whitelists as $whitelist) {
             if (! file_exists($whitelist) || ! ($file = fopen($whitelist, 'a'))) return false;
@@ -1705,10 +1757,9 @@ class Civ13
     public function factionlistUpdate(array $factionlists = []): bool
     {
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
-        foreach (array_keys($this->server_settings) as $server) {
-            $server = strtolower($server);
-            if (isset($this->files[$server.'_factionlist']) && !in_array($this->files[$server.'_factionlist'], $factionlists)) array_unshift($factionlists, $this->files[$server.'_factionlist']);
-        }
+        $factionlists2 = $factionlists;
+        if (isset($this->files['tdm_factionlist']) && !in_array($this->files['tdm_factionlist'], $factionlists)) array_unshift($factionlists, $this->files['tdm_factionlist']);
+        if (isset($this->files['nomads_factionlist']) && !in_array($this->files['nomads_factionlist'], $factionlists)) array_unshift($factionlists2, $this->files['nomads_factionlist']);
         if (empty($factionlists)) return false;
         foreach ($factionlists as $factionlist) {
             if (! file_exists($factionlist) || ! ($file = @fopen($factionlist, 'a'))) continue;
@@ -1733,11 +1784,7 @@ class Civ13
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
         //$this->logger->debug('Updating admin lists');
         // Prepend default admin lists if they exist and haven't been added already
-        $defaultLists = [];
-        foreach (array_keys($this->server_settings) as $key) {
-            $key = strtolower($key);
-            $defaultLists[] = "{$key}_admins";
-        }
+        $defaultLists = ['tdm_admins', 'nomads_admins'];
         if ($defaults) foreach ($defaultLists as $adminlist) if (isset($this->files[$adminlist]) && !in_array($adminlist, $adminlists))
             array_unshift($adminlists, $adminlist);
 
