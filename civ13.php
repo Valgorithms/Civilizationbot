@@ -827,13 +827,13 @@ class Civ13
     */
     public function bancheck(string $ckey, $bypass = false): bool
     {
-        $banned = ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
+        $banned = ($this->legacy ? $this->__legacyBancheck($ckey) : $this->__sqlBancheck($ckey));
         if (! $bypass && $member = $this->getVerifiedMember($ckey))
             if ($banned && ! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
             elseif (! $banned && $member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "bancheck ($ckey)");
         return $banned;
     }
-    public function legacyBancheck(string $ckey): bool
+    public function __legacyBancheck(string $ckey): bool
     {
         $legacyBancheck = function(string $ckey, string $server): bool
         {
@@ -852,10 +852,13 @@ class Civ13
             }
             fclose($filecheck);
         };
-        foreach (array_keys($this->server_settings) as $server) if ($legacyBancheck($ckey, $server)) return true;
+        foreach (array_keys($this->server_settings) as $server) {
+            $server = strtolower($server);
+            if ($legacyBancheck($ckey, $server)) return true;
+        }
         return false;
     }
-    public function sqlBancheck(string $ckey): bool
+    public function __sqlBancheck(string $ckey): bool
     {
         // TODO
         return false;
