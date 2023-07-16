@@ -1549,11 +1549,11 @@ class Civ13
 
         if (! $this->ready) { // TODO: This may not currently work as intended and the WEBAPI sometimes breaks when trying to use this
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
-            $listener = function() use ($ckey, $message, $channel_id, $moderate) {
+            /*$listener = function() use ($ckey, $message, $channel_id, $moderate, &$listener) {
                 $this->gameChatWebhookRelay($ckey, $message, $channel_id, $moderate);
                 $this->discord->removeListener('ready', $listener);
             };
-            $this->discord->on('ready', $listener);
+            $this->discord->on('ready', $listener);*/
             return true; // Assume that the function will succeed when the bot is ready
         }
         
