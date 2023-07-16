@@ -68,40 +68,12 @@ class Civ13
     public array $current_rounds = [];
     public array $rounds = [];
 
-    public string $relay_method = 'webhook'; //Method to use for relaying messages to Discord, either 'webhook' or 'file'
-    public bool $moderate = true; //Whether or not to moderate the servers using the badwords list
-    public array $badwords = [
-        /* Format:
-            'word' => 'bad word' //Bad word to look for
-            'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] //Duration of the ban
-            'reason' => 'reason' //Reason for the ban
-            'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] //Used to group bad words together by category
-            'method' => detection method ['exact', 'contains'] //Exact ignores partial matches, contains matches partial matchesq
-            'warnings' => 1 //Number of warnings before a ban
-        */
-        ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'contains', 'warnings' => 1], //Used to test the system
-        
-        ['word' => 'beaner', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'chink', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'coon', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'exact', 'warnings' => 1],
-        ['word' => 'fag', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'gook', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'kike', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'nigg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'nlgg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'niqq', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'tranny', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        
-        ['word' => 'cunt', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
-        ['word' => 'fuck you', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
-        ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
-        ['word' => 'kys', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], //This is more severe than the others, so ban after only one warning
-        
-        ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
-        ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
-    ];
-    public array $badwords_warnings = []; //Collection of $ckey => ['category' => string, 'badword' => string, 'count' => integer] for how many times a user has recently infringed
+    public array $server_settings = []; //NYI, this will replace most individual variables
     public bool $legacy = true; //If true, the bot will use the file methods instead of the SQL ones
+    public string $relay_method = 'webhook'; //Method to use for relaying messages to Discord, either 'webhook' or 'file'
+    public bool $moderate = false; //Whether or not to moderate the servers using the badwords list
+    public array $badwords = [];
+    public array $badwords_warnings = []; //Collection of $ckey => ['category' => string, 'badword' => string, 'count' => integer] for how many times a user has recently infringed
     
     public $functions = array(
         'ready' => [],
@@ -175,7 +147,14 @@ class Civ13
         if (isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if (isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
         if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
-        if (isset($options['relay_method']) && in_array(strtolower($options['relay_method']), ['file', 'webhook'])) $this->relay_method = strtolower($options['relay_method']);
+
+        if (isset($options['server_settings'])) foreach ($options['server_settings'] as $key => $array) $this->server_settings[$key] = $array;
+        else $this->logger->warning('No server settings passed in options!');
+        
+        if (isset($options['legacy']) && is_bool($options['legacy'])) $this->legacy = $options['legacy'];
+        if (isset($options['relay_method']) && in_array($relay_method = strtolower($options['relay_method']), ['file', 'webhook'])) $this->relay_method = $relay_method;
+        if (isset($options['moderate']) && is_bool($options['moderate'])) $this->moderate = $options['moderate'];
+        if (isset($options['badwords']) && is_array($options['badwords'])) $this->badwords = $options['badwords'];
 
         if (isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
         if (isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
@@ -190,6 +169,8 @@ class Civ13
         if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->logger->warning('No functions passed in options!');
         
+        if (isset($options['folders'])) foreach ($options['folders'] as $key => $path) $this->folders[$key] = $path;
+        else $this->logger->warning('No folders passed in options!');
         if (isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
         else $this->logger->warning('No files passed in options!');
         if (isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $id) $this->channel_ids[$key] = $id;
@@ -337,27 +318,41 @@ class Civ13
         }
         $this->logger = $options['logger'];
 
-        foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! file_exists($value) || ! is_dir($value)) {
+        if (isset($options['server_settings'])) foreach ($options['server_settings'] as $key => $array) {
+            if (! is_string($key) || ! is_array($array)) {
+                $this->logger->warning('Server settings array is not a valid key=>value array of server settings!');
+                unset($options['server_settings']);
+                break;
+            }
+            foreach (array_keys($array) as $k) if (! is_string($k)) {
+                $this->logger->warning('Server settings array is not a valid key=>value array of server settings!');
+                unset($options['server_settings']);
+                break 2;
+            }
+        }
+        if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! file_exists($value) || ! is_dir($value)) {
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
         }
-        foreach ($options['files'] as $key => $value) if (! is_string($value) || ! file_exists($value)) {
+        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || ! file_exists($value)) {
             $this->logger->warning("`$value` is not a valid file path!");
             unset($options['files'][$key]);
         }
-        foreach ($options['channel_ids'] as $key => $value) if (! is_numeric($value)) {
+        if (isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $value) if (! is_numeric($value)) {
             $this->logger->warning("`$value` is not a valid channel id!");
             unset($options['channel_ids'][$key]);
         }
-        foreach ($options['role_ids'] as $key => $value) if (! is_numeric($value)) {
+        if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $value) if (! is_numeric($value)) {
             $this->logger->warning("`$value` is not a valid role id!");
             unset($options['role_ids'][$key]);
         }
-        foreach ($options['functions'] as $key => $array) {
+        if (isset($options['functions'])) foreach ($options['functions'] as $key => $array) {
             if (! is_array($array)) {
                 $this->logger->warning("`$key` is not a valid function array!");
                 unset($options['functions'][$key]);
-            } else foreach ($array as $func) if (! is_callable($func)) {
+                continue;
+            }
+            foreach ($array as $func) if (! is_callable($func)) {
                 $this->logger->warning("`$func` is not a valid function!");
                 unset($options['functions'][$key]);
             }
