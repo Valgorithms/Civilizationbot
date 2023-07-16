@@ -1551,8 +1551,9 @@ class Civ13
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
             $listener = function() use ($ckey, $message, $channel_id, $moderate) {
                 $this->gameChatWebhookRelay($ckey, $message, $channel_id, $moderate);
+                $this->discord->removeListener('ready', $listener);
             };
-            $this->discord->once('ready', $listener);
+            $this->discord->on('ready', $listener);
             return true; // Assume that the function will succeed when the bot is ready
         }
         
