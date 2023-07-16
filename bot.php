@@ -182,6 +182,7 @@ $options = array(
         'sportsteams' => '/home/1713/civ13-tdm/SQL/sports_teams.txt',
 
         //Persistence
+        /*
         'pers_log_basedir' => '/home/1713/civ13-pers/data/logs',
         'pers_ooc_path' => '/home/1713/civ13-pers/ooc.log',
         'pers_admin_path' => '/home/1713/civ13-pers/admin.log',
@@ -198,6 +199,7 @@ $options = array(
         'pers_awards_br_path' => '/home/1713/civ13-pers/SQL/awards_br.txt',
         //Campaign
         'pers_factionlist' => '/home/1713/civ13-pers/SQL/factionlist.txt',
+        */
 
         //Script paths
         'nomads_updateserverabspaths' => '/home/1713/civ13-rp/scripts/updateserverabspaths.py',
