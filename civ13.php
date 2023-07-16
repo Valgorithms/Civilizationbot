@@ -980,7 +980,7 @@ class Civ13
     */
     public function ban(array $array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, string|array|null $server = ''): string
     {
-        $ban = function (array $array, ?string $admin = null, string $server): string
+        $ban = function (string $server, array $array, ?string $admin = null): string
         {
             $server = strtolower($server);
             if ($member = $this->getVerifiedMember($array['ckey']))
@@ -993,14 +993,14 @@ class Civ13
         if (! $server) $server = array_keys($this->server_settings);
         if (is_array($server)) {
             $result = '';
-            foreach ($server as $s) $result .= $ban($array, $admin, $s);
+            foreach ($server as $s) $result .= $ban($s, $array, $admin);
             return $result;
         }
-        return $ban($array, $admin, $server);
+        return $ban($server, $array, $admin);
     }
     public function unban(string $ckey, ?string $admin = null, string|array|null $server = ''): void
     {
-        $unban = function (string $ckey, ?string $admin = null, string|array|null $server): void
+        $unban = function (string $server, string $ckey, ?string $admin = null): void
         {
             if ($this->legacy) $this->__legacyUnban($server, $ckey, $admin);
             else $this->__sqlUnban($server, $ckey, $admin);
@@ -1011,8 +1011,8 @@ class Civ13
 
         $admin ??= $this->discord->user->displayname;
         if (! $server) $server = array_keys($this->server_settings);
-        if (is_array($server)) foreach ($server as $s) $unban($ckey, $admin, $s);
-        elseif (is_string($server)) $unban($ckey, $admin, $server);
+        if (is_array($server)) foreach ($server as $s) $unban($s, $ckey, $admin);
+        elseif (is_string($server)) $unban($server, $ckey, $admin);
     }
     
     public function __DirectMessage(string $recipient, string $message, string $sender, string|array|null $server): bool
