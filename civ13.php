@@ -148,7 +148,7 @@ class Civ13
         if (isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
         if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
 
-        if (isset($options['server_settings'])) foreach ($options['server_settings'] as $key => $array) $this->server_settings[$key] = $array;
+        if (isset($options['server_settings']) && is_array($options['server_settings'])) $this->server_settings = $options['server_settings'];
         else $this->logger->warning('No server settings passed in options!');
         
         if (isset($options['legacy']) && is_bool($options['legacy'])) $this->legacy = $options['legacy'];
@@ -916,7 +916,7 @@ class Civ13
             unset($this->panic_bans[$ckey]);
             $this->VarSave('panic_bans.json', $this->panic_bans);
         };
-        if (! $server) $server = strtolower(array_keys($this->server_settings)[0]);
+        if (! $server) $server = array_keys($this->server_settings);
         if (is_array($server)) foreach ($server as $s) $panicunban($ckey, $s);
         if (is_string($server)) $panicunban($ckey, $server);
     }
@@ -946,7 +946,7 @@ class Civ13
             return $result;
         };
 
-        if (! $server) $server = strtolower(array_keys($this->server_settings)[0]);
+        if (! $server) $server = array_keys($this->server_settings);
         if (is_array($server)) foreach ($server as $s) $result .= $legacyban($s, $array, $admin);
         if (is_string($server)) $result .= $legacyban($server, $array, $admin);
         return $result;
@@ -1159,7 +1159,7 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach(array_keys($this->server_settings) as $server) {
+        foreach (array_keys($this->server_settings) as $server) {
             $server = strtolower($server);
             if (isset($this->files[$server . '_playerlogs']) && file_exists($this->files[$server . '_playerlogs'])) $file_contents .= file_get_contents($this->files[$server . '_playerlogs']);
             else $this->logger->warning("unable to open `{$server}_playerlogs' or it does not exist!");
@@ -1703,7 +1703,6 @@ class Civ13
     public function factionlistUpdate(array $factionlists = []): bool
     {
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
-        $factionlists2 = $factionlists;
         foreach (array_keys($this->server_settings) as $server) {
             $server = strtolower($server);
             if (isset($this->files[$server.'_factionlist']) && !in_array($this->files[$server.'_factionlist'], $factionlists)) array_unshift($factionlists, $this->files[$server.'_factionlist']);
