@@ -32,7 +32,7 @@ require getcwd() . '/token.php'; //$token
 include getcwd() . '/vendor/autoload.php';
 
 $loop = Loop::get();
-$streamHandler = new StreamHandler('php://stdout', Level::Info);
+$streamHandler = new StreamHandler('php://stdout', Level::Debug);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
 $logger = new Logger('Civ13', [$streamHandler]);
 $discord = new Discord([
