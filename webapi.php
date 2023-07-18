@@ -667,9 +667,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         $new_message .= substr($message, $strpos);
                         $message = $new_message;
                         if (isset($civ13->channel_ids[$server . '-playercount']) && $playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
-                            if ($existingCount = explode('-', $playercount_channel->name)[1])
+                            if ($existingCount = explode('-', $playercount_channel->name)[1]) {
                                 $existingCount = intval($existingCount);
-                                var_dump("$server's existing player count: $existingCount");
                                 if ($existingCount === 0) $message .= " There are currently no players on the $server server.";
                                 elseif ($existingCount === 1) $message .= " There is currently 1 player on the $server server.";
                                 elseif ($existingCount > 1) {
@@ -678,6 +677,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                                     elseif (isset($civ13->role_ids['2+']) && $civ13->role_ids['2+'] && ($existingCount >= 2)) $message .= "<@{$civ13->role_ids['2+']}>, ";
                                     $message .= " There are currently $existingCount players on the $server server.";
                                 }
+                            }
                     }
                     break;
                 case 'icmessage':
@@ -702,10 +702,18 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         $message .= "`$game_id` ";
                     }
                     $message .= 'has started!';
-                    if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
-                        if ($existingCount = explode('-', $playercount_channel->name)[1])
-                            if ($existingCount > 1) $message .= " There are currently $existingCount players on the server.";
-                            else $message .= " There is currently $existingCount player on the server.";
+                    if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']));
+                        if ($existingCount = explode('-', $playercount_channel->name)[1]) {
+                            $existingCount = intval($existingCount);
+                            if ($existingCount === 0) $message .= " There are currently no players on the $server server.";
+                            elseif ($existingCount === 1) $message .= " There is currently 1 player on the $server server.";
+                            elseif ($existingCount > 1) {
+                                if (isset($civ13->role_ids['30+']) && $civ13->role_ids['30+'] && ($existingCount >= 30)) $message .= "<@{$civ13->role_ids['30+']}>, ";
+                                elseif (isset($civ13->role_ids['15+']) && $civ13->role_ids['15+'] && ($existingCount >= 15)) $message .= "<@{$civ13->role_ids['15+']}>, ";
+                                elseif (isset($civ13->role_ids['2+']) && $civ13->role_ids['2+'] && ($existingCount >= 2)) $message .= "<@{$civ13->role_ids['2+']}>, ";
+                                $message .= " There are currently $existingCount players on the $server server.";
+                            }
+                        }
                     // A future update should include a way to call a $civ13 function using the server and round id
                     break;
                 case 'respawn_notice':
