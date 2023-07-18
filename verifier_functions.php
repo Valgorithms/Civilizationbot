@@ -26,13 +26,12 @@ $civ_listeners = function (Civ13 $civ13): void //Handles Verified and Veteran ca
     {
         $civ13->getVerified();
         if ($member->roles->has($civ13->role_ids['veteran'])) $civ13->whitelistUpdate();
-        if ($member->roles->has($civ13->role_ids['red']) || $member->roles->has($civ13->role_ids['blue'])) $civ13->factionlistUpdate();
         $faction_roles = [
             'red',
             'blue',
         ];
-        foreach ($faction_roles as $role) 
-            if ($member->roles->has($civ13->role_ids[$role])) { $civ13->factionlistUpdate(); break;}
+        foreach ($faction_roles as $role_id) 
+            if ($member->roles->has($civ13->role_ids[$role_id])) { $civ13->factionlistUpdate(); break;}
         $admin_roles = [
             'admiral',
             'bishop',
