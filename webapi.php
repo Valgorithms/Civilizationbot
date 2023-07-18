@@ -669,7 +669,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         if (isset($civ13->channel_ids[$server . '-playercount']) && $playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
                             if ($existingCount = explode('-', $playercount_channel->name)[1])
                                 $existingCount = intval($existingCount);
-                                $civ13->logger->debug("$server's existing player count: $existingCount");
+                                var_dump("$server's existing player count: $existingCount");
                                 if ($existingCount === 0) $message .= " There are currently no players on the $server server.";
                                 elseif ($existingCount === 1) $message .= " There is currently 1 player on the $server server.";
                                 elseif ($existingCount > 1) {
