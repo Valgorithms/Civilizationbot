@@ -675,8 +675,8 @@ class Civ13
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
-                return "Ckey `$ckey` is too new! ($age)";
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
+                return $reason;
             }
             $found = false;
             foreach (explode('|', file_get_contents($this->files['tdm_playerlogs']) . file_get_contents($this->files['nomads_playerlogs'])) as $line)
