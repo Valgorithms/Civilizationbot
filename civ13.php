@@ -515,16 +515,16 @@ class Civ13
 
         // Get Discord ID
         $id = null;
-        if ($input instanceof Member || $input instanceof User) {
+        if ($input instanceof Member || $input instanceof User) { // If $input is a Member or User, get the Discord ID
             $id = $input->id;
-        } elseif (is_numeric($input)) {
+        } elseif (is_numeric($input)) { // If $input is a number, it could be a Discord ID
             if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
             $id = $input;
-        } elseif (is_string($input)) {
+        } elseif (is_string($input)) { // If $input is a string, it could be a ckey
             if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
             if (! $item = $this->verified->get('ss13', $input)) return false;
             $id = $item['discord'];
-        } elseif (is_array($input)) {
+        } elseif (is_array($input)) { // If $input is an array, it could contain either a ckey or a Discord ID
             if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
             elseif (isset($input['discord']) && is_string($input['discord']) && is_numeric($input['discord'] = $this->sanitizeCkeyOrDiscordID($input['discord']))) $id = $input['discord'];
             elseif (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeCkeyOrDiscordID($input['ss13']))) $id = $item['discord'];
