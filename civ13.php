@@ -497,7 +497,7 @@ class Civ13
             if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
             if (is_numeric($input) && $item = $this->verified->get('discord', $input)) return $item;
             elseif ($item = $this->verified->get('ss13', $input)) return $item;
-        } else if ($input instanceof Member || $input instanceof User) {
+        } elseif ($input instanceof Member || $input instanceof User) {
             if ($item = $this->verified->get('discord', $input->id)) return $item;
         } elseif (is_array($input)) {
             if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
