@@ -1103,8 +1103,10 @@ class Civ13
         if (! isset($array['duration'])) return "You must specify a duration to ban for.";
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
         $array['ckey'] = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $array['ckey']));
-        if (is_numeric($array['ckey']) && ! $item = $this->verified->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
-        else $array['ckey'] = $item['ss13'];
+        if (is_numeric($array['ckey'])) {
+            if (! $item = $this->verified->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
+            $array['ckey'] = $item['ss13'];
+        }
         if ($member = $this->getVerifiedMember($array['ckey']))
             if (! $member->roles->has($this->role_ids['banished']))
                 $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
