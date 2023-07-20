@@ -17,6 +17,7 @@ use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Guild\Role;
 use Discord\Parts\User\Member;
+use Discord\Parts\User\User;
 use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Formatter\LineFormatter;
@@ -489,13 +490,21 @@ class Civ13
 
     public function getVerifiedMember($item): Member|false
     {
+        
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
-        if (is_string($item)) {
-            preg_match('/<@(\d+)>/', $item, $matches);
-            if (isset($matches[1]) && is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item; // 
-            if (is_string($item = $this->getVerifiedItem($item))) return false;
-        }
-        if ($item && $member = $guild->members->get('id', $item['discord'])) return $member;
+        if (is_string($item))
+            if (! $item = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $item)))
+                return false;
+        if (is_numeric($item))
+            return $guild->members->get('id', $item) ?? false;
+        if (is_string($item))
+            if ($item = $this->verified->get('ss13', $item))
+                return $guild->members->get('id', $item['discord']) ?? false;
+        if (is_array($item))
+            if (isset($item['discord']) && isset($item['ss13']))
+                return $guild->members->get('id', $item['discord']) ?? false;
+        if ($item instanceof Member || $item instanceof User)
+                return $this->verified->get('discord', $item->id) ? $item : false;
         return false;
     }
 
@@ -1039,8 +1048,15 @@ class Civ13
     * Ban functions will return a string containing the results of the ban
     * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
     */
-    public function ban(array $array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null): string
+    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null): string
     {
+        if (! isset($array['ckey'])) return "You must specify a ckey to ban.";
+        if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) return "The ckey must be a Byond username or Discord ID.";
+        if (! isset($array['duration'])) return "You must specify a duration to ban for.";
+        if (! isset($array['reason'])) return "You must specify a reason for the ban.";
+        $array['ckey'] = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $array['ckey']));
+        if (is_numeric($array['ckey']) && ! $item = $this->verified->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
+        else $array['ckey'] = $item['ss13'];
         if ($member = $this->getVerifiedMember($array['ckey']))
             if (! $member->roles->has($this->role_ids['banished']))
                 $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");

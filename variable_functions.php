@@ -594,15 +594,16 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0] = str_replace(['.', '_', '-', ' '], '', $split_message[0])) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"];
+        $result = $civ13->ban($arr, $civ13->getVerifiedItem($message->author->id)['ss13']);
         
         if (! $tdm_playerlogs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
         if (! $nomads_playerlogs = file_get_contents($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
-        $civ13->timers['banlog_update_tdm'] = $civ13->discord->getLoop()->addPeriodicTimer(30, function() use ($civ13, $banlog_update, $nomads_playerlogs, $tdm_playerlogs, $split_message) {
-            file_put_contents($civ13->files['tdm_bans'], $banlog_update(file_get_contents($civ13->files['tdm_bans']), [$nomads_playerlogs, $tdm_playerlogs], $split_message[0]));
+        $civ13->timers['banlog_update_tdm'] = $civ13->discord->getLoop()->addPeriodicTimer(30, function() use ($civ13, $banlog_update, $nomads_playerlogs, $tdm_playerlogs, $arr) {
+            file_put_contents($civ13->files['tdm_bans'], $banlog_update(file_get_contents($civ13->files['tdm_bans']), [$nomads_playerlogs, $tdm_playerlogs], $arr['ckey']));
         });
-        $civ13->timers['banlog_update_nomads'] = $civ13->discord->getLoop()->addPeriodicTimer(60, function() use ($civ13, $banlog_update, $nomads_playerlogs, $tdm_playerlogs, $split_message) {
-            file_put_contents($civ13->files['nomads_bans'], $banlog_update(file_get_contents($civ13->files['nomads_bans']), [$nomads_playerlogs, $tdm_playerlogs], $split_message[0]));
+        $civ13->timers['banlog_update_nomads'] = $civ13->discord->getLoop()->addPeriodicTimer(60, function() use ($civ13, $banlog_update, $nomads_playerlogs, $tdm_playerlogs, $arr) {
+            file_put_contents($civ13->files['nomads_bans'], $banlog_update(file_get_contents($civ13->files['nomads_bans']), [$nomads_playerlogs, $tdm_playerlogs], $arr['ckey']));
         });
         
         return $message->reply($result);
