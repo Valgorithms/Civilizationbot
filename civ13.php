@@ -479,24 +479,60 @@ class Civ13
         return $this->verified;
     }
 
-    public function getVerifiedItem($id)
+    public function getVerifiedItem(Member|User|string|array $id)
     {
         if (is_numeric($id) && $item = $this->verified->get('discord', $id)) return $item;
         if ($item = $this->verified->get('ss13', $id)) return $item;
         preg_match('/<@(\d+)>/', $id, $matches);
         if (isset($matches[1]) && is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
         return false;
+
+        
+        if (is_string($id)) {
+            if (! $id = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $id))) return false;
+            if (is_numeric($id)) {
+                if (! $item = $this->verified->get('discord', $id)) return false;
+                return $item;
+            }
+            if (! $item = $this->verified->get('ss13', $id)) return false;
+            return $item;
+        }
+
+        if (is_array($id)) {
+            if (isset($id['discord'])) {
+                if (! is_numeric($id['discord'])) return false;
+                if (! $item = $this->verified->get('discord', $id['discord'])) return false;
+                return $item;
+            }
+            if (isset($id['ss13'])) {
+                if (! $id['ss13'] = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $id['ss13']))) return false;
+                if (! $id = $this->verified->get('ss13', $id['ss13'])) return false;
+                if (! $item = $this->verified->get('id', $id['ss13'])) return false;
+                return $item;
+            }
+            return false;
+        }
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
+        if ($id instanceof Member || $id instanceof User) {
+            if (! $item = $this->verified->get('discord', $id->id)) return false;
+            return $item;
+        }
+        return false; // If $id is not a string, array, Member, or User, return false (this should never happen)
     }
 
     public function getVerifiedMember(Member|User|string|array $item): Member|false
     {
-        
+        if (is_string($item) && ! $item = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $item))) return false;
+        if ($item instanceof Member) {
+            if (! $this->verified->get('discord', $item->id)) return false;
+            return $item;
+        }
+
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
-        if (is_string($item))
-            if (! $item = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $item)))
-                return false;
-        if (is_numeric($item))
-            return $guild->members->get('id', $item) ?? false;
+        if (is_numeric($item)) {
+            if (! $member = $guild->members->get('id', $item)) return false;
+            return $member;
+        }
         if (is_string($item)) {
             if (! $item = $this->verified->get('ss13', $item)) return false;
             if (! $member = $guild->members->get('id', $item['discord'])) return false;
@@ -516,10 +552,11 @@ class Civ13
             }
             return false;
         }
-        if ($item instanceof Member)
-            return $this->verified->get('discord', $item->id) ? $item : false;
-        if ($item instanceof User)
-            return $this->verified->get('discord', $item->id) ? $guild->members->get('id', $item->id) ?? false : false;
+        if ($item instanceof User) {
+            if (! $this->verified->get('discord', $item->id)) return false;
+            if (! $member = $guild->members->get('id', $item->id)) return false;
+            return $member;
+        }
         return false; // If $item is not a string, array, Member, or User, return false (this should never happen)
     }
 
