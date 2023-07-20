@@ -488,7 +488,7 @@ class Civ13
         return false;
     }
 
-    public function getVerifiedMember($item): Member|false
+    public function getVerifiedMember(Member|User|string|array $item): Member|false
     {
         
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
@@ -497,15 +497,30 @@ class Civ13
                 return false;
         if (is_numeric($item))
             return $guild->members->get('id', $item) ?? false;
-        if (is_string($item))
-            if ($item = $this->verified->get('ss13', $item))
-                return $guild->members->get('id', $item['discord']) ?? false;
-        if (is_array($item))
-            if (isset($item['discord']) && isset($item['ss13']))
-                return $guild->members->get('id', $item['discord']) ?? false;
-        if ($item instanceof Member || $item instanceof User)
-                return $this->verified->get('discord', $item->id) ? $item : false;
-        return false;
+        if (is_string($item)) {
+            if (! $item = $this->verified->get('ss13', $item)) return false;
+            if (! $member = $guild->members->get('id', $item['discord'])) return false;
+            return $member;
+        }
+        if (is_array($item)) {
+            if (isset($item['discord'])) {
+                if (! is_numeric($item['discord'])) return false;
+                if (! $member = $guild->members->get('id', $item['discord'])) return false;
+                return $member;
+            }
+            if (isset($item['ss13'])) {
+                if (! $item['ss13'] = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $item['ss13']))) return false;
+                if (! $item = $this->verified->get('ss13', $item['ss13'])) return false;
+                if (! $member = $guild->members->get('id', $item['discord'])) return false;
+                return $member;
+            }
+            return false;
+        }
+        if ($item instanceof Member)
+            return $this->verified->get('discord', $item->id) ? $item : false;
+        if ($item instanceof User)
+            return $this->verified->get('discord', $item->id) ? $guild->members->get('id', $item->id) ?? false : false;
+        return false; // If $item is not a string, array, Member, or User, return false (this should never happen)
     }
 
     public function getRole($id): Role|false
