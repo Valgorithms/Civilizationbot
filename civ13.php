@@ -512,17 +512,16 @@ class Civ13
     {
         // Get the guild (required to get the member)
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
-        
-        // Sanitize input
-        if (is_string($input) && ! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
 
         // Get Discord ID
         $id = null;
         if ($input instanceof Member || $input instanceof User) {
             $id = $input->id;
         } elseif (is_numeric($input)) {
+            if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
             $id = $input;
         } elseif (is_string($input)) {
+            if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
             if (! $item = $this->verified->get('ss13', $input)) return false;
             if (! isset($item['discord'])) return false;
             $id = $item['discord'];
