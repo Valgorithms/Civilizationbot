@@ -475,7 +475,7 @@ class Civ13
     */
     public function sanitizeInput(string $input): string
     {
-        return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', ' '], '', $input));
+        return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', ' '], '', strtolower($input)));
     }
 
     public function isVerified(string $input): bool
@@ -897,6 +897,7 @@ class Civ13
     */
     public function bancheck(string $ckey, $bypass = false): bool
     {
+        if (! $ckey = $this->sanitizeInput($ckey)) return false;
         $banned = ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
         if (! $bypass && $member = $this->getVerifiedMember($ckey))
             if ($banned && ! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
