@@ -528,7 +528,7 @@ class Civ13
             $id = $item['discord'];
         } elseif (is_array($input)) {
             if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
-            if (isset($input['discord'])) $id = $input['discord'];
+            if (isset($input['discord'])) $id = $this->sanitizeCkeyOrDiscordID($input['discord']);
             elseif (isset($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeCkeyOrDiscordID($input['ss13']))) $id = $item['discord'];
             //else return false; // If $input is an array, but does not have a discord or ss13 key, return false (this should never happen)
         } //else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
