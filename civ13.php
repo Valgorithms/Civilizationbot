@@ -523,6 +523,8 @@ class Civ13
     public function getVerifiedMember(Member|User|string|array $item): Member|false
     {
         if (is_string($item) && ! $item = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $item))) return false;
+        if (is_array($item) && ! isset($item['discord']) && ! isset($item['ss13'])) return false;
+
         if ($item instanceof Member) {
             if (! $this->verified->get('discord', $item->id)) return false;
             return $item;
@@ -550,7 +552,6 @@ class Civ13
                 if (! $member = $guild->members->get('id', $item['discord'])) return false;
                 return $member;
             }
-            return false;
         }
         if ($item instanceof User) {
             if (! $this->verified->get('discord', $item->id)) return false;
