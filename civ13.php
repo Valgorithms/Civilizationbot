@@ -470,9 +470,12 @@ class Civ13
         else $this->logger->warning("Failed top create new config for guild {$guild->name}");
     }
 
-    public function sanitizeCkeyOrDiscordID(string $input): string
+    /*
+    * This function is used to get either sanitize a ckey or a Discord snowflake
+    */
+    public function sanitizeInput(string $input): string
     {
-        return trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $input));
+        return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', ' '], '', $input));
     }
 
     public function isVerified(string $input): bool
@@ -480,7 +483,8 @@ class Civ13
         return $this->verified->get('ss13', $input) ?? (is_numeric($input) && ($this->verified->get('discord', $input)));
     }
     
-    /* This function is used to fetch the bot's cache of verified members that are currently found in the Civ13 Discord server
+    /*
+    * This function is used to fetch the bot's cache of verified members that are currently found in the Civ13 Discord server
     * If the bot is not in the Civ13 Discord server, it will return the bot's cache of verified members
     */
     public function getVerifiedMemberItems(): Collection
@@ -489,61 +493,74 @@ class Civ13
         return $this->verified;
     }
 
+    /*
+    * This function is used to get a verified item from a ckey or Discord ID
+    * If the user is verified, it will return an array containing the verified item
+    * It will return false if the user is not verified
+    */
     public function getVerifiedItem(Member|User|array|string $input): array|false
     {
-
         // Get the verified item
         if (is_string($input)) {
-            if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
+            if (! $input = $this->sanitizeInput($input)) return false;
             if (is_numeric($input) && $item = $this->verified->get('discord', $input)) return $item;
             elseif ($item = $this->verified->get('ss13', $input)) return $item;
         } elseif ($input instanceof Member || $input instanceof User) {
             if ($item = $this->verified->get('discord', $input->id)) return $item;
         } elseif (is_array($input)) {
             if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
-            if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->verified->get('discord', $this->sanitizeCkeyOrDiscordID($input['discord']))) return $item;
-            if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeCkeyOrDiscordID($input['ss13']))) return $item;
-        } //else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)+
-
+            if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->verified->get('discord', $this->sanitizeInput($input['discord']))) return $item;
+            if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) return $item;
+        } //else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
         return false;
     }
 
+    /*
+    * This function is used to get a Member object from a ckey or Discord ID
+    * It will return false if the user is not verified, if the user is not in the Civ13 Discord server, or if the bot is not in the Civ13 Discord server
+    */
     public function getVerifiedMember(Member|User|array|string $input): Member|false
     {
         // Get the guild (required to get the member)
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
-
         // Get Discord ID
         $id = null;
         if ($input instanceof Member || $input instanceof User) { // If $input is a Member or User, get the Discord ID
             $id = $input->id;
-        } elseif (is_numeric($input)) { // If $input is a number, it could be a Discord ID
-            if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
-            $id = $input;
-        } elseif (is_string($input)) { // If $input is a string, it could be a ckey
-            if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
-            if (! $item = $this->verified->get('ss13', $input)) return false;
-            $id = $item['discord'];
+        } elseif (is_string($input)) { // If $input is a string, it could be either a ckey or Discord ID
+            if (! $input = $this->sanitizeInput($input)) {
+                $this->logger->warning("An invalid string was passed to getVerifiedMember()");
+                return false;
+            } elseif (is_numeric($input)) { // If $input is not a number, it is probably a ckey
+                $id = $input;
+            } else {
+                if (! $item = $this->verified->get('ss13', $input)) return false;
+                $id = $item['discord'];
+            }
         } elseif (is_array($input)) { // If $input is an array, it could contain either a ckey or a Discord ID
             if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
-            elseif (isset($input['discord']) && is_string($input['discord']) && is_numeric($input['discord'] = $this->sanitizeCkeyOrDiscordID($input['discord']))) $id = $input['discord'];
-            elseif (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeCkeyOrDiscordID($input['ss13']))) $id = $item['discord'];
+            elseif (isset($input['discord']) && is_string($input['discord']) && is_numeric($input['discord'] = $this->sanitizeInput($input['discord']))) $id = $input['discord'];
+            elseif (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) $id = $item['discord'];
             else return false; // If $input is an array, but contains invalid data, return false
         } //else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
-
-        // Check if Discord ID is in the verified collection
-        if (! $id || ! $this->isVerified($id)) return false;
-
-        // Get the member
-        if (! $member = $guild->members->get('id', $id)) return false;
-        return $member;
+        if (! $id || ! $this->isVerified($id)) return false; // Check if Discord ID is in the verified collection
+        if ($member = $guild->members->get('id', $id)) return $member; // Get the member from the guild
+        return false;
     }
 
-    public function getRole($id): Role|false
+    public function getRole(string $input): ?Role
     {
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
-        if ($id && $role = $guild->roles->get('id', $id)) return $role;
-        return false;
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null;
+        if (! $input) {
+            $this->logger->warning("An invalid string was passed to getRole()");
+            return null;
+        }
+        if (is_numeric($id = $this->sanitizeInput($input)))
+            if ($role = $guild->roles->get('id', $id))
+                return $role;
+        if ($role = $guild->roles->get('name', $input)) return $role;
+        $this->logger->warning("Could not find role with id or name `$input`");
+        return null;
     }
     
     /*

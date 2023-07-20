@@ -397,7 +397,8 @@ class Slash
 
         $this->civ13->discord->listenCommand('ban', function ($interaction): void
         {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban(['ckey' => $interaction->data->options['ckey']->value, 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->banappeal}"], $this->civ13->getVerifiedItem($interaction->user)['ss13'])));
+            $arr = ['ckey' => $interaction->data->options['ckey']->value, 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->banappeal}"];
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban($arr, $this->civ13->getVerifiedItem($interaction->user)['ss13'])));
         });
         
         $this->civ13->discord->listenCommand('unban', function ($interaction): void
