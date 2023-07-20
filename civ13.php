@@ -489,45 +489,23 @@ class Civ13
         return $this->verified;
     }
 
-    public function getVerifiedItem(Member|User|array|string $id) //TODO: This function is a mess, clean it up
+    public function getVerifiedItem(Member|User|array|string $input): array|false
     {
-        if (is_numeric($id) && $item = $this->verified->get('discord', $id)) return $item;
-        if ($item = $this->verified->get('ss13', $id)) return $item;
-        preg_match('/<@(\d+)>/', $id, $matches);
-        if (isset($matches[1]) && is_numeric($matches[1]) && $item = $this->verified->get('discord', $matches[1])) return $item;
+
+        // Get the verified item
+        if (is_string($input)) {
+            if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
+            if (is_numeric($input) && $item = $this->verified->get('discord', $input)) return $item;
+            elseif ($item = $this->verified->get('ss13', $input)) return $item;
+        } else if ($input instanceof Member || $input instanceof User) {
+            if ($item = $this->verified->get('discord', $input->id)) return $item;
+        } elseif (is_array($input)) {
+            if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
+            if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->verified->get('discord', $this->sanitizeCkeyOrDiscordID($input['discord']))) return $item;
+            if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeCkeyOrDiscordID($input['ss13']))) return $item;
+        } //else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)+
+
         return false;
-
-        
-        if (is_string($id)) {
-            if (! $id = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $id))) return false;
-            if (is_numeric($id)) {
-                if (! $item = $this->verified->get('discord', $id)) return false;
-                return $item;
-            }
-            if (! $item = $this->verified->get('ss13', $id)) return false;
-            return $item;
-        }
-
-        if (is_array($id)) {
-            if (isset($id['discord'])) {
-                if (! is_numeric($id['discord'])) return false;
-                if (! $item = $this->verified->get('discord', $id['discord'])) return false;
-                return $item;
-            }
-            if (isset($id['ss13'])) {
-                if (! $id['ss13'] = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $id['ss13']))) return false;
-                if (! $id = $this->verified->get('ss13', $id['ss13'])) return false;
-                if (! $item = $this->verified->get('id', $id['ss13'])) return false;
-                return $item;
-            }
-            return false;
-        }
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
-        if ($id instanceof Member || $id instanceof User) {
-            if (! $item = $this->verified->get('discord', $id->id)) return false;
-            return $item;
-        }
-        return false; // If $id is not a string, array, Member, or User, return false (this should never happen)
     }
 
     public function getVerifiedMember(Member|User|array|string $input): Member|false
@@ -536,8 +514,7 @@ class Civ13
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
         
         // Sanitize input
-        if (is_array($input) && !isset($input['discord']) && !isset($input['ss13'])) return false;
-        elseif (is_string($input) && ! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
+        if (is_string($input) && ! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
 
         // Get Discord ID
         $id = null;
@@ -550,6 +527,7 @@ class Civ13
             if (! isset($item['discord'])) return false;
             $id = $item['discord'];
         } elseif (is_array($input)) {
+            if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
             if (isset($input['discord'])) $id = $input['discord'];
             elseif (isset($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeCkeyOrDiscordID($input['ss13']))) $id = $item['discord'];
             //else return false; // If $input is an array, but does not have a discord or ss13 key, return false (this should never happen)
