@@ -523,7 +523,6 @@ class Civ13
         } elseif (is_string($input)) {
             if (! $input = $this->sanitizeCkeyOrDiscordID($input)) return false;
             if (! $item = $this->verified->get('ss13', $input)) return false;
-            if (! isset($item['discord'])) return false;
             $id = $item['discord'];
         } elseif (is_array($input)) {
             if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
