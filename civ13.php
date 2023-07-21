@@ -1831,19 +1831,19 @@ class Civ13
     * Returns true if the whitelist files are successfully updated, false otherwise
     * If an additional whitelist is provided, it will be added to the list of whitelists to update
     */
-    public function factionlistUpdate(array $factionlists = []): bool
+    public function factionlistUpdate(): bool
     {
-        if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) {
-            $this->logger->warning("Faction roles `red` and `blue` were not found in the role_ids config");
+        if (! isset($this->role_ids['red'], $this->role_ids['blue'], $this->role_ids['organizer'])) {
+            $this->logger->debug("Faction roles `red`, `blue`, and `organizer` were not found in the `role_ids` config");
             return false; // If the bot is missing the required faction role IDs, return false
         }
         $keys = [];
         foreach (array_keys($this->server_settings) as $key) $keys[] = strtolower($key);
 
         $fl = [];
-        foreach ($keys as $key) if (isset($this->files["{$key}_factionlist"]) && !in_array($this->files["{$key}_factionlist"], $fl)) array_unshift($fl, $this->files["{$key}_factionlist"]);
+        foreach ($keys as $key) if (isset($this->files["{$key}_factionlist"]) && ! in_array($this->files["{$key}_factionlist"], $fl)) array_unshift($fl, $this->files["{$key}_factionlist"]);
         if (empty($fl)) {
-            $this->logger->warning("No factionlist files were found in the files config");
+            $this->logger->debug("No factionlist files were found in the `files` config");
             return false;
         }
         foreach ($fl as $file_path) {
@@ -1853,6 +1853,7 @@ class Civ13
                 if (! $member = $this->getVerifiedMember($item)) continue;
                 if ($member->roles->has($this->role_ids['red'])) fwrite($file, "{$item['ss13']};red" . PHP_EOL);
                 if ($member->roles->has($this->role_ids['blue'])) fwrite($file, "{$item['ss13']};blue" . PHP_EOL);
+                if ($member->roles->has($this->role_ids['organizer'])) fwrite($file, "{$item['ss13']};organizer" . PHP_EOL);
             }
             fclose($file);
         }
@@ -1864,14 +1865,19 @@ class Civ13
     * Returns true if the adminlist files are successfully updated, false otherwise
     * If an additional adminlist is provided, it will be added to the list of adminlists to update
     */
-    public function adminlistUpdate(array $adminlists = [], $defaults = true): bool
+    public function adminlistUpdate($defaults = true): bool
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
         // $this->logger->debug('Updating admin lists');
         // Prepend default admin lists if they exist and haven't been added already
-        $defaultLists = ['tdm_admins', 'nomads_admins'];
-        if ($defaults) foreach ($defaultLists as $adminlist) if (isset($this->files[$adminlist]) && !in_array($adminlist, $adminlists))
-            array_unshift($adminlists, $adminlist);
+        
+        
+        $adminlists = [];
+        if ($defaults) {
+            $defaultLists = [];
+            foreach (array_keys($this->server_settings) as $key) $defaultLists[] = strtolower($key) . '_admins';
+            foreach ($defaultLists as $adminlist) if (isset($this->files[$adminlist]) && !in_array($adminlist, $adminlists)) array_unshift($adminlists, $adminlist);
+        }
 
         // Check that all required roles are properly declared in the bot's config and exist in the guild
         $required_roles = [
@@ -1888,7 +1894,7 @@ class Civ13
             'mentor' => ['Mentor', '16384'],
         ];
         // If any required roles are missing, return false
-        if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the bot\'s config', $diff); return false; }
+        if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the `role_ids` config', $diff); return false; }
         foreach (array_keys($required_roles) as $role) if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
         
         // Write each verified member's SS13 ckey and associated role with its bitflag permission to the adminlist file
