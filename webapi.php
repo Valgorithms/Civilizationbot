@@ -870,10 +870,16 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 });
 $webapi->listen($socket);
 $webapi->on('error', function ($e) use ($civ13, $socket) {
-    $civ13->logger->error('API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString()));
+    $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
+    $civ13->logger->error($error);
     if (str_starts_with($e->getMessage(), 'The response callback')) {
         $civ13->logger->info('[RESTART] WEBAPI ERROR');
-        if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) $channel->sendMessage('Restarting...');
+        if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
+            $builder = \Discord\Builders\MessageBuilder::new()
+                ->setContent('Restarting due to error in HttpServer API...')
+                ->addFileFromContent("httpserver_error.txt", $error);
+            $channel->sendMessage($builder);
+        }
         $socket->close();
         $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
             \restart();
