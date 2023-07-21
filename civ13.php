@@ -732,7 +732,8 @@ class Civ13
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
-                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
+                $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
+                $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban($arr));
                 return $reason;
             }
             $found = false;
@@ -1464,13 +1465,17 @@ class Civ13
                 if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
-                    if ($ckeyinfo['altbanned']) $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"]))); //Automatically ban evaders
-                    else foreach ($ckeyinfo['ips'] as $ip) {
+                    if ($ckeyinfo['altbanned']) {
+                        $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                        $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban($arr))); //Automatically ban evaders
+                    } else foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) {
-                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"])));
+                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban($arr)));
                             break;
                         } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) {
-                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"])));
+                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                            $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban($arr)));
                             break 2;
                         }
                     }
@@ -1478,8 +1483,10 @@ class Civ13
                 if ($this->verified->get('ss13', $ckey)) continue;
                 if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey);
                 if (isset($this->ages[$ckey])) continue;
-                if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey]))
-                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban(['ckey' => $ckey, 'reason' => '999 years', 'duration' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"]));
+                if (! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) {
+                    $arr = ['ckey' => $ckey, 'reason' => '999 years', 'duration' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
+                    $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage($this->ban($arr));
+                }
             }
         };
         $serverinfoTimer();
@@ -1725,7 +1732,10 @@ class Civ13
     private function __relayViolation(string $server, string $ckey, array $badwords_array)
     {
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
-        if (! $this->__relayWarningCounter($ckey, $badwords_array)) return $this->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->banappeal}"]);
+        if (! $this->__relayWarningCounter($ckey, $badwords_array)) {
+            $arr = ['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->banappeal}"];
+            return $this->ban($arr);
+        }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
         if (str_contains($server, 'nomads')) return $this->DirectMessageNomads('AUTOMOD', $warning, $ckey);
