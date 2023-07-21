@@ -216,7 +216,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     });
                     function sendGetRequest(endpoint) {
                         var xhr = new XMLHttpRequest();
-                        xhr.open('GET', window.location.protocol + '// ' + window.location.hostname + ':" . $port . "/' + endpoint, true);
+                        xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':" . $port . "/' + endpoint, true);
                         xhr.onload = function() {
                             var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
                             var alertContainer = document.querySelector('.alert-container');
