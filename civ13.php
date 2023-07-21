@@ -1834,12 +1834,12 @@ class Civ13
     public function factionlistUpdate(array $factionlists = []): bool
     {
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
-        $factionlists2 = $factionlists;
-        if (isset($this->files['tdm_factionlist']) && !in_array($this->files['tdm_factionlist'], $factionlists)) array_unshift($factionlists, $this->files['tdm_factionlist']);
-        if (isset($this->files['nomads_factionlist']) && !in_array($this->files['nomads_factionlist'], $factionlists)) array_unshift($factionlists2, $this->files['nomads_factionlist']);
-        if (empty($factionlists)) return false;
-        foreach ($factionlists as $factionlist) {
-            if (! file_exists($factionlist) || ! ($file = @fopen($factionlist, 'a'))) continue;
+        $fl = [];
+        $keys = ['tdm', 'nomads'];
+        foreach ($keys as $key) if (isset($this->files["{$key}_factionlist"]) && !in_array($this->files["{$key}_factionlist"], $factionlists)) array_unshift($fl, $this->files["{$key}_factionlist"]);
+        if (empty($fl)) return false;
+        foreach ($fl as $file_path) {
+            if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'a'))) continue;
             ftruncate($file, 0);
             foreach ($this->verified as $item) {
                 if (! $member = $this->getVerifiedMember($item)) continue;

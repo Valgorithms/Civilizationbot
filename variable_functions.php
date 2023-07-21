@@ -492,7 +492,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'register')) { // This function is only authorized to be used by the database administrator
         if ($message->member->id != $civ13->technician_id) return $message->react("❌");
-        $split_message = explode('; ', trim(substr($message_content_lower, strlen('register'))));
+        $split_message = explode(';', trim(substr($message_content_lower, strlen('register'))));
         if (! $ckey = $civ13->sanitizeInput($split_message[0])) return $message->reply('Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
         if (! is_numeric($discord_id = $civ13->sanitizeInput($split_message[1]))) return $message->reply("Discord id `$discord_id` must be numeric.");
         return $message->reply($civ13->registerCkey($ckey, $discord_id)['error']);
