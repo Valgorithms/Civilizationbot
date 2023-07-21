@@ -118,6 +118,7 @@ if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { //
 }
 
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
+
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $external_ip, $valzargaming_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts)
 {
     // Port knocking security check
@@ -868,7 +869,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     }
     return new Response(200, ['Content-Type' => 'text/json'], json_encode($return ?? ''));
 });
-$webapi->listen($socket);
+//$webapi->listen($socket); // Moved to civ13.php
 $webapi->on('error', function ($e) use ($civ13, $socket) {
     $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error($error);

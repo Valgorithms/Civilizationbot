@@ -66,6 +66,8 @@ include 'variable_functions.php';
 include 'verifier_functions.php';
 include 'civ13.php';
 
+$webapi = null;
+$socket = null;
 $options = array(
     'loop' => $loop,
     'discord' => $discord,
@@ -73,6 +75,9 @@ $options = array(
     'filesystem' => $filesystem,
     'logger' => $logger,
     'stats' => $stats,
+
+    'webapi' => &$webapi,
+    'socket' => &$socket,
     
     // Configurations
 

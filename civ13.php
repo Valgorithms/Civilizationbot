@@ -27,6 +27,7 @@ use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\Http\Browser;
 use React\Http\HttpServer;
+use React\Socket\SocketServer;
 use React\EventLoop\TimerInterface;
 use React\Filesystem\Factory as FilesystemFactory;
 
@@ -49,6 +50,7 @@ class Civ13
     public $filecache_path = '';
     
     protected HttpServer $webapi;
+    protected SocketServer $socket;
     
     public collection $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
@@ -207,23 +209,31 @@ class Civ13
         else $this->logger->warning('No channel_ids passed in options!');
         if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
         else $this->logger->warning('No role_ids passed in options!');
-        $this->afterConstruct($server_options);
+        $this->afterConstruct($options, $server_options);
     }
     
     /*
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
-    protected function afterConstruct(array $server_options = [])
+    protected function afterConstruct(array $options = [], array $server_options = [])
     {
         $this->vzg_ip = gethostbyname('www.valzargaming.com');
         $this->civ13_ip = gethostbyname('www.civ13.com');
         $this->external_ip = file_get_contents('http://ipecho.net/plain');
 
         if (isset($this->discord)) {
-            $this->discord->once('ready', function () {
+            $this->discord->once('ready', function () use ($options) {
                 $this->ready = true;
                 $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
+                $this->logger->info('------');
+                if (isset($options['webapi'], $options['socket'])) {
+                    $this->logger->info('setting up HttpServer API');
+                    $this->webapi = $options['webapi'];
+                    $this->socket = $options['socket'];
+                    $this->webapi->listen($this->socket);
+                }
+
                 $this->logger->info('------');
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
                 $this->tests = $tests;
