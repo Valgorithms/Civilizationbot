@@ -337,5 +337,13 @@ $options = array(
 );
 if (include 'civ_token.php') $options['civ_token'] = $civ_token;
 $civ13 = new Civ13($options);
+$global_error_handler = function(int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13) {
+    $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
+    if ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
+        if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
+        $channel->sendMessage($msg);
+    }
+};
+set_error_handler($global_error_handler);
 include 'webapi.php'; //$socket, $webapi, webapiFail(), webapiSnow();
 $civ13->run();
