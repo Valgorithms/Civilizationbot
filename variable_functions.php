@@ -12,7 +12,7 @@ use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Activity;
 
 $status_changer_random = function (Civ13 $civ13): bool
-{ //on ready
+{ // on ready
     if (! $civ13->files['status_path']) {
         unset($civ13->timers['status_changer_timer']);
         $civ13->logger->warning('status_path is not defined');
@@ -25,15 +25,15 @@ $status_changer_random = function (Civ13 $civ13): bool
     }
     list($status, $type, $state) = explode('; ', $status_array[array_rand($status_array)]);
     if (! $status) return false;
-    $activity = new Activity($civ13->discord, [ //Discord status            
+    $activity = new Activity($civ13->discord, [ // Discord status            
         'name' => $status,
-        'type' => (int) $type, //0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
+        'type' => (int) $type, // 0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
     ]);
     $civ13->statusChanger($activity, $state);
     return true;
 };
 $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
-{ //on ready
+{ // on ready
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
@@ -316,7 +316,7 @@ $rank_check = function (Civ13 $civ13, $message = null, array $allowed_ranks = []
     $resolved_ranks = [];
     foreach ($allowed_ranks as $rank) $resolved_ranks[] = $civ13->role_ids[$rank];
     foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
-    //$message->reply('Rejected! You need to have at least the [' . ($message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks)) . '] rank.');
+    // $message->reply('Rejected! You need to have at least the [' . ($message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks)) . '] rank.');
     if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
@@ -348,7 +348,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $ckey = $item['ss13'];
         } else $ckey = $id;
         if (! $collectionsArray = $civ13->getCkeyLogCollections($ckey)) return $message->reply('No data found for that ckey.');
-        //$civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
+        // $civ13->logger->debug('Collections array:', $collectionsArray, PHP_EOL);
 
         $embed = new Embed($civ13->discord);
         $embed->setTitle($ckey);
@@ -361,17 +361,17 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $ips = [];
         $cids = [];
         $dates = [];
-        foreach ($collectionsArray[0] as $log) { //Get the ckey's primary identifiers
+        foreach ($collectionsArray[0] as $log) { // Get the ckey's primary identifiers
             if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
             if (isset($log['cid']) && !in_array($log['cid'], $cids)) $cids[] = $log['cid'];
             if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
-        foreach ($collectionsArray[1] as $log) { //Get the ckey's primary identifiers
+        foreach ($collectionsArray[1] as $log) { // Get the ckey's primary identifiers
             if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
             if (isset($log['cid']) && !in_array($log['cid'], $cids)) $cids[] = $log['cid'];
             if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
-        //$civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
+        // $civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
         $ckey_age = [];
         if (!empty($ckeys)) {
             foreach ($ckeys as $c) ($age = $civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
@@ -385,18 +385,18 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         }
         if (!empty($dates)) $embed->addFieldValues('Primary Dates', implode(', ', $dates));
 
-        //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
-        $playerlogs = $civ13->playerlogsToCollection(); //This is ALL players
+        // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
+        $playerlogs = $civ13->playerlogsToCollection(); // This is ALL players
         $i = 0;
         $break = false;
-        do { //Iterate through playerlogs to find all known ckeys, ips, and cids
+        do { // Iterate through playerlogs to find all known ckeys, ips, and cids
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
             $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                //$civ13->logger->debug('Found new match:', $log, PHP_EOL);
+                // $civ13->logger->debug('Found new match:', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
@@ -408,21 +408,21 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $dates = array_unique(array_merge($dates, $found_dates));
             if ($i > 10) $break = true;
             $i++;
-        } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
+        } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
 
         $banlogs = $civ13->bansToCollection();
         $civ13->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
         $found = true;
         $i = 0;
         $break = false;
-        do { //Iterate through playerlogs to find all known ckeys, ips, and cids
+        do { // Iterate through playerlogs to find all known ckeys, ips, and cids
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
             $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                //$civ13->logger->debug('Found new match: ', $log, PHP_EOL);
+                // $civ13->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
@@ -434,7 +434,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $dates = array_unique(array_merge($dates, $found_dates));
             if ($i > 10) $break = true;
             $i++;
-        } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
+        } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
         $altbanned = 'No';
         foreach ($ckeys as $key) if ($key != $ckey) if ($civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
 
@@ -521,7 +521,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $civ13->permitCkey($ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('permit'))));
         return $message->reply("$ckey is now permitted to bypass the Byond account restrictions.");
     }
-    if (str_starts_with($message_content_lower, 'unpermit')) { //Alias for revoke
+    if (str_starts_with($message_content_lower, 'unpermit')) { // Alias for revoke
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $civ13->permitCkey($ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('unpermit'))), false);
         return $message->reply("$ckey is no longer permitted to bypass the Byond account restrictions.");
@@ -611,7 +611,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'nomadsban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $message_content = substr($message_content, 10);
-        $split_message = explode('; ', $message_content); //$split_target[1] is the target
+        $split_message = explode('; ', $message_content); // $split_target[1] is the target
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
@@ -624,7 +624,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'tdmban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $message_content = substr($message_content, 7);
-        $split_message = explode('; ', $message_content); //$split_target[1] is the target
+        $split_message = explode('; ', $message_content); // $split_target[1] is the target
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
@@ -637,7 +637,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'persban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $message_content = substr($message_content, 7);
-        $split_message = explode('; ', $message_content); //$split_target[1] is the target
+        $split_message = explode('; ', $message_content); // $split_target[1] is the target
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
@@ -845,7 +845,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             return $message->channel->sendEmbed($embed);
         }
         return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'ranking.txt'));
-        //return $message->reply("The ranking is too long to display.");
+        // return $message->reply("The ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
         if (! $ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('rankme')))) return $message->reply('Wrong format. Please try `rankme [ckey]`.');
@@ -859,12 +859,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             return $message->channel->sendEmbed($embed);
         }
         return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'rank.txt'));
-        //return $message->reply("Your ranking is too long to display.");
+        // return $message->reply("Your ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'medals')) {
         if (! $ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('medals')))) return $message->reply('Wrong format. Please try `medals [ckey]`.');
         if (! $msg = $medals($civ13, $ckey)) return $message->reply('There was an error trying to get your medals!');
-        if (strlen($msg)<=2000) return $message->reply($msg); //Try embed description? 4096 characters
+        if (strlen($msg)<=2000) return $message->reply($msg); // Try embed description? 4096 characters
         if (strlen($msg)<=4096) {
             $embed = new Embed($civ13->discord);
             $embed->setAuthor($ckey);
@@ -872,7 +872,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             return $message->channel->sendEmbed($embed);
         }
         return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'medals.txt'));
-        //return $message->reply("Too many medals to display.");
+        // return $message->reply("Too many medals to display.");
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
         if (! $ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('brmedals')))) return $message->reply('Wrong format. Please try `brmedals [ckey]`.');
@@ -885,7 +885,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             return $message->channel->sendEmbed($embed);
         }
         return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'brmedals.txt'));
-        //return $message->reply("Too many medals to display.");
+        // return $message->reply("Too many medals to display.");
     }
 
     if (str_starts_with($message_content_lower, 'update bans')) {
@@ -938,18 +938,18 @@ $tdm_discord2admin = function (Civ13 $civ13, $author, $string): bool
 };
 $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin)
 { // on message
-    if (! $message->guild || $message->guild->owner_id != $civ13->owner_id) return; //Only process commands from a guild that Taislin owns
+    if (! $message->guild || $message->guild->owner_id != $civ13->owner_id) return; // Only process commands from a guild that Taislin owns
     if (! $civ13->command_symbol) $civ13->command_symbol = '!s';
     
     $message_content = '';
     $message_content_lower = '';
-    if (str_starts_with($message->content, $civ13->command_symbol . ' ')) { //Add these as slash commands?
+    if (str_starts_with($message->content, $civ13->command_symbol . ' ')) { // Add these as slash commands?
         $message_content = substr($message->content, strlen($civ13->command_symbol)+1);
         $message_content_lower = strtolower($message_content);
-    } elseif (str_starts_with($message->content, "<@!{$civ13->discord->id}>")) { //Add these as slash commands?
+    } elseif (str_starts_with($message->content, "<@!{$civ13->discord->id}>")) { // Add these as slash commands?
         $message_content = trim(substr($message->content, strlen($civ13->discord->id)+4));
         $message_content_lower = strtolower($message_content);
-    } elseif (str_starts_with($message->content, "<@{$civ13->discord->id}>")) { //Add these as slash commands?
+    } elseif (str_starts_with($message->content, "<@{$civ13->discord->id}>")) { // Add these as slash commands?
         $message_content = trim(substr($message->content, strlen($civ13->discord->id)+3));
         $message_content_lower = strtolower($message_content);
     }
@@ -960,24 +960,24 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
-            $p = preg_replace('/\s+/', ' ', $p); //reduce spaces
+            $p = preg_replace('/\s+/', ' ', $p); // reduce spaces
             $p = str_replace('PercentProcessorTime', '', $p);
             $p = str_replace('--------------------', '', $p);
-            $p = preg_replace('/\s+/', ' ', $p); //reduce spaces
+            $p = preg_replace('/\s+/', ' ', $p); // reduce spaces
             $load_array = explode(' ', $p);
 
             $x=0;
             $load = '';
             foreach ($load_array as $line) if (trim($line) && $x == 0) { $load = "CPU Usage: $line%" . PHP_EOL; break; }
             return $message->reply($load);
-        } else { //Linux
+        } else { // Linux
             $cpu_load = ($cpu_load_array = sys_getloadavg()) ? $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array) : '-1';
             return $message->reply("CPU Usage: $cpu_load%");
         }
         return $message->reply('Unrecognized operating system!');
     }
     if (str_starts_with($message_content_lower, 'insult')) {
-        $split_message = explode(' ', $message_content); //$split_target[1] is the target
+        $split_message = explode(' ', $message_content); // $split_target[1] is the target
         if ((count($split_message) <= 1 ) || ! strlen($split_message[1] === 0)) return;
         if (! file_exists($civ13->files['insults_path']) || ! ($file = @fopen($civ13->files['insults_path'], 'r'))) return $message->react("🔥");
         $insults_array = array();
@@ -1001,11 +1001,11 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (str_starts_with($message_content_lower, 'asay ')) {
         $message_filtered = substr($message_content, 5);
         switch (strtolower($message->channel->name)) {
-            //case 'ahelp-nomads': //Deprecated
+            // case 'ahelp-nomads': // Deprecated
             case 'asay-nomads':
                 if (! $nomads_discord2admin($civ13, $message->author->displayname, $message_filtered)) return $message->react("🔥");
                 return $message->react("📧");
-            //case 'ahelp-tdm': //Deprecated
+            // case 'ahelp-tdm': // Deprecated
             case 'asay-tdm':
                 if (! $tdm_discord2admin($civ13, $message->author->displayname, $message_filtered)) return $message->react("🔥");
                 return $message->react("📧");
@@ -1019,12 +1019,12 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         $recipient = array_shift($explode);
         $msg = implode(' ', $explode);
         switch (strtolower($message->channel->name)) {
-            //case 'ahelp-nomads': //Deprecated
+            // case 'ahelp-nomads': // Deprecated
             case 'asay-nomads':
             case 'ooc-nomads':
                 if (! $civ13->DirectMessageNomads($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'])) return $message->react("🔥");
                 return $message->react("📧");
-            //case 'ahelp-tdm': //Deprecated
+            // case 'ahelp-tdm': // Deprecated
             case 'asay-tdm':
             case 'ooc-tdm':
                 if (! $civ13->DirectMessageTDM($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'])) return $message->react("🔥");
@@ -1076,8 +1076,8 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
                 $member->addRole($civ13->role_ids['banished']);
         return;
     }
-    if (str_starts_with($message_content_lower, 'serverstatus')) { //See GitHub Issue #1
-        return; //deprecated
+    if (str_starts_with($message_content_lower, 'serverstatus')) { // See GitHub Issue #1
+        return; // deprecated
         /*
         $embed = new Embed($civ13->discord);
         $_1714 = !\portIsAvailable(1714);
@@ -1158,7 +1158,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
 };
 
 $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
-{ //ready_slash, requires other functions to work
+{ // ready_slash, requires other functions to work
     $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13): void
     {
         $civ13->logger->info('[GIT PULL]');
@@ -1226,5 +1226,5 @@ $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nom
 };
 /*$on_ready = function (Civ13 $civ13): void
 {    
-    //
+    // 
 };*/

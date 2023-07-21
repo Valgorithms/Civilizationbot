@@ -12,11 +12,11 @@ use React\Http\HttpServer;
 use React\Http\Message\Response;
 use \Psr\Http\Message\ServerRequestInterface;
 
-@include getcwd() . '/webapi_token_env.php'; //putenv("WEBAPI_TOKEN='YOUR_TOKEN_HERE'");
-$webhook_key = getenv('WEBAPI_TOKEN') ?? 'CHANGEME'; //The token is used to verify that the sender is legitimate and not a malicious actor
+@include getcwd() . '/webapi_token_env.php'; // putenv("WEBAPI_TOKEN='YOUR_TOKEN_HERE'");
+$webhook_key = getenv('WEBAPI_TOKEN') ?? 'CHANGEME'; // The token is used to verify that the sender is legitimate and not a malicious actor
 
 function webapiFail($part, $id) {
-    //logInfo('[webapi] Failed', ['part' => $part, 'id' => $id]);
+    // logInfo('[webapi] Failed', ['part' => $part, 'id' => $id]);
     return new Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], ($id ? 'Invalid' : 'Missing').' '.$part);
 }
 
@@ -32,7 +32,7 @@ $portknock = false;
 $max_attempts = 3;
 $portknock_ips = []; // ['ip' => ['step' => 0, 'authed' = false]]
 $portknock_servers = [];
-@include getcwd() . '/webapi_portknocks.php'; //putenv("DOORS=['port1', 'port2', 'port1', 'port3', 'port2' 'port1']"); (not a real example)
+@include getcwd() . '/webapi_portknocks.php'; // putenv("DOORS=['port1', 'port2', 'port1', 'port3', 'port2' 'port1']"); (not a real example)
 if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { // The port knocks are used to prevent malicious port scanners from spamming the webapi
     $validatePort = function($value) use ($port) {
         return (
@@ -52,16 +52,16 @@ if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { //
         $portknock = true;
         $initialized_ports = [];
         foreach ($portknock_ports as $p) {
-            if (! in_array($p, $initialized_ports)) { //Don't listen on the same port as the webapi or any other port
+            if (! in_array($p, $initialized_ports)) { // Don't listen on the same port as the webapi or any other port
                 $s = new SocketServer(sprintf('%s:%s', '0.0.0.0', $p), [], $civ13->loop);
                 $w = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $p, $portknock_ips, $portknock_ports, $max_attempts) {
                     // Initialize variables
                     $ip = $request->getServerParams()['REMOTE_ADDR'];
                     $step = 0;
-                    if (! isset($portknock_ips[$ip])) $portknock_ips[$ip] = ['step' => 0, 'authed' => false, 'failed' => 0, 'knocks' => 1]; //First time knocking
-                    elseif (isset($portknock_ips[$ip]['step'])) { //Already knocked
+                    if (! isset($portknock_ips[$ip])) $portknock_ips[$ip] = ['step' => 0, 'authed' => false, 'failed' => 0, 'knocks' => 1]; // First time knocking
+                    elseif (isset($portknock_ips[$ip]['step'])) { // Already knocked
                         $step = $portknock_ips[$ip]['step'];
-                        $portknock_ips[$ip]['knocks']++; //Useful for detecting spam, but not functionally used (yet)
+                        $portknock_ips[$ip]['knocks']++; // Useful for detecting spam, but not functionally used (yet)
                     }
 
                     // Too many failed attempts
@@ -144,7 +144,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     $id = (isset($path[2]) ? (string) $path[2] : false);
     $id2 = (isset($path[3]) ? (string) $path[3] : false);
     $ip = (isset($path[4]) ? (string) $path[4] : false);
-    $idarray = array(); //get from post data (NYI)
+    $idarray = array(); // get from post data (NYI)
     */
     
     $echo = 'API ';
@@ -156,8 +156,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     $ip = $partial = $method2 = (isset($path[4]) ? (string) strtolower($path[4]) : false); if ($partial) $echo .= "/$partial";
     $id3 = (isset($path[5]) ? (string) strtolower($path[5]) : false); if ($id3) $echo .= "/$id3";
     $id4 = (isset($path[6]) ? (string) strtolower($path[6]) : false); if ($id4) $echo .= "/$id4";
-    $idarray = array(); //get from post data (NYI)
-    //$civ13->logger->info($echo);
+    $idarray = array(); // get from post data (NYI)
+    // $civ13->logger->info($echo);
     
     if ($ip) $civ13->logger->info('API IP ' . $ip);
     $whitelist = [
@@ -215,7 +215,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     });
                     function sendGetRequest(endpoint) {
                         var xhr = new XMLHttpRequest();
-                        xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':" . $port . "/' + endpoint, true);
+                        xhr.open('GET', window.location.protocol + '// ' + window.location.hostname + ':" . $port . "/' + endpoint, true);
                         xhr.onload = function() {
                             var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
                             var alertContainer = document.querySelector('.alert-container');
@@ -437,11 +437,11 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 
     switch ($sub) {
         case (str_starts_with($sub, 'index.')):
-            $return = '<meta http-equiv="refresh" content="0 url=\'https://www.valzargaming.com/?login\'" />'; //Redirect to the website to log in
+            $return = '<meta http-equiv="refresh" content="0 url=\'https://www.valzargaming.com/?login\'" />'; // Redirect to the website to log in
             return new Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'github':
-            $return = '<meta http-equiv = \"refresh\" content = \"0; url = https://github.com/VZGCoders/Civilizationbot\" />'; //Redirect to the website to log in
+            $return = '<meta http-equiv = \"refresh\" content = \"0; url = https://github.com/VZGCoders/Civilizationbot\" />'; // Redirect to the website to log in
             return new Response(200, ['Content-Type' => 'text/html'], $return);
             break;
         case 'favicon.ico':
@@ -586,7 +586,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
             if (! $id || !webapiSnow($id)) return webapiFail('user_id', $id); $return = false;
-            if ($user = $civ13->discord->users->get('id', $id)) { //Search all guilds the bot is in and check if the user id exists as a guild owner
+            if ($user = $civ13->discord->users->get('id', $id)) { // Search all guilds the bot is in and check if the user id exists as a guild owner
                 foreach ($civ13->discord->guilds as $guild) {
                     if ($id == $guild->owner_id) {
                         $return = true;
@@ -600,10 +600,10 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             if (! $id || !webapiSnow($id)) return webapiFail('user_id', $id);
             if (! $user = $civ13->discord->users->get('id', $id)) $return = 'https://cdn.discordapp.com/embed/avatars/'.rand(0,4).'.png';
             else $return = $user->avatar;
-            //if (! $return) return new Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], (''));
+            // if (! $return) return new Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], (''));
             break;
 
-        case 'avatars': //This needs to be optimized to not use async code
+        case 'avatars': // This needs to be optimized to not use async code
             /*
             $idarray = $data ?? array(); // $data contains POST data
             $results = [];
@@ -631,10 +631,10 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             break;
 
         case 'webhook':
-            $server =& $method; //alias for readability
+            $server =& $method; // alias for readability
             if (! isset($civ13->channel_ids[$server.'_debug_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_debug_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
             $params = $request->getQueryParams();
-            //var_dump($params);
+            // var_dump($params);
             if (! $whitelisted && (! isset($params['key']) || $params['key'] != $webhook_key)) return new Response(401, ['Content-Type' => 'text/plain'], 'Unauthorized');
             if (! isset($params['method']) || ! isset($params['data'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Missing Parameters');
             $data = json_decode($params['data'], true);
@@ -650,9 +650,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (! isset($civ13->channel_ids[$server.'_asay_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_asay_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     if (isset($data['message'])) $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel_id)) 
-                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
+                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Relay handled by civ13->gameChatWebhookRelay
                     break;
-                case 'lobbymessage': //Might overlap with deadchat
+                case 'lobbymessage': // Might overlap with deadchat
                     if (! isset($civ13->channel_ids[$server.'_lobby_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_lobby_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $message .= "**__{$time} LOBBY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
                     break;
@@ -660,7 +660,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (! isset($civ13->channel_ids[$server.'_ooc_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_ooc_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
                     if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel_id))
-                        return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
+                        return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Relay handled by civ13->gameChatWebhookRelay
                     if ($civ13->relay_method === 'file' && ! $ckey && str_ends_with($message, 'starting!') && $strpos = strpos($message, 'New round ')) {
                         $new_message = '';
                         if (isset($civ13->role_ids['round_start'])) $new_message .= "<@&{$civ13->role_ids['round_start']}>, ";
@@ -684,7 +684,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (! isset($civ13->channel_ids[$server.'_ic_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_ic_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
                     if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel_id, false))
-                        return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Relay handled by civ13->gameChatWebhookRelay
+                        return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Relay handled by civ13->gameChatWebhookRelay
                     break;
                 case 'memessage':
                     if (isset($data['message'])) $message .= "**__{$time} EMOTE__ $ckey** " . html_entity_decode(urldecode($data['message']));
@@ -694,7 +694,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     break;
                 case 'round_start':
                     if (! isset($civ13->channel_ids[$server]) || ! $channel_id = $civ13->channel_ids[$server]) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    if ($civ13->relay_method !== 'webhook') return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Only relay if using webhook
+                    if ($civ13->relay_method !== 'webhook') return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Only relay if using webhook
                     if (isset($civ13->role_ids['round_start'])) $message .= "<@&{$civ13->role_ids['round_start']}>, ";
                     $message .= 'New round ';
                     if (isset($data['round']) && $game_id = $data['round']) {
@@ -717,11 +717,11 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     // A future update should include a way to call a $civ13 function using the server and round id
                     break;
                 case 'respawn_notice':
-                    //if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
+                    // if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
                     if (isset($data['message'])) $message .= html_entity_decode(urldecode($data['message']));
                     break;
                 case 'login':
-                    //Move this to a function in civ13.php
+                    // Move this to a function in civ13.php
                     if (isset($civ13->paroled[$ckey])
                         && isset($civ13->channel_ids['parole_notif'])
                         && $parole_log_channel = $civ13->discord->getChannel($civ13->channel_ids['parole_notif'])
@@ -748,7 +748,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= '.';
                     break;
                 case 'logout':
-                    //Move this to a function in civ13.php    
+                    // Move this to a function in civ13.php    
                     if (isset($civ13->paroled[$ckey])
                         && isset($civ13->channel_ids['parole_notif'])
                         && $parole_log_channel = $civ13->discord->getChannel($civ13->channel_ids['parole_notif'])
@@ -781,7 +781,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
                     break;
                 case 'attacklogmessage':
-                    if ($server == 'tdm' && ! (! isset($data['ckey2']) || ! $data['ckey2'] || ($data['ckey'] !== $data['ckey2']))) return new Response(200, ['Content-Type' => 'text/html'], 'Done'); //Disabled on TDM, use manual checking of log files instead
+                    if ($server == 'tdm' && ! (! isset($data['ckey2']) || ! $data['ckey2'] || ($data['ckey'] !== $data['ckey2']))) return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Disabled on TDM, use manual checking of log files instead
                     if (! isset($civ13->channel_ids[$server.'_attack_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                     $channel_id = $civ13->channel_ids[$server.'_attack_channel'];
                     $message .= "**__{$time} ATTACK LOG__**: " . strip_tags($data['message']);

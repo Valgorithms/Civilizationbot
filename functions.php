@@ -7,14 +7,14 @@
  */
 
 if (PHP_OS_FAMILY == 'Windows') {
-    function spawnChildProcess($cmd) { //Not tested
+    function spawnChildProcess($cmd) { // Not tested
         execInBackground($cmd);
     }
     function execInBackground($cmd) {
-        pclose(popen("start {$cmd}", "r")); //pclose(popen("start /B ". $cmd, "r"));;
+        pclose(popen("start {$cmd}", "r")); // pclose(popen("start /B ". $cmd, "r"));;
     };
     function restart() {
-        pclose(popen('cmd /c "'. getcwd() . '\run.bat"', "r")); //pclose(popen("start /B ". $cmd, "r"));;
+        pclose(popen('cmd /c "'. getcwd() . '\run.bat"', "r")); // pclose(popen("start /B ". $cmd, "r"));;
     };
 } else {
     function spawnChildProcess($cmd) {
@@ -45,7 +45,7 @@ if (PHP_OS_FAMILY == 'Windows') {
         return $process;
     }
     function execInBackground($cmd) {
-        //exec("sudo $cmd > /dev/null &"); //Executes within the same shell
+        // exec("sudo $cmd > /dev/null &"); // Executes within the same shell
         $descriptorspec = [
             0 => ['pipe', 'r'],
             1 => ['pipe', 'w'],
@@ -58,7 +58,7 @@ if (PHP_OS_FAMILY == 'Windows') {
         echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
     };
     function restart() {
-        //exec("sudo nohup php8.1 bot.php > botlog.txt &");
+        // exec("sudo nohup php8.1 bot.php > botlog.txt &");
         $descriptorspec = [
             0 => ['pipe', 'r'],
             1 => ['pipe', 'w'],

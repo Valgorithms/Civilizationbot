@@ -50,38 +50,38 @@ class Civ13
     
     protected HttpServer $webapi;
     
-    public collection $verified; //This probably needs a default value for Collection, maybe make it a Repository instead?
+    public collection $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
-    public array $provisional = []; //Allow provisional registration if the website is down, then try to verify when it comes back up
-    public array $paroled = []; //List of ckeys that are no longer banned but have been paroled
-    public array $ages = []; //$ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
-    public string $minimum_age = '-21 days'; //Minimum age of a ckey
-    public array $permitted = []; //List of ckeys that are permitted to use the verification command even if they don't meet the minimum account age requirement or are banned with another ckey
+    public array $provisional = []; // Allow provisional registration if the website is down, then try to verify when it comes back up
+    public array $paroled = []; // List of ckeys that are no longer banned but have been paroled
+    public array $ages = []; // $ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
+    public string $minimum_age = '-21 days'; // Minimum age of a ckey
+    public array $permitted = []; // List of ckeys that are permitted to use the verification command even if they don't meet the minimum account age requirement or are banned with another ckey
     public array $blacklisted_regions = ['77.124', '77.125', '77.126', '77.127', '77.137.', '77.138.', '77.139.', '77.238.175', '77.91.69', '77.91.71', '77.91.74', '77.91.79', '77.91.88'];
     public array $blacklisted_countries = ['IL', 'ISR'];
 
     public array $timers = [];
-    public array $serverinfo = []; //Collected automatically by serverinfo_timer
-    public array $players = []; //Collected automatically by serverinfo_timer
-    public array $seen_players = []; //Collected automatically by serverinfo_timer
+    public array $serverinfo = []; // Collected automatically by serverinfo_timer
+    public array $players = []; // Collected automatically by serverinfo_timer
+    public array $seen_players = []; // Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
 
     public array $current_rounds = [];
     public array $rounds = [];
 
-    public array $server_settings = ['Nomads' => [], 'TDM' => []]; //NYI, this will replace most individual variables
-    public string $relay_method = 'webhook'; //Method to use for relaying messages to Discord, either 'webhook' or 'file'
-    public bool $moderate = true; //Whether or not to moderate the servers using the badwords list
+    public array $server_settings = ['Nomads' => [], 'TDM' => []]; // NYI, this will replace most individual variables
+    public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
+    public bool $moderate = true; // Whether or not to moderate the servers using the badwords list
     public array $badwords = [
         /* Format:
-            'word' => 'bad word' //Bad word to look for
-            'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] //Duration of the ban
-            'reason' => 'reason' //Reason for the ban
-            'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] //Used to group bad words together by category
-            'method' => detection method ['exact', 'contains'] //Exact ignores partial matches, contains matches partial matchesq
-            'warnings' => 1 //Number of warnings before a ban
+            'word' => 'bad word' // Bad word to look for
+            'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] // Duration of the ban
+            'reason' => 'reason' // Reason for the ban
+            'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] // Used to group bad words together by category
+            'method' => detection method ['exact', 'contains'] // Exact ignores partial matches, contains matches partial matchesq
+            'warnings' => 1 // Number of warnings before a ban
         */
-        ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'contains', 'warnings' => 1], //Used to test the system
+        ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'contains', 'warnings' => 1], // Used to test the system
         
         ['word' => 'beaner', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
         ['word' => 'chink', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
@@ -97,13 +97,13 @@ class Civ13
         ['word' => 'cunt', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
         ['word' => 'fuck you', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
         ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
-        ['word' => 'kys', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], //This is more severe than the others, so ban after only one warning
+        ['word' => 'kys', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
         
         ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
         ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
     ];
-    public array $badwords_warnings = []; //Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
-    public bool $legacy = true; //If true, the bot will use the file methods instead of the SQL ones
+    public array $badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
+    public bool $legacy = true; // If true, the bot will use the file methods instead of the SQL ones
     
     public $functions = array(
         'ready' => [],
@@ -112,19 +112,19 @@ class Civ13
         'misc' => [],
     );
     
-    public string $command_symbol = '@Civilizationbot'; //The symbol that the bot will use to identify commands if it is not mentioned
-    public string $owner_id = '196253985072611328'; //Taislin's Discord ID
-    public string $technician_id = '116927250145869826'; //Valithor Obsidion's Discord ID
-    public string $embed_footer = ''; //Footer for embeds, this is set in the ready event
-    public string $civ13_guild_id = '468979034571931648'; //Guild ID for the Civ13 server
-    public string $verifier_feed_channel_id = '1032411190695055440'; //Channel where the bot will listen for verification notices and then update its verified cache accordingly
-    public string $civ_token = ''; //Token for use with $verify_url, this is not the same as the bot token and should be kept secret
+    public string $command_symbol = '@Civilizationbot'; // The symbol that the bot will use to identify commands if it is not mentioned
+    public string $owner_id = '196253985072611328'; // Taislin's Discord ID
+    public string $technician_id = '116927250145869826'; // Valithor Obsidion's Discord ID
+    public string $embed_footer = ''; // Footer for embeds, this is set in the ready event
+    public string $civ13_guild_id = '468979034571931648'; // Guild ID for the Civ13 server
+    public string $verifier_feed_channel_id = '1032411190695055440'; // Channel where the bot will listen for verification notices and then update its verified cache accordingly
+    public string $civ_token = ''; // Token for use with $verify_url, this is not the same as the bot token and should be kept secret
 
-    public string $github = 'https://github.com/VZGCoders/Civilizationbot'; //Link to the bot's github page
-    public string $banappeal = 'civ13.com slash discord'; //Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
-    public string $rules = 'civ13.com slash rules'; //Link to the server rules
-    public string $verify_url = 'http://valzargaming.com:8080/verified/'; //Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
-    public string $serverinfo_url = ''; //Where the bot will retrieve server information from
+    public string $github = 'https://github.com/VZGCoders/Civilizationbot'; // Link to the bot's github page
+    public string $banappeal = 'civ13.com slash discord'; // Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
+    public string $rules = 'civ13.com slash rules'; // Link to the server rules
+    public string $verify_url = 'http://valzargaming.com:8080/verified/'; // Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
+    public string $serverinfo_url = ''; // Where the bot will retrieve server information from
     public bool $webserver_online = false;
     
     public array $folders = [];
@@ -133,12 +133,12 @@ class Civ13
     public array $ports = [];
     public array $channel_ids = [];
     public array $role_ids = [];
-    public array $permissions = []; //NYI, used to store rank_check array for each command
+    public array $permissions = []; // NYI, used to store rank_check array for each command
     
-    public array $discord_config = []; //This variable and its related function currently serve no purpose, but I'm keeping it in case I need it later
-    public array $tests = []; //Staff application test templates
-    public bool $panic_bunker = false; //If true, the bot will server ban anyone who is not verified when they join the server
-    public array $panic_bans = []; //List of ckeys that have been banned by the panic bunker in the current runtime
+    public array $discord_config = []; // This variable and its related function currently serve no purpose, but I'm keeping it in case I need it later
+    public array $tests = []; // Staff application test templates
+    public bool $panic_bunker = false; // If true, the bot will server ban anyone who is not verified when they join the server
+    public array $panic_bans = []; // List of ckeys that have been banned by the panic bunker in the current runtime
 
     /**
      * Creates a Civ13 client instance.
@@ -272,7 +272,7 @@ class Civ13
                 $this->badwords_warnings = $badwords_warnings;
                 $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username}#{$this->discord->discriminator} by Valithor#5947";
 
-                $this->getVerified(); //Populate verified property with data from DB
+                $this->getVerified(); // Populate verified property with data from DB
                 if (! $provisional = $this->VarLoad('provisional.json')) {
                     $provisional = [];
                     $this->VarSave('provisional.json', $provisional);
@@ -283,15 +283,15 @@ class Civ13
                     $this->VarSave('ages.json', $ages);
                 }
                 $this->ages = $ages;
-                foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); //Attempt to register all provisional users
-                $this->unbanTimer(); //Start the unban timer and remove the role from anyone who has been unbanned
+                foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
+                $this->unbanTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
                 $this->setIPs();
-                $this->serverinfoTimer(); //Start the serverinfo timer and update the serverinfo channel
+                $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
                 $this->pending = new Collection([], 'discord');
-                //Initialize configurations
+                // Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
                 foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
-                $this->discord_config = $discord_config; //Declared, but not currently used for anything
+                $this->discord_config = $discord_config; // Declared, but not currently used for anything
                 
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
@@ -459,11 +459,11 @@ class Civ13
     {
         $discord_config[$guild->id] = [
             'toggles' => [
-                'verifier' => false, //Verifier is disabled by default in new servers
+                'verifier' => false, // Verifier is disabled by default in new servers
             ],
             'roles' => [
                 'verified' => '', 
-                'promoted' => '', //Different servers may have different standards for getting promoted
+                'promoted' => '', // Different servers may have different standards for getting promoted
             ],
         ];
         if ($this->VarSave('discord_config.json', $discord_config)) $this->logger->info("Created new config for guild {$guild->name}");
@@ -511,7 +511,7 @@ class Civ13
             if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
             if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->verified->get('discord', $this->sanitizeInput($input['discord']))) return $item;
             if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) return $item;
-        } //else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
+        } // else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
         return false;
     }
 
@@ -542,7 +542,7 @@ class Civ13
             elseif (isset($input['discord']) && is_string($input['discord']) && is_numeric($input['discord'] = $this->sanitizeInput($input['discord']))) $id = $input['discord'];
             elseif (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) $id = $item['discord'];
             else return false; // If $input is an array, but contains invalid data, return false
-        } //else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
+        } // else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
         if (! $id || ! $this->isVerified($id)) return false; // Check if Discord ID is in the verified collection
         if ($member = $guild->members->get('id', $id)) return $member; // Get the member from the guild
         return false;
@@ -599,16 +599,16 @@ class Civ13
     
     public function logNewRound(string $server, string $game_id, string $time): void
     {
-        if (isset($this->current_rounds[$server]) && isset($this->rounds[$server][$this->current_rounds[$server]]) && $this->rounds[$server][$this->current_rounds[$server]] && $game_id !== $this->current_rounds[$server]) //If the round already exists and is not the current round
-            $this->rounds[$server][$this->current_rounds[$server]]['end'] = $time; //Set end time of previous round
-        $this->current_rounds[$server] = $game_id; //Update current round
-        $this->VarSave('current_rounds.json', $this->current_rounds); //Update log of currently running game_ids
-        $this->rounds[$server][$game_id] = []; //Initialize round array
-        $this->rounds[$server][$game_id]['start'] = $time; //Set start time
+        if (isset($this->current_rounds[$server]) && isset($this->rounds[$server][$this->current_rounds[$server]]) && $this->rounds[$server][$this->current_rounds[$server]] && $game_id !== $this->current_rounds[$server]) // If the round already exists and is not the current round
+            $this->rounds[$server][$this->current_rounds[$server]]['end'] = $time; // Set end time of previous round
+        $this->current_rounds[$server] = $game_id; // Update current round
+        $this->VarSave('current_rounds.json', $this->current_rounds); // Update log of currently running game_ids
+        $this->rounds[$server][$game_id] = []; // Initialize round array
+        $this->rounds[$server][$game_id]['start'] = $time; // Set start time
         $this->rounds[$server][$game_id]['end'] = null;
         $this->rounds[$server][$game_id]['players'] = [];
         $this->rounds[$server][$game_id]['interrupted'] = false;
-        $this->VarSave('rounds.json', $this->rounds); //Update log of rounds
+        $this->VarSave('rounds.json', $this->rounds); // Update log of rounds
     }
     public function logPlayerLogin(string $server, string $ckey, string $time, string $ip = '', string $cid = ''): void
     {
@@ -656,7 +656,7 @@ class Civ13
      * If the token matches, the function returns true
      */
     public function checkToken(string $discord_id): bool
-    { //Check if the user set their token
+    { // Check if the user set their token
         if (! $item = $this->pending->get('discord', $discord_id)) return false; // User is not in pending collection (This should never happen and is probably a programming error)
         if (! $page = $this->getByondPage($item['ss13'])) return false; // Website could not be retrieved or the description wasn't found
         if ($item['token'] != $this->getByondDesc($page)) return false; // Token does not match the description
@@ -667,11 +667,11 @@ class Civ13
      * This function is used to retrieve the 50 character token from the BYOND website
      */
     public function getByondPage(string $ckey): string|false 
-    { //Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and added the generated token to their description first!
+    { // Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and added the generated token to their description first!
         $url = 'http://www.byond.com/members/'.urlencode($ckey).'?format=text';
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); //return the page as a string
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // return the page as a string
         curl_setopt($ch, CURLOPT_HTTPGET, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
         curl_setopt($ch, CURLOPT_TIMEOUT, 3);
@@ -686,7 +686,7 @@ class Civ13
      */
     public function getByondDesc(string $page): string|false 
     {
-        if ($desc = substr($page, (strpos($page , 'desc')+8), 50)) return $desc; //PHP versions older than 8.0.0 will return false if the desc isn't found, otherwise an empty string will be returned
+        if ($desc = substr($page, (strpos($page , 'desc')+8), 50)) return $desc; // PHP versions older than 8.0.0 will return false if the desc isn't found, otherwise an empty string will be returned
         return false;
     }
     
@@ -742,7 +742,7 @@ class Civ13
                 if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
-        return $this->verifyNew($discord_id)['error']; //['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
+        return $this->verifyNew($discord_id)['error']; // ['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
     }
 
     /*
@@ -750,7 +750,7 @@ class Civ13
     * It will check if the token is valid, then add the user to the verified list
     */
     public function verifyNew(string $discord_id): array // ['success' => bool, 'error' => string]
-    { //Attempt to verify a user
+    { // Attempt to verify a user
         if (! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->technician_id}>."];
         if (! $this->checkToken($discord_id)) return ['success' => false, 'error' => "You have not set your description yet! It needs to be set to `{$item['token']}`"];
         $ckeyinfo = $this->ckeyinfo($item['ss13']);
@@ -771,7 +771,7 @@ class Civ13
     public function provisionalRegistration(string $ckey, string $discord_id): bool
     {
         $provisionalRegistration = function($ckey, $discord_id) use (&$provisionalRegistration) {
-            if ($this->verified->get('discord', $discord_id)) { //User already verified, this function shouldn't be called (may happen anyway because of the timer)
+            if ($this->verified->get('discord', $discord_id)) { // User already verified, this function shouldn't be called (may happen anyway because of the timer)
                 if (isset($this->provisional[$ckey])) unset($this->provisional[$ckey]);
                 return false;
             }
@@ -824,19 +824,19 @@ class Civ13
     * otherwise it will add the user to the SQL database and the verified list, remove them from the pending list, and give them the verified role
     */
     public function verifyCkey(string $ckey, string $discord_id, $provisional = false): array // ['success' => bool, 'error' => string]
-    { //Send $_POST information to the website. Only call this function after the getByondDesc() verification process has been completed!
+    { // Send $_POST information to the website. Only call this function after the getByondDesc() verification process has been completed!
         $success = false;
         $error = '';
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->verify_url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return the transfer as a string    
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return the transfer as a string    
         curl_setopt($ch, CURLOPT_POST, TRUE);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]));
         $result = curl_exec($ch);
-        $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); //Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+        $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
         switch ($http_status) {
-            case 200: //Verified
+            case 200: // Verified
                 $success = true;
                 $error = "`$ckey` - (" . $this->ages[$ckey] . ") has been verified and registered to $discord_id";
                 $this->pending->offsetUnset($discord_id);
@@ -856,22 +856,22 @@ class Civ13
                     if ($channel) $channel->sendMessage("Verified $member. ($ckey - {$this->ages[$ckey]})");
                 }
                 break;
-            case 403: //Already registered
-                $error = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; //This should have been caught above. Need to run getVerified() again?
+            case 403: // Already registered
+                $error = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; // This should have been caught above. Need to run getVerified() again?
                 $this->getVerified();
                 break;
             case 404:
                 $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
-            case 503: //Database unavailable
+            case 503: // Database unavailable
                 $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
-            case 504: //Gateway timeout
+            case 504: // Gateway timeout
                 $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
-            case 0: //The website is down, so allow provisional registration, then try to verify when it comes back up
+            case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
                 $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";    
-                if (! $provisional) { //
+                if (! $provisional) { // 
                     if (! isset($this->provisional[$ckey])) {
                         $this->provisional[$ckey] = $discord_id;
                         $this->VarSave('provisional.json', $this->provisional);
@@ -909,8 +909,8 @@ class Civ13
     {
         if (file_exists($this->files['nomads_bans']) && ($filecheck1 = fopen($this->files['nomads_bans'], 'r'))) {
             while (($fp = fgets($filecheck1, 4096)) !== false) {
-                //str_replace(PHP_EOL, '', $fp); // Is this necessary?
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                // str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
                     fclose($filecheck1);
                     return true;
@@ -920,8 +920,8 @@ class Civ13
         }// else $this->logger->debug("unable to open `{$this->files['nomads_bans']}`");
         if (file_exists($this->files['tdm_bans']) && ($filecheck2 = fopen($this->files['tdm_bans'], 'r'))) {
             while (($fp = fgets($filecheck2, 4096)) !== false) {
-                //str_replace(PHP_EOL, '', $fp); // Is this necessary?
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                // str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
                     fclose($filecheck2);
                     return true;
@@ -931,8 +931,8 @@ class Civ13
         }// else $this->logger->debug("unable to open `{$this->files['tdm_bans']}`");
         if (isset($this->files['pers_bans']) && file_exists($this->files['pers_bans']) && ($filecheck3 = @fopen($this->files['pers_bans'], 'r'))) {
             while (($fp = fgets($filecheck3, 4096)) !== false) {
-                //str_replace(PHP_EOL, '', $fp); // Is this necessary?
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); //$split_ckey[0] is the ckey
+                // str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
                 if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
                     fclose($filecheck3);
                     return true;
@@ -1195,7 +1195,7 @@ class Civ13
             'bc' => '7777', 
             'ps13' => '7778',
         ];
-        if (! $this->serverinfo_url) $this->serverinfo_url = 'http://' . (isset($this->ips['vzg']) ? $this->ips['vzg'] : $this->vzg_ip) . '/servers/serverinfo.json'; //Default to VZG unless passed manually in config
+        if (! $this->serverinfo_url) $this->serverinfo_url = 'http://' . (isset($this->ips['vzg']) ? $this->ips['vzg'] : $this->vzg_ip) . '/servers/serverinfo.json'; // Default to VZG unless passed manually in config
     }
     
     /*
@@ -1346,31 +1346,31 @@ class Civ13
         if (! $ckey = str_replace(['.', '_', '-', ' '], '', trim($ckey))) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->getVerifiedItem($ckey)) $ckey = $item['ss13'];
-        //var_dump('Ckey Collections Array: ', $collectionsArray, PHP_EOL);
+        // var_dump('Ckey Collections Array: ', $collectionsArray, PHP_EOL);
         
         $ckeys = [$ckey];
         $ips = [];
         $cids = [];
-        foreach ($collectionsArray[0] as $log) { //Get the ckey's primary identifiers
+        foreach ($collectionsArray[0] as $log) { // Get the ckey's primary identifiers
             if (isset($log['ip'])) $ips[] = $log['ip'];
             if (isset($log['cid'])) $cids[] = $log['cid'];
         }
-        foreach ($collectionsArray[1] as $log) { //Get the ckey's primary identifiers
+        foreach ($collectionsArray[1] as $log) { // Get the ckey's primary identifiers
             if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
             if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
         }
-        //var_dump('Searchable: ',  $ckeys, $ips, $cids, PHP_EOL);
-        //Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
+        // var_dump('Searchable: ',  $ckeys, $ips, $cids, PHP_EOL);
+        // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $this->playerlogsToCollection();
         $i = 0;
         $break = false;
-        do { //Iterate through playerlogs to find all known ckeys, ips, and cids
+        do { // Iterate through playerlogs to find all known ckeys, ips, and cids
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                //$this->logger->debug('Found new match: ', $log, PHP_EOL);
+                // $this->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
@@ -1380,13 +1380,13 @@ class Civ13
             $cids = array_unique(array_merge($cids, $found_cids));
             if ($i > 10) $break = true;
             $i++;
-        } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
+        } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
     
         $banlogs = $this->bansToCollection();        
         $found = true;
         $break = false;
         $i = 0;
-        do { //Iterate through playerlogs to find all known ckeys, ips, and cids
+        do { // Iterate through playerlogs to find all known ckeys, ips, and cids
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
@@ -1401,7 +1401,7 @@ class Civ13
             $cids = array_unique(array_merge($cids, $found_cids));
             $i++;
             if ($i > 10) $break = true;
-        } while ($found && ! $break); //Keep iterating until no new ckeys, ips, or cids are found
+        } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
 
         $verified = false;
         $altbanned = false;
@@ -1436,17 +1436,17 @@ class Civ13
         $ch = curl_init(); 
         curl_setopt($ch, CURLOPT_URL, "http://ip-api.com/json/$ip"); 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 1); //The site is usually really fast, so we don't want to wait too long
+        curl_setopt($ch, CURLOPT_TIMEOUT, 1); // The site is usually really fast, so we don't want to wait too long
         $response = curl_exec($ch);
         curl_close($ch);
         $json = json_decode($response, true);
-        if (! $json) return ''; //If the request timed out or if the service 429'd us
+        if (! $json) return ''; // If the request timed out or if the service 429'd us
         if ($json['status'] == 'success') return $json['countryCode'] . '->' . $json['region'] . '->' . $json['city'];
     }
     function IP2Country(string $ip): string
     {
         $numbers = explode('.', $ip);
-        if (! include('ip_files/'.$numbers[0].'.php')) return 'unknown'; //$ranges is defined in the included file
+        if (! include('ip_files/'.$numbers[0].'.php')) return 'unknown'; // $ranges is defined in the included file
         $code = ($numbers[0] * 16777216) + ($numbers[1] * 65536) + ($numbers[2] * 256) + ($numbers[3]);    
         $country = '';
         foreach (array_keys($ranges) as $key) if ($key<=$code) if ($ranges[$key][0]>=$code) {
@@ -1467,7 +1467,7 @@ class Civ13
                     $ckeyinfo = $this->ckeyinfo($ckey);
                     if ($ckeyinfo['altbanned']) {
                         $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
-                        $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban($arr))); //Automatically ban evaders
+                        $this->discord->getChannel($this->channel_ids['staff_bot'])->sendMessage(($this->ban($arr))); // Automatically ban evaders
                     } else foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) {
                             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
@@ -1576,12 +1576,12 @@ class Civ13
             3 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>", 'prefix' => 'bc-'],
             4 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>", 'prefix' => 'ps-']
         ];
-        //$relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); //We need to declare stationname in world.dm first
+        // $relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); // We need to declare stationname in world.dm first
 
         $index = 0;
-        //foreach ($relevant_servers as $server) // TODO: We need to declare stationname in world.dm first
+        // foreach ($relevant_servers as $server) // TODO: We need to declare stationname in world.dm first
         foreach ($this->serverinfo as $server) {
-            if (array_key_exists('ERROR', $server) || $index > 2) { //We only care about Nomads, TDM, and Persistence
+            if (array_key_exists('ERROR', $server) || $index > 2) { // We only care about Nomads, TDM, and Persistence
                 $index++; // TODO: Remove this once we have stationname in world.dm
                 continue;
             }
@@ -1615,7 +1615,7 @@ class Civ13
     */
     public function unbanTimer(): bool
     {
-        //We don't want the persistence server to do this function
+        // We don't want the persistence server to do this function
         if (! file_exists($this->files['nomads_bans']) || ! ($file = fopen($this->files['nomads_bans'], 'r'))) return false;
         fclose($file);
         if (! file_exists($this->files['tdm_bans']) || (! $file2 = fopen($this->files['tdm_bans'], 'r'))) return false;
@@ -1651,7 +1651,7 @@ class Civ13
     { // The file function needs to be replaced with the new Webhook system
         if ($this->relay_method !== 'file') return false;
         if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) {
-            $this->relay_method = 'webhook'; //Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
+            $this->relay_method = 'webhook'; // Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
             $this->logger->warning("gameChatFileRelay() was called with an invalid file path: `$file_path`, falling back to using webhooks for relaying instead.");
             return false;
         }
@@ -1669,7 +1669,7 @@ class Civ13
         }
         ftruncate($file, 0);
         fclose($file);
-        return $this->__gameChatRelay($relay_array, $channel, $moderate); //Disabled moderation as it is now done quicker using the Webhook system
+        return $this->__gameChatRelay($relay_array, $channel, $moderate); // Disabled moderation as it is now done quicker using the Webhook system
     }
     public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $moderate = true): bool
     {
@@ -1710,7 +1710,7 @@ class Civ13
         } else {
             $embed = new Embed($this->discord);
             if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-            //else $this->discord->users->fetch('id', $item['discord']); //disabled to prevent rate limiting
+            // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
             $embed->setDescription($array['message']);
             $channel->sendEmbed($embed);
         }
@@ -1719,11 +1719,11 @@ class Civ13
     private function __gameChatModerate(string $ckey, string $string, string $server = 'nomads'): string
     {
         foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
-            case 'exact': //ban ckey if $string contains a blacklisted phrase exactly as it is defined
+            case 'exact': // ban ckey if $string contains a blacklisted phrase exactly as it is defined
                 if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
                 break;
-            case 'contains': //ban ckey if $string contains a blacklisted word
-            default: //default to 'contains'
+            case 'contains': // ban ckey if $string contains a blacklisted word
+            default: // default to 'contains'
                 if (str_contains(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
         }
         return $string;
@@ -1799,7 +1799,7 @@ class Civ13
         fclose ($search);
         arsort($result);
         if (! file_exists($this->files['ranking_path']) || ! ($search = fopen($this->files['ranking_path'], 'w'))) return false;
-        foreach ($result as $ckey => $score) fwrite($search, "$score;$ckey" . PHP_EOL); //Is this the proper behavior, or should we truncate the file first?
+        foreach ($result as $ckey => $score) fwrite($search, "$score;$ckey" . PHP_EOL); // Is this the proper behavior, or should we truncate the file first?
         fclose ($search);
         return true;
     }
@@ -1835,7 +1835,7 @@ class Civ13
     {
         if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) {
             $this->logger->warning("Faction roles `red` and `blue` were not found in the role_ids config");
-            return false; //If the bot is missing the required faction role IDs, return false
+            return false; // If the bot is missing the required faction role IDs, return false
         }
         $keys = [];
         foreach (array_keys($this->server_settings) as $key) $keys[] = strtolower($key);
@@ -1867,7 +1867,7 @@ class Civ13
     public function adminlistUpdate(array $adminlists = [], $defaults = true): bool
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
-        //$this->logger->debug('Updating admin lists');
+        // $this->logger->debug('Updating admin lists');
         // Prepend default admin lists if they exist and haven't been added already
         $defaultLists = ['tdm_admins', 'nomads_admins'];
         if ($defaults) foreach ($defaultLists as $adminlist) if (isset($this->files[$adminlist]) && !in_array($adminlist, $adminlists))
@@ -1877,13 +1877,13 @@ class Civ13
         $required_roles = [
             'admiral' => ['Host', '65535'],
             'bishop' => ['Bishop', '65535'],
-            'host' => ['Host', '65535'], //Default Host permission, only used if another role is not found first
+            'host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
             'grandmaster' => ['GrandMaster', '16382'],
             'marshall' => ['Marshall', '16382'],
             'knightcommander' => ['KnightCommander', '16382'],
-            'captain' => ['Captain', '16382'], //Default High Staff permission, only used if another role is not found first
+            'captain' => ['Captain', '16382'], // Default High Staff permission, only used if another role is not found first
             'storyteller' => ['StoryTeller', '16254'],
-            'squire' => ['Squire', '8708'], //Squires will also have the Knight role, but it takes priority
+            'squire' => ['Squire', '8708'], // Squires will also have the Knight role, but it takes priority
             'knight' => ['Knight', '12158'],
             'mentor' => ['Mentor', '16384'],
         ];
@@ -1901,7 +1901,7 @@ class Civ13
             fwrite($file, $file_contents);
             fclose($file);
         }
-        //$this->logger->debug('Admin lists updated');
+        // $this->logger->debug('Admin lists updated');
         return true;
     }
 }
