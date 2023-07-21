@@ -1833,11 +1833,19 @@ class Civ13
     */
     public function factionlistUpdate(array $factionlists = []): bool
     {
-        if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) return false;
+        if (! (isset($this->role_ids['red'], $this->role_ids['blue']))) {
+            $this->logger->warning("Faction roles `red` and `blue` were not found in the role_ids config");
+            return false; //If the bot is missing the required faction role IDs, return false
+        }
+        $keys = [];
+        foreach (array_keys($this->server_settings) as $key) $keys[] = strtolower($key);
+
         $fl = [];
-        $keys = ['tdm', 'nomads'];
-        foreach ($keys as $key) if (isset($this->files["{$key}_factionlist"]) && !in_array($this->files["{$key}_factionlist"], $factionlists)) array_unshift($fl, $this->files["{$key}_factionlist"]);
-        if (empty($fl)) return false;
+        foreach ($keys as $key) if (isset($this->files["{$key}_factionlist"]) && !in_array($this->files["{$key}_factionlist"], $fl)) array_unshift($fl, $this->files["{$key}_factionlist"]);
+        if (empty($fl)) {
+            $this->logger->warning("No factionlist files were found in the files config");
+            return false;
+        }
         foreach ($fl as $file_path) {
             if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'a'))) continue;
             ftruncate($file, 0);

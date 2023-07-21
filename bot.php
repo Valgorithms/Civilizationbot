@@ -137,7 +137,7 @@ $options = array(
     'folders' => array(
         //'typespess_path' => '/home/1713/civ13-typespess',
     ),
-    'files' => array(
+    'files' => array( //Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
         //Fun
         'insults_path' => 'insults.txt',
         'ranking_path' => 'ranking.txt',
