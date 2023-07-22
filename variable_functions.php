@@ -564,7 +564,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'promotable')) {
         if (! $promotable_check = $civ13->functions['misc']['promotable_check']) return $message->react("🔥");
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
-        if (! $promotable_check($civ13, trim(substr($message_content, 10)))) return $message->react("👎");
+        if (! $promotable_check($civ13, $civ13->sanitizeInput(substr($message_content, 10)))) return $message->react("👎");
         return $message->react("👍");
     }
     
@@ -765,11 +765,6 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! file_exists($civ13->files['map_defines_path'])) return $message->react("🔥");
         return $message->reply(MessageBuilder::new()->addFile($civ13->files['map_defines_path'], 'maps.txt'));
     }
-    if (str_starts_with($message_content_lower, 'banlist')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (! file_exists($civ13->files['tdm_bans'])) return $message->react("🔥");
-        return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
-    }
     if (str_starts_with($message_content_lower, 'adminlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (! file_exists($civ13->files['nomads_admins'])) return $message->react("🔥");
@@ -959,7 +954,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (str_starts_with($message_content_lower, 'help')) return $message->reply(
         '**List of Commands**:' . PHP_EOL
         . '**General:** `approveme`, `ranking`, `rankme`, `medals`, `brmedals`' . PHP_EOL
-        . '**Staff:** `ckeyinfo`, `permitted`, `permit`, `unpermit` or `revoke`, `parole`, `release`, `refresh`, `maplist`, `banlist` (tbd), `adminlist`, `factionlist`, `sportsteams`, `logs`, `playerlogs`, `bans`, `ban`, `unban`, `[SERVER]ban`, `[SERVER]unban`, `[SERVER]host`, `[SERVER]restart`, `[SERVER]kill`, `[SERVER]mapswap`' . PHP_EOL
+        . '**Staff:** `ckeyinfo`, `permitted`, `permit`, `unpermit` or `revoke`, `parole`, `release`, `refresh`, `maplist`, `adminlist`, `factionlist`, `sportsteams`, `logs`, `playerlogs`, `bans`, `ban`, `unban`, `[SERVER]ban`, `[SERVER]unban`, `[SERVER]host`, `[SERVER]restart`, `[SERVER]kill`, `[SERVER]mapswap`' . PHP_EOL
         . '**High Staff:** `relay`, `fullbancheck`, `fullaltcheck`, `discard`, `tests`, `promotable`, `mass_promotion_loop`, `mass_promotion_check`, `stop`, `update bans`' . PHP_EOL
         . '**Bishop:** `register`' . PHP_EOL
         . '**Admiral:** `ts`'
