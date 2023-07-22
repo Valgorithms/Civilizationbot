@@ -655,39 +655,39 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
         return $message->reply("**$admin** unbanned **$ckey**");
     }
-    if (str_starts_with($message_content_lower, 'unbannomads ')) {
+    if (str_starts_with($message_content_lower, 'nomadsunban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('unbannomads')))))
+        if (is_numeric($ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('nomadsunban')))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->unbanNomads($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->nomadsunban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
         $result = "**$admin** unbanned **$ckey** from **Nomads**";
         if ($member = $civ13->getVerifiedMember('id', $ckey))
             if ($member->roles->has($civ13->role_ids['banished']))
                 $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
-    if (str_starts_with($message_content_lower, 'unbantdm ')) {
+    if (str_starts_with($message_content_lower, 'tdmunban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('unbantdm')))))
+        if (is_numeric($ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('tdmunban')))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->unbanTDM($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->tdmunban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
         $result = "**$admin** unbanned **$ckey** from **TDM**";
         if ($member = $civ13->getVerifiedMember('id', $ckey)) 
             if ($member->roles->has($civ13->role_ids['banished']))
                 $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
-    if (str_starts_with($message_content_lower, 'unbanpers ')) {
+    if (str_starts_with($message_content_lower, 'persunban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (is_numeric($ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('unbanpers')))))
+        if (is_numeric($ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('persunban')))))
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->unbanPers($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->persunban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
         $result = "**$admin** unbanned **{$ckey}** from **Persistence**";
         if ($member = $civ13->getVerifiedMember('id', $ckey)) 
             if ($member->roles->has($civ13->role_ids['banished']))
@@ -956,7 +956,14 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (! $message_content) return;
     
     if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
-    if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: ckey, bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, logs, nomadshost, nomadskill, nomadsrestart, nomadsmapswap, tdmhost, tdmkill, tdmrestart, tdmmapswap, panic bunker');
+    if (str_starts_with($message_content_lower, 'help')) return $message->reply(
+        '**List of Commands**:' . PHP_EOL
+        . '**General:** `approveme`, `ranking`, `rankme`, `medals`, `brmedals`' . PHP_EOL
+        . '**Staff:** `ckeyinfo`, `permitted`, `permit`, `unpermit` or `revoke`, `parole`, `release`, `refresh`, `maplist`, `banlist` (tbd), `adminlist`, `factionlist`, `sportsteams`, `logs`, `playerlogs`, `bans`, `ban`, `unban`, `[SERVER]ban`, `[SERVER]unban`, `[SERVER]host`, `[SERVER]restart`, `[SERVER]kill`, `[SERVER]mapswap`' . PHP_EOL
+        . '**High Staff:** `relay`, `fullbancheck`, `fullaltcheck`, `discard`, `tests`, `promotable`, `mass_promotion_loop`, `mass_promotion_check`, `stop`, `update bans`' . PHP_EOL
+        . '**Bishop:** `register`' . PHP_EOL
+        . '**Admiral:** `ts`'
+    );
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');

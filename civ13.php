@@ -995,7 +995,7 @@ class Civ13
     }
     public function __panicUnban(string $ckey): void
     {
-        ($this->legacy ? $this->legacyUnbanNomads($ckey) : $this->sqlUnbanNomads($ckey));
+        ($this->legacy ? $this->legacynomadsunban($ckey) : $this->sqlnomadsunban($ckey));
         unset($this->panic_bans[$ckey]);
         $this->VarSave('panic_bans.json', $this->panic_bans);
     }
@@ -1061,36 +1061,36 @@ class Civ13
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-    public function legacyUnbanNomads(string $ckey, ?string $admin = null): void
+    public function legacynomadsunban(string $ckey, ?string $admin = null): void
     {
         if (file_exists($this->files['nomads_discord2unban']) && $file = fopen($this->files['nomads_discord2unban'], 'a')) {
             fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
             fclose($file);
         }
     }
-    public function sqlUnbanNomads(string $ckey, ?string $admin = null): void
+    public function sqlnomadsunban(string $ckey, ?string $admin = null): void
     {
         // TODO
     }
-    public function legacyUnbanTDM(string $ckey, ?string $admin = null): void
+    public function legacytdmunban(string $ckey, ?string $admin = null): void
     {
         if (file_exists($this->files['tdm_discord2unban']) && $file = fopen($this->files['tdm_discord2unban'], 'a')) {
             fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
             fclose($file);
         }
     }
-    public function sqlUnbanTDM(string $ckey, ?string $admin = null): void
+    public function sqltdmunban(string $ckey, ?string $admin = null): void
     {
         // TODO
     }
-    public function legacyUnbanPers(string $ckey, ?string $admin = null): void
+    public function legacypersunban(string $ckey, ?string $admin = null): void
     {
         if (file_exists($this->files['pers_discord2unban']) && $file = fopen($this->files['pers_discord2unban'], 'a')) {
             fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
             fclose($file);
         }
     }
-    public function sqlUnbanPers(string $ckey, ?string $admin = null): void
+    public function sqlpersunban(string $ckey, ?string $admin = null): void
     {
         // TODO
     }
@@ -1144,30 +1144,30 @@ class Civ13
     {
         $admin ??= $this->discord->user->displayname;
         if ($this->legacy) {
-            $this->legacyUnbanNomads($ckey, $admin);
-            $this->legacyUnbanTDM($ckey, $admin);
+            $this->legacynomadsunban($ckey, $admin);
+            $this->legacytdmunban($ckey, $admin);
         } else {
-            $this->sqlUnbanNomads($ckey, $admin);
-            $this->sqlUnbanTDM($ckey, $admin);
+            $this->sqlnomadsunban($ckey, $admin);
+            $this->sqltdmunban($ckey, $admin);
         }
         if ( $member = $this->getVerifiedMember($ckey))
             if ($member->roles->has($this->role_ids['banished']))
                 $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
     }
-    public function unbanNomads(string $ckey, ?string $admin = null)
+    public function nomadsunban(string $ckey, ?string $admin = null)
     {
-        if ($this->legacy) return $this->legacyUnbanNomads($ckey, $admin);
-        return $this->sqlUnbanNomads($ckey, $admin);
+        if ($this->legacy) return $this->legacynomadsunban($ckey, $admin);
+        return $this->sqlnomadsunban($ckey, $admin);
     }
-    public function unbanTDM(string $ckey, ?string $admin = null)
+    public function tdmunban(string $ckey, ?string $admin = null)
     {
-        if ($this->legacy) return $this->legacyUnbanTDM($ckey, $admin);
-        return $this->sqlUnbanTDM($ckey, $admin);
+        if ($this->legacy) return $this->legacytdmunban($ckey, $admin);
+        return $this->sqltdmunban($ckey, $admin);
     }
-    public function unbanPers(string $ckey, ?string $admin = null)
+    public function persunban(string $ckey, ?string $admin = null)
     {
-        if ($this->legacy) return $this->legacyUnbanPers($ckey, $admin);
-        return $this->sqlUnbanPers($ckey, $admin);
+        if ($this->legacy) return $this->legacypersunban($ckey, $admin);
+        return $this->sqlpersunban($ckey, $admin);
     }
     
     public function DirectMessageNomads(string $recipient, string $message, string $sender): bool
