@@ -91,7 +91,7 @@ $restart_pers = function (Civ13 $civ13) use ($kill_pers, $host_pers): void
     $kill_pers($civ13);
     $host_pers($civ13);
 };
-$mapswap_nomads = function (Civ13 $civ13, string $mapto): bool
+$nomads_mapswap = function (Civ13 $civ13, string $mapto): bool
 {
     if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
     
@@ -103,10 +103,10 @@ $mapswap_nomads = function (Civ13 $civ13, string $mapto): bool
     fclose($file);
     if (! in_array($mapto, $maps)) return false;
     
-    \execInBackground("python3 {$civ13->files['mapswap_nomads']} $mapto");
+    \execInBackground("python3 {$civ13->files['nomads_mapswap']} $mapto");
     return true;
 };
-$mapswap_tdm = function (Civ13 $civ13, string $mapto): bool
+$tdm_mapswap = function (Civ13 $civ13, string $mapto): bool
 {
     if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
     
@@ -118,7 +118,7 @@ $mapswap_tdm = function (Civ13 $civ13, string $mapto): bool
     fclose($file);
     if (! in_array($mapto, $maps)) return false;
     
-    \execInBackground("python3 {$civ13->files['mapswap_tdm']} $mapto");
+    \execInBackground("python3 {$civ13->files['tdm_mapswap']} $mapto");
     return true;
 };
 $mapswap_pers = function (Civ13 $civ13, string $mapto): bool
@@ -320,7 +320,7 @@ $rank_check = function (Civ13 $civ13, $message = null, array $allowed_ranks = []
     if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $kill_nomads, $kill_tdm, $kill_pers, $host_nomads, $host_tdm, $host_pers, $restart_nomads, $restart_tdm, $restart_pers, $mapswap_nomads, $mapswap_tdm, $mapswap_pers, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $kill_nomads, $kill_tdm, $kill_pers, $host_nomads, $host_tdm, $host_pers, $restart_nomads, $restart_tdm, $restart_pers, $nomads_mapswap, $tdm_mapswap, $mapswap_pers, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -694,68 +694,68 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
                 $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
-    if (str_starts_with($message_content_lower, 'hostnomads')) {
+    if (str_starts_with($message_content_lower, 'nomadshost')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $host_nomads($civ13);
         return $message->reply("Attempting to update and bring up Nomads <byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>");
     }
-    if (str_starts_with($message_content_lower, 'hosttdm')) {
+    if (str_starts_with($message_content_lower, 'tdmhost')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $host_tdm($civ13);
         return $message->reply("Attempting to update and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>");
     }
-    if (str_starts_with($message_content_lower, 'hostpers')) {
+    if (str_starts_with($message_content_lower, 'pershost')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $host_pers($civ13);
         return $message->reply("Attempting to update and bring up Persistence <byond://{$civ13->ips['pers']}:{$civ13->ports['pers']}>");
     }
-    if (str_starts_with($message_content_lower, 'restartnomads')) {
+    if (str_starts_with($message_content_lower, 'nomadsrestart')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $restart_nomads($civ13);
         return $message->reply("Attempted to kill, update, and bring up Nomads <byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>");
     }
-    if (str_starts_with($message_content_lower, 'restarttdm')) {
+    if (str_starts_with($message_content_lower, 'tdmrestart')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $restart_tdm($civ13);
         return $message->reply("Attempted to kill, update, and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>");
     }
-    if (str_starts_with($message_content_lower, 'restartpers')) {
+    if (str_starts_with($message_content_lower, 'persrestart')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $restart_pers($civ13);
         return $message->reply("Attempted to kill, update, and bring up pers <byond://{$civ13->ips['pers']}:{$civ13->ports['pers']}>");
     }
-    if (str_starts_with($message_content_lower, 'killnomads')) {
+    if (str_starts_with($message_content_lower, 'nomadskill')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $kill_nomads($civ13);
         return $message->reply('Attempted to kill the Nomads server.');
     }
-    if (str_starts_with($message_content_lower, 'killtdm')) {
+    if (str_starts_with($message_content_lower, 'tdmkill')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $kill_tdm($civ13);
         return $message->reply('Attempted to kill the TDM server.');
     }
-    if (str_starts_with($message_content_lower, 'killpers')) {
+    if (str_starts_with($message_content_lower, 'perskill')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $kill_pers($civ13);
         return $message->reply('Attempted to kill the TDM server.');
     }
-    if (str_starts_with($message_content_lower, 'mapswapnomads')) {
+    if (str_starts_with($message_content_lower, 'nomadsmapswap')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $split_message = explode('mapswapnomads ', $message_content);
+        $split_message = explode('nomadsmapswap ', $message_content);
         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
-        if (! $mapswap_nomads($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
+        if (! $nomads_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
-    if (str_starts_with($message_content_lower, 'mapswaptdm')) {
+    if (str_starts_with($message_content_lower, 'tdmmapswap')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $split_message = explode('mapswaptdm ', $message_content);
+        $split_message = explode('tdmmapswap ', $message_content);
         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
-        if (! $mapswap_tdm($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
+        if (! $tdm_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
-    if (str_starts_with($message_content_lower, 'mapswappers')) {
+    if (str_starts_with($message_content_lower, 'persmapswap')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        $split_message = explode('mapswappers ', $message_content);
+        $split_message = explode('persmapswap ', $message_content);
         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
         if (! $mapswap_pers($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
@@ -785,8 +785,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'sportsteams')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (! file_exists($civ13->files['sportsteams'])) return $message->react("🔥");
-        return $message->reply(MessageBuilder::new()->addFile($civ13->files['sportsteams'], 'sports_teams.txt'));
+        if (! file_exists($civ13->files['tdm_sportsteams'])) return $message->react("🔥");
+        return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_sportsteams'], 'sports_teams.txt'));
     }
     if (str_starts_with($message_content_lower, 'logs')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
@@ -956,7 +956,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (! $message_content) return;
     
     if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
-    if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: ckey, bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, logs, hostnomads, killnomads, restartnomads, mapswapnomads, hosttdm, killtdm, restarttdm, mapswaptdm, panic bunker');
+    if (str_starts_with($message_content_lower, 'help')) return $message->reply('**List of Commands**: ckey, bancheck, insult, cpu, ping, (un)whitelistme, rankme, ranking. **Staff only**: ban, logs, nomadshost, nomadskill, nomadsrestart, nomadsmapswap, tdmhost, tdmkill, tdmrestart, tdmmapswap, panic bunker');
     if (str_starts_with($message_content_lower, 'cpu')) {
          if (PHP_OS_FAMILY == "Windows") {
             $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');

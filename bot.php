@@ -186,7 +186,7 @@ $options = array(
         // Campaign
         'tdm_factionlist' => '/home/1713/civ13-tdm/SQL/factionlist.txt',
         // Football
-        'sportsteams' => '/home/1713/civ13-tdm/SQL/sports_teams.txt',
+        'tdm_sportsteams' => '/home/1713/civ13-tdm/SQL/sports_teams.txt',
 
         // Persistence
         /*
@@ -215,14 +215,14 @@ $options = array(
         'nomads_dmb' => '/home/1713/civ13-rp/civ13.dmb',
         'nomads_killsudos' => '/home/1713/civ13-rp/scripts/killsudos.py',
         'nomads_killciv13' => '/home/1713/civ13-rp/scripts/killciv13.py',
-        'mapswap_nomads' => '/home/1713/civ13-rp/scripts/mapswap.py',
+        'nomads_mapswap' => '/home/1713/civ13-rp/scripts/mapswap.py',
 
         'tdm_updateserverabspaths' => '/home/1713/civ13-tdm/scripts/updateserverabspaths.py',
         'tdm_serverdata' => '/home/1713/civ13-tdm/serverdata.txt',
         'tdm_dmb' => '/home/1713/civ13-tdm/civ13.dmb',
         'tdm_killsudos' => '/home/1713/civ13-tdm/scripts/killsudos.py',
         'tdm_killciv13' => '/home/1713/civ13-tdm/scripts/killciv13.py',
-        'mapswap_tdm' => '/home/1713/civ13-tdm/scripts/mapswap.py',
+        'tdm_mapswap' => '/home/1713/civ13-tdm/scripts/mapswap.py',
 
         /*
         'pers_updateserverabspaths' => '/home/1713/civ13-pers/scripts/updateserverabspaths.py',
