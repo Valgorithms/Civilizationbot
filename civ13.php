@@ -71,7 +71,7 @@ class Civ13
     public array $current_rounds = [];
     public array $rounds = [];
 
-    public array $server_settings = ['Nomads' => [], 'TDM' => []]; // NYI, this will replace most individual variables
+    public array $server_settings = ['TDM' => [], 'Nomads' => []]; // NYI, this will replace most individual variables
     public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = true; // Whether or not to moderate the servers using the badwords list
     public array $badwords = [
@@ -1366,8 +1366,8 @@ class Civ13
             if (isset($log['cid'])) $cids[] = $log['cid'];
         }
         foreach ($collectionsArray[1] as $log) { // Get the ckey's primary identifiers
-            if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-            if (isset($log['cid']) && !in_array($log['cid'], $ips)) $cids[] = $log['cid'];
+            if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+            if (isset($log['cid']) && ! in_array($log['cid'], $ips)) $cids[] = $log['cid'];
         }
         // var_dump('Searchable: ',  $ckeys, $ips, $cids, PHP_EOL);
         // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
@@ -1381,9 +1381,9 @@ class Civ13
             $found_cids = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 // $this->logger->debug('Found new match: ', $log, PHP_EOL);
-                if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
@@ -1402,9 +1402,9 @@ class Civ13
             $found_ips = [];
             $found_cids = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (! in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
@@ -1472,7 +1472,7 @@ class Civ13
             $this->serverinfoFetch(); 
             $this->serverinfoParsePlayers();
             foreach ($this->serverinfoPlayers() as $ckey) {
-                if (!in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
+                if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
                     if ($ckeyinfo['altbanned']) {
@@ -1814,24 +1814,54 @@ class Civ13
         return true;
     }
 
+    // Check that all required roles are properly declared in the bot's config and exist in the guild
+    public function hasRequiredConfigRoles(array $required_roles = [], bool $assoc_roles = false): bool
+    {
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
+        if ($assoc_roles) if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the `role_ids` config', $diff); return false; }
+        elseif ($diff = array_diff($required_roles, array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the `role_ids` config', $diff); return false; }
+        foreach ($required_roles as $role) if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
+        return true;
+    }
+    
+    // Check that all required files are properly declared in the bot's config and exist in the guild
+    public function hasRequiredConfigFiles(array $lists = [], bool $defaults = true, string $postfix = ''): array|false
+    {
+        $l = [];
+        if ($defaults) {
+            $defaultLists = [];
+            foreach (array_keys($this->server_settings) as $key) $defaultLists[] = strtolower($key) . $postfix;
+            foreach ($defaultLists as $file_path) if (isset($this->files[$file_path]) && ! in_array($file_path, $l)) array_unshift($l, $file_path);
+            if (empty($l)) $this->logger->debug("No default `$postfix` files were found in the `files` config");
+        }
+        if ($lists) foreach ($lists as $file_path) if (isset($this->files[$file_path]) && ! in_array($file_path, $l)) array_unshift($l, $file_path);
+        if (empty($l)) {
+            $this->logger->warning("No `$postfix` files were found");
+            return false;
+        }
+        return $l;
+    }
+    
     /*
     * This function is used to update the whitelist files
     * Returns true if the whitelist files are successfully updated, false otherwise
     */
-    public function whitelistUpdate(array $whitelists = []): bool
+    public function whitelistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_whistlist'): bool
     {
-        if (! isset($this->role_ids['veteran'])) return false;
-        if (isset($this->files['nomads_whitelist']) && !in_array($this->files['nomads_whitelist'], $whitelists)) array_unshift($whitelists, $this->files['nomads_whitelist']);
-        if (isset($this->files['tdm_whitelist']) && !in_array($this->files['tdm_whitelist'], $whitelists)) array_unshift($whitelists, $this->files['tdm_whitelist']);
-        if (empty($whitelists)) return false;
-        foreach ($whitelists as $whitelist) {
-            if (! file_exists($whitelist) || ! ($file = fopen($whitelist, 'a'))) return false;
+        $required_roles = ['veteran'];
+        if (! $this->hasRequiredConfigRoles($required_roles)) return false;
+        if (! $l = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+
+        foreach ($l as $file_path) {
+            if (! file_exists($this->files[$file_path]) || ! ($file = @fopen($this->files[$file_path], 'a'))) continue;
             ftruncate($file, 0);
-            foreach ($this->verified as $item) {
+            $file_contents = '';
+            foreach ($this->verified as $item) { // Write each verified member's SS13 ckey and associated role to the factionlist files
                 if (! $member = $this->getVerifiedMember($item)) continue;
-                if (! $member->roles->has($this->role_ids['veteran'])) continue;
-                fwrite($file, "{$item['ss13']} = {$item['discord']}" . PHP_EOL);
+                foreach ($required_roles as $role) if ($member->roles->has($this->role_ids[$role]))
+                { $file_contents .= "{$item['ss13']} = {$item['discord']}" . PHP_EOL; /*break 1;*/ }
             }
+            fwrite($file, $file_contents);
             fclose($file);
         }
         return true;
@@ -1841,30 +1871,22 @@ class Civ13
     * Returns true if the whitelist files are successfully updated, false otherwise
     * If an additional whitelist is provided, it will be added to the list of whitelists to update
     */
-    public function factionlistUpdate(): bool
+    public function factionlistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_factionlist'): bool
     {
-        if (! isset($this->role_ids['red'], $this->role_ids['blue'], $this->role_ids['organizer'])) {
-            $this->logger->debug("Faction roles `red`, `blue`, and `organizer` were not found in the `role_ids` config");
-            return false; // If the bot is missing the required faction role IDs, return false
-        }
-        $keys = [];
-        foreach (array_keys($this->server_settings) as $key) $keys[] = strtolower($key);
+        $required_roles = ['red', 'ble', 'organizer']; // Check that all required roles are properly declared in the bot's config and exist in the guild
+        if (! $this->hasRequiredConfigRoles($required_roles)) return false;
+        if (! $l = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
 
-        $fl = [];
-        foreach ($keys as $key) if (isset($this->files["{$key}_factionlist"]) && ! in_array($this->files["{$key}_factionlist"], $fl)) array_unshift($fl, $this->files["{$key}_factionlist"]);
-        if (empty($fl)) {
-            $this->logger->debug("No factionlist files were found in the `files` config");
-            return false;
-        }
-        foreach ($fl as $file_path) {
-            if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'a'))) continue;
+        foreach ($l as $file_path) {
+            if (! file_exists($this->files[$file_path]) || ! ($file = @fopen($this->files[$file_path], 'a'))) continue;
             ftruncate($file, 0);
-            foreach ($this->verified as $item) {
+            $file_contents = '';
+            foreach ($this->verified as $item) { // Write each verified member's SS13 ckey and associated role to the factionlist files
                 if (! $member = $this->getVerifiedMember($item)) continue;
-                if ($member->roles->has($this->role_ids['red'])) fwrite($file, "{$item['ss13']};red" . PHP_EOL);
-                if ($member->roles->has($this->role_ids['blue'])) fwrite($file, "{$item['ss13']};blue" . PHP_EOL);
-                if ($member->roles->has($this->role_ids['organizer'])) fwrite($file, "{$item['ss13']};organizer" . PHP_EOL);
+                foreach ($required_roles as $role) if ($member->roles->has($this->role_ids[$role]))
+                { $file_contents .= "{$item['ss13']};{$role}" . PHP_EOL; /*break 1;*/ }
             }
+            fwrite($file, $file_contents);
             fclose($file);
         }
         return true;
@@ -1875,22 +1897,9 @@ class Civ13
     * Returns true if the adminlist files are successfully updated, false otherwise
     * If an additional adminlist is provided, it will be added to the list of adminlists to update
     */
-    public function adminlistUpdate($defaults = true): bool
+    public function adminlistUpdate(array $lists = [], $defaults = true, string $postfix = '_admins'): bool
     {
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
-        // $this->logger->debug('Updating admin lists');
-        // Prepend default admin lists if they exist and haven't been added already
-        
-        
-        $adminlists = [];
-        if ($defaults) {
-            $defaultLists = [];
-            foreach (array_keys($this->server_settings) as $key) $defaultLists[] = strtolower($key) . '_admins';
-            foreach ($defaultLists as $adminlist) if (isset($this->files[$adminlist]) && !in_array($adminlist, $adminlists)) array_unshift($adminlists, $adminlist);
-        }
-
-        // Check that all required roles are properly declared in the bot's config and exist in the guild
-        $required_roles = [
+        $required_roles = [ // Check that all required roles are properly declared in the bot's config and exist in the guild
             'admiral' => ['Host', '65535'],
             'bishop' => ['Bishop', '65535'],
             'host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
@@ -1903,21 +1912,21 @@ class Civ13
             'knight' => ['Knight', '12158'],
             'mentor' => ['Mentor', '16384'],
         ];
-        // If any required roles are missing, return false
-        if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the `role_ids` config', $diff); return false; }
-        foreach (array_keys($required_roles) as $role) if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
-        
-        // Write each verified member's SS13 ckey and associated role with its bitflag permission to the adminlist file
-        foreach ($adminlists as $adminlist) {
-            if (! file_exists($this->files[$adminlist]) || ! ($file = fopen($this->files[$adminlist], 'a'))) continue; // If the file cannot be opened, skip to the next admin list
+        if (! $this->hasRequiredConfigRoles($required_roles, true)) return false;
+        if (! $l = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+
+        foreach ($l as $file_path) {
+            if (! file_exists($this->files[$file_path]) || ! ($file = @fopen($this->files[$file_path], 'a'))) continue;
             ftruncate($file, 0);
             $file_contents = '';
-            foreach ($this->verified as $item) if ($member = $this->getVerifiedMember($item)) foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->role_ids[$role]))
+            foreach ($this->verified as $item) { // Write each verified member's SS13 ckey and file_path role with its bitflag permission to the adminlist files
+                if (! $member = $this->getVerifiedMember($item)) continue;
+                foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->role_ids[$role]))
                 { $file_contents .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL; break 1; }
+            }
             fwrite($file, $file_contents);
             fclose($file);
         }
-        // $this->logger->debug('Admin lists updated');
         return true;
     }
 }

@@ -140,7 +140,7 @@ $mapswap_pers = function (Civ13 $civ13, string $mapto): bool
 $log_handler = function (Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(';', $message_content);
-    if (!in_array(trim($tokens[0]), ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
+    if (! in_array(trim($tokens[0]), ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
     if (trim($tokens[0]) == 'nomads') {
         unset($tokens[0]);
         $results = $civ13->FileNav($civ13->files['nomads_log_basedir'], $tokens);
@@ -155,7 +155,7 @@ $log_handler = function (Civ13 $civ13, $message, string $message_content)
 };
 $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lower)
 {
-    if (!in_array($message_content_lower, ['nomads', 'tdm', 'pers'])) return $message->reply('Please use the format `bans nomads` or `bans tdm');
+    if (! in_array($message_content_lower, ['nomads', 'tdm', 'pers'])) return $message->reply('Please use the format `bans nomads` or `bans tdm');
     switch ($message_content_lower)
     {
         case 'nomads': return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_bans'], 'bans.txt'));
@@ -362,14 +362,14 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $cids = [];
         $dates = [];
         foreach ($collectionsArray[0] as $log) { // Get the ckey's primary identifiers
-            if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-            if (isset($log['cid']) && !in_array($log['cid'], $cids)) $cids[] = $log['cid'];
-            if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
+            if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+            if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
+            if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
         foreach ($collectionsArray[1] as $log) { // Get the ckey's primary identifiers
-            if (isset($log['ip']) && !in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-            if (isset($log['cid']) && !in_array($log['cid'], $cids)) $cids[] = $log['cid'];
-            if (isset($log['date']) && !in_array($log['date'], $dates)) $dates[] = $log['date'];
+            if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+            if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
+            if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
         }
         // $civ13->logger->debug('Primary identifiers:', $ckeys, $ips, $cids, $dates, PHP_EOL);
         $ckey_age = [];
@@ -397,10 +397,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_dates = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 // $civ13->logger->debug('Found new match:', $log, PHP_EOL);
-                if (!in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
+                if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
@@ -423,10 +423,10 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $found_dates = [];
             foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 // $civ13->logger->debug('Found new match: ', $log, PHP_EOL);
-                if (!in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                if (!in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                if (!in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                if (!in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
+                if (! in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
             }
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
@@ -790,7 +790,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     if (str_starts_with($message_content_lower, 'playerlogs')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $tokens = explode(';', trim(substr($message_content, 10)));
-        if (!in_array(trim($tokens[0]), ['nomads', 'tdm', 'pers'])) return $message->reply('Please use the format `playerslogs nomads` or `playerlogs tdm`');
+        if (! in_array(trim($tokens[0]), ['nomads', 'tdm', 'pers'])) return $message->reply('Please use the format `playerslogs nomads` or `playerlogs tdm`');
         switch ($tokens[0])
         {
             case 'nomads':
