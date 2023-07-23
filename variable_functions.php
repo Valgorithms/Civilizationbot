@@ -11,7 +11,7 @@ use Discord\Builders\MessageBuilder;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Activity;
 
-$status_changer_random = function (Civ13 $civ13): bool
+$status_changer_random = function(Civ13 $civ13): bool
 { // on ready
     if (! $civ13->files['status_path']) {
         unset($civ13->timers['status_changer_timer']);
@@ -32,12 +32,12 @@ $status_changer_random = function (Civ13 $civ13): bool
     $civ13->statusChanger($activity, $state);
     return true;
 };
-$status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
+$status_changer_timer = function(Civ13 $civ13) use ($status_changer_random): void
 { // on ready
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-$log_handler = function (Civ13 $civ13, $message, string $message_content)
+$log_handler = function(Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(';', $message_content);
     if (! in_array(trim($tokens[0]), ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
@@ -53,7 +53,7 @@ $log_handler = function (Civ13 $civ13, $message, string $message_content)
     if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     return $message->reply("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
 };
-$banlog_handler = function (Civ13 $civ13, $message, string $message_content_lower)
+$banlog_handler = function(Civ13 $civ13, $message, string $message_content_lower)
 {
     if (! in_array($message_content_lower, ['nomads', 'tdm', 'pers'])) return $message->reply('Please use the format `bans nomads` or `bans tdm');
     switch ($message_content_lower)
@@ -64,7 +64,7 @@ $banlog_handler = function (Civ13 $civ13, $message, string $message_content_lowe
     }
 };
 
-$ranking = function (Civ13 $civ13): false|string
+$ranking = function(Civ13 $civ13): false|string
 {
     $line_array = array();
     if (! file_exists($civ13->files['ranking_path']) || ! ($search = fopen($civ13->files['ranking_path'], 'r'))) return false;
@@ -80,7 +80,7 @@ $ranking = function (Civ13 $civ13): false|string
     }
     return $msg;
 };
-$rankme = function (Civ13 $civ13, string $ckey): false|string
+$rankme = function(Civ13 $civ13, string $ckey): false|string
 {
     $line_array = array();
     if (! file_exists($civ13->files['ranking_path']) || ! ($search = fopen($civ13->files['ranking_path'], 'r'))) return false;
@@ -99,7 +99,7 @@ $rankme = function (Civ13 $civ13, string $ckey): false|string
     if (! $found) return "No medals found for ckey `$ckey`.";
     return $result;
 };
-$medals = function (Civ13 $civ13, string $ckey): false|string
+$medals = function(Civ13 $civ13, string $ckey): false|string
 {
     $result = '';
     if (! file_exists($civ13->files['tdm_awards_path']) || ! ($search = fopen($civ13->files['tdm_awards_path'], 'r'))) return false;
@@ -127,7 +127,7 @@ $medals = function (Civ13 $civ13, string $ckey): false|string
     if ($result != '') return $result;
     if (! $found && ($result == '')) return 'No medals found for this ckey.';
 };
-$brmedals = function (Civ13 $civ13, string $ckey): string
+$brmedals = function(Civ13 $civ13, string $ckey): string
 {
     $result = '';
     if (! file_exists($civ13->files['tdm_awards_br_path']) || ! ($search = fopen($civ13->files['tdm_awards_br_path'], 'r'))) return 'Error getting file.';
@@ -141,7 +141,7 @@ $brmedals = function (Civ13 $civ13, string $ckey): string
     return $result;
 };
 
-$tests = function (Civ13 $civ13, $message, string $message_content)
+$tests = function(Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(' ', $message_content);
     if (! $tokens[0]) {
@@ -177,7 +177,7 @@ $tests = function (Civ13 $civ13, $message, string $message_content)
     }
 };
 
-$banlog_update = function (string $banlog, array $playerlogs, $ckey = null): string
+$banlog_update = function(string $banlog, array $playerlogs, $ckey = null): string
 {
     $temp = [];
     $oldlist = [];
@@ -211,7 +211,7 @@ $banlog_update = function (string $banlog, array $playerlogs, $ckey = null): str
     return trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
 };
 
-$rank_check = function (Civ13 $civ13, $message = null, array $allowed_ranks = [], $verbose = true): bool
+$rank_check = function(Civ13 $civ13, $message = null, array $allowed_ranks = [], $verbose = true): bool
 {
     $resolved_ranks = [];
     foreach ($allowed_ranks as $rank) $resolved_ranks[] = $civ13->role_ids[$rank];
@@ -220,7 +220,7 @@ $rank_check = function (Civ13 $civ13, $message = null, array $allowed_ranks = []
     if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
+$guild_message = function(Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -515,7 +515,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->nomadsban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], null, 'Nomads');
         if ($member = $civ13->getVerifiedMember('id', $split_message[0]))
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -528,7 +528,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->tdmban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], 'TDM');
         if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -541,7 +541,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-        $result = $civ13->banPers(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $result = $civ13->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"], $civ13->getVerifiedItem($message->author->id)['ss13'], 'Pers');
         if ($member = $civ13->getVerifiedMember('id', $split_message[0])) 
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished'], $result);
@@ -561,7 +561,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->nomadsunban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'Nomads');
         $result = "**$admin** unbanned **$ckey** from **Nomads**";
         if ($member = $civ13->getVerifiedMember('id', $ckey))
             if ($member->roles->has($civ13->role_ids['banished']))
@@ -574,7 +574,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->tdmunban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'TDM');
         $result = "**$admin** unbanned **$ckey** from **TDM**";
         if ($member = $civ13->getVerifiedMember('id', $ckey)) 
             if ($member->roles->has($civ13->role_ids['banished']))
@@ -587,7 +587,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             if (! $item = $civ13->getVerifiedItem($id)) return $message->reply("No data found for Discord ID `$ckey`.");
             else $ckey = $item['ckey'];
         
-        $civ13->persunban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13']);
+        $civ13->unban($ckey, $admin = $civ13->getVerifiedItem($message->author->id)['ss13'], 'Pers');
         $result = "**$admin** unbanned **{$ckey}** from **Persistence**";
         if ($member = $civ13->getVerifiedMember('id', $ckey)) 
             if ($member->roles->has($civ13->role_ids['banished']))
@@ -750,21 +750,21 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
 };
 
-$nomads_discord2admin = function (Civ13 $civ13, $author, $string): bool
+$nomads_discord2admin = function(Civ13 $civ13, $author, $string): bool
 {
     if (! file_exists($civ13->files['nomads_discord2admin']) || ! ($file = fopen($civ13->files['nomads_discord2admin'], 'a'))) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
-$tdm_discord2admin = function (Civ13 $civ13, $author, $string): bool
+$tdm_discord2admin = function(Civ13 $civ13, $author, $string): bool
 {
     if (! file_exists($civ13->files['tdm_discord2admin']) || ! $file = fopen($civ13->files['tdm_discord2admin'], 'a')) return false;
     fwrite($file, "$author:::$string" . PHP_EOL);
     fclose($file);
     return true;
 };
-$on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_discord2admin, $tdm_discord2admin)
+$on_message = function(Civ13 $civ13, $message) use ($guild_message, $nomads_discord2admin, $tdm_discord2admin)
 { // on message
     $message_array = $civ13->filterMessage($message);
     if (! $message_array['called']) return; // Not a command
@@ -974,7 +974,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
 };
 
-$slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme, $medals, $brmedals): void
+$slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme, $medals, $brmedals): void
 { // ready_slash, requires other functions to work
     $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13): void
     {
@@ -1041,7 +1041,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme, $medals
     }
     */
 };
-/*$on_ready = function (Civ13 $civ13): void
+/*$on_ready = function(Civ13 $civ13): void
 {    
     // 
 };*/

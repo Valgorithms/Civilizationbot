@@ -176,7 +176,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     
     if (! $whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
 
-    $webpage_content = function ($return) use ($civ13, $port, $sub) {
+    $webpage_content = function($return) use ($civ13, $port, $sub) {
         return '<meta name="color-scheme" content="light dark"> 
                 <div class="button-container">
                     <button style="width:8%" onclick="sendGetRequest(\'pull\')">Pull</button>
