@@ -37,7 +37,7 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-$host_nomads = function (Civ13 $civ13): void
+$nomads_host = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['nomads_updateserverabspaths']}");
     \execInBackground("rm -f {$civ13->files['nomads_serverdata']}");
@@ -46,16 +46,16 @@ $host_nomads = function (Civ13 $civ13): void
         \execInBackground("DreamDaemon {$civ13->files['nomads_dmb']} {$civ13->ports['nomads']} -trusted -webclient -logself &");
     });
 };
-$kill_nomads = function (Civ13 $civ13): void
+$nomads_kill = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['nomads_killciv13']}");
 };
-$restart_nomads = function (Civ13 $civ13) use ($kill_nomads, $host_nomads): void
+$nomads_restart = function (Civ13 $civ13) use ($nomads_kill, $nomads_host): void
 {
-    $kill_nomads($civ13);
-    $host_nomads($civ13);
+    $nomads_kill($civ13);
+    $nomads_host($civ13);
 };
-$host_tdm = function (Civ13 $civ13): void
+$tdm_host = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['tdm_updateserverabspaths']}");
     \execInBackground("rm -f {$civ13->files['tdm_serverdata']}");
@@ -64,16 +64,16 @@ $host_tdm = function (Civ13 $civ13): void
         \execInBackground("DreamDaemon {$civ13->files['tdm_dmb']} {$civ13->ports['tdm']} -trusted -webclient -logself &");
     });
 };
-$kill_tdm = function (Civ13 $civ13): void
+$tdm_kill = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['tdm_killciv13']}");
 };
-$restart_tdm = function (Civ13 $civ13) use ($kill_tdm, $host_tdm): void
+$tdm_restart = function (Civ13 $civ13) use ($tdm_kill, $tdm_host): void
 {
-    $kill_tdm($civ13);
-    $host_tdm($civ13);
+    $tdm_kill($civ13);
+    $tdm_host($civ13);
 };
-$host_pers = function (Civ13 $civ13): void
+$pers_host = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['pers_updateserverabspaths']}");
     \execInBackground("rm -f {$civ13->files['pers_serverdata']}");
@@ -82,14 +82,14 @@ $host_pers = function (Civ13 $civ13): void
         \execInBackground("DreamDaemon {$civ13->files['pers_dmb']} {$civ13->ports['pers']} -trusted -webclient -logself &");
     });
 };
-$kill_pers = function (Civ13 $civ13): void
+$pers_kill = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['pers_killciv13']}");
 };
-$restart_pers = function (Civ13 $civ13) use ($kill_pers, $host_pers): void
+$restart_pers = function (Civ13 $civ13) use ($pers_kill, $pers_host): void
 {
-    $kill_pers($civ13);
-    $host_pers($civ13);
+    $pers_kill($civ13);
+    $pers_host($civ13);
 };
 $nomads_mapswap = function (Civ13 $civ13, string $mapto): bool
 {
@@ -121,7 +121,7 @@ $tdm_mapswap = function (Civ13 $civ13, string $mapto): bool
     \execInBackground("python3 {$civ13->files['tdm_mapswap']} $mapto");
     return true;
 };
-$mapswap_pers = function (Civ13 $civ13, string $mapto): bool
+$pers_mapswap = function (Civ13 $civ13, string $mapto): bool
 {
     if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
     
@@ -133,7 +133,7 @@ $mapswap_pers = function (Civ13 $civ13, string $mapto): bool
     fclose($file);
     if (! in_array($mapto, $maps)) return false;
     
-    \execInBackground("python3 {$civ13->files['mapswap_pers']} $mapto");
+    \execInBackground("python3 {$civ13->files['pers_mapswap']} $mapto");
     return true;
 };
 
@@ -320,7 +320,7 @@ $rank_check = function (Civ13 $civ13, $message = null, array $allowed_ranks = []
     if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $kill_nomads, $kill_tdm, $kill_pers, $host_nomads, $host_tdm, $host_pers, $restart_nomads, $restart_tdm, $restart_pers, $nomads_mapswap, $tdm_mapswap, $mapswap_pers, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $nomads_kill, $tdm_kill, $pers_kill, $nomads_host, $tdm_host, $pers_host, $nomads_restart, $tdm_restart, $restart_pers, $nomads_mapswap, $tdm_mapswap, $pers_mapswap, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -696,27 +696,27 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'nomadshost')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $host_nomads($civ13);
+        $nomads_host($civ13);
         return $message->reply("Attempting to update and bring up Nomads <byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>");
     }
     if (str_starts_with($message_content_lower, 'tdmhost')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $host_tdm($civ13);
+        $tdm_host($civ13);
         return $message->reply("Attempting to update and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>");
     }
     if (str_starts_with($message_content_lower, 'pershost')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $host_pers($civ13);
+        $pers_host($civ13);
         return $message->reply("Attempting to update and bring up Persistence <byond://{$civ13->ips['pers']}:{$civ13->ports['pers']}>");
     }
     if (str_starts_with($message_content_lower, 'nomadsrestart')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $restart_nomads($civ13);
+        $nomads_restart($civ13);
         return $message->reply("Attempted to kill, update, and bring up Nomads <byond://{$civ13->ips['nomads']}:{$civ13->ports['nomads']}>");
     }
     if (str_starts_with($message_content_lower, 'tdmrestart')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $restart_tdm($civ13);
+        $tdm_restart($civ13);
         return $message->reply("Attempted to kill, update, and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>");
     }
     if (str_starts_with($message_content_lower, 'persrestart')) {
@@ -726,17 +726,17 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'nomadskill')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $kill_nomads($civ13);
+        $nomads_kill($civ13);
         return $message->reply('Attempted to kill the Nomads server.');
     }
     if (str_starts_with($message_content_lower, 'tdmkill')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $kill_tdm($civ13);
+        $tdm_kill($civ13);
         return $message->reply('Attempted to kill the TDM server.');
     }
     if (str_starts_with($message_content_lower, 'perskill')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
-        $kill_pers($civ13);
+        $pers_kill($civ13);
         return $message->reply('Attempted to kill the TDM server.');
     }
     if (str_starts_with($message_content_lower, 'nomadsmapswap')) {
@@ -757,7 +757,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $split_message = explode('persmapswap ', $message_content);
         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
-        if (! $mapswap_pers($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
+        if (! $pers_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
     if (str_starts_with($message_content_lower, 'maplist')) {
@@ -1159,7 +1159,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
 };
 
-$slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nomads, $ranking, $rankme, $medals, $brmedals): void
+$slash_init = function (Civ13 $civ13, $commands) use ($tdm_restart, $nomads_restart, $ranking, $rankme, $medals, $brmedals): void
 { // ready_slash, requires other functions to work
     $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13): void
     {
@@ -1175,15 +1175,15 @@ $slash_init = function (Civ13 $civ13, $commands) use ($restart_tdm, $restart_nom
         $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
     });
     
-    $civ13->discord->listenCommand('restart_nomads', function ($interaction) use ($civ13, $restart_nomads): void
+    $civ13->discord->listenCommand('nomads_restart', function ($interaction) use ($civ13, $nomads_restart): void
     {
     $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up Nomads <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"));
-        $restart_nomads($civ13);
+        $nomads_restart($civ13);
     });
-    $civ13->discord->listenCommand('restart_tdm', function ($interaction) use ($civ13, $restart_tdm): void
+    $civ13->discord->listenCommand('tdm_restart', function ($interaction) use ($civ13, $tdm_restart): void
     {
         $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"));
-        $restart_tdm($civ13);
+        $tdm_restart($civ13);
     });
     
     $civ13->discord->listenCommand('ranking', function ($interaction) use ($civ13, $ranking): void
