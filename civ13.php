@@ -221,41 +221,43 @@ class Civ13
     // Generate a list of functions derived by the keys found in server_settings
     // The key is the name of the command, and the value is the function to call
     protected function generateServerFunctions() {
+        $rank_check = function ($message, array $allowed_ranks = [], $verbose = true): bool
+        {
+            $resolved_ranks = [];
+            foreach ($allowed_ranks as $rank) $resolved_ranks[] = $this->role_ids[$rank];
+            foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
+            if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $this->role_ids[array_pop($allowed_ranks)] . '> rank.');
+            return false;
+        };
+
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
 
-            $rank_check = function ($message, array $allowed_ranks = [], $verbose = true): bool
-            {
-                $resolved_ranks = [];
-                foreach ($allowed_ranks as $rank) $resolved_ranks[] = $this->role_ids[$rank];
-                foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
-                if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $this->role_ids[array_pop($allowed_ranks)] . '> rank.');
-                return false;
-            };
-
             foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
-                if (! $this->getRequiredConfigFiles($postfix, true)) continue;
-                $serverhost = function () use ($server): void
-                {
-                    \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
-                    \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
-                    \execInBackground("python3 {$this->files[$server.'_killsudos']}");
-                    $this->discord->getLoop()->addTimer(30, function() use ($server) {
-                        \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$this->ports[$server]} -trusted -webclient -logself &");
-                    });
-                };
-                $this->server_funcs_called[$server.'host'] = $serverhost;
+                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+                else {
+                    $serverhost = function () use ($server): void
+                    {
+                        \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
+                        \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
+                        \execInBackground("python3 {$this->files[$server.'_killsudos']}");
+                        $this->discord->getLoop()->addTimer(30, function() use ($server) {
+                            \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$this->ports[$server]} -trusted -webclient -logself &");
+                        });
+                    };
+                    $this->server_funcs_called[$server.'host'] = $serverhost;
+                }
             }
-
             foreach (['_killciv13'] as $postfix) {
-                if (! $this->getRequiredConfigFiles($postfix, true)) continue;
-                $serverkill = function () use ($server): void
-                {
-                    \execInBackground("python3 {$this->files[$server.'_killciv13']}");
-                };
-                $this->server_funcs_called[$server.'kill'] = $serverkill;
+                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+                else {
+                    $serverkill = function () use ($server): void
+                    {
+                        \execInBackground("python3 {$this->files[$server.'_killciv13']}");
+                    };
+                    $this->server_funcs_called[$server.'kill'] = $serverkill;
+                }
             }
-
             if (isset($this->server_funcs_called[$server.'host'], $this->server_funcs_called[$server.'kill'])) {
                 $serverrestart = function () use ($server): void
                 {
@@ -267,46 +269,50 @@ class Civ13
 
 
             foreach (['_mapswap'] as $postfix) {
-                if (! $this->getRequiredConfigFiles($postfix, true)) continue;
-                $servermapswap = function ($message, $message_filtered) use ($server, $rank_check)
-                {
-                    $mapswap = function ($mapto) use ($server): bool
+                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+                else {
+                    $servermapswap = function ($message, $message_filtered) use ($server, $rank_check)
                     {
-                        if (! file_exists($this->files['map_defines_path']) || ! ($file = fopen($this->files['map_defines_path'], 'r'))) return false;
-                    
-                        $maps = array();
-                        while (($fp = fgets($file, 4096)) !== false) {
-                            $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
-                            if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
-                        }
-                        fclose($file);
-                        if (! in_array($mapto, $maps)) return false;
+                        $mapswap = function ($mapto) use ($server): bool
+                        {
+                            if (! file_exists($this->files['map_defines_path']) || ! ($file = fopen($this->files['map_defines_path'], 'r'))) return false;
                         
-                        \execInBackground("python3 {$this->files[$server.'_mapswap']} $mapto");
-                        return true;
+                            $maps = array();
+                            while (($fp = fgets($file, 4096)) !== false) {
+                                $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
+                                if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
+                            }
+                            fclose($file);
+                            if (! in_array($mapto, $maps)) return false;
+                            
+                            \execInBackground("python3 {$this->files[$server.'_mapswap']} $mapto");
+                            return true;
+                        };
+                        if (! $rank_check($message, ['admiral', 'captain'])) return $message->react("❌");
+                        $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
+                        if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
+                        if (! $mapswap($mapto)) return $message->reply("`$mapto` was not found in the map definitions.");
+                        return $message->reply("Attempting to change `$server` map to `$mapto`");
                     };
-                    if (! $rank_check($message, ['admiral', 'captain'])) return $message->react("❌");
-                    $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
-                    if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
-                    if (! $mapswap($mapto)) return $message->reply("`$mapto` was not found in the map definitions.");
-                    return $message->reply("Attempting to change `$server` map to `$mapto`");
-                };
-                $this->server_funcs_called[$server.'mapswap'] = $servermapswap;
+                    $this->server_funcs_called[$server.'mapswap'] = $servermapswap;
+                }
             }
             
             foreach (['_discord2ooc'] as $postfix) {
-                if (! $this->getRequiredConfigFiles($postfix, true)) continue;
-                $serverdiscord2ooc = function (string $author, string $string) use ($server): bool
-                {
-                    if (! file_exists($this->files[$server.'_discord2ooc']) || ! ($file = @fopen($this->files[$server.'_discord2ooc'], 'a'))) {
-                        $this->logger->error("Unable to open `{$this->files[$server.'_discord2ooc']}` for writing.");
-                        return false;
-                    }
-                    fwrite($file, "$author:::$string" . PHP_EOL);
-                    fclose($file);
-                    return true; 
-                };
-                $this->server_funcs_uncalled[$server.'discord2ooc'] = $serverdiscord2ooc;
+                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+                else {
+                    $serverdiscord2ooc = function (string $author, string $string) use ($server): bool
+                    {
+                        if (! file_exists($this->files[$server.'_discord2ooc']) || ! ($file = @fopen($this->files[$server.'_discord2ooc'], 'a'))) {
+                            $this->logger->error("Unable to open `{$this->files[$server.'_discord2ooc']}` for writing.");
+                            return false;
+                        }
+                        fwrite($file, "$author:::$string" . PHP_EOL);
+                        fclose($file);
+                        return true; 
+                    };
+                    $this->server_funcs_uncalled[$server.'discord2ooc'] = $serverdiscord2ooc;
+                }
             }
         }
     }
