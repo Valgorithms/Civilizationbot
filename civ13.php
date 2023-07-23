@@ -1210,7 +1210,6 @@ class Civ13
     }
     public function legacyBan(array $array, $admin = null): string
     {
-        //return $this->legacyBanNomads($array, $admin) . $this->legacyBanTDM($array, $admin);
         $admin = $admin ?? $this->discord->user->username;
         $result = '';
         foreach (array_keys($this->server_settings) as $key) {
@@ -1297,6 +1296,22 @@ class Civ13
     {
         if ($this->legacy) return $this->legacypersunban($ckey, $admin);
         return $this->sqlpersunban($ckey, $admin);
+    }
+    
+    public function DirectMessage(string $recipient, string $message, string $sender): bool
+    {
+        $sent = false;
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (! file_exists($this->files[$server.'_discord2dm']) || ! $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
+                $this->logger->debug("unable to open `{$this->files[$server.'_discord2dm']}`");
+                continue;
+            }
+            $sent = true;
+            fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
+            fclose($file);
+        }
+        return $sent;
     }
     
     public function DirectMessageNomads(string $recipient, string $message, string $sender): bool
