@@ -267,7 +267,7 @@ class Civ13
 
             foreach (['_mapswap'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) continue;
-                $servermapswap = function ($message) use ($server, $rank_check)
+                $servermapswap = function ($message, $message_filtered) use ($server, $rank_check)
                 {
                     $mapswap = function ($mapto) use ($server): bool
                     {
@@ -285,7 +285,7 @@ class Civ13
                         return true;
                     };
                     if (! $rank_check($message, ['admiral', 'captain'])) return $message->react("❌");
-                    $split_message = explode($server.'mapswap ', $this->filterMessage($message)['message_content']);
+                    $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
                     if (! $mapswap($mapto)) return $message->reply("`$mapto` was not found in the map definitions.");
                     return $message->reply("Attempting to change `$server` map to `$mapto`");
@@ -410,8 +410,8 @@ class Civ13
                 
                 $this->discord->on('message', function ($message): void
                 {
-                    $message_filtered = $this->filterMessage($message)['message_content_lower'];
-                    foreach ($this->server_funcs as $command => $func) if (str_starts_with($message_filtered, $command)) $func($message); // Server functions
+                    $message_filtered = $this->filterMessage($message);
+                    foreach ($this->server_funcs as $command => $func) if (str_starts_with($message_filtered['message_content_lower'], $command)) $func($message, $message_filtered); // Server functions
                     if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
                     else $this->logger->debug('No message functions found!');
                 });
