@@ -302,8 +302,8 @@ $options = array(
         'banished' => '710328377210306641', // Banned in-game (unused)
         'paroled' => '745336314689355796', // On parole
         'parolemin' => '743971427929030748', // Parolemin
-        'red' => '955869414622904320', // Redmenia
-        'blue' => '955869567035527208', // Blugoslavia
+        'red' => '1132678312301428886', // Redmenia
+        'blue' => '1132678353070067802', // Blugoslavia
         'organizer' => '1089060051425165362', // Admin / Faction Organizer
 
         'round_start' => '1110597830403424328', // Round Start Ping
