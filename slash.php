@@ -335,47 +335,23 @@ class Slash
             $response = '';
             $reason = 'unknown';
             $found = false;
-            if (isset($this->civ13->files['nomads_bans']) && file_exists($this->civ13->files['nomads_bans']) && ($filecheck1 = fopen($this->civ13->files['nomads_bans'], 'r'))) {
-                while (($fp = fgets($filecheck1, 4096)) !== false) {
-                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
-                        $found = true;
-                        $type = $linesplit[0];
-                        $reason = $linesplit[3];
-                        $admin = $linesplit[4];
-                        $date = $linesplit[5];
-                        $response .= "**{$item['ss13']}** has been **$type** banned from **Nomads** on **$date** for **$reason** by $admin." . PHP_EOL;
+
+            foreach (array_keys($this->civ13->server_settings) as $key) {
+                $file_path = strtolower($key) . '_bans';
+                if (isset($this->civ13->files[$file_path]) && file_exists($this->civ13->files[$file_path]) && ($file = @fopen($this->civ13->files[$file_path], 'r'))) {
+                    while (($fp = fgets($file, 4096)) !== false) {
+                        $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
+                        if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
+                            $found = true;
+                            $type = $linesplit[0];
+                            $reason = $linesplit[3];
+                            $admin = $linesplit[4];
+                            $date = $linesplit[5];
+                            $response .= "**{$item['ss13']}** has been **$type** banned from **$key** on **$date** for **$reason** by $admin." . PHP_EOL;
+                        }
                     }
+                    fclose($file);
                 }
-                fclose($filecheck1);
-            }
-            if (isset($this->civ13->files['tdm_bans']) && file_exists($this->civ13->files['tdm_bans']) && ($filecheck2 = fopen($this->civ13->files['tdm_bans'], 'r'))) {
-                while (($fp = fgets($filecheck2, 4096)) !== false) {
-                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
-                        $found = true;
-                        $type = $linesplit[0];
-                        $reason = $linesplit[3];
-                        $admin = $linesplit[4];
-                        $date = $linesplit[5];
-                        $response .= "**{$item['ss13']}** has been **$type** banned from **TDM** on **$date** for **$reason** by $admin." . PHP_EOL;
-                    }
-                }
-                fclose($filecheck2);
-            }
-            if (isset($this->civ13->files['pers_bans']) && file_exists($this->civ13->files['pers_bans']) && ($filecheck3 = fopen($this->civ13->files['pers_bans'], 'r'))) {
-                while (($fp = fgets($filecheck3, 4096)) !== false) {
-                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
-                        $found = true;
-                        $type = $linesplit[0];
-                        $reason = $linesplit[3];
-                        $admin = $linesplit[4];
-                        $date = $linesplit[5];
-                        $response .= "**{$item['ss13']}** has been **$type** banned from **Persistence** on **$date** for **$reason** by $admin." . PHP_EOL;
-                    }
-                }
-                fclose($filecheck3);
             }
             if (! $found) $response .= "No bans were found for **{$item['ss13']}**." . PHP_EOL;
             elseif ($member = $this->civ13->getVerifiedMember($item['ss13']))

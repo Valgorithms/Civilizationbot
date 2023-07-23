@@ -37,108 +37,6 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-/*
-$nomads_host = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['nomads_updateserverabspaths']}");
-    \execInBackground("rm -f {$civ13->files['nomads_serverdata']}");
-    \execInBackground("python3 {$civ13->files['nomads_killsudos']}");
-    $civ13->discord->getLoop()->addTimer(30, function() use ($civ13) {
-        \execInBackground("DreamDaemon {$civ13->files['nomads_dmb']} {$civ13->ports['nomads']} -trusted -webclient -logself &");
-    });
-};
-$nomads_kill = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['nomads_killciv13']}");
-};
-$nomads_restart = function (Civ13 $civ13) use ($nomads_kill, $nomads_host): void
-{
-    $nomads_kill($civ13);
-    $nomads_host($civ13);
-};
-$tdm_host = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['tdm_updateserverabspaths']}");
-    \execInBackground("rm -f {$civ13->files['tdm_serverdata']}");
-    \execInBackground("python3 {$civ13->files['tdm_killsudos']}");
-    $civ13->discord->getLoop()->addTimer(30, function() use ($civ13) {
-        \execInBackground("DreamDaemon {$civ13->files['tdm_dmb']} {$civ13->ports['tdm']} -trusted -webclient -logself &");
-    });
-};
-$tdm_kill = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['tdm_killciv13']}");
-};
-$tdm_restart = function (Civ13 $civ13) use ($tdm_kill, $tdm_host): void
-{
-    $tdm_kill($civ13);
-    $tdm_host($civ13);
-};
-$pers_host = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['pers_updateserverabspaths']}");
-    \execInBackground("rm -f {$civ13->files['pers_serverdata']}");
-    \execInBackground("python3 {$civ13->files['pers_killsudos']}");
-    $civ13->discord->getLoop()->addTimer(30, function() use ($civ13) {
-        \execInBackground("DreamDaemon {$civ13->files['pers_dmb']} {$civ13->ports['pers']} -trusted -webclient -logself &");
-    });
-};
-$pers_kill = function (Civ13 $civ13): void
-{
-    \execInBackground("python3 {$civ13->files['pers_killciv13']}");
-};
-$restart_pers = function (Civ13 $civ13) use ($pers_kill, $pers_host): void
-{
-    $pers_kill($civ13);
-    $pers_host($civ13);
-};
-$nomads_mapswap = function (Civ13 $civ13, string $mapto): bool
-{
-    if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
-    
-    $maps = array();
-    while (($fp = fgets($file, 4096)) !== false) {
-        $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
-        if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
-    }
-    fclose($file);
-    if (! in_array($mapto, $maps)) return false;
-    
-    \execInBackground("python3 {$civ13->files['nomads_mapswap']} $mapto");
-    return true;
-};
-$tdm_mapswap = function (Civ13 $civ13, string $mapto): bool
-{
-    if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
-    
-    $maps = array();
-    while (($fp = fgets($file, 4096)) !== false) {
-        $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
-        if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
-    }
-    fclose($file);
-    if (! in_array($mapto, $maps)) return false;
-    
-    \execInBackground("python3 {$civ13->files['tdm_mapswap']} $mapto");
-    return true;
-};
-$pers_mapswap = function (Civ13 $civ13, string $mapto): bool
-{
-    if (! file_exists($civ13->files['map_defines_path']) || ! ($file = fopen($civ13->files['map_defines_path'], 'r'))) return false;
-    
-    $maps = array();
-    while (($fp = fgets($file, 4096)) !== false) {
-        $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
-        if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
-    }
-    fclose($file);
-    if (! in_array($mapto, $maps)) return false;
-    
-    \execInBackground("python3 {$civ13->files['pers_mapswap']} $mapto");
-    return true;
-};
-*/
-
 $log_handler = function (Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(';', $message_content);
@@ -1041,39 +939,31 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         }
         $reason = 'unknown';
         $found = false;
-        if (file_exists($civ13->files['nomads_bans']) && ($filecheck1 = fopen($civ13->files['nomads_bans'], 'r'))) {
-            while (($fp = fgets($filecheck1, 4096)) !== false) {
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp)));
-                if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
-                    $found = true;
-                    $type = $linesplit[0];
-                    $reason = $linesplit[3];
-                    $admin = $linesplit[4];
-                    $date = $linesplit[5];
-                    $message->reply("**$ckey** has been **$type** banned from **Nomads** on **$date** for **$reason** by $admin.");
+        $response = '';
+        foreach (array_keys($civ13->server_settings) as $key) {
+            $file_path = strtolower($key) . '_bans';
+            if (isset($civ13->files[$file_path]) && file_exists($civ13->files[$file_path]) && ($file = @fopen($civ13->files[$file_path], 'r'))) {
+                while (($fp = fgets($file, 4096)) !== false) {
+                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
+                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
+                        $found = true;
+                        $type = $linesplit[0];
+                        $reason = $linesplit[3];
+                        $admin = $linesplit[4];
+                        $date = $linesplit[5];
+                        $response .= "**{$item['ss13']}** has been **$type** banned from **$key** on **$date** for **$reason** by $admin." . PHP_EOL;
+                    }
                 }
+                fclose($file);
             }
-            fclose($filecheck1);
         }
-        if (file_exists($civ13->files['tdm_bans']) && ($filecheck2 = fopen($civ13->files['tdm_bans'], 'r'))) {
-            while (($fp = fgets($filecheck2, 4096)) !== false) {
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp)));
-                if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
-                    $found = true;
-                    $type = $linesplit[0];
-                    $reason = $linesplit[3];
-                    $admin = $linesplit[4];
-                    $date = $linesplit[5];
-                    $message->reply("**$ckey** has been **$type** banned from **TDM** on **$date** for **$reason** by $admin.");
-                }
-            }
-            fclose($filecheck2);
-        }
-        if (! $found) return $message->reply("No bans were found for **$ckey**.");
+        if (! $found) $response .= "No bans were found for **{$item['ss13']}**." . PHP_EOL;
         if ($member = $civ13->getVerifiedMember($ckey))
             if (! $member->roles->has($civ13->role_ids['banished']))
                 $member->addRole($civ13->role_ids['banished']);
-        return;
+        $embed = new Embed($civ13->discord);
+        $embed->setDescription($response);
+        return $message->reply(MessageBuilder::new()->addEmbed($embed));
     }
     if (str_starts_with($message_content_lower, 'serverstatus')) { // See GitHub Issue #1
         return; // deprecated
