@@ -1540,6 +1540,10 @@ class Civ13
     private function playercountChannelUpdate(int $count = 0, string $prefix = '')
     {
         if (! $channel = $this->discord->getChannel($this->channel_ids[$prefix . 'playercount'])) return;
+        if (! $channel->created) {
+            $this->logger->warning("Channel {$channel->name} hasn't been created!");
+            return;
+        }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
         if ($this->playercount_ticker % 10 !== 0) return;
         if ((int)$existingCount !== $count) {
