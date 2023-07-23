@@ -2066,8 +2066,10 @@ class Civ13
         {
             $string = '';
             foreach (array_keys($required_roles) as $role)
-                if ($member->roles->has($this->role_ids[$role]))
+                if ($member->roles->has($this->role_ids[$role])) {
                     $string .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL;
+                    continue; // We only want to assign one role per member
+                }
             return $string;
         };
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
