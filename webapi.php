@@ -673,9 +673,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                                 if ($existingCount === 0) $message .= " There are currently no players on the $server server.";
                                 elseif ($existingCount === 1) $message .= " There is currently 1 player on the $server server.";
                                 elseif ($existingCount > 1) {
-                                    if (isset($civ13->role_ids['30+']) && $civ13->role_ids['30+'] && ($existingCount >= 30)) $message .= "<@&{$civ13->role_ids['30+']}>, ";
-                                    elseif (isset($civ13->role_ids['15+']) && $civ13->role_ids['15+'] && ($existingCount >= 15)) $message .= "<@&{$civ13->role_ids['15+']}>, ";
-                                    elseif (isset($civ13->role_ids['2+']) && $civ13->role_ids['2+'] && ($existingCount >= 2)) $message .= "<@&{$civ13->role_ids['2+']}>, ";
+                                    if (isset($civ13->role_ids['30+']) && $civ13->role_ids['30+'] && ($existingCount >= 30)) $message .= " <@&{$civ13->role_ids['30+']}>,";
+                                    elseif (isset($civ13->role_ids['15+']) && $civ13->role_ids['15+'] && ($existingCount >= 15)) $message .= " <@&{$civ13->role_ids['15+']}>,";
+                                    elseif (isset($civ13->role_ids['2+']) && $civ13->role_ids['2+'] && ($existingCount >= 2)) $message .= " <@&{$civ13->role_ids['2+']}>,";
                                     $message .= " There are currently $existingCount players on the $server server.";
                                 }
                             }
