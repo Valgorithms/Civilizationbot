@@ -1825,7 +1825,7 @@ class Civ13
     }
     
     // Check that all required files are properly declared in the bot's config and exist in the guild
-    public function hasRequiredConfigFiles(array $lists = [], bool $defaults = true, string $postfix = ''): array|false
+    public function getRequiredConfigFiles(array $lists = [], bool $defaults = true, string $postfix = ''): array|false
     {
         $l = [];
         if ($defaults) {
@@ -1866,7 +1866,7 @@ class Civ13
     {
         $required_roles = ['veteran'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $file_paths = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->getRequiredConfigFiles($lists, $defaults, $postfix)) return false;
 
         $callback = function ($member, $item, $required_roles): string
         {
@@ -1885,7 +1885,7 @@ class Civ13
     {
         $required_roles = ['red', 'blue', 'organizer'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $file_paths = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->getRequiredConfigFiles($lists, $defaults, $postfix)) return false;
 
         $callback = function ($member, $item, $required_roles): string
         {
@@ -1916,7 +1916,7 @@ class Civ13
             'mentor' => ['Mentor', '16384'],
         ];
         if (! $this->hasRequiredConfigRoles($required_roles, true)) return false;
-        if (! $file_paths = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->getRequiredConfigFiles($lists, $defaults, $postfix)) return false;
 
         $callback = function ($member, $item, $required_roles): string
         {
