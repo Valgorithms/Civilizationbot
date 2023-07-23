@@ -456,12 +456,11 @@ class Civ13
                     $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() {
                         if ($this->relay_method !== 'file') return;
                         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
-                        if (isset($this->channel_ids['nomads_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_ooc_channel'])) $this->gameChatFileRelay($this->files['nomads_ooc_path'], $channel);  // #ooc-nomads
-                        if (isset($this->channel_ids['nomads_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['nomads_asay_channel'])) $this->gameChatFileRelay($this->files['nomads_admin_path'], $channel);  // #asay-nomads
-                        if (isset($this->channel_ids['tdm_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_ooc_channel'])) $this->gameChatFileRelay($this->files['tdm_ooc_path'], $channel);  // #ooc-tdm
-                        if (isset($this->channel_ids['tdm_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['tdm_asay_channel'])) $this->gameChatFileRelay($this->files['tdm_admin_path'], $channel);  // #asay-tdm
-                        if (isset($this->channel_ids['pers_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_ooc_channel'])) $this->gameChatFileRelay($this->files['pers_ooc_path'], $channel);  // #ooc-pers
-                        if (isset($this->channel_ids['pers_admin_channel']) && $channel = $guild->channels->get('id', $this->channel_ids['pers_admin_channel'])) $this->gameChatFileRelay($this->files['pers_admin_path'], $channel);  // #asay-pers
+                        foreach (array_keys($this->server_settings) as $key) {
+                            $server = strtolower($key);
+                            if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_ooc_channel'])) $this->gameChatFileRelay($this->files[$server.'_ooc_path'], $channel);  // #ooc-server
+                            if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_asay_channel'])) $this->gameChatFileRelay($this->files[$server.'_admin_path'], $channel);  // #asay-server
+                        }
                     });
                 }
             });

@@ -244,7 +244,7 @@ $options = array(
         'persistence-playercount' => '1090788345082298369', // persistence-#
         // File read relays
         // 'pers_ooc_channel' => '1090863947579658320', // #ooc-pers
-        // 'pers_admin_channel' => '1090863837730848798', // #ahelp-pers
+        // 'pers_asay_channel' => '', // #asay-pers
 
         /* Nomad */
         'nomads' => '799952084505067581', #nomads
