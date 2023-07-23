@@ -2065,10 +2065,13 @@ class Civ13
         $callback = function ($member, $item, $required_roles): string
         {
             $string = '';
+            $checked_ids = [];
             foreach (array_keys($required_roles) as $role)
                 if ($member->roles->has($this->role_ids[$role])) {
-                    $string .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL;
-                    continue; // We only want to assign one role per member
+                    if (! in_array($member->id, $checked_ids)) {
+                        $string .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL;
+                        $checked_ids[] = $member->id;
+                    }
                 }
             return $string;
         };
