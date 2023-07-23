@@ -113,7 +113,8 @@ class Civ13
         'messages' => [],
         'misc' => [],
     );
-    public $server_funcs = [];
+    public $server_funcs_called = []; // List of functions that are called when their respective command is called
+    public $server_funcs_uncalled = []; // List of functions that are available for use by other functions, but otherwise not called via a message command
     
     public string $command_symbol = '@Civilizationbot'; // The symbol that the bot will use to identify commands if it is not mentioned
     public string $owner_id = '196253985072611328'; // Taislin's Discord ID
@@ -243,7 +244,7 @@ class Civ13
                         \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$this->ports[$server]} -trusted -webclient -logself &");
                     });
                 };
-                $this->server_funcs[$server.'host'] = $serverhost;
+                $this->server_funcs_called[$server.'host'] = $serverhost;
             }
 
             foreach (['_killciv13'] as $postfix) {
@@ -252,16 +253,16 @@ class Civ13
                 {
                     \execInBackground("python3 {$this->files[$server.'_killciv13']}");
                 };
-                $this->server_funcs[$server.'kill'] = $serverkill;
+                $this->server_funcs_called[$server.'kill'] = $serverkill;
             }
 
-            if (isset($this->server_funcs[$server.'host'], $this->server_funcs[$server.'kill'])) {
+            if (isset($this->server_funcs_called[$server.'host'], $this->server_funcs_called[$server.'kill'])) {
                 $serverrestart = function () use ($server): void
                 {
-                    $this->server_funcs[$server.'kill']();
-                    $this->server_funcs[$server.'host']();
+                    $this->server_funcs_called[$server.'kill']();
+                    $this->server_funcs_called[$server.'host']();
                 };
-                $this->server_funcs[$server.'restart'] = $serverrestart;
+                $this->server_funcs_called[$server.'restart'] = $serverrestart;
             }
 
 
@@ -290,7 +291,22 @@ class Civ13
                     if (! $mapswap($mapto)) return $message->reply("`$mapto` was not found in the map definitions.");
                     return $message->reply("Attempting to change `$server` map to `$mapto`");
                 };
-                $this->server_funcs[$server.'mapswap'] = $servermapswap;
+                $this->server_funcs_called[$server.'mapswap'] = $servermapswap;
+            }
+            
+            foreach (['_discord2ooc'] as $postfix) {
+                if (! $this->getRequiredConfigFiles($postfix, true)) continue;
+                $serverdiscord2ooc = function (string $author, string $string) use ($server): bool
+                {
+                    if (! file_exists($this->files[$server.'_discord2ooc']) || ! ($file = @fopen($this->files[$server.'_discord2ooc'], 'a'))) {
+                        $this->logger->error("Unable to open `{$this->files[$server.'_discord2ooc']}` for writing.");
+                        return false;
+                    }
+                    fwrite($file, "$author:::$string" . PHP_EOL);
+                    fclose($file);
+                    return true; 
+                };
+                $this->server_funcs_uncalled[$server.'discord2ooc'] = $serverdiscord2ooc;
             }
         }
     }
@@ -411,7 +427,7 @@ class Civ13
                 $this->discord->on('message', function ($message): void
                 {
                     $message_filtered = $this->filterMessage($message);
-                    foreach ($this->server_funcs as $command => $func) if (str_starts_with($message_filtered['message_content_lower'], $command)) $func($message, $message_filtered); // Server functions
+                    foreach ($this->server_funcs_called as $command => $func) if (str_starts_with($message_filtered['message_content_lower'], $command)) $func($message, $message_filtered); // Server functions
                     if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
                     else $this->logger->debug('No message functions found!');
                 });
