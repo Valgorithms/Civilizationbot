@@ -1846,7 +1846,7 @@ class Civ13
     * This function is used to the contents of files based on the roles of verified members
     * The callback function is used to determine what to write to the file
     */
-    public function updateFilesFromRoles(array $file_paths = [], array $required_roles = [], callable $callback): void
+    public function updateFilesFromRoles(callable $callback, array $file_paths, array $required_roles): void
     {
         foreach ($file_paths as $file_path) {
             if (!file_exists($this->files[$file_path]) || !($file = @fopen($this->files[$file_path], 'a'))) continue;
@@ -1876,7 +1876,7 @@ class Civ13
                     $string .= "{$item['ss13']} = {$item['discord']}" . PHP_EOL;
             return $string;
         };
-        $this->updateFilesFromRoles($file_paths, $required_roles, $callback);
+        $this->updateFilesFromRoles($callback, $file_paths, $required_roles);
         return true;
     }
 
@@ -1895,7 +1895,7 @@ class Civ13
                     $string .= "{$item['ss13']};{$role}" . PHP_EOL;
             return $string;
         };
-        $this->updateFilesFromRoles($file_paths, $required_roles, $callback);
+        $this->updateFilesFromRoles($callback, $file_paths, $required_roles);
         return true;
     }
 
@@ -1926,7 +1926,7 @@ class Civ13
                     $string .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL;
             return $string;
         };
-        $this->updateFilesFromRoles($file_paths, $required_roles, $callback);
+        $this->updateFilesFromRoles($callback, $file_paths, $required_roles);
         return true;
     }
 }
