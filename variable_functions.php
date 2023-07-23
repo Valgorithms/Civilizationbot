@@ -612,7 +612,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             }
             $found = true;
             $file_contents = file_get_contents($civ13->files[$server.'_admins']);
-            $builder->addFileFromContent($file_contents, $server.'_admins.txt');
+            $builder->addFileFromContent($server.'_admins.txt', $file_contents);
         }
         if (! $found) return $message->react("🔥");
         return $message->reply($builder);
@@ -686,7 +686,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
-        return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'ranking.txt'));
+        return $message->reply(MessageBuilder::new()->addFileFromContent('ranking.txt', $msg));
         // return $message->reply("The ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'rankme')) {
@@ -700,7 +700,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
-        return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'rank.txt'));
+        return $message->reply(MessageBuilder::new()->addFileFromContent('rank.txt', $msg));
         // return $message->reply("Your ranking is too long to display.");
     }
     if (str_starts_with($message_content_lower, 'medals')) {
@@ -713,7 +713,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
-        return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'medals.txt'));
+        return $message->reply(MessageBuilder::new()->addFileFromContent('medals.txt', $msg));
         // return $message->reply("Too many medals to display.");
     }
     if (str_starts_with($message_content_lower, 'brmedals')) {
@@ -726,7 +726,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
             $embed->setDescription($msg);
             return $message->channel->sendEmbed($embed);
         }
-        return $message->reply(MessageBuilder::new()->addFileFromContent($msg, 'brmedals.txt'));
+        return $message->reply(MessageBuilder::new()->addFileFromContent('brmedals.txt', $msg));
         // return $message->reply("Too many medals to display.");
     }
 
