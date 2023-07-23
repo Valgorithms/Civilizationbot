@@ -869,9 +869,14 @@ class Civ13
                 return $reason;
             }
             $found = false;
-            foreach (explode('|', file_get_contents($this->files['tdm_playerlogs']) . file_get_contents($this->files['nomads_playerlogs'])) as $line)
-                if (explode(';', trim($line))[0] == $ckey) { $found = true; break; }
-                if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
+            $file_contents = '';
+            foreach (array_keys($this->server_settings) as $key) {
+                $server = strtolower($key);
+                if (isset($this->files[$server.'_playerlogs'])) $file_contents .= file_get_contents($this->files[$server.'_playerlogs']);
+                else $this->logger->warning("unable to open {$this->files[$server.'_playerlogs']}");
+            }
+            foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] == $ckey) { $found = true; break; }
+            if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
         return $this->verifyNew($discord_id)['error']; // ['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
@@ -1386,9 +1391,10 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        if (isset($this->files['tdm_bans']) && file_exists($this->files['tdm_bans'])) $file_contents .= file_get_contents($this->files['tdm_bans']);
-        if (isset($this->files['nomads_bans']) && file_exists($this->files['nomads_bans'])) $file_contents .= file_get_contents($this->files['nomads_bans']);
-        if (isset($this->files['pers_bans']) && file_exists($this->files['pers_bans'])) $file_contents .= file_get_contents($this->files['pers_bans']);
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (isset($this->files[$server.'_bans']) && file_exists($this->files[$server.'_bans'])) $file_contents .= file_get_contents($this->files[$server.'_bans']);
+        }
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
         
         $ban_collection = new Collection([], 'uid');
@@ -1438,9 +1444,10 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        if (isset($this->files['nomads_playerlogs']) && file_exists($this->files['nomads_playerlogs'])) $file_contents .= file_get_contents($this->files['nomads_playerlogs']);
-        if (isset($this->files['tdm_playerlogs']) && file_exists($this->files['tdm_playerlogs'])) $file_contents .= file_get_contents($this->files['tdm_playerlogs']);
-        if (isset($this->files['pers_playerlogs']) && file_exists($this->files['pers_playerlogs'])) $file_contents .= file_get_contents($this->files['pers_playerlogs']);
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (isset($this->files[$server.'_playerlogs']) && file_exists($this->files[$server.'_playerlogs'])) $file_contents .= file_get_contents($this->files[$server.'_playerlogs']);
+        }
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
 
         $arrays = [];
@@ -1760,10 +1767,11 @@ class Civ13
     public function unbanTimer(): bool
     {
         // We don't want the persistence server to do this function
-        if (! file_exists($this->files['nomads_bans']) || ! ($file = fopen($this->files['nomads_bans'], 'r'))) return false;
-        fclose($file);
-        if (! file_exists($this->files['tdm_bans']) || (! $file2 = fopen($this->files['tdm_bans'], 'r'))) return false;
-        fclose($file2);
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (! file_exists($this->files[$server.'_bans']) || ! ($file = fopen($this->files[$server.'_bans'], 'r'))) return false;
+            fclose($file);
+        }
 
         $unbanTimer = function() {
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
