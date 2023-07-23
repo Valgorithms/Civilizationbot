@@ -1984,7 +1984,7 @@ class Civ13
     }
 
     /*
-    * This function is used to the contents of files based on the roles of verified members
+    * This function is used to update the contents of files based on the roles of verified members
     * The callback function is used to determine what to write to the file
     */
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
