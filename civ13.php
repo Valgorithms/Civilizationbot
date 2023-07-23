@@ -113,6 +113,7 @@ class Civ13
         'messages' => [],
         'misc' => [],
     );
+    public $server_funcs = [];
     
     public string $command_symbol = '@Civilizationbot'; // The symbol that the bot will use to identify commands if it is not mentioned
     public string $owner_id = '196253985072611328'; // Taislin's Discord ID
@@ -202,6 +203,7 @@ class Civ13
         
         if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->logger->warning('No functions passed in options!');
+        $this->generateServerFunctions();
         
         if (isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
         else $this->logger->warning('No files passed in options!');
@@ -212,6 +214,41 @@ class Civ13
         $this->afterConstruct($options, $server_options);
     }
     
+    // Generate a list of functions derived by the keys found in server_settings
+    // The key is the name of the command, and the value is the function to call
+    protected function generateServerFunctions() {
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            $required_files = ['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'];
+            foreach ($required_files as $postfix) {
+                if (! $this->getRequiredConfigFiles($postfix, true)) continue;
+                $func = function () use ($server): void
+                {
+                    \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
+                    \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
+                    \execInBackground("python3 {$this->files[$server.'_killsudos']}");
+                    $this->discord->getLoop()->addTimer(30, function() use ($server) {
+                        \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$this->ports[$server]} -trusted -webclient -logself &");
+                    });
+                };
+                $this->server_funcs[$server.'host'] = $func;
+            }
+        }
+    }
+
+    public function filterMessage($message): array
+    {
+        if (! $message->guild || $message->guild->owner_id != $this->owner_id)  return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
+
+        $message_content = '';
+        $prefix = $this->command_symbol ?? '@Civilizationbot';
+        $called = false;
+        if (str_starts_with($message->content, $call = $prefix . ' ')) { $message_content = trim(substr($message->content, strlen($call))); $called = true; }
+        elseif (str_starts_with($message->content, $call = "<@!{$this->discord->id}>")) { $message_content = trim(substr($message->content, strlen($call))); $called = true; }
+        elseif (str_starts_with($message->content, $call = "<@{$this->discord->id}>")) { $message_content = trim(substr($message->content, strlen($call))); $called = true; }
+        return ['message_content' => $message_content, 'message_content_lower' => strtolower($message_content), 'called' => $called];
+    }
+
     /*
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
@@ -314,7 +351,8 @@ class Civ13
                 
                 $this->discord->on('message', function ($message): void
                 {
-                    if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message);
+                    foreach ($this->server_funcs as $command => $func) if (str_starts_with($message->content, $command)) $func($message); // Anonymous functions
+                    if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
                     else $this->logger->debug('No message functions found!');
                 });
                 $this->discord->on('GUILD_MEMBER_ADD', function ($guildmember): void
@@ -1825,7 +1863,7 @@ class Civ13
     }
     
     // Check that all required files are properly declared in the bot's config and exist in the guild
-    public function getRequiredConfigFiles(array $lists = [], bool $defaults = true, string $postfix = ''): array|false
+    public function getRequiredConfigFiles(string $postfix = '', bool $defaults = true, array $lists = []): array|false
     {
         $l = [];
         if ($defaults) {
@@ -1866,7 +1904,7 @@ class Civ13
     {
         $required_roles = ['veteran'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $file_paths = $this->getRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->getRequiredConfigFiles($postfix, $defaults, $lists)) return false;
 
         $callback = function ($member, $item, $required_roles): string
         {
@@ -1885,7 +1923,7 @@ class Civ13
     {
         $required_roles = ['red', 'blue', 'organizer'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $file_paths = $this->getRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->getRequiredConfigFiles($postfix, $defaults, $lists)) return false;
 
         $callback = function ($member, $item, $required_roles): string
         {
@@ -1916,7 +1954,7 @@ class Civ13
             'mentor' => ['Mentor', '16384'],
         ];
         if (! $this->hasRequiredConfigRoles($required_roles, true)) return false;
-        if (! $file_paths = $this->getRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->getRequiredConfigFiles($postfix, $defaults, $lists)) return false;
 
         $callback = function ($member, $item, $required_roles): string
         {

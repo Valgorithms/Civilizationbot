@@ -694,6 +694,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
                 $member->removeRole($civ13->role_ids['banished'], $result);
         return $message->reply($result);
     }
+    /*
     if (str_starts_with($message_content_lower, 'nomadshost')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $nomads_host($civ13);
@@ -709,6 +710,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $pers_host($civ13);
         return $message->reply("Attempting to update and bring up Persistence <byond://{$civ13->ips['pers']}:{$civ13->ports['pers']}>");
     }
+    */
     if (str_starts_with($message_content_lower, 'nomadsrestart')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $nomads_restart($civ13);
@@ -897,7 +899,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         file_put_contents($civ13->files['nomads_bans'], $nomads);
         return $message->react("👍");
     }
-    if ($message_content_lower == 'panic') {
+    if (str_starts_with($message_content_lower, 'panic')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         return $message->reply('Panic bunker is now ' . (($civ13->panic_bunker = ! $civ13->panic_bunker) ? 'enabled.' : 'disabled.'));
     }
@@ -933,22 +935,13 @@ $tdm_discord2admin = function (Civ13 $civ13, $author, $string): bool
 };
 $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_discord2ooc, $tdm_discord2ooc, $nomads_discord2admin, $tdm_discord2admin)
 { // on message
-    if (! $message->guild || $message->guild->owner_id != $civ13->owner_id) return; // Only process commands from a guild that Taislin owns
-    if (! $civ13->command_symbol) $civ13->command_symbol = '!s';
-    
-    $message_content = '';
-    $message_content_lower = '';
-    if (str_starts_with($message->content, $civ13->command_symbol . ' ')) { // Add these as slash commands?
-        $message_content = substr($message->content, strlen($civ13->command_symbol)+1);
-        $message_content_lower = strtolower($message_content);
-    } elseif (str_starts_with($message->content, "<@!{$civ13->discord->id}>")) { // Add these as slash commands?
-        $message_content = trim(substr($message->content, strlen($civ13->discord->id)+4));
-        $message_content_lower = strtolower($message_content);
-    } elseif (str_starts_with($message->content, "<@{$civ13->discord->id}>")) { // Add these as slash commands?
-        $message_content = trim(substr($message->content, strlen($civ13->discord->id)+3));
-        $message_content_lower = strtolower($message_content);
+    $message_array = $civ13->filterMessage($message);
+    if (! $message_array['called']) return; // Not a command
+    if (! $message_content = $message_array['message_content']) { // No command
+        $random_responses = ['You can see a full list of commands by using the `help` command.'];
+        if (count($random_responses) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent("<@{$message->author_id}>, " . $random_responses[rand(0, count($random_responses)-1)]));
     }
-    if (! $message_content) return;
+    $message_content_lower = $message_array['message_content_lower'];
     
     if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
     if (str_starts_with($message_content_lower, 'help')) return $message->reply(
