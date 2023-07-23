@@ -802,15 +802,13 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
         $message_content = substr($message_content, 4);
         foreach ($civ13->server_settings as $key) {
             $server = strtolower($key);
-            if (! isset($civ13->server_funcs_uncalled[$server.'discord2ooc'])) return $message->react("🔥");
-            switch (strtolower($message->channel->name)) {
+            if (isset($civ13->server_funcs_uncalled[$server.'discord2ooc'])) switch (strtolower($message->channel->name)) {
                 case "ooc-{$server}":                    
                     if (! $civ13->server_funcs_uncalled[$server.'discord2ooc']($message->author->displayname, $message_content)) return $message->react("🔥");
                     return $message->react("📧");
-                default:
-                    return $message->reply('You need to be in any of the #ooc channels to use this command.');
             }
         }
+        return $message->reply('You need to be in any of the #ooc channels to use this command.');
     }
     if (str_starts_with($message_content_lower, 'asay ')) {
         $message_content = substr($message_content, 5);
