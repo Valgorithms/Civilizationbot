@@ -1975,6 +1975,7 @@ class Civ13
             $defaultLists = [];
             foreach (array_keys($this->server_settings) as $key) $defaultLists[] = strtolower($key) . $postfix;
             foreach ($defaultLists as $file_path) if (isset($this->files[$file_path]) && ! in_array($file_path, $l)) array_unshift($l, $file_path);
+            else $this->logger->warning("Default `$postfix` file `$file_path` was either missing from the `files` config or already included in the list");
             if (empty($l)) $this->logger->debug("No default `$postfix` files were found in the `files` config");
         }
         if ($lists) foreach ($lists as $file_path) if (isset($this->files[$file_path]) && ! in_array($file_path, $l)) array_unshift($l, $file_path);
