@@ -322,7 +322,7 @@ $rank_check = function (Civ13 $civ13, $message = null, array $allowed_ranks = []
     if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
-$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $nomads_kill, $tdm_kill, $pers_kill, $nomads_host, $tdm_host, $pers_host, $nomads_restart, $tdm_restart, $restart_pers, $nomads_mapswap, $tdm_mapswap, $pers_mapswap, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
+$guild_message = function (Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update)
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     

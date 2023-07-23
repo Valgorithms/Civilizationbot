@@ -203,6 +203,8 @@ class Civ13
         
         if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->logger->warning('No functions passed in options!');
+        if (isset($options['server_settings']) && is_array($options['server_settings'])) $this->server_settings = $options['server_settings'];
+        else $this->logger->warning('No server_settings passed in options!');
         $this->generateServerFunctions();
         
         if (isset($options['files'])) foreach ($options['files'] as $key => $path) $this->files[$key] = $path;
