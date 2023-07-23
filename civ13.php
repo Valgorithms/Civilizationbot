@@ -275,7 +275,7 @@ class Civ13
                     {
                         $mapswap = function(string $mapto) use ($server): bool
                         {
-                            if (! file_exists($this->files['map_defines_path']) || ! ($file = @fopen($this->files['map_defines_path'], 'r'))) {
+                            if (! file_exists($this->files['map_defines_path']) || ! $file = @fopen($this->files['map_defines_path'], 'r')) {
                                 $this->logger->error("unable to open `{$this->files['map_defines_path']}` for reading.");
                                 return false;
                             }
@@ -306,7 +306,7 @@ class Civ13
                 else {
                     $serverdiscord2ooc = function(string $author, string $string) use ($server): bool
                     {
-                        if (! file_exists($this->files[$server.'_discord2ooc']) || ! ($file = @fopen($this->files[$server.'_discord2ooc'], 'a'))) {
+                        if (! file_exists($this->files[$server.'_discord2ooc']) || ! $file = @fopen($this->files[$server.'_discord2ooc'], 'a')) {
                             $this->logger->error("unable to open `{$this->files[$server.'_discord2ooc']}` for writing.");
                             return false;
                         }
@@ -314,7 +314,24 @@ class Civ13
                         fclose($file);
                         return true; 
                     };
-                    $this->server_funcs_uncalled[$server.'discord2ooc'] = $serverdiscord2ooc;
+                    $this->server_funcs_uncalled[$server.'_discord2ooc'] = $serverdiscord2ooc;
+                }
+            }
+
+            foreach (['_discord2admin'] as $postfix) {
+                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+                else {
+                    $serverdiscord2admin = function(string $author, string $string) use ($server): bool
+                    {
+                        if (! file_exists($this->files[$server.'_discord2admin']) || ! $file = @fopen($this->files[$server.'_discord2admin'], 'a')) {
+                            $this->logger->error("unable to open `{$this->files[$server.'_discord2admin']}` for writing.");
+                            return false;
+                        }
+                        fwrite($file, "$author:::$string" . PHP_EOL);
+                        fclose($file);
+                        return true;
+                    };
+                    $this->server_funcs_uncalled[$server.'_discord2admin'] = $serverdiscord2admin;
                 }
             }
         }
@@ -1046,7 +1063,7 @@ class Civ13
     {
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
-            if (file_exists($this->files[$server.'_bans']) && ($file = fopen($this->files[$server.'_bans'], 'r'))) {
+            if (file_exists($this->files[$server.'_bans']) && $file = @fopen($this->files[$server.'_bans'], 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -1122,7 +1139,7 @@ class Civ13
         $legacyUnban = function(string $ckey, string $admin, string $key)
         {
             $server = strtolower($key);
-            if (file_exists($this->files[$server.'_discord2unban']) && $file = fopen($this->files[$server.'_discord2unban'], 'a')) {
+            if (file_exists($this->files[$server.'_discord2unban']) && $file = @fopen($this->files[$server.'_discord2unban'], 'a')) {
                 fwrite($file, $admin . ":::$ckey");
                 fclose($file);
             } else $this->logger->warning("unable to open {$this->files[$server.'_discord2unban']}");
@@ -1664,7 +1681,7 @@ class Civ13
         // We don't want the persistence server to do this function
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
-            if (! file_exists($this->files[$server.'_bans']) || ! ($file = fopen($this->files[$server.'_bans'], 'r'))) return false;
+            if (! file_exists($this->files[$server.'_bans']) || ! $file = @fopen($this->files[$server.'_bans'], 'r')) return false;
             fclose($file);
         }
 
@@ -1697,13 +1714,13 @@ class Civ13
     public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false): bool
     { // The file function needs to be replaced with the new Webhook system
         if ($this->relay_method !== 'file') return false;
-        if (! file_exists($file_path) || ! ($file = @fopen($file_path, 'r+'))) {
+        if (! file_exists($file_path) || ! $file = @fopen($file_path, 'r+')) {
             $this->relay_method = 'webhook'; // Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
             $this->logger->warning("gameChatFileRelay() was called with an invalid file path: `$file_path`, falling back to using webhooks for relaying instead.");
             return false;
         }
         if (! $channel = $this->discord->getChannel($channel_id)) {
-            $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
+            $this->logger->warning("gameChatFileRelay() was unable to retrieve the channel with ID `$channel_id`");
             return false;
         }
 
@@ -1722,8 +1739,11 @@ class Civ13
     {
         if ($this->relay_method !== 'webhook') return false;
         if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
-            $this->logger->warning('gameChatWebhookRelay() gameChatWebhookRelay() was called with invalid parameters');
-            $this->logger->warning(json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
+            $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
+            return false;
+        }
+        if (! $channel = $this->discord->getChannel($channel_id)) {
+            $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
             return false;
         }
         
@@ -1736,11 +1756,7 @@ class Civ13
             $this->discord->on('ready', $listener);
             return true; // Assume that the function will succeed when the bot is ready
         }
-
-        if (! $channel = $this->discord->getChannel($channel_id)) {
-            $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
-            return false;
-        }
+        
         return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
     }
     private function __gameChatRelay(array $array, $channel, $moderate = true): bool
@@ -1786,8 +1802,7 @@ class Civ13
         }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
-        if (str_contains($server, 'nomads')) return $this->DirectMessage('AUTOMOD', $warning, $ckey, 'Nomads');
-        if (str_contains($server, 'tdm')) return $this->DirectMessage('AUTOMOD', $warning, $ckey, 'TDM');
+        return $this->DirectMessage('AUTOMOD', $warning, $ckey, $server);
     }
     /*
     * This function determines if a player has been warned too many times for a specific category of bad words
@@ -1810,11 +1825,12 @@ class Civ13
     public function recalculateRanking(): bool
     {
         if (! isset($this->files['tdm_awards_path']) || ! isset($this->files['ranking_path'])) return false;
-        if (! file_exists($this->files['tdm_awards_path']) || ! ($search = fopen($this->files['tdm_awards_path'], 'r'))) return false;
+        if (! file_exists($this->files['tdm_awards_path']) || ! file_exists($this->files['ranking_path'])) return false;
+        if (! $file = @fopen($this->files['tdm_awards_path'], 'r')) return false;
         $result = array();
-        while (! feof($search)) {
+        while (! feof($file)) {
             $medal_s = 0;
-            $duser = explode(';', trim(str_replace(PHP_EOL, '', fgets($search))));
+            $duser = explode(';', trim(str_replace(PHP_EOL, '', fgets($file))));
             switch ($duser[2]) {
                 case 'long service medal':
                 case 'wounded badge':
@@ -1844,11 +1860,11 @@ class Civ13
             if (!isset($result[$duser[0]])) $result[$duser[0]] = 0;
             $result[$duser[0]] += $medal_s;
         }
-        fclose ($search);
+        fclose ($file);
         arsort($result);
-        if (! file_exists($this->files['ranking_path']) || ! ($search = fopen($this->files['ranking_path'], 'w'))) return false;
-        foreach ($result as $ckey => $score) fwrite($search, "$score;$ckey" . PHP_EOL); // Is this the proper behavior, or should we truncate the file first?
-        fclose ($search);
+        if (! $file = @fopen($this->files['ranking_path'], 'w')) return false;
+        foreach ($result as $ckey => $score) fwrite($file, "$score;$ckey" . PHP_EOL); // Is this the proper behavior, or should we truncate the file first?
+        fclose ($file);
         return true;
     }
 
@@ -1887,7 +1903,7 @@ class Civ13
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
     {
         foreach ($file_paths as $file_path) {
-            if (!file_exists($this->files[$file_path]) || !($file = @fopen($this->files[$file_path], 'a'))) continue;
+            if (!file_exists($this->files[$file_path]) || ! $file = @fopen($this->files[$file_path], 'a')) continue;
             ftruncate($file, 0);
             $file_contents = '';
             foreach ($this->verified as $item) {

@@ -67,7 +67,7 @@ $banlog_handler = function(Civ13 $civ13, $message, string $message_content_lower
 $ranking = function(Civ13 $civ13): false|string
 {
     $line_array = array();
-    if (! file_exists($civ13->files['ranking_path']) || ! ($search = fopen($civ13->files['ranking_path'], 'r'))) return false;
+    if (! file_exists($civ13->files['ranking_path']) || ! $search = @fopen($civ13->files['ranking_path'], 'r')) return false;
     while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
     fclose($search);
 
@@ -83,7 +83,7 @@ $ranking = function(Civ13 $civ13): false|string
 $rankme = function(Civ13 $civ13, string $ckey): false|string
 {
     $line_array = array();
-    if (! file_exists($civ13->files['ranking_path']) || ! ($search = fopen($civ13->files['ranking_path'], 'r'))) return false;
+    if (! file_exists($civ13->files['ranking_path']) || ! $search = @fopen($civ13->files['ranking_path'], 'r')) return false;
     while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
     fclose($search);
     
@@ -102,7 +102,7 @@ $rankme = function(Civ13 $civ13, string $ckey): false|string
 $medals = function(Civ13 $civ13, string $ckey): false|string
 {
     $result = '';
-    if (! file_exists($civ13->files['tdm_awards_path']) || ! ($search = fopen($civ13->files['tdm_awards_path'], 'r'))) return false;
+    if (! file_exists($civ13->files['tdm_awards_path']) || ! $search = @fopen($civ13->files['tdm_awards_path'], 'r')) return false;
     $found = false;
     while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
         $found = true;
@@ -130,7 +130,7 @@ $medals = function(Civ13 $civ13, string $ckey): false|string
 $brmedals = function(Civ13 $civ13, string $ckey): string
 {
     $result = '';
-    if (! file_exists($civ13->files['tdm_awards_br_path']) || ! ($search = fopen($civ13->files['tdm_awards_br_path'], 'r'))) return 'Error getting file.';
+    if (! file_exists($civ13->files['tdm_awards_br_path']) || ! $search = @fopen($civ13->files['tdm_awards_br_path'], 'r')) return 'Error getting file.';
     $found = false;
     while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
         $found = true;
@@ -750,20 +750,6 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
     }
 };
 
-$nomads_discord2admin = function(Civ13 $civ13, $author, $string): bool
-{
-    if (! file_exists($civ13->files['nomads_discord2admin']) || ! ($file = fopen($civ13->files['nomads_discord2admin'], 'a'))) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true;
-};
-$tdm_discord2admin = function(Civ13 $civ13, $author, $string): bool
-{
-    if (! file_exists($civ13->files['tdm_discord2admin']) || ! $file = fopen($civ13->files['tdm_discord2admin'], 'a')) return false;
-    fwrite($file, "$author:::$string" . PHP_EOL);
-    fclose($file);
-    return true;
-};
 $on_message = function(Civ13 $civ13, $message) use ($guild_message, $nomads_discord2admin, $tdm_discord2admin)
 { // on message
     $message_array = $civ13->filterMessage($message);
@@ -815,9 +801,9 @@ $on_message = function(Civ13 $civ13, $message) use ($guild_message, $nomads_disc
         $message_content = substr($message_content, 4);
         foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
-            if (isset($civ13->server_funcs_uncalled[$server.'discord2ooc'])) switch (strtolower($message->channel->name)) {
+            if (isset($civ13->server_funcs_uncalled[$server.'_discord2ooc'])) switch (strtolower($message->channel->name)) {
                 case "ooc-{$server}":                    
-                    if (! $civ13->server_funcs_uncalled[$server.'discord2ooc']($message->author->displayname, $message_content)) return $message->react("🔥");
+                    if (! $civ13->server_funcs_uncalled[$server.'_discord2ooc']($message->author->displayname, $message_content)) return $message->react("🔥");
                     return $message->react("📧");
             }
         }
@@ -825,38 +811,32 @@ $on_message = function(Civ13 $civ13, $message) use ($guild_message, $nomads_disc
     }
     if (str_starts_with($message_content_lower, 'asay ')) {
         $message_content = substr($message_content, 5);
-        switch (strtolower($message->channel->name)) {
-            // case 'ahelp-nomads': // Deprecated
-            case 'asay-nomads':
-                if (! $nomads_discord2admin($civ13, $message->author->displayname, $message_content)) return $message->react("🔥");
-                return $message->react("📧");
-            // case 'ahelp-tdm': // Deprecated
-            case 'asay-tdm':
-                if (! $tdm_discord2admin($civ13, $message->author->displayname, $message_content)) return $message->react("🔥");
-                return $message->react("📧");
-            default:
-                return $message->reply('You need to be in any of the #asay channels to use this command.');
+        foreach (array_keys($civ13->server_settings) as $key) {
+            $server = strtolower($key);
+            if (isset($civ13->server_funcs_uncalled[$server.'_discord2admin'])) switch (strtolower($message->channel->name)) {
+                case "asay-{$server}":                    
+                    if (! $civ13->server_funcs_uncalled[$server.'_discord2admin']($message->author->displayname, $message_content)) return $message->react("🔥");
+                    return $message->react("📧");
+            }
         }
+        return $message->reply('You need to be in any of the #asay channels to use this command.');
     }
     if (str_starts_with($message_content_lower, 'dm ') || str_starts_with($message_content_lower, 'pm ')) {
         $message_content = substr($message_content, 3);
         $explode = explode(';', $message_content);
         $recipient = array_shift($explode);
         $msg = implode(' ', $explode);
-        switch (strtolower($message->channel->name)) {
-            // case 'ahelp-nomads': // Deprecated
-            case 'asay-nomads':
-            case 'ooc-nomads':
-                if (! $civ13->DirectMessage($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'], 'nomads')) return $message->react("🔥");
-                return $message->react("📧");
-            // case 'ahelp-tdm': // Deprecated
-            case 'asay-tdm':
-            case 'ooc-tdm':
-                if (! $civ13->DirectMessage($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'], 'tdm')) return $message->react("🔥");
-                return $message->react("📧");
-            default:
-                return $message->reply('You need to be in any of the #ooc or #asay channels to use this command.');
+        foreach (array_keys($civ13->server_settings) as $key) {
+            $server = strtolower($key);
+            switch (strtolower($message->channel->name)) {
+                // case 'ahelp-{$server}}': // Deprecated
+                case "asay-{$server}":
+                case "ooc-{$server}":
+                    if (! $civ13->DirectMessage($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'], $server)) return $message->react("🔥");
+                    return $message->react("📧");
+            }
         }
+        return $message->reply('You need to be in any of the #ooc or #asay channels to use this command.');
     }
 
     if (str_starts_with($message_content_lower, 'bancheck')) {
