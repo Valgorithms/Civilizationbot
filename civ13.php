@@ -219,10 +219,19 @@ class Civ13
     protected function generateServerFunctions() {
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
-            $required_files = ['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'];
-            foreach ($required_files as $postfix) {
+
+            $rank_check = function ($message, array $allowed_ranks = [], $verbose = true): bool
+            {
+                $resolved_ranks = [];
+                foreach ($allowed_ranks as $rank) $resolved_ranks[] = $this->role_ids[$rank];
+                foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
+                if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $this->role_ids[array_pop($allowed_ranks)] . '> rank.');
+                return false;
+            };
+
+            foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) continue;
-                $func = function () use ($server): void
+                $serverhost = function () use ($server): void
                 {
                     \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
                     \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
@@ -231,7 +240,54 @@ class Civ13
                         \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$this->ports[$server]} -trusted -webclient -logself &");
                     });
                 };
-                $this->server_funcs[$server.'host'] = $func;
+                $this->server_funcs[$server.'host'] = $serverhost;
+            }
+
+            foreach (['_killciv13'] as $postfix) {
+                if (! $this->getRequiredConfigFiles($postfix, true)) continue;
+                $serverkill = function () use ($server): void
+                {
+                    \execInBackground("python3 {$this->files[$server.'_killciv13']}");
+                };
+                $this->server_funcs[$server.'kill'] = $serverkill;
+            }
+
+            if (isset($this->server_funcs[$server.'host'], $this->server_funcs[$server.'kill'])) {
+                $serverrestart = function () use ($server): void
+                {
+                    $this->server_funcs[$server.'kill']();
+                    $this->server_funcs[$server.'host']();
+                };
+                $this->server_funcs[$server.'restart'] = $serverrestart;
+            }
+
+
+            foreach (['_mapswap'] as $postfix) {
+                if (! $this->getRequiredConfigFiles($postfix, true)) continue;
+                $servermapswap = function ($message) use ($server, $rank_check)
+                {
+                    $mapswap = function ($mapto) use ($server): bool
+                    {
+                        if (! file_exists($this->files['map_defines_path']) || ! ($file = fopen($this->files['map_defines_path'], 'r'))) return false;
+                    
+                        $maps = array();
+                        while (($fp = fgets($file, 4096)) !== false) {
+                            $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
+                            if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
+                        }
+                        fclose($file);
+                        if (! in_array($mapto, $maps)) return false;
+                        
+                        \execInBackground("python3 {$this->files[$server.'_mapswap']} $mapto");
+                        return true;
+                    };
+                    if (! $rank_check($message, ['admiral', 'captain'])) return $message->react("❌");
+                    $split_message = explode($server.'mapswap ', $this->filterMessage($message)['message_content']);
+                    if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
+                    if (! $mapswap($mapto)) return $message->reply("`$mapto` was not found in the map definitions.");
+                    return $message->reply("Attempting to change `$server` map to `$mapto`");
+                };
+                $this->server_funcs[$server.'mapswap'] = $servermapswap;
             }
         }
     }

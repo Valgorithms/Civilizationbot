@@ -37,6 +37,7 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
+/*
 $nomads_host = function (Civ13 $civ13): void
 {
     \execInBackground("python3 {$civ13->files['nomads_updateserverabspaths']}");
@@ -136,6 +137,7 @@ $pers_mapswap = function (Civ13 $civ13, string $mapto): bool
     \execInBackground("python3 {$civ13->files['pers_mapswap']} $mapto");
     return true;
 };
+*/
 
 $log_handler = function (Civ13 $civ13, $message, string $message_content)
 {
@@ -710,7 +712,6 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $pers_host($civ13);
         return $message->reply("Attempting to update and bring up Persistence <byond://{$civ13->ips['pers']}:{$civ13->ports['pers']}>");
     }
-    */
     if (str_starts_with($message_content_lower, 'nomadsrestart')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $nomads_restart($civ13);
@@ -741,6 +742,8 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         $pers_kill($civ13);
         return $message->reply('Attempted to kill the TDM server.');
     }
+    */
+    /*
     if (str_starts_with($message_content_lower, 'nomadsmapswap')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         $split_message = explode('nomadsmapswap ', $message_content);
@@ -762,6 +765,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! $pers_mapswap($civ13, $mapto, $message)) return $message->reply("$mapto was not found in the map definitions.");
         return $message->reply("Attempting to change map to $mapto");
     }
+    */
     if (str_starts_with($message_content_lower, 'maplist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (! file_exists($civ13->files['map_defines_path'])) return $message->react("🔥");
