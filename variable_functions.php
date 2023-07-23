@@ -1156,7 +1156,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if ($message->member && $guild_message($civ13, $message, $message_content, $message_content_lower)) return;
 };
 
-$slash_init = function (Civ13 $civ13, $commands) use ($tdm_restart, $nomads_restart, $ranking, $rankme, $medals, $brmedals): void
+$slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme, $medals, $brmedals): void
 { // ready_slash, requires other functions to work
     $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13): void
     {
@@ -1172,15 +1172,15 @@ $slash_init = function (Civ13 $civ13, $commands) use ($tdm_restart, $nomads_rest
         $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
     });
     
-    $civ13->discord->listenCommand('nomads_restart', function ($interaction) use ($civ13, $nomads_restart): void
+    $civ13->discord->listenCommand('nomads_restart', function ($interaction) use ($civ13): void
     {
     $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up Nomads <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"));
-        $nomads_restart($civ13);
+        if (isset($civ13->server_funcs['nomadsrestart'])) $civ13->server_funcs['nomadsrestart']();
     });
-    $civ13->discord->listenCommand('tdm_restart', function ($interaction) use ($civ13, $tdm_restart): void
+    $civ13->discord->listenCommand('tdm_restart', function ($interaction) use ($civ13): void
     {
         $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"));
-        $tdm_restart($civ13);
+        if (isset($civ13->server_funcs['tdmrestart'])) $civ13->server_funcs['tdmrestart']();
     });
     
     $civ13->discord->listenCommand('ranking', function ($interaction) use ($civ13, $ranking): void
