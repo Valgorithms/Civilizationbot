@@ -411,7 +411,7 @@ class Civ13
                 $this->discord->on('message', function ($message): void
                 {
                     $message_filtered = $this->filterMessage($message)['message_content_lower'];
-                    foreach ($this->server_funcs as $command => $func) if (str_starts_with($message_filtered, $command)) $func($message); // Anonymous functions
+                    foreach ($this->server_funcs as $command => $func) if (str_starts_with($message_filtered, $command)) $func($message); // Server functions
                     if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
                     else $this->logger->debug('No message functions found!');
                 });

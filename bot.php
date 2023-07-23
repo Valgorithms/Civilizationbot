@@ -321,7 +321,6 @@ $options = array(
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
             'civ_listeners' => $civ_listeners, // TODO: Move into civ13.php
-            // 'declareAnonVariableFunctions' => $declareAnonVariableFunctions,
         ],
         'ready_slash' => [
             'slash_init' => $slash_init,
