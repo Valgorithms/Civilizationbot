@@ -1750,8 +1750,9 @@ class Civ13
     */
     public function joinRoles($member): void
     {
-        if ($member->guild_id == $this->civ13_guild_id) 
-            if ($item = $this->verified->get('discord', $member->id)) {
+        if ($member->guild_id == $this->civ13_guild_id && $item = $this->verified->get('discord', $member->id)) {
+            if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
+            else {
                 $banned = $this->bancheck($item['ss13'], true);
                 $paroled = isset($this->paroled[$item['ss13']]);
                 if ($banned && $paroled) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished'], $this->role_ids['paroled']], "bancheck join {$item['ss13']}");
@@ -1759,6 +1760,7 @@ class Civ13
                 elseif ($paroled) $member->setroles([$this->role_ids['infantry'], $this->role_ids['paroled']], "parole join {$item['ss13']}");
                 else $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
             }
+        }
     }
     /*
     * This function checks all Discord member's ckeys against the banlist
