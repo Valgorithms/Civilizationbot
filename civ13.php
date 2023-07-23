@@ -1841,7 +1841,22 @@ class Civ13
         }
         return $l;
     }
-    
+
+    public function updateFilesFromRoles(array $file_paths = [], array $required_roles = [], callable $callback): void
+    {
+        foreach ($file_paths as $file_path) {
+            if (!file_exists($this->files[$file_path]) || !($file = @fopen($this->files[$file_path], 'a'))) continue;
+            ftruncate($file, 0);
+            $file_contents = '';
+            foreach ($this->verified as $item) {
+                if (!$member = $this->getVerifiedMember($item)) continue;
+                $file_contents .= $callback($member, $item, $required_roles);
+            }
+            fwrite($file, $file_contents);
+            fclose($file);
+        }
+    }
+
     /*
     * This function is used to update the whitelist files
     * Returns true if the whitelist files are successfully updated, false otherwise
@@ -1850,22 +1865,20 @@ class Civ13
     {
         $required_roles = ['veteran'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $l = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
 
-        foreach ($l as $file_path) {
-            if (! file_exists($this->files[$file_path]) || ! ($file = @fopen($this->files[$file_path], 'a'))) continue;
-            ftruncate($file, 0);
-            $file_contents = '';
-            foreach ($this->verified as $item) { // Write each verified member's SS13 ckey and associated role to the factionlist files
-                if (! $member = $this->getVerifiedMember($item)) continue;
-                foreach ($required_roles as $role) if ($member->roles->has($this->role_ids[$role]))
-                { $file_contents .= "{$item['ss13']} = {$item['discord']}" . PHP_EOL; /*break 1;*/ }
-            }
-            fwrite($file, $file_contents);
-            fclose($file);
-        }
+        $callback = function ($member, $item, $required_roles): string
+        {
+            $string = '';
+            foreach ($required_roles as $role)
+                if ($member->roles->has($this->role_ids[$role]))
+                    $string .= "{$item['ss13']} = {$item['discord']}" . PHP_EOL;
+            return $string;
+        };
+        $this->updateFilesFromRoles($file_paths, $required_roles, $callback);
         return true;
     }
+
     /*
     * This function is used to update the campaign whitelist files
     * Returns true if the whitelist files are successfully updated, false otherwise
@@ -1875,20 +1888,17 @@ class Civ13
     {
         $required_roles = ['red', 'ble', 'organizer']; // Check that all required roles are properly declared in the bot's config and exist in the guild
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $l = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
 
-        foreach ($l as $file_path) {
-            if (! file_exists($this->files[$file_path]) || ! ($file = @fopen($this->files[$file_path], 'a'))) continue;
-            ftruncate($file, 0);
-            $file_contents = '';
-            foreach ($this->verified as $item) { // Write each verified member's SS13 ckey and associated role to the factionlist files
-                if (! $member = $this->getVerifiedMember($item)) continue;
-                foreach ($required_roles as $role) if ($member->roles->has($this->role_ids[$role]))
-                { $file_contents .= "{$item['ss13']};{$role}" . PHP_EOL; /*break 1;*/ }
-            }
-            fwrite($file, $file_contents);
-            fclose($file);
-        }
+        $callback = function ($member, $item, $required_roles): string
+        {
+            $string = '';
+            foreach ($required_roles as $role)
+                if ($member->roles->has($this->role_ids[$role]))
+                    $string .= "{$item['ss13']};{$role}" . PHP_EOL;
+            return $string;
+        };
+        $this->updateFilesFromRoles($file_paths, $required_roles, $callback);
         return true;
     }
 
@@ -1913,20 +1923,17 @@ class Civ13
             'mentor' => ['Mentor', '16384'],
         ];
         if (! $this->hasRequiredConfigRoles($required_roles, true)) return false;
-        if (! $l = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
+        if (! $file_paths = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
 
-        foreach ($l as $file_path) {
-            if (! file_exists($this->files[$file_path]) || ! ($file = @fopen($this->files[$file_path], 'a'))) continue;
-            ftruncate($file, 0);
-            $file_contents = '';
-            foreach ($this->verified as $item) { // Write each verified member's SS13 ckey and file_path role with its bitflag permission to the adminlist files
-                if (! $member = $this->getVerifiedMember($item)) continue;
-                foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->role_ids[$role]))
-                { $file_contents .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL; break 1; }
-            }
-            fwrite($file, $file_contents);
-            fclose($file);
-        }
+        $callback = function ($member, $item, $required_roles): string
+        {
+            $string = '';
+            foreach (array_keys($required_roles) as $role)
+                if ($member->roles->has($this->role_ids[$role]))
+                    $string .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL;
+            return $string;
+        };
+        $this->updateFilesFromRoles($file_paths, $required_roles, $callback);
         return true;
     }
 }
