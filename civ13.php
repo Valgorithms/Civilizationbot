@@ -275,7 +275,10 @@ class Civ13
                     {
                         $mapswap = function ($mapto) use ($server): bool
                         {
-                            if (! file_exists($this->files['map_defines_path']) || ! ($file = fopen($this->files['map_defines_path'], 'r'))) return false;
+                            if (! file_exists($this->files['map_defines_path']) || ! ($file = @fopen($this->files['map_defines_path'], 'r'))) {
+                                $this->logger->error("Unable to open `{$this->files['map_defines_path']}` for reading.");
+                                return false;
+                            }
                         
                             $maps = array();
                             while (($fp = fgets($file, 4096)) !== false) {
@@ -1037,39 +1040,20 @@ class Civ13
     }
     public function legacyBancheck(string $ckey): bool
     {
-        if (file_exists($this->files['nomads_bans']) && ($filecheck1 = fopen($this->files['nomads_bans'], 'r'))) {
-            while (($fp = fgets($filecheck1, 4096)) !== false) {
-                // str_replace(PHP_EOL, '', $fp); // Is this necessary?
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
-                    fclose($filecheck1);
-                    return true;
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (file_exists($this->files[$server.'_bans']) && ($file = fopen($this->files[$server.'_bans'], 'r'))) {
+                while (($fp = fgets($file, 4096)) !== false) {
+                    // str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
+                    if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                        fclose($file);
+                        return true;
+                    }
                 }
-            }
-            fclose($filecheck1);
-        }// else $this->logger->debug("unable to open `{$this->files['nomads_bans']}`");
-        if (file_exists($this->files['tdm_bans']) && ($filecheck2 = fopen($this->files['tdm_bans'], 'r'))) {
-            while (($fp = fgets($filecheck2, 4096)) !== false) {
-                // str_replace(PHP_EOL, '', $fp); // Is this necessary?
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
-                    fclose($filecheck2);
-                    return true;
-                }
-            }
-            fclose($filecheck2);
-        }// else $this->logger->debug("unable to open `{$this->files['tdm_bans']}`");
-        if (isset($this->files['pers_bans']) && file_exists($this->files['pers_bans']) && ($filecheck3 = @fopen($this->files['pers_bans'], 'r'))) {
-            while (($fp = fgets($filecheck3, 4096)) !== false) {
-                // str_replace(PHP_EOL, '', $fp); // Is this necessary?
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
-                    fclose($filecheck3);
-                    return true;
-                }
-            }
-            fclose($filecheck3);
-        }// else $this->logger->debug("unable to open `{$this->files['pers_bans']}`");
+                fclose($file);
+            } else $this->logger->debug("unable to open `{$this->files[$server.'_bans']}`");
+        }
         return false;
     }
     public function sqlBancheck(string $ckey): bool
@@ -1129,7 +1113,7 @@ class Civ13
         $admin = $admin ?? $this->discord->user->username;
         $result = '';
         if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
-        if (file_exists($this->files['nomads_discord2ban']) && $file = fopen($this->files['nomads_discord2ban'], 'a')) {
+        if (file_exists($this->files['nomads_discord2ban']) && $file = @fopen($this->files['nomads_discord2ban'], 'a')) {
             fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
             fclose($file);
         } else {
@@ -1148,7 +1132,7 @@ class Civ13
         $admin = $admin ?? $this->discord->user->username;
         $result = '';
         if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
-        if (file_exists($this->files['tdm_discord2ban']) && $file = fopen($this->files['tdm_discord2ban'], 'a')) {
+        if (file_exists($this->files['tdm_discord2ban']) && $file = @fopen($this->files['tdm_discord2ban'], 'a')) {
             fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
             fclose($file);
         } else {
