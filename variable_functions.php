@@ -601,8 +601,21 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     }
     if (str_starts_with($message_content_lower, 'adminlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if (! file_exists($civ13->files['nomads_admins'])) return $message->react("🔥");
-        return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_admins'], 'nomads_admins.txt')->addFile($civ13->files['tdm_admins'], 'tdm_admins.txt'));
+        
+        $builder = MessageBuilder::new();
+        $found = false;
+        foreach (array_keys($civ13->server_settings) as $key) {
+            $server = strtolower($key);
+            if (! file_exists($civ13->files[$server.'_admins'])) {
+                $civ13->logger->debug("`{$server}_admins` is not a valid file path!");
+                continue;
+            }
+            $found = true;
+            $file_contents = file_get_contents($civ13->files[$server.'_admins']);
+            $builder->addFileFromContent($file_contents, $server.'_admins.txt');
+        }
+        if (! $found) return $message->react("🔥");
+        return $message->reply($builder);
     }
     if (str_starts_with($message_content_lower, 'factionlist')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
