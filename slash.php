@@ -542,6 +542,8 @@ class Slash
 
         $this->civ13->discord->listenCommand('join_campaign', function ($interaction)
         {
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Factions are not ready to be assigned yet'), true);
+            //Disabled for now
             if (! $this->civ13->getVerifiedItem($interaction->member->id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("You are either not currently verified with a byond username or do not exist in the cache yet"), true);
             else {
                 foreach ($interaction->member->roles as $role) if ($role->id === $this->civ13->role_ids['red'] || $role->id === $this->civ13->role_ids['blue']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You're already in a faction!"), true);
