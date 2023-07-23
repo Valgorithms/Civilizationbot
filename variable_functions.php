@@ -800,7 +800,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     if (str_starts_with($message_content_lower, 'ooc ')) {
         $message_content = substr($message_content, 4);
-        foreach ($civ13->server_settings as $key) {
+        foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
             if (isset($civ13->server_funcs_uncalled[$server.'discord2ooc'])) switch (strtolower($message->channel->name)) {
                 case "ooc-{$server}":                    
