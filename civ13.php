@@ -1727,8 +1727,6 @@ class Civ13
             return false;
         }
         
-        if ( $channel = $this->discord->getChannel($channel_id)) return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
-        
         if (! $this->ready) {
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
             $listener = function() use ($ckey, $message, $channel_id, $moderate, &$listener) {
@@ -1738,9 +1736,12 @@ class Civ13
             $this->discord->on('ready', $listener);
             return true; // Assume that the function will succeed when the bot is ready
         }
-        
-        $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
-        return false;
+
+        if (! $channel = $this->discord->getChannel($channel_id)) {
+            $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
+            return false;
+        }
+        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
     }
     private function __gameChatRelay(array $array, $channel, $moderate = true): bool
     {
