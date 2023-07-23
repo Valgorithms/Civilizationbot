@@ -1165,6 +1165,16 @@ class Civ13
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
+    public function legacyUnban(string $ckey, ?string $admin = null): void
+    {
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (file_exists($this->files[$server.'_discord2unban']) && $file = fopen($this->files[$server.'_discord2unban'], 'a')) {
+                fwrite($file, ($admin ? $admin : $this->discord->user->displayname) . ":::$ckey");
+                fclose($file);
+            }
+        }
+    }
     public function legacynomadsunban(string $ckey, ?string $admin = null): void
     {
         if (file_exists($this->files['nomads_discord2unban']) && $file = fopen($this->files['nomads_discord2unban'], 'a')) {
@@ -1200,7 +1210,23 @@ class Civ13
     }
     public function legacyBan(array $array, $admin = null): string
     {
-        return $this->legacyBanNomads($array, $admin) . $this->legacyBanTDM($array, $admin);
+        //return $this->legacyBanNomads($array, $admin) . $this->legacyBanTDM($array, $admin);
+        $admin = $admin ?? $this->discord->user->username;
+        $result = '';
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+
+            if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
+            if (file_exists($this->files[$server.'_discord2ban']) && $file = @fopen($this->files[$server.'_discord2ban'], 'a')) {
+                fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
+                fclose($file);
+                $result .= "**$admin** banned **{$array['ckey']}** from **{$key}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
+            } else {
+                $this->logger->warning("unable to open {$this->files[$server.'_discord2ban']}");
+                $result .= "unable to open {$this->files[$server.'_discord2ban']}" . PHP_EOL;
+            }
+        }
+        return $result;
     }
     public function sqlBan(array $array, $admin = null): string
     {
@@ -1248,8 +1274,7 @@ class Civ13
     {
         $admin ??= $this->discord->user->displayname;
         if ($this->legacy) {
-            $this->legacynomadsunban($ckey, $admin);
-            $this->legacytdmunban($ckey, $admin);
+            $this->legacyUnban($ckey, $admin);
         } else {
             $this->sqlnomadsunban($ckey, $admin);
             $this->sqltdmunban($ckey, $admin);
