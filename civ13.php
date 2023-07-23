@@ -1298,35 +1298,26 @@ class Civ13
         return $this->sqlpersunban($ckey, $admin);
     }
     
-    public function DirectMessage(string $recipient, string $message, string $sender): bool
+    public function DirectMessage(string $recipient, string $message, string $sender, ?string $server): bool
     {
-        $sent = false;
-        foreach (array_keys($this->server_settings) as $key) {
-            $server = strtolower($key);
+        $directmessage = function(string $recipient, string $message, string $sender, ?string $server): bool
+        {
             if (! file_exists($this->files[$server.'_discord2dm']) || ! $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
                 $this->logger->debug("unable to open `{$this->files[$server.'_discord2dm']}`");
-                continue;
+                return false;
             }
-            $sent = true;
             fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
             fclose($file);
+            return true;
+        };
+        
+        $sent = false;
+        if ($server) $sent = $directmessage($recipient, $message, $sender, $server);
+        else foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            $sent = $directmessage($recipient, $message, $sender, $server);
         }
         return $sent;
-    }
-    
-    public function DirectMessageNomads(string $recipient, string $message, string $sender): bool
-    {
-        if (! file_exists($this->files['nomads_discord2dm']) || ! $file = fopen($this->files['nomads_discord2dm'], 'a')) return false;
-        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
-        fclose($file);
-        return true;
-    }
-    public function DirectMessageTDM(string $recipient, string $message, string $sender): bool
-    {
-        if (! file_exists($this->files['tdm_discord2dm']) || ! $file = fopen($this->files['tdm_discord2dm'], 'a')) return false;
-        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
-        fclose($file);
-        return true;
     }
 
     /*
@@ -1892,8 +1883,8 @@ class Civ13
         }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $channel->sendMessage("`$ckey` is" . substr($warning, 7));
-        if (str_contains($server, 'nomads')) return $this->DirectMessageNomads('AUTOMOD', $warning, $ckey);
-        if (str_contains($server, 'tdm')) return $this->DirectMessageTDM('AUTOMOD', $warning, $ckey);
+        if (str_contains($server, 'nomads')) return $this->DirectMessage('AUTOMOD', $warning, $ckey, 'nomads');
+        if (str_contains($server, 'tdm')) return $this->DirectMessage('AUTOMOD', $warning, $ckey, 'tdm');
     }
     /*
     * This function determines if a player has been warned too many times for a specific category of bad words

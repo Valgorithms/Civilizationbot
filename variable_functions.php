@@ -834,12 +834,12 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
             // case 'ahelp-nomads': // Deprecated
             case 'asay-nomads':
             case 'ooc-nomads':
-                if (! $civ13->DirectMessageNomads($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'])) return $message->react("🔥");
+                if (! $civ13->DirectMessage($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'], 'nomads')) return $message->react("🔥");
                 return $message->react("📧");
             // case 'ahelp-tdm': // Deprecated
             case 'asay-tdm':
             case 'ooc-tdm':
-                if (! $civ13->DirectMessageTDM($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'])) return $message->react("🔥");
+                if (! $civ13->DirectMessage($recipient, $msg, $civ13->getVerifiedItem($message->author->id)['ss13'], 'tdm')) return $message->react("🔥");
                 return $message->react("📧");
             default:
                 return $message->reply('You need to be in any of the #ooc or #asay channels to use this command.');
