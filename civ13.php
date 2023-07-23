@@ -1842,6 +1842,10 @@ class Civ13
         return $l;
     }
 
+    /*
+    * This function is used to the contents of files based on the roles of verified members
+    * The callback function is used to determine what to write to the file
+    */
     public function updateFilesFromRoles(array $file_paths = [], array $required_roles = [], callable $callback): void
     {
         foreach ($file_paths as $file_path) {
@@ -1857,10 +1861,7 @@ class Civ13
         }
     }
 
-    /*
-    * This function is used to update the whitelist files
-    * Returns true if the whitelist files are successfully updated, false otherwise
-    */
+    // This function is used to update the whitelist files
     public function whitelistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_whistlist'): bool
     {
         $required_roles = ['veteran'];
@@ -1879,11 +1880,7 @@ class Civ13
         return true;
     }
 
-    /*
-    * This function is used to update the campaign whitelist files
-    * Returns true if the whitelist files are successfully updated, false otherwise
-    * If an additional whitelist is provided, it will be added to the list of whitelists to update
-    */
+    // This function is used to update the campaign whitelist files
     public function factionlistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_factionlist'): bool
     {
         $required_roles = ['red', 'ble', 'organizer']; // Check that all required roles are properly declared in the bot's config and exist in the guild
@@ -1902,11 +1899,7 @@ class Civ13
         return true;
     }
 
-    /*
-    * This function is used to update the adminlist files
-    * Returns true if the adminlist files are successfully updated, false otherwise
-    * If an additional adminlist is provided, it will be added to the list of adminlists to update
-    */
+    // This function is used to update the adminlist files
     public function adminlistUpdate(array $lists = [], $defaults = true, string $postfix = '_admins'): bool
     {
         $required_roles = [ // Check that all required roles are properly declared in the bot's config and exist in the guild
