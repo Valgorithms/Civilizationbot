@@ -326,12 +326,12 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
     
     if (str_starts_with($message_content_lower, 'approveme')) {
         if ($message->member->roles->has($civ13->role_ids['infantry']) || $message->member->roles->has($civ13->role_ids['veteran'])) return $message->reply('You already have the verification role!');
-        if ($item = $civ13->getVerifiedItem($message->member->id)) {
+        if ($item = $civ13->getVerifiedItem($message->author->id)) {
             $message->member->setRoles([$civ13->role_ids['infantry']], "approveme {$item['ss13']}");
             return $message->react("👍");
         }
         if (! $ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('approveme')))) return $message->reply('Invalid format! Please use the format `approveme ckey`');
-        return $message->reply($civ13->verifyProcess($ckey, $message->member->id));
+        return $message->reply($civ13->verifyProcess($ckey, $message->author->id));
     }
     if (str_starts_with($message_content_lower, 'relay') || str_starts_with($message_content_lower, 'relay')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
@@ -491,7 +491,7 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         return $message->reply("The following ckeys are alt accounts of verified players:" . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $ckeys) . '`');
     }
     if (str_starts_with($message_content_lower, 'register')) { // This function is only authorized to be used by the database administrator
-        if ($message->member->id != $civ13->technician_id) return $message->react("❌");
+        if ($message->author->id != $civ13->technician_id) return $message->react("❌");
         $split_message = explode(';', trim(substr($message_content_lower, strlen('register'))));
         if (! $ckey = $civ13->sanitizeInput($split_message[0])) return $message->reply('Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
         if (! is_numeric($discord_id = $civ13->sanitizeInput($split_message[1]))) return $message->reply("Discord id `$discord_id` must be numeric.");
@@ -535,24 +535,24 @@ $guild_message = function (Civ13 $civ13, $message, string $message_content, stri
         if (! isset($civ13->role_ids['paroled'])) return $message->react("🔥");
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (! $item = $civ13->getVerifiedItem($id = $civ13->sanitizeInput(substr($message_content_lower, strlen('parole'))))) return $message->reply("<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
-        $civ13->paroleCkey($ckey = $item['ss13'], $message->member->id, true);
-        $admin = $civ13->getVerifiedItem($message->member->id)['ss13'];
+        $civ13->paroleCkey($ckey = $item['ss13'], $message->author->id, true);
+        $admin = $civ13->getVerifiedItem($message->author->id)['ss13'];
         if ($member = $civ13->getVerifiedMember($item))
             if (! $member->roles->has($civ13->role_ids['paroled']))
                 $member->addRole($civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
-        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->member->id}>).");
+        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->author->id}>).");
         return $message->react("👍");
     }
     if (str_starts_with($message_content_lower, 'release')) {
         if (! isset($civ13->role_ids['paroled'])) return $message->react("🔥");
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if (! $item = $civ13->getVerifiedItem($id = $civ13->sanitizeInput(substr($message_content_lower, strlen('release'))))) return $message->reply("<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
-        $civ13->paroleCkey($ckey = $item['ss13'], $message->member->id, false);
-        $admin = $civ13->getVerifiedItem($message->member->id)['ss13'];
+        $civ13->paroleCkey($ckey = $item['ss13'], $message->author->id, false);
+        $admin = $civ13->getVerifiedItem($message->author->id)['ss13'];
         if ($member = $civ13->getVerifiedMember($item))
             if ($member->roles->has($civ13->role_ids['paroled']))
                 $member->removeRole($civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
-        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->member->id}>).");
+        if ($channel = $civ13->discord->getChannel($civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->author->id}>).");
         return $message->react("👍");
     }
 
@@ -939,7 +939,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     if (! $message_array['called']) return; // Not a command
     if (! $message_content = $message_array['message_content']) { // No command
         $random_responses = ['You can see a full list of commands by using the `help` command.'];
-        if (count($random_responses) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent("<@{$message->author_id}>, " . $random_responses[rand(0, count($random_responses)-1)]));
+        if (count($random_responses) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent("<@{$message->author->id}>, " . $random_responses[rand(0, count($random_responses)-1)]));
     }
     $message_content_lower = $message_array['message_content_lower'];
     
@@ -1136,7 +1136,7 @@ $on_message = function (Civ13 $civ13, $message) use ($guild_message, $nomads_dis
     }
     if (! str_starts_with($message_content_lower, 'ckeyinfo') && str_starts_with($message_content_lower, 'ckey')) {
         if (! $ckey = $civ13->sanitizeInput(substr($message_content_lower, strlen('ckey')))) {
-            if (! $item = $civ13->getVerifiedItem($id = $message->member->id)) return $message->reply("You are not registered to any byond username");
+            if (! $item = $civ13->getVerifiedItem($id = $message->author->id)) return $message->reply("You are not registered to any byond username");
             return $message->reply("You are registered to `{$item['ss13']}`");
         }
         if (is_numeric($ckey)) {
