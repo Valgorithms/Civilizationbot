@@ -858,7 +858,7 @@ class Civ13
     */
     public function verifyProcess(string $ckey, string $discord_id): string
     {
-        $ckey = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $ckey));
+        $ckey = $this->sanitizeInput($ckey);
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
         if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
@@ -1247,7 +1247,7 @@ class Civ13
         if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) return "The ckey must be a Byond username or Discord ID.";
         if (! isset($array['duration'])) return "You must specify a duration to ban for.";
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
-        $array['ckey'] = trim(str_replace(['<@!', '<@', '>', '.', '_', '-', ' '], '', $array['ckey']));
+        $array['ckey'] = $this->sanitizeInput($array['ckey']);
         if (is_numeric($array['ckey'])) {
             if (! $item = $this->verified->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
@@ -1359,7 +1359,7 @@ class Civ13
             if (array_key_exists('ERROR', $server)) continue;
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
-                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = str_replace(['.', '_', '-', ' '], '', strtolower(urldecode($server[$key])));
+                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = $this->sanitizeInput(urldecode($server[$key]));
             }
         }
         return $this->players;
@@ -1494,7 +1494,7 @@ class Civ13
     */
     public function ckeyinfo(string $ckey): array
     {
-        if (! $ckey = str_replace(['.', '_', '-', ' '], '', trim($ckey))) return [null, null, null, false, false];
+        if (! $ckey = $this->sanitizeInput($ckey)) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->getVerifiedItem($ckey)) $ckey = $item['ss13'];
         // var_dump('Ckey Collections Array: ', $collectionsArray, PHP_EOL);
@@ -1697,7 +1697,7 @@ class Civ13
             });
             if (!empty($players)) {
                 $players = array_map(function ($key) use ($server) {
-                    return strtolower(str_replace(['.', '_', '-', ' '], '', urldecode($server[$key])));
+                    return strtolower($this->sanitizeInput(urldecode($server[$key])));
                 }, $players);
                 $playerCount = count($players);
             }
@@ -1736,7 +1736,7 @@ class Civ13
                 $index++; // TODO: Remove this once we have stationname in world.dm
                 continue;
             }
-            $p1 = (isset($server['players']) ? $server['players'] : count(array_map(fn($player) => str_replace(['.', '_', '-', ' '], '', strtolower(urldecode($player))), array_filter($server, function($key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))));
+            $p1 = (isset($server['players']) ? $server['players'] : count(array_map(fn($player) => $this->sanitizeInput(urldecode($player)), array_filter($server, function($key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))));
             $p2 = $server_info[$index]['prefix'];
             $this->playercountChannelUpdate($p1, $p2);
             $index++; // TODO: Remove this once we have stationname in world.dm
@@ -1818,7 +1818,7 @@ class Civ13
         while (($fp = fgets($file, 4096)) !== false) {
             $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
             $string = substr($fp, strpos($fp, '/')+1);
-            if ($string && $ckey = strtolower(str_replace(['.', '_', '-', ' '], '', substr($string, 0, strpos($string, ':')))))
+            if ($string && $ckey = $this->sanitizeInput(substr($string, 0, strpos($string, ':'))))
                 $relay_array[] = ['ckey' => $ckey, 'message' => $fp, 'server' => explode('-', $channel->name)[0]];
         }
         ftruncate($file, 0);
@@ -1856,7 +1856,7 @@ class Civ13
             return false;
         }
         if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $array['server']);
-        if (! $item = $this->verified->get('ss13', strtolower(str_replace(['.', '_', '-', ' '], '', $array['ckey'])))) {
+        if (! $item = $this->verified->get('ss13', $this->sanitizeInput($array['ckey']))) {
             $builder = \Discord\Builders\MessageBuilder::new()
                 ->setContent($array['message'])
                 ->setAllowedMentions(['parse'=>[]]);
