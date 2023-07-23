@@ -1883,7 +1883,7 @@ class Civ13
     // This function is used to update the campaign whitelist files
     public function factionlistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_factionlist'): bool
     {
-        $required_roles = ['red', 'ble', 'organizer']; // Check that all required roles are properly declared in the bot's config and exist in the guild
+        $required_roles = ['red', 'blue', 'organizer'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         if (! $file_paths = $this->hasRequiredConfigFiles($lists, $defaults, $postfix)) return false;
 
@@ -1902,7 +1902,7 @@ class Civ13
     // This function is used to update the adminlist files
     public function adminlistUpdate(array $lists = [], $defaults = true, string $postfix = '_admins'): bool
     {
-        $required_roles = [ // Check that all required roles are properly declared in the bot's config and exist in the guild
+        $required_roles = [
             'admiral' => ['Host', '65535'],
             'bishop' => ['Bishop', '65535'],
             'host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
