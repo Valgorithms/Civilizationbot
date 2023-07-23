@@ -1957,11 +1957,10 @@ class Civ13
     }
 
     // Check that all required roles are properly declared in the bot's config and exist in the guild
-    public function hasRequiredConfigRoles(array $required_roles = [], bool $assoc_roles = false): bool
+    public function hasRequiredConfigRoles(array $required_roles = []): bool
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
-        if ($assoc_roles) if ($diff = array_diff(array_keys($required_roles), array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the `role_ids` config', $diff); return false; }
-        elseif ($diff = array_diff($required_roles, array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the `role_ids` config', $diff); return false; }
+        if ($diff = array_diff($required_roles, array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the `role_ids` config', $diff); return false; }
         foreach ($required_roles as $role) if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
         return true;
     }
@@ -2057,7 +2056,7 @@ class Civ13
             'knight' => ['Knight', '12158'],
             'mentor' => ['Mentor', '16384'],
         ];
-        if (! $this->hasRequiredConfigRoles($required_roles, true)) return false;
+        if (! $this->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! $file_paths = $this->getRequiredConfigFiles($postfix, $defaults, $lists)) return false;
 
         $callback = function ($member, $item, $required_roles): string
