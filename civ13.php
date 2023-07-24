@@ -1757,7 +1757,7 @@ class Civ13
             return true; // Assume that the function will succeed when the bot is ready
         }
         
-        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[0]], $channel, $moderate);
+        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $channel, $moderate);
     }
     private function __gameChatRelay(array $array, $channel, $moderate = true): bool
     {

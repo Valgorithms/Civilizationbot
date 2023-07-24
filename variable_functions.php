@@ -750,7 +750,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
     }
 };
 
-$on_message = function(Civ13 $civ13, $message) use ($guild_message, $nomads_discord2admin, $tdm_discord2admin)
+$on_message = function(Civ13 $civ13, $message) use ($guild_message)
 { // on message
     $message_array = $civ13->filterMessage($message);
     if (! $message_array['called']) return; // Not a command
