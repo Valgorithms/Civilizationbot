@@ -40,28 +40,34 @@ $status_changer_timer = function(Civ13 $civ13) use ($status_changer_random): voi
 $log_handler = function(Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(';', $message_content);
-    if (! in_array(trim($tokens[0]), ['nomads', 'tdm'])) return $message->reply('Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`');
-    if (trim($tokens[0]) == 'nomads') {
+    foreach (array_keys($this->server_settings) as $key) {
+        $server = strtolower($key);
+        if (! trim($tokens[0]) == $server) continue; // Check if server is valid
+        
+        if (! isset($civ13->files[$server.'_log_basedir']) || ! file_exists($civ13->files[$server.'_log_basedir'])) {
+            $civ13->logger->warning("`{$server}_log_basedir` is not defined or does not exist");
+            return $message->react("🔥");
+        }
+        
         unset($tokens[0]);
-        $results = $civ13->FileNav($civ13->files['nomads_log_basedir'], $tokens);
-    } else {
-        unset($tokens[0]);
-        $results = $civ13->FileNav($civ13->files['tdm_log_basedir'], $tokens);
+        $results = $civ13->FileNav($civ13->files[$server.'_log_basedir'], $tokens);
+        if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
+        if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
+        if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+        return $message->reply("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
-    if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
-    if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-    if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-    return $message->reply("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+    return $message->reply("Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`");;
 };
 $banlog_handler = function(Civ13 $civ13, $message, string $message_content_lower)
 {
-    if (! in_array($message_content_lower, ['nomads', 'tdm', 'pers'])) return $message->reply('Please use the format `bans nomads` or `bans tdm');
-    switch ($message_content_lower)
-    {
-        case 'nomads': return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_bans'], 'bans.txt'));
-        case 'tdm': return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_bans'], 'bans.txt'));
-        case 'pers': return $message->reply(MessageBuilder::new()->addFile($civ13->files['pers_bans'], 'bans.txt'));
+    $keys = [];
+    foreach (array_keys($this->server_settings) as $key) {
+        $keys[] = $server = strtolower($key);
+        if ($message_content_lower !== $server) continue;
+        if (! isset($civ13->files[$server.'_bans']) || ! file_exists($civ13->files[$server.'_bans']) || ! $file_contents = file_get_contents($civ13->files[$server.'_bans'])) return $message->react("🔥");
+        return $message->reply(MessageBuilder::new()->addFileFromContent('bans.txt', $file_contents));
     }
+    return $message->reply('Please use the format `bans {server}`. Valid servers: `' . implode(', ', $keys)) . '`';
 };
 
 $ranking = function(Civ13 $civ13): false|string
