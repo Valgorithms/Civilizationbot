@@ -341,7 +341,7 @@ class Civ13
                 $serverban = function($message, array $message_filtered) use ($key, $rank_check): Promise
                 {
                     if (! $rank_check($this, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-                    $message_content = substr($message_filtered['message_content'], strlen($key.'ban '));
+                    if (! $message_content = substr($message_filtered['message_content'], strlen($key.'ban'))) return $message->reply('Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
                     $split_message = explode('; ', $message_content); // $split_target[1] is the target
                     if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
                     if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
@@ -357,7 +357,7 @@ class Civ13
                 $serverunban = function($message, array $message_filtered) use ($key, $rank_check): Promise
                 {
                     if (! $rank_check($this, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-                    if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban')))) return $message->reply('Missing ckey! Please use the format `unban ckey`');
+                    if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban')))) return $message->reply('Missing unban ckey! Please use the format `{server}unban ckey`');
                     if (is_numeric($ckey)) {
                         if (! $item = $this->getVerifiedItem($ckey)) return $message->reply("No data found for Discord ID `$ckey`.");
                         $ckey = $item['ckey'];
