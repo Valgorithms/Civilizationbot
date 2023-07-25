@@ -680,6 +680,8 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         return $message->reply('Panic bunker is now ' . (($civ13->panic_bunker = ! $civ13->panic_bunker) ? 'enabled.' : 'disabled.'));
     }
+
+    return null;
 };
 
 $on_message = function(Civ13 $civ13, $message) use ($guild_message)
