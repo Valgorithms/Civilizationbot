@@ -495,18 +495,25 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"];
-        $result = $civ13->ban($arr, $civ13->getVerifiedItem($message->author->id)['ss13']);
-        
-        if (! $tdm_playerlogs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
-        if (! $nomads_playerlogs = file_get_contents($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
-        $civ13->timers['banlog_update_tdm'] = $civ13->discord->getLoop()->addPeriodicTimer(30, function() use ($civ13, $banlog_update, $nomads_playerlogs, $tdm_playerlogs, $arr) {
-            file_put_contents($civ13->files['tdm_bans'], $banlog_update(file_get_contents($civ13->files['tdm_bans']), [$nomads_playerlogs, $tdm_playerlogs], $arr['ckey']));
-        });
-        $civ13->timers['banlog_update_nomads'] = $civ13->discord->getLoop()->addPeriodicTimer(60, function() use ($civ13, $banlog_update, $nomads_playerlogs, $tdm_playerlogs, $arr) {
-            file_put_contents($civ13->files['nomads_bans'], $banlog_update(file_get_contents($civ13->files['nomads_bans']), [$nomads_playerlogs, $tdm_playerlogs], $arr['ckey']));
-        });
-        
-        return $message->reply($result);
+
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            $civ13->timers['banlog_update_'.$server] = $civ13->discord->getLoop()->addTimer(30, function() use ($civ13, $server, $banlog_update, $arr) {
+                $playerlogs = [];
+                foreach (array_keys($this->server_settings) as $key) {
+                    $server = strtolower($key);
+                    if (! isset($civ13->files[$server.'_playerlogs']) || ! file_exists($civ13->files[$server.'_playerlogs'])) continue;
+                    if ($playerlog = file_get_contents($civ13->files[$server.'_playerlogs'])) $playerlogs[] = $playerlog;
+                }
+                if ($playerlogs) foreach (array_keys($this->server_settings) as $key) {
+                    $server = strtolower($key);
+                    if (! isset($civ13->files[$server.'_bans']) || ! file_exists($civ13->files[$server.'_bans'])) continue;
+                    file_put_contents($civ13->files[$server.'_bans'], $banlog_update(file_get_contents($civ13->files[$server.'_bans']), $playerlogs, $arr['ckey']));
+                }
+            });
+        }
+    
+        return $message->reply($civ13->ban($arr, $civ13->getVerifiedItem($message->author->id)['ss13']));
     }
     if (str_starts_with($message_content_lower, 'nomadsban ')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
