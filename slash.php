@@ -249,23 +249,18 @@ class Slash
                 // 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
             ]));
             
-            if ($command = $commands->get('name', 'restart_nomads')) $commands->delete($command->id);
-            /* if (! $commands->get('name', 'nomads_restart')) $commands->save(new Command($this->civ13->discord, [
-                'type'                       => Command::CHAT_INPUT,
-                'name'                       => 'nomads_restart',
-                'description'                => 'Restart the Nomads server',
-                'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
-            ])); */
             
-            if ($command = $commands->get('name', 'restart_tdm')) $commands->delete($command->id);
-            /* if (! $commands->get('name', 'tdm_restart')) $commands->save(new Command($this->civ13->discord, [
-                'type'                       => Command::CHAT_INPUT,
-                'name'                       => 'tdm_restart',
-                'description'                => 'Restart the TDM server',
-                'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
-            ])); */
+            foreach (array_keys($this->civ13->server_settings) as $key) {
+                $server = strtolower($key);
+                if ($command = $commands->get('name', $server.'_restart')) $commands->delete($command->id);
+                /* if (! $commands->get('name', $server.'_restart')) $commands->save(new Command($this->civ13->discord, [
+                    'type'                       => Command::CHAT_INPUT,
+                    'name'                       => "{$server}_restart",
+                    'description'                => "Restart the {$key} server",
+                    'dm_permission'              => false,
+                    'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+                ])); */
+            }
 
             // if ($command = $commands->get('name', 'approveme')) $commands->delete($command->id);
             if (! $commands->get('name', 'approveme')) $commands->save(new Command($this->civ13->discord, [

@@ -910,17 +910,6 @@ $slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme, $medals,
         $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
     });
     
-    $civ13->discord->listenCommand('nomads_restart', function ($interaction) use ($civ13): void
-    {
-    $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up Nomads <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"));
-        if (isset($civ13->server_funcs_called['nomadsrestart'])) $civ13->server_funcs_called['nomadsrestart']();
-    });
-    $civ13->discord->listenCommand('tdm_restart', function ($interaction) use ($civ13): void
-    {
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up TDM <byond://{$civ13->ips['tdm']}:{$civ13->ports['tdm']}>"));
-        if (isset($civ13->server_funcs_called['tdmrestart'])) $civ13->server_funcs_called['tdmrestart']();
-    });
-    
     $civ13->discord->listenCommand('ranking', function ($interaction) use ($civ13, $ranking): void
     {
         $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking($civ13)), true);
@@ -930,6 +919,18 @@ $slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme, $medals,
         if (! $item = $civ13->verified->get('discord', $interaction->member->id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
     });
+
+    foreach (array_keys($this->server_settings) as $key) {
+        $server = strtolower($key);
+
+        if (isset($civ13->ips[$server], $civ13->ports[$server]))
+            $civ13->discord->listenCommand($server.'_restart', function ($interaction) use ($civ13, $server, $key): void
+            {
+                $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$civ13->ips[$server]}:{$civ13->ports[$server]}>"));
+                if (isset($civ13->server_funcs_called[$server.'restart'])) $civ13->server_funcs_called[$server.'restart']();
+            });
+    }
+
     /* Deprecated
     $civ13->discord->listenCommand('rank', function ($interaction) use ($civ13, $rankme): void
     {
