@@ -336,42 +336,40 @@ class Civ13
                 }
             }
 
-            if (! $this->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `$server ban` because the required config roles were not found.");
-            else {
-                $serverban = function($message, array $message_filtered) use ($key, $rank_check): Promise
-                {
-                    if (! $rank_check($this, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-                    if (! $message_content = substr($message_filtered['message_content'], strlen($key.'ban'))) return $message->reply('Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
-                    $split_message = explode('; ', $message_content); // $split_target[1] is the target
-                    if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
-                    if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
-                    if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-                    $result = $this->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"], $this->getVerifiedItem($message->author->id)['ss13'], null, $key);
-                    if ($member = $this->getVerifiedMember('id', $split_message[0]))
-                        if (! $member->roles->has($this->role_ids['banished']))
-                            $member->addRole($this->role_ids['banished'], $result);
-                    return $message->reply($result);
-                };
-                $this->server_funcs_called[$server.'ban'] = $serverban;
+            $serverban = function($message, array $message_filtered) use ($server, $key, $rank_check): Promise
+            {
+                if (! $this->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `$server ban` because the required config roles were not found.");
+                if (! $rank_check($this, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+                if (! $message_content = substr($message_filtered['message_content'], strlen($key.'ban'))) return $message->reply('Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
+                $split_message = explode('; ', $message_content); // $split_target[1] is the target
+                if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+                if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
+                if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
+                $result = $this->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"], $this->getVerifiedItem($message->author->id)['ss13'], null, $key);
+                if ($member = $this->getVerifiedMember('id', $split_message[0]))
+                    if (! $member->roles->has($this->role_ids['banished']))
+                        $member->addRole($this->role_ids['banished'], $result);
+                return $message->reply($result);
+            };
+            $this->server_funcs_called[$server.'ban'] = $serverban;
 
-                $serverunban = function($message, array $message_filtered) use ($key, $rank_check): Promise
-                {
-                    if (! $rank_check($this, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-                    if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban')))) return $message->reply('Missing unban ckey! Please use the format `{server}unban ckey`');
-                    if (is_numeric($ckey)) {
-                        if (! $item = $this->getVerifiedItem($ckey)) return $message->reply("No data found for Discord ID `$ckey`.");
-                        $ckey = $item['ckey'];
-                    }
-                    
-                    $this->unban($ckey, $admin = $this->getVerifiedItem($message->author->id)['ss13'], $key);
-                    $result = "**$admin** unbanned **$ckey** from **$key**";
-                    if ($member = $this->getVerifiedMember('id', $ckey))
-                        if ($member->roles->has($this->role_ids['banished']))
-                            $member->removeRole($this->role_ids['banished'], $result);
-                    return $message->reply($result);
-                };
-                $this->server_funcs_called[$server.'unban'] = $serverunban;
-            }
+            $serverunban = function($message, array $message_filtered) use ($key, $rank_check): Promise
+            {
+                if (! $rank_check($this, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+                if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban')))) return $message->reply('Missing unban ckey! Please use the format `{server}unban ckey`');
+                if (is_numeric($ckey)) {
+                    if (! $item = $this->getVerifiedItem($ckey)) return $message->reply("No data found for Discord ID `$ckey`.");
+                    $ckey = $item['ckey'];
+                }
+                
+                $this->unban($ckey, $admin = $this->getVerifiedItem($message->author->id)['ss13'], $key);
+                $result = "**$admin** unbanned **$ckey** from **$key**";
+                if ($member = $this->getVerifiedMember('id', $ckey))
+                    if ($member->roles->has($this->role_ids['banished']))
+                        $member->removeRole($this->role_ids['banished'], $result);
+                return $message->reply($result);
+            };
+            $this->server_funcs_called[$server.'unban'] = $serverunban;
         }
     }
 
