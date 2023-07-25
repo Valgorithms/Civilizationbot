@@ -661,8 +661,8 @@ class Civ13
     /*
     * This function is used to send a message containing the list of bans for all servers
     */
-    public function banlogHandler($message, string $message_content_lower): Promise
-    {
+    public function banlogHandler($message, string $message_content_lower): Promise 
+    { // I'm not sure if I want this function to be here, in the server functions, as a variable function, or as a slash command
         $fc = [];
         $keys = [];
         foreach (array_keys($this->server_settings) as $key) {
