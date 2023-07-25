@@ -484,7 +484,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
     
     if (str_starts_with($message_content_lower, 'refresh')) {
         return $message->react("❌"); // Disabled, currently not working
-        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("");
+        if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         if ($civ13->getVerified()) return $message->react("👍");
         return $message->react("👎");
     }
