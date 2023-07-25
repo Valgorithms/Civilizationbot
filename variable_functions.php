@@ -60,17 +60,6 @@ $log_handler = function(Civ13 $civ13, $message, string $message_content)
     }
     return $message->reply('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`');
 };
-$banlog_handler = function(Civ13 $civ13, $message, string $message_content_lower)
-{
-    $keys = [];
-    foreach (array_keys($civ13->server_settings) as $key) {
-        $keys[] = $server = strtolower($key);
-        if ($message_content_lower !== $server) continue;
-        if (! isset($civ13->files[$server.'_bans']) || ! file_exists($civ13->files[$server.'_bans']) || ! $file_contents = file_get_contents($civ13->files[$server.'_bans'])) return $message->react("🔥");
-        return $message->reply(MessageBuilder::new()->addFileFromContent('bans.txt', $file_contents));
-    }
-    return $message->reply('Please use the format `bans {server}`. Valid servers: `' . implode(', ', $keys)) . '`';
-};
 
 $ranking = function(Civ13 $civ13): false|string
 {
@@ -228,7 +217,7 @@ $rank_check = function(Civ13 $civ13, $message = null, array $allowed_ranks = [],
     if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     return false;
 };
-$guild_message = function(Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $log_handler, $banlog_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update): ?Promise
+$guild_message = function(Civ13 $civ13, $message, string $message_content, string $message_content_lower) use ($rank_check, $log_handler, $ranking, $rankme, $medals, $brmedals, $tests, $banlog_update): ?Promise
 {
     if (! $message->member) return $message->reply('Error! Unable to get Discord Member class.');
     
@@ -588,7 +577,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
     }
     if (str_starts_with($message_content_lower, 'bans')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if ($banlog_handler($civ13, $message, trim(substr($message_content_lower, strlen('bans'))))) return null;
+        if ($civ13->banlogHandler($message, trim(substr($message_content_lower, strlen('bans'))))) return null;
     }
 
     if (str_starts_with($message_content_lower, 'stop')) {

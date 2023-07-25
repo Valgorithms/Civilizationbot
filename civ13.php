@@ -10,6 +10,7 @@ namespace Civ13;
 
 use Civ13\Slash;
 use Discord\Discord;
+use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
 use Discord\Parts\Channel\Channel;
@@ -657,6 +658,27 @@ class Civ13
         else $this->logger->warning("Failed top create new config for guild {$guild->name}");
     }
 
+    /*
+    * This function is used to send a message containing the list of bans for all servers
+    */
+    public function banlogHandler($message, string $message_content_lower): Promise
+    {
+        $fc = [];
+        $keys = [];
+        foreach (array_keys($this->server_settings) as $key) {
+            $keys[] = $server = strtolower($key);
+            if ($message_content_lower !== $server) continue;
+            if (! isset($this->files[$server.'_bans']) || ! file_exists($this->files[$server.'_bans']) || ! $file_contents = file_get_contents($this->files[$server.'_bans'])) return $message->react("🔥");
+            $file_contents[$server] = $fc;
+        }
+        if ($fc) {
+            $builder = MessageBuilder::new();
+            foreach ($fc as $file_contents) $builder->addFileFromContent($server.'_bans.txt', $file_contents);
+            return $message->reply($builder);
+        }
+        return $message->reply('Please use the format `bans {server}`. Valid servers: `' . implode(', ', $keys)) . '`';
+    }
+    
     /*
     * This function is used to get either sanitize a ckey or a Discord snowflake
     */
