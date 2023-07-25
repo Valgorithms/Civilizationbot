@@ -40,8 +40,9 @@ $status_changer_timer = function(Civ13 $civ13) use ($status_changer_random): voi
 $log_handler = function(Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(';', $message_content);
+    $keys = [];
     foreach (array_keys($civ13->server_settings) as $key) {
-        $server = strtolower($key);
+        $keys[] = $server = strtolower($key);
         if (! trim($tokens[0]) == $server) continue; // Check if server is valid
         
         if (! isset($civ13->files[$server.'_log_basedir']) || ! file_exists($civ13->files[$server.'_log_basedir'])) {
@@ -56,7 +57,7 @@ $log_handler = function(Civ13 $civ13, $message, string $message_content)
         if (! isset($results[2]) || ! $results[2]) return $message->reply('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
         return $message->reply("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
     }
-    return $message->reply("Please use the format `logs nomads;folder;file` or `logs tdm;folder;file`");;
+    return $message->reply('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys)) . '`';
 };
 $banlog_handler = function(Civ13 $civ13, $message, string $message_content_lower)
 {
@@ -650,19 +651,14 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
     if (str_starts_with($message_content_lower, 'playerlogs')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         $tokens = explode(';', trim(substr($message_content, 10)));
-        if (! in_array(trim($tokens[0]), ['nomads', 'tdm', 'pers'])) return $message->reply('Please use the format `playerslogs nomads` or `playerlogs tdm`');
-        switch ($tokens[0])
-        {
-            case 'nomads':
-                if (! is_file($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
-                return $message->reply(MessageBuilder::new()->addFile($civ13->files['nomads_playerlogs'], 'playerlogs.txt'));
-            case 'tdm':
-                if (! is_file($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
-                return $message->reply(MessageBuilder::new()->addFile($civ13->files['tdm_playerlogs'], 'playerlogs.txt'));
-            case 'pers':
-                if (! is_file($civ13->files['pers_playerlogs'])) return $message->react("🔥");
-                return $message->reply(MessageBuilder::new()->addFile($civ13->files['pers_playerlogs'], 'playerlogs.txt'));
+        $keys = [];
+        foreach (array_keys($civ13->server_settings) as $key) {
+            $keys[] = $server = strtolower($key);
+            if (trim($tokens[0]) != $key) continue;
+            if (! isset($civ13->files[$server.'_playerlogs']) || ! file_exists($civ13->files[$server.'_playerlogs']) || ! $file_contents = file_get_contents($civ13->files[$server.'_playerlogs'])) return $message->react("🔥");
+            return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
         }
+        return $message->reply('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys)) . '`';
     }
     if (str_starts_with($message_content_lower, 'bans')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
