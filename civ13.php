@@ -352,7 +352,7 @@ class Civ13
                             $member->addRole($this->role_ids['banished'], $result);
                     return $message->reply($result);
                 };
-                $this->server_funcs_uncalled[$server.'ban '] = $serverban;
+                $this->server_funcs_called[$server.'ban '] = $serverban;
 
                 $serverunban = function($message, array $message_filtered) use ($key, $rank_check): Promise
                 {
@@ -369,7 +369,7 @@ class Civ13
                             $member->removeRole($this->role_ids['banished'], $result);
                     return $message->reply($result);
                 };
-                $this->server_funcs_uncalled[$server.'unban '] = $serverunban;
+                $this->server_funcs_called[$server.'unban '] = $serverunban;
             }
         }
     }
