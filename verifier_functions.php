@@ -9,15 +9,16 @@ $civ_listeners = function(Civ13 $civ13): void // Handles Verified and Veteran ca
         if ($message->channel_id == $civ13->verifier_feed_channel_id) return $civ13->getVerified();
     });
     
-    $civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) use ($civ13): void
+    $civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) use ($civ13)//: Promise // Pending promises v3
     {
         $civ13->getVerified();
-        $civ13->timers["add_{$member->id}"] = $civ13->discord->getLoop()->addTimer(8640, function() use ($civ13, $member) { // Kick member if they have not verified
+        $civ13->timers["add_{$member->id}"] = $civ13->discord->getLoop()->addTimer(8640, function() use ($civ13, $member)
+        { // Kick member if they have not verified
             $civ13->getVerified();
-            if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return;
-            if (! $member_future = $guild->members->get('id', $member->id)) return;
-            if ($civ13->getVerifiedItem($member)) return; // Don't kick if they have verified
-            if ($member_future->roles->has($civ13->role_ids['infantry']) || $member_future->roles->has($civ13->role_ids['veteran'])) return;
+            if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return null;
+            if (! $member_future = $guild->members->get('id', $member->id)) return null;
+            if ($civ13->getVerifiedItem($member)) return null; // Don't kick if they have verified
+            if ($member_future->roles->has($civ13->role_ids['infantry']) || $member_future->roles->has($civ13->role_ids['veteran'])) return null;
             return $guild->members->kick($member_future, 'Not verified');
         });
     });

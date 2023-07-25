@@ -27,6 +27,7 @@ use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\Http\Browser;
 use React\Http\HttpServer;
+use React\Promise\Promise;
 use React\Socket\SocketServer;
 use React\EventLoop\TimerInterface;
 use React\Filesystem\Factory as FilesystemFactory;
@@ -271,7 +272,7 @@ class Civ13
             foreach (['_mapswap'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
                 else {
-                    $servermapswap = function($message, array $message_filtered) use ($server, $rank_check)
+                    $servermapswap = function($message, array $message_filtered) use ($server, $rank_check): Promise
                     {
                         $mapswap = function(string $mapto) use ($server): bool
                         {
@@ -333,6 +334,42 @@ class Civ13
                     };
                     $this->server_funcs_uncalled[$server.'_discord2admin'] = $serverdiscord2admin;
                 }
+            }
+
+            if (! $this->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `$server ban` because the required config roles were not found.");
+            else {
+                $serverban = function($message, array $message_filtered) use ($key, $rank_check): Promise
+                {
+                    if (! $rank_check($this, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+                    $message_content = substr($message_filtered['message_content'], strlen($key.'ban '));
+                    $split_message = explode('; ', $message_content); // $split_target[1] is the target
+                    if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+                    if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
+                    if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
+                    $result = $this->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"], $this->getVerifiedItem($message->author->id)['ss13'], null, $key);
+                    if ($member = $this->getVerifiedMember('id', $split_message[0]))
+                        if (! $member->roles->has($this->role_ids['banished']))
+                            $member->addRole($this->role_ids['banished'], $result);
+                    return $message->reply($result);
+                };
+                $this->server_funcs_uncalled[$server.'ban '] = $serverban;
+
+                $serverunban = function($message, array $message_filtered) use ($key, $rank_check): Promise
+                {
+                    if (! $rank_check($this, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
+                    if (is_numeric($ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban'))))) {
+                        if (! $item = $this->getVerifiedItem($ckey)) return $message->reply("No data found for Discord ID `$ckey`.");
+                        $ckey = $item['ckey'];
+                    }
+                    
+                    $this->unban($ckey, $admin = $this->getVerifiedItem($message->author->id)['ss13'], $key);
+                    $result = "**$admin** unbanned **$ckey** from **$key**";
+                    if ($member = $this->getVerifiedMember('id', $ckey))
+                        if ($member->roles->has($this->role_ids['banished']))
+                            $member->removeRole($this->role_ids['banished'], $result);
+                    return $message->reply($result);
+                };
+                $this->server_funcs_uncalled[$server.'unban '] = $serverunban;
             }
         }
     }
@@ -470,8 +507,9 @@ class Civ13
 
                 if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
                     $this->logger->info('chat relay timer started');
-                    $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function() {
-                        if ($this->relay_method !== 'file') return;
+                    $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function()
+                    {
+                        if ($this->relay_method !== 'file') return null;
                         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
                         foreach (array_keys($this->server_settings) as $key) {
                             $server = strtolower($key);
@@ -483,6 +521,7 @@ class Civ13
             });
 
         }
+
     }
     
     /**
@@ -1272,7 +1311,7 @@ class Civ13
     }
     public function webserverStatusChannelUpdate(bool $status)
     {
-        if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return;
+        if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return null;
         [$webserver_name, $reported_status] = explode('-', $channel->name);
         if ($this->webserver_online) $status = 'online';
         else $status = 'offline';
@@ -1554,19 +1593,23 @@ class Civ13
     * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
     * It is called on ready and every 5 minutes
     */
-    private function playercountChannelUpdate(int $count = 0, string $prefix = '')
+    private function playercountChannelUpdate(int $count = 0, string $prefix = ''): bool
     {
-        if (! $channel = $this->discord->getChannel($this->channel_ids[$prefix . 'playercount'])) return;
+        if (! $channel = $this->discord->getChannel($this->channel_ids[$prefix . 'playercount'])) {
+            $this->logger->warning("Channel {$prefix}playercount doesn't exist!");
+            return false;
+        }
         if (! $channel->created) {
             $this->logger->warning("Channel {$channel->name} hasn't been created!");
-            return;
+            return false;
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
-        if ($this->playercount_ticker % 10 !== 0) return;
+        if ($this->playercount_ticker % 10 !== 0) return false;
         if ((int)$existingCount !== $count) {
             $channel->name = "{$channelPrefix}-{$count}";
             $channel->guild->channels->save($channel);
         }
+        return true;
     }
     public function serverinfoParse(): array
     {
