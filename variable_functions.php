@@ -558,7 +558,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         
         $builder = MessageBuilder::new()->setContent('Faction Lists');
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
             if (file_exists($civ13->files[$server.'_factionlist'])) $builder->addfile($civ13->files[$server.'_factionlist'], $server.'_factionlist.txt');
             else $civ13->logger->warning("`{$server}_factionlist` is not a valid file path!");
@@ -669,7 +669,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         
         $server_playerlogs = [];
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
             if (! $playerlogs = file_get_contents($civ13->files[$server.'_playerlogs'])) {
                 $civ13->logger->warning("`{$server}_playerlogs` is not a valid file path!");
@@ -680,7 +680,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         if (! $server_playerlogs) return $message->react("🔥");
         
         $updated = false;
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
             if (! $bans = file_get_contents($civ13->files[$server.'_bans'])) {
                 $civ13->logger->warning("`{$server}_bans` is not a valid file path!");
