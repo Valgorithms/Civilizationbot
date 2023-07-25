@@ -40,7 +40,7 @@ $status_changer_timer = function(Civ13 $civ13) use ($status_changer_random): voi
 $log_handler = function(Civ13 $civ13, $message, string $message_content)
 {
     $tokens = explode(';', $message_content);
-    foreach (array_keys($this->server_settings) as $key) {
+    foreach (array_keys($civ13->server_settings) as $key) {
         $server = strtolower($key);
         if (! trim($tokens[0]) == $server) continue; // Check if server is valid
         
@@ -61,7 +61,7 @@ $log_handler = function(Civ13 $civ13, $message, string $message_content)
 $banlog_handler = function(Civ13 $civ13, $message, string $message_content_lower)
 {
     $keys = [];
-    foreach (array_keys($this->server_settings) as $key) {
+    foreach (array_keys($civ13->server_settings) as $key) {
         $keys[] = $server = strtolower($key);
         if ($message_content_lower !== $server) continue;
         if (! isset($civ13->files[$server.'_bans']) || ! file_exists($civ13->files[$server.'_bans']) || ! $file_contents = file_get_contents($civ13->files[$server.'_bans'])) return $message->react("🔥");
@@ -502,16 +502,16 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
         $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$civ13->banappeal}"];
 
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
             $civ13->timers['banlog_update_'.$server] = $civ13->discord->getLoop()->addTimer(30, function() use ($civ13, $server, $banlog_update, $arr) {
                 $playerlogs = [];
-                foreach (array_keys($this->server_settings) as $key) {
+                foreach (array_keys($civ13->server_settings) as $key) {
                     $server = strtolower($key);
                     if (! isset($civ13->files[$server.'_playerlogs']) || ! file_exists($civ13->files[$server.'_playerlogs'])) continue;
                     if ($playerlog = file_get_contents($civ13->files[$server.'_playerlogs'])) $playerlogs[] = $playerlog;
                 }
-                if ($playerlogs) foreach (array_keys($this->server_settings) as $key) {
+                if ($playerlogs) foreach (array_keys($civ13->server_settings) as $key) {
                     $server = strtolower($key);
                     if (! isset($civ13->files[$server.'_bans']) || ! file_exists($civ13->files[$server.'_bans'])) continue;
                     file_put_contents($civ13->files[$server.'_bans'], $banlog_update(file_get_contents($civ13->files[$server.'_bans']), $playerlogs, $arr['ckey']));
