@@ -558,8 +558,11 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
         
         $builder = MessageBuilder::new()->setContent('Faction Lists');
-        if (file_exists($civ13->files['tdm_factionlist'])) $builder->addfile($civ13->files['tdm_factionlist'], 'tdm_factionlist.txt');
-        if (file_exists($civ13->files['nomads_factionlist'])) $builder->addfile($civ13->files['nomads_factionlist'], 'nomads_factionlist.txt');
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (file_exists($civ13->files[$server.'_factionlist'])) $builder->addfile($civ13->files[$server.'_factionlist'], $server.'_factionlist.txt');
+            else $civ13->logger->warning("`{$server}_factionlist` is not a valid file path!");
+        }
         return $message->reply($builder);
     }
     if (str_starts_with($message_content_lower, 'sportsteams')) {
@@ -663,19 +666,33 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
     }
 
     if (str_starts_with($message_content_lower, 'update bans')) {
-        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌"); 
-        if (! $tdm_bans = file_get_contents($civ13->files['tdm_bans'])) return $message->react("🔥");
-        if (! $nomads_bans = file_get_contents($civ13->files['nomads_bans'])) return $message->react("🔥");
-        if (! $tdm_playerlogs = file_get_contents($civ13->files['tdm_playerlogs'])) return $message->react("🔥");
-        if (! $nomads_playerlogs = file_get_contents($civ13->files['nomads_playerlogs'])) return $message->react("🔥");
-        $tdm = $banlog_update($tdm_bans, [$nomads_playerlogs, $tdm_playerlogs]);
-        $tdm = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $tdm);
-        file_put_contents($civ13->files['tdm_bans'], $tdm);
-        $nomads = $banlog_update($nomads_bans, [$nomads_playerlogs, $tdm_playerlogs]);
-        $nomads = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $nomads);
-        file_put_contents($civ13->files['nomads_bans'], $nomads);
-        return $message->react("👍");
+        if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
+        
+        $server_playerlogs = [];
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (! $playerlogs = file_get_contents($civ13->files[$server.'_playerlogs'])) {
+                $civ13->logger->warning("`{$server}_playerlogs` is not a valid file path!");
+                continue;
+            }
+            $server_playerlogs[] = $playerlogs;
+        }
+        if (! $server_playerlogs) return $message->react("🔥");
+        
+        $updated = false;
+        foreach (array_keys($this->server_settings) as $key) {
+            $server = strtolower($key);
+            if (! $bans = file_get_contents($civ13->files[$server.'_bans'])) {
+                $civ13->logger->warning("`{$server}_bans` is not a valid file path!");
+                continue;
+            }
+            file_put_contents($civ13->files[$server.'_bans'], preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($bans, $server_playerlogs)));
+            $updated = true;
+        }
+        if ($updated) return $message->react("👍");
+        return $message->react("🔥");
     }
+
     if (str_starts_with($message_content_lower, 'panic')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain'])) return $message->react("❌");
         return $message->reply('Panic bunker is now ' . (($civ13->panic_bunker = ! $civ13->panic_bunker) ? 'enabled.' : 'disabled.'));
