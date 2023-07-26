@@ -1044,7 +1044,8 @@ class Civ13
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->verify_url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return the transfer as a string    
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return the transfer as a string
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Civ13');
         curl_setopt($ch, CURLOPT_POST, TRUE);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]));
         $result = curl_exec($ch);
@@ -1346,7 +1347,7 @@ class Civ13
     }
     public function serverinfoFetch(): array
     {
-        if (! $data_json = json_decode(file_get_contents($this->serverinfo_url, false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) {
+        if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) {
             $this->webserverStatusChannelUpdate($this->webserver_online = false);
             return [];
         }
