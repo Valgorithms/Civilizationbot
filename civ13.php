@@ -676,7 +676,7 @@ class Civ13
             foreach ($fc as $file_contents) $builder->addFileFromContent($server.'_bans.txt', $file_contents);
             return $message->reply($builder);
         }
-        return $message->reply('Please use the format `bans {server}`. Valid servers: `' . implode(', ', $keys)) . '`';
+        return $message->reply('Please use the format `bans {server}`. Valid servers: `' . implode(', ', $keys) . '`');
     }
     
     /*
