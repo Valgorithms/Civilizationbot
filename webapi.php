@@ -450,15 +450,15 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->info('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            $favicon = file_get_contents('favicon.ico');
-            return new Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
+            if ($favicon = @file_get_contents('favicon.ico')) return new Response(200, ['Content-Type' => 'image/x-icon'], $favicon);
+            else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`");
         
         case 'nohup.out':
             if (! $whitelisted) {
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('nohup.out')) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+            if ($return = @file_get_contents('nohup.out')) return new Response(200, ['Content-Type' => 'text/plain'], $return);
             else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `nohup.out`");
             break;
         
@@ -467,7 +467,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog.txt')) return new Response(200, ['Content-Type' => 'text/html'], $webpage_content($return));
+            if ($return = @file_get_contents('botlog.txt')) return new Response(200, ['Content-Type' => 'text/html'], $webpage_content($return));
             else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog.txt`");
             break;
             
@@ -476,7 +476,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                 $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
                 return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
             }
-            if ($return = file_get_contents('botlog2.txt')) return new Response(200, ['Content-Type' => 'text/html'], $webpage_content($return));
+            if ($return = @file_get_contents('botlog2.txt')) return new Response(200, ['Content-Type' => 'text/html'], $webpage_content($return));
             else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `botlog2.txt`");
             break;
         
@@ -814,7 +814,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
                     $nomads_bans = $civ13->files['nomads_bans'];
-                    if ($return = file_get_contents($nomads_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    if ($return = @file_get_contents($nomads_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`");
                     break;
                 case 'playerlogs':
@@ -823,7 +823,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
                     $nomads_playerlogs = $civ13->files['nomads_playerlogs'];
-                    if ($return = file_get_contents($nomads_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    if ($return = @file_get_contents($nomads_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_playerlogs`");
                 default:
                     return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
@@ -837,7 +837,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
                     $tdm_bans = $civ13->files['tdm_bans'];
-                    if ($return = file_get_contents($tdm_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    if ($return = @file_get_contents($tdm_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`");
                     break;
                 case 'playerlogs':
@@ -846,7 +846,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
                     }
                     $tdm_playerlogs = $civ13->files['tdm_playerlogs'];
-                    if ($return = file_get_contents($tdm_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    if ($return = @file_get_contents($tdm_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
                     else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_playerlogs`");
                 default:
                     return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');

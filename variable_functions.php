@@ -500,7 +500,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
                 foreach (array_keys($civ13->server_settings) as $key) {
                     $server = strtolower($key);
                     if (! isset($civ13->files[$server.'_playerlogs']) || ! file_exists($civ13->files[$server.'_playerlogs'])) continue;
-                    if ($playerlog = file_get_contents($civ13->files[$server.'_playerlogs'])) $playerlogs[] = $playerlog;
+                    if ($playerlog = @file_get_contents($civ13->files[$server.'_playerlogs'])) $playerlogs[] = $playerlog;
                 }
                 if ($playerlogs) foreach (array_keys($civ13->server_settings) as $key) {
                     $server = strtolower($key);
@@ -532,13 +532,12 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         $found = false;
         foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
-            if (! file_exists($civ13->files[$server.'_admins'])) {
+            if (! file_exists($civ13->files[$server.'_admins']) || ! $file_contents = @file_get_contents($civ13->files[$server.'_admins'])) {
                 $civ13->logger->debug("`{$server}_admins` is not a valid file path!");
                 continue;
             }
-            $found = true;
-            $file_contents = file_get_contents($civ13->files[$server.'_admins']);
             $builder->addFileFromContent($server.'_admins.txt', $file_contents);
+            $found = true;
         }
         if (! $found) return $message->react("🔥");
         return $message->reply($builder);
@@ -570,7 +569,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         foreach (array_keys($civ13->server_settings) as $key) {
             $keys[] = $server = strtolower($key);
             if (trim($tokens[0]) != $key) continue;
-            if (! isset($civ13->files[$server.'_playerlogs']) || ! file_exists($civ13->files[$server.'_playerlogs']) || ! $file_contents = file_get_contents($civ13->files[$server.'_playerlogs'])) return $message->react("🔥");
+            if (! isset($civ13->files[$server.'_playerlogs']) || ! file_exists($civ13->files[$server.'_playerlogs']) || ! $file_contents = @file_get_contents($civ13->files[$server.'_playerlogs'])) return $message->react("🔥");
             return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
         }
         return $message->reply('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
@@ -660,7 +659,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         $server_playerlogs = [];
         foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
-            if (! $playerlogs = file_get_contents($civ13->files[$server.'_playerlogs'])) {
+            if (! $playerlogs = @file_get_contents($civ13->files[$server.'_playerlogs'])) {
                 $civ13->logger->warning("`{$server}_playerlogs` is not a valid file path!");
                 continue;
             }
@@ -671,7 +670,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
         $updated = false;
         foreach (array_keys($civ13->server_settings) as $key) {
             $server = strtolower($key);
-            if (! $bans = file_get_contents($civ13->files[$server.'_bans'])) {
+            if (! $bans = @file_get_contents($civ13->files[$server.'_bans'])) {
                 $civ13->logger->warning("`{$server}_bans` is not a valid file path!");
                 continue;
             }

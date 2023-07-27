@@ -618,7 +618,7 @@ class Civ13
     {
         if ($filename === '') return null;
         if (!file_exists($this->filecache_path . $filename)) return null;
-        if (($string = file_get_contents($this->filecache_path . $filename)) === false) return null;
+        if (($string = @file_get_contents($this->filecache_path . $filename) ?? false) === false) return null;
         if (! $assoc_array = json_decode($string, TRUE)) return null;
         return $assoc_array;
     }
@@ -668,8 +668,8 @@ class Civ13
         foreach (array_keys($this->server_settings) as $key) {
             $keys[] = $server = strtolower($key);
             if ($message_content_lower !== $server) continue;
-            if (! isset($this->files[$server.'_bans']) || ! file_exists($this->files[$server.'_bans']) || ! $file_contents = file_get_contents($this->files[$server.'_bans'])) return $message->react("🔥");
-            $file_contents[$server] = $fc;
+            if (! isset($this->files[$server.'_bans']) || ! file_exists($this->files[$server.'_bans']) || ! $file_contents = @file_get_contents($this->files[$server.'_bans'])) return $message->react("🔥");
+            $fc[$server] = $file_contents;
         }
         if ($fc) {
             $builder = MessageBuilder::new();
@@ -949,7 +949,7 @@ class Civ13
             $file_contents = '';
             foreach (array_keys($this->server_settings) as $key) {
                 $server = strtolower($key);
-                if (isset($this->files[$server.'_playerlogs'])) $file_contents .= file_get_contents($this->files[$server.'_playerlogs']);
+                if (isset($this->files[$server.'_playerlogs']) && file_exists($this->files[$server.'_playerlogs']) && $fc = @file_get_contents($this->files[$server.'_playerlogs'])) $file_contents .= $fc;
                 else $this->logger->warning("unable to open {$this->files[$server.'_playerlogs']}");
             }
             foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] == $ckey) { $found = true; break; }
@@ -1335,8 +1335,7 @@ class Civ13
     {
         if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return null;
         [$webserver_name, $reported_status] = explode('-', $channel->name);
-        if ($this->webserver_online) $status = 'online';
-        else $status = 'offline';
+        $status = $this->webserver_online ? 'online' : 'offline';
         if ($reported_status != $status) {
             $msg = "Webserver is now **{$status}**.";
             if ($status == 'offline') $msg .= " Webserver technician <@{$this->technician_id}> has been notified.";
@@ -1356,15 +1355,19 @@ class Civ13
     }
     public function bansToCollection(): Collection
     {
+        $ban_collection = new Collection([], 'uid');
         // Get the contents of the file
         $file_contents = '';
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
-            if (isset($this->files[$server.'_bans']) && file_exists($this->files[$server.'_bans'])) $file_contents .= file_get_contents($this->files[$server.'_bans']);
+            if (isset($this->files[$server.'_bans']) && file_exists($this->files[$server.'_bans']) && $fc = @file_get_contents($this->files[$server.'_bans'])) $file_contents .= $fc;
+            else $this->logger->warning("unable to open `{$this->files[$server.'_bans']}`");
         }
-        $file_contents = str_replace(PHP_EOL, '', $file_contents);
         
+        // Create a new collection
         $ban_collection = new Collection([], 'uid');
+        if (! $file_contents) return $ban_collection;
+        $file_contents = str_replace(PHP_EOL, '', $file_contents);
         foreach (explode('|||', $file_contents) as $item)
             if ($ban = $this->banArrayToAssoc(explode(';', $item)))
                 $ban_collection->pushItem($ban);
@@ -1413,7 +1416,8 @@ class Civ13
         $file_contents = '';
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
-            if (isset($this->files[$server.'_playerlogs']) && file_exists($this->files[$server.'_playerlogs'])) $file_contents .= file_get_contents($this->files[$server.'_playerlogs']);
+            if (isset($this->files[$server.'_playerlogs']) && file_exists($this->files[$server.'_playerlogs']) && $fc = @file_get_contents($this->files[$server.'_playerlogs'])) $file_contents .= $fc;
+            else $this->logger->warning("unable to open `{$this->files[$server.'_playerlogs']}`");
         }
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
 
