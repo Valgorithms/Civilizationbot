@@ -576,7 +576,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
     }
     if (str_starts_with($message_content_lower, 'bans')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if ($civ13->banlogHandler($message, trim(substr($message_content_lower, strlen('bans'))))) return null;
+        if ($promise = $civ13->banlogHandler($message, trim(substr($message_content_lower, strlen('bans'))))) return $promise;
     }
 
     if (str_starts_with($message_content_lower, 'stop')) {
