@@ -38,7 +38,7 @@ $status_changer_timer = function(Civ13 $civ13) use ($status_changer_random): voi
     $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-$log_handler = function(Civ13 $civ13, $message, string $message_content)
+$log_handler = function(Civ13 $civ13, $message, string $message_content): Promise
 {
     $tokens = explode(';', $message_content);
     $keys = [];
@@ -560,7 +560,7 @@ $guild_message = function(Civ13 $civ13, $message, string $message_content, strin
     }
     if (str_starts_with($message_content_lower, 'logs')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
-        if ($log_handler($civ13, $message, trim(substr($message_content, 4)))) return null;
+        if ($promise = $log_handler($civ13, $message, trim(substr($message_content, 4)))) return $promise;
     }
     if (str_starts_with($message_content_lower, 'playerlogs')) {
         if (! $rank_check($civ13, $message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
