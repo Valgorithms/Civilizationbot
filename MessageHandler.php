@@ -25,7 +25,7 @@ use React\Promise\Promise;
 class MessageHandler extends Handler implements MessageHandlerInterface
 {
     protected Civ13 $civ13;
-    
+
     public function __construct(Civ13 &$civ13, array $handlers = [])
     {
         $this->civ13 = $civ13;
