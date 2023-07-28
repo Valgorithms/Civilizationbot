@@ -500,7 +500,6 @@ class Civ13
                 
                 $this->discord->on('message', function ($message): void
                 {
-                    $message_filtered = $this->filterMessage($message);
                     if (! $this->messageHandler->handle($message)) { // This section will be deprecated in the future
                         if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
                         else $this->logger->debug('No message variable functions found!');
