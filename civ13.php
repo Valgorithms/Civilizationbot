@@ -352,7 +352,8 @@ class Civ13
                 if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
                 if (! $split_message[1]) return $message->reply('Missing ban duration! Please use the format `ban ckey; duration; reason`');
                 if (! $split_message[2]) return $message->reply('Missing ban reason! Please use the format `ban ckey; duration; reason`');
-                $result = $this->ban(['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"], $this->getVerifiedItem($message->author->id)['ss13'], null, $key);
+                $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"];
+                $result = $this->ban($arr, $this->getVerifiedItem($message->author->id)['ss13'], null, $key);
                 if ($member = $this->getVerifiedMember('id', $split_message[0]))
                     if (! $member->roles->has($this->role_ids['banished']))
                         $member->addRole($this->role_ids['banished'], $result);
