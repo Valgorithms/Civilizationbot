@@ -1988,6 +1988,7 @@ class Civ13
                 if (!$member = $this->getVerifiedMember($item)) continue;
                 $file_contents .= $callback($member, $item, $required_roles);
             }
+            var_dump("Writing file contents to {$this->files[$file_path]}", $file_contents);
             fwrite($file, $file_contents);
             fclose($file);
         }
