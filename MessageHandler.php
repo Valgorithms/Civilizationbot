@@ -236,6 +236,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
             if ($promise = $method_func()) return $promise;
         }
         if (empty($this->handlers)) $this->civ13->logger->info('No message handlers found!');
+        return null;
     }
 
     public function checkRank(Message $message, array $allowed_ranks = []): ?Promise
