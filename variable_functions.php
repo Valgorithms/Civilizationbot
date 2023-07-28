@@ -926,7 +926,7 @@ $slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme, $medals,
             $civ13->discord->listenCommand($server.'_restart', function ($interaction) use ($civ13, $server, $key): void
             {
                 $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$civ13->ips[$server]}:{$civ13->ports[$server]}>"));
-                if (isset($civ13->server_funcs_called[$server.'restart'])) $civ13->server_funcs_called[$server.'restart']();
+                if ($serverrestart = $this->messageHandler->offsetGet($server.'restart')) $serverrestart();
             });
     }
 

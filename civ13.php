@@ -116,7 +116,6 @@ class Civ13
         'messages' => [],
         'misc' => [],
     );
-    public $server_funcs_called = []; // List of functions that are called when their respective command is called
     public $server_funcs_uncalled = []; // List of functions that are available for use by other functions, but otherwise not called via a message command
     
     public string $command_symbol = '@Civilizationbot'; // The symbol that the bot will use to identify commands if it is not mentioned
@@ -256,7 +255,7 @@ class Civ13
                             \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$this->ports[$server]} -trusted -webclient -logself &");
                         });
                     };
-                    $this->server_funcs_called[$server.'host'] = $serverhost;
+                    $this->messageHandler->offsetSet($server.'host', $serverhost);
                 }
             }
             foreach (['_killciv13'] as $postfix) {
@@ -266,16 +265,16 @@ class Civ13
                     {
                         \execInBackground("python3 {$this->files[$server.'_killciv13']}");
                     };
-                    $this->server_funcs_called[$server.'kill'] = $serverkill;
+                    $this->messageHandler->offsetSet($server.'kill', $serverkill);
                 }
             }
-            if (isset($this->server_funcs_called[$server.'host'], $this->server_funcs_called[$server.'kill'])) {
+            if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
                 $serverrestart = function() use ($server): void
                 {
-                    $this->server_funcs_called[$server.'kill']();
-                    $this->server_funcs_called[$server.'host']();
+                    $this->messageHandler->offsetGet($server.'kill')();
+                    $this->messageHandler->offsetGet($server.'host')();
                 };
-                $this->server_funcs_called[$server.'restart'] = $serverrestart;
+                $this->messageHandler->offsetSet($server.'restart', $serverrestart);
             }
 
 
@@ -308,7 +307,7 @@ class Civ13
                         if (! $mapswap($mapto)) return $message->reply("`$mapto` was not found in the map definitions.");
                         return $message->reply("Attempting to change `$server` map to `$mapto`");
                     };
-                    $this->server_funcs_called[$server.'mapswap'] = $servermapswap;
+                    $this->messageHandler->offsetSet($server.'mapswap', $servermapswap);
                 }
             }
             
@@ -361,7 +360,7 @@ class Civ13
                         $member->addRole($this->role_ids['banished'], $result);
                 return $message->reply($result);
             };
-            $this->server_funcs_called[$server.'ban'] = $serverban;
+            $this->messageHandler->offsetSet($server.'ban', $serverban);
 
             $serverunban = function($message, array $message_filtered) use ($key, $rank_check): Promise
             {
@@ -379,7 +378,7 @@ class Civ13
                         $member->removeRole($this->role_ids['banished'], $result);
                 return $message->reply($result);
             };
-            $this->server_funcs_called[$server.'unban'] = $serverunban;
+            $this->messageHandler->offsetSet($server.'unban',  $serverunban);
         }
     }
 
@@ -502,7 +501,6 @@ class Civ13
                 $this->discord->on('message', function ($message): void
                 {
                     $message_filtered = $this->filterMessage($message);
-                    foreach ($this->server_funcs_called as $command => $func) if (str_starts_with($message_filtered['message_content_lower'], $command)) $func($message, $message_filtered); // Server functions
                     if (! $this->messageHandler->handle($message)) { // This section will be deprecated in the future
                         if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
                         else $this->logger->debug('No message variable functions found!');
