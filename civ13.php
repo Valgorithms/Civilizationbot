@@ -14,6 +14,7 @@ use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
 use Discord\Parts\Channel\Channel;
+use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Guild\Role;
@@ -139,7 +140,6 @@ class Civ13
     public array $ports = [];
     public array $channel_ids = [];
     public array $role_ids = [];
-    public array $permissions = []; // NYI, used to store rank_check array for each command
     
     public array $discord_config = []; // This variable and its related function currently serve no purpose, but I'm keeping it in case I need it later
     public array $tests = []; // Staff application test templates
@@ -223,22 +223,18 @@ class Civ13
     // Generate a list of functions derived by the keys found in server_settings
     // The key is the name of the command, and the value is the function to call
     protected function generateServerFunctions() {
-        $rank_check = function($message, array $allowed_ranks = [], bool $verbose = true): bool
-        {
-            $resolved_ranks = [];
-            foreach ($allowed_ranks as $rank) $resolved_ranks[] = $this->role_ids[$rank];
-            foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
-            if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $this->role_ids[array_pop($allowed_ranks)] . '> rank.');
-            return false;
-        };
-
+        
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
 
-            $serverconfigexists = function ($message) use ($key): Promise
+            $serverconfigexists = function (?Message $message = null) use ($key): Promise|bool
             {
-                if (isset($this->server_settings[$key])) return $message->react("👍");
-                return $message->react("👎");
+                if (isset($this->server_settings[$key])) {
+                    if ($message) return $message->react("👍");
+                    return true;
+                }
+                if ($message) return $message->react("👎");
+                return false;
             };
             $this->logger->info("Generating {$server}configexists command.");
             $this->messageHandler->offsetSet($server.'configexists', $serverconfigexists);
@@ -246,7 +242,7 @@ class Civ13
             foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
                 else {
-                    $serverhost = function() use ($server): void
+                    $serverhost = function(?Message $message = null) use ($server): void
                     {
                         \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
                         \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
@@ -254,6 +250,7 @@ class Civ13
                         $this->discord->getLoop()->addTimer(30, function() use ($server) {
                             \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$this->ports[$server]} -trusted -webclient -logself &");
                         });
+                        if ($message) $message->react("👍");
                     };
                     $this->messageHandler->offsetSet($server.'host', $serverhost);
                 }
@@ -261,18 +258,20 @@ class Civ13
             foreach (['_killciv13'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
                 else {
-                    $serverkill = function() use ($server): void
+                    $serverkill = function(?Message $message = null) use ($server): void
                     {
                         \execInBackground("python3 {$this->files[$server.'_killciv13']}");
+                        if ($message) $message->react("👍");
                     };
                     $this->messageHandler->offsetSet($server.'kill', $serverkill);
                 }
             }
             if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
-                $serverrestart = function() use ($server): void
+                $serverrestart = function(?Message $message = null) use ($server): void
                 {
-                    $this->messageHandler->offsetGet($server.'kill')();
-                    $this->messageHandler->offsetGet($server.'host')();
+                    if ($kill = array_shift($this->messageHandler->offsetGet($server.'kill'))) $kill();
+                    if ($host = array_shift($this->messageHandler->offsetGet($server.'host'))) $host();
+                    if ($message) $message->react("👍");
                 };
                 $this->messageHandler->offsetSet($server.'restart', $serverrestart);
             }
@@ -281,12 +280,13 @@ class Civ13
             foreach (['_mapswap'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
                 else {
-                    $servermapswap = function($message, array $message_filtered) use ($server, $rank_check): Promise
+                    $servermapswap = function(?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server): Promise|bool
                     {
-                        $mapswap = function(string $mapto) use ($server): bool
+                        $mapswap = function(string $mapto, ?Message $message = null, ) use ($server): Promise|bool
                         {
                             if (! file_exists($this->files['map_defines_path']) || ! $file = @fopen($this->files['map_defines_path'], 'r')) {
                                 $this->logger->error("unable to open `{$this->files['map_defines_path']}` for reading.");
+                                if ($message) return $message->reply("`$mapto` was not found in the map definitions.");
                                 return false;
                             }
                         
@@ -299,15 +299,14 @@ class Civ13
                             if (! in_array($mapto, $maps)) return false;
                             
                             \execInBackground("python3 {$this->files[$server.'_mapswap']} $mapto");
+                            if ($message) return $message->reply("Attempting to change `$server` map to `$mapto`");
                             return true;
                         };
-                        if (! $rank_check($message, ['admiral', 'captain'])) return $message->react("❌");
                         $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
                         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $message->reply('You need to include the name of the map.');
-                        if (! $mapswap($mapto)) return $message->reply("`$mapto` was not found in the map definitions.");
-                        return $message->reply("Attempting to change `$server` map to `$mapto`");
+                        return $mapswap($mapto, $message);
                     };
-                    $this->messageHandler->offsetSet($server.'mapswap', $servermapswap);
+                    $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['admiral', 'captain']);
                 }
             }
             
@@ -345,10 +344,9 @@ class Civ13
                 }
             }
 
-            $serverban = function($message, array $message_filtered) use ($server, $key, $rank_check): Promise
+            $serverban = function($message, array $message_filtered) use ($server, $key): Promise
             {
                 if (! $this->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `$server ban` because the required config roles were not found.");
-                if (! $rank_check($message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
                 if (! $message_content = substr($message_filtered['message_content'], strlen($key.'ban'))) return $message->reply('Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
                 $split_message = explode('; ', $message_content); // $split_target[1] is the target
                 if (! $split_message[0]) return $message->reply('Missing ban ckey! Please use the format `ban ckey; duration; reason`');
@@ -362,9 +360,8 @@ class Civ13
             };
             $this->messageHandler->offsetSet($server.'ban', $serverban);
 
-            $serverunban = function($message, array $message_filtered) use ($key, $rank_check): Promise
+            $serverunban = function($message, array $message_filtered) use ($key): Promise
             {
-                if (! $rank_check($message, ['admiral', 'captain', 'knight'])) return $message->react("❌");
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban')))) return $message->reply('Missing unban ckey! Please use the format `{server}unban ckey`');
                 if (is_numeric($ckey)) {
                     if (! $item = $this->getVerifiedItem($ckey)) return $message->reply("No data found for Discord ID `$ckey`.");
@@ -378,7 +375,7 @@ class Civ13
                         $member->removeRole($this->role_ids['banished'], $result);
                 return $message->reply($result);
             };
-            $this->messageHandler->offsetSet($server.'unban',  $serverunban);
+            $this->messageHandler->offsetSet($server.'unban',  $serverunban, ['admiral', 'captain', 'knight']);
         }
     }
 

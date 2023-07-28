@@ -14,28 +14,26 @@ use \Traversable;
 interface HandlerInterface
 {
     public function get(): array;
-    public function set(array $handlers): void;
-    public function pull(int|string $key, ?callable $default = null): ?callable;
-    public function fill(array $handlers): static;
-    public function push(array ...$handlers): static;
-    public function pushHandler(callable $callback): ?static;
+    public function set(array $handlers): static;
+    public function pull(int|string $index, ?callable $default = null): array;
+    public function fill(array $commands, array $handlers): static;
+    public function pushHandler(callable $callback, int|string|null $command = null): static;
     public function count(): int;
-    public function first(): ?callable;
-    public function last(): ?callable;
+    public function first(): array;
+    public function last(): array;
     public function isset(int|string $offset): bool;
-    public function has(array ...$keys): bool;
+    public function has(array ...$indexes): bool;
     public function filter(callable $callback): static;
-    public function find(callable $callback): ?callable;
-    public function clear(): void;
+    public function find(callable $callback): array;
+    public function clear(): static;
     public function map(callable $callback): static;
-    public function merge(object $handler);
+    public function merge(object $handler): static;
     public function toArray(): array;
     public function offsetExists(int|string $offset): bool;
-    public function offsetGet(int|string $key): ?callable;
-    public function offsetSet(int|string $key, callable $callback): void;
-    public function setOffset(int|string $newIndex, callable $callback): bool;
-    public function getOffset(callable $callback): int|string|false;
+    public function offsetGet(int|string $offset): array;
+    public function offsetSet(int|string $offset, callable $callback): static;
     public function getIterator(): Traversable;
+    public function __debugInfo(): array;
 }
 
 namespace Civ13;
@@ -55,39 +53,39 @@ class Handler implements HandlerInterface
     
     public function get(): array
     {
-        return $this->handlers;
+        return [$this->handlers];
     }
     
-    public function set(array $handlers): void
+    public function set(array $handlers): static
     {
         $this->handlers = $handlers;
+        return $this;
     }
 
-    public function pull(int|string $key, ?callable $default = null): ?callable
+    public function pull(int|string $index, ?callable $default = null): array
     {
-        if (isset($this->handlers[$key])) {
-            $default = $this->handlers[$key];
-            unset($this->handlers[$key]);
+        if (isset($this->handlers[$index])) {
+            $default = $this->handlers[$index];
+            unset($this->handlers[$index]);
         }
 
-        return $default;
+        return [$default];
     }
 
-    public function fill(array $handlers): static
+    public function fill(array $commands, array $handlers): static
     {
+        if (count($commands) !== count($handlers)) {
+            throw new \Exception('Commands and Handlers must be the same length.');
+            return $this;
+        }
         foreach ($handlers as $handler) $this->pushHandler($handler);
         return $this;
     }
 
-    public function push(array ...$handlers): static
+    public function pushHandler(callable $callback, int|string|null $command = null): static
     {
-        foreach ($handlers as $handler) $this->pushHandler($handler);
-        return $this;
-    }
-
-    public function pushHandler(callable $callback): ?static
-    {
-        $this->handlers[] = $callback;
+        if ($command) $this->handlers[$command] = $callback;
+        else $this->handlers[] = $callback;
         return $this;
     }
 
@@ -96,19 +94,14 @@ class Handler implements HandlerInterface
         return count($this->handlers);
     }
 
-    public function first(): ?callable
+    public function first(): array
     {
-        foreach ($this->handlers as $handler) return $handler;
-        return null;
+        return [array_shift(array_shift($this->toArray()) ?? [])];
     }
     
-    public function last(): ?callable
+    public function last(): array
     {
-        if ($last = end($this->handlers) !== false) {
-            reset($this->handlers);
-            return $last;
-        }
-        return null;
+        return [array_pop(array_shift($this->toArray()) ?? [])];
     }
 
     public function isset(int|string $offset): bool
@@ -116,35 +109,35 @@ class Handler implements HandlerInterface
         return $this->offsetExists($offset);
     }
     
-    public function has(array ...$keys): bool
+    public function has(array ...$indexes): bool
     {
-        foreach ($keys as $key)
-            if (! isset($this->handlers[$key]))
+        foreach ($indexes as $index)
+            if (! isset($this->handlers[$index]))
                 return false;
-
         return true;
     }
     
     public function filter(callable $callback): static
     {
         $static = new static([]);
-        foreach ($this->handlers as $handler)
+        foreach ($this->handlers as $command => $handler)
             if ($callback($handler))
-                $static->push($handler);
+                $static->pushHandler($handler, $command);
         return $static;
     }
     
-    public function find(callable $callback): ?callable
+    public function find(callable $callback): array
     {
         foreach ($this->handlers as $handler)
             if ($callback($handler))
-                return $handler;
-        return null;
+                return [$handler];
+        return [];
     }
 
-    public function clear(): void
+    public function clear(): static
     {
         $this->handlers = [];
+        return $this;
     }
 
     public function map(callable $callback): static
@@ -161,13 +154,14 @@ class Handler implements HandlerInterface
             throw new \Exception('Handler::merge() expects parameter 1 to be an object with a method named "toArray", ' . gettype($handler) . ' given');
             return $this;
         }
-        $this->handlers = array_merge($this->handlers, $handler->toArray());
+        $toArray = $handler->toArray();
+        $this->handlers = array_merge($this->handlers, array_shift($toArray));
         return $this;
     }
     
     public function toArray(): array
     {
-        return $this->handlers;
+        return [$this->handlers];
     }
     
     public function offsetExists(int|string $offset): bool
@@ -175,24 +169,23 @@ class Handler implements HandlerInterface
         return isset($this->handlers[$offset]);
     }
 
-    public function offsetGet(int|string $key): ?callable
+    public function offsetGet(int|string $offset): array
     {
-        if (isset($this->handlers[$key])) return $this->handlers[$key];
-        return null;
+        return [$this->handlers[$offset] ?? null];
     }
     
-    public function offsetSet(int|string $key, callable $callback): void
+    public function offsetSet(int|string $offset, callable $callback): static
     {
-        $this->handlers[$key] = $callback;
+        $this->handlers[$offset] = $callback;
+        return $this;
     }
 
-    public function setOffset(int|string $newIndex, callable $callback): bool
+    public function setOffset(int|string $newOffset, callable $callback): static
     {
-        
-        if ($index = $this->getOffset($callback) === false) return false;
-        unset($this->handlers[$index]);
-        $this->handlers[$newIndex] = $callback;
-        return true;
+        if ($offset = $this->getOffset($callback) === false) $offset = $newOffset;
+        unset($this->handlers[$offset]);
+        $this->handlers[$newOffset] = $callback;
+        return $this;
     }
     
     public function getOffset(callable $callback): int|string|false
