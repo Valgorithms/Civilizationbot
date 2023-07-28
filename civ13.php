@@ -35,6 +35,7 @@ use React\Filesystem\Factory as FilesystemFactory;
 
 class Civ13
 {
+    public MessageHandler $messageHandler;
 
     public Slash $slash;
     public $vzg_ip = '';
@@ -216,7 +217,7 @@ class Civ13
 
         if (isset($options['server_settings']) && is_array($options['server_settings'])) $this->server_settings = $options['server_settings'];
         else $this->logger->warning('No server_settings passed in options!');
-        $this->generateServerFunctions();
+        
         $this->afterConstruct($options, $server_options);
     }
     
@@ -234,6 +235,14 @@ class Civ13
 
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
+
+            $serverconfigexists = function ($message) use ($key): Promise
+            {
+                if (isset($this->server_settings[$key])) return $message->react("👍");
+                return $message->react("👎");
+            };
+            $this->logger->info("Generating {$server}configexists command.");
+            $this->messageHandler->offsetSet($server.'configexists', $serverconfigexists);
 
             foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
@@ -393,6 +402,9 @@ class Civ13
     */
     protected function afterConstruct(array $options = [], array $server_options = [])
     {
+        $this->messageHandler = new MessageHandler($this);
+        $this->generateServerFunctions();
+        
         $this->vzg_ip = gethostbyname('www.valzargaming.com');
         $this->civ13_ip = gethostbyname('www.civ13.com');
         $this->external_ip = file_get_contents('http://ipecho.net/plain');
@@ -491,8 +503,10 @@ class Civ13
                 {
                     $message_filtered = $this->filterMessage($message);
                     foreach ($this->server_funcs_called as $command => $func) if (str_starts_with($message_filtered['message_content_lower'], $command)) $func($message, $message_filtered); // Server functions
-                    if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
-                    else $this->logger->debug('No message functions found!');
+                    if (! $this->messageHandler->handle($message)) { // This section will be deprecated in the future
+                        if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
+                        else $this->logger->debug('No message variable functions found!');
+                    }
                 });
                 $this->discord->on('GUILD_MEMBER_ADD', function ($guildmember): void
                 {
