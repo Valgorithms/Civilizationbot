@@ -700,7 +700,7 @@ $on_message = function(Civ13 $civ13, $message) use ($guild_message)
     $message_content_lower = $message_array['message_content_lower'];
     
     // if (str_starts_with($message_content_lower, 'ping')) return $message->reply('Pong!');
-    $this->messageHandler->offsetSet('ping', function($message) {
+    $civ13->messageHandler->offsetSet('ping', function($message) {
         return $message->reply('Pong!');
     });
     if (str_starts_with($message_content_lower, 'help')) return $message->reply(
