@@ -6,9 +6,8 @@
  * Copyright (c) 2023-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
- namespace Civ13\Interfaces;
+namespace Civ13\Interfaces;
 
-use Civ13\Handler;
 use \ArrayIterator;
 use \Traversable;
 
