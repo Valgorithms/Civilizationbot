@@ -1586,8 +1586,9 @@ class Civ13
     * This function is used to get a Member object from a ckey or Discord ID
     * It will return false if the user is not verified, if the user is not in the Civ13 Discord server, or if the bot is not in the Civ13 Discord server
     */
-    public function getVerifiedMember(Member|User|array|string $input): Member|false
+    public function getVerifiedMember(Member|User|array|string|null $input): Member|false
     {
+        if (! $input) return false;
         // Get the guild (required to get the member)
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
         // Get Discord ID
