@@ -492,10 +492,11 @@ class Civ13
 
         $this->messageHandler->offsetSet('bancheck', function(Message $message, array $message_filtered, string $command) {
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
-            if (is_numeric($ckey))
-                if (! $item = $this->verified->get('discord', $ckey))
-                    return $message->reply("No ckey found for Discord ID `$ckey`.");
-            $ckey = $item['ss13'];
+            if (is_numeric($ckey)) {
+                if (! $item = $this->verified->get('discord', $ckey)) return $message->reply("No ckey found for Discord ID `$ckey`.");
+                $ckey = ['ss13'];
+            }
+            
             $reason = 'unknown';
             $found = false;
             $response = '';
