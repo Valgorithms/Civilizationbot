@@ -834,7 +834,7 @@ class Civ13
                     $picked[] = $rand;
                     $questions[] = $this->tests[$test_key][$rand];
                 }
-                return $message->reply("$test_key test:" . PHP_EOL . implode(PHP_EOL, $questions));
+                return $message->reply(implode(PHP_EOL, $questions));
             }
             return $message->reply('Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
         }, ['admiral', 'captain']);
