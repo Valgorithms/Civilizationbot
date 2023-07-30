@@ -85,14 +85,14 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         return $this;
     }
     
-    public function pushPermission(array $required_permissions, int|string|null $command = null): ?static
+    public function pushPermission(array $required_permissions, int|string|null $command = null): ?self
     {
         if ($command) $this->required_permissions[$command] = $required_permissions;
         else $this->required_permissions[] = $required_permissions;
         return $this;
     }
 
-    public function pushMethod(string $method, int|string|null $command = null): ?static
+    public function pushMethod(string $method, int|string|null $command = null): ?self
     {
         if ($command) $this->methods[$command] = $method;
         else $this->methods[] = $method;
@@ -119,7 +119,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         return $return;
     }
 
-    public function filter(callable $callback): self
+    public function filter(callable $callback): static
     {
         $static = new static($this->civ13, []);
         foreach ($this->handlers as $command => $handler)
@@ -145,7 +145,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     }
     
     // TODO: Review this method
-    public function map(callable $callback): self
+    public function map(callable $callback): static
     {
         $arr = array_combine(array_keys($this->handlers), array_map($callback, array_values($this->toArray())));
         return new static($this->civ13, array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? []);
@@ -211,6 +211,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     
     public function handle(Message $message): ?Promise
     {
+        // if (! $message->member) return $message->reply('Unable to get Discord Member class. Commands are only available in guilds.');
         $message_filtered = $this->civ13->filterMessage($message);
         foreach ($this->handlers as $command => $callback) {
             switch ($this->methods[$command]) {

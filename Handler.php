@@ -117,7 +117,7 @@ class Handler implements HandlerInterface
         return true;
     }
     
-    public function filter(callable $callback): self
+    public function filter(callable $callback): static
     {
         $static = new static([]);
         foreach ($this->handlers as $command => $handler)
@@ -140,7 +140,7 @@ class Handler implements HandlerInterface
         return $this;
     }
 
-    public function map(callable $callback): self
+    public function map(callable $callback): static
     {
         return new static(array_combine(array_keys($this->handlers), array_map($callback, array_values($this->handlers))));
     }

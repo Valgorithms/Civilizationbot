@@ -792,30 +792,35 @@ class Civ13
             $this->messageHandler->offsetSet('release', $release, ['admiral', 'captain', 'knight']);
         }
 
-        $this->messageHandler->offsetSet('tests', function(Message $message, array $message_filtered): Promise
+        $this->messageHandler->offsetSet('tests', function(Message $message, array $message_filtered, string $command): Promise
         {
-            $tokens = explode(' ', $message_filtered['message_content']);
-            if (! $tokens[0]) {
-                if (empty($this->tests)) return $message->reply("No tests have been created yet! Try creating one with `tests test_key add {Your Test's Question}`");
+            $tokens = explode(' ', trim(substr($message_filtered['message_content'], strlen($command))));
+            var_dump($tokens);
+            if (! isset($tokens[0]) || ! $tokens[0]) {
+                if (empty($this->tests)) return $message->reply("No tests have been created yet! Try creating one with `tests {test_key} add {question}`");
                 return $message->reply('Available tests: `' . implode('`, `', array_keys($this->tests)) . '`');
             }
-            if (! isset($tokens[1]) || (! array_key_exists($test_key = $tokens[0], $this->tests) && $tokens[1] != 'add')) return $message->reply("Test `$test_key` hasn't been created yet! Please add a question first.");
-            if ($tokens[1] == 'list') return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->tests[$test_key], true)));
-            if ($tokens[1] == 'add') {
-                unset ($tokens[1], $tokens[0]);
-                $this->tests[$test_key][] = $question = implode(' ', $tokens);
+            if (! isset($tokens[1]) || ! $tokens[1] || ! $test_key = $tokens[1]) return $message->reply('Invalid format!');
+            if (! isset($this->tests[$test_key])){
+                if (! in_array($tokens[0], ['add', 'list'])) return $message->reply("Test `$test_key` hasn't been created yet! Please add a question first.");
+            }
+            if ($tokens[0] == 'list') return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->tests[$test_key], true)));
+            if ($tokens[0] == 'add') {
+                unset($tokens[1], $tokens[0]);
+                if (! $question = implode(' ', $tokens)) return $message->reply('Invalid format! Please use the format `tests {test_key} add {question}`');
+                $this->tests[$test_key][] = $question;
                 $this->VarSave('tests.json', $this->tests);
                 return $message->reply("Added question to test $test_key: $question");
             }
             if ($tokens[1] == 'remove') {
-                if (! is_numeric($tokens[2])) return $message->reply("Invalid format! Please use the format `tests test_key remove #`");
-                if (! isset($this->tests[$test_key][$tokens[2]])) return $message->reply("Question not found in test $test_key! Please use the format `tests test_key remove #`");
+                if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $message->reply("Invalid format! Please use the format `tests {test_key} remove #`");
+                if (! isset($this->tests[$test_key][$tokens[2]])) return $message->reply("Question not found in test `$test_key`! Please use the format `tests test_key remove #`");
                 unset($this->tests[$test_key][$tokens[2]]);
                 $this->VarSave('tests.json', $this->tests);
                 return $message->reply("Removed question {$tokens[2]}: {$this->tests[$test_key][$tokens[2]]}");
             }
             if ($tokens[1] == 'post') {
-                if (! is_numeric($tokens[2])) return $message->reply("Invalid format! Please use the format `tests test_key post #`");
+                if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $message->reply("Invalid format! Please use the format `tests {test_key} post #`");
                 if (count($this->tests[$test_key])<$tokens[2]) return $message->reply("Can't return more questions than exist in a test!");
                 $questions = [];
                 while (count($questions)<$tokens[2]) if (! in_array($this->tests[$test_key][($rand = array_rand($this->tests[$test_key]))], $questions)) $questions[] = $this->tests[$test_key][$rand];
@@ -826,6 +831,7 @@ class Civ13
                 $this->VarSave('tests.json', $this->tests);
                 return $message->reply("Deleted test `$test_key`");
             }
+            return $message->reply('Invalid format!');
         }, ['admiral', 'captain']);
 
         if (isset($this->functions['misc']['promotable_check']) && $promotable_check = $this->functions['misc']['promotable_check']) {
@@ -1335,8 +1341,9 @@ class Civ13
                 
                 $this->discord->on('message', function ($message): void
                 {
-                    if (! $this->messageHandler->handle($message)) { // This section will be deprecated in the future
-                        if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message); // Variable functions
+                    $message_filtered = $this->filterMessage($message);
+                    if (! $this->messageHandler->handle($message, $message_filtered)) { // This section will be deprecated in the future
+                        if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message, $message_filtered); // Variable functions
                         else $this->logger->debug('No message variable functions found!');
                     }
                 });
