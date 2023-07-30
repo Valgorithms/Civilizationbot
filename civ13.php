@@ -829,7 +829,11 @@ class Civ13
                 if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $message->reply("Invalid format! Please use the format `tests post {test_key} {# of questions}`");
                 if (count($this->tests[$test_key])<$tokens[2]) return $message->reply("Can't return more questions than exist in a test!");
                 $questions = [];
-                while (count($questions)<$tokens[2]) if (! in_array($this->tests[$test_key][($rand = array_rand($this->tests[$test_key]))], $questions)) $questions[] = $this->tests[$test_key][$rand];
+                $picked = [];
+                while (count($questions)<$tokens[2]) if (! in_array($this->tests[$test_key][$rand = array_rand($this->tests[$test_key])], $questions)) if (! in_array($rand, $picked)) {
+                    $picked[] = $rand;
+                    $questions[] = $this->tests[$test_key][$rand];
+                }
                 return $message->reply("$test_key test:" . PHP_EOL . implode(PHP_EOL, $questions));
             }
             return $message->reply('Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
