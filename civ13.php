@@ -815,18 +815,18 @@ class Civ13
                 if (! $question = implode(' ', $tokens)) return $message->reply('Invalid format! Please use the format `tests add {test_key} {question}`');
                 $this->tests[$test_key][] = $question;
                 $this->VarSave('tests.json', $this->tests);
-                return $message->reply("Added question to test $test_key: $question");
+                return $message->reply("Added question to test `$test_key`: `$question`");
             }
             if ($tokens[0] == 'remove') {
                 if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $message->reply("Invalid format! Please use the format `tests remove {test_key} {question #}`");
-                if (! isset($this->tests[$test_key][$tokens[2]])) return $message->reply("Question not found in test `$test_key`! Please use the format `tests test_key remove #`");
+                if (! isset($this->tests[$test_key][$tokens[2]])) return $message->reply("Question not found in test `$test_key`! Please use the format `tests {test_key} remove {question #}`");
                 $question = $this->tests[$test_key][$tokens[2]];
                 unset($this->tests[$test_key][$tokens[2]]);
                 $this->VarSave('tests.json', $this->tests);
-                return $message->reply("Removed question {$tokens[2]}: $question");
+                return $message->reply("Removed question `{$tokens[2]}`: `$question`");
             }
             if ($tokens[0] == 'post') {
-                if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $message->reply("Invalid format! Please use the format `tests post {test_key} #`");
+                if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $message->reply("Invalid format! Please use the format `tests post {test_key} {# of questions}`");
                 if (count($this->tests[$test_key])<$tokens[2]) return $message->reply("Can't return more questions than exist in a test!");
                 $questions = [];
                 while (count($questions)<$tokens[2]) if (! in_array($this->tests[$test_key][($rand = array_rand($this->tests[$test_key]))], $questions)) $questions[] = $this->tests[$test_key][$rand];
