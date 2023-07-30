@@ -494,9 +494,8 @@ class Civ13
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $message->reply('Wrong format. Please try `bancheck [ckey]`.');
             if (is_numeric($ckey)) {
                 if (! $item = $this->verified->get('discord', $ckey)) return $message->reply("No ckey found for Discord ID `$ckey`.");
-                $ckey = ['ss13'];
+                $ckey = $item['ss13'];
             }
-            
             $reason = 'unknown';
             $found = false;
             $response = '';
@@ -508,18 +507,18 @@ class Civ13
                 }
                 while (($fp = fgets($file, 4096)) !== false) {
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
+                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
                         $found = true;
                         $type = $linesplit[0];
                         $reason = $linesplit[3];
                         $admin = $linesplit[4];
                         $date = $linesplit[5];
-                        $response .= "**{$item['ss13']}** has been **$type** banned from **$key** on **$date** for **$reason** by $admin." . PHP_EOL;
+                        $response .= "**$ckey** has been **$type** banned from **$key** on **$date** for **$reason** by $admin." . PHP_EOL;
                     }
                 }
                 fclose($file);
             }
-            if (! $found) $response .= "No bans were found for **{$item['ss13']}**." . PHP_EOL;
+            if (! $found) $response .= "No bans were found for **$ckey**." . PHP_EOL;
             if (isset($this->role_ids['banished']) && $member = $this->getVerifiedMember($ckey))
                 if (! $member->roles->has($this->role_ids['banished']))
                     $member->addRole($this->role_ids['banished']);
