@@ -172,7 +172,7 @@ class Civ13
         }
         if (!file_exists($this->filecache_path)) mkdir($this->filecache_path, 0664, true);
         
-        if (isset($options['command_symbol'])) $this->command_symbol = $options['command_symbol'];
+        if (isset($options['command_symbol']) && $options['command_symbol']) $this->command_symbol = $options['command_symbol'];
         if (isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
         if (isset($options['technician_id'])) $this->technician_id = $options['technician_id'];
         if (isset($options['verify_url'])) $this->verify_url = $options['verify_url'];
@@ -222,8 +222,8 @@ class Civ13
     
     // Generate a list of functions derived by the keys found in server_settings
     // The key is the name of the command, and the value is the function to call
-    protected function generateServerFunctions() {
-        
+    protected function generateServerMessageFunctions()
+    {    
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
 
@@ -380,12 +380,16 @@ class Civ13
         }
     }
 
+    protected function generateMessageFunctions()
+    {
+        //
+    }
+
     public function filterMessage($message): array
     {
         if (! $message->guild || $message->guild->owner_id != $this->owner_id)  return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
-
         $message_content = '';
-        $prefix = $this->command_symbol ?? '@Civilizationbot';
+        $prefix = $this->command_symbol;
         $called = false;
         if (str_starts_with($message->content, $call = $prefix . ' ')) { $message_content = trim(substr($message->content, strlen($call))); $called = true; }
         elseif (str_starts_with($message->content, $call = "<@!{$this->discord->id}>")) { $message_content = trim(substr($message->content, strlen($call))); $called = true; }
@@ -400,7 +404,8 @@ class Civ13
     protected function afterConstruct(array $options = [], array $server_options = [])
     {
         $this->messageHandler = new MessageHandler($this);
-        $this->generateServerFunctions();
+        $this->generateServerMessageFunctions();
+        $this->generateMessageFunctions();
         
         $this->vzg_ip = gethostbyname('www.valzargaming.com');
         $this->civ13_ip = gethostbyname('www.civ13.com');
