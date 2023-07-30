@@ -26,41 +26,41 @@ use React\Promise\Promise;
 class MessageHandler extends Handler implements MessageHandlerInterface
 {
     protected Civ13 $civ13;
-    protected array $permissions;
+    protected array $required_permissions;
     protected array $methods;
 
-    public function __construct(Civ13 &$civ13, array $handlers = [], array $permissions = [], array $methods = [])
+    public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $methods = [])
     {
         $this->civ13 = $civ13;
         parent::__construct($handlers);
-        $this->permissions = $permissions;
+        $this->required_permissions = $required_permissions;
         $this->methods = $methods;
     }
 
     public function get(): array
     {
-        return [$this->handlers, $this->permissions, $this->methods];
+        return [$this->handlers, $this->required_permissions, $this->methods];
     }
 
-    public function set(array $handlers, array $permissions = [], array $methods = []): static
+    public function set(array $handlers, array $required_permissions = [], array $methods = []): self
     {
         parent::set($handlers);
-        $this->permissions = $permissions;
+        $this->required_permissions = $required_permissions;
         $this->methods = $methods;
 
         return $this;
     }
 
-    public function pull(int|string $index, ?callable $defaultCallables = null, array $defaultPermissions = null, array $defaultMethods = null): array
+    public function pull(int|string $index, ?callable $defaultCallables = null, array $defaultrequired_permissions = null, array $defaultMethods = null): array
     {
         $return = [];
         $return[] = parent::pull($index, $defaultCallables);
 
-        if (isset($this->permissions[$index])) {
-            $defaultPermissions = $this->permissions[$index];
-            unset($this->permissions[$index]);
+        if (isset($this->required_permissions[$index])) {
+            $defaultrequired_permissions = $this->required_permissions[$index];
+            unset($this->required_permissions[$index]);
         }
-        $return[] = $defaultPermissions;
+        $return[] = $defaultrequired_permissions;
 
         if (isset($this->methods[$index])) {
             $defaultMethods = $this->methods[$index];
@@ -71,7 +71,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         return $return;
     }
 
-    public function fill(array $commands, array $handlers, array $permissions = [], array $methods = []): static
+    public function fill(array $commands, array $handlers, array $required_permissions = [], array $methods = []): self
     {
         if (count($commands) !== count($handlers)) {
             throw new \Exception('Commands and Handlers must be the same length.');
@@ -79,16 +79,16 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         }
         foreach($commands as $command) {
             parent::pushHandler(array_shift($handlers), $command);
-            $this->pushPermission(array_shift($permissions), $command);
+            $this->pushPermission(array_shift($required_permissions), $command);
             $this->pushMethod($methods, $command);
         }
         return $this;
     }
     
-    public function pushPermission(array $permissions, int|string|null $command = null): ?static
+    public function pushPermission(array $required_permissions, int|string|null $command = null): ?static
     {
-        if ($command) $this->permissions[$command] = $permissions;
-        else $this->permissions[] = $permissions;
+        if ($command) $this->required_permissions[$command] = $required_permissions;
+        else $this->required_permissions[] = $required_permissions;
         return $this;
     }
 
@@ -119,7 +119,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         return $return;
     }
 
-    public function filter(callable $callback): static
+    public function filter(callable $callback): self
     {
         $static = new static($this->civ13, []);
         foreach ($this->handlers as $command => $handler)
@@ -132,20 +132,20 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     {
         foreach ($this->handlers as $index => $handler)
             if ($callback($handler))
-                return [$handler, $this->permissions[$index] ?? [], $this->methods[$index] ?? 'str_starts_with'];
+                return [$handler, $this->required_permissions[$index] ?? [], $this->methods[$index] ?? 'str_starts_with'];
         return [];
     }
 
-    public function clear(): static
+    public function clear(): self
     {
         parent::clear();
-        $this->permissions = [];
+        $this->required_permissions = [];
         $this->methods = [];
         return $this;
     }
     
     // TODO: Review this method
-    public function map(callable $callback): static
+    public function map(callable $callback): self
     {
         $arr = array_combine(array_keys($this->handlers), array_map($callback, array_values($this->toArray())));
         return new static($this->civ13, array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? []);
@@ -154,7 +154,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     /**
      * @throws Exception if toArray property does not exist
      */
-    public function merge(object $handler): static
+    public function merge(object $handler): self
     {
         if (! property_exists($handler, 'toArray')) {
             throw new \Exception('Handler::merge() expects parameter 1 to be an object with a method named "toArray", ' . gettype($handler) . ' given');
@@ -162,7 +162,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         }
         $toArray = $handler->toArray();
         $this->handlers = array_merge($this->handlers, array_shift($toArray));
-        $this->permissions = array_merge($this->permissions, array_shift($toArray));
+        $this->required_permissions = array_merge($this->required_permissions, array_shift($toArray));
         $this->methods = array_merge($this->methods, array_shift($toArray));
         return $this;
     }
@@ -170,7 +170,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     public function toArray(): array
     {
         $toArray = parent::toArray();
-        $toArray[] = $this->permissions;
+        $toArray[] = $this->required_permissions;
         $toArray[] = $this->methods;
         return $toArray;
     }
@@ -178,26 +178,26 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     public function offsetGet(int|string $index): array
     {
         $return = parent::offsetGet($index);
-        $return[] = $this->permissions[$index] ?? null;
+        $return[] = $this->required_permissions[$index] ?? null;
         $return[] = $this->methods[$index] ?? null;
         return $return;
     }
     
-    public function offsetSet(int|string $index, callable $callback, ?array $permissions = [], ?string $method = 'str_starts_with'): static
+    public function offsetSet(int|string $index, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with'): self
     {
         parent::offsetSet($index, $callback);
-        $this->permissions[$index] = $permissions;
+        $this->required_permissions[$index] = $required_permissions;
         $this->methods[$index] = $method;
         return $this;
     }
     
-    public function setOffset(int|string $newOffset, callable $callback, ?array $permissions = [], ?string $method = 'str_starts_with'): static
+    public function setOffset(int|string $newOffset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with'): self
     {
         parent::setOffset($newOffset, $callback);
         if ($offset = $this->getOffset($callback) === false) $offset = $newOffset;
-        unset($this->permissions[$offset]);
+        unset($this->required_permissions[$offset]);
         unset($this->methods[$offset]);
-        $this->permissions[$newOffset] = $permissions;
+        $this->required_permissions[$newOffset] = $required_permissions;
         $this->methods[$newOffset] = $method;
         return $this;
     }
@@ -214,11 +214,19 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         $message_filtered = $this->civ13->filterMessage($message);
         foreach ($this->handlers as $command => $callback) {
             switch ($this->methods[$command]) {
+                case 'exact':
+                $method_func = function () use ($message, $message_filtered, $command, $callback): ?Promise
+                {
+                    if ($message_filtered['message_content_lower'] == $command)
+                        return $callback($message, $message_filtered, $command); // This is where the magic happens
+                    return null;
+                };
+                break;
                 case 'str_contains':
                     $method_func = function () use ($message, $message_filtered, $command, $callback): ?Promise
                     {
                         if (str_contains($message_filtered['message_content_lower'], $command)) 
-                            return $callback($message, $message_filtered); // This is where the magic happens
+                            return $callback($message, $message_filtered, $command); // This is where the magic happens
                         return null;
                     };
                     break;
@@ -227,12 +235,12 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                     $method_func = function () use ($message, $message_filtered, $command, $callback): ?Promise
                     {
                         if (str_starts_with($message_filtered['message_content_lower'], $command)) 
-                            return $callback($message, $message_filtered); // This is where the magic happens
+                            return $callback($message, $message_filtered, $command); // This is where the magic happens
                         return null;
                     };
             }
-            $permissions = $this->permissions['command'] ?? [];
-            if ($rejected = $this->checkRank($message, $permissions)) return $rejected;
+            $required_permissions = $this->required_permissions['command'] ?? [];
+            if ($rejected = $this->checkRank($message, $required_permissions)) return $rejected;
             if ($promise = $method_func()) return $promise;
         }
         if (empty($this->handlers)) $this->civ13->logger->info('No message handlers found!');
