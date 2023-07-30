@@ -795,7 +795,6 @@ class Civ13
         $this->messageHandler->offsetSet('tests', function(Message $message, array $message_filtered, string $command): Promise
         {
             $tokens = explode(' ', trim(substr($message_filtered['message_content'], strlen($command))));
-            var_dump($tokens);
             if (! isset($tokens[0]) || ! $tokens[0]) {
                 if (empty($this->tests)) return $message->reply("No tests have been created yet! Try creating one with `tests add {test_key} {question}`");
                 if (array_keys($this->tests)) $reply = 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`';
