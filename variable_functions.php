@@ -119,7 +119,7 @@ $brmedals = function(Civ13 $civ13, string $ckey): string
 };
 */
 
-$on_message = function(Civ13 $civ13, Message $message, ?array $message_filtered = null)
+$on_message = function(Civ13 $civ13, Message $message, ?array $message_filtered = null): ?Promise // Pending promises v3
 { // on message
     $message_array = $message_filtered ?? $civ13->filterMessage($message);
     if (! $message_array['called']) return null; // Not a command
