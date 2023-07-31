@@ -519,7 +519,7 @@ class Civ13
                 fclose($file);
             }
             if (! $found) $response .= "No bans were found for **$ckey**." . PHP_EOL;
-            if (isset($this->role_ids['banished']) && $member = $this->getVerifiedMember($ckey))
+            elseif (isset($this->role_ids['banished']) && $member = $this->getVerifiedMember($ckey))
                 if (! $member->roles->has($this->role_ids['banished']))
                     $member->addRole($this->role_ids['banished']);
             $embed = new Embed($this->discord);
