@@ -55,7 +55,6 @@ $ranking = function(Civ13 $civ13): false|string
     }
     return $msg;
 };
-
 $rankme = function(Civ13 $civ13, string $ckey): false|string
 {
     $line_array = array();
@@ -75,6 +74,8 @@ $rankme = function(Civ13 $civ13, string $ckey): false|string
     if (! $found) return "No medals found for ckey `$ckey`.";
     return $result;
 };
+
+/*
 $medals = function(Civ13 $civ13, string $ckey): false|string
 {
     $result = '';
@@ -116,50 +117,7 @@ $brmedals = function(Civ13 $civ13, string $ckey): string
     if (! $found) return 'No medals found for this ckey.';
     return $result;
 };
-
-$banlog_update = function(string $banlog, array $playerlogs, ?string $ckey = null): string
-{
-    $temp = [];
-    $oldlist = [];
-    foreach (explode('|||', $banlog) as $bsplit) {
-        $ban = explode(';', trim($bsplit));
-        if (isset($ban[9]))
-            if (!isset($ban[9]) || !isset($ban[10]) || $ban[9] == '0' || $ban[10] == '0') {
-                if (! $ckey) $temp[$ban[8]][] = $bsplit;
-                elseif ($ckey == $ban[8]) $temp[$ban[8]][] = $bsplit;
-            } else $oldlist[] = $bsplit;
-    }
-    foreach ($playerlogs as $playerlog)
-    foreach (explode('|', $playerlog) as $lsplit) {
-        $log = explode(';', trim($lsplit));
-        foreach (array_values($temp) as &$b2) foreach ($b2 as &$arr) {
-            $a = explode(';', $arr);
-            if ($a[8] == $log[0]) {
-                $a[9] = $log[2];
-                $a[10] = $log[1];
-                $arr = implode(';', $a);
-            }
-        }
-    }
-
-    $updated = [];
-    foreach (array_values($temp) as $ban)
-        if (is_array($ban)) foreach (array_values($ban) as $b) $updated[] = $b;
-        else $updated[] = $ban;
-    
-    if (empty($updated)) return preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
-    return trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
-};
-
-$rank_check = function(Civ13 $civ13, Message $message = null, array $allowed_ranks = [], bool $verbose = true): bool
-{
-    $resolved_ranks = [];
-    foreach ($allowed_ranks as $rank) $resolved_ranks[] = $civ13->role_ids[$rank];
-    foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
-    // $message->reply('Rejected! You need to have at least the [' . ($message->guild->roles ? $message->guild->roles->get('id', $civ13->role_ids[array_pop($resolved_ranks)])->name : array_pop($allowed_ranks)) . '] rank.');
-    if ($verbose && $message) $message->reply('Rejected! You need to have at least the <@&' . $civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
-    return false;
-};
+*/
 
 $on_message = function(Civ13 $civ13, Message $message, ?array $message_filtered = null)
 { // on message
@@ -256,12 +214,11 @@ $slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme): void
     foreach (array_keys($this->server_settings) as $key) {
         $server = strtolower($key);
 
-        if (isset($civ13->ips[$server], $civ13->ports[$server]))
-            $civ13->discord->listenCommand($server.'_restart', function ($interaction) use ($civ13, $server, $key): void
-            {
-                $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$civ13->ips[$server]}:{$civ13->ports[$server]}>"));
-                if ($serverrestart = array_shift($this->messageHandler->offsetGet($server.'restart'))) $serverrestart();
-            });
+        if (isset($civ13->ips[$server], $civ13->ports[$server])) $civ13->discord->listenCommand($server.'_restart', function ($interaction) use ($civ13, $server, $key): void
+        {
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$civ13->ips[$server]}:{$civ13->ports[$server]}>"));
+            if ($serverrestart = array_shift($this->messageHandler->offsetGet($server.'restart'))) $serverrestart();
+        });
     }
 
     /* Deprecated

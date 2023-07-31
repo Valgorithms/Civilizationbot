@@ -2437,7 +2437,7 @@ class Civ13
         if ($country == '') $country = 'unknown';
         return $country;
     }
-    public function serverinfoTimer(): void
+    public function serverinfoTimer(): TimerInterface
     {
         $serverinfoTimer = function() {
             $this->serverinfoFetch(); 
@@ -2470,7 +2470,7 @@ class Civ13
             }
         };
         $serverinfoTimer();
-        $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function() use ($serverinfoTimer) { $serverinfoTimer(); }); // Check players every minute
+        return $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function() use ($serverinfoTimer) { $serverinfoTimer(); }); // Check players every minute
     }
     /*
     * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts
