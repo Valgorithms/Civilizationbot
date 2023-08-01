@@ -14,7 +14,6 @@ use React\Promise\PromiseInterface;
 interface MessageHandlerInterface extends HandlerInterface
 {
     public function handle(Message $message): ?PromiseInterface;
-    public function checkRank(Message $message, array $allowed_ranks = []): ?PromiseInterface;
 }
 
 namespace Civ13;
@@ -230,19 +229,10 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                     };
             }
             $required_permissions = $this->required_permissions['command'] ?? [];
-            if ($rejected = $this->checkRank($message, $required_permissions)) return $rejected;
+            if (! $message->member || ! $this->checkRank($message->member, $required_permissions)) return $message->reply('Rejected! You need to have at least the <@&' . $this->civ13->role_ids[array_pop($required_permissions)] . '> rank.');
             if ($PromiseInterface = $method_func()) return $PromiseInterface;
         }
         if (empty($this->handlers)) $this->civ13->logger->info('No message handlers found!');
         return null;
-    }
-
-    public function checkRank(Message $message, array $allowed_ranks = []): ?PromiseInterface
-    {
-        if (empty($allowed_ranks)) return null;
-        $resolved_ranks = [];
-        foreach ($allowed_ranks as $rank) if (isset($this->civ13->role_ids[$rank])) $resolved_ranks[] = $this->civ13->role_ids[$rank];
-        foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return null;
-        return $message->reply('Rejected! You need to have at least the <@&' . $this->civ13->role_ids[array_pop($allowed_ranks)] . '> rank.');
     }
 }

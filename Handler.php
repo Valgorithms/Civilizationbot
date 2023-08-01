@@ -8,6 +8,8 @@
 
 namespace Civ13\Interfaces;
 
+use Discord\Parts\User\Member;
+use React\Promise\PromiseInterface;
 use \ArrayIterator;
 use \Traversable;
 
@@ -34,11 +36,14 @@ interface HandlerInterface
     public function offsetSet(int|string $offset, callable $callback): self;
     public function getIterator(): Traversable;
     public function __debugInfo(): array;
+
+    public function checkRank(Member $member, array $allowed_ranks = []): bool;
 }
 
 namespace Civ13;
 
 use Civ13\Interfaces\HandlerInterface;
+use Discord\Parts\User\Member;
 use \ArrayIterator;
 use \Traversable;
 
@@ -203,5 +208,14 @@ class Handler implements HandlerInterface
     public function __debugInfo(): array
     {
         return ['handlers' => array_keys($this->handlers)];
+    }
+
+    public function checkRank(Member $member, array $allowed_ranks = []): bool
+    {
+        if (empty($allowed_ranks)) return true;
+        $resolved_ranks = [];
+        foreach ($allowed_ranks as $rank) if (isset($this->civ13->role_ids[$rank])) $resolved_ranks[] = $this->civ13->role_ids[$rank];
+        foreach ($member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
+        return false;
     }
 }
