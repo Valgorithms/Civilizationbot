@@ -25,14 +25,12 @@ use React\Promise\PromiseInterface;
 
 class MessageHandler extends Handler implements MessageHandlerInterface
 {
-    protected Civ13 $civ13;
     protected array $required_permissions;
     protected array $methods;
 
     public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $methods = [])
     {
-        $this->civ13 = $civ13;
-        parent::__construct($handlers);
+        parent::__construct($civ13, $handlers);
         $this->required_permissions = $required_permissions;
         $this->methods = $methods;
     }
@@ -117,15 +115,6 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         $return[] = array_pop(array_shift($toArray) ?? []);
         $return[] = array_pop(array_shift($toArray) ?? []);
         return $return;
-    }
-
-    public function filter(callable $callback): static
-    {
-        $static = new static($this->civ13, []);
-        foreach ($this->handlers as $command => $handler)
-            if ($callback($command, $handler))
-                $static->pushHandler($handler, $command);
-        return $static;
     }
 
     public function find(callable $callback): array

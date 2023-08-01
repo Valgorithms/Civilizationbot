@@ -44,10 +44,12 @@ use \Traversable;
 
 class Handler implements HandlerInterface
 {
+    protected Civ13 $civ13;
     protected array $handlers = [];
     
-    public function __construct(array $handlers = [])
+    public function __construct(Civ13 &$civ13, array $handlers = [])
     {
+        $this->civ13 = $civ13;
         $this->handlers = $handlers;
     }
     
@@ -119,7 +121,7 @@ class Handler implements HandlerInterface
     
     public function filter(callable $callback): static
     {
-        $static = new static([]);
+        $static = new static($this->civ13, []);
         foreach ($this->handlers as $command => $handler)
             if ($callback($handler))
                 $static->pushHandler($handler, $command);
@@ -142,7 +144,7 @@ class Handler implements HandlerInterface
 
     public function map(callable $callback): static
     {
-        return new static(array_combine(array_keys($this->handlers), array_map($callback, array_values($this->handlers))));
+        return new static($this->civ13, array_combine(array_keys($this->handlers), array_map($callback, array_values($this->handlers))));
     }
     
     /**
