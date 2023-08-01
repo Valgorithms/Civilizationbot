@@ -9,9 +9,9 @@
 use Civ13\Civ13;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
-use Discord\Parts\Embed\Embed;
+//use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Activity;
-use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 $status_changer_random = function(Civ13 $civ13): bool
 { // on ready
@@ -119,7 +119,7 @@ $brmedals = function(Civ13 $civ13, string $ckey): string
 };
 */
 
-$on_message = function(Civ13 $civ13, Message $message, ?array $message_filtered = null): ?Promise
+$on_message = function(Civ13 $civ13, Message $message, ?array $message_filtered = null): ?PromiseInterface
 { // on message
     $message_array = $message_filtered ?? $civ13->filterMessage($message);
     if (! $message_array['called']) return null; // Not a command

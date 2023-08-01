@@ -9,19 +9,19 @@
 namespace Civ13\Interfaces;
 
 use Discord\Parts\Channel\Message;
-use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 interface MessageHandlerInterface extends HandlerInterface
 {
-    public function handle(Message $message): ?Promise;
-    public function checkRank(Message $message, array $allowed_ranks = []): ?Promise;
+    public function handle(Message $message): ?PromiseInterface;
+    public function checkRank(Message $message, array $allowed_ranks = []): ?PromiseInterface;
 }
 
 namespace Civ13;
 
 use Civ13\Interfaces\messageHandlerInterface;
 use Discord\Parts\Channel\Message;
-use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class MessageHandler extends Handler implements MessageHandlerInterface
 {
@@ -209,14 +209,14 @@ class MessageHandler extends Handler implements MessageHandlerInterface
 
     //Unique to MessageHandler
     
-    public function handle(Message $message): ?Promise
+    public function handle(Message $message): ?PromiseInterface
     {
         // if (! $message->member) return $message->reply('Unable to get Discord Member class. Commands are only available in guilds.');
         $message_filtered = $this->civ13->filterMessage($message);
         foreach ($this->handlers as $command => $callback) {
             switch ($this->methods[$command]) {
                 case 'exact':
-                $method_func = function () use ($message, $message_filtered, $command, $callback): ?Promise
+                $method_func = function () use ($message, $message_filtered, $command, $callback): ?PromiseInterface
                 {
                     if ($message_filtered['message_content_lower'] == $command)
                         return $callback($message, $message_filtered, $command); // This is where the magic happens
@@ -224,7 +224,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                 };
                 break;
                 case 'str_contains':
-                    $method_func = function () use ($message, $message_filtered, $command, $callback): ?Promise
+                    $method_func = function () use ($message, $message_filtered, $command, $callback): ?PromiseInterface
                     {
                         if (str_contains($message_filtered['message_content_lower'], $command)) 
                             return $callback($message, $message_filtered, $command); // This is where the magic happens
@@ -233,7 +233,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                     break;
                 case 'str_starts_with':
                 default:
-                    $method_func = function () use ($message, $message_filtered, $command, $callback): ?Promise
+                    $method_func = function () use ($message, $message_filtered, $command, $callback): ?PromiseInterface
                     {
                         if (str_starts_with($message_filtered['message_content_lower'], $command)) 
                             return $callback($message, $message_filtered, $command); // This is where the magic happens
@@ -242,13 +242,13 @@ class MessageHandler extends Handler implements MessageHandlerInterface
             }
             $required_permissions = $this->required_permissions['command'] ?? [];
             if ($rejected = $this->checkRank($message, $required_permissions)) return $rejected;
-            if ($promise = $method_func()) return $promise;
+            if ($PromiseInterface = $method_func()) return $PromiseInterface;
         }
         if (empty($this->handlers)) $this->civ13->logger->info('No message handlers found!');
         return null;
     }
 
-    public function checkRank(Message $message, array $allowed_ranks = []): ?Promise
+    public function checkRank(Message $message, array $allowed_ranks = []): ?PromiseInterface
     {
         if (empty($allowed_ranks)) return null;
         $resolved_ranks = [];

@@ -2,7 +2,7 @@
 use Civ13\Civ13;
 use Discord\Discord;
 use Discord\Parts\User\Member;
-use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 $civ_listeners = function(Civ13 $civ13): void // Handles Verified and Veteran cache and lists lists
 { // on ready
@@ -14,7 +14,7 @@ $civ_listeners = function(Civ13 $civ13): void // Handles Verified and Veteran ca
     $civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) use ($civ13): void
     {
         $civ13->getVerified();
-        $civ13->timers["add_{$member->id}"] = $civ13->discord->getLoop()->addTimer(8640, function() use ($civ13, $member): ?Promise
+        $civ13->timers["add_{$member->id}"] = $civ13->discord->getLoop()->addTimer(8640, function() use ($civ13, $member): ?PromiseInterface
         { // Kick member if they have not verified
             $civ13->getVerified();
             if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
