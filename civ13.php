@@ -716,7 +716,13 @@ class Civ13
                     if (count($ckeyinfo['ckeys']) > 1)
                         $ckeys = array_unique(array_merge($ckeys, $ckeyinfo['ckeys']));
                 }
-            return $message->reply("The following ckeys are alt accounts of unbanned verified players:" . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $ckeys) . '`');
+            if ($ckeys) {
+                $builder = MessageBuilder::new();
+                $builder->addFileFromContent('alts.txt', '`'.implode('`' . PHP_EOL . '`', $ckeys));
+                $builder->setContent('The following ckeys are alt accounts of unbanned verified players.');
+                return $message->reply($builder);
+            }
+            return $message->reply('No alts found.');
         }, ['admiral', 'captain']);
 
         $this->messageHandler->offsetSet('register', function(Message $message, array $message_filtered, string $command) { // This function is only authorized to be used by the database administrator

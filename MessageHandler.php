@@ -228,14 +228,14 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                         return null;
                     };
             }
-            $required_permissions = $this->required_permissions[$command] ?? [];
             if (! $message->member) return null;
             if ($callback = $method_func()) { // Command triggered
+                $required_permissions = $this->required_permissions[$command] ?? [];
                 if ($lowest_rank = array_pop($required_permissions)) {
                     if (! isset($this->civ13->role_ids[$lowest_rank])) {
                         $this->civ13->logger->warning("Unable to find role ID for rank `$lowest_rank`");
                         throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
-                    } elseif (! $this->checkRank($message->member, $required_permissions)) return $message->reply('Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
+                    } elseif (! $this->checkRank($message->member, $this->required_permissions[$command] ?? [])) return $message->reply('Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
                 }
                 return $callback($message, $message_filtered, $command);
             }
