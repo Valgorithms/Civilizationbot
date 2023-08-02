@@ -9,7 +9,7 @@
 namespace Civ13;
 
 use Discord\Builders\MessageBuilder;
-use Discord\Helpers\RegisteredCommand;
+use React\Promise\PromiseInterface;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\Permissions\RolePermission;
@@ -282,22 +282,22 @@ class Slash
     }
     public function declareListeners(): void
     {
-        $this->civ13->discord->listenCommand('ping', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('ping', function ($interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
         });
 
-        $this->civ13->discord->listenCommand('stats', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('stats', function ($interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()));
         });
         
-        $this->civ13->discord->listenCommand('invite', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('invite', function ($interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->discord->application->getInviteURLAttribute('8')), true);
         });
 
-        $this->civ13->discord->listenCommand('players', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('players', function ($interaction): PromiseInterface
         {
             if (empty($data = $this->civ13->serverinfoParse())) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
             $embed = new Embed($this->civ13->discord);
@@ -316,13 +316,13 @@ class Slash
             return $interaction->respondWithMessage($messagebuilder);
         });
 
-        $this->civ13->discord->listenCommand('ckey', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('ckey', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss13']}`"), true);
         });
 
-        $this->civ13->discord->listenCommand('bancheck', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('bancheck', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $response = '';
@@ -358,19 +358,19 @@ class Slash
             } else return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The ranking is too long to display. Please use the chat command instead."), true);
         });
 
-        $this->civ13->discord->listenCommand('bancheck_ckey', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('bancheck_ckey', function ($interaction): PromiseInterface
         {
             if ($this->civ13->bancheck($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is currently banned on one of the Civ13.com servers."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is not currently banned on one of the Civ13.com servers."), true);
         });
 
-        $this->civ13->discord->listenCommand('ban', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('ban', function ($interaction): PromiseInterface
         {
             $arr = ['ckey' => $interaction->data->options['ckey']->value, 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->banappeal}"];
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban($arr, $this->civ13->getVerifiedItem($interaction->user)['ss13'])));
         });
         
-        $this->civ13->discord->listenCommand('unban', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('unban', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
@@ -378,7 +378,7 @@ class Slash
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('**`' . ($admin ?? $interaction->user->displayname) . "`** unbanned **`{$item['ss13']}`**."));
         });
 
-        $this->civ13->discord->listenCommand('parole', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('parole', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->paroleCkey($ckey = $item['ss13'], $interaction->user->id, true);
@@ -390,7 +390,7 @@ class Slash
             return $interaction->respondWithMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole.", true);
         });
 
-        $this->civ13->discord->listenCommand('release', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('release', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->getVerifiedItem($interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->paroleCkey($ckey = $item['ss13'], $interaction->user->id, false);
@@ -403,7 +403,7 @@ class Slash
         });
 
         /* Deprecated
-        $this->civ13->discord->listenCommand('permitted', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('permitted', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $response = "**`{$item['ss13']}`** is not currently permitted to bypass Byond account restrictions.";
@@ -412,21 +412,21 @@ class Slash
         });
         */
         
-        $this->civ13->discord->listenCommand('permit', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('permit', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->permitCkey($item['ss13']);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** has permitted **`{$item['ss13']}`** to bypass Byond account restrictions."));
         });
 
-        $this->civ13->discord->listenCommand('revoke', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('revoke', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->permitCkey($item['ss13'], false);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** has removed permission from **`{$item['ss13']}`** to bypass Byond account restrictions."));
         });
 
-        $this->civ13->discord->listenCommand('ckeyinfo', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('ckeyinfo', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
@@ -455,7 +455,7 @@ class Slash
             return $interaction->respondWithMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
         });
 
-        $this->civ13->discord->listenCommand('statistics', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('statistics', function ($interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             
@@ -513,12 +513,12 @@ class Slash
             return $interaction->respondWithMessage($messagebuilder, true);
         });
         
-        $this->civ13->discord->listenCommand('panic', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('panic', function ($interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')));
         });
 
-        $this->civ13->discord->listenCommand('join_campaign', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('join_campaign', function ($interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Factions are not ready to be assigned yet'), true);
             //Disabled for now
@@ -533,7 +533,7 @@ class Slash
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('A faction has been assigned'), true);
         });
 
-        $this->civ13->discord->listenCommand('approveme', function ($interaction): RegisteredCommand
+        $this->civ13->discord->listenCommand('approveme', function ($interaction): PromiseInterface
         {
             if ($interaction->member->roles->has($this->civ13->role_ids['infantry']) || $interaction->member->roles->has($this->civ13->role_ids['veteran'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
             if (! $item = $this->civ13->verified->get('discord', $interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->verifyProcess($interaction->data->options['ckey']->value, $interaction->member->id)), true);
