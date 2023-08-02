@@ -222,7 +222,7 @@ class Civ13
     
     // Generate a list of functions derived by the keys found in server_settings
     // The key is the name of the command, and the value is the function to call
-    protected function generateServerMessageFunctions()
+    protected function generateServerMessageFunctions(): void
     {    
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
@@ -380,7 +380,7 @@ class Civ13
         }
     }
 
-    protected function generateMessageFunctions()
+    protected function generateMessageFunctions(): void
     { // TODO: add infantry and veteran roles to all non-staff command paramters except for `approveme`1
         $this->messageHandler->offsetSet('ping', function(Message $message): PromiseInterface
         {
@@ -1244,7 +1244,7 @@ class Civ13
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
-    protected function afterConstruct(array $options = [], array $server_options = [])
+    protected function afterConstruct(array $options = [], array $server_options = []): void
     {
         $this->messageHandler = new MessageHandler($this);
         $this->generateServerMessageFunctions();
@@ -1782,7 +1782,7 @@ class Civ13
      */
     public function checkByondAge(string $age): bool
     {
-        return (strtotime($age) > strtotime($this->minimum_age)) ? false : true;
+        return strtotime($age) <= strtotime($this->minimum_age);
     }
 
     /*
@@ -2190,7 +2190,7 @@ class Civ13
         }
         return $this->players;
     }
-    public function webserverStatusChannelUpdate(bool $status)
+    public function webserverStatusChannelUpdate(bool $status): ?PromiseInterface
     {
         if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return null;
         [$webserver_name, $reported_status] = explode('-', $channel->name);
@@ -2200,8 +2200,9 @@ class Civ13
             if ($status == 'offline') $msg .= " Webserver technician <@{$this->technician_id}> has been notified.";
             $channel->sendMessage($msg);
             $channel->name = "{$webserver_name}-{$status}";
-            $channel->guild->channels->save($channel);
+            return $channel->guild->channels->save($channel);
         }
+        return null;
     }
     public function serverinfoFetch(): array
     {
@@ -2247,7 +2248,7 @@ class Civ13
     *   9 => banned cid
     *   10 => ip
     */
-    public function banArrayToAssoc(array $item)
+    public function banArrayToAssoc(array $item): ?array
     {
         // Invalid item format
         if (count($item) !== 11) return null;
@@ -2296,7 +2297,7 @@ class Civ13
     *   3 => UID?
     *   4 => Date
     */
-    public function playerlogArrayToAssoc(array $item)
+    public function playerlogArrayToAssoc(array $item): ?array
     {
         // Invalid item format
         if (count($item) !== 5) return null;
@@ -2608,7 +2609,7 @@ class Civ13
         // We don't want the persistence server to do this function
         foreach (array_keys($this->server_settings) as $key) {
             $server = strtolower($key);
-            if (! file_exists($this->files[$server.'_bans']) || ! $file = @fopen($this->files[$server.'_bans'], 'r')) return false;
+            if (! isset($this->files[$server.'_bans']) || ! file_exists($this->files[$server.'_bans']) || ! $file = @fopen($this->files[$server.'_bans'], 'r')) return false;
             fclose($file);
         }
 
@@ -2720,7 +2721,7 @@ class Civ13
         return $string;
     }
     // This function is called from the game's chat hook if a player says something that contains a blacklisted word
-    private function __relayViolation(string $server, string $ckey, array $badwords_array)
+    private function __relayViolation(string $server, string $ckey, array $badwords_array): string|bool // TODO: return type needs to be decided
     {
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
         if (! $this->__relayWarningCounter($ckey, $badwords_array)) {
