@@ -706,7 +706,7 @@ class Civ13
             return $message->react("👍");
         }, ['admiral', 'captain']);
 
-        $this->messageHandler->offsetSet('fullbancheck', function(Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('fullaltcheck', function(Message $message): PromiseInterface
         {
             $ckeys = [];
             $members = $message->guild->members->filter(function ($member) { return !$member->roles->has($this->role_ids['banished']); });

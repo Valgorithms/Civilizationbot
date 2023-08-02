@@ -25,50 +25,50 @@ use React\Promise\PromiseInterface;
 class MessageHandler extends Handler implements MessageHandlerInterface
 {
     protected array $required_permissions;
-    protected array $methods;
+    protected array $match_methods;
 
-    public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $methods = [])
+    public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $match_methods = [])
     {
         parent::__construct($civ13, $handlers);
         $this->required_permissions = $required_permissions;
-        $this->methods = $methods;
+        $this->match_methods = $match_methods;
     }
 
     public function get(): array
     {
-        return [$this->handlers, $this->required_permissions, $this->methods];
+        return [$this->handlers, $this->required_permissions, $this->match_methods];
     }
 
-    public function set(array $handlers, array $required_permissions = [], array $methods = []): self
+    public function set(array $handlers, array $required_permissions = [], array $match_methods = []): self
     {
         parent::set($handlers);
         $this->required_permissions = $required_permissions;
-        $this->methods = $methods;
+        $this->match_methods = $match_methods;
 
         return $this;
     }
 
-    public function pull(int|string $index, ?callable $defaultCallables = null, array $defaultrequired_permissions = null, array $defaultMethods = null): array
+    public function pull(int|string $index, ?callable $defaultCallables = null, array $default_required_permissions = null, array $default_match_methods = null): array
     {
         $return = [];
         $return[] = parent::pull($index, $defaultCallables);
 
         if (isset($this->required_permissions[$index])) {
-            $defaultrequired_permissions = $this->required_permissions[$index];
+            $default_required_permissions = $this->required_permissions[$index];
             unset($this->required_permissions[$index]);
         }
-        $return[] = $defaultrequired_permissions;
+        $return[] = $default_required_permissions;
 
-        if (isset($this->methods[$index])) {
-            $defaultMethods = $this->methods[$index];
-            unset($this->methods[$index]);
+        if (isset($this->match_methods[$index])) {
+            $default_match_methods = $this->match_methods[$index];
+            unset($this->match_methods[$index]);
         }
-        $return[] = $defaultMethods;
+        $return[] = $default_match_methods;
 
         return $return;
     }
 
-    public function fill(array $commands, array $handlers, array $required_permissions = [], array $methods = []): self
+    public function fill(array $commands, array $handlers, array $required_permissions = [], array $match_methods = []): self
     {
         if (count($commands) !== count($handlers)) {
             throw new \Exception('Commands and Handlers must be the same length.');
@@ -77,7 +77,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         foreach($commands as $command) {
             parent::pushHandler(array_shift($handlers), $command);
             $this->pushPermission(array_shift($required_permissions), $command);
-            $this->pushMethod($methods, $command);
+            $this->pushMethod($match_methods, $command);
         }
         return $this;
     }
@@ -91,8 +91,8 @@ class MessageHandler extends Handler implements MessageHandlerInterface
 
     public function pushMethod(string $method, int|string|null $command = null): ?self
     {
-        if ($command) $this->methods[$command] = $method;
-        else $this->methods[] = $method;
+        if ($command) $this->match_methods[$command] = $method;
+        else $this->match_methods[] = $method;
         return $this;
     }
 
@@ -120,7 +120,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     {
         foreach ($this->handlers as $index => $handler)
             if ($callback($handler))
-                return [$handler, $this->required_permissions[$index] ?? [], $this->methods[$index] ?? 'str_starts_with'];
+                return [$handler, $this->required_permissions[$index] ?? [], $this->match_methods[$index] ?? 'str_starts_with'];
         return [];
     }
 
@@ -128,7 +128,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     {
         parent::clear();
         $this->required_permissions = [];
-        $this->methods = [];
+        $this->match_methods = [];
         return $this;
     }
     
@@ -151,7 +151,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         $toArray = $handler->toArray();
         $this->handlers = array_merge($this->handlers, array_shift($toArray));
         $this->required_permissions = array_merge($this->required_permissions, array_shift($toArray));
-        $this->methods = array_merge($this->methods, array_shift($toArray));
+        $this->match_methods = array_merge($this->match_methods, array_shift($toArray));
         return $this;
     }
 
@@ -159,7 +159,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     {
         $toArray = parent::toArray();
         $toArray[] = $this->required_permissions;
-        $toArray[] = $this->methods;
+        $toArray[] = $this->match_methods;
         return $toArray;
     }
 
@@ -167,7 +167,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     {
         $return = parent::offsetGet($index);
         $return[] = $this->required_permissions[$index] ?? null;
-        $return[] = $this->methods[$index] ?? null;
+        $return[] = $this->match_methods[$index] ?? null;
         return $return;
     }
     
@@ -175,7 +175,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     {
         parent::offsetSet($index, $callback);
         $this->required_permissions[$index] = $required_permissions;
-        $this->methods[$index] = $method;
+        $this->match_methods[$index] = $method;
         return $this;
     }
     
@@ -184,9 +184,9 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         parent::setOffset($newOffset, $callback);
         if ($offset = $this->getOffset($callback) === false) $offset = $newOffset;
         unset($this->required_permissions[$offset]);
-        unset($this->methods[$offset]);
+        unset($this->match_methods[$offset]);
         $this->required_permissions[$newOffset] = $required_permissions;
-        $this->methods[$newOffset] = $method;
+        $this->match_methods[$newOffset] = $method;
         return $this;
     }
 
@@ -202,35 +202,43 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         // if (! $message->member) return $message->reply('Unable to get Discord Member class. Commands are only available in guilds.');
         $message_filtered = $this->civ13->filterMessage($message);
         foreach ($this->handlers as $command => $callback) {
-            switch ($this->methods[$command]) {
+            switch ($this->match_methods[$command]) {
                 case 'exact':
-                $method_func = function () use ($message, $message_filtered, $command, $callback): ?PromiseInterface
+                $method_func = function () use ($message_filtered, $command, $callback): ?callable
                 {
                     if ($message_filtered['message_content_lower'] == $command)
-                        return $callback($message, $message_filtered, $command); // This is where the magic happens
+                        return $callback; // This is where the magic happens
                     return null;
                 };
                 break;
                 case 'str_contains':
-                    $method_func = function () use ($message, $message_filtered, $command, $callback): ?PromiseInterface
+                    $method_func = function () use ($message_filtered, $command, $callback): ?callable
                     {
                         if (str_contains($message_filtered['message_content_lower'], $command)) 
-                            return $callback($message, $message_filtered, $command); // This is where the magic happens
+                            return $callback; // This is where the magic happens
                         return null;
                     };
                     break;
                 case 'str_starts_with':
                 default:
-                    $method_func = function () use ($message, $message_filtered, $command, $callback): ?PromiseInterface
+                    $method_func = function () use ($message_filtered, $command, $callback): ?callable
                     {
                         if (str_starts_with($message_filtered['message_content_lower'], $command)) 
-                            return $callback($message, $message_filtered, $command); // This is where the magic happens
+                            return $callback; // This is where the magic happens
                         return null;
                     };
             }
-            $required_permissions = $this->required_permissions['command'] ?? [];
-            if (! $message->member || ! $this->checkRank($message->member, $required_permissions)) return $message->reply('Rejected! You need to have at least the <@&' . $this->civ13->role_ids[array_pop($required_permissions)] . '> rank.');
-            if ($PromiseInterface = $method_func()) return $PromiseInterface;
+            $required_permissions = $this->required_permissions[$command] ?? [];
+            if (! $message->member) return null;
+            if ($callback = $method_func()) { // Command triggered
+                if ($lowest_rank = array_pop($required_permissions)) {
+                    if (! isset($this->civ13->role_ids[$lowest_rank])) {
+                        $this->civ13->logger->warning("Unable to find role ID for rank `$lowest_rank`");
+                        throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
+                    } elseif (! $this->checkRank($message->member, $required_permissions)) return $message->reply('Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
+                }
+                return $callback($message, $message_filtered, $command);
+            }
         }
         if (empty($this->handlers)) $this->civ13->logger->info('No message handlers found!');
         return null;
