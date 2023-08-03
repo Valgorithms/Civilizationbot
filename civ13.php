@@ -2850,7 +2850,7 @@ class Civ13
     }
 
     // This function is used to update the whitelist files
-    public function whitelistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_whistlist'): bool
+    public function whitelistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_whitelist'): bool
     {
         $required_roles = ['veteran'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
