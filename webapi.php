@@ -566,7 +566,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) $channel->sendMessage('Restarting...');
             $return = 'restarting';
             $socket->close();
-            $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
+            if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
                 \restart();
                 $civ13->discord->close();
                 die();
@@ -882,7 +882,7 @@ $webapi->on('error', function ($e) use ($civ13, $socket) {
             $channel->sendMessage($builder);
         }
         $socket->close();
-        $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
+        if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
             \restart();
             $civ13->discord->close();
             die();

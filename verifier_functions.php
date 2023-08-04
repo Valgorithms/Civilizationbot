@@ -14,6 +14,10 @@ $civ_listeners = function(Civ13 $civ13): void // Handles Verified and Veteran ca
     $civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) use ($civ13): void
     {
         $civ13->getVerified();
+        if (isset($civ13->timers["add_{$member->id}"])) {
+            $civ13->discord->getLoop()->cancelTimer($civ13->timers["add_{$member->id}"]);
+            unset($civ13->timers["add_{$member->id}"]);
+        }
         $civ13->timers["add_{$member->id}"] = $civ13->discord->getLoop()->addTimer(8640, function() use ($civ13, $member): ?PromiseInterface
         { // Kick member if they have not verified
             $civ13->getVerified();
@@ -125,5 +129,5 @@ $mass_promotion_loop = function(Civ13 $civ13) use ($promotable_check): bool // N
 };
 $mass_promotion_timer = function(Civ13 $civ13) use ($mass_promotion_loop): void // Not implemented
 {
-    $civ13->timers['mass_promotion_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(86400, function () use ($mass_promotion_loop) { $mass_promotion_loop; });
+    if (! isset($civ13->timers['mass_promotion_timer'])) $civ13->timers['mass_promotion_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(86400, function () use ($mass_promotion_loop) { $mass_promotion_loop; });
 };

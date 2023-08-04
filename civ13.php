@@ -247,7 +247,7 @@ class Civ13
                         \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
                         \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
                         \execInBackground("python3 {$this->files[$server.'_killsudos']}");
-                        $this->discord->getLoop()->addTimer(30, function() use ($server) {
+                        if (! isset($this->timers[$server.'host'])) $this->timers[$server.'host'] = $this->discord->getLoop()->addTimer(30, function() use ($server) {
                             \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$this->ports[$server]} -trusted -webclient -logself &");
                         });
                         if ($message) $message->react("👍");
@@ -918,7 +918,7 @@ class Civ13
     
             foreach (array_keys($this->server_settings) as $key) { // TODO: Review this for performance and redundancy
                 $server = strtolower($key);
-                $this->timers['banlog_update_'.$server] = $this->discord->getLoop()->addTimer(30, function() use ($banlog_update, $arr) {
+                if (! isset($this->timers['banlog_update_'.$server])) $this->timers['banlog_update_'.$server] = $this->discord->getLoop()->addTimer(30, function() use ($banlog_update, $arr) {
                     $playerlogs = [];
                     foreach (array_keys($this->server_settings) as $k) {
                         $s = strtolower($k);
@@ -1366,7 +1366,7 @@ class Civ13
 
                 if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
                     $this->logger->info('chat relay timer started');
-                    $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function()
+                    if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function()
                     {
                         if ($this->relay_method !== 'file') return null;
                         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
@@ -1860,7 +1860,7 @@ class Civ13
             }
             
             if ($result['error'] && str_starts_with('The website', $result['error'])) {
-                $this->discord->getLoop()->addTimer(1800, function() use ($provisionalRegistration, $ckey, $discord_id) {
+                if (! isset($this->timers['provisional_registration'])) $this->timers['provisional_registration'] = $this->discord->getLoop()->addTimer(1800, function() use ($provisionalRegistration, $ckey, $discord_id) {
                     $provisionalRegistration($ckey, $discord_id);
                 });
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
@@ -2477,7 +2477,8 @@ class Civ13
             }
         };
         $serverinfoTimer();
-        return $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function() use ($serverinfoTimer) { $serverinfoTimer(); }); // Check players every minute
+        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function() use ($serverinfoTimer) { $serverinfoTimer(); });
+        return $this->timers['serverinfo_timer']; // Check players every minute
     }
     /*
     * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts
@@ -2629,7 +2630,7 @@ class Civ13
                         }
          };
          $unbanTimer();
-         $this->timers['unban_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function() use ($unbanTimer) { $unbanTimer(); });
+         if (! isset($this->timers['unban_timer'])) $this->timers['unban_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function() use ($unbanTimer) { $unbanTimer(); });
          return true;
     }
 

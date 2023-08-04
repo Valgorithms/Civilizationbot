@@ -36,7 +36,7 @@ $status_changer_random = function(Civ13 $civ13): bool
 };
 $status_changer_timer = function(Civ13 $civ13) use ($status_changer_random): void
 { // on ready
-    $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
+    if (! isset($civ13->timers['status_changer_timer'])) $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
 $ranking = function(Civ13 $civ13): false|string
