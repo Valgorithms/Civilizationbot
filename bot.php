@@ -288,6 +288,7 @@ $options = array(
         'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
     ),
     'role_ids' => array(
+        // Discord ranks
         'admiral' => '468980650914086913', // Civ13 Discord Server Owner
         'bishop' => '791450326455681034', // Civ13 Debug Host
         'host' => '677873806513274880', // Civ13 Server Host
@@ -304,15 +305,19 @@ $options = array(
         'banished' => '710328377210306641', // Banned in-game (unused)
         'paroled' => '745336314689355796', // On parole
         'parolemin' => '743971427929030748', // Parolemin
+        
+        // Factions
         'red' => '1132678312301428886', // Redmenia
         'blue' => '1132678353070067802', // Blugoslavia
         'organizer' => '1089060051425165362', // Admin / Faction Organizer
 
+        // Notification pings
         'round_start' => '1110597830403424328', // Round Start Ping
         '2+' => '981963719804346418', // LowPopStart
         '15+' => '981963721817620511', // 15+ Popping
         '30+' => '981963696895062106', // 30+ Popping
 
+        // Server channels
         'tdm' => '753768519203684445',
         'nomads' => '753768513671397427',
         'pers' => '753768492834095235',
@@ -344,7 +349,8 @@ $options = array(
 if (include 'civ_token.php') $options['civ_token'] = $civ_token;
 $civ13 = new Civ13($options);
 $global_error_handler = function(int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13) {
-    if (($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
+    if (
+        ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         && ! str_ends_with($errstr, 'Connection timed out')
         && ! str_ends_with($errstr, 'No route to host')
     )

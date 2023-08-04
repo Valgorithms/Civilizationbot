@@ -125,7 +125,7 @@ $on_message = function(Civ13 $civ13, Message $message, ?array $message_filtered 
     if (! $message_array['called']) return null; // Not a command
     if (! $message_array['message_content']) { // No command given
         $random_responses = ['You can see a full list of commands by using the `help` command.'];
-        if (count($random_responses) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent("<@{$message->author->id}>, " . $random_responses[rand(0, count($random_responses)-1)]));
+        if (count($random_responses) > 0) return $civ13->sendMessage($message->channel, "<@{$message->author->id}>, " . $random_responses[rand(0, count($random_responses)-1)]);
     }
     if (str_starts_with($message_array['message_content_lower'], 'serverstatus')) { // See GitHub Issue #1
         return null; // deprecated
