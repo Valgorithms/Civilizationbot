@@ -346,7 +346,7 @@ class Civ13
                 }
             }
 
-            $serverban = function ($message, array $message_filtered) use ($server, $key): PromiseInterface
+            $serverban = function (Message $message, array $message_filtered) use ($server, $key): PromiseInterface
             {
                 if (! $this->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `$server ban` because the required config roles were not found.");
                 if (! $message_content = substr($message_filtered['message_content'], strlen($key.'ban'))) return $this->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
@@ -363,7 +363,7 @@ class Civ13
             };
             $this->messageHandler->offsetSet($server.'ban', $serverban);
 
-            $serverunban = function ($message, array $message_filtered) use ($key): PromiseInterface
+            $serverunban = function (Message $message, array $message_filtered) use ($key): PromiseInterface
             {
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban')))) return $this->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
                 if (is_numeric($ckey)) {
@@ -711,7 +711,7 @@ class Civ13
         $this->messageHandler->offsetSet('fullaltcheck', function (Message $message): PromiseInterface
         {
             $ckeys = [];
-            $members = $message->guild->members->filter(function ($member) { return !$member->roles->has($this->role_ids['banished']); });
+            $members = $message->guild->members->filter(function (Member $member) { return !$member->roles->has($this->role_ids['banished']); });
             foreach ($members as $member)
                 if ($item = $this->getVerifiedItem($member->id)) {
                     $ckeyinfo = $this->ckeyinfo($item['ss13']);
@@ -1340,7 +1340,7 @@ class Civ13
                 
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
-                $this->discord->application->commands->freshen()->done( function (GlobalCommandRepository $commands): void
+                $this->discord->application->commands->freshen()->done(function (GlobalCommandRepository $commands): void
                 {
                     $this->slash->updateCommands($commands);
                     if (! empty($this->functions['ready_slash'])) foreach (array_values($this->functions['ready_slash']) as $func) $func($this, $commands);
@@ -2319,8 +2319,8 @@ class Civ13
     }
     public function getCkeyLogCollections(string $ckey): ?array
     {
-        if ($playerlog = $this->playerlogsToCollection()->filter( function ($item) use ($ckey) { return $item['ckey'] === $ckey; }))
-            if ($bans = $this->bansToCollection()->filter(function($item) use ($playerlog) { return $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid']); }));
+        if ($playerlog = $this->playerlogsToCollection()->filter(function (array $item) use ($ckey) { return $item['ckey'] === $ckey; }))
+            if ($bans = $this->bansToCollection()->filter(function(array $item) use ($playerlog) { return $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid']); }));
                 return [$playerlog, $bans];
     }
     /*
@@ -2543,7 +2543,7 @@ class Civ13
                 return strpos($key, 'player') === 0 && is_numeric(substr($key, 6));
             });
             if (! empty($players)) {
-                $players = array_map(function ($key) use ($server) {
+                $players = array_map(function (int|string $key) use ($server) {
                     return strtolower($this->sanitizeInput(urldecode($server[$key])));
                 }, $players);
                 $playerCount = count($players);

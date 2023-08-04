@@ -15,12 +15,12 @@ use \Psr\Http\Message\ServerRequestInterface;
 @include getcwd() . '/webapi_token_env.php'; // putenv("WEBAPI_TOKEN='YOUR_TOKEN_HERE'");
 $webhook_key = getenv('WEBAPI_TOKEN') ?? 'CHANGEME'; // The token is used to verify that the sender is legitimate and not a malicious actor
 
-$webapiFail = function ($part, $id) {
+$webapiFail = function (string $part, string $id) {
     // logInfo('[webapi] Failed', ['part' => $part, 'id' => $id]);
     return new Response(($id ? 404 : 400), ['Content-Type' => 'text/plain'], ($id ? 'Invalid' : 'Missing').' '.$part);
 };
 
-$webapiSnow = function ($string) {
+$webapiSnow = function (string $string) {
     return preg_match('/^[0-9]{16,20}$/', $string);
 };
 
@@ -34,7 +34,7 @@ $portknock_ips = []; // ['ip' => ['step' => 0, 'authed' = false]]
 $portknock_servers = [];
 @include getcwd() . '/webapi_portknocks.php'; // putenv("DOORS=['port1', 'port2', 'port1', 'port3', 'port2' 'port1']"); (not a real example)
 if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { // The port knocks are used to prevent malicious port scanners from spamming the webapi
-    $validatePort = function ($value) use ($port) {
+    $validatePort = function (int|string $value) use ($port) {
         return (
             $value > 0 // Port numbers are positive
             && $value < 65536 // Port numbers are between 0 and 65535
@@ -107,7 +107,7 @@ if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { //
                     return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
                 });
                 $w->listen($s);
-                $w->on('error', function ($e) use ($civ13) {
+                $w->on('error', function (Exception $e) use ($civ13) {
                     $civ13->logger->error('KNOCK ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString()));
                 });
                 $portknock_servers[] = $w;
@@ -176,7 +176,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     
     if (! $whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
 
-    $webpage_content = function ($return) use ($civ13, $port, $sub) {
+    $webpage_content = function (string $return) use ($civ13, $port, $sub) {
         return '<meta name="color-scheme" content="light dark"> 
                 <div class="button-container">
                     <button style="width:8%" onclick="sendGetRequest(\'pull\')">Pull</button>
@@ -608,14 +608,14 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             /*
             $idarray = $data ?? array(); // $data contains POST data
             $results = [];
-            $promise = $civ13->discord->users->fetch($idarray[0])->then(function ($user) use (&$results) {
+            $promise = $civ13->discord->users->fetch($idarray[0])->then(function (User $user) use (&$results) {
               $results[$user->id] = $user->avatar;
             });
             
             for ($i = 1; $i < count($idarray); $i++) {
                 $discord = $civ13->discord;
                 $promise->then(function () use (&$results, $idarray, $i, $discord) {
-                return $civ13->discord->users->fetch($idarray[$i])->then(function ($user) use (&$results) {
+                return $civ13->discord->users->fetch($idarray[$i])->then(function (User $user) use (&$results) {
                     $results[$user->id] = $user->avatar;
                 });
               });
@@ -870,7 +870,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     return new Response(200, ['Content-Type' => 'text/json'], json_encode($return ?? ''));
 });
 //$webapi->listen($socket); // Moved to civ13.php
-$webapi->on('error', function ($e) use ($civ13, $socket) {
+$webapi->on('error', function (Exception $e) use ($civ13, $socket) {
     $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error($error);
     if (str_starts_with($e->getMessage(), 'The response callback')) {
