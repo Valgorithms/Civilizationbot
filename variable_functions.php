@@ -10,10 +10,11 @@ use Civ13\Civ13;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
 //use Discord\Parts\Embed\Embed;
+use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\Activity;
 use React\Promise\PromiseInterface;
 
-$status_changer_random = function(Civ13 $civ13): bool
+$status_changer_random = function (Civ13 $civ13): bool
 { // on ready
     if (! $civ13->files['status_path']) {
         unset($civ13->timers['status_changer_timer']);
@@ -34,12 +35,12 @@ $status_changer_random = function(Civ13 $civ13): bool
     $civ13->statusChanger($activity, $state);
     return true;
 };
-$status_changer_timer = function(Civ13 $civ13) use ($status_changer_random): void
+$status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
 { // on ready
-    if (! isset($civ13->timers['status_changer_timer'])) $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function() use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
+    if (! isset($civ13->timers['status_changer_timer'])) $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function () use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-$ranking = function(Civ13 $civ13): false|string
+$ranking = function (Civ13 $civ13): false|string
 {
     $line_array = array();
     if (! isset($civ13->files['ranking_path']) || ! file_exists($civ13->files['ranking_path']) || ! $search = @fopen($civ13->files['ranking_path'], 'r')) return false;
@@ -55,7 +56,7 @@ $ranking = function(Civ13 $civ13): false|string
     }
     return $msg;
 };
-$rankme = function(Civ13 $civ13, string $ckey): false|string
+$rankme = function (Civ13 $civ13, string $ckey): false|string
 {
     $line_array = array();
     if (! file_exists($civ13->files['ranking_path']) || ! $search = @fopen($civ13->files['ranking_path'], 'r')) return false;
@@ -76,7 +77,7 @@ $rankme = function(Civ13 $civ13, string $ckey): false|string
 };
 
 /*
-$medals = function(Civ13 $civ13, string $ckey): false|string
+$medals = function (Civ13 $civ13, string $ckey): false|string
 {
     $result = '';
     if (! file_exists($civ13->files['tdm_awards_path']) || ! $search = @fopen($civ13->files['tdm_awards_path'], 'r')) return false;
@@ -104,7 +105,7 @@ $medals = function(Civ13 $civ13, string $ckey): false|string
     if ($result != '') return $result;
     if (! $found && ($result == '')) return 'No medals found for this ckey.';
 };
-$brmedals = function(Civ13 $civ13, string $ckey): string
+$brmedals = function (Civ13 $civ13, string $ckey): string
 {
     $result = '';
     if (! file_exists($civ13->files['tdm_awards_br_path']) || ! $search = @fopen($civ13->files['tdm_awards_br_path'], 'r')) return 'Error getting file.';
@@ -119,7 +120,7 @@ $brmedals = function(Civ13 $civ13, string $ckey): string
 };
 */
 
-$on_message = function(Civ13 $civ13, Message $message, ?array $message_filtered = null): ?PromiseInterface
+$on_message = function (Civ13 $civ13, Message $message, ?array $message_filtered = null): ?PromiseInterface
 { // on message
     $message_array = $message_filtered ?? $civ13->filterMessage($message);
     if (! $message_array['called']) return null; // Not a command
@@ -185,27 +186,27 @@ $on_message = function(Civ13 $civ13, Message $message, ?array $message_filtered 
     return null;
 };
 
-$slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme): void
+$slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme): void
 { // ready_slash, requires other functions to work
-    $civ13->discord->listenCommand('pull', function ($interaction) use ($civ13): void
+    $civ13->discord->listenCommand('pull', function (Interaction $interaction) use ($civ13): void
     {
         $civ13->logger->info('[GIT PULL]');
         \execInBackground('git pull');
         $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating code from GitHub...'));
     });
     
-    $civ13->discord->listenCommand('update', function ($interaction) use ($civ13): void
+    $civ13->discord->listenCommand('update', function (Interaction $interaction) use ($civ13): void
     {
         $civ13->logger->info('[COMPOSER UPDATE]');
         \execInBackground('composer update');
         $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
     });
     
-    $civ13->discord->listenCommand('ranking', function ($interaction) use ($civ13, $ranking): void
+    $civ13->discord->listenCommand('ranking', function (Interaction $interaction) use ($civ13, $ranking): void
     {
         $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking($civ13)), true);
     });
-    $civ13->discord->listenCommand('rankme', function ($interaction) use ($civ13, $rankme): void
+    $civ13->discord->listenCommand('rankme', function (Interaction $interaction) use ($civ13, $rankme): void
     {
         if (! $item = $civ13->verified->get('discord', $interaction->member->id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
@@ -214,7 +215,7 @@ $slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme): void
     foreach (array_keys($this->server_settings) as $key) {
         $server = strtolower($key);
 
-        if (isset($civ13->ips[$server], $civ13->ports[$server])) $civ13->discord->listenCommand($server.'_restart', function ($interaction) use ($civ13, $server, $key): void
+        if (isset($civ13->ips[$server], $civ13->ports[$server])) $civ13->discord->listenCommand($server.'_restart', function (Interaction $interaction) use ($civ13, $server, $key): void
         {
             $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$civ13->ips[$server]}:{$civ13->ports[$server]}>"));
             if ($serverrestart = array_shift($this->messageHandler->offsetGet($server.'restart'))) $serverrestart();
@@ -222,19 +223,19 @@ $slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme): void
     }
 
     /* Deprecated
-    $civ13->discord->listenCommand('rank', function ($interaction) use ($civ13, $rankme): void
+    $civ13->discord->listenCommand('rank', function (Interaction $interaction) use ($civ13, $rankme): void
     {
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
     });*/
     /* Deprecated
-    $civ13->discord->listenCommand('medals', function ($interaction) use ($civ13, $medals): void
+    $civ13->discord->listenCommand('medals', function (Interaction $interaction) use ($civ13, $medals): void
     {
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($medals($civ13, $item['ss13'])), true);
     });*/
     /* Deprecated
-    $civ13->discord->listenCommand('brmedals', function ($interaction) use ($civ13, $brmedals): void
+    $civ13->discord->listenCommand('brmedals', function (Interaction $interaction) use ($civ13, $brmedals): void
     {
         if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($brmedals($civ13, $item['ss13'])), true);
@@ -252,7 +253,7 @@ $slash_init = function(Civ13 $civ13, $commands) use ($ranking, $rankme): void
     }
     */
 };
-/*$on_ready = function(Civ13 $civ13): void
+/*$on_ready = function (Civ13 $civ13): void
 {    
     // 
 };*/

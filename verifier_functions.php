@@ -1,12 +1,13 @@
 <?php
 use Civ13\Civ13;
 use Discord\Discord;
+use Discord\Parts\Channel\Message;
 use Discord\Parts\User\Member;
 use React\Promise\PromiseInterface;
 
-$civ_listeners = function(Civ13 $civ13): void // Handles Verified and Veteran cache and lists lists
+$civ_listeners = function (Civ13 $civ13): void // Handles Verified and Veteran cache and lists lists
 { // on ready
-    $civ13->discord->on('message', function ($message) use ($civ13): void
+    $civ13->discord->on('message', function (Message $message) use ($civ13): void
     {
         if ($message->channel_id == $civ13->verifier_feed_channel_id) $civ13->getVerified(); // Other bots should webhook to this channel to trigger a refresh
     });
@@ -18,7 +19,7 @@ $civ_listeners = function(Civ13 $civ13): void // Handles Verified and Veteran ca
             $civ13->discord->getLoop()->cancelTimer($civ13->timers["add_{$member->id}"]);
             unset($civ13->timers["add_{$member->id}"]);
         }
-        $civ13->timers["add_{$member->id}"] = $civ13->discord->getLoop()->addTimer(8640, function() use ($civ13, $member): ?PromiseInterface
+        $civ13->timers["add_{$member->id}"] = $civ13->discord->getLoop()->addTimer(8640, function () use ($civ13, $member): ?PromiseInterface
         { // Kick member if they have not verified
             $civ13->getVerified();
             if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
@@ -97,7 +98,7 @@ $civ_listeners = function(Civ13 $civ13): void // Handles Verified and Veteran ca
 // e) They are currently in the Civ13 discord server
 // f) They have not received any infractions in the Civ13 discord. (NYI)
 // g) They have been *recently* active on any of the Civ13.com servers (Determined by admin review)
-$promotable_check = function(Civ13 $civ13, string $identifier): bool
+$promotable_check = function (Civ13 $civ13, string $identifier): bool
 {
     if (! $civ13->verified && ! $civ13->getVerified()) return false; // Unable to get info from DB
     if (! $item = $civ13->getVerifiedMemberItems()->get('ss13', htmlspecialchars($identifier)) ?? $civ13->getVerifiedMemberItems()->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; // a&e, ckey and/or discord id exists in DB and member is in the Discord server
@@ -106,7 +107,7 @@ $promotable_check = function(Civ13 $civ13, string $identifier): bool
     if ($civ13->bancheck($item['ss13'])) return false; // d, must not have active ban
     return true;
 };
-$mass_promotion_check = function(Civ13 $civ13) use ($promotable_check): array|false
+$mass_promotion_check = function (Civ13 $civ13) use ($promotable_check): array|false
 {
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
     if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;
@@ -114,7 +115,7 @@ $mass_promotion_check = function(Civ13 $civ13) use ($promotable_check): array|fa
     foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [(string) $member, $member->displayname, $civ13->verified->get('discord', $member->id)['ss13']];
     return $promotables;
 };
-$mass_promotion_loop = function(Civ13 $civ13) use ($promotable_check): bool // Not implemented
+$mass_promotion_loop = function (Civ13 $civ13) use ($promotable_check): bool // Not implemented
 {
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
     if (! $members = $guild->members->filter(function ($member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;
@@ -127,7 +128,7 @@ $mass_promotion_loop = function(Civ13 $civ13) use ($promotable_check): bool // N
     }
     return true;
 };
-$mass_promotion_timer = function(Civ13 $civ13) use ($mass_promotion_loop): void // Not implemented
+$mass_promotion_timer = function (Civ13 $civ13) use ($mass_promotion_loop): void // Not implemented
 {
     if (! isset($civ13->timers['mass_promotion_timer'])) $civ13->timers['mass_promotion_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(86400, function () use ($mass_promotion_loop) { $mass_promotion_loop; });
 };

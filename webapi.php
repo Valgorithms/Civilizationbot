@@ -34,7 +34,7 @@ $portknock_ips = []; // ['ip' => ['step' => 0, 'authed' = false]]
 $portknock_servers = [];
 @include getcwd() . '/webapi_portknocks.php'; // putenv("DOORS=['port1', 'port2', 'port1', 'port3', 'port2' 'port1']"); (not a real example)
 if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { // The port knocks are used to prevent malicious port scanners from spamming the webapi
-    $validatePort = function($value) use ($port) {
+    $validatePort = function ($value) use ($port) {
         return (
             $value > 0 // Port numbers are positive
             && $value < 65536 // Port numbers are between 0 and 65535
@@ -176,7 +176,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     
     if (! $whitelisted) $civ13->logger->info('API REMOTE_ADDR ' . $request->getServerParams()['REMOTE_ADDR']);
 
-    $webpage_content = function($return) use ($civ13, $port, $sub) {
+    $webpage_content = function ($return) use ($civ13, $port, $sub) {
         return '<meta name="color-scheme" content="light dark"> 
                 <div class="button-container">
                     <button style="width:8%" onclick="sendGetRequest(\'pull\')">Pull</button>
@@ -217,7 +217,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     function sendGetRequest(endpoint) {
                         var xhr = new XMLHttpRequest();
                         xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':" . $port . "/' + endpoint, true);
-                        xhr.onload = function() {
+                        xhr.onload = function () {
                             var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
                             var alertContainer = document.querySelector('.alert-container');
                             var alert = document.createElement('div');
@@ -410,12 +410,12 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         var autoReloadCheckbox = document.getElementById('auto-reload-checkbox');
                         var interval;
 
-                        reloadButton.addEventListener('click', function() {
+                        reloadButton.addEventListener('click', function () {
                             clearInterval(interval);
                             location.reload();
                         });
 
-                        autoReloadCheckbox.addEventListener('change', function() {
+                        autoReloadCheckbox.addEventListener('change', function () {
                             if (this.checked) {
                                 interval = setInterval(function() {
                                     location.reload();

@@ -35,7 +35,7 @@ if (PHP_OS_FAMILY == 'Windows') {
             echo 'closed' . PHP_EOL;
         });
         
-        $process->on('exit', function($exitCode, $termSignal) {
+        $process->on('exit', function ($exitCode, $termSignal) {
             if ($termSignal === null) {
                 echo "Process exited with code $exitCode" . PHP_EOL;
             } else {
