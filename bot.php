@@ -344,7 +344,11 @@ $options = array(
 if (include 'civ_token.php') $options['civ_token'] = $civ_token;
 $civ13 = new Civ13($options);
 $global_error_handler = function(int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13) {
-    if (! str_ends_with($errstr, 'Connection timed out') && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
+    if (($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
+        && ! str_ends_with($errstr, 'Connection timed out')
+        && ! str_ends_with($errstr, 'No route to host')
+    )
+    {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
         if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
         $channel->sendMessage($msg);
