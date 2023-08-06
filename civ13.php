@@ -390,15 +390,16 @@ class Civ13
         });
 
         $this->messageHandler->offsetSet('help', function (Message $message): PromiseInterface
-        {
-            return $this->reply($message, 
-                '**List of Commands**:' . PHP_EOL
-                . '**General:** `approveme`, `ranking`, `rankme`, `medals`, `brmedals`' . PHP_EOL
-                . '**Staff:** `ckeyinfo`, `permitted`, `permit`, `unpermit` or `revoke`, `parole`, `release`, `refresh`, `maplist`, `adminlist`, `factionlist`, `sportsteams`, `logs`, `playerlogs`, `bans`, `ban`, `unban`, `[SERVER]ban`, `[SERVER]unban`, `[SERVER]host`, `[SERVER]restart`, `[SERVER]kill`, `[SERVER]mapswap`' . PHP_EOL
-                . '**High Staff:** `relay`, `fullbancheck`, `fullaltcheck`, `discard`, `tests`, `promotable`, `mass_promotion_loop`, `mass_promotion_check`, `stop`, `update bans`' . PHP_EOL
-                . '**Bishop:** `register`' . PHP_EOL
-                . '**Admiral:** `ts`'
-            );
+        { // TODO: Automate this using messageHandler and either a foreach loop or a built-in function
+            $commands = '**List of Commands**:' . PHP_EOL;
+            $commands .= '**General:** `ping`, `help`, ';
+            if (! $message->member->roles->has($this->role_ids['infantry']) || ! $message->member->roles->has($this->role_ids['veteran'])) $commands .= '`approveme`' . PHP_EOL;
+            else $commands .= '`ranking`, `rankme`, `medals`, `brmedals`' . PHP_EOL;
+            if ($message->member->roles->has($this->role_ids['knight'])) $commands .= '**Staff:** `ckeyinfo`, `permitted`, `permit`, `unpermit` or `revoke`, `parole`, `release`, `refresh`, `maplist`, `adminlist`, `factionlist`, `sportsteams`, `logs`, `playerlogs`, `bans`, `ban`, `unban`, `[SERVER]ban`, `[SERVER]unban`, `[SERVER]host`, `[SERVER]restart`, `[SERVER]kill`, `[SERVER]mapswap`' . PHP_EOL;
+            if ($message->member->roles->has($this->role_ids['captain'])) $commands .= '**High Staff:** `relay`, `fullbancheck`, `fullaltcheck`, `discard`, `tests`, `promotable`, `mass_promotion_loop`, `mass_promotion_check`, `stop`, `update bans`' . PHP_EOL;
+            if ($message->member->roles->has($this->role_ids['bishop'])) $commands .= '**Bishop:** `register`' . PHP_EOL;
+            if ($message->member->roles->has($this->role_ids['admiral'])) $commands .= '**Admiral:** `ts`';
+            return $this->reply($message, $commands);
         });
 
         $this->messageHandler->offsetSet('cpu', function (Message $message): PromiseInterface

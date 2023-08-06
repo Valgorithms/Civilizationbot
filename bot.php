@@ -290,7 +290,7 @@ $options = array(
     'role_ids' => array(
         // Discord ranks
         'admiral' => '468980650914086913', // Civ13 Discord Server Owner
-        'bishop' => '791450326455681034', // Civ13 Debug Host
+        'bishop' => '791450326455681034', // Civ13 Debug Host / Database admin
         'host' => '677873806513274880', // Civ13 Server Host
         'grandmaster' => '487608503553490965', // Grand Master
         'marshall' => '496004389950193667', // Marshall
