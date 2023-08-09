@@ -263,6 +263,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
             if (! isset($array[$rank]) || ! $array[$rank]) continue;
             if (is_numeric($rank)) $string .= '<@&' . $rank . '>: `';
             else $string .= $rank . ': `'; // everyone
+            asort($array[$rank]);
             $string .= implode('`, `', $array[$rank]);
             $string .= '`' . PHP_EOL;
         }
