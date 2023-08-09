@@ -248,22 +248,22 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     // Don't forget to use ->setAllowedMentions(['parse'=>[]]) on the MessageBuilder object to prevent all roles being pinged
     public function generateHelp(?Collection $roles = null): string
     {
+        $ranks = array_keys($this->civ13->role_ids);
+        $ranks[] = 'everyone';
+        
         $array = [];
-        foreach (array_values($this->civ13->role_ids) as $rank) $array[$rank] = []; // Values are numeric snowflake, sorted in order of highest to lowest rank
-        $array['everyone'] = [];
         foreach (array_keys($this->handlers) as $command) {
             $required_permissions = $this->required_permissions[$command] ?? [];
             $lowest_rank = array_pop($required_permissions) ?? 'everyone';
             if (! $roles) $array[$lowest_rank][] = $command;
             elseif ($lowest_rank == 'everyone' || $this->checkRank($roles, $this->required_permissions[$command])) $array[$lowest_rank][] = $command;
-
         }
         $string = '';
-        foreach (array_keys($array) as $id) {
-            if (! $array[$id]) continue;
-            if (is_numeric($id)) $string .= '<@&' . $id . '>: `';
-            else $string .= $id . ': `'; // everyone
-            $string .= implode('`, `', $array[$id]);
+        foreach ($ranks as $rank) {
+            if (! isset($array[$rank]) || ! $array[$rank]) continue;
+            if (is_numeric($rank)) $string .= '<@&' . $rank . '>: `';
+            else $string .= $rank . ': `'; // everyone
+            $string .= implode('`, `', $array[$rank]);
             $string .= '`' . PHP_EOL;
         }
         return $string;
