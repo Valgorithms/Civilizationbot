@@ -284,8 +284,8 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         $string = '';
         foreach ($ranks as $rank) {
             if (! isset($array[$rank]) || ! $array[$rank]) continue;
-            if (is_numeric($rank)) $string .= '<@&' . $rank . '>: `';
-            else $string .= $rank . ': `'; // everyone
+            if (is_numeric($rank)) $string .= '<@&' . $this->civ13->role_ids[$rank] . '>: `';
+            else $string .= '@' . $rank . ': `'; // everyone
             asort($array[$rank]);
             $string .= implode('`, `', $array[$rank]);
             $string .= '`' . PHP_EOL;

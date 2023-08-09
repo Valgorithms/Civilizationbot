@@ -391,7 +391,8 @@ class Civ13
 
         $this->messageHandler->offsetSet('help', function (Message $message): PromiseInterface
         { // TODO: Automate this using messageHandler and either a foreach loop or a built-in function
-            return $this->reply($message, $this->messageHandler->generateHelp($message->member->roles, 'help.txt', true));
+            return $this->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true);
+            
             $commands = '**List of Commands**:' . PHP_EOL;
             $commands .= '**General:** `ping`, `help`, ';
             if (! $message->member->roles->has($this->role_ids['infantry']) || ! $message->member->roles->has($this->role_ids['veteran'])) $commands .= '`approveme`' . PHP_EOL;
