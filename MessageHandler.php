@@ -27,29 +27,31 @@ class MessageHandler extends Handler implements MessageHandlerInterface
 {
     protected array $required_permissions;
     protected array $match_methods;
+    protected array $descriptions;
 
-    public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $match_methods = [])
+    public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $match_methods = [], array $descriptions = [])
     {
         parent::__construct($civ13, $handlers);
         $this->required_permissions = $required_permissions;
         $this->match_methods = $match_methods;
+        $this->descriptions = $descriptions;
     }
 
     public function get(): array
     {
-        return [$this->handlers, $this->required_permissions, $this->match_methods];
+        return [$this->handlers, $this->required_permissions, $this->match_methods, $this->descriptions];
     }
 
-    public function set(array $handlers, array $required_permissions = [], array $match_methods = []): self
+    public function set(array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
     {
         parent::set($handlers);
         $this->required_permissions = $required_permissions;
         $this->match_methods = $match_methods;
-
+        $this->descriptions = $descriptions;
         return $this;
     }
 
-    public function pull(int|string $index, ?callable $defaultCallables = null, array $default_required_permissions = null, array $default_match_methods = null): array
+    public function pull(int|string $index, ?callable $defaultCallables = null, array $default_required_permissions = null, array $default_match_methods = null, array $default_descriptions = null): array
     {
         $return = [];
         $return[] = parent::pull($index, $defaultCallables);
@@ -66,10 +68,16 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         }
         $return[] = $default_match_methods;
 
+        if (isset($this->descriptions[$index])) {
+            $default_descriptions = $this->descriptions[$index];
+            unset($this->descriptions[$index]);
+        }
+        $return[] = $default_descriptions;
+
         return $return;
     }
 
-    public function fill(array $commands, array $handlers, array $required_permissions = [], array $match_methods = []): self
+    public function fill(array $commands, array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
     {
         if (count($commands) !== count($handlers)) {
             throw new \Exception('Commands and Handlers must be the same length.');
@@ -78,7 +86,8 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         foreach($commands as $command) {
             parent::pushHandler(array_shift($handlers), $command);
             $this->pushPermission(array_shift($required_permissions), $command);
-            $this->pushMethod($match_methods, $command);
+            $this->pushMethod(array_shift($match_methods), $command);
+            $this->pushDescription(array_shift($descriptions), $command);
         }
         return $this;
     }
@@ -94,6 +103,13 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     {
         if ($command) $this->match_methods[$command] = $method;
         else $this->match_methods[] = $method;
+        return $this;
+    }
+
+    public function pushDescription(string $description, int|string|null $command = null): ?self
+    {
+        if ($command) $this->descriptions[$command] = $description;
+        else $this->descriptions[] = $description;
         return $this;
     }
 
@@ -121,7 +137,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     {
         foreach ($this->handlers as $index => $handler)
             if ($callback($handler))
-                return [$handler, $this->required_permissions[$index] ?? [], $this->match_methods[$index] ?? 'str_starts_with'];
+                return [$handler, $this->required_permissions[$index] ?? [], $this->match_methods[$index] ?? 'str_starts_with', $this->descriptions[$index] ?? ''];
         return [];
     }
 
@@ -130,6 +146,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         parent::clear();
         $this->required_permissions = [];
         $this->match_methods = [];
+        $this->descriptions = [];
         return $this;
     }
     
@@ -137,7 +154,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     public function map(callable $callback): static
     {
         $arr = array_combine(array_keys($this->handlers), array_map($callback, array_values($this->toArray())));
-        return new static($this->civ13, array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? []);
+        return new static($this->civ13, array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? []);
     }
 
     /**
@@ -150,44 +167,50 @@ class MessageHandler extends Handler implements MessageHandlerInterface
             return $this;
         }
         $toArray = $handler->toArray();
-        $this->handlers = array_merge($this->handlers, array_shift($toArray));
-        $this->required_permissions = array_merge($this->required_permissions, array_shift($toArray));
-        $this->match_methods = array_merge($this->match_methods, array_shift($toArray));
+        $this->handlers = array_merge($this->handlers, array_shift($toArray) ?? []);
+        $this->required_permissions = array_merge($this->required_permissions, array_shift($toArray) ?? []);
+        $this->match_methods = array_merge($this->match_methods, array_shift($toArray) ?? []);
+        $this->descriptions = array_merge($this->descriptions, array_shift($toArray) ?? []);
         return $this;
     }
 
     public function toArray(): array
     {
         $toArray = parent::toArray();
-        $toArray[] = $this->required_permissions;
-        $toArray[] = $this->match_methods;
+        $toArray[] = $this->required_permissions ?? [];
+        $toArray[] = $this->match_methods ?? [];
+        $toArray[] = $this->descriptions ?? [];
         return $toArray;
     }
 
-    public function offsetGet(int|string $index): array
+    public function offsetGet(int|string $offset): array
     {
-        $return = parent::offsetGet($index);
-        $return[] = $this->required_permissions[$index] ?? null;
-        $return[] = $this->match_methods[$index] ?? null;
+        $return = parent::offsetGet($offset);
+        $return[] = $this->required_permissions[$offset] ?? null;
+        $return[] = $this->match_methods[$offset] ?? null;
+        $return[] = $this->descriptions[$offset] ?? null;
         return $return;
     }
     
-    public function offsetSet(int|string $index, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with'): self
+    public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
-        parent::offsetSet($index, $callback);
-        $this->required_permissions[$index] = $required_permissions;
-        $this->match_methods[$index] = $method;
+        parent::offsetSet($offset, $callback);
+        $this->required_permissions[$offset] = $required_permissions;
+        $this->match_methods[$offset] = $method;
+        $this->descriptions[$offset] = $description;
         return $this;
     }
     
-    public function setOffset(int|string $newOffset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with'): self
+    public function setOffset(int|string $newOffset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
         parent::setOffset($newOffset, $callback);
         if ($offset = $this->getOffset($callback) === false) $offset = $newOffset;
         unset($this->required_permissions[$offset]);
         unset($this->match_methods[$offset]);
+        unset($this->descriptions[$offset]);
         $this->required_permissions[$newOffset] = $required_permissions;
         $this->match_methods[$newOffset] = $method;
+        $this->descriptions[$newOffset] = $description;
         return $this;
     }
 
