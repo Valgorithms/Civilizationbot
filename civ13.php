@@ -361,7 +361,7 @@ class Civ13
                         $member->addRole($this->role_ids['banished'], $result);
                 return $this->reply($message, $result);
             };
-            $this->messageHandler->offsetSet($server.'ban', $serverban, ['admiral', 'captain']);
+            $this->messageHandler->offsetSet($server.'ban', $serverban, ['admiral', 'captain', 'knight']);
 
             $serverunban = function (Message $message, array $message_filtered) use ($key): PromiseInterface
             {
