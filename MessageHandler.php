@@ -20,6 +20,7 @@ namespace Civ13;
 
 use Civ13\Interfaces\messageHandlerInterface;
 use Discord\Parts\Channel\Message;
+use Discord\Helpers\Collection;
 use React\Promise\PromiseInterface;
 
 class MessageHandler extends Handler implements MessageHandlerInterface
@@ -235,12 +236,42 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                     if (! isset($this->civ13->role_ids[$lowest_rank])) {
                         $this->civ13->logger->warning("Unable to find role ID for rank `$lowest_rank`");
                         throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
-                    } elseif (! $this->checkRank($message->member, $this->required_permissions[$command] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
+                    } elseif (! $this->checkRank($message->member->roles, $this->required_permissions[$command] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
                 }
                 return $callback($message, $message_filtered, $command);
             }
         }
         if (empty($this->handlers)) $this->civ13->logger->info('No message handlers found!');
         return null;
+    }
+
+    // Don't forget to use ->setAllowedMentions(['parse'=>[]]) on the MessageBuilder object to prevent all roles being pinged
+    public function generateHelp(?Collection $roles = null): string
+    {
+        $array = [];
+        foreach (array_values($this->civ13->role_ids) as $rank) $array[$rank] = []; // Values are numeric snowflake, sorted in order of highest to lowest rank
+        $array['everyone'] = [];
+        foreach (array_keys($this->handlers) as $command) {
+            $required_permissions = $this->required_permissions[$command] ?? [];
+            $lowest_rank = array_pop($required_permissions) ?? 'everyone';
+            if (! $roles) $array[$lowest_rank][] = $command;
+            elseif ($lowest_rank == 'everyone' || $this->checkRank($roles, $this->required_permissions[$command])) $array[$lowest_rank][] = $command;
+
+        }
+        $string = '';
+        foreach (array_keys($array) as $id) {
+            if (! $array[$id]) continue;
+            if (is_numeric($id)) $string .= '<@&' . $id . '>: `';
+            else $string .= $id . ': `'; // everyone
+            $string .= implode('`, `', $array[$id]);
+            $string .= '`' . PHP_EOL;
+        }
+        return $string;
+    }
+
+    // Don't forget to use ->setAllowedMentions(['parse'=>[]]) on the MessageBuilder object to prevent all roles being pinged
+    public function __toString(): string
+    {
+        return $this->generateHelp();
     }
 }

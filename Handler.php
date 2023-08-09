@@ -8,6 +8,7 @@
 
 namespace Civ13\Interfaces;
 
+use Discord\Helpers\Collection;
 use Discord\Parts\User\Member;
 use React\Promise\PromiseInterface;
 use \ArrayIterator;
@@ -37,12 +38,13 @@ interface HandlerInterface
     public function getIterator(): Traversable;
     public function __debugInfo(): array;
 
-    public function checkRank(Member $member, array $allowed_ranks = []): bool;
+    public function checkRank(?Collection $roles = null, array $allowed_ranks = []): bool;
 }
 
 namespace Civ13;
 
 use Civ13\Interfaces\HandlerInterface;
+use Discord\Helpers\Collection;
 use Discord\Parts\User\Member;
 use \ArrayIterator;
 use \Traversable;
@@ -210,12 +212,12 @@ class Handler implements HandlerInterface
         return ['handlers' => array_keys($this->handlers)];
     }
 
-    public function checkRank(Member $member, array $allowed_ranks = []): bool
+    public function checkRank(?Collection $roles = null, array $allowed_ranks = []): bool
     {
         if (empty($allowed_ranks)) return true;
         $resolved_ranks = [];
         foreach ($allowed_ranks as $rank) if (isset($this->civ13->role_ids[$rank])) $resolved_ranks[] = $this->civ13->role_ids[$rank];
-        foreach ($member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
+        foreach ($roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
         return false;
     }
 }

@@ -239,7 +239,7 @@ class Civ13
                 return false;
             };
             $this->logger->info("Generating {$server}configexists command.");
-            $this->messageHandler->offsetSet($server.'configexists', $serverconfigexists);
+            $this->messageHandler->offsetSet($server.'configexists', $serverconfigexists, ['admiral', 'captain']);
 
             foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
@@ -254,7 +254,7 @@ class Civ13
                         });
                         if ($message) $message->react("👍");
                     };
-                    $this->messageHandler->offsetSet($server.'host', $serverhost);
+                    $this->messageHandler->offsetSet($server.'host', $serverhost, ['admiral', 'captain']);
                 }
             }
             foreach (['_killciv13'] as $postfix) {
@@ -265,7 +265,7 @@ class Civ13
                         \execInBackground("python3 {$this->files[$server.'_killciv13']}");
                         if ($message) $message->react("👍");
                     };
-                    $this->messageHandler->offsetSet($server.'kill', $serverkill);
+                    $this->messageHandler->offsetSet($server.'kill', $serverkill, ['admiral', 'captain']);
                 }
             }
             if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
@@ -275,7 +275,7 @@ class Civ13
                     if ($host = array_shift($this->messageHandler->offsetGet($server.'host'))) $host();
                     if ($message) $message->react("👍");
                 };
-                $this->messageHandler->offsetSet($server.'restart', $serverrestart);
+                $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['admiral', 'captain']);
             }
 
 
@@ -361,7 +361,7 @@ class Civ13
                         $member->addRole($this->role_ids['banished'], $result);
                 return $this->reply($message, $result);
             };
-            $this->messageHandler->offsetSet($server.'ban', $serverban);
+            $this->messageHandler->offsetSet($server.'ban', $serverban, ['admiral', 'captain']);
 
             $serverunban = function (Message $message, array $message_filtered) use ($key): PromiseInterface
             {
@@ -391,6 +391,7 @@ class Civ13
 
         $this->messageHandler->offsetSet('help', function (Message $message): PromiseInterface
         { // TODO: Automate this using messageHandler and either a foreach loop or a built-in function
+            return $this->reply($message, $this->messageHandler->generateHelp($message->member->roles, 'help.txt', true));
             $commands = '**List of Commands**:' . PHP_EOL;
             $commands .= '**General:** `ping`, `help`, ';
             if (! $message->member->roles->has($this->role_ids['infantry']) || ! $message->member->roles->has($this->role_ids['veteran'])) $commands .= '`approveme`' . PHP_EOL;
@@ -734,7 +735,7 @@ class Civ13
             if (! $ckey = $this->sanitizeInput($split_message[0])) return $this->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
             if (! is_numeric($discord_id = $this->sanitizeInput($split_message[1]))) return $this->reply($message, "Discord id `$discord_id` must be numeric.");
             return $this->reply($message, $this->registerCkey($ckey, $discord_id)['error']);
-        });
+        }, ['bishop']);
 
         $this->messageHandler->offsetSet('discard', function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
@@ -1230,10 +1231,11 @@ class Civ13
         return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
     }
 
-    public function reply(Message $message, string $content, string $file_name = 'message.txt'): ?PromiseInterface
+    public function reply(Message $message, string $content, string $file_name = 'message.txt', $prevent_mentions = false): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         $builder = MessageBuilder::new();
+        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (strlen($content)<=2000) return $message->reply($builder->setContent($content));
         if (strlen($content)<=4096) {
             $embed = new Embed($this->discord);
