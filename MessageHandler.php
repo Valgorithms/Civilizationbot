@@ -16,12 +16,54 @@ interface MessageHandlerInterface extends HandlerInterface
     public function handle(Message $message): ?PromiseInterface;
 }
 
+interface MessageHandlerCallbackInterface //NYI
+{
+    public function __invoke(Message $message, array $message_filtered, string $command): ?PromiseInterface;
+}
+
 namespace Civ13;
 
-use Civ13\Interfaces\messageHandlerInterface;
+use Civ13\Interfaces\MessageHandlerInterface;
+use Civ13\Interfaces\MessageHandlerCallbackInterface;
 use Discord\Parts\Channel\Message;
 use Discord\Helpers\Collection;
 use React\Promise\PromiseInterface;
+
+class MessageHandlerCallback implements MessageHandlerCallbackInterface
+{  
+    private $callback;
+
+    public function __construct(callable $callback)
+    {
+        $reflection = new \ReflectionFunction($callback);
+        $parameters = $reflection->getParameters();
+
+        $expectedParameterTypes = [Message::class, 'array', 'string'];
+
+        if (count($parameters) !== $count = count($expectedParameterTypes)) {
+            throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
+        }
+
+        foreach ($parameters as $index => $parameter) {
+            if (! $parameter->hasType()) {
+                throw new \InvalidArgumentException("Parameter $index must have a type hint.");
+            }
+
+            $type = $parameter->getType()->getName();
+
+            if ($type !== $expectedParameterTypes[$index]) {
+                throw new \InvalidArgumentException("Parameter $index must be of type {$expectedParameterTypes[$index]}.");
+            }
+        }
+
+        $this->callback = $callback;
+    }
+
+    public function __invoke(Message $message, array $message_filtered = [], string $command = ''): ?PromiseInterface
+    {
+        return call_user_func($this->callback, $message, $message_filtered, $command);
+    }
+}
 
 class MessageHandler extends Handler implements MessageHandlerInterface
 {
@@ -228,7 +270,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         foreach ($this->handlers as $command => $callback) {
             switch ($this->match_methods[$command]) {
                 case 'exact':
-                $method_func = function () use ($message_filtered, $command, $callback): ?callable
+                $method_func = function () use ($callback, $message_filtered, $command): ?callable
                 {
                     if ($message_filtered['message_content_lower'] == $command)
                         return $callback; // This is where the magic happens
@@ -236,7 +278,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                 };
                 break;
                 case 'str_contains':
-                    $method_func = function () use ($message_filtered, $command, $callback): ?callable
+                    $method_func = function () use ($callback, $message_filtered, $command): ?callable
                     {
                         if (str_contains($message_filtered['message_content_lower'], $command)) 
                             return $callback; // This is where the magic happens
@@ -245,7 +287,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                     break;
                 case 'str_starts_with':
                 default:
-                    $method_func = function () use ($message_filtered, $command, $callback): ?callable
+                    $method_func = function () use ($callback, $message_filtered, $command): ?callable
                     {
                         if (str_starts_with($message_filtered['message_content_lower'], $command)) 
                             return $callback; // This is where the magic happens

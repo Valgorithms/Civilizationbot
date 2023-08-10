@@ -384,12 +384,12 @@ class Civ13
 
     protected function generateMessageFunctions(): void
     { // TODO: add infantry and veteran roles to all non-staff command paramters except for `approveme`1
-        $this->messageHandler->offsetSet('ping', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('ping', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             return $this->reply($message, 'Pong!');
-        });
+        }));
 
-        $this->messageHandler->offsetSet('help', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('help', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         { // TODO: Automate this using messageHandler and either a foreach loop or a built-in function
             return $this->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true);
             
@@ -402,9 +402,9 @@ class Civ13
             if ($message->member->roles->has($this->role_ids['bishop'])) $commands .= '**Bishop:** `register`' . PHP_EOL;
             if ($message->member->roles->has($this->role_ids['admiral'])) $commands .= '**Admiral:** `ts`';
             return $this->reply($message, $commands);
-        });
+        }));
 
-        $this->messageHandler->offsetSet('cpu', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('cpu', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (PHP_OS_FAMILY == "Windows") {
                 $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
@@ -423,10 +423,10 @@ class Civ13
                 return $this->reply($message, "CPU Usage: $cpu_load%");
             }
             return $this->reply($message, 'Unrecognized operating system!');
-        });
+        }));
 
         if (isset($this->role_ids['infantry']))
-        $this->messageHandler->offsetSet('approveme', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('approveme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if ($message->member->roles->has($this->role_ids['infantry']) || (isset($this->role_ids['veteran']) && $message->member->roles->has($this->role_ids['veteran']))) return $this->reply($message, 'You already have the verification role!');
             if ($item = $this->getVerifiedItem($message->author->id)) {
@@ -435,7 +435,7 @@ class Civ13
             }
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
             return $this->reply($message, $this->verifyProcess($ckey, $message->author->id));
-        });
+        }));
 
         if (file_exists($this->files['insults_path']))
         $this->messageHandler->offsetSet('insult', function (Message $message, array $message_filtered): PromiseInterface
@@ -495,7 +495,7 @@ class Civ13
         $this->messageHandler->offsetSet('dm', $directmessage);
         $this->messageHandler->offsetSet('pm', $directmessage);
 
-        $this->messageHandler->offsetSet('bancheck', function (Message $message, array $message_filtered, string $command) {
+        $this->messageHandler->offsetSet('bancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
             if (is_numeric($ckey)) {
                 if (! $item = $this->verified->get('discord', $ckey)) return $this->reply($message, "No ckey found for Discord ID `$ckey`.");
@@ -530,26 +530,26 @@ class Civ13
             $embed = new Embed($this->discord);
             $embed->setDescription($response);
             return $message->reply(MessageBuilder::new()->addEmbed($embed));
-        });
+        }));
 
-        $this->messageHandler->offsetSet('discord2ckey', function (Message $message, array $message_filtered, string $command) {
+        $this->messageHandler->offsetSet('discord2ckey', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
             if (! $item = $this->verified->get('discord', $id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "`$id` is not registered to any byond username");
             return $this->reply($message, "`$id` is registered to `{$item['ss13']}`");
-        });
+        }));
 
-        $this->messageHandler->offsetSet('ckey2discord', function (Message $message, array $message_filtered, string $command) {
+        $this->messageHandler->offsetSet('ckey2discord', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
             if (! $item = $this->verified->get('ss13', $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "`$ckey` is not registered to any discord id");
             return $this->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
-        });
+        }));
         
-        $this->messageHandler->offsetSet('ckeyrelayinfo', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('ckeyrelayinfo', new MessageHandlerCallback(function (Message $message, array $message_filtered = [], string $command = 'ckeyrelayinfo'): PromiseInterface
         {
             $this->relay_method === 'file' ? $method = 'webhook' : $method = 'file';
             $this->relay_method = $method;
             return $this->reply($message, "Relay method changed to `$method`.");
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
         
-        $this->messageHandler->offsetSet('ckeyinfo', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('ckeyinfo', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $high_rank_check = function (Message $message, array $allowed_ranks = []): bool
             {
@@ -684,9 +684,9 @@ class Civ13
             if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
             $builder->addEmbed($embed);
             return $message->reply($builder);
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
-        $this->messageHandler->offsetSet('ckey', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('ckey', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
@@ -701,17 +701,17 @@ class Civ13
             if (! $age = $this->getByondAge($ckey)) return $this->reply($message, "`$ckey` does not exist");
             if ($item = $this->getVerifiedItem($ckey)) return $this->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
             return $this->reply($message, "`$ckey` is not registered to any discord id ($age)");
-        });
+        }));
 
-        $this->messageHandler->offsetSet('fullbancheck', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('fullbancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             foreach ($message->guild->members as $member)
                 if ($item = $this->getVerifiedItem($member->id))
                     $this->bancheck($item['ss13']);
             return $message->react("👍");
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
 
-        $this->messageHandler->offsetSet('fullaltcheck', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('fullaltcheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $ckeys = [];
             $members = $message->guild->members->filter(function (Member $member) { return !$member->roles->has($this->role_ids['banished']); });
@@ -728,17 +728,17 @@ class Civ13
                 return $message->reply($builder);
             }
             return $this->reply($message, 'No alts found.');
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
 
-        $this->messageHandler->offsetSet('register', function (Message $message, array $message_filtered, string $command) { // This function is only authorized to be used by the database administrator
+        $this->messageHandler->offsetSet('register', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) { // This function is only authorized to be used by the database administrator
             if ($message->author->id != $this->technician_id) return $message->react("❌");
             $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
             if (! $ckey = $this->sanitizeInput($split_message[0])) return $this->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
             if (! is_numeric($discord_id = $this->sanitizeInput($split_message[1]))) return $this->reply($message, "Discord id `$discord_id` must be numeric.");
             return $this->reply($message, $this->registerCkey($ckey, $discord_id)['error']);
-        }, ['bishop']);
+        }), ['bishop']);
 
-        $this->messageHandler->offsetSet('discard', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('discard', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
             $string = "`$ckey` will no longer attempt to be automatically registered.";
@@ -751,19 +751,19 @@ class Civ13
                 $this->VarSave('provisional.json', $this->provisional);
             }
             return $this->reply($message, $string);
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
-        $this->messageHandler->offsetSet('permitted', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('permitted', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (empty($this->permitted)) return $this->reply($message, 'No users have been permitted to bypass the Byond account restrictions.');
             return $this->reply($message, 'The following ckeys are now permitted to bypass the Byond account limit and restrictions: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', array_keys($this->permitted)) . '`');
-        }, ['admiral', 'captain', 'knight'], 'exact');
+        }), ['admiral', 'captain', 'knight'], 'exact');
 
-        $this->messageHandler->offsetSet('permit', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('permit', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $this->permitCkey($ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
             return $this->reply($message, "$ckey is now permitted to bypass the Byond account restrictions.");
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
         $revoke = function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
@@ -803,7 +803,7 @@ class Civ13
             $this->messageHandler->offsetSet('release', $release, ['admiral', 'captain', 'knight']);
         }
 
-        $this->messageHandler->offsetSet('tests', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('tests', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $tokens = explode(' ', trim(substr($message_filtered['message_content'], strlen($command))));
             if (! isset($tokens[0]) || ! $tokens[0]) {
@@ -848,7 +848,7 @@ class Civ13
                 return $this->reply($message, implode(PHP_EOL, $questions));
             }
             return $this->reply($message, 'Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
 
         if (isset($this->functions['misc']['promotable_check']) && $promotable_check = $this->functions['misc']['promotable_check']) {
             $promotable = function (Message $message, array $message_filtered, string $command) use ($promotable_check): PromiseInterface
@@ -860,24 +860,24 @@ class Civ13
         }
 
         if (isset($this->functions['misc']['mass_promotion_loop']) && $mass_promotion_loop = $this->functions['misc']['mass_promotion_loop'])
-        $this->messageHandler->offsetSet('mass_promotion_loop', function (Message $message) use ($mass_promotion_loop): PromiseInterface
+        $this->messageHandler->offsetSet('mass_promotion_loop', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($mass_promotion_loop): PromiseInterface
         {
             if (! $mass_promotion_loop($this)) return $message->react("👎");
             return $message->react("👍");
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
 
         if (isset($this->functions['misc']['mass_promotion_check']) && $mass_promotion_check = $this->functions['misc']['mass_promotion_check'])
-        $this->messageHandler->offsetSet('mass_promotion_check', function (Message $message) use ($mass_promotion_check): PromiseInterface
+        $this->messageHandler->offsetSet('mass_promotion_check', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($mass_promotion_check): PromiseInterface
         {
             if ($promotables = $mass_promotion_check($this)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
             return $message->react("👎");
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
 
-        $this->messageHandler->offsetSet('refresh', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('refresh', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if ($this->getVerified()) return $message->react("👍");
             return $message->react("👎");
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
         $banlog_update = function (string $banlog, array $playerlogs, ?string $ckey = null): string
         {
@@ -912,7 +912,7 @@ class Civ13
             if (empty($updated)) return preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
             return trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
         };
-        $this->messageHandler->offsetSet('ban', function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
+        $this->messageHandler->offsetSet('ban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
         {
             $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
             $split_message = explode('; ', $message_filtered['message_content']);
@@ -938,25 +938,25 @@ class Civ13
                 });
             }
             return $this->reply($message, $this->ban($arr, $this->getVerifiedItem($message->author->id)['ss13']));
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
         
-        $this->messageHandler->offsetSet('unban', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('unban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (is_numeric($ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
                 if (! $item = $this->getVerifiedItem($ckey)) return $this->reply($message, "No data found for Discord ID `$ckey`.");
                 else $ckey = $item['ckey'];
             $this->unban($ckey, $admin = $this->getVerifiedItem($message->author->id)['ss13']);
             return $this->reply($message, "**$admin** unbanned **$ckey**");
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
         if (isset($this->files['map_defines_path']) && file_exists($this->files['map_defines_path']))
-        $this->messageHandler->offsetSet('maplist', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('maplist', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (! $file_contents = @file_get_contents($this->files['map_defines_path'])) return $message->react("🔥");
             return $message->reply(MessageBuilder::new()->addFileFromContent('maps.txt', $file_contents));
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
-        $this->messageHandler->offsetSet('adminlist', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('adminlist', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {            
             $builder = MessageBuilder::new();
             $found = false;
@@ -971,9 +971,9 @@ class Civ13
             }
             if (! $found) return $message->react("🔥");
             return $message->reply($builder);
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
-        $this->messageHandler->offsetSet('factionlist', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('factionlist', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {            
             $builder = MessageBuilder::new()->setContent('Faction Lists');
             foreach (array_keys($this->server_settings) as $key) {
@@ -982,14 +982,14 @@ class Civ13
                 else $this->logger->warning("`{$server}_factionlist` is not a valid file path!");
             }
             return $message->reply($builder);
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
         if (isset($this->files['tdm_sportsteams']) && file_exists($this->files['tdm_sportsteams']))
-        $this->messageHandler->offsetSet('sportsteams', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('sportsteams', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {            
             if (! $file_contents = @file_get_contents($this->files['tdm_sportsteams'])) return $message->react("🔥");
             return $message->reply(MessageBuilder::new()->addFileFromContent('sports_teams.txt', $file_contents));
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
         $log_handler = function (Message $message, string $message_content): PromiseInterface
         {
@@ -1011,12 +1011,13 @@ class Civ13
             }
             return $this->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`');
         };
-        $this->messageHandler->offsetSet('logs', function (Message $message, array $message_filtered, string $command) use ($log_handler): PromiseInterface
+
+        $this->messageHandler->offsetSet('logs', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($log_handler): PromiseInterface
         {
             return $log_handler($message, trim(substr($message_filtered['message_content'], strlen($command))));
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
-        $this->messageHandler->offsetSet('playerlogs', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('playerlogs', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $tokens = explode(';', trim(substr($message_filtered['message_content'], strlen($command))));
             $keys = [];
@@ -1027,23 +1028,23 @@ class Civ13
                 return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
             }
             return $this->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
-        $this->messageHandler->offsetSet('bans', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('bans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             return $this->banlogHandler($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
-        }, ['admiral', 'captain', 'knight']);
+        }), ['admiral', 'captain', 'knight']);
 
-        $this->messageHandler->offsetSet('stop', function (Message $message)//: PromiseInterface
+        $this->messageHandler->offsetSet('stop', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command)//: PromiseInterface
         {
             $promise = $message->react("🛑");
             $promise->done(function () { $this->stop(); });
             //return $promise; // Pending PromiseInterfaces v3
             return null;
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
 
         if (isset($this->folders['typespess_path'], $this->files['typespess_launch_server_path']))
-        $this->messageHandler->offsetSet('ts', function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->messageHandler->offsetSet('ts', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
             if (! in_array($state, ['on', 'off'])) return $this->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
@@ -1056,7 +1057,7 @@ class Civ13
                 \execInBackground('killall index.js');
                 return $this->reply($message, '**TypeSpess Civ13** test server down.');
             }
-        }, ['admiral']);
+        }), ['admiral']);
 
         if (isset($this->files['ranking_path']) && file_exists($this->files['ranking_path'])) {
             $ranking = function (): false|string
@@ -1075,12 +1076,12 @@ class Civ13
                 }
                 return $msg;
             };
-            $this->messageHandler->offsetSet('ranking', function (Message $message) use ($ranking): PromiseInterface
+            $this->messageHandler->offsetSet('ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($ranking): PromiseInterface
             {
                 if (! $this->recalculateRanking()) return $this->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
                 if (! $msg = $ranking()) return $this->reply($message, 'There was an error trying to recalculate ranking!');
                 return $this->reply($message, $msg, 'ranking.txt');
-            });
+            }));
 
             $rankme = function (string $ckey): false|string
             {
@@ -1101,14 +1102,14 @@ class Civ13
                 if (! $found) return "No medals found for ckey `$ckey`.";
                 return $result;
             };
-            $this->messageHandler->offsetSet('rankme', function (Message $message, array $message_filtered, string $command) use ($rankme): PromiseInterface
+            $this->messageHandler->offsetSet('rankme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($rankme): PromiseInterface
             {
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
                 if (! $this->recalculateRanking()) return $this->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
                 if (! $msg = $rankme($ckey)) return $this->reply($message, 'There was an error trying to get your ranking!');
                 return $this->sendMessage($message->channel, $msg, 'rank.txt');
                 // return $this->reply($message, "Your ranking is too long to display.");
-            });
+            }));
         }
         if (isset($this->files['tdm_awards_path']) && file_exists($this->files['tdm_awards_path'])) {
             $medals = function (string $ckey): false|string
@@ -1139,12 +1140,12 @@ class Civ13
                 if ($result != '') return $result;
                 if (! $found && ($result == '')) return 'No medals found for this ckey.';
             };
-            $this->messageHandler->offsetSet('medals', function (Message $message, array $message_filtered, string $command) use ($medals): PromiseInterface
+            $this->messageHandler->offsetSet('medals', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($medals): PromiseInterface
             {
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `medals [ckey]`.');
                 if (! $msg = $medals($this, $ckey)) return $this->reply($message, 'There was an error trying to get your medals!');
                 return $this->reply($message, $msg, 'medals.txt');
-            });
+            }));
         }
         if (isset($this->files['tdm_awards_br_path']) && file_exists($this->files['tdm_awards_br_path'])) {
             $brmedals = function (string $ckey): string
@@ -1160,16 +1161,16 @@ class Civ13
                 if (! $found) return 'No medals found for this ckey.';
                 return $result;
             };
-            $this->messageHandler->offsetSet('brmedals', function (Message $message, array $message_filtered, string $command) use ($brmedals): PromiseInterface
+            $this->messageHandler->offsetSet('brmedals', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($brmedals): PromiseInterface
             {
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
                 if (! $msg = $brmedals($ckey)) return $this->reply($message, 'There was an error trying to get your medals!');
                 return $this->reply($message, $msg, 'brmedals.txt');
                 // return $this->reply($message, "Too many medals to display.");
-            });
+            }));
         }
 
-        $this->messageHandler->offsetSet('update bans', function (Message $message) use ($banlog_update): PromiseInterface
+        $this->messageHandler->offsetSet('update bans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
         {   
             $server_playerlogs = [];
             foreach (array_keys($this->server_settings) as $key) {
@@ -1197,12 +1198,12 @@ class Civ13
             }
             if ($updated) return $message->react("👍");
             return $message->react("🔥");
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
 
-        $this->messageHandler->offsetSet('panic', function (Message $message): PromiseInterface
+        $this->messageHandler->offsetSet('panic', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             return $this->reply($message, 'Panic bunker is now ' . (($this->panic_bunker = ! $this->panic_bunker) ? 'enabled.' : 'disabled.'));
-        }, ['admiral', 'captain']);
+        }), ['admiral', 'captain']);
     }
 
     public function filterMessage($message): array
