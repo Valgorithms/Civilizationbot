@@ -178,17 +178,17 @@ $options = array(
         'tdm_discord2dm' => '/home/civ13/civ13-tdm/SQL/discord2dm.txt',
         'tdm_discord2ban' => '/home/civ13/civ13-tdm/SQL/discord2ban.txt',
         'tdm_discord2unban' => '/home/civ13/civ13-tdm/SQL/discord2unban.txt',
-        'tdm_discord2ban' => '/home/civ13/civ13-tdm/SQL/discord2ban.txt',
         'tdm_admins' => '/home/civ13/civ13-tdm/SQL/admins.txt',
         'tdm_whitelist' => '/home/civ13/civ13-tdm/SQL/whitelist.txt',
         'tdm_bans' => '/home/civ13/civ13-tdm/SQL/bans.txt',
         'tdm_playerlogs' => '/home/civ13/civ13-tdm/SQL/playerlogs.txt',
-        'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt',
-        'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt',
         // Campaign
         'tdm_factionlist' => '/home/civ13/civ13-tdm/SQL/factionlist.txt',
         // Football
         'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt',
+        // Medals
+        'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt',
+        'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt',
 
         // Persistence
         /*
@@ -200,7 +200,6 @@ $options = array(
         'pers_discord2dm' => '/home/civ13/civ13-pers/SQL/discord2dm.txt',
         'pers_discord2ban' => '/home/civ13/civ13-pers/SQL/discord2ban.txt',
         'pers_discord2unban' => '/home/civ13/civ13-pers/SQL/discord2unban.txt',
-        'pers_discord2ban' => '/home/civ13/civ13-pers/SQL/discord2ban.txt',
         'pers_admins' => '/home/civ13/civ13-pers/SQL/admins.txt',
         'pers_whitelist' => '/home/civ13/civ13-pers/SQL/whitelist.txt',
         'pers_bans' => '/home/civ13/civ13-pers/SQL/bans.txt',

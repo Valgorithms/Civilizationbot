@@ -1170,7 +1170,7 @@ class Civ13
             }));
         }
 
-        $this->messageHandler->offsetSet('update bans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
+        $this->messageHandler->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
         {   
             $server_playerlogs = [];
             foreach (array_keys($this->server_settings) as $key) {
