@@ -912,13 +912,19 @@ class Civ13
             if (empty($updated)) return preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
             return trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
         };
+        
+        $this->messageHandler->offsetSet('listbans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            return $this->banlogHandler($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
+        }), ['admiral', 'captain', 'knight']);
+        
         $this->messageHandler->offsetSet('ban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
         {
             $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
             $split_message = explode('; ', $message_filtered['message_content']);
             if (! $split_message[0] = $this->sanitizeInput($split_message[0])) return $this->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
-            if (! $split_message[1]) return $this->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
-            if (! $split_message[2]) return $this->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
+            if (! isset($split_message[1]) || ! $split_message[1]) return $this->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
+            if (! isset($split_message[2]) || ! $split_message[2]) return $this->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
             $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"];
     
             foreach (array_keys($this->server_settings) as $key) { // TODO: Review this for performance and redundancy
@@ -1028,11 +1034,6 @@ class Civ13
                 return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
             }
             return $this->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
-        }), ['admiral', 'captain', 'knight']);
-
-        $this->messageHandler->offsetSet('bans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            return $this->banlogHandler($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
         }), ['admiral', 'captain', 'knight']);
 
         $this->messageHandler->offsetSet('stop', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command)//: PromiseInterface
