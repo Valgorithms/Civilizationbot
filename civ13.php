@@ -1406,7 +1406,7 @@ class Civ13
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
         }
-        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || ! file_exists($value)) {
+        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || (! file_exists($value) && ! touch($value))) {
             $this->logger->warning("`$value` is not a valid file path!");
             unset($options['files'][$key]);
         }
