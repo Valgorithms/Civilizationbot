@@ -250,13 +250,6 @@ $options = array(
         
     ),
     'channel_ids' => array(
-        /* Persistence */
-        'pers' => '799951945346711552', #persistence
-        'persistence-playercount' => '1090788345082298369', // persistence-#
-        // File read relays
-        // 'pers_ooc_channel' => '1090863947579658320', // #ooc-pers
-        // 'pers_asay_channel' => '', // #asay-pers
-
         /* Nomad */
         'nomads' => '799952084505067581', #nomads
         'nomads-playercount' => '1048777424894185484', // nomads-#
