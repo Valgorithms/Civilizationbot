@@ -99,7 +99,6 @@ $options = array(
     'verifier_feed_channel_id' => '1032411190695055440', // Channel VZG Verifier webhooks verification messages to
     // 'serverinfo_url' => '',
     'server_settings' => [ // Server specific settings (NYI), this will replace most individual variables.
-        /*
         'TDM' => [
             'moderate' => true,
             'relay_method' => 'webhook',
@@ -108,11 +107,12 @@ $options = array(
             'moderate' => true,
             'relay_method' => 'webhook',
         ],
-        */
+        /*
         'Pers' => [
             'moderate' => true,
             'relay_method' => 'webhook',
         ],
+        */
     ],
     'legacy' => true,
     'relay_method' => 'webhook',
