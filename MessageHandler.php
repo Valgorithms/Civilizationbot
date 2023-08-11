@@ -16,7 +16,7 @@ interface MessageHandlerInterface extends HandlerInterface
     public function handle(Message $message): ?PromiseInterface;
 }
 
-interface MessageHandlerCallbackInterface //NYI
+interface MessageHandlerCallbackInterface
 {
     public function __invoke(Message $message, array $message_filtered, string $command): ?PromiseInterface;
 }
