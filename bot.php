@@ -191,7 +191,6 @@ $options = array(
         'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt',
 
         // Persistence
-        /*
         'pers_log_basedir' => '/home/civ13/civ13-pers/data/logs',
         'pers_ooc_path' => '/home/civ13/civ13-pers/ooc.log',
         'pers_admin_path' => '/home/civ13/civ13-pers/admin.log',
@@ -208,7 +207,11 @@ $options = array(
         'pers_awards_br_path' => '/home/civ13/civ13-pers/SQL/awards_br.txt',
         // Campaign
         'pers_factionlist' => '/home/civ13/civ13-pers/SQL/factionlist.txt',
-        */
+        // Football
+        'tdm_sportsteams' => '/home/civ13/civ13-pers/SQL/sports_teams.txt',
+        // Medals
+        'tdm_awards_path' => '/home/civ13/civ13-pers/SQL/awards.txt',
+        'tdm_awards_br_path' => '/home/civ13/civ13-pers/SQL/awards_br.txt',
 
         // Script paths
         'nomads_updateserverabspaths' => '/home/civ13/civ13-rp/scripts/updateserverabspaths.py',
