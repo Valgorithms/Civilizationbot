@@ -293,19 +293,17 @@ $options = array(
         'pers' => '799951945346711552', #pers
         'pers-playercount' => '1090788345082298369', // pers-#
 
-        /*
-        'pers_ooc_channel' => '1107016184328622233', // #ooc-pers
-        'pers_lobby_channel' => '1107021760483831988', // #lobby-pers
-        'pers_asay_channel' => '1107016769169801216', // #asay-pers
-        'pers_ic_channel' => '1121531682198138920', // #ic-pers
-
-        'pers_transit_channel' => '1107020747622326313', // #transit-pers
-        'pers_adminlog_channel' => '1107024305927225455', // #adminlog-pers
-        'pers_debug_channel' => '1106248157798600715', // #debug-pers (debugging)
-        'pers_garbage_channel' => '1107018726307528735', // #garbage-pers
-        'pers_runtime_channel' => '1107017103883632792', // #runtime-pers
-        'pers_attack_channel' => '1107017830160936980', // #attack-pers
-        */
+        'pers_ooc_channel' => '1139614228408455388', // #ooc-pers
+        'pers_lobby_channel' => '1139614248222343282', // #lobby-pers
+        'pers_asay_channel' => '1139614266299785278', // #asay-pers
+        'pers_ic_channel' => '1139614281512529941', // #ic-pers
+        
+        'pers_transit_channel' => '1139614542700216420', // #transit-pers
+        'pers_adminlog_channel' => '1139614564577722448', // #adminlog-pers
+        'pers_debug_channel' => '1139614582931984575', // #debug-pers (debugging)
+        'pers_garbage_channel' => '1139614596789964820', // #garbage-pers
+        'pers_runtime_channel' => '1139614629081915492', // #runtime-pers
+        'pers_attack_channel' => '1139614643954921593', // #attack-pers
 
         // Misc
         'webserver-status' => '1106967195092783104', #webserver-status
