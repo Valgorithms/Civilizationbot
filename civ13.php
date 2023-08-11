@@ -917,7 +917,7 @@ class Civ13
         {
             return $this->banlogHandler($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
         }), ['admiral', 'captain', 'knight']);
-        
+
         $this->messageHandler->offsetSet('ban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
         {
             $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
@@ -1543,7 +1543,7 @@ class Civ13
             foreach ($fc as $file_contents) $builder->addFileFromContent($server.'_bans.txt', $file_contents);
             return $message->reply($builder);
         }
-        return $this->reply($message, 'Please use the format `bans {server}`. Valid servers: `' . implode(', ', $keys) . '`');
+        return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', $keys) . '`');
     }
     
     /*
