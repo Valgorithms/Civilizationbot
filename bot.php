@@ -228,6 +228,13 @@ $options = array(
         'tdm_killciv13' => '/home/civ13/civ13-tdm/scripts/killciv13.py',
         'tdm_mapswap' => '/home/civ13/civ13-tdm/scripts/mapswap.py',
 
+        'pers_updateserverabspaths' => '/home/civ13/civ13-pers/scripts/updateserverabspaths.py',
+        'pers_serverdata' => '/home/civ13/civ13-pers/serverdata.txt',
+        'pers_dmb' => '/home/civ13/civ13-pers/civ13.dmb',
+        'pers_killsudos' => '/home/civ13/civ13-pers/scripts/killsudos.py',
+        'pers_killciv13' => '/home/civ13/civ13-pers/scripts/killciv13.py',
+        'pers_mapswap' => '/home/civ13/civ13-pers/scripts/mapswap.py',
+
         /*
         'pers_updateserverabspaths' => '/home/civ13/civ13-pers/scripts/updateserverabspaths.py',
         'pers_serverdata' => '/home/civ13/civ13-pers/serverdata.txt',
@@ -254,7 +261,7 @@ $options = array(
         'nomads' => '799952084505067581', #nomads
         'nomads-playercount' => '1048777424894185484', // nomads-#
 
-        'nomads_ooc_channel' => '1110001963405418616', // #ooc-nomads (New)
+        'nomads_ooc_channel' => '1110001963405418616', // #ooc-nomads
         'nomads_lobby_channel' => '1110001986134347856', // #lobby-nomads
         'nomads_asay_channel' => '1110002005977604186', // #asay-nomads
         'nomads_ic_channel' => '1121531739114852432', // #ic-nomads
@@ -270,7 +277,7 @@ $options = array(
         'tdm' => '799952134426591273', #tdm
         'tdm-playercount' => '1048777462898761789', // tdm-#
 
-        'tdm_ooc_channel' => '1107016184328622233', // #ooc-tdm (New)
+        'tdm_ooc_channel' => '1107016184328622233', // #ooc-tdm
         'tdm_lobby_channel' => '1107021760483831988', // #lobby-tdm
         'tdm_asay_channel' => '1107016769169801216', // #asay-tdm
         'tdm_ic_channel' => '1121531682198138920', // #ic-tdm
@@ -281,6 +288,24 @@ $options = array(
         'tdm_garbage_channel' => '1107018726307528735', // #garbage-tdm
         'tdm_runtime_channel' => '1107017103883632792', // #runtime-tdm
         'tdm_attack_channel' => '1107017830160936980', // #attack-tdm
+
+        /* Persistence */ 
+        'pers' => '799951945346711552', #pers
+        'pers-playercount' => '1090788345082298369', // pers-#
+
+        /*
+        'pers_ooc_channel' => '1107016184328622233', // #ooc-pers
+        'pers_lobby_channel' => '1107021760483831988', // #lobby-pers
+        'pers_asay_channel' => '1107016769169801216', // #asay-pers
+        'pers_ic_channel' => '1121531682198138920', // #ic-pers
+
+        'pers_transit_channel' => '1107020747622326313', // #transit-pers
+        'pers_adminlog_channel' => '1107024305927225455', // #adminlog-pers
+        'pers_debug_channel' => '1106248157798600715', // #debug-pers (debugging)
+        'pers_garbage_channel' => '1107018726307528735', // #garbage-pers
+        'pers_runtime_channel' => '1107017103883632792', // #runtime-pers
+        'pers_attack_channel' => '1107017830160936980', // #attack-pers
+        */
 
         // Misc
         'webserver-status' => '1106967195092783104', #webserver-status
