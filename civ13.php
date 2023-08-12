@@ -284,12 +284,11 @@ class Civ13
                 else {
                     $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server): PromiseInterface|bool
                     {
-                        $mapswap = function (string $mapto, ?Message $message = null, ) use ($server): PromiseInterface|bool
+                        $mapswap = function (string $mapto, ?Message $message = null, ) use ($server): ?PromiseInterface
                         {
                             if (! file_exists($this->files['map_defines_path']) || ! $file = @fopen($this->files['map_defines_path'], 'r')) {
                                 $this->logger->error("unable to open `{$this->files['map_defines_path']}` for reading.");
-                                if ($message) return $this->reply($message, "`$mapto` was not found in the map definitions.");
-                                return false;
+                                if ($message) return $this->reply($message, "unable to open `{$this->files['map_defines_path']}` for reading.");
                             }
                         
                             $maps = array();
@@ -298,11 +297,10 @@ class Civ13
                                 if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
                             }
                             fclose($file);
-                            if (! in_array($mapto, $maps)) return false;
+                            if (! in_array($mapto, $maps)) return $this->reply($message, "`$mapto` was not found in the map definitions.");
                             
                             \execInBackground("python3 {$this->files[$server.'_mapswap']} $mapto");
                             if ($message) return $this->reply($message, "Attempting to change `$server` map to `$mapto`");
-                            return true;
                         };
                         $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
                         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->reply($message, 'You need to include the name of the map.');
