@@ -64,7 +64,7 @@ if (PHP_OS_FAMILY == 'Windows') {
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w']
         ];
-        $output = 'sudo nohup php8.1 bot.php > botlog.txt &';
+        $output = 'sudo nohup php bot.php > botlog.txt &';
         $pid = proc_get_status(proc_open($output, $descriptorspec, $pipes))['pid'];
         echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
     };
