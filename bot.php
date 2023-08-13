@@ -241,18 +241,7 @@ $options = array(
         'pers_killciv13' => '/home/civ13/civ13-pers/scripts/killciv13.py',
         'pers_mapswap' => '/home/civ13/civ13-pers/scripts/mapswap.py',
 
-        /*
-        'pers_updateserverabspaths' => '/home/civ13/civ13-pers/scripts/updateserverabspaths.py',
-        'pers_serverdata' => '/home/civ13/civ13-pers/serverdata.txt',
-        'pers_dmb' => '/home/civ13/civ13-pers/civ13.dmb',
-        'pers_killsudos' => '/home/civ13/civ13-pers/scripts/killsudos.py',
-        'pers_killciv13' => '/home/civ13/civ13-pers/scripts/killciv13.py',
-        'pers_mapswap' => '/home/civ13/civ13-pers/scripts/mapswap.py',
-        */
-
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
-        
-         // Unused
         
     ),
     'channel_ids' => array(
