@@ -806,53 +806,6 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             }
             return new Response(200, ['Content-Type' => 'text/html'], 'Done');
 
-        case 'nomads':
-            switch ($id) {
-                case 'bans':
-                    if (! $whitelisted) {
-                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
-                    }
-                    $nomads_bans = $civ13->files['nomads_bans'];
-                    if ($return = @file_get_contents($nomads_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
-                    else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_bans`");
-                    break;
-                case 'playerlogs':
-                    if (! $whitelisted) {
-                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
-                    }
-                    $nomads_playerlogs = $civ13->files['nomads_playerlogs'];
-                    if ($return = @file_get_contents($nomads_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
-                    else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$nomads_playerlogs`");
-                default:
-                    return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
-            }
-            break;
-        case 'tdm':
-            switch ($id) {
-                case 'bans':
-                    if (! $whitelisted) {
-                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
-                    }
-                    $tdm_bans = $civ13->files['tdm_bans'];
-                    if ($return = @file_get_contents($tdm_bans)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
-                    else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_bans`");
-                    break;
-                case 'playerlogs':
-                    if (! $whitelisted) {
-                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
-                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
-                    }
-                    $tdm_playerlogs = $civ13->files['tdm_playerlogs'];
-                    if ($return = @file_get_contents($tdm_playerlogs)) return new Response(200, ['Content-Type' => 'text/plain'], $return);
-                    else return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$tdm_playerlogs`");
-                default:
-                    return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
-            }
-            break;
-        
         case 'discord2ckey':
             if (! $id || !$webapiSnow($id) || !is_numeric($id)) return $webapiFail('user_id', $id);
             $discord2ckey = $civ13->functions['misc']['discord2ckey'];
@@ -866,6 +819,34 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             
         default:
             return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
+    }
+    // Server-specific
+    foreach (array_keys($this->server_settings) as $key) {
+        $server = strtolower($key);
+        if ($sub == $key)
+            switch ($id) {
+                case 'bans':
+                    if (! $whitelisted) {
+                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
+                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                    }
+                    if (! isset($civ13->files[$key.'bans']) || ! $bans = $civ13->files[$key.'bans']) return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$bans`");
+                    if (! $return = @file_get_contents($bans)) return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$bans`");
+                    return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    break;
+                case 'playerlogs':
+                    if (! $whitelisted) {
+                        $civ13->logger->alert('API REJECT ' . $request->getServerParams()['REMOTE_ADDR']);
+                        return new Response(501, ['Content-Type' => 'text/plain'], 'Reject');
+                    }
+                    if (! isset($civ13->files[$key.'_playerlogs']) || ! $playerlogs = $civ13->files[$key.'_playerlogs']) return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$playerlogs`");
+                    if (! $return = @file_get_contents($playerlogs)) return new Response(501, ['Content-Type' => 'text/plain'], "Unable to access `$playerlogs`");
+                    return new Response(200, ['Content-Type' => 'text/plain'], $return);
+                    
+                default:
+                    return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
+            }
+            break;
     }
     return new Response(200, ['Content-Type' => 'text/json'], json_encode($return ?? ''));
 });
