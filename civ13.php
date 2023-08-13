@@ -77,7 +77,7 @@ class Civ13
     public array $current_rounds = [];
     public array $rounds = [];
 
-    public array $server_settings = ['TDM' => [], 'Nomads' => []]; // NYI, this will replace most individual variables
+    public array $server_settings = ['TDM' => [], 'Nomads' => [], 'Pers' => []]; // NYI, this will replace most individual variables
     public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = true; // Whether or not to moderate the servers using the badwords list
     public array $badwords = [
@@ -417,7 +417,9 @@ class Civ13
                 foreach ($load_array as $line) if (trim($line) && $x == 0) { $load = "CPU Usage: $line%" . PHP_EOL; break; }
                 return $this->reply($message, $load);
             } else { // Linux
-                $cpu_load = ($cpu_load_array = sys_getloadavg()) ? $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array) : '-1';
+                $cpu_load = ($cpu_load_array = sys_getloadavg())
+                    ? $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array)
+                    : '-1';
                 return $this->reply($message, "CPU Usage: $cpu_load%");
             }
             return $this->reply($message, 'Unrecognized operating system!');
@@ -542,7 +544,9 @@ class Civ13
         
         $this->messageHandler->offsetSet('ckeyrelayinfo', new MessageHandlerCallback(function (Message $message, array $message_filtered = [], string $command = 'ckeyrelayinfo'): PromiseInterface
         {
-            $this->relay_method === 'file' ? $method = 'webhook' : $method = 'file';
+            $this->relay_method === 'file'
+                ? $method = 'webhook'
+                : $method = 'file';
             $this->relay_method = $method;
             return $this->reply($message, "Relay method changed to `$method`.");
         }), ['admiral', 'captain']);
@@ -624,7 +628,9 @@ class Civ13
             } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
 
             $banlogs = $this->bansToCollection();
-            $this->bancheck($ckey) ? $banned = 'Yes' : $banned = 'No';
+            $this->bancheck($ckey)
+                ? $banned = 'Yes'
+                : $banned = 'No';
             $found = true;
             $i = 0;
             $break = false;
@@ -1319,7 +1325,10 @@ class Civ13
                     $this->VarSave('badwords_warnings.json', $badwords_warnings);
                 }
                 $this->badwords_warnings = $badwords_warnings;
-                $this->embed_footer = ($this->github ?  $this->github . PHP_EOL : '') . "{$this->discord->username}#{$this->discord->discriminator} by Valithor#5947";
+                $this->embed_footer = $this->github 
+                    ? $this->github . PHP_EOL
+                    : '';
+                $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
 
                 $this->getVerified(); // Populate verified property with data from DB
                 if (! $provisional = $this->VarLoad('provisional.json')) {
@@ -2040,17 +2049,25 @@ class Civ13
     }
     public function __panicBan(string $ckey): void
     {
-        if (! $this->bancheck($ckey, true)) {
-            ($this->legacy ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"], null, 'nomads') : $this->sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"], null, 'nomads') );
+        if (! $this->bancheck($ckey, true)) foreach ($this->server_settings as $server => $settings) {
+            if (! isset($settings['panic']) || ! $settings['panic']) continue;
+            $settings['legacy']
+                ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"], null, $server)
+                : $this->sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"], null, $server);
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
     }
     public function __panicUnban(string $ckey): void
     {
-        ($this->legacy ? $this->legacyUnban($ckey, null, 'Nomads') : $this->sqlUnban($ckey, null, 'Nomads'));
-        unset($this->panic_bans[$ckey]);
-        $this->VarSave('panic_bans.json', $this->panic_bans);
+        foreach ($this->server_settings as $server => $settings) {
+            if (! isset($settings['panic']) || ! $settings['panic']) continue;
+            $settings['legacy']
+                ? $this->legacyUnban($ckey, null, $server)
+                : $this->sqlUnban($ckey, null, $server);
+            unset($this->panic_bans[$ckey]);
+            $this->VarSave('panic_bans.json', $this->panic_bans);
+        }
     }
 
     /*
@@ -2202,7 +2219,9 @@ class Civ13
     {
         if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return null;
         [$webserver_name, $reported_status] = explode('-', $channel->name);
-        $status = $this->webserver_online ? 'online' : 'offline';
+        $status = $this->webserver_online
+            ? 'online'
+            : 'offline';
         if ($reported_status != $status) {
             $msg = "Webserver is now **{$status}**.";
             if ($status == 'offline') $msg .= " Webserver technician <@{$this->technician_id}> has been notified.";
@@ -2560,7 +2579,9 @@ class Civ13
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
     
             if ($index <= 2) {
-                $p1 = (isset($server['players']) ? $server['players'] : count($players) ?? 0);
+                $p1 = (isset($server['players'])
+                    ? $server['players']
+                    : count($players) ?? 0);
                 $p2 = $si['prefix'];
                 $this->playercountChannelUpdate($p1, $p2);
             }
@@ -2587,7 +2608,9 @@ class Civ13
                 $index++; // TODO: Remove this once we have stationname in world.dm
                 continue;
             }
-            $p1 = (isset($server['players']) ? $server['players'] : count(array_map(fn($player) => $this->sanitizeInput(urldecode($player)), array_filter($server, function (string $key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))));
+            $p1 = (isset($server['players'])
+                ? $server['players']
+                : count(array_map(fn($player) => $this->sanitizeInput(urldecode($player)), array_filter($server, function (string $key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))));
             $p2 = $server_info[$index]['prefix'];
             $this->playercountChannelUpdate($p1, $p2);
             $index++; // TODO: Remove this once we have stationname in world.dm

@@ -808,9 +808,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 
         case 'discord2ckey':
             if (! $id || !$webapiSnow($id) || !is_numeric($id)) return $webapiFail('user_id', $id);
-            $discord2ckey = $civ13->functions['misc']['discord2ckey'];
-            $return = $discord2ckey($civ13, $id);
-            return new Response(200, ['Content-Type' => 'text/plain'], $return);
+            if ($discord2ckey = array_shift($this->messageHandler->offsetGet('discord2ckey'))) return new Response(200, ['Content-Type' => 'text/plain'], $discord2ckey($civ13, $id));
             break;
             
         case 'verified':

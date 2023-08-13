@@ -16,7 +16,7 @@ methods to report the vulnerability:
 
 - Directly contact the lead maintainer [@valzargaming](https://github.com/valzargaming). 
   - You will need to login to be able to see the email address on the [GitHub profile page](https://github.com/valzargaming).
-  - Alternatively you can send a DM via Discord to Valithor#5947.
+  - Alternatively you can send a DM via Discord to valithor.
 
 Please be patient while the vulnerability is being reviewed. Deploying the fix to address the vulnerability
 can often take a little time due to the amount of preparation required, to ensure the vulnerability has
