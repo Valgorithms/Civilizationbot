@@ -41,9 +41,10 @@ class Civ13
     public MessageHandler $messageHandler;
 
     public Slash $slash;
-    public $vzg_ip = '';
-    public $civ13_ip = '';
+    
     public $external_ip = '';
+    public $civ13_ip = '';
+    public $vzg_ip = '';
 
     public StreamSelectLoop $loop;
     public Discord $discord;
@@ -2183,8 +2184,8 @@ class Civ13
     public function setIPs(): void
     {
         $this->ips = [
-            'nomads' => $this->external_ip,
-            'tdm' => $this->external_ip,
+            'nomads' => $this->civ13_ip,
+            'tdm' => $this->civ13_ip,
             'pers' => $this->vzg_ip,
             'vzg' => $this->vzg_ip,
         ];

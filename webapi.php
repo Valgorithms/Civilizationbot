@@ -24,8 +24,9 @@ $webapiSnow = function (string $string) {
     return preg_match('/^[0-9]{16,20}$/', $string);
 };
 
-$external_ip = file_get_contents('http://ipecho.net/plain');
-$valzargaming_ip = gethostbyname('www.valzargaming.com');
+// $external_ip = file_get_contents('http://ipecho.net/plain');
+// $civ13_ip = gethostbyname('www.civ13.com');
+// $vzg_ip = gethostbyname('www.valzargaming.com');
 $port = '55555';
 
 $portknock = false;
@@ -119,7 +120,7 @@ if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { //
 
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
 
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $external_ip, $valzargaming_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow)
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow)
 {
     // Port knocking security check
     $authed_ips = [];
@@ -164,7 +165,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     $whitelist = [
         '127.0.0.1',
         $external_ip,
-        $valzargaming_ip,
+        $civ13_ip,
+        $vzg_ip,
         '51.254.161.128',
         '69.244.83.231',
     ];

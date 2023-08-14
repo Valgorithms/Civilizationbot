@@ -68,6 +68,10 @@ include 'civ13.php';
 include 'Handler.php';
 include 'MessageHandler.php';
 
+$external_ip = file_get_contents('http://ipecho.net/plain');
+$civ13_ip = gethostbyname('www.civ13.com');
+$vzg_ip = gethostbyname('www.valzargaming.com');
+
 $webapi = null;
 $socket = null;
 $options = array(
@@ -100,12 +104,16 @@ $options = array(
     // 'serverinfo_url' => '',
     'server_settings' => [ // Server specific settings (NYI), this will replace most individual variables.
         'Nomads' => [
+            'ip' => $civ13_ip, // IP of the server
+            'port' => '1715', // Port of the server
             'panic' => true, // Panic mode will ban all users who are not verified
             'legacy' => true, // Legacy mode will use the file system instead of an SQL database
             'moderate' => true, // Whether chat moderation is enabled
             'relay_method' => 'webhook', // How messages are relayed to the server
         ],
         'TDM' => [
+            'ip' => $civ13_ip,
+            'port' => '1714',
             'panic' => false,
             'legacy' => true,
             'moderate' => true,
@@ -113,6 +121,8 @@ $options = array(
         ],
         /*
         'Pers' => [
+            'ip' => $vzg_ip,
+            'port' => '1717',
             'panic' => true,
             'legacy' => true,
             'moderate' => true,
