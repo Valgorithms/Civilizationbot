@@ -42,9 +42,7 @@ class Civ13
 
     public Slash $slash;
     
-    public $external_ip = '';
-    public $civ13_ip = '';
-    public $vzg_ip = '';
+    public string $webserver_url = 'www.valzargaming.com'; // The URL of the webserver that the bot pulls server information from
 
     public StreamSelectLoop $loop;
     public Discord $discord;
@@ -78,7 +76,7 @@ class Civ13
     public array $current_rounds = [];
     public array $rounds = [];
 
-    public array $server_settings = ['TDM' => [], 'Nomads' => [], 'Pers' => []]; // NYI, this will replace most individual variables
+    public array $server_settings = [];
     public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = true; // Whether or not to moderate the servers using the badwords list
     public array $badwords = [
@@ -186,6 +184,7 @@ class Civ13
         if (isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if (isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
         if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
+        if (isset($options['webserver_url'])) $this->webserver_url = $options['webserver_url'];
         if (isset($options['legacy']) && is_bool($options['legacy'])) $this->legacy = $options['legacy'];
         if (isset($options['relay_method'])) {
             if (is_string($options['relay_method'])) {
@@ -223,11 +222,27 @@ class Civ13
         $this->afterConstruct($options, $server_options);
     }
     
-    // Generate a list of functions derived by the keys found in server_settings
-    // The key is the name of the command, and the value is the function to call
-    protected function generateServerMessageFunctions(): void
+    /**
+     * This method generates server functions based on the server settings.
+     * It loops through the server settings and generates server functions for each enabled server.
+     * For each server, it generates the following message-related functions, prefixed with the server name:
+     * - configexists: checks if the server configuration exists.
+     * - host: starts the server host process.
+     * - kill: kills the server process.
+     * - restart: restarts the server process by killing and starting it again.
+     * - mapswap: swaps the current map of the server with a new one.
+     * - ban: bans a player from the server.
+     * - unban: unbans a player from the server.
+     * Also, for each server, it generates the following functions:
+     * - discord2ooc: relays message to the server's OOC channel.
+     * - discord2admin: relays messages to the server's admin channel.
+     * 
+     * @return void
+     */
+    protected function generateServerFunctions(): void
     {    
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
 
             $serverconfigexists = function (?Message $message = null) use ($key): PromiseInterface|bool
@@ -278,7 +293,6 @@ class Civ13
                 };
                 $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['admiral', 'captain']);
             }
-
 
             foreach (['_mapswap'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
@@ -381,8 +395,16 @@ class Civ13
         }
     }
 
-    protected function generateMessageFunctions(): void
-    { // TODO: add infantry and veteran roles to all non-staff command paramters except for `approveme`1
+    /*
+     * The generated functions include `ping`, `help`, `cpu`, `approveme`, and `insult`.
+     * The `ping` function replies with "Pong!" when called.
+     * The `help` function generates a list of available commands based on the user's roles.
+     * The `cpu` function returns the CPU usage of the system.
+     * The `approveme` function verifies a user's identity and assigns them the `infantry` role.
+     * And more! (see the code for more details)
+     */
+    protected function generateGlobalFunctions(): void
+    { // TODO: add infantry and veteran roles to all non-staff command parameters except for `approveme`
         $this->messageHandler->offsetSet('ping', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             return $this->reply($message, 'Pong!');
@@ -439,7 +461,7 @@ class Civ13
         }));
 
         if (file_exists($this->files['insults_path']))
-        $this->messageHandler->offsetSet('insult', function (Message $message, array $message_filtered): PromiseInterface
+        $this->messageHandler->offsetSet('insult', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $split_message = explode(' ', $message_filtered['message_content']); // $split_target[1] is the target
             if ((count($split_message) <= 1 ) || ! strlen($split_message[1] === 0)) return null;
@@ -448,11 +470,12 @@ class Civ13
             while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
             if (count($insults_array) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $insults_array[rand(0, count($insults_array)-1)])->setAllowedMentions(['parse'=>[]]));
             return $this->reply($message, 'No insults found!');
-        });
+        }));
 
-        $this->messageHandler->offsetSet('ooc', function (Message $message, array $message_filtered): PromiseInterface
+        $this->messageHandler->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $setting) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (isset($this->server_funcs_uncalled[$server.'_discord2ooc'])) switch (strtolower($message->channel->name)) {
                     case "ooc-{$server}":                    
@@ -461,11 +484,12 @@ class Civ13
                 }
             }
             return $this->reply($message, 'You need to be in any of the #ooc channels to use this command.');
-        });
+        }));
 
-        $this->messageHandler->offsetSet('asay', function (Message $message, array $message_filtered): PromiseInterface
+        $this->messageHandler->offsetSet('asay', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (isset($this->server_funcs_uncalled[$server.'_discord2admin'])) switch (strtolower($message->channel->name)) {
                     case "asay-{$server}":                    
@@ -474,14 +498,15 @@ class Civ13
                 }
             }
             return $this->reply($message, 'You need to be in any of the #asay channels to use this command.');
-        });
+        }));
 
-        $directmessage = function (Message $message, array $message_filtered): PromiseInterface
+        $directmessage = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $explode = explode(';', $message_filtered['message_content']);
             $recipient = array_shift($explode);
             $msg = implode(' ', $explode);
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 switch (strtolower($message->channel->name)) {
                     // case 'ahelp-{$server}}': // Deprecated
@@ -492,7 +517,7 @@ class Civ13
                 }
             }
             return $this->reply($message, 'You need to be in any of the #ooc or #asay channels to use this command.');
-        };
+        });
         $this->messageHandler->offsetSet('dm', $directmessage);
         $this->messageHandler->offsetSet('pm', $directmessage);
 
@@ -505,7 +530,8 @@ class Civ13
             $reason = 'unknown';
             $found = false;
             $response = '';
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $file_path = strtolower($key) . '_bans';
                 if (! isset($this->files[$file_path]) || ! file_exists($this->files[$file_path]) || ! ($file = @fopen($this->files[$file_path], 'r'))) {
                     $this->logger->warning("Could not open `$file_path` for reading.");
@@ -543,6 +569,15 @@ class Civ13
             return $this->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
         }));
         
+        /**
+         * Changes the relay method between 'file' and 'webhook' and sends a message to confirm the change.
+         *
+         * @param Message $message The message object received from the user.
+         * @param array $message_filtered An array of filtered message content.
+         * @param string $command The command string.
+         *
+         * @return PromiseInterface
+         */
         $this->messageHandler->offsetSet('ckeyrelayinfo', new MessageHandlerCallback(function (Message $message, array $message_filtered = [], string $command = 'ckeyrelayinfo'): PromiseInterface
         {
             $this->relay_method === 'file'
@@ -552,6 +587,15 @@ class Civ13
             return $this->reply($message, "Relay method changed to `$method`.");
         }), ['admiral', 'captain']);
         
+        /**
+         * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
+         * It also iterates through playerlogs ban logs to find all known ckeys, IPs, and CIDs.
+         * If the user has high staff privileges, it also displays primary IPs and CIDs.
+         * @param Message $message The message object.
+         * @param array $message_filtered The filtered message content.
+         * @param string $command The command used to trigger this method.
+         * @return PromiseInterface
+         */
         $this->messageHandler->offsetSet('ckeyinfo', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $high_rank_check = function (Message $message, array $allowed_ranks = []): bool
@@ -770,11 +814,11 @@ class Civ13
             return $this->reply($message, "$ckey is now permitted to bypass the Byond account restrictions.");
         }), ['admiral', 'captain', 'knight']);
 
-        $revoke = function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $revoke = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $this->permitCkey($ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
             return $this->reply($message, "$ckey is no longer permitted to bypass the Byond account restrictions.");
-        };
+        });
         $this->messageHandler->offsetSet('revoke', $revoke, ['admiral', 'captain', 'knight']);
         $this->messageHandler->offsetSet('unpermit', $revoke, ['admiral', 'captain', 'knight']); // Alias for revoke
         
@@ -790,7 +834,7 @@ class Civ13
                 if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $this->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->author->id}>).");
                 return $message->react("👍");
             };
-            $this->messageHandler->offsetSet('parole', $parole, ['admiral', 'captain', 'knight']);
+            $this->messageHandler->offsetSet('parole', new MessageHandlerCallback($parole), ['admiral', 'captain', 'knight']);
         }
 
         if (isset($this->role_ids['paroled'], $this->channel_ids['parole_logs'])) {
@@ -805,7 +849,7 @@ class Civ13
                 if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $this->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->author->id}>).");
                 return $message->react("👍");
             };
-            $this->messageHandler->offsetSet('release', $release, ['admiral', 'captain', 'knight']);
+            $this->messageHandler->offsetSet('release', new MessageHandlerCallback($release), ['admiral', 'captain', 'knight']);
         }
 
         $this->messageHandler->offsetSet('tests', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
@@ -856,11 +900,11 @@ class Civ13
         }), ['admiral', 'captain']);
 
         if (isset($this->functions['misc']['promotable_check']) && $promotable_check = $this->functions['misc']['promotable_check']) {
-            $promotable = function (Message $message, array $message_filtered, string $command) use ($promotable_check): PromiseInterface
+            $promotable = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($promotable_check): PromiseInterface
             {
                 if (! $promotable_check($this, $this->sanitizeInput(substr($message_filtered['message_content'], strlen($command))))) return $message->react("👎");
                 return $message->react("👍");
-            };
+            });
             $this->messageHandler->offsetSet('promotable', $promotable, ['admiral', 'captain']);
         }
 
@@ -932,16 +976,19 @@ class Civ13
             if (! isset($split_message[2]) || ! $split_message[2]) return $this->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
             $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"];
     
-            foreach (array_keys($this->server_settings) as $key) { // TODO: Review this for performance and redundancy
+            foreach ($this->server_settings as $key => $settings) { // TODO: Review this for performance and redundancy
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (! isset($this->timers['banlog_update_'.$server])) $this->timers['banlog_update_'.$server] = $this->discord->getLoop()->addTimer(30, function () use ($banlog_update, $arr) {
                     $playerlogs = [];
-                    foreach (array_keys($this->server_settings) as $k) {
+                    foreach ($this->server_settings as $k => $s) {
+                        if (! isset($s['enabled']) || ! $s['enabled']) continue;
                         $s = strtolower($k);
                         if (! isset($this->files[$s.'_playerlogs']) || ! file_exists($this->files[$s.'_playerlogs'])) continue;
                         if ($playerlog = @file_get_contents($this->files[$s.'_playerlogs'])) $playerlogs[] = $playerlog;
                     }
-                    if ($playerlogs) foreach (array_keys($this->server_settings) as $k) {
+                    if ($playerlogs) foreach ($this->server_settings as $k => $s) {
+                        if (! isset($s['enabled']) || ! $s['enabled']) continue;
                         $s = strtolower($k);
                         if (! isset($this->files[$s.'_bans']) || ! file_exists($this->files[$s.'_bans'])) continue;
                         file_put_contents($this->files[$s.'_bans'], $banlog_update(file_get_contents($this->files[$s.'_bans']), $playerlogs, $arr['ckey']));
@@ -971,7 +1018,8 @@ class Civ13
         {            
             $builder = MessageBuilder::new();
             $found = false;
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (! file_exists($this->files[$server.'_admins']) || ! $file_contents = @file_get_contents($this->files[$server.'_admins'])) {
                     $this->logger->debug("`{$server}_admins` is not a valid file path!");
@@ -987,7 +1035,8 @@ class Civ13
         $this->messageHandler->offsetSet('factionlist', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {            
             $builder = MessageBuilder::new()->setContent('Faction Lists');
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (file_exists($this->files[$server.'_factionlist'])) $builder->addfile($this->files[$server.'_factionlist'], $server.'_factionlist.txt');
                 else $this->logger->warning("`{$server}_factionlist` is not a valid file path!");
@@ -1006,7 +1055,8 @@ class Civ13
         {
             $tokens = explode(';', $message_content);
             $keys = [];
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $keys[] = $server = strtolower($key);
                 if (! trim($tokens[0]) == $server) continue; // Check if server is valid
                 if (! isset($this->files[$server.'_log_basedir']) || ! file_exists($this->files[$server.'_log_basedir'])) {
@@ -1032,7 +1082,8 @@ class Civ13
         {
             $tokens = explode(';', trim(substr($message_filtered['message_content'], strlen($command))));
             $keys = [];
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $keys[] = $server = strtolower($key);
                 if (trim($tokens[0]) != $key) continue;
                 if (! isset($this->files[$server.'_playerlogs']) || ! file_exists($this->files[$server.'_playerlogs']) || ! $file_contents = @file_get_contents($this->files[$server.'_playerlogs'])) return $message->react("🔥");
@@ -1179,7 +1230,8 @@ class Civ13
         $this->messageHandler->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
         {   
             $server_playerlogs = [];
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (! $playerlogs = @file_get_contents($this->files[$server.'_playerlogs'])) {
                     $this->logger->warning("`{$server}_playerlogs` is not a valid file path!");
@@ -1190,7 +1242,8 @@ class Civ13
             if (! $server_playerlogs) return $message->react("🔥");
             
             $updated = false;
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (! $bans = @file_get_contents($this->files[$server.'_bans'])) {
                     $this->logger->warning("`{$server}_bans` is not a valid file path!");
@@ -1254,19 +1307,22 @@ class Civ13
         return $message->reply($builder->addFileFromContent($file_name, $content));
     }
 
-    /*
-    * This function is called after the constructor is finished.
-    * It is used to load the files, start the timers, and start handling events.
-    */
+    /**
+     * This method is called after the object is constructed.
+     * It initializes various properties, starts timers, and starts handling events.
+     *
+     * @param array $options An array of options.
+     * @param array $server_options An array of server options.
+     * @return void
+     */
     protected function afterConstruct(array $options = [], array $server_options = []): void
     {
         $this->messageHandler = new MessageHandler($this);
-        $this->generateServerMessageFunctions();
-        $this->generateMessageFunctions();
+        $this->generateServerFunctions();
+        $this->generateGlobalFunctions();
+        $this->logger->debug('[COMMAND LIST] ' . $this->messageHandler->generateHelp());
         
-        $this->vzg_ip = gethostbyname('www.valzargaming.com');
-        $this->civ13_ip = gethostbyname('www.civ13.com');
-        $this->external_ip = file_get_contents('http://ipecho.net/plain');
+        if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
 
         if (isset($this->discord)) {
             $this->discord->once('ready', function () use ($options) {
@@ -1344,7 +1400,8 @@ class Civ13
                 $this->ages = $ages;
                 foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
                 $this->unbanTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
-                $this->setIPs();
+                //$this->setIPs();
+                $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json";
                 $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
                 $this->pending = new Collection([], 'discord');
                 // Initialize configurations
@@ -1386,7 +1443,8 @@ class Civ13
                     {
                         if ($this->relay_method !== 'file') return null;
                         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
-                        foreach (array_keys($this->server_settings) as $key) {
+                        foreach ($this->server_settings as $key => $settings) {
+                            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                             $server = strtolower($key);
                             if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_ooc_channel'])) $this->gameChatFileRelay($this->files[$server.'_ooc_path'], $channel);  // #ooc-server
                             if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_asay_channel'])) $this->gameChatFileRelay($this->files[$server.'_admin_path'], $channel);  // #asay-server
@@ -1400,7 +1458,10 @@ class Civ13
     }
     
     /**
-     * Attempt to catch errors with the user-provided $options early
+     * Resolves the given options array by validating and setting default values for each option.
+     *
+     * @param array $options An array of options to be resolved.
+     * @return array The resolved options array.
      */
     protected function resolveOptions(array $options = []): array
     {
@@ -1415,7 +1476,7 @@ class Civ13
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
         }
-        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || (! file_exists($value) && ! touch($value))) {
+        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || (! file_exists($value) && ! @touch($value))) {
             $this->logger->warning("`$value` is not a valid file path!");
             unset($options['files'][$key]);
         }
@@ -1445,6 +1506,14 @@ class Civ13
         return $options;
     }
     
+    /**
+     * Runs the Discord loop.
+     *
+     * @return void
+     *
+     * @throws \Discord\Exceptions\IntentException
+     * @throws \Discord\Exceptions\SocketException
+     */
     public function run(): void
     {
         $this->logger->info('Starting Discord loop');
@@ -1452,6 +1521,11 @@ class Civ13
         else $this->discord->run();
     }
 
+    /**
+     * Stops the bot and logs the shutdown message.
+     *
+     * @return void
+     */
     public function stop(): void
     {
         $this->logger->info('Shutting down');
@@ -1483,12 +1557,26 @@ class Civ13
      * FOR %F IN ("%SystemRoot%\servicing\Packages\Microsoft-Windows-GroupPolicy-ClientTools-Package~*.mum") DO (DISM /Online /NoRestart /Add-Package:"%F")
      * FOR %F IN ("%SystemRoot%\servicing\Packages\Microsoft-Windows-GroupPolicy-ClientExtensions-Package~*.mum") DO (DISM /Online /NoRestart /Add-Package:"%F")
      */
+    
+     /**
+     * Saves an associative array to a file in JSON format.
+     *
+     * @param string $filename The name of the file to save the data to.
+     * @param array $assoc_array The associative array to be saved.
+     * @return bool Returns true if the data was successfully saved, false otherwise.
+     */
     public function VarSave(string $filename = '', array $assoc_array = []): bool
     {
         if ($filename === '') return false;
         if (file_put_contents($this->filecache_path . $filename, json_encode($assoc_array)) === false) return false;
         return true;
     }
+    /**
+     * Loads a variable from a file in the file cache.
+     *
+     * @param string $filename The name of the file to load.
+     * @return array|null Returns an associative array of the loaded variable, or null if the file does not exist or could not be loaded.
+     */
     public function VarLoad(string $filename = ''): ?array
     {
         if ($filename === '') return null;
@@ -1498,13 +1586,13 @@ class Civ13
         return $assoc_array;
     }
 
-    /*
-    * This function is used to navigate a file tree and find a file
-    * $basedir is the directory to start in
-    * $subdirs is an array of subdirectories to navigate
-    * $subdirs should be a 1d array of strings
-    * The first string in $subdirs should be the first subdirectory to navigate to, and so on    
-    */
+    /**
+     * This function is used to navigate a file tree and find a file
+     *
+     * @param string $basedir The directory to start in
+     * @param array $subdirs An array of subdirectories to navigate
+     * @return array Returns an array with the first element being a boolean indicating if the file was found, and the second element being either an array of files in the directory or the path to the file if it was found
+     */
     public function FileNav(string $basedir, array $subdirs): array
     {
         $scandir = scandir($basedir);
@@ -1515,9 +1603,14 @@ class Civ13
         return $this->FileNav("$basedir/$subdir", $subdirs);
     }
 
-    /*
-    * This function is used to set the default config for a guild if it does not already exist
-    */
+    /**
+     * This function is used to set the default configuration for a guild if it does not already exist.
+     *
+     * @param Guild $guild The guild for which the configuration is being set.
+     * @param array &$discord_config The Discord configuration array.
+     *
+     * @return void
+     */
     public function SetConfigTemplate(Guild $guild, array &$discord_config): void
     {
         $discord_config[$guild->id] = [
@@ -1533,14 +1626,19 @@ class Civ13
         else $this->logger->warning("Failed top create new config for guild {$guild->name}");
     }
 
-    /*
-    * This function is used to send a message containing the list of bans for all servers
-    */
+    /**
+     * Sends a message containing the list of bans for all servers.
+     *
+     * @param Message $message The message object.
+     * @param string $message_content_lower The message content in lowercase.
+     * @return PromiseInterface
+     */
     public function banlogHandler(Message $message, string $message_content_lower): PromiseInterface 
     { // I'm not sure if I want this function to be here, in the server functions, as a variable function, or as a slash command
         $fc = [];
         $keys = [];
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $keys[] = $server = strtolower($key);
             if ($message_content_lower !== $server) continue;
             if (! isset($this->files[$server.'_bans']) || ! file_exists($this->files[$server.'_bans']) || ! $file_contents = @file_get_contents($this->files[$server.'_bans'])) return $message->react("🔥");
@@ -1824,7 +1922,8 @@ class Civ13
             }
             $found = false;
             $file_contents = '';
-            foreach (array_keys($this->server_settings) as $key) {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (isset($this->files[$server.'_playerlogs']) && file_exists($this->files[$server.'_playerlogs']) && $fc = @file_get_contents($this->files[$server.'_playerlogs'])) $file_contents .= $fc;
                 else $this->logger->warning("unable to open {$this->files[$server.'_playerlogs']}");
@@ -2023,7 +2122,8 @@ class Civ13
     }
     public function legacyBancheck(string $ckey): bool
     {
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
             if (file_exists($this->files[$server.'_bans']) && $file = @fopen($this->files[$server.'_bans'], 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
@@ -2075,6 +2175,7 @@ class Civ13
     public function __panicBan(string $ckey): void
     {
         if (! $this->bancheck($ckey, true)) foreach ($this->server_settings as $server => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['panic']) || ! $settings['panic']) continue;
             $settings['legacy']
                 ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"], null, $server)
@@ -2086,6 +2187,7 @@ class Civ13
     public function __panicUnban(string $ckey): void
     {
         foreach ($this->server_settings as $server => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['panic']) || ! $settings['panic']) continue;
             $settings['legacy']
                 ? $this->legacyUnban($ckey, null, $server)
@@ -2115,7 +2217,10 @@ class Civ13
             } else $this->logger->warning("unable to open {$this->files[$server.'_discord2unban']}");
         };
         if ($key) $legacyUnban($ckey, $admin, $key);
-        else foreach (array_keys($this->server_settings) as $key) $legacyUnban($ckey, $admin, $key);
+        else foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $legacyUnban($ckey, $admin, $key);
+        }
     }
     public function sqlpersunban(string $ckey, ?string $admin = null): void
     {
@@ -2139,7 +2244,10 @@ class Civ13
         };
         if ($key) return $legacyBan($array, $admin, $key);
         $result = '';
-        foreach (array_keys($this->server_settings) as $key) $result .= $legacyBan($array, $admin, $key);
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $result .= $legacyBan($array, $admin, $key);
+        }
         return $result;
     }
     public function sqlBan(array $array, $admin = null, ?string $key = ''): string
@@ -2196,31 +2304,11 @@ class Civ13
         
         $sent = false;
         if ($key) $sent = $directmessage($recipient, $message, $sender, $key);
-        else foreach (array_keys($this->server_settings) as $key) if ($directmessage($recipient, $message, $sender, $key)) $sent = true;
+        else foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            if ($directmessage($recipient, $message, $sender, $key)) $sent = true;
+        }
         return $sent;
-    }
-
-    /*
-    * This function defines the IPs and ports of the servers
-    * It is called on ready
-    * TODO: Move definitions into config/constructor?
-    */
-    public function setIPs(): void
-    {
-        $this->ips = [
-            'nomads' => $this->civ13_ip,
-            'tdm' => $this->civ13_ip,
-            'pers' => $this->vzg_ip,
-            'vzg' => $this->vzg_ip,
-        ];
-        $this->ports = [
-            'nomads' => '1715',
-            'tdm' => '1714',
-            'pers' => '1717',
-            'bc' => '7777', 
-            'ps13' => '7778',
-        ];
-        if (! $this->serverinfo_url) $this->serverinfo_url = 'http://' . (isset($this->ips['vzg']) ? $this->ips['vzg'] : $this->vzg_ip) . '/servers/serverinfo.json'; // Default to VZG unless passed manually in config
     }
     
     /*
@@ -2270,7 +2358,8 @@ class Civ13
         $ban_collection = new Collection([], 'uid');
         // Get the contents of the file
         $file_contents = '';
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
             if (isset($this->files[$server.'_bans']) && file_exists($this->files[$server.'_bans']) && $fc = @file_get_contents($this->files[$server.'_bans'])) $file_contents .= $fc;
             else $this->logger->warning("unable to open `{$this->files[$server.'_bans']}`");
@@ -2326,7 +2415,8 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
             if (isset($this->files[$server.'_playerlogs']) && file_exists($this->files[$server.'_playerlogs']) && $fc = @file_get_contents($this->files[$server.'_playerlogs'])) $file_contents .= $fc;
             else $this->logger->warning("unable to open `{$this->files[$server.'_playerlogs']}`");
@@ -2380,7 +2470,6 @@ class Civ13
         if (! $ckey = $this->sanitizeInput($ckey)) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->getVerifiedItem($ckey)) $ckey = $item['ss13'];
-        // var_dump('Ckey Collections Array: ', $collectionsArray, PHP_EOL);
         
         $ckeys = [$ckey];
         $ips = [];
@@ -2393,7 +2482,6 @@ class Civ13
             if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
             if (isset($log['cid']) && ! in_array($log['cid'], $ips)) $cids[] = $log['cid'];
         }
-        // var_dump('Searchable: ',  $ckeys, $ips, $cids, PHP_EOL);
         // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $this->playerlogsToCollection();
         $i = 0;
@@ -2555,26 +2643,17 @@ class Civ13
     }
     public function serverinfoParse(): array
     {
-        if (empty($this->serverinfo)) return [];
-    
-        $server_info = [
-            ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>", 'prefix' => 'tdm-'],
-            ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>", 'prefix' => 'nomads-'],
-            ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['pers']}:{$this->ports['pers']}>", 'prefix' => 'pers-'],
-            ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>", 'prefix' => 'bc-'],
-            ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>", 'prefix' => 'ps-'],
-        ];
-    
-        $return = [];
-        foreach ($this->serverinfo as $index => $server) {
-            $si = array_shift($server_info);
-            $return[$index]['Server'] = [false => $si['name'] . PHP_EOL . $si['link']];
-            $return[$index]['Host'] = [true => $si['host']];
-            if (array_key_exists('ERROR', $server)) {
-                $return[$index] = [];
-                continue;
-            }
-    
+        if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) return []; // No data to parse
+        $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
+        $return = []; // This is the array we'll return
+        foreach ($this->server_settings as $k => $settings) {            
+            if (! $server = array_shift($serverinfo)) continue; // No data for this server
+            if (! isset($settings['supported']) || ! $settings['supported']) { $index++; continue; } // Server is not supported by the remote webserver and won't appear in data
+            if (! isset($settings['name'], $settings['ip'], $settings['port'], $settings['host'])) { $index++; continue; } // Server is missing required settings in config 
+            if (array_key_exists('ERROR', $server)) { $return[$index] = []; $index++; continue; } // Remote webserver reports server is not responding
+            $return[$index]['Server'] = [false => $settings['name'] . PHP_EOL . "<byond://{$settings['ip']}:{$settings['port']}>"];
+            $return[$index]['Host'] = [true => $settings['host']];
+           
             if (isset($server['roundduration'])) {
                 $rd = explode(":", urldecode($server['roundduration']));
                 $days = floor($rd[0] / 24);
@@ -2607,7 +2686,7 @@ class Civ13
                 $p1 = (isset($server['players'])
                     ? $server['players']
                     : count($players) ?? 0);
-                $p2 = $si['prefix'];
+                $p2 = strtolower($k) . '-';
                 $this->playercountChannelUpdate($p1, $p2);
             }
         }
@@ -2615,28 +2694,25 @@ class Civ13
         return $return;
     }
 
+    // This is a simplified version of serverinfoParse() that only updates the player counter
     public function serverinfoParsePlayers(): void
     {
-        $server_info = [
-            0 => ['name' => 'TDM', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['tdm']}:{$this->ports['tdm']}>", 'prefix' => 'tdm-'],
-            1 => ['name' => 'Nomads', 'host' => 'Taislin', 'link' => "<byond://{$this->ips['nomads']}:{$this->ports['nomads']}>", 'prefix' => 'nomads-'],
-            2 => ['name' => 'Persistence', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['pers']}:{$this->ports['pers']}>", 'prefix' => 'pers-'],
-            3 => ['name' => 'Blue Colony', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['bc']}>", 'prefix' => 'bc-'],
-            4 => ['name' => 'Pocket Stronghold 13', 'host' => 'ValZarGaming', 'link' => "<byond://{$this->ips['vzg']}:{$this->ports['ps13']}>", 'prefix' => 'ps-']
-        ];
+        if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) return; // No data to parse
+
         // $relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); // We need to declare stationname in world.dm first
 
-        $index = 0;
-        // foreach ($relevant_servers as $server) // TODO: We need to declare stationname in world.dm first
-        foreach ($this->serverinfo as $server) {
-            if (array_key_exists('ERROR', $server) || $index > 2) { // We only care about Nomads, TDM, and Persistence
-                $index++; // TODO: Remove this once we have stationname in world.dm
-                continue;
-            }
+        $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
+        foreach ($this->server_settings as $k => $settings) {            
+            if (! $server = array_shift($this->serverinfo)) continue; // No data for this server
+            if (! isset($settings['supported']) || ! $settings['supported']) { $index++; continue; } // Server is not supported by the remote webserver and won't appear in data
+            if (! isset($settings['name'])) { $index++; continue; } // Server is missing required settings in config 
+            if (array_key_exists('ERROR', $server)) { $index++; continue; } // Remote webserver reports server is not responding
+
             $p1 = (isset($server['players'])
                 ? $server['players']
-                : count(array_map(fn($player) => $this->sanitizeInput(urldecode($player)), array_filter($server, function (string $key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY))));
-            $p2 = $server_info[$index]['prefix'];
+                : count(array_map(fn($player) => $this->sanitizeInput(urldecode($player)), array_filter($server, function (string $key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY)))
+            );
+            $p2 = strtolower($k) . '-';
             $this->playercountChannelUpdate($p1, $p2);
             $index++; // TODO: Remove this once we have stationname in world.dm
         }
@@ -2668,7 +2744,8 @@ class Civ13
     public function unbanTimer(): bool
     {
         // We don't want the persistence server to do this function
-        foreach (array_keys($this->server_settings) as $key) {
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
             if (! isset($this->files[$server.'_bans']) || ! file_exists($this->files[$server.'_bans']) || ! $file = @fopen($this->files[$server.'_bans'], 'r')) return false;
             fclose($file);
@@ -2868,7 +2945,10 @@ class Civ13
         $l = [];
         if ($defaults) {
             $defaultLists = [];
-            foreach (array_keys($this->server_settings) as $key) $defaultLists[] = strtolower($key) . $postfix;
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+                $defaultLists[] = strtolower($key) . $postfix;
+            }
             foreach ($defaultLists as $file_path) if (isset($this->files[$file_path]) && ! in_array($file_path, $l)) array_unshift($l, $file_path);
             else $this->logger->warning("Default `$postfix` file `$file_path` was either missing from the `files` config or already included in the list");
             if (empty($l)) $this->logger->debug("No default `$postfix` files were found in the `files` config");

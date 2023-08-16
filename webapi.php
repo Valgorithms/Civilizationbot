@@ -810,7 +810,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 
         case 'discord2ckey':
             if (! $id || !$webapiSnow($id) || !is_numeric($id)) return $webapiFail('user_id', $id);
-            if ($discord2ckey = array_shift($this->messageHandler->offsetGet('discord2ckey'))) return new Response(200, ['Content-Type' => 'text/plain'], $discord2ckey($civ13, $id));
+            if ($discord2ckey = array_shift($civ13->messageHandler->offsetGet('discord2ckey'))) return new Response(200, ['Content-Type' => 'text/plain'], $discord2ckey($civ13, $id));
             break;
             
         case 'verified':
@@ -821,7 +821,8 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             return new Response(501, ['Content-Type' => 'text/plain'], 'Not implemented');
     }
     // Server-specific
-    foreach (array_keys($this->server_settings) as $key) {
+    foreach ($civ13->server_settings as $key => $settings) {
+        if (!isset($settings['enabled']) || !$settings['enabled']) continue;
         $server = strtolower($key);
         if ($sub == $key)
             switch ($id) {

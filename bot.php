@@ -91,7 +91,9 @@ $options = array(
     // The Verify URL is where verification requests are sent to and where the verification list is retrieved from
     // The website must return valid json when no parameters are passed to it and MUST allow POST requests including 'token', 'ckey', and 'discord'
     // Reach out to Valithor if you need help setting up your website
-    'verify_url' => 'http://valzargaming.com:8080/verified/', 
+    'webserver_url' => 'www.valzargaming.com',
+    'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
+    // 'serverinfo_url' => '', // URL of the serverinfo.json file
 
     'banappeal' => 'civ13.com slash discord',
     'rules' => 'civ13.com slash rules',
@@ -101,34 +103,43 @@ $options = array(
     'technician_id' => '116927250145869826', // Valithor
     'civ13_guild_id' => '468979034571931648', // Civ13
     'verifier_feed_channel_id' => '1032411190695055440', // Channel VZG Verifier webhooks verification messages to
-    // 'serverinfo_url' => '',
-    'server_settings' => [ // Server specific settings (NYI), this will replace most individual variables.
-        'Nomads' => [
-            'ip' => $civ13_ip, // IP of the server
-            'port' => '1715', // Port of the server
-            'panic' => true, // Panic mode will ban all users who are not verified
-            'legacy' => true, // Legacy mode will use the file system instead of an SQL database
-            'moderate' => true, // Whether chat moderation is enabled
-            'relay_method' => 'webhook', // How messages are relayed to the server
-        ],
+    'server_settings' => [ // Server specific settings, listed in the order in which they appear on the VZG server list.
         'TDM' => [
+            'supported' => true,
+            'enabled' => true,
+            'name' => 'TDM',
             'ip' => $civ13_ip,
+            'host' => 'Taislin',
             'port' => '1714',
             'panic' => false,
             'legacy' => true,
             'moderate' => true,
             'relay_method' => 'webhook',
         ],
-        /*
+        'Nomads' => [
+            'supported' => true, // Whether the server is supported by the remote webserver
+            'enabled' => true, // Whether the server should have commands handled by the bot
+            'name' => 'Nomads', // Name of the server and the prefix of the playercount channel (e.g. nomads-999)
+            'ip' => $civ13_ip, // IP of the server
+            'host' => 'Taislin', // Host of the server
+            'port' => '1715', // Port of the server
+            'panic' => true, // Panic mode will ban all users who are not verified
+            'legacy' => true, // Legacy mode will use the file system instead of an SQL database
+            'moderate' => true, // Whether chat moderation is enabled
+            'relay_method' => 'webhook', // How messages are relayed to the server
+        ],
         'Pers' => [
+            'supported' => true,
+            'enabled' => false,
+            'name' => 'Persistence',
             'ip' => $vzg_ip,
+            'host' => 'ValZarGaming',
             'port' => '1717',
             'panic' => true,
             'legacy' => true,
             'moderate' => true,
             'relay_method' => 'webhook',
         ],
-        */
     ],
     'legacy' => true,
     'relay_method' => 'webhook',
