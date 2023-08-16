@@ -410,7 +410,7 @@ class Civ13
             return $this->reply($message, 'Pong!');
         }));
 
-        $this->messageHandler->offsetSet('help', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $help = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         { // TODO: Automate this using messageHandler and either a foreach loop or a built-in function
             return $this->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true);
             
@@ -423,7 +423,9 @@ class Civ13
             if ($message->member->roles->has($this->role_ids['bishop'])) $commands .= '**Bishop:** `register`' . PHP_EOL;
             if ($message->member->roles->has($this->role_ids['admiral'])) $commands .= '**Admiral:** `ts`';
             return $this->reply($message, $commands);
-        }));
+        });
+        $this->messageHandler->offsetSet('help', $help);
+        $this->messageHandler->offsetSet('commands', $help);
 
         $this->messageHandler->offsetSet('cpu', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
