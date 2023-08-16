@@ -1863,26 +1863,36 @@ class Civ13
     {
         $provisionalRegistration = function (string $ckey, string $discord_id) use (&$provisionalRegistration) {
             if ($this->verified->get('discord', $discord_id)) { // User already verified, this function shouldn't be called (may happen anyway because of the timer)
-                if (isset($this->provisional[$ckey])) unset($this->provisional[$ckey]);
+                unset($this->provisional[$ckey]);
                 return false;
             }
-            $result = $this->verifyCkey($ckey, $discord_id, true);
 
-            if ($result['success']) {
+            $result = [];
+
+            if (isset($this->verify_url) && $this->verify_url) $result = $this->verifyCkey($ckey, $discord_id, true);
+
+            if (isset($result['success']) && $result['success']) {
                 unset($this->provisional[$ckey]);
                 $this->VarSave('provisional.json', $this->provisional);
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Successfully verified Byond account `$ckey` with Discord ID <@$discord_id>.");
                 return false;
             }
             
-            if ($result['error'] && str_starts_with('The website', $result['error'])) {
-                if (! isset($this->timers['provisional_registration'])) $this->timers['provisional_registration'] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) {
-                    $provisionalRegistration($ckey, $discord_id);
-                });
+            if (
+                (! isset($this->verify_url) || ! $this->verify_url) // The website URL is not configured
+                || (isset($result['error']) && $result['error'] && str_starts_with('The website', $result['error'])) // The website is down
+            ) {
+                if (
+                    (isset($this->verify_url) && $this->verify_url) // Only bother with the timer if the website URL is configured
+                    && ! isset($this->timers['provisional_registration'])
+                ) $this->timers['provisional_registration'] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if (! $member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
-                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result['error']);
+                if (
+                    (isset($this->verify_url) && $this->verify_url) // Only send a warning if the website URL is configured
+                    && isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])
+                ) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result['error']);
                 return true;
             }
             if ($result['error'] && str_starts_with('Either Byond account', $result['error'])) {
@@ -1918,6 +1928,20 @@ class Civ13
     { // Send $_POST information to the website. Only call this function after the getByondDesc() verification process has been completed!
         $success = false;
         $error = '';
+
+        // Bypass remote registration and skip straight to provisional if the remote webserver is not configured
+        if (
+            (! isset($this->verify_url) || ! $this->verify_url) // The website URL is not configured
+            && ! $provisional // This is not revisiting a previous provisional registration
+        ) {
+            if (! isset($this->provisional[$ckey])) {
+                $this->provisional[$ckey] = $discord_id;
+                $this->VarSave('provisional.json', $this->provisional);
+            }
+            if ($this->provisionalRegistration($ckey, $discord_id)) $error = "Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
+            return ['success' => $success, 'error' => $error];
+        }
+       
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->verify_url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
