@@ -449,6 +449,10 @@ class Civ13
             }
             return $this->reply($message, 'Unrecognized operating system!');
         }));
+        $this->messageHandler->offsetSet('checkip', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            return $message->reply(file_get_contents('http://ipecho.net/plain'));
+        }));
 
         if (isset($this->role_ids['infantry']))
         $this->messageHandler->offsetSet('approveme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
@@ -2645,14 +2649,26 @@ class Civ13
     }
     public function serverinfoParse(): array
     {
-        if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) return []; // No data to parse
+        if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) {
+            return []; // No data to parse
+            $this->logger->warning('No serverinfo data to parse!');
+        }
         $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
         $return = []; // This is the array we'll return
         foreach ($this->server_settings as $k => $settings) {            
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
-            if (! isset($settings['supported']) || ! $settings['supported']) { $index++; continue; } // Server is not supported by the remote webserver and won't appear in data
-            if (! isset($settings['name'], $settings['ip'], $settings['port'], $settings['host'])) { $index++; continue; } // Server is missing required settings in config 
-            if (array_key_exists('ERROR', $server)) { $return[$index] = []; $index++; continue; } // Remote webserver reports server is not responding
+            if (! isset($settings['supported']) || ! $settings['supported']) { 
+                $this->logger->debug("Server {$settings['name']} is not supported by the remote webserver!");
+                $index++; continue;
+            } // Server is not supported by the remote webserver and won't appear in data
+            if (! isset($settings['name'], $settings['ip'], $settings['port'], $settings['host'])) { 
+                $this->logger->warning("Server {$settings['name']} is missing required settings in config!");
+                $index++; continue;
+            } // Server is missing required settings in config 
+            if (array_key_exists('ERROR', $server)) {
+                $this->logger->debug("Server {$settings['name']} is not responding!");
+                $return[$index] = []; $index++; continue;
+            } // Remote webserver reports server is not responding
             $return[$index]['Server'] = [false => $settings['name'] . PHP_EOL . "<byond://{$settings['ip']}:{$settings['port']}>"];
             $return[$index]['Host'] = [true => $settings['host']];
            
@@ -2684,13 +2700,14 @@ class Civ13
     
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
     
-            if ($index <= 2) {
+            if ($settings['enabled']) {
                 $p1 = (isset($server['players'])
                     ? $server['players']
                     : count($players) ?? 0);
                 $p2 = strtolower($k) . '-';
                 $this->playercountChannelUpdate($p1, $p2);
             }
+            $index++;
         }
         $this->playercount_ticker++;
         return $return;
@@ -2699,15 +2716,21 @@ class Civ13
     // This is a simplified version of serverinfoParse() that only updates the player counter
     public function serverinfoParsePlayers(): void
     {
-        if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) return; // No data to parse
+        if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) {
+            $this->logger->warning('No serverinfo players data to parse!');
+            return; // No data to parse
+        }
 
         // $relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); // We need to declare stationname in world.dm first
 
         $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
         foreach ($this->server_settings as $k => $settings) {            
-            if (! $server = array_shift($this->serverinfo)) continue; // No data for this server
+            if (! $server = array_shift($serverinfo)) continue; // No data for this server
             if (! isset($settings['supported']) || ! $settings['supported']) { $index++; continue; } // Server is not supported by the remote webserver and won't appear in data
-            if (! isset($settings['name'])) { $index++; continue; } // Server is missing required settings in config 
+            if (! isset($settings['name'])) { 
+                $this->logger->warning("Server {$k} is missing a name in config!");
+                $index++; continue;
+            } // Server is missing required settings in config 
             if (array_key_exists('ERROR', $server)) { $index++; continue; } // Remote webserver reports server is not responding
 
             $p1 = (isset($server['players'])
