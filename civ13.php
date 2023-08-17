@@ -60,6 +60,7 @@ class Civ13
     public collection $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
     public array $provisional = []; // Allow provisional registration if the website is down, then try to verify when it comes back up
+    public array $softbanned = []; // List of ckeys and discord IDs that are not allowed to go through the verification process
     public array $paroled = []; // List of ckeys that are no longer banned but have been paroled
     public array $ages = []; // $ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
     public string $minimum_age = '-21 days'; // Minimum age of a ckey
@@ -463,6 +464,7 @@ class Civ13
                 return $message->react("👍");
             }
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
+            if (isset($this->softbanned[$item['ss13']]) || isset($this->softbanned[$message->user_id])) return $this->reply($message, 'This account is currently under investigation.');
             return $this->reply($message, $this->verifyProcess($ckey, $message->author->id));
         }));
 
@@ -973,6 +975,18 @@ class Civ13
             return $this->banlogHandler($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
         }), ['admiral', 'captain', 'knight']);
 
+        $this->messageHandler->offsetSet('softban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            $this->softban($id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
+            return $this->reply($message, "`$id` is no longer allowed to get verified.");
+        }), ['admiral', 'captain', 'knight']);
+
+        $this->messageHandler->offsetSet('unsoftban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            $this->softban($id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
+            return $this->reply($message, "`$id` is allowed to get verified again.");
+        }), ['admiral', 'captain', 'knight']);
+        
         $this->messageHandler->offsetSet('ban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
         {
             $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
@@ -1378,6 +1392,11 @@ class Civ13
                     $this->VarSave('permitted.json', $permitted);
                 }
                 $this->permitted = $permitted;
+                if (! $softbanned = $this->VarLoad('softbanned.json')) {
+                    $softbanned = [];
+                    $this->VarSave('softbanned.json', $softbanned);
+                }
+                $this->softbanned = $softbanned;
                 if (! $panic_bans = $this->VarLoad('panic_bans.json')) {
                     $panic_bans = [];
                     $this->VarSave('panic_bans.json', $panic_bans);
@@ -2261,6 +2280,20 @@ class Civ13
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
 
+    /**
+     * Soft bans a user by adding their ckey to the softbanned array or removes them from it if $allow is false.
+     * 
+     * @param string $ckey The key of the user to be soft banned.
+     * @param bool $allow Whether to add or remove the user from the softbanned array.
+     * @return array The updated softbanned array.
+     */
+    public function softban($id, $allow = true): array
+    {
+        if ($allow) $this->softbanned[$id] = true;
+        else unset($this->softbanned[$id]);
+        $this->VarSave('softbanned.json', $this->softbanned);
+        return $this->softbanned;
+    }
     /*
     * These functions determine which of the above methods should be used to process a ban or unban
     * Ban functions will return a string containing the results of the ban
@@ -2753,6 +2786,7 @@ class Civ13
         if ($member->guild_id == $this->civ13_guild_id && $item = $this->verified->get('discord', $member->id)) {
             if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
             else {
+                if (isset($this->softbanned[$item['ss13']]) || isset($this->softbanned[$member->id])) return;
                 $banned = $this->bancheck($item['ss13'], true);
                 $paroled = isset($this->paroled[$item['ss13']]);
                 if ($banned && $paroled) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished'], $this->role_ids['paroled']], "bancheck join {$item['ss13']}");
