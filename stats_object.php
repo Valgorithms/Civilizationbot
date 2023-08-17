@@ -60,7 +60,7 @@ class Stats
         return @str_replace(
             "\n",
             ' ',
-            $parse
+            $parse ?? 'Failed to execute command'
         );
     }
 
