@@ -42,6 +42,14 @@ class Slash
             'description' => 'Replies with Pong!',
         ]));
 
+        // if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
+        if (! $commands->get('name', 'help')) $commands->save(new Command($this->civ13->discord, [
+            'name'          => 'help',
+            'description'   => 'View a list of available commands',
+            'dm_permission' => false,
+        ]));
+
+
         // if ($command = $commands->get('name', 'pull')) $commands->delete($command->id);
         if (! $commands->get('name', 'pull')) $commands->save(new Command($this->civ13->discord, [
                 'name'                       => 'pull',
@@ -288,6 +296,11 @@ class Slash
         $this->civ13->discord->listenCommand('ping', function (Interaction $interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
+        });
+
+        $this->civ13->discord->listenCommand('help', function (Interaction $interaction): PromiseInterface
+        {
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->messageHandler->generateHelp($interaction->member->roles)), true);
         });
 
         $this->civ13->discord->listenCommand('stats', function (Interaction $interaction): PromiseInterface

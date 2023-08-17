@@ -56,9 +56,11 @@ class Stats
      */
     private function getBotVersion(): string
     {
-        return str_replace(
-            "\n", ' ',
-            `git rev-parse --abbrev-ref HEAD; git log --oneline -1`
+        $parse = `git rev-parse --abbrev-ref HEAD; git log --oneline -1`;
+        return @str_replace(
+            "\n",
+            ' ',
+            $parse
         );
     }
 
