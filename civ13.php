@@ -2786,10 +2786,14 @@ class Civ13
             }
         }
     }
-    /*
-    * This function checks all Discord member's ckeys against the banlist
-    * If they are no longer banned, it will remove the banished role from them
-    */
+    /**
+     * Every 12 hours, this function checks if a user is banned and removes the banished role from them if they are not.
+     * It loops through all the members in the guild and checks if they have the banished role.
+     * If they are not been banned, it removes the banished role from them.
+     * If the staff_bot channel exists, it sends a message to the channel indicating that the banished role has been removed from the member.
+     *
+     * @return bool Returns true if the function executes successfully, false otherwise.
+     */
     public function unbanTimer(): bool
     {
         // We don't want the persistence server to do this function
