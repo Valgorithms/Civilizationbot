@@ -454,7 +454,7 @@ class Civ13
                 return $message->react("👍");
             }
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
-            if (isset($this->softbanned[$item['ss13']]) || isset($this->softbanned[$message->user_id])) return $this->reply($message, 'This account is currently under investigation.');
+            if (($item['ss13'] && isset($this->softbanned[$item['ss13']])) || isset($this->softbanned[$message->user_id])) return $this->reply($message, 'This account is currently under investigation.');
             return $this->reply($message, $this->verifyProcess($ckey, $message->author->id));
         }));
 
@@ -2776,7 +2776,7 @@ class Civ13
         if ($member->guild_id == $this->civ13_guild_id && $item = $this->verified->get('discord', $member->id)) {
             if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
             else {
-                if (isset($this->softbanned[$item['ss13']]) || isset($this->softbanned[$member->id])) return;
+                if (($item['ss13'] && isset($this->softbanned[$item['ss13']])) || isset($this->softbanned[$member->id])) return;
                 $banned = $this->bancheck($item['ss13'], true);
                 $paroled = isset($this->paroled[$item['ss13']]);
                 if ($banned && $paroled) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished'], $this->role_ids['paroled']], "bancheck join {$item['ss13']}");
