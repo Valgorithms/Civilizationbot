@@ -212,12 +212,12 @@ $slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme): void
         else $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
     });
 
-    foreach (array_keys($this->server_settings) as $key) {
+    foreach (array_keys($this->server_settings) as $key => $settings) {
         $server = strtolower($key);
 
-        if (isset($civ13->ips[$server], $civ13->ports[$server])) $civ13->discord->listenCommand($server.'_restart', function (Interaction $interaction) use ($civ13, $server, $key): void
+        if (isset($settings['ip'], $settings['port'])) $civ13->discord->listenCommand($server.'_restart', function (Interaction $interaction) use ($civ13, $server, $key, $settings): void
         {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$civ13->ips[$server]}:{$civ13->ports[$server]}>"));
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$settings['ip']}:{$settings['port']}>"));
             if ($serverrestart = array_shift($this->messageHandler->offsetGet($server.'restart'))) $serverrestart();
         });
     }
