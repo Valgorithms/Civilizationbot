@@ -266,12 +266,12 @@ class Civ13
                         \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
                         \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
                         \execInBackground("python3 {$this->files[$server.'_killsudos']}");
-                        if (! isset($this->timers[$server.'Host'])) $this->timers[$server.'Host'] = $this->discord->getLoop()->addTimer(30, function () use ($server, $settings) {
+                        if (! isset($this->timers[$server.'host'])) $this->timers[$server.'host'] = $this->discord->getLoop()->addTimer(30, function () use ($server, $settings) {
                             \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$settings['port']} -trusted -webclient -logself &");
                         });
                         if ($message) $message->react("👍");
                     };
-                    $this->messageHandler->offsetSet($server.'Host', $serverhost, ['Owner', 'High Staff']);
+                    $this->messageHandler->offsetSet($server.'host', $serverhost, ['Owner', 'High Staff']);
                 }
             }
             foreach (['_killciv13'] as $postfix) {
@@ -285,11 +285,11 @@ class Civ13
                     $this->messageHandler->offsetSet($server.'kill', $serverkill, ['Owner', 'High Staff']);
                 }
             }
-            if ($this->messageHandler->offsetExists($server.'Host') && $this->messageHandler->offsetExists($server.'kill')) {
+            if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
                 $serverrestart = function (?Message $message = null) use ($server): void
                 {
                     if ($kill = array_shift($this->messageHandler->offsetGet($server.'kill'))) $kill();
-                    if ($host = array_shift($this->messageHandler->offsetGet($server.'Host'))) $host();
+                    if ($host = array_shift($this->messageHandler->offsetGet($server.'host'))) $host();
                     if ($message) $message->react("👍");
                 };
                 $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['Owner', 'High Staff']);
