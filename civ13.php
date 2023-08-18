@@ -3082,8 +3082,8 @@ class Civ13
             'Chief Technical Officer' => ['Bishop', '65535'],
             'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
             'Head Admin' => ['GrandMaster', '16382'],
-            'Vice Head Admin' => ['Marshall', '16382'],
-            'Manager' => ['KnightCommander', '16382'],
+            'Manager' => ['Marshall', '16382'],
+            'Supervisor' => ['KnightCommander', '16382'],
             'High Staff' => ['Captain', '16382'], // Default High Staff permission, only used if another role is not found first
             'Event Admin' => ['StoryTeller', '16254'],
             'Moderator' => ['Squire', '8708'], // Squires will also have the Knight role, but it takes priority
@@ -3094,8 +3094,8 @@ class Civ13
             'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
             'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
             'Head Admin' => ['Head Admin', '16382'],
-            'Vice Head Admin' => ['Vice Head Admin', '16382'],
             'Manager' => ['Manager', '16382'],
+            'Supervisor' => ['Supervisor', '16382'],
             'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
             'Event Admin' => ['Event Admin', '16254'],
             'Moderator' => ['Moderator', '8708'], // Moderators will also have the Knight role, but it takes priority
