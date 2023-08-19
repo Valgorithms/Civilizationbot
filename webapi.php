@@ -853,9 +853,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     return new Response(200, ['Content-Type' => 'text/json'], json_encode($return ?? ''));
 });
 //$webapi->listen($socket); // Moved to civ13.php
-$webapi->on('error', function (Exception $e) use ($civ13, $socket) {
+$webapi->on('error', function (Exception $e, \Psr\Http\Message\RequestInterface $request) use ($civ13, $socket) {
     $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
-    $civ13->logger->error($error);
+    $civ13->logger->error($error . ' Request: ' . $request->getRequestTarget());
     if (str_starts_with($e->getMessage(), 'The response callback')) {
         $civ13->logger->info('[RESTART] WEBAPI ERROR');
         if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
