@@ -290,7 +290,10 @@ class Civ13
                 {
                     $kill = $this->messageHandler->offsetGet($server.'kill') ?? [];
                     $host = $this->messageHandler->offsetGet($server.'host') ?? [];
-                    if ($kill = array_shift($kill) && $host = array_shift($host)) {
+                    if (
+                        ($kill = array_shift($kill))
+                        && ($host = array_shift($host))
+                    ) {
                         $kill();
                         $host();
                         if ($message) return $message->react("👍");
