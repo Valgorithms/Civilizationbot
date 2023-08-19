@@ -3091,18 +3091,6 @@ class Civ13
     {
         $required_roles = [
             'Owner' => ['Host', '65535'],
-            'Chief Technical Officer' => ['Bishop', '65535'],
-            'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
-            'Head Admin' => ['GrandMaster', '16382'],
-            'Manager' => ['Marshall', '16382'],
-            'Supervisor' => ['KnightCommander', '16382'],
-            'High Staff' => ['Captain', '16382'], // Default High Staff permission, only used if another role is not found first
-            'Event Admin' => ['StoryTeller', '16254'],
-            'Moderator' => ['Squire', '8708'], // Squires will also have the Knight role, but it takes priority
-            'Admin' => ['Knight', '12158'],
-            'Mentor' => ['Mentor', '16384'],
-            /*
-            'Owner' => ['Host', '65535'],
             'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
             'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
             'Head Admin' => ['Head Admin', '16382'],
@@ -3110,10 +3098,9 @@ class Civ13
             'Supervisor' => ['Supervisor', '16382'],
             'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
             'Event Admin' => ['Event Admin', '16254'],
-            'Moderator' => ['Moderator', '8708'], // Moderators will also have the Knight role, but it takes priority
+            'Moderator' => ['Moderator', '8708'], // Moderators will also have the Admin role, but it takes priority
             'Admin' => ['Admin', '12158'],
             'Mentor' => ['Mentor', '16384'],
-            */  
         ];
         if (! $this->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! $file_paths = $this->getRequiredConfigFiles($postfix, $defaults, $lists)) return false;
