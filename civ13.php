@@ -286,11 +286,16 @@ class Civ13
                 }
             }
             if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
-                $serverrestart = function (?Message $message = null) use ($server): void
+                $serverrestart = function (?Message $message = null) use ($server): ?PromiseInterface
                 {
-                    if ($kill = array_shift($this->messageHandler->offsetGet($server.'kill'))) $kill();
-                    if ($host = array_shift($this->messageHandler->offsetGet($server.'host'))) $host();
-                    if ($message) $message->react("👍");
+                    $kill = $this->messageHandler->offsetGet($server.'kill') ?? [];
+                    $host = $this->messageHandler->offsetGet($server.'host') ?? [];
+                    if ($kill = array_shift($kill) && $host = array_shift($host)) {
+                        $kill();
+                        $host();
+                        if ($message) return $message->react("👍");
+                    }
+                    if ($message) return $message->react("🔥");
                 };
                 $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['Owner', 'High Staff']);
             }
