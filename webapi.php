@@ -152,7 +152,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     $echo = 'API ';
     $sub = 'index.';
     $path = explode('/', $request->getUri()->getPath());
-    $civ13->logger->info('[webapi] ' . $request->getServerParams()['REMOTE_ADDR'] . ' ' . $request->getMethod() . ' ' . $request->getUri()->getPath());
+    $civ13->logger->debug('[webapi] ' . $request->getServerParams()['REMOTE_ADDR'] . ' ' . $request->getMethod() . ' ' . $request->getUri()->getPath());
     $repository = $sub = (isset($path[1]) ? (string) strtolower($path[1]) : false); if ($repository) $echo .= "$repository";
     $method = $id = (isset($path[2]) ? (string) strtolower($path[2]) : false); if ($method) $echo .= "/$method";
     $id2 = $repository2 = (isset($path[3]) ? (string) strtolower($path[3]) : false); if ($id2) $echo .= "/$id2";
