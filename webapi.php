@@ -169,7 +169,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
         $civ13_ip,
         $vzg_ip,
         '51.254.161.128',
-        '69.244.83.231',
+        '69.137.227.236',
     ];
     $whitelist = array_merge($whitelist, $authed_ips);
     $substr_whitelist = ['10.0.0.', '192.168.']; 
