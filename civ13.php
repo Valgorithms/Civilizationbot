@@ -535,7 +535,7 @@ class Civ13
             }
             $reason = 'unknown';
             $found = false;
-            $response = '';
+            $content = '';
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $file_path = strtolower($key) . '_bans';
@@ -551,18 +551,16 @@ class Civ13
                         $reason = $linesplit[3];
                         $admin = $linesplit[4];
                         $date = $linesplit[5];
-                        $response .= "**$ckey** has been **$type** banned from **$key** on **$date** for **$reason** by $admin." . PHP_EOL;
+                        $content .= "**$ckey** has been **$type** banned from **$key** on **$date** for **$reason** by $admin." . PHP_EOL;
                     }
                 }
                 fclose($file);
             }
-            if (! $found) $response .= "No bans were found for **$ckey**." . PHP_EOL;
+            if (! $found) $content .= "No bans were found for **$ckey**." . PHP_EOL;
             elseif (isset($this->role_ids['banished']) && $member = $this->getVerifiedMember($ckey))
                 if (! $member->roles->has($this->role_ids['banished']))
                     $member->addRole($this->role_ids['banished']);
-            $embed = new Embed($this->discord);
-            $embed->setDescription($response);
-            return $message->reply(MessageBuilder::new()->addEmbed($embed));
+            return $this->reply($message, $content, 'bancheck.txt');
         }));
 
         $this->messageHandler->offsetSet('discord2ckey', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
