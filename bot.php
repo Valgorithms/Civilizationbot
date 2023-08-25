@@ -68,6 +68,7 @@ include 'civ13.php';
 include 'Handler.php';
 include 'MessageHandler.php';
 
+// TODO: Add a timer and a callable function to update these IP addresses every 12 hours
 $external_ip = file_get_contents('http://ipecho.net/plain');
 $civ13_ip = gethostbyname('www.civ13.com');
 $vzg_ip = gethostbyname('www.valzargaming.com');
@@ -187,6 +188,7 @@ $options = array(
         'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
         
         // Nomads
+
         'nomads_log_basedir' => '/home/civ13/civ13-rp/data/logs',
         'nomads_ooc_path' => '/home/civ13/civ13-rp/ooc.log',
         'nomads_admin_path' => '/home/civ13/civ13-rp/admin.log',
@@ -201,6 +203,8 @@ $options = array(
         'nomads_playerlogs' => '/home/civ13/civ13-rp/SQL/playerlogs.txt',
         // Campaign
         'nomads_factionlist' => '/home/civ13/civ13-rp/SQL/factionlist.txt',
+        // Basedir
+        'nomads_basedir' => '/home/civ13/civ13-rp',
         
         // TDM
         'tdm_log_basedir' => '/home/civ13/civ13-tdm/data/logs',
@@ -222,6 +226,8 @@ $options = array(
         // Medals
         'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt',
         'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt',
+        // Basedir
+        'nomads_basedir' => '/home/civ13/civ13-tdm',
 
         // Persistence
         'pers_log_basedir' => '/home/civ13/civ13-pers/data/logs',
@@ -245,6 +251,8 @@ $options = array(
         // Medals
         'tdm_awards_path' => '/home/civ13/civ13-pers/SQL/awards.txt',
         'tdm_awards_br_path' => '/home/civ13/civ13-pers/SQL/awards_br.txt',
+        // Basedir
+        'pers_basedir' => '/home/civ13/civ13-pers',
 
         // Script paths
         'nomads_updateserverabspaths' => '/home/civ13/civ13-rp/scripts/updateserverabspaths.py',
@@ -386,6 +394,13 @@ $options = array(
         ],
     ),
 );
+$cyrillic_alphabet = array(  // Ban use of Cyrillic characters
+    'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
+    'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
+    'І', 'і', 'Ї', 'ї', 'Є', 'є',
+);
+foreach ($cyrillic_alphabet as $char) $options['badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'contains', 'warnings' => 1];
+
 if (include 'civ_token.php') $options['civ_token'] = $civ_token;
 $civ13 = new Civ13($options);
 $global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13) {
