@@ -517,12 +517,12 @@ class Civ13
                 switch (strtolower($message->channel->name)) {
                     // case 'ahelp-{$server}}': // Deprecated
                     case "asay-{$server}":
-                    case "ooc-{$server}":
+                    case "ic-{$server}":
                         if (! $this->DirectMessage($recipient, $msg, $this->getVerifiedItem($message->author->id)['ss13'], $server)) return $message->react("🔥");
                         return $message->react("📧");
                 }
             }
-            return $this->reply($message, 'You need to be in any of the #ooc or #asay channels to use this command.');
+            return $this->reply($message, 'You need to be in any of the #ic or #asay channels to use this command.');
         });
         $this->messageHandler->offsetSet('dm', $directmessage);
         $this->messageHandler->offsetSet('pm', $directmessage);
