@@ -2906,10 +2906,11 @@ class Civ13
         foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
             case 'exact': // ban ckey if $string contains a blacklisted phrase exactly as it is defined
                 if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
-                break;
+                break 2;
             case 'contains': // ban ckey if $string contains a blacklisted word
             default: // default to 'contains'
                 if (str_contains(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
+                break 2;
         }
         return $string;
     }
