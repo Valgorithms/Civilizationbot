@@ -2322,11 +2322,11 @@ class Civ13
                 $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
     }
     
-    public function DirectMessage(string $recipient, string $message, string $sender, ?string $key = ''): bool
+    public function DirectMessage(string $recipient, string $message, string $sender, ?string $server = ''): bool
     {
-        $directmessage = function (string $recipient, string $message, string $sender, string $key): bool
+        $directmessage = function (string $recipient, string $message, string $sender, string $server): bool
         {
-            $server = strtolower($key);
+            $server = strtolower($server);
             if (file_exists($this->files[$server.'_discord2dm']) && $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
                 fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
                 fclose($file);
@@ -2338,8 +2338,9 @@ class Civ13
         };
         
         $sent = false;
-        if ($key) $sent = $directmessage($recipient, $message, $sender, $key);
+        if ($server) $sent = $directmessage($recipient, $message, $sender, $server);
         else foreach ($this->server_settings as $key => $settings) {
+            $server = strtolower($key);
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if ($directmessage($recipient, $message, $sender, $key)) $sent = true;
         }
