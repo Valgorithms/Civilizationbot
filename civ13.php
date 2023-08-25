@@ -480,7 +480,7 @@ class Civ13
 
         $this->messageHandler->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
-            foreach ($this->server_settings as $key => $setting) {
+            foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
                 if (isset($this->server_funcs_uncalled[$server.'_discord2ooc'])) switch (strtolower($message->channel->name)) {
