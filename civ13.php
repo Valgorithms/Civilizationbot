@@ -519,6 +519,7 @@ class Civ13
                     case "asay-{$server}":
                     case "ic-{$server}":
                         if (! $this->DirectMessage($recipient, $msg, $this->getVerifiedItem($message->author->id)['ss13'], $server)) return $message->react("🔥");
+                        $this->logger->info("Sending message to $server for $recipient from from {$this->getVerifiedItem($message->author->id)['ss13']}: $msg");
                         return $message->react("📧");
                 }
             }
