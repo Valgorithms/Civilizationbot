@@ -399,7 +399,7 @@ $cyrillic_alphabet = array(  // Ban use of Cyrillic characters
     'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
     'І', 'і', 'Ї', 'ї', 'Є', 'є',
 );
-foreach ($cyrillic_alphabet as $char) $options['badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'contains', 'warnings' => 1];
+foreach ($cyrillic_alphabet as $char) $options['badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'contains', 'warnings' => 2];
 
 if (include 'civ_token.php') $options['civ_token'] = $civ_token;
 $civ13 = new Civ13($options);
