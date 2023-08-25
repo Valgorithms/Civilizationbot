@@ -509,7 +509,7 @@ class Civ13
         $directmessage = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $explode = explode(';', $message_filtered['message_content']);
-            $recipient = array_shift($explode);
+            $recipient = $this->sanitizeInput(substr(array_shift($explode), strlen($command)));
             $msg = implode(' ', $explode);
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
@@ -519,7 +519,7 @@ class Civ13
                     case "asay-{$server}":
                     case "ic-{$server}":
                         if (! $this->DirectMessage($recipient, $msg, $this->getVerifiedItem($message->author->id)['ss13'], $server)) return $message->react("🔥");
-                        $this->logger->info("Sending message to $server for $recipient from from {$this->getVerifiedItem($message->author->id)['ss13']}: $msg");
+                        $this->logger->info("Sending message to `$server` for `$recipient` from `{$this->getVerifiedItem($message->author->id)['ss13']}`: $msg");
                         return $message->react("📧");
                 }
             }
