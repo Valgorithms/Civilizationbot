@@ -420,7 +420,7 @@ class Civ13
         }));
 
         $help = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        { // TODO: Automate this using messageHandler and either a foreach loop or a built-in function
+        {
             return $this->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true);
         });
         $this->messageHandler->offsetSet('help', $help);
@@ -462,7 +462,7 @@ class Civ13
                 return $message->react("👍");
             }
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
-            if (($item['ss13'] && isset($this->softbanned[$item['ss13']])) || isset($this->softbanned[$message->user_id])) return $this->reply($message, 'This account is currently under investigation.');
+            if (isset($item['ss13']) && (isset($this->softbanned[$item['ss13']]) || isset($this->softbanned[$message->user_id]))) return $this->reply($message, 'This account is currently under investigation.');
             return $this->reply($message, $this->verifyProcess($ckey, $message->author->id));
         }));
 
