@@ -463,6 +463,154 @@ class Civ13
             return $message->reply(file_get_contents('http://ipecho.net/plain'));
         }));
 
+        /**
+         * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
+         * It also iterates through playerlogs ban logs to find all known ckeys, IPs, and CIDs.
+         * If the user has high staff privileges, it also displays primary IPs and CIDs.
+         * @param Message $message The message object.
+         * @param array $message_filtered The filtered message content.
+         * @param string $command The command used to trigger this method.
+         * @return PromiseInterface
+         */
+        $this->messageHandler->offsetSet('ckeyinfo', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            $high_rank_check = function (Message $message, array $allowed_ranks = []): bool
+            {
+                $resolved_ranks = [];
+                foreach ($allowed_ranks as $rank) if (isset($this->role_ids[$rank])) $resolved_ranks[] = $this->role_ids[$rank];
+                foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
+                return false;
+            };
+            $high_staff = $high_rank_check($message, ['Owner', 'High Staff']);
+            if (! $id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
+            if (is_numeric($id)) {
+                if (! $item = $this->getVerifiedItem($id)) return $this->reply($message, "No data found for Discord ID `$id`.");
+                $ckey = $item['ss13'];
+            } else $ckey = $id;
+            if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return $this->reply($message, 'No data found for that ckey.');
+
+            $embed = new Embed($this->discord);
+            $embed->setTitle($ckey);
+            if ($item = $this->getVerifiedItem($ckey)) {
+                $ckey = $item['ss13'];
+                if ($member = $this->getVerifiedMember($item))
+                    $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+            }
+            $ckeys = [$ckey];
+            $ips = [];
+            $cids = [];
+            $dates = [];
+            // Get the ckey's primary identifiers
+            foreach ($collectionsArray[0] as $log) {
+                if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+                if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
+                if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
+            }
+            foreach ($collectionsArray[1] as $log) {
+                if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+                if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
+                if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
+            }
+            $ckey_age = [];
+            if (! empty($ckeys)) {
+                foreach ($ckeys as $c) ($age = $this->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
+                $ckey_age_string = '';
+                foreach ($ckey_age as $key => $value) $ckey_age_string .= " $key ($value) ";
+                if ($ckey_age_string) $embed->addFieldValues('Primary Ckeys', trim($ckey_age_string));
+            }
+            if ($high_staff) {
+                if (! empty($ips) && $ips) $embed->addFieldValues('Primary IPs', implode(', ', $ips), true);
+                if (! empty($cids) && $cids) $embed->addFieldValues('Primary CIDs', implode(', ', $cids), true);
+            }
+            if (! empty($dates) && $dates) $embed->addFieldValues('Primary Dates', implode(', ', $dates));
+
+            // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
+            $playerlogs = $this->playerlogsToCollection(); // This is ALL players
+            $i = 0;
+            $break = false;
+            do { // Iterate through playerlogs to find all known ckeys, ips, and cids
+                $found = false;
+                $found_ckeys = [];
+                $found_ips = [];
+                $found_cids = [];
+                $found_dates = [];
+                foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                    if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                    if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                    if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                    if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
+                }
+                $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+                $ips = array_unique(array_merge($ips, $found_ips));
+                $cids = array_unique(array_merge($cids, $found_cids));
+                $dates = array_unique(array_merge($dates, $found_dates));
+                if ($i > 10) $break = true;
+                $i++;
+            } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
+
+            $banlogs = $this->bansToCollection();
+            $this->bancheck($ckey)
+                ? $banned = 'Yes'
+                : $banned = 'No';
+            $found = true;
+            $i = 0;
+            $break = false;
+            do { // Iterate through playerlogs to find all known ckeys, ips, and cids
+                $found = false;
+                $found_ckeys = [];
+                $found_ips = [];
+                $found_cids = [];
+                $found_dates = [];
+                foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+                    if (! in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                    if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
+                    if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
+                    if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
+                }
+                $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+                $ips = array_unique(array_merge($ips, $found_ips));
+                $cids = array_unique(array_merge($cids, $found_cids));
+                $dates = array_unique(array_merge($dates, $found_dates));
+                if ($i > 10) $break = true;
+                $i++;
+            } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
+            $altbanned = 'No';
+            foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = 'Yes'; break; }
+
+            $verified = 'No';
+            if ($this->verified->get('ss13', $ckey)) $verified = 'Yes';
+            if (! empty($ckeys) && $ckeys) {
+                foreach ($ckeys as $c) if (! isset($ckey_age[$c])) ($age = $this->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
+                $ckey_age_string = '';
+                foreach ($ckey_age as $key => $value) $ckey_age_string .= "$key ($value) ";
+                if ($ckey_age_string) $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
+            }
+            if ($high_staff) {
+                if (! empty($ips) && $ips) $embed->addFieldValues('Matched IPs', implode(', ', $ips), true);
+                if (! empty($cids) && $cids) $embed->addFieldValues('Matched CIDs', implode(', ', $cids), true);
+            }
+            if (! empty($ips) && $ips) {
+                $regions = [];
+                foreach ($ips as $ip) if (! in_array($region = $this->IP2Country($ip), $regions)) $regions[] = $region;
+                if ($regions) $embed->addFieldValues('Regions', implode(', ', $regions));
+            }
+            if (! empty($dates) && $dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
+            if ($verified) $embed->addfieldValues('Verified', $verified, true);
+            $discords = [];
+            if ($ckeys) foreach ($ckeys as $c) if ($item = $this->verified->get('ss13', $c)) $discords[] = $item['discord'];
+            if ($discords) {
+                foreach ($discords as &$id) $id = "<@{$id}>";
+                $embed->addfieldValues('Discord', implode(', ', $discords));
+            }
+            if ($banned) $embed->addfieldValues('Currently Banned', $banned, true);
+            if ($altbanned) $embed->addfieldValues('Alt Banned', $altbanned, true);
+            $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No', true);
+            $builder = MessageBuilder::new();
+            if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
+            $builder->addEmbed($embed);
+            return $message->reply($builder);
+        }), ['Owner', 'High Staff', 'Admin']);
+        
         if (! $this->shard) {
             if (isset($this->role_ids['infantry']))
             $this->messageHandler->offsetSet('approveme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
@@ -740,155 +888,7 @@ class Civ13
                 : $method = 'file';
             $this->relay_method = $method;
             return $this->reply($message, "Relay method changed to `$method`.");
-        }), ['Owner', 'High Staff']);
-        
-        /**
-         * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
-         * It also iterates through playerlogs ban logs to find all known ckeys, IPs, and CIDs.
-         * If the user has high staff privileges, it also displays primary IPs and CIDs.
-         * @param Message $message The message object.
-         * @param array $message_filtered The filtered message content.
-         * @param string $command The command used to trigger this method.
-         * @return PromiseInterface
-         */
-        $this->messageHandler->offsetSet('ckeyinfo', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            $high_rank_check = function (Message $message, array $allowed_ranks = []): bool
-            {
-                $resolved_ranks = [];
-                foreach ($allowed_ranks as $rank) if (isset($this->role_ids[$rank])) $resolved_ranks[] = $this->role_ids[$rank];
-                foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
-                return false;
-            };
-            $high_staff = $high_rank_check($message, ['Owner', 'High Staff']);
-            if (! $id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
-            if (is_numeric($id)) {
-                if (! $item = $this->getVerifiedItem($id)) return $this->reply($message, "No data found for Discord ID `$id`.");
-                $ckey = $item['ss13'];
-            } else $ckey = $id;
-            if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return $this->reply($message, 'No data found for that ckey.');
-
-            $embed = new Embed($this->discord);
-            $embed->setTitle($ckey);
-            if ($item = $this->getVerifiedItem($ckey)) {
-                $ckey = $item['ss13'];
-                if ($member = $this->getVerifiedMember($item))
-                    $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
-            }
-            $ckeys = [$ckey];
-            $ips = [];
-            $cids = [];
-            $dates = [];
-            // Get the ckey's primary identifiers
-            foreach ($collectionsArray[0] as $log) {
-                if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-                if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
-                if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
-            }
-            foreach ($collectionsArray[1] as $log) {
-                if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-                if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
-                if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
-            }
-            $ckey_age = [];
-            if (! empty($ckeys)) {
-                foreach ($ckeys as $c) ($age = $this->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
-                $ckey_age_string = '';
-                foreach ($ckey_age as $key => $value) $ckey_age_string .= " $key ($value) ";
-                if ($ckey_age_string) $embed->addFieldValues('Primary Ckeys', trim($ckey_age_string));
-            }
-            if ($high_staff) {
-                if (! empty($ips) && $ips) $embed->addFieldValues('Primary IPs', implode(', ', $ips), true);
-                if (! empty($cids) && $cids) $embed->addFieldValues('Primary CIDs', implode(', ', $cids), true);
-            }
-            if (! empty($dates) && $dates) $embed->addFieldValues('Primary Dates', implode(', ', $dates));
-
-            // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
-            $playerlogs = $this->playerlogsToCollection(); // This is ALL players
-            $i = 0;
-            $break = false;
-            do { // Iterate through playerlogs to find all known ckeys, ips, and cids
-                $found = false;
-                $found_ckeys = [];
-                $found_ips = [];
-                $found_cids = [];
-                $found_dates = [];
-                foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                    if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                    if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                    if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                    if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
-                }
-                $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
-                $ips = array_unique(array_merge($ips, $found_ips));
-                $cids = array_unique(array_merge($cids, $found_cids));
-                $dates = array_unique(array_merge($dates, $found_dates));
-                if ($i > 10) $break = true;
-                $i++;
-            } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
-
-            $banlogs = $this->bansToCollection();
-            $this->bancheck($ckey)
-                ? $banned = 'Yes'
-                : $banned = 'No';
-            $found = true;
-            $i = 0;
-            $break = false;
-            do { // Iterate through playerlogs to find all known ckeys, ips, and cids
-                $found = false;
-                $found_ckeys = [];
-                $found_ips = [];
-                $found_cids = [];
-                $found_dates = [];
-                foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                    if (! in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                    if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                    if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                    if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
-                }
-                $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
-                $ips = array_unique(array_merge($ips, $found_ips));
-                $cids = array_unique(array_merge($cids, $found_cids));
-                $dates = array_unique(array_merge($dates, $found_dates));
-                if ($i > 10) $break = true;
-                $i++;
-            } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
-            $altbanned = 'No';
-            foreach ($ckeys as $key) if ($key != $ckey) if ($this->bancheck($key)) { $altbanned = 'Yes'; break; }
-
-            $verified = 'No';
-            if ($this->verified->get('ss13', $ckey)) $verified = 'Yes';
-            if (! empty($ckeys) && $ckeys) {
-                foreach ($ckeys as $c) if (! isset($ckey_age[$c])) ($age = $this->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
-                $ckey_age_string = '';
-                foreach ($ckey_age as $key => $value) $ckey_age_string .= "$key ($value) ";
-                if ($ckey_age_string) $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
-            }
-            if ($high_staff) {
-                if (! empty($ips) && $ips) $embed->addFieldValues('Matched IPs', implode(', ', $ips), true);
-                if (! empty($cids) && $cids) $embed->addFieldValues('Matched CIDs', implode(', ', $cids), true);
-            }
-            if (! empty($ips) && $ips) {
-                $regions = [];
-                foreach ($ips as $ip) if (! in_array($region = $this->IP2Country($ip), $regions)) $regions[] = $region;
-                if ($regions) $embed->addFieldValues('Regions', implode(', ', $regions));
-            }
-            if (! empty($dates) && $dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
-            if ($verified) $embed->addfieldValues('Verified', $verified, true);
-            $discords = [];
-            if ($ckeys) foreach ($ckeys as $c) if ($item = $this->verified->get('ss13', $c)) $discords[] = $item['discord'];
-            if ($discords) {
-                foreach ($discords as &$id) $id = "<@{$id}>";
-                $embed->addfieldValues('Discord', implode(', ', $discords));
-            }
-            if ($banned) $embed->addfieldValues('Currently Banned', $banned, true);
-            if ($altbanned) $embed->addfieldValues('Alt Banned', $altbanned, true);
-            $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No', true);
-            $builder = MessageBuilder::new();
-            if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
-            $builder->addEmbed($embed);
-            return $message->reply($builder);
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'High Staff']);    
 
         $this->messageHandler->offsetSet('fullaltcheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
