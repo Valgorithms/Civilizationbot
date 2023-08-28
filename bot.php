@@ -178,7 +178,7 @@ $options = array(
         ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
         ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
         
-        ['word' => '', 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'cyrillic', 'warnings' => 2],
+        ['word' => 'RU', 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'cyrillic', 'warnings' => 2],
     ],
     'folders' => array(
         // 'typespess_path' => '/home/civ13/civ13-typespess',
