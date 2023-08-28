@@ -38,6 +38,8 @@ use React\Filesystem\Factory as FilesystemFactory;
 
 class Civ13
 {
+    public bool $shard = false;
+    
     public MessageHandler $messageHandler;
 
     public Slash $slash;
@@ -1487,6 +1489,11 @@ class Civ13
      */
     protected function resolveOptions(array $options = []): array
     {
+        if (! isset($options['shard']) || ! ($options['shard'] instanceof Bool)) {
+            $options['shard'] = false;
+        }
+        $this->shard = $options['shard'] ?? false;
+        
         if (! isset($options['logger']) || ! ($options['logger'] instanceof Logger)) {
             $streamHandler = new StreamHandler('php://stdout', Level::Info);
             $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
