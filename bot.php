@@ -356,6 +356,7 @@ $options = array(
         'veteran' => '468983261708681216', // Promoted
         'infantry' => '468982790772228127', // Verified
         'banished' => '710328377210306641', // Banned in-game
+        'permabanished' => '1126137099209425017', // Permanently banned in-game
         'paroled' => '745336314689355796', // On parole
         'parolemin' => '743971427929030748', // Parole Admin
         

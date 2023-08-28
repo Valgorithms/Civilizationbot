@@ -621,7 +621,6 @@ class Civ13
                     return $message->react("👍");
                 }
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
-                if (isset($item['ss13']) && (isset($this->softbanned[$item['ss13']]) || isset($this->softbanned[$message->user_id]))) return $this->reply($message, 'This account is currently under investigation.');
                 return $this->reply($message, $this->verifyProcess($ckey, $message->author->id));
             }));
 
@@ -1975,13 +1974,15 @@ class Civ13
     public function verifyProcess(string $ckey, string $discord_id): string
     {
         $ckey = $this->sanitizeInput($ckey);
+        if ($this->permabancheck($ckey)) return 'This account is already verified, but needs to appeal an existing ban first.';
+        if (isset($this->softbanned[$ckey]) || isset($this->softbanned[$discord_id])) return 'This account is currently under investigation.';
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
         if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                $msg = $this->ban($arr);
+                $msg = $this->ban($arr, null, '', true);
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                 return $reason;
             }
@@ -2205,7 +2206,31 @@ class Civ13
         }
         return false;
     }
+    public function legacyPermabancheck(string $ckey): bool
+    {
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $server = strtolower($key);
+            if (file_exists($this->files[$server.'_bans']) && $file = @fopen($this->files[$server.'_bans'], 'r')) {
+                while (($fp = fgets($file, 4096)) !== false) {
+                    // str_replace(PHP_EOL, '', $fp); // Is this necessary?
+                    $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
+                    if ((count($linesplit)>=8) && ($linesplit[8] == $ckey) && ($linesplit[0] == 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
+                        fclose($file);
+                        return true;
+                    }
+                }
+                fclose($file);
+            } else $this->logger->debug("unable to open `{$this->files[$server.'_bans']}`");
+        }
+        return false;
+    }
     public function sqlBancheck(string $ckey): bool
+    {
+        // TODO
+        return false;
+    }
+    public function sqlPermabancheck(string $ckey): bool
     {
         // TODO
         return false;
@@ -2335,16 +2360,30 @@ class Civ13
         $this->VarSave('softbanned.json', $this->softbanned);
         return $this->softbanned;
     }
+
+    public function permabancheck(string $id, bool $bypass = false): bool
+    {
+        if (! $id = $this->sanitizeInput($id)) return false;
+        $permabanned = ($this->legacy ? $this->legacyPermabancheck($id) : $this->sqlPermabancheck($id));
+        if (! $this->shard)
+            if (! $bypass && $member = $this->getVerifiedMember($id))
+                if ($permabanned && ! $member->roles->has($this->role_ids['banished'], $this->role_ids['permabanished'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($id)");
+                elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($id)");
+        return $permabanned;
+    }
+
+    
     /*
     * These functions determine which of the above methods should be used to process a ban or unban
     * Ban functions will return a string containing the results of the ban
     * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
     */
-    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, ?string $key = ''): string
+    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, ?string $key = '', $permanent = false): string
     {
         if (! isset($array['ckey'])) return "You must specify a ckey to ban.";
         if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) return "The ckey must be a Byond username or Discord ID.";
         if (! isset($array['duration'])) return "You must specify a duration to ban for.";
+        if ($array['duration'] == '999 years') $permanent = true;
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
         $array['ckey'] = $this->sanitizeInput($array['ckey']);
         if (is_numeric($array['ckey'])) {
@@ -2353,10 +2392,12 @@ class Civ13
         }
         if (! $this->shard)
             if ($member = $this->getVerifiedMember($array['ckey']))
-                if (! $member->roles->has($this->role_ids['banished']))
-                    $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
-        if ($this->legacy) return $this->legacyBan($array, $admin, $key);
-        return $this->sqlBan($array, $admin, $key);
+                if (! $member->roles->has($this->role_ids['banished'])) {
+                    if (! $permanent) $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
+                    else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
+                }
+        if ($this->legacy) return $this->legacyBan($array, $admin, $key, $permanent);
+        return $this->sqlBan($array, $admin, $key, $permanent);
     }
     public function unban(string $ckey, ?string $admin = null, ?string $key = ''): void
     {
@@ -2672,17 +2713,17 @@ class Civ13
                     $ckeyinfo = $this->ckeyinfo($ckey);
                     if ($ckeyinfo['altbanned']) { // Banned with a different ckey
                         $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
-                        $msg = $this->ban($arr);
+                        $msg = $this->ban($arr, null, '', true);
                         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     } else foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
                             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
-                            $msg = $this->ban($arr);
+                            $msg = $this->ban($arr, null, '', true);
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                             break;
                         } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
                             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
-                            $msg = $this->ban($arr);
+                            $msg = $this->ban($arr, null, '', true);
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                             break 2;
                         }
@@ -2692,7 +2733,7 @@ class Civ13
                 if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
                 if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                    $msg = $this->ban($arr);
+                    $msg = $this->ban($arr, null, '', true);
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                 }
             }
@@ -2965,7 +3006,13 @@ class Civ13
             case 'exact': // ban ckey if $string contains a blacklisted phrase exactly as it is defined
                 if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
                 break 2;
-            case 'contains': // ban ckey if $string contains a blacklisted word
+            case 'str_starts_with':
+                if (str_starts_with(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
+                break 2;
+            case 'str_ends_with':
+                if (str_ends_with(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
+                break 2;
+            case 'str_contains': // ban ckey if $string contains a blacklisted word
             default: // default to 'contains'
                 if (str_contains(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
                 break 2;
