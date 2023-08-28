@@ -3006,6 +3006,9 @@ class Civ13
             case 'exact': // ban ckey if $string contains a blacklisted phrase exactly as it is defined
                 if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
                 break 2;
+            case 'cyrillic': // ban ckey if $string contains a cyrillic character
+                if (preg_match('/\p{Cyrillic}/ui', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
+                break 2;
             case 'str_starts_with':
                 if (str_starts_with(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
                 break 2;
