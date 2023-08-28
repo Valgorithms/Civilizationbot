@@ -154,7 +154,7 @@ $options = array(
             'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] // Duration of the ban
             'reason' => 'reason' // Reason for the ban
             'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] // Used to group bad words together by category
-            'method' => detection method ['exact', 'str_contains', 'str_starts_with'] // Exact ignores partial matches, contains matches partial matchesq
+            'method' => detection method ['exact', 'str_contains', 'str_ends_with', 'str_starts_with'] // Exact ignores partial matches, str_contains matches partial matches, etc.
             'warnings' => 1 // Number of warnings before a ban
         */
         ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'str_contains', 'warnings' => 1], // Used to test the system

@@ -285,6 +285,14 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                         return null;
                     };
                     break;
+                case 'str_ends_with':
+                    $method_func = function () use ($callback, $message_filtered, $command): ?callable
+                    {
+                        if (str_ends_with($message_filtered['message_content_lower'], $command)) 
+                            return $callback; // This is where the magic happens
+                        return null;
+                    };
+                    break;
                 case 'str_starts_with':
                 default:
                     $method_func = function () use ($callback, $message_filtered, $command): ?callable
