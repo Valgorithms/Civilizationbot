@@ -38,6 +38,7 @@ use React\Filesystem\Factory as FilesystemFactory;
 
 class Civ13
 {
+    public bool $sharding = false;
     public bool $shard = false;
     
     public MessageHandler $messageHandler;
@@ -1489,6 +1490,11 @@ class Civ13
      */
     protected function resolveOptions(array $options = []): array
     {
+        if (! isset($options['sharding']) || ! ($options['sharding'] instanceof Bool)) {
+            $options['sharding'] = false;
+        }
+        $this->shard = $options['sharding'] ?? false;
+        
         if (! isset($options['shard']) || ! ($options['shard'] instanceof Bool)) {
             $options['shard'] = false;
         }

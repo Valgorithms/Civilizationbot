@@ -76,6 +76,9 @@ $vzg_ip = gethostbyname('www.valzargaming.com');
 $webapi = null;
 $socket = null;
 $options = array(
+    'sharding' => true, // Enable sharding of the bot, allowing it to be run on multiple servers without conflicts, and suppressing certain responses where a shard may be handling the request
+    'shard' => true, // Whether this instance is a shard
+
     'loop' => $loop,
     'discord' => $discord,
     'browser' => $browser,
