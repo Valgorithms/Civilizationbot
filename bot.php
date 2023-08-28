@@ -8,10 +8,10 @@
 
 use \Civ13\Civ13;
 use \Discord\Discord;
-use \Discord\Helpers\CacheConfig;
+//use \Discord\Helpers\CacheConfig;
 use \React\EventLoop\Loop;
-use \WyriHaximus\React\Cache\Redis as RedisCache;
-use \Clue\React\Redis\Factory as Redis;
+//use \WyriHaximus\React\Cache\Redis as RedisCache;
+//use \Clue\React\Redis\Factory as Redis;
 use \React\Filesystem\Factory as FilesystemFactory;
 use \Monolog\Logger;
 use \Monolog\Level;
@@ -283,6 +283,8 @@ $options = array(
         
     ),
     'channel_ids' => array(
+        'get-approved' => '690025163634376738', #get-approved
+
         /* Nomad */
         'nomads' => '799952084505067581', #nomads
         'nomads-playercount' => '1048777424894185484', // nomads-#
@@ -397,6 +399,8 @@ $options = array(
         ],
     ),
 );
+$options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `approveme` command. Failure to verify in a timely manner will result in an automatic removal from the server.";
+
 $cyrillic_alphabet = array(  // Ban use of Cyrillic characters
     'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
     'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',

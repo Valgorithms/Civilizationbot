@@ -34,8 +34,10 @@ class Slash
     {
         // 
     }
-    public function updateCommands($commands) // declareListeners
+    public function updateCommands($commands): void
     {
+        if ($this->civ13->shard) return; // Only run on the first shard
+
         // if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
         if (! $commands->get('name', 'ping')) $commands->save(new Command($this->civ13->discord, [
             'name'        => 'ping',

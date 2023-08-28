@@ -40,6 +40,7 @@ class Civ13
 {
     public bool $sharding = false;
     public bool $shard = false;
+    public string $welcome_message = '';
     
     public MessageHandler $messageHandler;
 
@@ -398,9 +399,10 @@ class Civ13
                 
                 $this->unban($ckey, $admin = $this->getVerifiedItem($message->author->id)['ss13'], $key);
                 $result = "**$admin** unbanned **$ckey** from **$key**";
-                if ($member = $this->getVerifiedMember('id', $ckey))
-                    if ($member->roles->has($this->role_ids['banished']))
-                        $member->removeRole($this->role_ids['banished'], $result);
+                if (! $this->sharding)
+                    if ($member = $this->getVerifiedMember('id', $ckey))
+                        if ($member->roles->has($this->role_ids['banished']))
+                            $member->removeRole($this->role_ids['banished'], $result);
                 return $this->reply($message, $result);
             };
             $this->messageHandler->offsetSet($server.'unban',  $serverunban, ['Owner', 'High Staff', 'Admin']);
@@ -456,32 +458,180 @@ class Civ13
             return $message->reply(file_get_contents('http://ipecho.net/plain'));
         }));
 
-        if (isset($this->role_ids['infantry']))
-        $this->messageHandler->offsetSet('approveme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            if ($message->member->roles->has($this->role_ids['infantry']) || (isset($this->role_ids['veteran']) && $message->member->roles->has($this->role_ids['veteran']))) return $this->reply($message, 'You already have the verification role!');
-            if ($item = $this->getVerifiedItem($message->author->id)) {
-                $message->member->setRoles([$this->role_ids['infantry']], "approveme {$item['ss13']}");
+        if (! $this->shard) {
+            if (isset($this->role_ids['infantry']))
+            $this->messageHandler->offsetSet('approveme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            {
+                if ($message->member->roles->has($this->role_ids['infantry']) || (isset($this->role_ids['veteran']) && $message->member->roles->has($this->role_ids['veteran']))) return $this->reply($message, 'You already have the verification role!');
+                if ($item = $this->getVerifiedItem($message->author->id)) {
+                    $message->member->setRoles([$this->role_ids['infantry']], "approveme {$item['ss13']}");
+                    return $message->react("👍");
+                }
+                if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
+                if (isset($item['ss13']) && (isset($this->softbanned[$item['ss13']]) || isset($this->softbanned[$message->user_id]))) return $this->reply($message, 'This account is currently under investigation.');
+                return $this->reply($message, $this->verifyProcess($ckey, $message->author->id));
+            }));
+
+            if (file_exists($this->files['insults_path']))
+            $this->messageHandler->offsetSet('insult', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            {
+                $split_message = explode(' ', $message_filtered['message_content']); // $split_target[1] is the target
+                if ((count($split_message) <= 1 ) || ! strlen($split_message[1] === 0)) return null;
+                if (! ($file = @fopen($this->files['insults_path'], 'r'))) return $message->react("🔥");
+                $insults_array = array();
+                while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
+                if (count($insults_array) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $insults_array[rand(0, count($insults_array)-1)])->setAllowedMentions(['parse'=>[]]));
+                return $this->reply($message, 'No insults found!');
+            }));
+
+            $this->messageHandler->offsetSet('discord2ckey', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
+                if (! $item = $this->verified->get('discord', $id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "`$id` is not registered to any byond username");
+                return $this->reply($message, "`$id` is registered to `{$item['ss13']}`");
+            }));
+
+            $this->messageHandler->offsetSet('ckey2discord', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
+                if (! $item = $this->verified->get('ss13', $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "`$ckey` is not registered to any discord id");
+                return $this->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
+            }));
+
+            $this->messageHandler->offsetSet('ckey', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            {
+                //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
+                if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
+                    if (! $item = $this->getVerifiedItem($ckey = $message->author->id)) return $this->reply($message, "You are not registered to any byond username");
+                    return $this->reply($message, "You are registered to `{$item['ss13']}`");
+                }
+                if (is_numeric($ckey)) {
+                    if (! $item = $this->getVerifiedItem($ckey)) return $this->reply($message, "`$ckey` is not registered to any ckey");
+                    if (! $age = $this->getByondAge($item['ss13'])) return $this->reply($message, "`{$item['ss13']}` does not exist");
+                    return $this->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+                }
+                if (! $age = $this->getByondAge($ckey)) return $this->reply($message, "`$ckey` does not exist");
+                if ($item = $this->getVerifiedItem($ckey)) return $this->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+                return $this->reply($message, "`$ckey` is not registered to any discord id ($age)");
+            }));
+
+            $this->messageHandler->offsetSet('fullbancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            {
+                foreach ($message->guild->members as $member)
+                    if ($item = $this->getVerifiedItem($member->id))
+                        $this->bancheck($item['ss13']);
                 return $message->react("👍");
+            }), ['Owner', 'High Staff']);
+            
+            $this->messageHandler->offsetSet('register', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
+            { // This function is only authorized to be used by the database administrator
+                if ($this->shard) return null;
+                if ($message->author->id != $this->technician_id) return $message->react("❌");
+                $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
+                if (! $ckey = $this->sanitizeInput($split_message[0])) return $this->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
+                if (! is_numeric($discord_id = $this->sanitizeInput($split_message[1]))) return $this->reply($message, "Discord id `$discord_id` must be numeric.");
+                return $this->reply($message, $this->registerCkey($ckey, $discord_id)['error']);
+            }), ['Chief Technical Officer']);
+
+            $this->messageHandler->offsetSet('discard', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
+            {
+                if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
+                $string = "`$ckey` will no longer attempt to be automatically registered.";
+                if (isset($this->provisional[$ckey])) {
+                    if ($member = $message->guild->members->get($this->provisional[$ckey])) {
+                        $member->removeRole($this->role_ids['infantry']);
+                        $string .= " The <@&{$this->role_ids['infantry']}> role has been removed from $member.";
+                    }
+                    unset($this->provisional[$ckey]);
+                    $this->VarSave('provisional.json', $this->provisional);
+                }
+                return $this->reply($message, $string);
+            }), ['Owner', 'High Staff', 'Admin']);
+            
+            if (isset($this->role_ids['paroled'], $this->channel_ids['parole_logs'])) {
+                $release = function (Message $message, array $message_filtered, string $command): ?PromiseInterface
+                {
+                    if (! $item = $this->getVerifiedItem($id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
+                    $this->paroleCkey($ckey = $item['ss13'], $message->author->id, false);
+                    $admin = $this->getVerifiedItem($message->author->id)['ss13'];
+                    if ($member = $this->getVerifiedMember($item))
+                        if ($member->roles->has($this->role_ids['paroled']))
+                            $member->removeRole($this->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
+                    if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $this->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->author->id}>).");
+                    return $message->react("👍");
+                };
+                $this->messageHandler->offsetSet('release', new MessageHandlerCallback($release), ['Owner', 'High Staff', 'Admin']);
             }
-            if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
-            if (isset($item['ss13']) && (isset($this->softbanned[$item['ss13']]) || isset($this->softbanned[$message->user_id]))) return $this->reply($message, 'This account is currently under investigation.');
-            return $this->reply($message, $this->verifyProcess($ckey, $message->author->id));
-        }));
 
-        if (file_exists($this->files['insults_path']))
-        $this->messageHandler->offsetSet('insult', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            $split_message = explode(' ', $message_filtered['message_content']); // $split_target[1] is the target
-            if ((count($split_message) <= 1 ) || ! strlen($split_message[1] === 0)) return null;
-            if (! ($file = @fopen($this->files['insults_path'], 'r'))) return $message->react("🔥");
-            $insults_array = array();
-            while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
-            if (count($insults_array) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $insults_array[rand(0, count($insults_array)-1)])->setAllowedMentions(['parse'=>[]]));
-            return $this->reply($message, 'No insults found!');
-        }));
+            $this->messageHandler->offsetSet('tests', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            {
+                $tokens = explode(' ', trim(substr($message_filtered['message_content'], strlen($command))));
+                if (! isset($tokens[0]) || ! $tokens[0]) {
+                    if (empty($this->tests)) return $this->reply($message, "No tests have been created yet! Try creating one with `tests add {test_key} {question}`");
+                    if (array_keys($this->tests)) $reply = 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`';
+                    $reply .= PHP_EOL . 'Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`';
+                    return $this->reply($message, 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`');
+                }
+                if (! isset($tokens[1]) || ! $tokens[1] || ! $test_key = $tokens[1]) return $this->reply($message, 'Invalid format! You must include the name of the test, e.g. `tests list {test_key}.');
+                if (! isset($this->tests[$test_key])) return $this->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
+                if ($tokens[0] == 'list') return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->tests[$test_key], true))->setContent('Number of questions: ' . count(array_keys($this->tests[$test_key]))));
+                if ($tokens[0] == 'delete') {
+                    if (isset($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests delete {test_key}`"); // Prevents accidental deletion of tests
+                    unset($this->tests[$test_key]);
+                    $this->VarSave('tests.json', $this->tests);
+                    return $this->reply($message, "Deleted test `$test_key`");
+                }
+                if ($tokens[0] == 'add') {
+                    unset($tokens[1], $tokens[0]);
+                    if (! $question = implode(' ', $tokens)) return $this->reply($message, 'Invalid format! Please use the format `tests add {test_key} {question}`');
+                    $this->tests[$test_key][] = $question;
+                    $this->VarSave('tests.json', $this->tests);
+                    return $this->reply($message, "Added question to test `$test_key`: `$question`");
+                }
+                if ($tokens[0] == 'remove') {
+                    if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests remove {test_key} {question #}`");
+                    if (! isset($this->tests[$test_key][$tokens[2]])) return $this->reply($message, "Question not found in test `$test_key`! Please use the format `tests {test_key} remove {question #}`");
+                    $question = $this->tests[$test_key][$tokens[2]];
+                    unset($this->tests[$test_key][$tokens[2]]);
+                    $this->VarSave('tests.json', $this->tests);
+                    return $this->reply($message, "Removed question `{$tokens[2]}`: `$question`");
+                }
+                if ($tokens[0] == 'post') {
+                    if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests post {test_key} {# of questions}`");
+                    if (count($this->tests[$test_key])<$tokens[2]) return $this->reply($message, "Can't return more questions than exist in a test!");
+                    $questions = [];
+                    $picked = [];
+                    while (count($questions)<$tokens[2]) if (! in_array($this->tests[$test_key][$rand = array_rand($this->tests[$test_key])], $questions)) if (! in_array($rand, $picked)) {
+                        $picked[] = $rand;
+                        $questions[] = $this->tests[$test_key][$rand];
+                    }
+                    return $this->reply($message, implode(PHP_EOL, $questions));
+                }
+                return $this->reply($message, 'Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
+            }), ['Owner', 'High Staff']);
 
-        $this->messageHandler->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            if (isset($this->functions['misc']['promotable_check']) && $promotable_check = $this->functions['misc']['promotable_check']) {
+                $promotable = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($promotable_check): PromiseInterface
+                {
+                    if (! $promotable_check($this, $this->sanitizeInput(substr($message_filtered['message_content'], strlen($command))))) return $message->react("👎");
+                    return $message->react("👍");
+                });
+                $this->messageHandler->offsetSet('promotable', $promotable, ['Owner', 'High Staff']);
+            }
+
+            if (isset($this->functions['misc']['mass_promotion_loop']) && $mass_promotion_loop = $this->functions['misc']['mass_promotion_loop'])
+            $this->messageHandler->offsetSet('mass_promotion_loop', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($mass_promotion_loop): PromiseInterface
+            {
+                if (! $mass_promotion_loop($this)) return $message->react("👎");
+                return $message->react("👍");
+            }), ['Owner', 'High Staff']);
+
+            if (isset($this->functions['misc']['mass_promotion_check']) && $mass_promotion_check = $this->functions['misc']['mass_promotion_check'])
+            $this->messageHandler->offsetSet('mass_promotion_check', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($mass_promotion_check): PromiseInterface
+            {
+                if ($promotables = $mass_promotion_check($this)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
+                return $message->react("👎");
+            }), ['Owner', 'High Staff']);
+            //
+        }
+
+        $this->messageHandler->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
@@ -492,6 +642,7 @@ class Civ13
                         return $message->react("📧");
                 }
             }
+            if ($this->sharding) return null;
             return $this->reply($message, 'You need to be in any of the #ooc channels to use this command.');
         }));
 
@@ -506,6 +657,7 @@ class Civ13
                         return $message->react("📧");
                 }
             }
+            if ($this->sharding) return null;
             return $this->reply($message, 'You need to be in any of the #asay channels to use this command.');
         }));
 
@@ -565,16 +717,6 @@ class Civ13
                 if (! $member->roles->has($this->role_ids['banished']))
                     $member->addRole($this->role_ids['banished']);
             return $this->reply($message, $content, 'bancheck.txt');
-        }));
-
-        $this->messageHandler->offsetSet('discord2ckey', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
-            if (! $item = $this->verified->get('discord', $id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "`$id` is not registered to any byond username");
-            return $this->reply($message, "`$id` is registered to `{$item['ss13']}`");
-        }));
-
-        $this->messageHandler->offsetSet('ckey2discord', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
-            if (! $item = $this->verified->get('ss13', $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "`$ckey` is not registered to any discord id");
-            return $this->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
         }));
         
         /**
@@ -743,31 +885,6 @@ class Civ13
             return $message->reply($builder);
         }), ['Owner', 'High Staff', 'Admin']);
 
-        $this->messageHandler->offsetSet('ckey', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
-            if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                if (! $item = $this->getVerifiedItem($ckey = $message->author->id)) return $this->reply($message, "You are not registered to any byond username");
-                return $this->reply($message, "You are registered to `{$item['ss13']}`");
-            }
-            if (is_numeric($ckey)) {
-                if (! $item = $this->getVerifiedItem($ckey)) return $this->reply($message, "`$ckey` is not registered to any ckey");
-                if (! $age = $this->getByondAge($item['ss13'])) return $this->reply($message, "`{$item['ss13']}` does not exist");
-                return $this->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
-            }
-            if (! $age = $this->getByondAge($ckey)) return $this->reply($message, "`$ckey` does not exist");
-            if ($item = $this->getVerifiedItem($ckey)) return $this->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
-            return $this->reply($message, "`$ckey` is not registered to any discord id ($age)");
-        }));
-
-        $this->messageHandler->offsetSet('fullbancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            foreach ($message->guild->members as $member)
-                if ($item = $this->getVerifiedItem($member->id))
-                    $this->bancheck($item['ss13']);
-            return $message->react("👍");
-        }), ['Owner', 'High Staff']);
-
         $this->messageHandler->offsetSet('fullaltcheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $ckeys = [];
@@ -786,29 +903,6 @@ class Civ13
             }
             return $this->reply($message, 'No alts found.');
         }), ['Owner', 'High Staff']);
-
-        $this->messageHandler->offsetSet('register', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) { // This function is only authorized to be used by the database administrator
-            if ($message->author->id != $this->technician_id) return $message->react("❌");
-            $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
-            if (! $ckey = $this->sanitizeInput($split_message[0])) return $this->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
-            if (! is_numeric($discord_id = $this->sanitizeInput($split_message[1]))) return $this->reply($message, "Discord id `$discord_id` must be numeric.");
-            return $this->reply($message, $this->registerCkey($ckey, $discord_id)['error']);
-        }), ['Chief Technical Officer']);
-
-        $this->messageHandler->offsetSet('discard', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
-            $string = "`$ckey` will no longer attempt to be automatically registered.";
-            if (isset($this->provisional[$ckey])) {
-                if ($member = $message->guild->members->get($this->provisional[$ckey])) {
-                    $member->removeRole($this->role_ids['infantry']);
-                    $string .= " The <@&{$this->role_ids['infantry']}> role has been removed from $member.";
-                }
-                unset($this->provisional[$ckey]);
-                $this->VarSave('provisional.json', $this->provisional);
-            }
-            return $this->reply($message, $string);
-        }), ['Owner', 'High Staff', 'Admin']);
 
         $this->messageHandler->offsetSet('permitted', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
@@ -844,91 +938,6 @@ class Civ13
             };
             $this->messageHandler->offsetSet('parole', new MessageHandlerCallback($parole), ['Owner', 'High Staff', 'Admin']);
         }
-
-        if (isset($this->role_ids['paroled'], $this->channel_ids['parole_logs'])) {
-            $release = function (Message $message, array $message_filtered, string $command): PromiseInterface
-            {
-                if (! $item = $this->getVerifiedItem($id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
-                $this->paroleCkey($ckey = $item['ss13'], $message->author->id, false);
-                $admin = $this->getVerifiedItem($message->author->id)['ss13'];
-                if ($member = $this->getVerifiedMember($item))
-                    if ($member->roles->has($this->role_ids['paroled']))
-                        $member->removeRole($this->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
-                if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $this->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->author->id}>).");
-                return $message->react("👍");
-            };
-            $this->messageHandler->offsetSet('release', new MessageHandlerCallback($release), ['Owner', 'High Staff', 'Admin']);
-        }
-
-        $this->messageHandler->offsetSet('tests', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            $tokens = explode(' ', trim(substr($message_filtered['message_content'], strlen($command))));
-            if (! isset($tokens[0]) || ! $tokens[0]) {
-                if (empty($this->tests)) return $this->reply($message, "No tests have been created yet! Try creating one with `tests add {test_key} {question}`");
-                if (array_keys($this->tests)) $reply = 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`';
-                $reply .= PHP_EOL . 'Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`';
-                return $this->reply($message, 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`');
-            }
-            if (! isset($tokens[1]) || ! $tokens[1] || ! $test_key = $tokens[1]) return $this->reply($message, 'Invalid format! You must include the name of the test, e.g. `tests list {test_key}.');
-            if (! isset($this->tests[$test_key])) return $this->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
-            if ($tokens[0] == 'list') return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->tests[$test_key], true))->setContent('Number of questions: ' . count(array_keys($this->tests[$test_key]))));
-            if ($tokens[0] == 'delete') {
-                if (isset($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests delete {test_key}`"); // Prevents accidental deletion of tests
-                unset($this->tests[$test_key]);
-                $this->VarSave('tests.json', $this->tests);
-                return $this->reply($message, "Deleted test `$test_key`");
-            }
-            if ($tokens[0] == 'add') {
-                unset($tokens[1], $tokens[0]);
-                if (! $question = implode(' ', $tokens)) return $this->reply($message, 'Invalid format! Please use the format `tests add {test_key} {question}`');
-                $this->tests[$test_key][] = $question;
-                $this->VarSave('tests.json', $this->tests);
-                return $this->reply($message, "Added question to test `$test_key`: `$question`");
-            }
-            if ($tokens[0] == 'remove') {
-                if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests remove {test_key} {question #}`");
-                if (! isset($this->tests[$test_key][$tokens[2]])) return $this->reply($message, "Question not found in test `$test_key`! Please use the format `tests {test_key} remove {question #}`");
-                $question = $this->tests[$test_key][$tokens[2]];
-                unset($this->tests[$test_key][$tokens[2]]);
-                $this->VarSave('tests.json', $this->tests);
-                return $this->reply($message, "Removed question `{$tokens[2]}`: `$question`");
-            }
-            if ($tokens[0] == 'post') {
-                if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests post {test_key} {# of questions}`");
-                if (count($this->tests[$test_key])<$tokens[2]) return $this->reply($message, "Can't return more questions than exist in a test!");
-                $questions = [];
-                $picked = [];
-                while (count($questions)<$tokens[2]) if (! in_array($this->tests[$test_key][$rand = array_rand($this->tests[$test_key])], $questions)) if (! in_array($rand, $picked)) {
-                    $picked[] = $rand;
-                    $questions[] = $this->tests[$test_key][$rand];
-                }
-                return $this->reply($message, implode(PHP_EOL, $questions));
-            }
-            return $this->reply($message, 'Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
-        }), ['Owner', 'High Staff']);
-
-        if (isset($this->functions['misc']['promotable_check']) && $promotable_check = $this->functions['misc']['promotable_check']) {
-            $promotable = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($promotable_check): PromiseInterface
-            {
-                if (! $promotable_check($this, $this->sanitizeInput(substr($message_filtered['message_content'], strlen($command))))) return $message->react("👎");
-                return $message->react("👍");
-            });
-            $this->messageHandler->offsetSet('promotable', $promotable, ['Owner', 'High Staff']);
-        }
-
-        if (isset($this->functions['misc']['mass_promotion_loop']) && $mass_promotion_loop = $this->functions['misc']['mass_promotion_loop'])
-        $this->messageHandler->offsetSet('mass_promotion_loop', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($mass_promotion_loop): PromiseInterface
-        {
-            if (! $mass_promotion_loop($this)) return $message->react("👎");
-            return $message->react("👍");
-        }), ['Owner', 'High Staff']);
-
-        if (isset($this->functions['misc']['mass_promotion_check']) && $mass_promotion_check = $this->functions['misc']['mass_promotion_check'])
-        $this->messageHandler->offsetSet('mass_promotion_check', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($mass_promotion_check): PromiseInterface
-        {
-            if ($promotables = $mass_promotion_check($this)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
-            return $message->react("👎");
-        }), ['Owner', 'High Staff']);
 
         $this->messageHandler->offsetSet('refresh', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
@@ -1300,31 +1309,51 @@ class Civ13
     public function sendMessage($channel, string $content, string $file_name = 'message.txt', $prevent_mentions = false): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
+        $output = '';
+        if ($this->sharding) {
+            $enabled_servers = array_keys(array_filter($this->server_settings, function($settings) {
+                return isset($settings['enabled']) && $settings['enabled'];
+            }));
+            if ($enabled_servers) {
+                if (! $enabled_servers_string = implode(', ', $enabled_servers)) $enabled_servers_string = 'None';
+                if ($this->shard) $output .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
+                else $output .= '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
+            }
+        }
+        $output .= $content;
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
-        if (strlen($content)<=4096) {
+        if (strlen($output)<=2000) return $channel->sendMessage($builder->setContent($output));
+        if (strlen($output)<=4096) {
             $embed = new Embed($this->discord);
-            $embed->setDescription($content);
+            $embed->setDescription($output);
             $builder->addEmbed($embed);
             return $channel->sendMessage($builder);
         }
-        return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
+        return $channel->sendMessage($builder->addFileFromContent($file_name, $output));
     }
 
     public function reply(Message $message, string $content, string $file_name = 'message.txt', $prevent_mentions = false): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
+        $output = '';
+        if ($this->sharding) {
+            $enabled_servers = array_keys(array_filter($this->server_settings, function($settings) {
+                return isset($settings['enabled']) && $settings['enabled'];
+            }));
+            if ($enabled_servers) $output .= '**SHARD FOR [' . (implode(', ', $enabled_servers) ?? 'None') . ']**' . PHP_EOL;
+        }
+        $output .= $content;
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (strlen($content)<=2000) return $message->reply($builder->setContent($content));
-        if (strlen($content)<=4096) {
+        if (strlen($output)<=2000) return $message->reply($builder->setContent($output));
+        if (strlen($output)<=4096) {
             $embed = new Embed($this->discord);
-            $embed->setDescription($content);
+            $embed->setDescription($output);
             $builder->addEmbed($embed);
             return $message->reply($builder);
         }
-        return $message->reply($builder->addFileFromContent($file_name, $content));
+        return $message->reply($builder->addFileFromContent($file_name, $output));
     }
 
     /**
@@ -1453,6 +1482,7 @@ class Civ13
                 });
                 $this->discord->on('GUILD_MEMBER_ADD', function (Member $guildmember): void
                 {
+                    if ($this->shard) return;                    
                     $this->joinRoles($guildmember);
                     if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $guildmember);
                     else $this->logger->debug('No message functions found!');
@@ -1490,15 +1520,20 @@ class Civ13
      */
     protected function resolveOptions(array $options = []): array
     {
-        if (! isset($options['sharding']) || ! ($options['sharding'] instanceof Bool)) {
+        if (! isset($options['sharding']) || ! is_bool($options['sharding'])) {
             $options['sharding'] = false;
         }
-        $this->shard = $options['sharding'] ?? false;
+        $this->sharding = $options['sharding'];
         
-        if (! isset($options['shard']) || ! ($options['shard'] instanceof Bool)) {
+        if (! isset($options['shard']) || ! is_bool($options['shard'])) {
             $options['shard'] = false;
         }
-        $this->shard = $options['shard'] ?? false;
+        $this->shard = $options['shard'];
+
+        if (! isset($options['welcome_message']) || ! is_string($options['welcome_message'])) {
+            $options['welcome_message'] = '';
+        }
+        $this->welcome_message = $options['welcome_message'];
         
         if (! isset($options['logger']) || ! ($options['logger'] instanceof Logger)) {
             $streamHandler = new StreamHandler('php://stdout', Level::Info);
@@ -2150,9 +2185,10 @@ class Civ13
     {
         if (! $ckey = $this->sanitizeInput($ckey)) return false;
         $banned = ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
-        if (! $bypass && $member = $this->getVerifiedMember($ckey))
-            if ($banned && ! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
-            elseif (! $banned && $member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "bancheck ($ckey)");
+        if (! $this->shard)
+            if (! $bypass && $member = $this->getVerifiedMember($ckey))
+                if ($banned && ! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
+                elseif (! $banned && $member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "bancheck ($ckey)");
         return $banned;
     }
     public function legacyBancheck(string $ckey): bool
@@ -2320,9 +2356,10 @@ class Civ13
             if (! $item = $this->verified->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
         }
-        if ($member = $this->getVerifiedMember($array['ckey']))
-            if (! $member->roles->has($this->role_ids['banished']))
-                $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
+        if (! $this->shard)
+            if ($member = $this->getVerifiedMember($array['ckey']))
+                if (! $member->roles->has($this->role_ids['banished']))
+                    $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
         if ($this->legacy) return $this->legacyBan($array, $admin, $key);
         return $this->sqlBan($array, $admin, $key);
     }
@@ -2331,9 +2368,10 @@ class Civ13
         $admin ??= $this->discord->user->displayname;
         if ($this->legacy) $this->legacyUnban($ckey, $admin, $key);
         else $this->sqlUnban($ckey, $admin, $key);
-        if ( $member = $this->getVerifiedMember($ckey))
-            if ($member->roles->has($this->role_ids['banished']))
-                $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
+        if (! $this->shard)
+            if ($member = $this->getVerifiedMember($ckey))
+                if ($member->roles->has($this->role_ids['banished']))
+                    $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
     }
     
     public function DirectMessage(string $recipient, string $message, string $sender, ?string $server = ''): bool
@@ -2788,25 +2826,34 @@ class Civ13
         $this->playercount_ticker++;
     }
 
-    /*
-    * This function takes a member and checks if they have previously been verified
-    * If they have, it will assign them the appropriate roles
-    */
-    public function joinRoles(Member $member): void
+    /**
+     * This function takes a member and checks if they have previously been verified
+     * If they have, it will assign them the appropriate roles
+     * If they have not, it will send them a message indicating that they need to verify if the 'welcome_message' is set
+     *
+     * @param Member $member The member to check and assign roles to
+     * @return PromiseInterface|null Returns null if the member is softbanned, otherwise returns a PromiseInterface
+     */
+    public function joinRoles(Member $member): ?PromiseInterface
     {
         if ($member->guild_id == $this->civ13_guild_id && $item = $this->verified->get('discord', $member->id)) {
             if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
             else {
-                if (($item['ss13'] && isset($this->softbanned[$item['ss13']])) || isset($this->softbanned[$member->id])) return;
+                if (($item['ss13'] && isset($this->softbanned[$item['ss13']])) || isset($this->softbanned[$member->id])) return null;
                 $banned = $this->bancheck($item['ss13'], true);
                 $paroled = isset($this->paroled[$item['ss13']]);
-                if ($banned && $paroled) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished'], $this->role_ids['paroled']], "bancheck join {$item['ss13']}");
-                elseif ($banned) $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
-                elseif ($paroled) $member->setroles([$this->role_ids['infantry'], $this->role_ids['paroled']], "parole join {$item['ss13']}");
-                else $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
+                if ($banned && $paroled) return $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished'], $this->role_ids['paroled']], "bancheck join {$item['ss13']}");
+                if ($banned) return $member->setroles([$this->role_ids['infantry'], $this->role_ids['banished']], "bancheck join {$item['ss13']}");
+                if ($paroled) return $member->setroles([$this->role_ids['infantry'], $this->role_ids['paroled']], "parole join {$item['ss13']}");
+                return $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
             }
         }
+        if (isset($this->welcome_message, $this->channel_ids['get-approved']) && $this->welcome_message && $member->guild_id == $this->civ13_guild_id)
+            if ($channel = $this->discord->getChannel($this->channel_ids['get-approved']))
+                return $this->sendMessage($channel, $this->welcome_message);
+        return null;
     }
+
     /**
      * Every 12 hours, this function checks if a user is banned and removes the banished role from them if they are not.
      * It loops through all the members in the guild and checks if they have the banished role.
@@ -2826,6 +2873,7 @@ class Civ13
         }
 
         $unbanTimer = function () {
+            if ($this->shard) return;
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
                 if ($members = $guild->members->filter(fn ($member) => $member->roles->has($this->role_ids['banished'])))
                     foreach ($members as $member) if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id))
