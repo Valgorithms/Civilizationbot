@@ -82,6 +82,7 @@ class Civ13
     public array $rounds = [];
 
     public array $server_settings = [];
+    public array $enabled_servers = [];
     public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = true; // Whether or not to moderate the servers using the badwords list
     public array $badwords = [
@@ -223,6 +224,10 @@ class Civ13
 
         if (isset($options['server_settings']) && is_array($options['server_settings'])) $this->server_settings = $options['server_settings'];
         else $this->logger->warning('No server_settings passed in options!');
+
+        $this->enabled_servers = array_keys(array_filter($this->server_settings, function($settings) {
+            return isset($settings['enabled']) && $settings['enabled'];
+        }));
         
         $this->afterConstruct($options, $server_options);
     }
@@ -1306,54 +1311,44 @@ class Civ13
         return ['message_content' => $message_content, 'message_content_lower' => strtolower($message_content), 'called' => $called];
     }
 
-    public function sendMessage($channel, string $content, string $file_name = 'message.txt', $prevent_mentions = false): ?PromiseInterface
+    public function sendMessage($channel, string $content, string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
-        $output = '';
-        if ($this->sharding) {
-            $enabled_servers = array_keys(array_filter($this->server_settings, function($settings) {
-                return isset($settings['enabled']) && $settings['enabled'];
-            }));
-            if ($enabled_servers) {
-                if (! $enabled_servers_string = implode(', ', $enabled_servers)) $enabled_servers_string = 'None';
-                if ($this->shard) $output .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
-                else $output .= '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
-            }
+        if ($announce_shard && $this->sharding && $this->enabled_servers) {
+            if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
+            if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
+            else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
         }
-        $output .= $content;
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (strlen($output)<=2000) return $channel->sendMessage($builder->setContent($output));
-        if (strlen($output)<=4096) {
+        if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
+        if (strlen($content)<=4096) {
             $embed = new Embed($this->discord);
-            $embed->setDescription($output);
+            $embed->setDescription($content);
             $builder->addEmbed($embed);
             return $channel->sendMessage($builder);
         }
-        return $channel->sendMessage($builder->addFileFromContent($file_name, $output));
+        return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
     }
 
-    public function reply(Message $message, string $content, string $file_name = 'message.txt', $prevent_mentions = false): ?PromiseInterface
+    public function reply(Message $message, string $content, string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
-        $output = '';
-        if ($this->sharding) {
-            $enabled_servers = array_keys(array_filter($this->server_settings, function($settings) {
-                return isset($settings['enabled']) && $settings['enabled'];
-            }));
-            if ($enabled_servers) $output .= '**SHARD FOR [' . (implode(', ', $enabled_servers) ?? 'None') . ']**' . PHP_EOL;
+        if ($announce_shard && $this->sharding && $this->enabled_servers) {
+            if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
+            if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
+            else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
         }
-        $output .= $content;
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (strlen($output)<=2000) return $message->reply($builder->setContent($output));
-        if (strlen($output)<=4096) {
+        if (strlen($content)<=2000) return $message->reply($builder->setContent($content));
+        if (strlen($content)<=4096) {
             $embed = new Embed($this->discord);
-            $embed->setDescription($output);
+            $embed->setDescription($content);
             $builder->addEmbed($embed);
             return $message->reply($builder);
         }
-        return $message->reply($builder->addFileFromContent($file_name, $output));
+        return $message->reply($builder->addFileFromContent($file_name, $content));
     }
 
     /**
@@ -2954,7 +2949,7 @@ class Civ13
             return false;
         }
         if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $array['server']);
-        if (! $item = $this->verified->get('ss13', $this->sanitizeInput($array['ckey']))) $this->sendMessage($channel, $array['message'], 'relay.txt', false);
+        if (! $item = $this->verified->get('ss13', $this->sanitizeInput($array['ckey']))) $this->sendMessage($channel, $array['message'], 'relay.txt', false, false);
         else {
             $embed = new Embed($this->discord);
             if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
