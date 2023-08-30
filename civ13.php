@@ -1233,7 +1233,7 @@ class Civ13
             $this->messageHandler->offsetSet('medals', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($medals): PromiseInterface
             {
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `medals [ckey]`.');
-                if (! $msg = $medals($this, $ckey)) return $this->reply($message, 'There was an error trying to get your medals!');
+                if (! $msg = $medals($ckey)) return $this->reply($message, 'There was an error trying to get your medals!');
                 return $this->reply($message, $msg, 'medals.txt');
             }));
         }
