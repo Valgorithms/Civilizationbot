@@ -652,7 +652,10 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     break;
                 case 'asaymessage':
                     if (! isset($civ13->channel_ids[$server.'_asay_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_asay_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
-                    if (isset($data['message'])) $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
+                    if (isset($data['message'])) {
+                        $ckey = explode('/', $ckey)[0]; // separate ckey from the string
+                        $message .= "**__{$time} ASAY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
+                    }
                     if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel_id)) 
                          return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Relay handled by civ13->gameChatWebhookRelay
                     break;

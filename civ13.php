@@ -1757,8 +1757,8 @@ class Civ13
             if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
             if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->verified->get('discord', $this->sanitizeInput($input['discord']))) return $item;
             if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) return $item;
-        } // else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
-        return false;
+        }
+        return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
     }
 
     /*
