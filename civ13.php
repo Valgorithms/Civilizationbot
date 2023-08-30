@@ -2886,7 +2886,7 @@ class Civ13
         }
         if (isset($this->welcome_message, $this->channel_ids['get-approved']) && $this->welcome_message && $member->guild_id == $this->civ13_guild_id)
             if ($channel = $this->discord->getChannel($this->channel_ids['get-approved']))
-                return $this->sendMessage($channel, $member->nick, "<@{$member->id}, " . $this->welcome_message);
+                return $this->sendMessage($channel, "<@{$member->id}, " . $this->welcome_message);
         return null;
     }
 
