@@ -3002,23 +3002,39 @@ class Civ13
     }
     private function __gameChatModerate(string $ckey, string $string, string $server = 'nomads'): string
     {
+        $lower = strtolower($string);
         foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
             case 'exact': // ban ckey if $string contains a blacklisted phrase exactly as it is defined
-                if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
-                break 2;
+                if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) {
+                    $this->__relayViolation($server, $ckey, $badwords_array);
+                    break 2;
+                }
+                continue;
             case 'cyrillic': // ban ckey if $string contains a cyrillic character
-                if (preg_match('/\p{Cyrillic}/ui', $string)) $this->__relayViolation($server, $ckey, $badwords_array);
-                break 2;
+                if (preg_match('/\p{Cyrillic}/ui', $string)) {
+                    $this->__relayViolation($server, $ckey, $badwords_array);
+                    break 2;
+                }
+                continue;
             case 'str_starts_with':
-                if (str_starts_with(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
-                break 2;
+                if (str_starts_with($lower, $badwords_array['word'])) {
+                    $this->__relayViolation($server, $ckey, $badwords_array);
+                    break 2;
+                }
+                continue;
             case 'str_ends_with':
-                if (str_ends_with(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
-                break 2;
+                if (str_ends_with($lower, $badwords_array['word'])) {
+                    $this->__relayViolation($server, $ckey, $badwords_array);
+                    break 2;
+                }
+                continue;
             case 'str_contains': // ban ckey if $string contains a blacklisted word
             default: // default to 'contains'
-                if (str_contains(strtolower($string), $badwords_array['word'])) $this->__relayViolation($server, $ckey, $badwords_array);
-                break 2;
+                if (str_contains($lower, $badwords_array['word'])) {
+                    $this->__relayViolation($server, $ckey, $badwords_array);
+                    break 2;
+                }
+                continue;
         }
         return $string;
     }
