@@ -3009,32 +3009,32 @@ class Civ13
                     $this->__relayViolation($server, $ckey, $badwords_array);
                     break 2;
                 }
-                continue;
+                continue 2;
             case 'cyrillic': // ban ckey if $string contains a cyrillic character
                 if (preg_match('/\p{Cyrillic}/ui', $string)) {
                     $this->__relayViolation($server, $ckey, $badwords_array);
                     break 2;
                 }
-                continue;
+                continue 2;
             case 'str_starts_with':
                 if (str_starts_with($lower, $badwords_array['word'])) {
                     $this->__relayViolation($server, $ckey, $badwords_array);
                     break 2;
                 }
-                continue;
+                continue 2;
             case 'str_ends_with':
                 if (str_ends_with($lower, $badwords_array['word'])) {
                     $this->__relayViolation($server, $ckey, $badwords_array);
                     break 2;
                 }
-                continue;
+                continue 2;
             case 'str_contains': // ban ckey if $string contains a blacklisted word
             default: // default to 'contains'
                 if (str_contains($lower, $badwords_array['word'])) {
                     $this->__relayViolation($server, $ckey, $badwords_array);
                     break 2;
                 }
-                continue;
+                continue 2;
         }
         return $string;
     }
