@@ -255,6 +255,42 @@ class Civ13
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
 
+            foreach (['_playernotes_basedir'] as $postfix) {
+                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+                else {
+                    $servernotes = function (Message $message, array $message_filtered) use ($server): PromiseInterface
+                    {
+                        if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content'], strlen($server.'notes')))) return $this->reply($message, 'Missing ckey! Please use the format `notes ckey`');
+                        $first_letter_lower = strtolower(substr($ckey, 0, 1));
+                        $first_letter_upper = strtoupper(substr($ckey, 0, 1));
+                        
+                        $letter_dir = '';
+                        if (is_dir($this->files[$server.'_playernotes_basedir'] . "/$first_letter_lower")) $letter_dir = $this->files[$server.'_playernotes_basedir'] . "/$first_letter_lower";
+                        else if (is_dir($this->files[$server.'_playernotes_basedir'] . "/$first_letter_upper")) $letter_dir = $this->files[$server.'_playernotes_basedir'] . "/$first_letter_upper";
+                        else return $this->reply($message, "No notes found for any ckey starting with `$first_letter_upper`.");
+
+                        $player_dir = '';
+                        $dirs = [];
+                        $scandir = scandir($letter_dir);
+                        if ($scandir) $dirs = array_filter($scandir, function($dir) use ($ckey, $letter_dir) {
+                            return strtolower($dir) === strtolower($ckey)/* && is_dir($letter_dir . "/$dir")*/;
+                        });
+                        if (count($dirs) > 0) $player_dir = $letter_dir . "/" . reset($dirs);
+                        else return $this->reply($message, "No notes found for `$ckey`.");
+
+                        if (file_exists($player_dir . "/info.sav")) $file_path = $player_dir . "/info.sav";
+                        else return $this->reply($message, "A notes folder was found for `$ckey`, however no notes were found in it.");
+
+                        $result = '';
+                        if ($contents = file_get_contents($file_path)) $result = $contents;
+                        else return $this->reply($message, "A notes file with path `$file_path` was found for `$ckey`, however the file could not be read.");
+                        
+                        return $this->reply($message, $result, 'info.sav', true);
+                    };
+                    $this->messageHandler->offsetSet($server.'notes', $servernotes, ['Owner', 'High Staff', 'Admin']);
+                }
+            }
+            
             $serverconfigexists = function (?Message $message = null) use ($key): PromiseInterface|bool
             {
                 if (isset($this->server_settings[$key])) {
@@ -462,32 +498,6 @@ class Civ13
         {
             return $message->reply(file_get_contents('http://ipecho.net/plain'));
         }));
-
-        $this->messageHandler->offsetSet('notes', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {
-            foreach ($this->server_settings as $key => $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
-                if (! isset($this->files[$key.'_playernotes_basedir']) || (! is_dir($this->files[$key.'_playernotes_basedir']) && ! mkdir($this->files[$key.'_playernotes_basedir'], 0664, true) )) {
-                    $this->logger->debug("Skipping server function `$server notes` because the required folder was not found.");
-                    continue;
-                }
-                else {
-                    $servernotes = function (Message $message, array $message_filtered) use ($server): PromiseInterface
-                    {
-                        if (! $this->hasRequiredConfigRoles(['notes'])) $this->logger->debug("Skipping server function `$server notes` because the required config roles were not found.");
-                        if (! $message_content = substr($message_filtered['message_content'], strlen($server.'notes'))) return $this->reply($message, 'Missing notes! Please use the format `{server}notes notes`');
-                        $split_message = explode('; ', $message_content); // $split_target[1] is the target
-                        if (! $split_message[0]) return $this->reply($message, 'Missing notes! Please use the format `notes notes`');
-                        $arr = ['ckey' => $split_message[0], 'notes' => $split_message[1]];
-                        $result = $this->notes($arr, $this->getVerifiedItem($message->author->id)['ss13'], null, $server);
-                        return $this->reply($message, $result);
-                    };
-                    $this->messageHandler->offsetSet($server.'notes', $servernotes, ['Owner', 'High Staff', 'Admin']);
-                }
-            }
-            return $this->reply($message, 'This command is currently in development.');
-        }), ['Owner', 'High Staff', 'Admin']);
         /**
          * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
          * It also iterates through playerlogs ban logs to find all known ckeys, IPs, and CIDs.

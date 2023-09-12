@@ -192,8 +192,8 @@ $options = array(
         'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
         
         // Nomads
-
         'nomads_log_basedir' => '/home/civ13/civ13-rp/data/logs',
+        'nomads_playernotes_basedir' => '/home/civ13/civ13-rp/data/player_saves',
         'nomads_ooc_path' => '/home/civ13/civ13-rp/ooc.log',
         'nomads_admin_path' => '/home/civ13/civ13-rp/admin.log',
         'nomads_discord2ooc' => '/home/civ13/civ13-rp/SQL/discord2ooc.txt',
@@ -212,6 +212,7 @@ $options = array(
         
         // TDM
         'tdm_log_basedir' => '/home/civ13/civ13-tdm/data/logs',
+        'tdm_playernotes_basedir' => '/home/civ13/civ13-tdm/data/player_saves',
         'tdm_ooc_path' => '/home/civ13/civ13-tdm/ooc.log',
         'tdm_admin_path' => '/home/civ13/civ13-tdm/admin.log',
         'tdm_discord2ooc' => '/home/civ13/civ13-tdm/SQL/discord2ooc.txt',
@@ -231,10 +232,11 @@ $options = array(
         'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt',
         'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt',
         // Basedir
-        'nomads_basedir' => '/home/civ13/civ13-tdm',
+        'tdm_basedir' => '/home/civ13/civ13-tdm',
 
         // Persistence
         'pers_log_basedir' => '/home/civ13/civ13-pers/data/logs',
+        'pers_playernotes_basedir' => '/home/civ13/civ13-pers/data/player_saves',
         'pers_ooc_path' => '/home/civ13/civ13-pers/ooc.log',
         'pers_admin_path' => '/home/civ13/civ13-pers/admin.log',
         'pers_discord2ooc' => '/home/civ13/civ13-pers/SQL/discord2ooc.txt',
@@ -251,10 +253,10 @@ $options = array(
         // Campaign
         'pers_factionlist' => '/home/civ13/civ13-pers/SQL/factionlist.txt',
         // Football
-        'tdm_sportsteams' => '/home/civ13/civ13-pers/SQL/sports_teams.txt',
+        'pers_sportsteams' => '/home/civ13/civ13-pers/SQL/sports_teams.txt',
         // Medals
-        'tdm_awards_path' => '/home/civ13/civ13-pers/SQL/awards.txt',
-        'tdm_awards_br_path' => '/home/civ13/civ13-pers/SQL/awards_br.txt',
+        'pers_awards_path' => '/home/civ13/civ13-pers/SQL/awards.txt',
+        'pers_awards_br_path' => '/home/civ13/civ13-pers/SQL/awards_br.txt',
         // Basedir
         'pers_basedir' => '/home/civ13/civ13-pers',
 
