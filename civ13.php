@@ -463,6 +463,31 @@ class Civ13
             return $message->reply(file_get_contents('http://ipecho.net/plain'));
         }));
 
+        $this->messageHandler->offsetSet('notes', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            foreach ($this->server_settings as $key => $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+                $server = strtolower($key);
+                if (! isset($this->files[$key.'_playernotes_basedir']) || (! is_dir($this->files[$key.'_playernotes_basedir']) && ! mkdir($this->files[$key.'_playernotes_basedir'], 0664, true) )) {
+                    $this->logger->debug("Skipping server function `$server notes` because the required folder was not found.");
+                    continue;
+                }
+                else {
+                    $servernotes = function (Message $message, array $message_filtered) use ($server): PromiseInterface
+                    {
+                        if (! $this->hasRequiredConfigRoles(['notes'])) $this->logger->debug("Skipping server function `$server notes` because the required config roles were not found.");
+                        if (! $message_content = substr($message_filtered['message_content'], strlen($server.'notes'))) return $this->reply($message, 'Missing notes! Please use the format `{server}notes notes`');
+                        $split_message = explode('; ', $message_content); // $split_target[1] is the target
+                        if (! $split_message[0]) return $this->reply($message, 'Missing notes! Please use the format `notes notes`');
+                        $arr = ['ckey' => $split_message[0], 'notes' => $split_message[1]];
+                        $result = $this->notes($arr, $this->getVerifiedItem($message->author->id)['ss13'], null, $server);
+                        return $this->reply($message, $result);
+                    };
+                    $this->messageHandler->offsetSet($server.'notes', $servernotes, ['Owner', 'High Staff', 'Admin']);
+                }
+            }
+            return $this->reply($message, 'This command is currently in development.');
+        }), ['Owner', 'High Staff', 'Admin']);
         /**
          * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
          * It also iterates through playerlogs ban logs to find all known ckeys, IPs, and CIDs.
