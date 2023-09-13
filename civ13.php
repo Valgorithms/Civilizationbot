@@ -272,7 +272,7 @@ class Civ13
                         $player_dir = '';
                         $dirs = [];
                         $scandir = scandir($letter_dir);
-                        if ($scandir) $dirs = array_filter($scandir, function($dir) use ($ckey, $letter_dir) {
+                        if ($scandir) $dirs = array_filter($scandir, function($dir) use ($ckey) {
                             return strtolower($dir) === strtolower($ckey)/* && is_dir($letter_dir . "/$dir")*/;
                         });
                         if (count($dirs) > 0) $player_dir = $letter_dir . "/" . reset($dirs);

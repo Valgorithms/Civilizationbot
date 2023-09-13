@@ -419,6 +419,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         && ! str_ends_with($errstr, 'Connection timed out')
         && ! str_ends_with($errstr, 'No route to host')
+        && ! str_ends_with($errstr, 'Connection refused')
     )
     {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
