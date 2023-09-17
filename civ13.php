@@ -791,7 +791,7 @@ class Civ13
                 $server = strtolower($key);
                 switch (strtolower($message->channel->name)) {
                     case "ooc-{$server}":                    
-                        if ($this->OOCMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author->id)['ss13'] ?? $message->author->displayname, $server)) return $message->react("📧");
+                        if ($this->OOCMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author->id)['ss13'] ?? $message->author->displayname, $key)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -806,7 +806,7 @@ class Civ13
                 $server = strtolower($key);
                 switch (strtolower($message->channel->name)) {
                     case "asay-{$server}":
-                        if ($this->AdminMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author->id)['ss13'] ?? $message->author->displayname, $server)) return $message->react("📧");
+                        if ($this->AdminMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author->id)['ss13'] ?? $message->author->displayname, $key)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -840,7 +840,7 @@ class Civ13
                     case "asay-{$server}":
                     case "ic-{$server}":
                     case "ooc-{$server}":
-                        if ($this->DirectMessage($recipient, $msg, $this->getVerifiedItem($message->author->id)['ss13'] ?? $message->author->displayname, $server)) return $message->react("📧");
+                        if ($this->DirectMessage($recipient, $msg, $this->getVerifiedItem($message->author->id)['ss13'] ?? $message->author->displayname, $key)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -2439,7 +2439,7 @@ class Civ13
             return false;
         };
         if ($server) {
-            if (! $this->server_settings[$server = strtolower($server)]['enabled'] ?? false) return false;
+            if (! $this->server_settings[$server]['enabled'] ?? false) return false;
             return $directmessage($recipient, $message, $sender, $server);
         }
         $sent = false;
@@ -2464,7 +2464,7 @@ class Civ13
             return false;
         };
         if ($server) {
-            if (! $this->server_settings[$server = strtolower($server)]['enabled'] ?? false) return false;
+            if (! $this->server_settings[$server]['enabled'] ?? false) return false;
             return $oocmessage($message, $sender, $server);
         }
         $sent = false;
@@ -2489,7 +2489,7 @@ class Civ13
             return false;
         };
         if ($server) {
-            if (! $this->server_settings[$server = strtolower($server)]['enabled'] ?? false) return false;
+            if (! $this->server_settings[$server]['enabled'] ?? false) return false;
             return $adminmessage($message, $sender, $server);
         }
         $sent = false;
