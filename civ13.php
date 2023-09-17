@@ -3106,6 +3106,7 @@ class Civ13
     // This function is called from the game's chat hook if a player says something that contains a blacklisted word
     private function __relayViolation(string $server, string $ckey, array $badwords_array): string|bool // TODO: return type needs to be decided
     {
+        if ($this->sanitizeInput($ckey) == $this->sanitizeInput($this->discord->user->displayname)) return false; // Don't ban the bot
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
         if (! $this->__relayWarningCounter($ckey, $badwords_array)) {
             $arr = ['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->banappeal}"];
@@ -3113,7 +3114,7 @@ class Civ13
         }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
-        return $this->DirectMessage($ckey, $warning, 'AUTOMOD', $server);
+        return $this->DirectMessage($ckey, $warning, $this->discord->user->displayname, $server);
     }
     /*
     * This function determines if a player has been warned too many times for a specific category of bad words
