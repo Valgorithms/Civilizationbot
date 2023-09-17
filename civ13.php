@@ -1048,9 +1048,9 @@ class Civ13
         
         $this->messageHandler->offsetSet('unban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
-            if (is_numeric($ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
+            if (is_numeric($ckey = $this->sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], trim(strlen($command))))))
                 if (! $item = $this->getVerifiedItem($ckey)) return $this->reply($message, "No data found for Discord ID `$ckey`.");
-                else $ckey = $item['ckey'];
+                else $ckey = $item['ss13'];
             $this->unban($ckey, $admin = $this->getVerifiedItem($message->author)['ss13']);
             return $this->reply($message, "**$admin** unbanned **$ckey**");
         }), ['Owner', 'High Staff', 'Admin']);
@@ -1761,7 +1761,6 @@ class Civ13
     */
     public function getVerifiedItem(Member|User|array|string $input): ?array
     {
-        // Get the verified item
         if (is_string($input)) {
             if (! $input = $this->sanitizeInput($input)) return null;
             if (is_numeric($input) && $item = $this->verified->get('discord', $input)) return $item;
