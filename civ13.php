@@ -2381,8 +2381,9 @@ class Civ13
         $permabanned = ($this->legacy ? $this->legacyPermabancheck($id) : $this->sqlPermabancheck($id));
         if (! $this->shard)
             if (! $bypass && $member = $this->getVerifiedMember($id))
-                if ($permabanned && ! $member->roles->has($this->role_ids['banished'], $this->role_ids['permabanished'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($id)");
-                elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($id)");
+                if ($permabanned && ! $member->roles->has($this->role_ids['permabanished'])) {
+                    if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($id)");
+                } elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($id)");
         return $permabanned;
     }
 
