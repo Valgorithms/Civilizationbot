@@ -324,8 +324,12 @@ class Civ13
                 else {
                     $serverkill = function (?Message $message = null) use ($server): void
                     {
-                        \execInBackground("python3 {$this->files[$server.'_killciv13']}");
-                        if ($message) $message->react("👍");
+                        $this->loop->addTimer(10, function () use ($server, $message): void
+                        {
+                            \execInBackground("python3 {$this->files[$server.'_killciv13']}");
+                            if ($message) $message->react("👍");
+                        });
+                        $this->OOCMessage("Server is shutting down.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
                     };
                     $this->messageHandler->offsetSet($server.'kill', $serverkill, ['Owner', 'High Staff']);
                 }
@@ -333,17 +337,22 @@ class Civ13
             if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
                 $serverrestart = function (?Message $message = null) use ($server): ?PromiseInterface
                 {
-                    $kill = $this->messageHandler->offsetGet($server.'kill') ?? [];
-                    $host = $this->messageHandler->offsetGet($server.'host') ?? [];
-                    if (
-                        ($kill = array_shift($kill))
-                        && ($host = array_shift($host))
-                    ) {
-                        $kill();
-                        $host();
-                        if ($message) return $message->react("👍");
-                    }
-                    if ($message) return $message->react("🔥");
+                    $this->loop->addTimer(10, function () use ($server, $message): ?PromiseInterface
+                    {
+                        $kill = $this->messageHandler->offsetGet($server.'kill') ?? [];
+                        $host = $this->messageHandler->offsetGet($server.'host') ?? [];
+                        if (
+                            ($kill = array_shift($kill))
+                            && ($host = array_shift($host))
+                        ) {
+                            $kill();
+                            $host();
+                            if ($message) return $message->react("👍");
+                        }
+                        if ($message) return $message->react("🔥");
+                    });
+                    $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
+                    return null;
                 };
                 $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['Owner', 'High Staff']);
             }
@@ -373,7 +382,12 @@ class Civ13
                         };
                         $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
                         if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->reply($message, 'You need to include the name of the map.');
-                        return $mapswap($mapto, $message);
+                        $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
+                        $this->loop->addtimer(10, function () use ($mapto, $mapswap, $message): ?PromiseInterface
+                        {
+                            return $mapswap($mapto, $message);
+                        });
+                        return true;
                     };
                     $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['Owner', 'High Staff']);
                 }
