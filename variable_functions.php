@@ -131,7 +131,7 @@ $on_message = function (Civ13 $civ13, Message $message, ?array $message_filtered
     if ($message_array['message_content'] == 'dev')
         if (isset($civ13->technician_id) && isset($civ13->role_ids['Chief Technical Officer']))
             if ($message->user_id === $civ13->technician_id)
-                $message->member->addRole($civ13->role_ids['Chief Technical Officer']);
+                return $message->member->addRole($civ13->role_ids['Chief Technical Officer']);
     if (str_starts_with($message_array['message_content_lower'], 'serverstatus')) { // See GitHub Issue #1
         return null; // deprecated
         /*
