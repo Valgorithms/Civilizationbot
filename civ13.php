@@ -860,9 +860,9 @@ class Civ13
             }
             if ($this->sharding) return null;
             return $this->reply($message, 'You need to be in any of the #ic, #asay, or #ooc channels to use this command.');
-        }, ['Owner', 'High Staff', 'Admin']);
-        $this->messageHandler->offsetSet('dm', $directmessage);
-        $this->messageHandler->offsetSet('pm', $directmessage);
+        });
+        $this->messageHandler->offsetSet('dm', $directmessage, ['Owner', 'High Staff', 'Admin']);
+        $this->messageHandler->offsetSet('pm', $directmessage, ['Owner', 'High Staff', 'Admin']);
 
         $this->messageHandler->offsetSet('bancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
