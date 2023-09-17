@@ -2450,6 +2450,7 @@ class Civ13
         $directmessage = function (string $recipient, string $message, string $sender, string $server): bool
         {
             $server = strtolower($server);
+            // if ($this->server_funcs_uncalled[$server.'_discord2admin']($this->discord->user->displayname, $message)) return true;
             if (file_exists($this->files[$server.'_discord2dm']) && $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
                 fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
                 fclose($file);
@@ -2463,7 +2464,6 @@ class Civ13
         $sent = false;
         if ($server) $sent = $directmessage($recipient, $message, $sender, $server);
         else foreach ($this->server_settings as $key => $settings) {
-            $server = strtolower($key);
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if ($directmessage($recipient, $message, $sender, $key)) $sent = true;
         }
@@ -3083,7 +3083,7 @@ class Civ13
         }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
-        return $this->DirectMessage('AUTOMOD', $warning, $ckey, $server);
+        return $this->DirectMessage($ckey, $warning, 'AUTOMOD', $server);
     }
     /*
     * This function determines if a player has been warned too many times for a specific category of bad words
