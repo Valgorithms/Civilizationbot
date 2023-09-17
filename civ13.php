@@ -2386,7 +2386,6 @@ class Civ13
                 } elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($id)");
         return $permabanned;
     }
-
     
     /*
     * These functions determine which of the above methods should be used to process a ban or unban
@@ -2445,7 +2444,7 @@ class Civ13
         $sent = false;
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if ($directmessage($recipient, $message, $sender, $key)) $sent = true;
+            $sent = $directmessage($recipient, $message, $sender, $key);
         }
         return $sent;
     }
@@ -2470,7 +2469,7 @@ class Civ13
         $sent = false;
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if ($oocmessage($message, $sender, $key)) $sent = true;
+            $sent = $oocmessage($message, $sender, $key);
         }
         return $sent;
     }
@@ -2495,7 +2494,7 @@ class Civ13
         $sent = false;
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if ($adminmessage($message, $sender, $key)) $sent = true;
+            $sent = $adminmessage($message, $sender, $key);
         }
         return $sent;
     }
