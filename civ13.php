@@ -3114,7 +3114,8 @@ class Civ13
         }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
-        return $this->DirectMessage($ckey, $warning, $this->discord->user->displayname, $server);
+        foreach (array_keys($this->server_settings) as $key) if (strtolower($server) == strtolower($key)) return $this->DirectMessage($ckey, $warning, $this->discord->user->displayname, $key);
+        return false;
     }
     /*
     * This function determines if a player has been warned too many times for a specific category of bad words
