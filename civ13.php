@@ -2450,7 +2450,6 @@ class Civ13
         $directmessage = function (string $recipient, string $message, string $sender, string $server): bool
         {
             $server = strtolower($server);
-            // if ($this->server_funcs_uncalled[$server.'_discord2admin']($this->discord->user->displayname, $message)) return true;
             if (file_exists($this->files[$server.'_discord2dm']) && $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
                 fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
                 fclose($file);
