@@ -814,6 +814,20 @@ class Civ13
             return $this->reply($message, 'You need to be in any of the #asay channels to use this command.');
         }));
 
+        $this->messageHandler->offsetSet('globalooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
+        {
+            if ($this->OOCMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author->id)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
+            if ($this->sharding) return null;
+            return $message->react("🔥");
+        }), ['Owner', 'High Staff', 'Admin']);
+
+        $this->messageHandler->offsetSet('globalasay', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
+        {
+            if ($this->AdminMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author->id)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
+            if ($this->sharding) return null;
+            return $message->react("🔥");
+        }), ['Owner', 'High Staff', 'Admin']);
+
         $directmessage = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $explode = explode(';', $message_filtered['message_content']);
