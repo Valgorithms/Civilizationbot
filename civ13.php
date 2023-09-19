@@ -337,7 +337,7 @@ class Civ13
             if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
                 $serverrestart = function (?Message $message = null) use ($server): ?PromiseInterface
                 {
-                    $this->loop->addTimer(10, function () use ($server, $message): ?PromiseInterface
+                    $this->loop->addTimer(10, function () use ($server): void
                     {
                         $kill = $this->messageHandler->offsetGet($server.'kill') ?? [];
                         $host = $this->messageHandler->offsetGet($server.'host') ?? [];
@@ -347,11 +347,11 @@ class Civ13
                         ) {
                             $kill();
                             $host();
-                            if ($message) return $message->react("👍");
                         }
-                        if ($message) return $message->react("🔥");
                     });
-                    $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
+                    if ($message) $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
+                    else $this->OOCMessage("Server is now restarting.", $this->discord->user->displayname, $server);
+                    if ($message) return $message->react("👍");
                     return null;
                 };
                 $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['Owner', 'High Staff']);
