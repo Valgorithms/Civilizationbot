@@ -324,7 +324,7 @@ class Civ13
                 else {
                     $serverkill = function (?Message $message = null) use ($server): void
                     {
-                        $this->loop->addTimer(10, function () use ($server, $message): void
+                        $this->loop->addTimer(10, function () use ($server): void
                         {
                             \execInBackground("python3 {$this->files[$server.'_killciv13']}");
                         });
@@ -346,7 +346,8 @@ class Civ13
                             && ($host = array_shift($host))
                         ) {
                             $kill();
-                            $host();
+                            $this->loop->addTimer(10, function () use ($host): void
+                            {$host();});
                         }
                     });
                     if ($message) $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
