@@ -23,14 +23,13 @@ interface MessageHandlerCallbackInterface
 
 namespace Civ13;
 
-use Civ13\Interfaces\MessageHandlerInterface;
 use Civ13\Interfaces\MessageHandlerCallbackInterface;
 use Discord\Parts\Channel\Message;
 use Discord\Helpers\Collection;
 use React\Promise\PromiseInterface;
 
 class MessageHandlerCallback implements MessageHandlerCallbackInterface
-{  
+{
     private $callback;
 
     public function __construct(callable $callback)
@@ -64,6 +63,8 @@ class MessageHandlerCallback implements MessageHandlerCallbackInterface
         return call_user_func($this->callback, $message, $message_filtered, $command);
     }
 }
+
+use Civ13\Interfaces\MessageHandlerInterface;
 
 class MessageHandler extends Handler implements MessageHandlerInterface
 {

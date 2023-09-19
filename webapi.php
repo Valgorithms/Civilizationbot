@@ -10,7 +10,7 @@ use Discord\Parts\Embed\Embed;
 use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
-use \Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 @include getcwd() . '/webapi_token_env.php'; // putenv("WEBAPI_TOKEN='YOUR_TOKEN_HERE'");
 $webhook_key = getenv('WEBAPI_TOKEN') ?? 'CHANGEME'; // The token is used to verify that the sender is legitimate and not a malicious actor
