@@ -2476,14 +2476,17 @@ class Civ13
             $this->logger->error("unable to open `{$this->files[$server.'_discord2ooc']}` for writing");
             return false;
         };
-        if ($server) {
-            if (! $this->server_settings[$server]['enabled'] ?? false) return false;
-            return $oocmessage($message, $sender, $server);
-        }
         $sent = false;
         foreach ($this->server_settings as $key => $settings) {
-            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $sent = $oocmessage($message, $sender, $key);
+            if ($server) {
+                if ($server == strtolower($key)) {
+                    if (! $this->server_settings[$key]['enabled'] ?? false) return false;
+                    return $oocmessage($message, $sender, $key);
+                }
+            } else {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+                $sent = $oocmessage($message, $sender, $key);
+            }
         }
         return $sent;
     }
