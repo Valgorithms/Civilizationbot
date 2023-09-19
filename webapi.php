@@ -637,7 +637,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
         case 'webhook':
             $server =& $method; // alias for readability+
             $upper = null;
-            foreach (array_keys($civ13->server_settings) as $key) if (strtolower($key) === $server) $upper = $server;
+            foreach (array_keys($civ13->server_settings) as $key) if (strtolower($key) === $server) $upper = $key;
             if (! isset($civ13->channel_ids[$server.'_debug_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_debug_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
             $params = $request->getQueryParams();
             // var_dump($params);
