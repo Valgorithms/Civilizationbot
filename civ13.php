@@ -388,7 +388,7 @@ class Civ13
                         {
                             return $mapswap($mapto, $message);
                         });
-                        if ($message) return $message->react("👍");
+                        if ($message) return $message->react("⏱️");
                     };
                     $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['Owner', 'High Staff']);
                 }
@@ -801,6 +801,7 @@ class Civ13
 
         $this->messageHandler->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
+            $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
@@ -816,6 +817,7 @@ class Civ13
 
         $this->messageHandler->offsetSet('asay', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
+            $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
@@ -831,6 +833,7 @@ class Civ13
 
         $this->messageHandler->offsetSet('globalooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
+            $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
             if ($this->OOCMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
             if ($this->sharding) return null;
             return $message->react("🔥");
@@ -838,6 +841,7 @@ class Civ13
 
         $this->messageHandler->offsetSet('globalasay', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
+            $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
             if ($this->AdminMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
             if ($this->sharding) return null;
             return $message->react("🔥");
@@ -1328,7 +1332,7 @@ class Civ13
         }), ['Owner', 'High Staff']);
     }
 
-    public function filterMessage($message): array
+    public function filterMessage(Message $message): array
     {
         if (! $message->guild || $message->guild->owner_id != $this->owner_id)  return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
         $message_content = '';
@@ -1353,6 +1357,39 @@ class Civ13
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
         if (strlen($content)<=4096) {
             $embed = new Embed($this->discord);
+            $embed->setDescription($content);
+            $builder->addEmbed($embed);
+            return $channel->sendMessage($builder);
+        }
+        return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
+    }
+
+    public function sendPlayerMessage($channel, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
+    {
+        // Sender is the ckey or Discord displayname
+        $ckey = null;
+        $member = null;
+        $verified = false;
+        if ($item = $this->getVerifiedItem($sender)) {
+            $ckey = $item['ss13'];
+            $verified = true;
+            $member = $this->getVerifiedMember($ckey);
+        }
+        $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
+
+        // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
+        if ($announce_shard && $this->sharding && $this->enabled_servers) {
+            if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
+            if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
+            else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
+        }
+        $builder = MessageBuilder::new();
+        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        if (!$verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
+        if (strlen($content)<=4096) {
+            $embed = new Embed($this->discord);
+            if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
+            if ($member) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
             $embed->setDescription($content);
             $builder->addEmbed($embed);
             return $channel->sendMessage($builder);
@@ -1794,11 +1831,11 @@ class Civ13
     * This function is used to get a Member object from a ckey or Discord ID
     * It will return false if the user is not verified, if the user is not in the Civ13 Discord server, or if the bot is not in the Civ13 Discord server
     */
-    public function getVerifiedMember(Member|User|array|string|null $input): Member|false
+    public function getVerifiedMember(Member|User|array|string|null $input): ?Member
     {
-        if (! $input) return false;
+        if (! $input) return null;
         // Get the guild (required to get the member)
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return false;
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null;
         // Get Discord ID
         $id = null;
         if ($input instanceof Member || $input instanceof User) { // If $input is a Member or User, get the Discord ID
@@ -1806,22 +1843,22 @@ class Civ13
         } elseif (is_string($input)) { // If $input is a string, it could be either a ckey or Discord ID
             if (! $input = $this->sanitizeInput($input)) {
                 $this->logger->warning("An invalid string was passed to getVerifiedMember()");
-                return false;
+                return null;
             } elseif (is_numeric($input)) { // If $input is not a number, it is probably a ckey
                 $id = $input;
             } else {
-                if (! $item = $this->verified->get('ss13', $input)) return false;
+                if (! $item = $this->verified->get('ss13', $input)) return null;
                 $id = $item['discord'];
             }
         } elseif (is_array($input)) { // If $input is an array, it could contain either a ckey or a Discord ID
-            if (! isset($input['discord']) && ! isset($input['ss13'])) return false;
+            if (! isset($input['discord']) && ! isset($input['ss13'])) return null;
             elseif (isset($input['discord']) && is_string($input['discord']) && is_numeric($input['discord'] = $this->sanitizeInput($input['discord']))) $id = $input['discord'];
             elseif (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) $id = $item['discord'];
-            else return false; // If $input is an array, but contains invalid data, return false
-        } // else return false; // If $input is not a string, array, Member, or User, return false (this should never happen)
-        if (! $id || ! $this->isVerified($id)) return false; // Check if Discord ID is in the verified collection
+            else return null; // If $input is an array, but contains invalid data, return null
+        } // else return false; // If $input is not a string, array, Member, or User, return null (this should never happen)
+        if (! $id || ! $this->isVerified($id)) return null; // Check if Discord ID is in the verified collection
         if ($member = $guild->members->get('id', $id)) return $member; // Get the member from the guild
-        return false;
+        return null;
     }
 
     public function getRole(string $input): ?Role
@@ -2438,31 +2475,6 @@ class Civ13
                 if ($member->roles->has($this->role_ids['banished']))
                     $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
     }
-    
-    public function DirectMessage(string $recipient, string $message, string $sender, ?string $server = ''): bool
-    {
-        $directmessage = function (string $recipient, string $message, string $sender, string $server): bool
-        {
-            $server = strtolower($server);
-            if (file_exists($this->files[$server.'_discord2dm']) && $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
-                fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
-                fclose($file);
-                return true;
-            }
-            $this->logger->debug("unable to open `{$this->files[$server.'_discord2dm']}` for writing");
-            return false;
-        };
-        if ($server) {
-            if (! $this->server_settings[$server]['enabled'] ?? false) return false;
-            return $directmessage($recipient, $message, $sender, $server);
-        }
-        $sent = false;
-        foreach ($this->server_settings as $key => $settings) {
-            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $sent = $directmessage($recipient, $message, $sender, $key);
-        }
-        return $sent;
-    }
 
     public function OOCMessage(string $message, string $sender, ?string $server = ''): bool
     {
@@ -2472,6 +2484,7 @@ class Civ13
             if (file_exists($this->files[$server.'_discord2ooc']) && $file = @fopen($this->files[$server.'_discord2ooc'], 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
+                if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_ooc_channel'])) $this->sendPlayerMessage($channel, $message, $sender);
                 return true; 
             }
             $this->logger->error("unable to open `{$this->files[$server.'_discord2ooc']}` for writing");
@@ -2480,10 +2493,9 @@ class Civ13
         $sent = false;
         foreach ($this->server_settings as $key => $settings) {
             if ($server) {
-                if ($server == strtolower($key)) {
-                    if (! $this->server_settings[$key]['enabled'] ?? false) return false;
-                    return $oocmessage($message, $sender, $key);
-                }
+                if (strtolower($server) !== strtolower($key)) continue;
+                if (! $this->server_settings[$key]['enabled'] ?? false) return false;
+                return $oocmessage($message, $sender, $key);
             } else {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $sent = $oocmessage($message, $sender, $key);
@@ -2500,19 +2512,50 @@ class Civ13
             if (file_exists($this->files[$server.'_discord2admin']) && $file = @fopen($this->files[$server.'_discord2admin'], 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
+                if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, $message, $sender);
                 return true;
             }
             $this->logger->error("unable to open `{$this->files[$server.'_discord2admin']}` for writing");
             return false;
         };
-        if ($server) {
-            if (! $this->server_settings[$server]['enabled'] ?? false) return false;
-            return $adminmessage($message, $sender, $server);
-        }
         $sent = false;
         foreach ($this->server_settings as $key => $settings) {
-            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $sent = $adminmessage($message, $sender, $key);
+            if ($server) {
+                if (strtolower($server) !== strtolower($key)) continue;
+                if (! $this->server_settings[$key]['enabled'] ?? false) return false;
+                return $adminmessage($message, $sender, $key);
+            } else {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+                $sent = $adminmessage($message, $sender, $key);
+            }
+        }
+        return $sent;
+    }
+
+    public function DirectMessage(string $recipient, string $message, string $sender, ?string $server = ''): bool
+    {
+        $directmessage = function (string $recipient, string $message, string $sender, string $server): bool
+        {
+            $server = strtolower($server);
+            if (file_exists($this->files[$server.'_discord2dm']) && $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
+                fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
+                fclose($file);
+                if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, $message, $sender, $recipient);
+                return true;
+            }
+            $this->logger->debug("unable to open `{$this->files[$server.'_discord2dm']}` for writing");
+            return false;
+        };
+        $sent = false;
+        foreach ($this->server_settings as $key => $settings) {
+            if ($server) {
+                if (strtolower($server) !== strtolower($key)) continue;
+                if (! $this->server_settings[$key]['enabled'] ?? false) return false;
+                return $directmessage($recipient, $message, $sender, $key);
+            } else {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+                $sent = $directmessage($recipient,$message, $sender, $key);
+            }
         }
         return $sent;
     }
