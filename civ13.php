@@ -327,8 +327,8 @@ class Civ13
                         $this->loop->addTimer(10, function () use ($server, $message): void
                         {
                             \execInBackground("python3 {$this->files[$server.'_killciv13']}");
-                            if ($message) $message->react("👍");
                         });
+                        if ($message) $message->react("👍");
                         $this->OOCMessage("Server is shutting down.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
                     };
                     $this->messageHandler->offsetSet($server.'kill', $serverkill, ['Owner', 'High Staff']);
