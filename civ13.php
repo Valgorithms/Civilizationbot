@@ -361,7 +361,7 @@ class Civ13
             foreach (['_mapswap'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
                 else {
-                    $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server): PromiseInterface|bool
+                    $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server): ?PromiseInterface
                     {
                         $mapswap = function (string $mapto, ?Message $message = null, ) use ($server): ?PromiseInterface
                         {
@@ -388,7 +388,7 @@ class Civ13
                         {
                             return $mapswap($mapto, $message);
                         });
-                        return true;
+                        if ($message) return $message->react("👍");
                     };
                     $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['Owner', 'High Staff']);
                 }
