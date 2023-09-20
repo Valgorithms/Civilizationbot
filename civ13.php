@@ -26,11 +26,13 @@ use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
+use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\Http\Browser;
 use React\Http\HttpServer;
+use React\Http\Message\Response as HttpResponse;
 use React\Promise\PromiseInterface;
 use React\Socket\SocketServer;
 use React\EventLoop\TimerInterface;
@@ -43,6 +45,7 @@ class Civ13
     public string $welcome_message = '';
     
     public MessageHandler $messageHandler;
+    public HttpHandler $httpHandler;
 
     public Slash $slash;
     
@@ -250,7 +253,8 @@ class Civ13
      * @return void
      */
     protected function generateServerFunctions(): void
-    {    
+    {
+        // messageHandler
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
@@ -429,6 +433,13 @@ class Civ13
             };
             $this->messageHandler->offsetSet($server.'unban',  $serverunban, ['Owner', 'High Staff', 'Admin']);
         }
+        // httpHandler
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $server = strtolower($key);
+
+            //TODO
+        }
     }
 
     /*
@@ -441,6 +452,7 @@ class Civ13
      */
     protected function generateGlobalFunctions(): void
     { // TODO: add infantry and veteran roles to all non-staff command parameters except for `approveme`
+        // messageHandler
         $this->messageHandler->offsetSet('ping', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             return $this->reply($message, 'Pong!');
@@ -1330,6 +1342,40 @@ class Civ13
         {
             return $this->reply($message, 'Panic bunker is now ' . (($this->panic_bunker = ! $this->panic_bunker) ? 'enabled.' : 'disabled.'));
         }), ['Owner', 'High Staff']);
+
+        // httpHandler
+        $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
+        {
+            return HttpResponse::plaintext("Hello wörld!\n");
+        }));
+        $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
+        {
+            if ($favicon = @file_get_contents('favicon.ico'))
+                return new HttpResponse(
+                    HttpResponse::STATUS_OK,
+                    ['Content-Type' => 'image/x-icon'],
+                    $favicon
+                );
+            return new HttpResponse(
+                HttpResponse::STATUS_NOT_FOUND,
+                ['Content-Type' => 'text/plain'],
+                "Unable to access `favicon.ico`"
+            );
+        }));
+
+        /*
+        $this->httpHandler->offsetSet('/endpoint', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
+        {
+            
+            return HttpResponse::plaintext("Hello wörld!\n");
+            return HttpResponse::html("<!doctype html><html><body>Hello wörld!</body></html>");
+            return new HttpResponse(
+                HttpResponse::STATUS_OK,
+                ['Content-Type' => 'text/json'],
+                json_encode($json ?? '')
+            );
+        }));
+        */
     }
 
     public function filterMessage(Message $message): array
@@ -1428,6 +1474,7 @@ class Civ13
     protected function afterConstruct(array $options = [], array $server_options = []): void
     {
         $this->messageHandler = new MessageHandler($this);
+        $this->httpHandler = new HttpHandler($this, [], $options['http_whitelist'] ?? []);
         $this->generateServerFunctions();
         $this->generateGlobalFunctions();
         $this->logger->debug('[COMMAND LIST] ' . $this->messageHandler->generateHelp());

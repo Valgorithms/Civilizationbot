@@ -66,12 +66,13 @@ include 'variable_functions.php';
 include 'verifier_functions.php';
 include 'civ13.php';
 include 'Handler.php';
-include 'MessageHandler.php';
+include 'messageHandler.php';
+include 'httpHandler.php';
 
 // TODO: Add a timer and a callable function to update these IP addresses every 12 hours
-$external_ip = file_get_contents('http://ipecho.net/plain');
 $civ13_ip = gethostbyname('www.civ13.com');
 $vzg_ip = gethostbyname('www.valzargaming.com');
+$http_whitelist = [$civ13_ip, $vzg_ip];
 
 $webapi = null;
 $socket = null;
@@ -88,6 +89,7 @@ $options = array(
 
     'webapi' => &$webapi,
     'socket' => &$socket,
+    'http_whitelist' => $http_whitelist,
     
     // Configurations
 
