@@ -26,11 +26,13 @@ use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
+use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\Http\Browser;
 use React\Http\HttpServer;
+use React\Http\Message\Response as HttpResponse;
 use React\Promise\PromiseInterface;
 use React\Socket\SocketServer;
 use React\EventLoop\TimerInterface;
@@ -43,6 +45,7 @@ class Civ13
     public string $welcome_message = '';
     
     public MessageHandler $messageHandler;
+    public HttpHandler $httpHandler;
 
     public Slash $slash;
     
@@ -135,6 +138,7 @@ class Civ13
     public string $civ_token = ''; // Token for use with $verify_url, this is not the same as the bot token and should be kept secret
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; // Link to the bot's github page
+    public string $discord_invite = 'https://civ13.com/discord'; // Link to the Civ13 Discord server
     public string $banappeal = 'civ13.com slash discord'; // Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
     public string $rules = 'civ13.com slash rules'; // Link to the server rules
     public string $verify_url = 'http://valzargaming.com:8080/verified/'; // Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
@@ -186,6 +190,7 @@ class Civ13
         if (isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
         if (isset($options['rules'])) $this->rules = $options['rules'];
         if (isset($options['github'])) $this->github = $options['github'];
+        if (isset($options['discord_invite'])) $this->discord_invite = $options['discord_invite'];
         if (isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
         if (isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if (isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
@@ -250,7 +255,8 @@ class Civ13
      * @return void
      */
     protected function generateServerFunctions(): void
-    {    
+    {
+        // messageHandler
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
@@ -429,6 +435,13 @@ class Civ13
             };
             $this->messageHandler->offsetSet($server.'unban',  $serverunban, ['Owner', 'High Staff', 'Admin']);
         }
+        // httpHandler
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $server = strtolower($key);
+
+            //TODO
+        }
     }
 
     /*
@@ -441,6 +454,7 @@ class Civ13
      */
     protected function generateGlobalFunctions(): void
     { // TODO: add infantry and veteran roles to all non-staff command parameters except for `approveme`
+        // messageHandler
         $this->messageHandler->offsetSet('ping', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             return $this->reply($message, 'Pong!');
@@ -1330,6 +1344,684 @@ class Civ13
         {
             return $this->reply($message, 'Panic bunker is now ' . (($this->panic_bunker = ! $this->panic_bunker) ? 'enabled.' : 'disabled.'));
         }), ['Owner', 'High Staff']);
+
+        // httpHandler
+        $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/ping'): HttpResponse
+        {
+            return HttpResponse::plaintext("Hello wörld!");
+        }));
+        $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/favicon.ico'): HttpResponse
+        {
+            if ($favicon = @file_get_contents('favicon.ico'))
+                return new HttpResponse(
+                    HttpResponse::STATUS_OK,
+                    ['Content-Type' => 'image/x-icon'],
+                    $favicon
+                );
+            return new HttpResponse(
+                HttpResponse::STATUS_NOT_FOUND,
+                ['Content-Type' => 'text/plain'],
+                "Unable to access `favicon.ico`"
+            );
+        }));
+
+        if ($this->github)
+        $this->httpHandler->offsetSet('/github', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/github'): HttpResponse
+        {
+            return new HttpResponse(
+                HttpResponse::STATUS_FOUND,
+                ['Location' => $this->github]
+            );
+        }));
+
+        if ($this->discord_invite)
+        $this->httpHandler->offsetSet('/discord', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/github'): HttpResponse
+        {
+            return new HttpResponse(
+                HttpResponse::STATUS_FOUND,
+                ['Location' => $this->discord_invite]
+            );
+        }));
+
+        $this->httpHandler->offsetSet('/reset', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/reset'): HttpResponse
+        {
+            execInBackground('git reset --hard origin/main');
+            $message = 'Forcefully moving the HEAD back to origin/main...';
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
+            return HttpResponse::plaintext("$message");
+        }), true);
+        $this->httpHandler->offsetSet('/pull', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/pull'): HttpResponse
+        {
+            execInBackground('git pull');
+            $message = 'Updating code from GitHub...';
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
+            return HttpResponse::plaintext("$message");
+        }), true);
+        $this->httpHandler->offsetSet('/update', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/update'): HttpResponse
+        {
+            execInBackground('composer update');
+            $message = 'Updating dependencies...';
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
+            return HttpResponse::plaintext("$message");
+        }), true);
+        $this->httpHandler->offsetSet('/restart', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/restart'): HttpResponse
+        {
+            $message = 'Restarting...';
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
+            $this->socket->close();
+            if (! isset($this->timers['restart'])) $this->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
+                \restart();
+                $this->discord->close();
+                die();
+            });
+            return HttpResponse::plaintext("$message");
+        }), true);
+        
+        $this->httpHandler->offsetSet('/verified', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/verified'): HttpResponse
+        {
+            return HttpResponse::json($this->verified->toArray());
+        }), true);
+
+
+        /*
+        $this->httpHandler->offsetSet('/endpoint', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint'): HttpResponse
+        {
+            
+            return HttpResponse::plaintext("Hello wörld!\n");
+            return HttpResponse::html("<!doctype html><html><body>Hello wörld!</body></html>");
+            return new HttpResponse(
+                HttpResponse::STATUS_OK,
+                ['Content-Type' => 'text/json'],
+                json_encode($json ?? '')
+            );
+        }));
+        */
+
+        $relay = function($message, $channel, $ckey = null): ?PromiseInterface
+        {
+            if (! $ckey || ! $item = $this->verified->get('ss13', $this->sanitizeInput(explode('/', $ckey)[0]))) return $this->sendMessage($channel, $message);
+            if ($user = $this->discord->users->get('id', $item['discord'])) {
+                $embed = new Embed($this->discord);
+                $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                $embed->setDescription($message);
+                return $channel->sendEmbed($embed);
+            } 
+            if ($item) {
+                $this->logger->warning("{$item['ss13']}'s Discord ID was not found not in the primary Discord server!");
+                $this->discord->users->fetch($item['discord']);
+                return $this->sendMessage($channel, $message);
+            }
+            return $this->sendMessage($channel, $message);
+        };
+        
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $server = strtolower($key);
+            $server_endpoint = '/' . $server;
+
+            $this->httpHandler->offsetSet($server_endpoint.'/bans', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if (! isset($this->files[$server.'bans']) || ! $bans = $this->files[$server.'bans']) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                if (! $return = @file_get_contents($bans)) return HttpResponse::plaintext("Unable to read `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                return HttpResponse::plaintext($return);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if (! isset($this->files[$server.'_playerlogs']) || ! $playerlogs = $this->files[$server.'_playerlogs']) return HttpResponse::plaintext("Unable to access `$playerlogs`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                if (! $return = @file_get_contents($playerlogs)) return HttpResponse::plaintext("Unable to read `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                return HttpResponse::plaintext($return);
+            }), true);
+        }
+
+        $endpoint = '/webhook';
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $server = strtolower($key);
+            $server_endpoint = $endpoint . '/' . $server;
+
+            // If no parameters are passed to a server_endpoint, try to find it using the query parameters
+            $this->httpHandler->offsetSet($server_endpoint, new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($server_endpoint): HttpResponse
+            {
+                $params = $request->getQueryParams();
+                //if ($params['method']) $this->logger->info("[METHOD] `{$params['method']}`");
+                $method = $this->httpHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
+                if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
+                else {
+                    if ($params['method']) $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
+                    return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
+                }
+                $this->logger->warning('[UNROUTED ENDPOINT]' . $server_endpoint);
+                return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} AHELP__ $ckey**: " . $message;
+
+                //$relay($message, $channel, $ckey); //Bypass moderator
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/asaymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                //$message = "**__{$time} ASAY__ $ckey**: $message";
+                $message = "**__{$time}__ $message";
+
+                $relay($message, $channel, $ckey);
+                //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/lobbymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_lobby_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_lobby_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} LOBBY__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/oocmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ooc_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ooc_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                //$time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                //$message = "**__{$time} OOC__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/icmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                //$time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                //$message = "**__{$time} OOC__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/memessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} EMOTE__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/garbage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} GARBAGE__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/round_start', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ooc_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ooc_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                $message = '';
+                if (isset($this->role_ids['round_start'])) $message .= "<@&{$this->role_ids['round_start']}>, ";
+                $message .= 'New round ';
+                if (isset($data['round']) && $game_id = $data['round']) {
+                    $this->logNewRound($server, $game_id, $time);
+                    $message .= "`$game_id` ";
+                }
+                $message .= 'has started!';
+                if ($playercount_channel = $this->discord->getChannel($this->channel_ids[$server . '-playercount']))
+                if ($existingCount = explode('-', $playercount_channel->name)[1]) {
+                    $existingCount = intval($existingCount);
+                    switch ($existingCount) {
+                        case 0:
+                            $message .= ' There are currently no players on the ' . ($key ?? $server) . ' server.';
+                            break;
+                        case 1:
+                            $message .= ' There is currently 1 player on the ' . ($key ?? $server) . ' server.';
+                            break;
+                        default:
+                            if (isset($this->role_ids['30+']) && $this->role_ids['30+'] && ($existingCount >= 30)) $message .= " <@&{$this->role_ids['30+']}>,";
+                            elseif (isset($this->role_ids['15+']) && $this->role_ids['15+'] && ($existingCount >= 15)) $message .= " <@&{$this->role_ids['15+']}>,";
+                            elseif (isset($this->role_ids['2+']) && $this->role_ids['2+'] && ($existingCount >= 2)) $message .= " <@&{$this->role_ids['2+']}>,";
+                            $message .= ' There are currently ' . $existingCount . ' players on the ' . ($key ?? $server) . ' server.';
+                            break;
+                    }
+                }
+                $this->sendMessage($channel, $message);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/respawn_notice', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            { // NYI
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/login', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_transit_channel'], $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_transit_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                $message = "$ckey connected to the server";
+                if (isset($data['ip'])) $message .= " with IP of {$data['ip']}";
+                if (isset($data['cid'])) $message .= " and CID of {$data['cid']}";
+                $message .= '.';
+                if (isset($this->current_rounds[$server]) && $this->current_rounds[$server]) $this->logPlayerLogin($server, $ckey, $time, $data['ip'] ?? '', $data['cid'] ?? '');
+
+                if (isset($this->paroled[$ckey])) {
+                    $message2 = '';
+                    if (isset($this->role_ids['parolemin'])) $message2 .= "<@&{$this->role_ids['parolemin']}>, ";
+                    $message2 .= "`$ckey` has logged into `$server`";
+                    $this->sendMessage($parole_notif_channel, $message2);
+                }
+
+                $relay($message, $channel, $ckey);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/logout', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_transit_channel'], $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_transit_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                $message = "$ckey disconnected from the server.";
+                if (isset($this->current_rounds[$server]) && $this->current_rounds[$server]) $this->logPlayerLogout($server, $ckey, $time);
+
+                if (isset($this->paroled[$ckey])) {
+                    $message2 = '';
+                    if (isset($this->role_ids['parolemin'])) $message2 .= "<@&{$this->role_ids['parolemin']}>, ";
+                    $message2 .= "`$ckey` has log out of `$server`";
+                    $this->sendMessage($parole_notif_channel, $message2);
+                }
+
+                $relay($message, $channel, $ckey);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/runtimemessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_runtime_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_runtime_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} RUNTIME__**: $message";
+
+                $relay($message, $channel);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/alogmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_adminlog_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_adminlog_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} ADMIN LOG__**: " . $message;
+
+                $relay($message, $channel);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/attacklogmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if ($server == 'tdm') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); // Disabled on TDM, use manual checking of log files instead
+                if (! isset($this->channel_ids[$server.'_attack_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_attack_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = ('NULL');
+                isset($data['ckey2']) ? $ckey2 = $this->sanitizeInput($data['ckey2']) : $ckey2 = null;
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message'])), '') : $message = '(NULL)';
+                $message = "**__{$time} ATTACK LOG__**: " . $message;
+                if ($ckey && $ckey2) if ($ckey === $ckey2) $message .= " (Self-Attack)";
+                
+                $relay($message, $channel);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            /*
+            $this->httpHandler->offsetSet($server_endpoint.'/', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+            */
+        }
+
+        $botlog_func = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/botlog'): HttpResponse
+        {
+            $port = 55555;
+            $webpage_content = function (string $return) use ($port, $endpoint) {
+                return '<meta name="color-scheme" content="light dark"> 
+                        <div class="button-container">
+                            <button style="width:8%" onclick="sendGetRequest(\'pull\')">Pull</button>
+                            <button style="width:8%" onclick="sendGetRequest(\'reset\')">Reset</button>
+                            <button style="width:8%" onclick="sendGetRequest(\'update\')">Update</button>
+                            <button style="width:8%" onclick="sendGetRequest(\'restart\')">Restart</button>
+                            <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open(\''. $this->github . '\')">' . $this->discord->user->displayname . '</button>
+                        </div>
+                        <div class="alert-container"></div>
+                        <div class="checkpoint">' . 
+                            str_replace('[' . date("Y"), '</div><div> [' . date("Y"), 
+                                str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)
+                            ) . 
+                        "</div>
+                        <div class='reload-container'>
+                            <button onclick='location.reload()'>Reload</button>
+                        </div>
+                        <div class='loading-container'>
+                            <div class='loading-bar'></div>
+                        </div>
+                        <script>
+                            var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
+                            var scrollTimeout;
+                            window.onload=function(){
+                                if(window.location.href==localStorage.getItem('lastUrl')){
+                                    mainScrollArea.scrollTop=localStorage.getItem('scrollTop');
+                                }else{
+                                    localStorage.setItem('lastUrl',window.location.href);
+                                    localStorage.setItem('scrollTop',0);
+                                }
+                            };
+                            mainScrollArea.addEventListener('scroll',function(){
+                                clearTimeout(scrollTimeout);
+                                scrollTimeout=setTimeout(function(){
+                                    localStorage.setItem('scrollTop',mainScrollArea.scrollTop);
+                                },100);
+                            });
+                            function sendGetRequest(endpoint) {
+                                var xhr = new XMLHttpRequest();
+                                xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':" . $port . "/' + endpoint, true);
+                                xhr.onload = function () {
+                                    var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
+                                    var alertContainer = document.querySelector('.alert-container');
+                                    var alert = document.createElement('div');
+                                    alert.innerHTML = response;
+                                    alertContainer.appendChild(alert);
+                                    setTimeout(function() {
+                                        alert.remove();
+                                    }, 15000);
+                                    if (endpoint === 'restart') {
+                                        var loadingBar = document.querySelector('.loading-bar');
+                                        var loadingContainer = document.querySelector('.loading-container');
+                                        loadingContainer.style.display = 'block';
+                                        var width = 0;
+                                        var interval = setInterval(function() {
+                                            if (width >= 100) {
+                                                clearInterval(interval);
+                                                location.reload();
+                                            } else {
+                                                width += 2;
+                                                loadingBar.style.width = width + '%';
+                                            }
+                                        }, 300);
+                                        loadingBar.style.backgroundColor = 'white';
+                                        loadingBar.style.height = '20px';
+                                        loadingBar.style.position = 'fixed';
+                                        loadingBar.style.top = '50%';
+                                        loadingBar.style.left = '50%';
+                                        loadingBar.style.transform = 'translate(-50%, -50%)';
+                                        loadingBar.style.zIndex = '9999';
+                                        loadingBar.style.borderRadius = '5px';
+                                        loadingBar.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+                                        var backdrop = document.createElement('div');
+                                        backdrop.style.position = 'fixed';
+                                        backdrop.style.top = '0';
+                                        backdrop.style.left = '0';
+                                        backdrop.style.width = '100%';
+                                        backdrop.style.height = '100%';
+                                        backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                                        backdrop.style.zIndex = '9998';
+                                        document.body.appendChild(backdrop);
+                                        setTimeout(function() {
+                                            clearInterval(interval);
+                                            if (!document.readyState || document.readyState === 'complete') {
+                                                location.reload();
+                                            } else {
+                                                setTimeout(function() {
+                                                    location.reload();
+                                                }, 5000);
+                                            }
+                                        }, 5000);
+                                    }
+                                };
+                                xhr.send();
+                            }
+                            </script>
+                            <style>
+                                .button-container {
+                                    position: fixed;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    background-color: #f1f1f1;
+                                    overflow: hidden;
+                                }
+                                .button-container button {
+                                    float: left;
+                                    display: block;
+                                    color: black;
+                                    text-align: center;
+                                    padding: 14px 16px;
+                                    text-decoration: none;
+                                    font-size: 17px;
+                                    border: none;
+                                    cursor: pointer;
+                                    color: white;
+                                    background-color: black;
+                                }
+                                .button-container button:hover {
+                                    background-color: #ddd;
+                                }
+                                .checkpoint {
+                                    margin-top: 100px;
+                                }
+                                .alert-container {
+                                    position: fixed;
+                                    top: 0;
+                                    right: 0;
+                                    width: 300px;
+                                    height: 100%;
+                                    overflow-y: scroll;
+                                    padding: 20px;
+                                    color: black;
+                                    background-color: black;
+                                }
+                                .alert-container div {
+                                    margin-bottom: 10px;
+                                    padding: 10px;
+                                    background-color: #fff;
+                                    border: 1px solid #ddd;
+                                }
+                                .reload-container {
+                                    position: fixed;
+                                    bottom: 0;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    margin-bottom: 20px;
+                                }
+                                .reload-container button {
+                                    display: block;
+                                    color: black;
+                                    text-align: center;
+                                    padding: 14px 16px;
+                                    text-decoration: none;
+                                    font-size: 17px;
+                                    border: none;
+                                    cursor: pointer;
+                                }
+                                .reload-container button:hover {
+                                    background-color: #ddd;
+                                }
+                                .loading-container {
+                                    position: fixed;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    bottom: 0;
+                                    background-color: rgba(0, 0, 0, 0.5);
+                                    display: none;
+                                }
+                                .loading-bar {
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    width: 0%;
+                                    height: 20px;
+                                    background-color: white;
+                                }
+                                .nav-container {
+                                    position: fixed;
+                                    bottom: 0;
+                                    right: 0;
+                                    margin-bottom: 20px;
+                                }
+                                .nav-container button {
+                                    display: block;
+                                    color: black;
+                                    text-align: center;
+                                    padding: 14px 16px;
+                                    text-decoration: none;
+                                    font-size: 17px;
+                                    border: none;
+                                    cursor: pointer;
+                                    color: white;
+                                    background-color: black;
+                                    margin-right: 10px;
+                                }
+                                .nav-container button:hover {
+                                    background-color: #ddd;
+                                }
+                                .checkbox-container {
+                                    display: inline-block;
+                                    margin-right: 10px;
+                                }
+                                .checkbox-container input[type=checkbox] {
+                                    display: none;
+                                }
+                                .checkbox-container label {
+                                    display: inline-block;
+                                    background-color: #ddd;
+                                    padding: 5px 10px;
+                                    cursor: pointer;
+                                }
+                                .checkbox-container input[type=checkbox]:checked + label {
+                                    background-color: #bbb;
+                                }
+                            </style>
+                            <div class='nav-container'>"
+                                . ($endpoint == '/botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
+                            . "</div>
+                            <div class='reload-container'>
+                                <div class='checkbox-container'>
+                                    <input type='checkbox' id='auto-reload-checkbox' " . (isset($_COOKIE['auto-reload']) && $_COOKIE['auto-reload'] == 'true' ? 'checked' : '') . ">
+                                    <label for='auto-reload-checkbox'>Auto Reload</label>
+                                </div>
+                                <button id='reload-button'>Reload</button>
+                            </div>
+                            <script>
+                                var reloadButton = document.getElementById('reload-button');
+                                var autoReloadCheckbox = document.getElementById('auto-reload-checkbox');
+                                var interval;
+        
+                                reloadButton.addEventListener('click', function () {
+                                    clearInterval(interval);
+                                    location.reload();
+                                });
+        
+                                autoReloadCheckbox.addEventListener('change', function () {
+                                    if (this.checked) {
+                                        interval = setInterval(function() {
+                                            location.reload();
+                                        }, 15000);
+                                        localStorage.setItem('auto-reload', 'true');
+                                    } else {
+                                        clearInterval(interval);
+                                        localStorage.setItem('auto-reload', 'false');
+                                    }
+                                });
+        
+                                if (localStorage.getItem('auto-reload') == 'true') {
+                                    autoReloadCheckbox.checked = true;
+                                    interval = setInterval(function() {
+                                        location.reload();
+                                    }, 15000);
+                                }
+                            </script>";
+            };
+            if ($return = @file_get_contents('botlog.txt')) return HttpResponse::html($webpage_content($return));
+            return HttpResponse::plaintext("Unable to access `botlog.txt`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+        });
+        $this->httpHandler->offsetSet('/botlog', $botlog_func, true);
+        $this->httpHandler->offsetSet('/botlog2', $botlog_func, true);
+        
     }
 
     public function filterMessage(Message $message): array
@@ -1347,6 +2039,7 @@ class Civ13
     public function sendMessage($channel, string $content, string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
+        if (is_string($channel)) $channel = $this->discord->getChannel($channel);
         if ($announce_shard && $this->sharding && $this->enabled_servers) {
             if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
             if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
@@ -1428,6 +2121,7 @@ class Civ13
     protected function afterConstruct(array $options = [], array $server_options = []): void
     {
         $this->messageHandler = new MessageHandler($this);
+        $this->httpHandler = new HttpHandler($this, [], $options['http_whitelist'] ?? []);
         $this->generateServerFunctions();
         $this->generateGlobalFunctions();
         $this->logger->debug('[COMMAND LIST] ' . $this->messageHandler->generateHelp());
