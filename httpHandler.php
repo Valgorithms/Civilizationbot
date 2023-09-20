@@ -106,16 +106,52 @@ class HttpHandler extends Handler implements HttpHandlerInterface
 
     public function processEndpoint(ServerRequestInterface $request): Response
     { // TODO
-        $path = $request->getUri()->getPath();
         $data = $request->getQueryParams();
-        if (isset($this->whitelisted[$path]))
-            if (! $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR']))
-                return $this->__throwError("You do not have permission to access this endpoint.");
-        if (isset($this->handlers[$path]))
-            if (is_callable($callback = $this->handlers[$path]))
-                if ($response = $callback($request, $data, $path));
-                    if ($response instanceof Response) return $response;
-                    else return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.");
+        $path = $request->getUri()->getPath();
+
+        foreach ($this->handlers as $endpoint => $callback) {
+            switch ($this->match_methods[$endpoint]) {
+                case 'exact':
+                $method_func = function () use ($callback, $endpoint, $path): ?callable
+                {
+                    if ($endpoint == $path)
+                        return $callback; // This is where the magic happens
+                    return null;
+                };
+                break;
+                case 'str_contains':
+                    $method_func = function () use ($callback, $endpoint, $path): ?callable
+                    {
+                        if (str_contains($endpoint, $path)) 
+                            return $callback; // This is where the magic happens
+                        return null;
+                    };
+                    break;
+                case 'str_ends_with':
+                    $method_func = function () use ($callback, $endpoint, $path): ?callable
+                    {
+                        if (str_ends_with($endpoint, $path)) 
+                            return $callback; // This is where the magic happens
+                        return null;
+                    };
+                    break;
+                case 'str_starts_with':
+                default:
+                    $method_func = function () use ($callback, $endpoint, $path): ?callable
+                    {
+                        if (str_starts_with($endpoint, $path)) 
+                            return $callback; // This is where the magic happens
+                        return null;
+                    };
+            }
+            if ($callback = $method_func()) { // Command triggered
+                if (($this->whitelisted[$endpoint] ?? false) !== false)
+                    if (! $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR']))
+                        return $this->__throwError("You do not have permission to access this endpoint.");
+                if (($response = $callback($request, $data, $endpoint)) instanceof HttpResponse) return $response;
+                else return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.");
+            }
+        }
         return $this->__throwError("An endpoint for `$path` does not exist.");
     }
 
@@ -124,7 +160,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->civ13->logger->info("HTTP Server error: `$error`");
         return Response::json(
             ['error' => $error]
-        )->withStatus(Response::STATUS_BAD_REQUEST);
+        )->withStatus(Response::STATUS_INTERNAL_SERVER_ERROR);
     }
 
     public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
