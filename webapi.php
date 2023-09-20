@@ -122,6 +122,10 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop)
 
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow)
 {
+    //if ($response = $civ13->httpHandler->handle($request)) return $response;
+    //return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
+
+    
     // Port knocking security check
     $authed_ips = [];
     if ($portknock && isset($portknock_ips[$request->getServerParams()['REMOTE_ADDR']])) {
@@ -172,7 +176,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
         '69.137.227.236',
     ];
     $whitelist = array_merge($whitelist, $authed_ips);
-    $substr_whitelist = ['10.0.0.', '192.168.']; 
+    $substr_whitelist = ['10.0.0.', '192.168.', '172.16.', '172.17.', '172.18.', '172.19.', '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', '172.27.', '172.28.', '172.29.', '172.30.', '172.31.']; 
     $whitelisted = false;
     foreach ($substr_whitelist as $substr) if (substr($request->getServerParams()['REMOTE_ADDR'], 0, strlen($substr)) == $substr) $whitelisted = true;
     if (in_array($request->getServerParams()['REMOTE_ADDR'], $whitelist)) $whitelisted = true;
@@ -872,7 +876,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 //$webapi->listen($socket); // Moved to civ13.php
 $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket) {
     $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
-    $civ13->logger->error('[webapi]' . $error);
+    $civ13->logger->error('[webapi] ' . $error);
     if ($request) $civ13->logger->error('[webapi] Request: ' . $request->getRequestTarget());
     if (str_starts_with($e->getMessage(), 'The response callback')) {
         $civ13->logger->info('[RESTART] WEBAPI ERROR');
