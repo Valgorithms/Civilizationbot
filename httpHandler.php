@@ -100,7 +100,10 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         //$this->civ13->logger->info("[WEBAPI PATH] $path");
         //$ext = pathinfo($query, PATHINFO_EXTENSION);
 
-        return $this->processEndpoint($request);
+        $response = $this->processEndpoint($request);
+        if ($response instanceof Response) return $response;
+        $this->civ13->logger->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` resulted in an object that did not implement the ResponseInterface.`');
+        return new Response(Response::STATUS_INTERNAL_SERVER_ERROR);
     }
 
     public function processEndpoint(ServerRequestInterface $request): Response

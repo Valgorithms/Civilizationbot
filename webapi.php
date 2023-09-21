@@ -142,15 +142,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
     $last_path = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
     $civ13->logger->info('[WEBAPI URI] ' . $last_path);
-    $response = $civ13->httpHandler->handle($request);
-    if ($response instanceof ResponseInterface) {
-        return $response;
-    } else {
-        $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` resulted in an object that did not implement the ResponseInterface.`');
-        return new Response(Response::STATUS_INTERNAL_SERVER_ERROR, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
-    }
-    $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` did not result in a Response.`');
-    return new Response(Response::STATUS_INTERNAL_SERVER_ERROR, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
+    return $civ13->httpHandler->handle($request);
 
     
     // Port knocking security check
@@ -508,6 +500,16 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     return new Response(200, ['Content-Type' => 'text/json'], json_encode($return ?? ''));
 });
 //$webapi->listen($socket); // Moved to civ13.php
+/**
+ * Handles errors thrown by the web API.
+ *
+ * @param Exception $e The exception that was thrown.
+ * @param \Psr\Http\Message\RequestInterface|null $request The request that caused the exception.
+ * @param object $civ13 The main object of the application.
+ * @param object $socket The socket object.
+ * @param string $last_path The last path that was accessed.
+ * @return void
+ */
 $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, &$last_path) {
     $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error('[webapi] ' . $error);
