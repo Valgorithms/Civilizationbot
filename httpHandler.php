@@ -91,7 +91,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $host = $request->getUri()->getHost();
         $port = $request->getUri()->getPort();
         $path = $request->getUri()->getPath();
-        if ($path === '' || $path[0] !== '/' || $path === '/') $path = '/index';
+        if ($path === '' || $path === '/') $path = '/index';
         $query = $request->getUri()->getQuery();
         $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
 
@@ -111,7 +111,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $data = [];
         if ($params = $request->getQueryParams())
             if (isset($params['data']))
-                $data = json_decode($params['data'], true);
+                $data = json_decode(urldecode($params['data']), true);
         $path = $request->getUri()->getPath();
         foreach ($this->handlers as $endpoint => $callback) {
             switch ($this->match_methods[$endpoint]) {

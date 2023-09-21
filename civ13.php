@@ -1345,7 +1345,14 @@ class Civ13
             return $this->reply($message, 'Panic bunker is now ' . (($this->panic_bunker = ! $this->panic_bunker) ? 'enabled.' : 'disabled.'));
         }), ['Owner', 'High Staff']);
 
-        // httpHandler
+        // httpHandler website endpoints
+        $this->httpHandler->offsetSet('/index', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/ping'): HttpResponse
+        {
+            return new HttpResponse(
+                HttpResponse::STATUS_FOUND,
+                ['Location' => 'https://www.valzargaming.com/?login']
+            );
+        }));
         $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/ping'): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!");
@@ -1365,24 +1372,7 @@ class Civ13
             );
         }));
 
-        if ($this->github)
-        $this->httpHandler->offsetSet('/github', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/github'): HttpResponse
-        {
-            return new HttpResponse(
-                HttpResponse::STATUS_FOUND,
-                ['Location' => $this->github]
-            );
-        }));
-
-        if ($this->discord_invite)
-        $this->httpHandler->offsetSet('/discord', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/github'): HttpResponse
-        {
-            return new HttpResponse(
-                HttpResponse::STATUS_FOUND,
-                ['Location' => $this->discord_invite]
-            );
-        }));
-
+        // httpHandler management endpoints
         $this->httpHandler->offsetSet('/reset', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/reset'): HttpResponse
         {
             execInBackground('git reset --hard origin/main');
@@ -1416,7 +1406,27 @@ class Civ13
             });
             return HttpResponse::plaintext("$message");
         }), true);
-        
+
+        // httpHandler redirect endpoints
+        if ($this->github)
+        $this->httpHandler->offsetSet('/github', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/github'): HttpResponse
+        {
+            return new HttpResponse(
+                HttpResponse::STATUS_FOUND,
+                ['Location' => $this->github]
+            );
+        }));
+
+        if ($this->discord_invite)
+        $this->httpHandler->offsetSet('/discord', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/github'): HttpResponse
+        {
+            return new HttpResponse(
+                HttpResponse::STATUS_FOUND,
+                ['Location' => $this->discord_invite]
+            );
+        }));
+
+        // httpHandler data endpoints
         $this->httpHandler->offsetSet('/verified', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/verified'): HttpResponse
         {
             return HttpResponse::json($this->verified->toArray());
@@ -1760,6 +1770,7 @@ class Civ13
             */
         }
 
+        // httpHandler log endpoints
         $botlog_func = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/botlog'): HttpResponse
         {
             $port = 55555;
