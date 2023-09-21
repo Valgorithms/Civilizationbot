@@ -18,7 +18,7 @@ interface HttpHandlerInterface extends HandlerInterface
 
 interface HttpHandlerCallbackInterface
 {
-    public function __invoke(ServerRequestInterface $request, array $data, string $endpoint): HttpResponse;
+    public function __invoke(ServerRequestInterface $request, array $data, string $endpoint, bool $whitelisted): HttpResponse;
 }
 
 namespace Civ13;
@@ -36,7 +36,7 @@ class HttpHandlerCallback implements HttpHandlerCallbackInterface
         $reflection = new \ReflectionFunction($callback);
         $parameters = $reflection->getParameters();
 
-        $expectedParameterTypes = [ServerRequestInterface::class, 'array', 'string'];
+        $expectedParameterTypes = [ServerRequestInterface::class, 'array', 'bool', 'string'];
 
         if (count($parameters) !== $count = count($expectedParameterTypes)) {
             throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
@@ -57,9 +57,9 @@ class HttpHandlerCallback implements HttpHandlerCallbackInterface
         $this->callback = $callback;
     }
 
-    public function __invoke(ServerRequestInterface $request, array $data = [], string $endpoint = ''): HttpResponse
+    public function __invoke(ServerRequestInterface $request, array $data = [], bool $whitelisted = false, string $endpoint = ''): HttpResponse
     {
-        return call_user_func($this->callback, $request, $data, $endpoint);
+        return call_user_func($this->callback, $request, $data, $whitelisted, $endpoint);
     }
 }
 
@@ -140,10 +140,11 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                     };
             }
             if ($callback = $method_func()) { // Command triggered
+                $whitelisted = false;
                 if (($this->whitelisted[$endpoint] ?? false) !== false)
-                    if (! $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR']))
+                    if (! $whitelisted = $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR']))
                         return $this->__throwError("You do not have permission to access this endpoint.");
-                if (($response = $callback($request, $data, $endpoint)) instanceof HttpResponse) return $response;
+                if (($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse) return $response;
                 else return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.");
             }
         }

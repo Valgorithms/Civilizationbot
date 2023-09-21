@@ -1346,11 +1346,11 @@ class Civ13
         }), ['Owner', 'High Staff']);
 
         // httpHandler
-        $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/ping'): HttpResponse
+        $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/ping'): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!");
         }));
-        $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/favicon.ico'): HttpResponse
+        $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/favicon.ico'): HttpResponse
         {
             if ($favicon = @file_get_contents('favicon.ico'))
                 return new HttpResponse(
@@ -1366,7 +1366,7 @@ class Civ13
         }));
 
         if ($this->github)
-        $this->httpHandler->offsetSet('/github', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/github'): HttpResponse
+        $this->httpHandler->offsetSet('/github', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/github'): HttpResponse
         {
             return new HttpResponse(
                 HttpResponse::STATUS_FOUND,
@@ -1375,7 +1375,7 @@ class Civ13
         }));
 
         if ($this->discord_invite)
-        $this->httpHandler->offsetSet('/discord', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/github'): HttpResponse
+        $this->httpHandler->offsetSet('/discord', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/github'): HttpResponse
         {
             return new HttpResponse(
                 HttpResponse::STATUS_FOUND,
@@ -1383,28 +1383,28 @@ class Civ13
             );
         }));
 
-        $this->httpHandler->offsetSet('/reset', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/reset'): HttpResponse
+        $this->httpHandler->offsetSet('/reset', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/reset'): HttpResponse
         {
             execInBackground('git reset --hard origin/main');
             $message = 'Forcefully moving the HEAD back to origin/main...';
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
             return HttpResponse::plaintext("$message");
         }), true);
-        $this->httpHandler->offsetSet('/pull', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/pull'): HttpResponse
+        $this->httpHandler->offsetSet('/pull', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/pull'): HttpResponse
         {
             execInBackground('git pull');
             $message = 'Updating code from GitHub...';
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
             return HttpResponse::plaintext("$message");
         }), true);
-        $this->httpHandler->offsetSet('/update', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/update'): HttpResponse
+        $this->httpHandler->offsetSet('/update', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/update'): HttpResponse
         {
             execInBackground('composer update');
             $message = 'Updating dependencies...';
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
             return HttpResponse::plaintext("$message");
         }), true);
-        $this->httpHandler->offsetSet('/restart', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/restart'): HttpResponse
+        $this->httpHandler->offsetSet('/restart', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/restart'): HttpResponse
         {
             $message = 'Restarting...';
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
@@ -1417,14 +1417,14 @@ class Civ13
             return HttpResponse::plaintext("$message");
         }), true);
         
-        $this->httpHandler->offsetSet('/verified', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/verified'): HttpResponse
+        $this->httpHandler->offsetSet('/verified', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/verified'): HttpResponse
         {
             return HttpResponse::json($this->verified->toArray());
         }), true);
 
 
         /*
-        $this->httpHandler->offsetSet('/endpoint', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
+        $this->httpHandler->offsetSet('/endpoint', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint'): HttpResponse
         {
             
             return HttpResponse::plaintext("Hello wörld!\n");
