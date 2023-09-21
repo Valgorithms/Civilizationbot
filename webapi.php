@@ -126,7 +126,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
         if ($response instanceof Response)
             return $response;
     $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` did not result in a Response.`');
-    return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
+    return new Response(Response::STATUS_INTERNAL_SERVER_ERROR, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
 
     
     // Port knocking security check
