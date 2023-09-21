@@ -1752,7 +1752,6 @@ class Civ13
             });
             $this->httpHandler->offsetSet('roundstatus', $generic_http_handler, true);
             $this->httpHandler->offsetSet('status_update', $generic_http_handler, true);
-
             /*
             $this->httpHandler->offsetSet($server_endpoint.'/', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
             {

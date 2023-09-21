@@ -278,6 +278,198 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             $return = '';
             break;
 
+        case 'webhook':
+            $server =& $method; // alias for readability+
+            $upper = null;
+            foreach (array_keys($civ13->server_settings) as $key) if (strtolower($key) === $server) $upper = $key;
+            if (! isset($civ13->channel_ids[$server.'_debug_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_debug_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+            $params = $request->getQueryParams();
+            // var_dump($params);
+            if (! $whitelisted && (! isset($params['key']) || $params['key'] != $webhook_key)) return new Response(401, ['Content-Type' => 'text/plain'], 'Unauthorized');
+            if (! isset($params['method']) || ! isset($params['data'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Missing Parameters');
+            $data = json_decode($params['data'], true);
+            $time = '['.date('H:i:s', time()).']';
+            $message = '';
+            $ckey = '';
+            if (isset($data['ckey'])) $ckey = $civ13->sanitizeInput($data['ckey']);
+            switch ($params['method']) {
+                case 'ahelpmessage':
+                    $message .= "**__{$time} AHELP__ $ckey**: " . html_entity_decode(urldecode($data['message']));
+                    break;
+                case 'asaymessage':
+                    if (! isset($civ13->channel_ids[$server.'_asay_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_asay_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    if (isset($data['message'])) {
+                        $ckey = explode('/', $ckey)[0]; // separate ckey from the string
+                        $message .= /*"**__{$time} ASAY__ $ckey**: " .*/ html_entity_decode(urldecode($data['message']));
+                    }
+                    if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel_id)) 
+                         return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Relay handled by civ13->gameChatWebhookRelay
+                    break;
+                case 'lobbymessage': // Might overlap with deadchat
+                    if (! isset($civ13->channel_ids[$server.'_lobby_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_lobby_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $message .= "**__{$time} LOBBY__ $ckey**: " . html_entity_decode(urldecode($data['message']));
+                    break;
+                case 'oocmessage':
+                    if (! isset($civ13->channel_ids[$server.'_ooc_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_ooc_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
+                    if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel_id))
+                        return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Relay handled by civ13->gameChatWebhookRelay
+                    if ($civ13->relay_method === 'file' && ! $ckey && str_ends_with($message, 'starting!') && $strpos = strpos($message, 'New round ')) {
+                        $new_message = '';
+                        if (isset($civ13->role_ids['round_start'])) $new_message .= "<@&{$civ13->role_ids['round_start']}>, ";
+                        $new_message .= substr($message, $strpos);
+                        $message = $new_message;
+                        if (isset($civ13->channel_ids[$server . '-playercount']) && $playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
+                            if ($existingCount = explode('-', $playercount_channel->name)[1]) {
+                                $existingCount = intval($existingCount);
+                                switch ($existingCount) {
+                                    case 0:
+                                        $message .= ' There are currently no players on the ' . ($upper ?? $server) . ' server.';
+                                        break;
+                                    case 1:
+                                        $message .= ' There is currently 1 player on the ' . ($upper ?? $server) . ' server.';
+                                        break;
+                                    default:
+                                        if (isset($civ13->role_ids['30+']) && $civ13->role_ids['30+'] && ($existingCount >= 30)) $message .= " <@&{$civ13->role_ids['30+']}>,";
+                                        elseif (isset($civ13->role_ids['15+']) && $civ13->role_ids['15+'] && ($existingCount >= 15)) $message .= " <@&{$civ13->role_ids['15+']}>,";
+                                        elseif (isset($civ13->role_ids['2+']) && $civ13->role_ids['2+'] && ($existingCount >= 2)) $message .= " <@&{$civ13->role_ids['2+']}>,";
+                                        $message .= ' There are currently ' . $existingCount . ' players on the ' . ($upper ?? $server) . ' server.';
+                                        break;
+                                }
+                            }
+                    }
+                    break;
+                case 'icmessage':
+                    if (! isset($civ13->channel_ids[$server.'_ic_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_ic_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $message .= html_entity_decode(strip_tags(urldecode($data['message'])));
+                    if ($civ13->relay_method === 'webhook' && $ckey && $message && $civ13->gameChatWebhookRelay($ckey, $message, $channel_id, false))
+                        return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Relay handled by civ13->gameChatWebhookRelay
+                    break;
+                case 'memessage':
+                    if (isset($data['message'])) $message .= "**__{$time} EMOTE__ $ckey** " . html_entity_decode(urldecode($data['message']));
+                    break;
+                case 'garbage':
+                    if (isset($data['message'])) $message .= "**__{$time} GARBAGE__ $ckey**: " . html_entity_decode(strip_tags($data['message']));
+                    break;
+                case 'round_start':
+                    if (! isset($civ13->channel_ids[$server]) || ! $channel_id = $civ13->channel_ids[$server]) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    if ($civ13->relay_method !== 'webhook') return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Only relay if using webhook
+                    if (isset($civ13->role_ids['round_start'])) $message .= "<@&{$civ13->role_ids['round_start']}>, ";
+                    $message .= 'New round ';
+                    if (isset($data['round']) && $game_id = $data['round']) {
+                        $civ13->logNewRound($server, $game_id, $time);
+                        $message .= "`$game_id` ";
+                    }
+                    $message .= 'has started!';
+                    if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
+                    if ($existingCount = explode('-', $playercount_channel->name)[1]) {
+                        $existingCount = intval($existingCount);
+                        switch ($existingCount) {
+                            case 0:
+                                $message .= ' There are currently no players on the ' . ($upper ?? $server) . ' server.';
+                                break;
+                            case 1:
+                                $message .= ' There is currently 1 player on the ' . ($upper ?? $server) . ' server.';
+                                break;
+                            default:
+                                if (isset($civ13->role_ids['30+']) && $civ13->role_ids['30+'] && ($existingCount >= 30)) $message .= " <@&{$civ13->role_ids['30+']}>,";
+                                elseif (isset($civ13->role_ids['15+']) && $civ13->role_ids['15+'] && ($existingCount >= 15)) $message .= " <@&{$civ13->role_ids['15+']}>,";
+                                elseif (isset($civ13->role_ids['2+']) && $civ13->role_ids['2+'] && ($existingCount >= 2)) $message .= " <@&{$civ13->role_ids['2+']}>,";
+                                $message .= ' There are currently ' . $existingCount . ' players on the ' . ($upper ?? $server) . ' server.';
+                                break;
+                        }
+                    }
+                    // A future update should include a way to call a $civ13 function using the server and round id
+                    break;
+                case 'respawn_notice':
+                    // if (isset($civ13->role_ids['respawn_notice'])) $message .= "<@&{$civ13->role_ids['respawn_notice']}>, ";
+                    if (isset($data['message'])) $message .= html_entity_decode(urldecode($data['message']));
+                    break;
+                case 'login':
+                    // Move this to a function in civ13.php
+                    if (isset($civ13->paroled[$ckey])
+                        && isset($civ13->channel_ids['parole_notif'])
+                        && $parole_log_channel = $civ13->discord->getChannel($civ13->channel_ids['parole_notif'])
+                    ) {
+                        $message2 = '';
+                        if (isset($civ13->role_ids['parolemin'])) $message2 .= "<@&{$civ13->role_ids['parolemin']}>, ";
+                        $message2 .= "`$ckey` has logged into `$server`";
+                        $parole_log_channel->sendMessage($message2);
+                    }
+
+                    if (isset($civ13->current_rounds[$server]) && $civ13->current_rounds[$server]) 
+                        $civ13->logPlayerLogin($server, $ckey, $time, $data['ip'] ?? '', $data['cid'] ?? '');
+
+                    if (! isset($civ13->channel_ids[$server.'_transit_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_transit_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $message .= "$ckey connected to the server";
+                    if (isset($data['ip'])) {
+                        $address = $data['ip'];
+                        $message .=  " with IP of $address";
+                    }
+                    if (isset($data['cid'])) {
+                        $computer_id = $data['cid'];
+                        $message .= " and CID of $computer_id";
+                    }
+                    $message .= '.';
+                    break;
+                case 'logout':
+                    // Move this to a function in civ13.php    
+                    if (isset($civ13->paroled[$ckey])
+                        && isset($civ13->channel_ids['parole_notif'])
+                        && $parole_log_channel = $civ13->discord->getChannel($civ13->channel_ids['parole_notif'])
+                    ) {
+                        $message2 = '';
+                        if (isset($civ13->role_ids['parolemin'])) $message2 .= "<@&{$civ13->role_ids['parolemin']}>, ";
+                        $message2 .= "`$ckey` has log out of `$server`";
+                        $parole_log_channel->sendMessage($message2);
+                    }
+
+                    if (isset($civ13->current_rounds[$server]) && $civ13->current_rounds[$server])
+                        $civ13->logPlayerLogout($server, $ckey, $time);
+
+                    if (! isset($civ13->channel_ids[$server.'_transit_channel']) || ! $channel_id = $civ13->channel_ids[$server.'_transit_channel']) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $message .= "$ckey disconnected from the server.";
+                    break;
+                case 'token':
+                case 'roundstatus':
+                case 'status_update':
+                    echo "[DATA FOR {$params['method']}]: "; var_dump($params['data']); echo PHP_EOL;
+                    break;
+                case 'runtimemessage':
+                    if (! isset($civ13->channel_ids[$server.'_runtime_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_runtime_channel'];
+                    $message .= "**__{$time} RUNTIME__**: " . strip_tags($data['message']);
+                    break;
+                case 'alogmessage':
+                    if (! isset($civ13->channel_ids[$server.'_adminlog_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_adminlog_channel'];
+                    $message .= "**__{$time} ADMIN LOG__**: " . strip_tags($data['message']);
+                    break;
+                case 'attacklogmessage':
+                    if ($server == 'tdm' && ! (! isset($data['ckey2']) || ! $data['ckey2'] || ($data['ckey'] !== $data['ckey2']))) return new Response(200, ['Content-Type' => 'text/html'], 'Done'); // Disabled on TDM, use manual checking of log files instead
+                    if (! isset($civ13->channel_ids[$server.'_attack_channel'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                    $channel_id = $civ13->channel_ids[$server.'_attack_channel'];
+                    $message .= "**__{$time} ATTACK LOG__**: " . strip_tags($data['message']);
+                    if (isset($data['ckey']) && isset($data['ckey2'])) if ($data['ckey'] && $data['ckey2']) if ($data['ckey'] === $data['ckey2']) $message .= " (Self-Attack)";
+                    break;
+                default:
+                    $civ13->logger->alert("API UNKNOWN METHOD `{$params['method']}` FROM " . $request->getServerParams()['REMOTE_ADDR']);
+                    return new Response(400, ['Content-Type' => 'text/plain'], 'Invalid Parameter');
+            }
+            if ($message && $channel = $civ13->discord->getChannel($channel_id)) {
+                if (! $ckey || ! $item = $civ13->verified->get('ss13', $civ13->sanitizeInput(explode('/', $ckey)[0]))) $channel->sendMessage($message);
+                elseif ($user = $civ13->discord->users->get('id', $item['discord'])) {
+                    $embed = new Embed($civ13->discord);
+                    $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                    $embed->setDescription($message);
+                    $channel->sendEmbed($embed);
+                } elseif ($item) {
+                    $civ13->discord->users->fetch($item['discord']);
+                    $channel->sendMessage($message);
+                } else $channel->sendMessage($message);
+            }
+            return new Response(200, ['Content-Type' => 'text/html'], 'Done');
+
         case 'discord2ckey':
             if (! $id || !$webapiSnow($id) || !is_numeric($id)) return $webapiFail('user_id', $id);
             if ($discord2ckey = array_shift($civ13->messageHandler->offsetGet('discord2ckey'))) return new Response(200, ['Content-Type' => 'text/plain'], $discord2ckey($civ13, $id));
