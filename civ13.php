@@ -1461,7 +1461,7 @@ class Civ13
 
             $this->httpHandler->offsetSet($server_endpoint.'/bans', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
             {
-                if (! isset($this->files[$server.'bans']) || ! $bans = $this->files[$server.'_bans']) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                if (! isset($this->files[$server.'_bans']) || ! $bans = $this->files[$server.'_bans']) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
                 if (! $return = @file_get_contents($bans)) return HttpResponse::plaintext("Unable to read `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 return HttpResponse::plaintext($return);
             }), true);
