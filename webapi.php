@@ -120,9 +120,12 @@ if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { //
 
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
 
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow)
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow): Response
 {
-    if ($response = $civ13->httpHandler->handle($request)) return $response;
+    if ($response = $civ13->httpHandler->handle($request))
+        if ($response instanceof Response)
+            return $response;
+    $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` did not result in a Response.`');
     return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
 
     
