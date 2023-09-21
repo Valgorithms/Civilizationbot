@@ -1746,6 +1746,13 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
+            $generic_http_handler = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint'): HttpResponse
+            {
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            });
+            $this->httpHandler->offsetSet('roundstatus', $generic_http_handler, true);
+            $this->httpHandler->offsetSet('status_update', $generic_http_handler, true);
+
             /*
             $this->httpHandler->offsetSet($server_endpoint.'/', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
             {
