@@ -1344,11 +1344,11 @@ class Civ13
         }), ['Owner', 'High Staff']);
 
         // httpHandler
-        $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
+        $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/ping'): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!\n");
         }));
-        $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
+        $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/favicon.ico'): HttpResponse
         {
             if ($favicon = @file_get_contents('favicon.ico'))
                 return new HttpResponse(

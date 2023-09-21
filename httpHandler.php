@@ -108,30 +108,26 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     { // TODO
         $data = $request->getQueryParams();
         $path = $request->getUri()->getPath();
-
         foreach ($this->handlers as $endpoint => $callback) {
             switch ($this->match_methods[$endpoint]) {
                 case 'exact':
-                $method_func = function () use ($callback, $endpoint, $path): ?callable
-                {
-                    if ($endpoint == $path)
-                        return $callback; // This is where the magic happens
-                    return null;
-                };
-                break;
+                    $method_func = function () use ($callback, $endpoint, $path): ?callable
+                    {
+                        if ($endpoint == $path) return $callback;
+                        return null;
+                    };
+                    break;
                 case 'str_contains':
                     $method_func = function () use ($callback, $endpoint, $path): ?callable
                     {
-                        if (str_contains($endpoint, $path)) 
-                            return $callback; // This is where the magic happens
+                        if (str_contains($endpoint, $path)) return $callback;
                         return null;
                     };
                     break;
                 case 'str_ends_with':
                     $method_func = function () use ($callback, $endpoint, $path): ?callable
                     {
-                        if (str_ends_with($endpoint, $path)) 
-                            return $callback; // This is where the magic happens
+                        if (str_ends_with($endpoint, $path)) return $callback;
                         return null;
                     };
                     break;
@@ -139,8 +135,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                 default:
                     $method_func = function () use ($callback, $endpoint, $path): ?callable
                     {
-                        if (str_starts_with($endpoint, $path)) 
-                            return $callback; // This is where the magic happens
+                        if (str_starts_with($endpoint, $path)) return $callback;
                         return null;
                     };
             }
