@@ -105,8 +105,8 @@ class HttpHandler extends Handler implements HttpHandlerInterface
 
     public function processEndpoint(ServerRequestInterface $request): Response
     { // TODO
-        $params = $request->getQueryParams();
-        $data = json_decode($params['data'], true);
+        $data = $request->getQueryParams();
+        if ($data['data']) $data = json_decode($data['data'], true);
         $path = $request->getUri()->getPath();
         foreach ($this->handlers as $endpoint => $callback) {
             switch ($this->match_methods[$endpoint]) {
