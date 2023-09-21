@@ -1454,6 +1454,26 @@ class Civ13
             return $this->sendMessage($channel, $message);
         };
         
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $server = strtolower($key);
+            $server_endpoint = '/' . $server;
+
+            $this->httpHandler->offsetSet($server_endpoint.'/bans', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if (! isset($this->files[$server.'bans']) || ! $bans = $this->files[$server.'bans']) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to access `$bans`");
+                if (! $return = @file_get_contents($bans)) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to read `$bans`");
+                return HttpResponse::plaintext($return);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if (! isset($this->files[$server.'_playerlogs']) || ! $playerlogs = $this->files[$server.'_playerlogs']) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to access `$playerlogs`");
+                if (! $return = @file_get_contents($playerlogs)) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to read `$playerlogs`");
+                return HttpResponse::plaintext($return);
+            }), true);
+        }
+
         $endpoint = '/webhook';
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
@@ -1708,20 +1728,6 @@ class Civ13
                 
                 $relay($message, $channel);
                 return new HttpResponse(HttpResponse::STATUS_OK);
-            }), true);
-
-            $this->httpHandler->offsetSet($server_endpoint.'/bans', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
-            {
-                if (! isset($this->files[$server.'bans']) || ! $bans = $this->files[$server.'bans']) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to access `$bans`");
-                if (! $return = @file_get_contents($bans)) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to read `$bans`");
-                return HttpResponse::plaintext($return);
-            }), true);
-
-            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
-            {
-                if (! isset($this->files[$server.'_playerlogs']) || ! $playerlogs = $this->files[$server.'_playerlogs']) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to access `$playerlogs`");
-                if (! $return = @file_get_contents($playerlogs)) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to read `$playerlogs`");
-                return HttpResponse::plaintext($return);
             }), true);
 
             /*
