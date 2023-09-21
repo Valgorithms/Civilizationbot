@@ -127,7 +127,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     if ($response instanceof ResponseInterface) {
         return $response;
     } else {
-        $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` did not result in a Response.`');
+        $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` resulted in an object that did not implement the ResponseInterface.`');
         return new Response(Response::STATUS_INTERNAL_SERVER_ERROR, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
     }
     $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` did not result in a Response.`');
