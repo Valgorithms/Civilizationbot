@@ -1485,7 +1485,7 @@ class Civ13
             {
                 $params = $request->getQueryParams();
                 //if ($params['method']) $this->logger->info("[METHOD] `{$params['method']}`");
-                $method = $this->httpHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
+                $method = $this->httpHandler->offsetGet($server_endpoint.'/'.($params['method'] ?? '')) ?? [];
                 if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 else {
                     if ($params['method']) $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
