@@ -1487,7 +1487,7 @@ class Civ13
                 if ($params['method']) $this->logger->info("METHOD: `{$params['method']}`");
                 $method = $this->httpHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
                 if ($method = array_shift($method)) {
-                    $this->logger->info('[DATA]' . json_encode($data));
+                    //$this->logger->info('[DATA]' . json_encode($data));
                     return $method($request, $data, $whitelisted, $endpoint);
                 } else {
                     if ($params['method']) $this->logger->info("NO FUNCTION FOUND FOR METHOD: `{$params['method']}`");
@@ -1504,7 +1504,7 @@ class Civ13
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 $message = "**__{$time} AHELP__ $ckey**: " . $message;
 
                 //$relay($message, $channel, $ckey); //Bypass moderator
@@ -1520,7 +1520,7 @@ class Civ13
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 //$message = "**__{$time} ASAY__ $ckey**: $message";
                 $message = "**__{$time}__ $message";
 
@@ -1537,7 +1537,7 @@ class Civ13
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 $message = "**__{$time} LOBBY__ $ckey**: $message";
 
                 //$relay($message, $channel, $ckey);
@@ -1553,7 +1553,7 @@ class Civ13
 
                 //$time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 //$message = "**__{$time} OOC__ $ckey**: $message";
 
                 //$relay($message, $channel, $ckey);
@@ -1569,7 +1569,7 @@ class Civ13
 
                 //$time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 //$message = "**__{$time} OOC__ $ckey**: $message";
 
                 //$relay($message, $channel, $ckey);
@@ -1585,7 +1585,7 @@ class Civ13
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 $message = "**__{$time} EMOTE__ $ckey**: $message";
 
                 //$relay($message, $channel, $ckey);
@@ -1601,7 +1601,7 @@ class Civ13
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 $message = "**__{$time} GARBAGE__ $ckey**: $message";
 
                 //$relay($message, $channel, $ckey);
@@ -1708,7 +1708,7 @@ class Civ13
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 $message = "**__{$time} RUNTIME__**: $message";
 
                 $relay($message, $channel);
@@ -1722,7 +1722,7 @@ class Civ13
                 if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_adminlog_channel'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
 
                 $time = '['.date('H:i:s', time()).']';
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message']))) : $message = '(NULL)';
                 $message = "**__{$time} ADMIN LOG__**: " . $message;
 
                 $relay($message, $channel);
@@ -1739,7 +1739,7 @@ class Civ13
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = ('NULL');
                 isset($data['ckey2']) ? $ckey2 = $this->sanitizeInput($data['ckey2']) : $ckey2 = null;
-                isset($data['message']) ? $message = strip_tags(html_entity_decode(urldecode($data['message'])), '') : $message = '(NULL)';
+                isset($data['message']) ? $message = htmlspecialchars(html_entity_decode(urldecode($data['message'])), '') : $message = '(NULL)';
                 $message = "**__{$time} ATTACK LOG__**: " . $message;
                 if ($ckey && $ckey2) if ($ckey === $ckey2) $message .= " (Self-Attack)";
                 
