@@ -511,6 +511,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
  * @return void
  */
 $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, &$last_path) {
+    $last_path = preg_replace('/(?<=key=)[^&]+/', '********', $last_path);
     $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error('[webapi] ' . $error);
     if ($request) $civ13->logger->error('[webapi] Request: ' . $request->getRequestTarget());
