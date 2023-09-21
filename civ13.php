@@ -1518,10 +1518,11 @@ class Civ13
                 if (! isset($this->channel_ids[$server.'_asay_channel'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                 if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
 
-                //$time = '['.date('H:i:s', time()).']';
+                $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
                 //$message = "**__{$time} ASAY__ $ckey**: $message";
+                $message = "**__{$time}__ $message";
 
                 $relay($message, $channel, $ckey);
                 //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
