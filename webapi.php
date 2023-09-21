@@ -124,8 +124,15 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop)
 $last_path = '';
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, &$last_path, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow): Response
 {
-    $civ13->logger->info('[WEBAPI PATH]' . ($last_path = $request->getUri()->getPath()));
-    if (! $last_path) return new Response(Response::STATUS_NOT_FOUND);
+    $scheme = $request->getUri()->getScheme();
+    $host = $request->getUri()->getHost();
+    $port = $request->getUri()->getPort();
+    $path = $request->getUri()->getPath();
+    if ($path === '' || $path[0] !== '/' || $path === '/') $path = '/index';
+    $query = $request->getUri()->getQuery();
+    $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
+    $last_path = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
+    $civ13->logger->info('[WEBAPI URI] ' . $last_path);
     $response = $civ13->httpHandler->handle($request);
     if ($response instanceof ResponseInterface) {
         return $response;
@@ -492,7 +499,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     return new Response(200, ['Content-Type' => 'text/json'], json_encode($return ?? ''));
 });
 //$webapi->listen($socket); // Moved to civ13.php
-$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, $last_path) {
+$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, &$last_path) {
     $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error('[webapi] ' . $error);
     if ($request) $civ13->logger->error('[webapi] Request: ' . $request->getRequestTarget());
