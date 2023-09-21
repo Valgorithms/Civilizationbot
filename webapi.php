@@ -10,6 +10,7 @@ use Discord\Parts\Embed\Embed;
 use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 @include getcwd() . '/webapi_token_env.php'; // putenv("WEBAPI_TOKEN='YOUR_TOKEN_HERE'");
@@ -122,9 +123,13 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop)
 
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow): Response
 {
-    if ($response = $civ13->httpHandler->handle($request))
-        if ($response instanceof Response)
-            return $response;
+    $response = $civ13->httpHandler->handle($request);
+    if ($response instanceof ResponseInterface) {
+        return $response;
+    } else {
+        $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` did not result in a Response.`');
+        return new Response(Response::STATUS_INTERNAL_SERVER_ERROR, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
+    }
     $civ13->info->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` did not result in a Response.`');
     return new Response(Response::STATUS_INTERNAL_SERVER_ERROR, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
 
