@@ -121,9 +121,10 @@ if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { //
 
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
 
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow): Response
+$last_path = '';
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $last_path, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow): Response
 {
-    $civ13->logger->info('[WEBAPI PATH]' . $request->getUri()->getPath());
+    $civ13->logger->info('[WEBAPI PATH]' . ($last_path = $request->getUri()->getPath()));
     $response = $civ13->httpHandler->handle($request);
     if ($response instanceof ResponseInterface) {
         return $response;
@@ -490,7 +491,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     return new Response(200, ['Content-Type' => 'text/json'], json_encode($return ?? ''));
 });
 //$webapi->listen($socket); // Moved to civ13.php
-$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket) {
+$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, $last_path) {
     $error = 'API ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error('[webapi] ' . $error);
     if ($request) $civ13->logger->error('[webapi] Request: ' . $request->getRequestTarget());
@@ -498,7 +499,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
         $civ13->logger->info('[RESTART] WEBAPI ERROR');
         if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
             $builder = \Discord\Builders\MessageBuilder::new()
-                ->setContent('Restarting due to error in HttpServer API...' . PHP_EOL . $error)
+                ->setContent('Restarting due to error in HttpServer API...' . PHP_EOL . "Last path: `$last_path`")
                 ->addFileFromContent("httpserver_error.txt", $error);
             $channel->sendMessage($builder);
         }
