@@ -121,6 +121,15 @@ if ($portknock_ports = getenv('DOORS') ? unserialize(getenv('DOORS')) : []) { //
 
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop);
 
+/**
+ * This code block creates a new HttpServer object and handles incoming HTTP requests.
+ * It extracts the scheme, host, port, path, query, and fragment from the request URI.
+ * If the path is empty or does not start with a forward slash, it sets the path to '/index'.
+ * It logs the URI and passes the request to the HttpHandler object for processing.
+ * If the response is an instance of ResponseInterface, it returns the response.
+ * If the response is either not an instance of ResponseInterface or if teh endpoint does not result in a Response, it logs an error and returns a JSON response with an error message.
+ * If the endpoint does not result in a Response, it logs an error and returns a JSON response with an error message.
+ */
 $last_path = '';
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, &$last_path, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow): Response
 {
