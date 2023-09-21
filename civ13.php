@@ -1655,7 +1655,7 @@ class Civ13
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! isset($this->channel_ids[$server.'_transit_channel'], $this->channel_ids['parole_notif'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                 if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_transit_channel'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
-                if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'parole_notif'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+                if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids['parole_notif'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1681,7 +1681,7 @@ class Civ13
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! isset($this->channel_ids[$server.'_transit_channel'], $this->channel_ids['parole_notif'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
                 if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_transit_channel'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
-                if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'parole_notif'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+                if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids['parole_notif'])) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
