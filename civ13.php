@@ -1417,6 +1417,10 @@ class Civ13
             return HttpResponse::plaintext("$message");
         }), true);
         
+        $this->httpHandler->offsetSet('/verified', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/verified'): HttpResponse
+        {
+            return HttpResponse::json($this->verified->toArray());
+        }), true);
 
 
         /*
