@@ -2130,7 +2130,7 @@ class Civ13
         $this->httpHandler = new HttpHandler($this, [], $options['http_whitelist'] ?? []);
         $this->generateServerFunctions();
         $this->generateGlobalFunctions();
-        $this->logger->debug('[COMMAND LIST] ' . $this->messageHandler->generateHelp());
+        $this->logger->debug('[COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
         
         if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
 
