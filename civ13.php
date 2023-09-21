@@ -1484,16 +1484,15 @@ class Civ13
             $this->httpHandler->offsetSet($server_endpoint, new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($server_endpoint): HttpResponse
             {
                 $params = $request->getQueryParams();
-                if ($params['method']) $this->logger->info("METHOD: `{$params['method']}`");
+                //if ($params['method']) $this->logger->info("[METHOD] `{$params['method']}`");
                 $method = $this->httpHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
-                if ($method = array_shift($method)) {
-                    //$this->logger->info('[DATA]' . json_encode($data));
-                    return $method($request, $data, $whitelisted, $endpoint);
-                } else {
-                    if ($params['method']) $this->logger->info("NO FUNCTION FOUND FOR METHOD: `{$params['method']}`");
+                if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
+                else {
+                    if ($params['method']) $this->logger->warning("NO FUNCTION FOUND FOR METHOD: `{$params['method']}`");
                     return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Method not found");
                 }
-                return new HttpResponse(HttpResponse::STATUS_OK);
+                $this->logger->warning('[UNROUTED ENDPOINT]' . $server_endpoint);
+                return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Method not found");
             }), true);
 
             $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
