@@ -1746,7 +1746,7 @@ class Civ13
                 if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_attack_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
-                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = ('NULL');
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = null;
                 isset($data['ckey2']) ? $ckey2 = $this->sanitizeInput($data['ckey2']) : $ckey2 = null;
                 isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                 $message = "**__{$time} ATTACK LOG__**: " . $message;
