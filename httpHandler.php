@@ -95,10 +95,10 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $query = $request->getUri()->getQuery();
         $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
 
-        $url = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
-        $this->civ13->logger->info("[WEBAPI PATH] $path");
-
-        $ext = pathinfo($query, PATHINFO_EXTENSION);
+        //$url = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
+        //$this->civ13->logger->info("[WEBAPI URL] $path");
+        //$this->civ13->logger->info("[WEBAPI PATH] $path");
+        //$ext = pathinfo($query, PATHINFO_EXTENSION);
 
         return $this->processEndpoint($request);
     }
