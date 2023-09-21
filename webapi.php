@@ -721,7 +721,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         $message .= "`$game_id` ";
                     }
                     $message .= 'has started!';
-                    if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']));
+                    if ($playercount_channel = $civ13->discord->getChannel($civ13->channel_ids[$server . '-playercount']))
                     if ($existingCount = explode('-', $playercount_channel->name)[1]) {
                         $existingCount = intval($existingCount);
                         switch ($existingCount) {
