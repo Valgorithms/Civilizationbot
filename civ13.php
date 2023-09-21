@@ -1461,15 +1461,15 @@ class Civ13
 
             $this->httpHandler->offsetSet($server_endpoint.'/bans', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
             {
-                if (! isset($this->files[$server.'bans']) || ! $bans = $this->files[$server.'bans']) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to access `$bans`");
-                if (! $return = @file_get_contents($bans)) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to read `$bans`");
+                if (! isset($this->files[$server.'bans']) || ! $bans = $this->files[$server.'bans']) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                if (! $return = @file_get_contents($bans)) return HttpResponse::plaintext("Unable to read `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 return HttpResponse::plaintext($return);
             }), true);
 
             $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
             {
-                if (! isset($this->files[$server.'_playerlogs']) || ! $playerlogs = $this->files[$server.'_playerlogs']) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to access `$playerlogs`");
-                if (! $return = @file_get_contents($playerlogs)) return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to read `$playerlogs`");
+                if (! isset($this->files[$server.'_playerlogs']) || ! $playerlogs = $this->files[$server.'_playerlogs']) return HttpResponse::plaintext("Unable to access `$playerlogs`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                if (! $return = @file_get_contents($playerlogs)) return HttpResponse::plaintext("Unable to read `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 return HttpResponse::plaintext($return);
             }), true);
         }
@@ -1488,7 +1488,7 @@ class Civ13
                 $method = $this->httpHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
                 if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 else {
-                    if ($params['method']) $this->logger->warning("NO FUNCTION FOUND FOR METHOD: `{$params['method']}`");
+                    if ($params['method']) $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
                     return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
                 }
                 $this->logger->warning('[UNROUTED ENDPOINT]' . $server_endpoint);
