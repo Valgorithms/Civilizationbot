@@ -104,6 +104,7 @@ $options = array(
     'banappeal' => 'civ13.com slash discord',
     'rules' => 'civ13.com slash rules',
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
+    'discord_invite' => 'https://civ13.com/discord',
     'command_symbol' => '@Civilizationbot',
     'owner_id' => '196253985072611328', // Taislin
     'technician_id' => '116927250145869826', // Valithor

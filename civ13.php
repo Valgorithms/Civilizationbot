@@ -138,6 +138,7 @@ class Civ13
     public string $civ_token = ''; // Token for use with $verify_url, this is not the same as the bot token and should be kept secret
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; // Link to the bot's github page
+    public string $discord_invite = 'https://civ13.com/discord'; // Link to the Civ13 Discord server
     public string $banappeal = 'civ13.com slash discord'; // Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
     public string $rules = 'civ13.com slash rules'; // Link to the server rules
     public string $verify_url = 'http://valzargaming.com:8080/verified/'; // Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
@@ -189,6 +190,7 @@ class Civ13
         if (isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
         if (isset($options['rules'])) $this->rules = $options['rules'];
         if (isset($options['github'])) $this->github = $options['github'];
+        if (isset($options['discord_invite'])) $this->discord_invite = $options['discord_invite'];
         if (isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
         if (isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if (isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
@@ -1371,6 +1373,23 @@ class Civ13
                 ['Location' => $this->github]
             );
         }));
+
+        if ($this->discord_invite)
+        $this->httpHandler->offsetSet('/discord', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/github'): HttpResponse
+        {
+            return new HttpResponse(
+                HttpResponse::STATUS_FOUND,
+                ['Location' => $this->discord_invite]
+            );
+        }));
+
+        $this->httpHandler->offsetSet('/reset', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/reset'): HttpResponse
+        {
+            execInBackground('git reset --hard origin/main');
+            $message = 'Forcefully moving the HEAD back to origin/main...';
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
+            return HttpResponse::plaintext("$message");
+        }), true);
 
         /*
         $this->httpHandler->offsetSet('/endpoint', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
