@@ -2003,8 +2003,8 @@ class Civ13
             if ($return = @file_get_contents('botlog.txt')) return HttpResponse::html($webpage_content($return));
             return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST, ['Content-Type' => 'text/plain'], "Unable to access `botlog.txt`");
         });
-        $this->httpHandler->offsetSet($server_endpoint.'/botlog', $botlog_func, true);
-        $this->httpHandler->offsetSet($server_endpoint.'/botlog2', $botlog_func, true);
+        $this->httpHandler->offsetSet('/botlog', $botlog_func, true);
+        $this->httpHandler->offsetSet('/botlog2', $botlog_func, true);
         
     }
 
