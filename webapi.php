@@ -141,7 +141,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
     $query = $request->getUri()->getQuery();
     $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
     $last_path = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
-    $civ13->logger->info('[WEBAPI URI] ' . $last_path);
+    //$civ13->logger->info('[WEBAPI URI] ' . $last_path);
     return $civ13->httpHandler->handle($request);
 
     
