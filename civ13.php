@@ -1491,7 +1491,7 @@ class Civ13
                     if ($params['method'] ?? '') $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
                     return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
                 }
-                $this->logger->warning('[UNROUTED ENDPOINT]' . $server_endpoint);
+                $this->logger->warning("[UNROUTED ENDPOINT] `$server_endpoint`");
                 return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
             }), true);
 
