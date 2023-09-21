@@ -1488,7 +1488,7 @@ class Civ13
                 $method = $this->httpHandler->offsetGet($server_endpoint.'/'.($params['method'] ?? '')) ?? [];
                 if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 else {
-                    if ($params['method']) $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
+                    if ($params['method'] ?? '') $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
                     return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
                 }
                 $this->logger->warning('[UNROUTED ENDPOINT]' . $server_endpoint);
