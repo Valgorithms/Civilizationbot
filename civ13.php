@@ -1363,6 +1363,15 @@ class Civ13
             );
         }));
 
+        if ($this->github)
+        $this->httpHandler->offsetSet('/github', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/github'): HttpResponse
+        {
+            return new HttpResponse(
+                HttpResponse::STATUS_FOUND,
+                ['Location' => $this->github]
+            );
+        }));
+
         /*
         $this->httpHandler->offsetSet('/endpoint', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
         {
