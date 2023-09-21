@@ -99,14 +99,14 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->civ13->logger->info("[WEBAPI PATH] $path");
 
         $ext = pathinfo($query, PATHINFO_EXTENSION);
-        $data = $request->getQueryParams();
 
         return $this->processEndpoint($request);
     }
 
     public function processEndpoint(ServerRequestInterface $request): Response
     { // TODO
-        $data = $request->getQueryParams();
+        $params = $request->getQueryParams();
+        $data = json_decode($params['data'], true);
         $path = $request->getUri()->getPath();
         foreach ($this->handlers as $endpoint => $callback) {
             switch ($this->match_methods[$endpoint]) {

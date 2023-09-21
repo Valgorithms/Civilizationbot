@@ -1487,7 +1487,6 @@ class Civ13
                 if ($params['method']) $this->logger->info("METHOD: `{$params['method']}`");
                 $method = $this->httpHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
                 if ($method = array_shift($method)) {
-                    if ($params['method']) $this->logger->info("FUNCTION FOUND FOR METHOD: `{$params['method']}`");
                     $this->logger->info('[DATA]' . json_encode($data));
                     return $method($request, $data, $whitelisted, $endpoint);
                 } else {
