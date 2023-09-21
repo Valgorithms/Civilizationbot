@@ -489,7 +489,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
         $civ13->logger->info('[RESTART] WEBAPI ERROR');
         if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
             $builder = \Discord\Builders\MessageBuilder::new()
-                ->setContent('Restarting due to error in HttpServer API...')
+                ->setContent('Restarting due to error in HttpServer API...' . PHP_EOL . $error)
                 ->addFileFromContent("httpserver_error.txt", $error);
             $channel->sendMessage($builder);
         }
