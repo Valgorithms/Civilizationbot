@@ -1489,10 +1489,10 @@ class Civ13
                 if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 else {
                     if ($params['method']) $this->logger->warning("NO FUNCTION FOUND FOR METHOD: `{$params['method']}`");
-                    return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Method not found");
+                    return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
                 }
                 $this->logger->warning('[UNROUTED ENDPOINT]' . $server_endpoint);
-                return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Method not found");
+                return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
             }), true);
 
             $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
