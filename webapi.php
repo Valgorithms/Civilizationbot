@@ -122,8 +122,8 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $port), [], $civ13->loop)
 
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow)
 {
-    //if ($response = $civ13->httpHandler->handle($request)) return $response;
-    //return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
+    if ($response = $civ13->httpHandler->handle($request)) return $response;
+    return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => 'error']));
 
     
     // Port knocking security check
