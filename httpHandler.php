@@ -18,7 +18,7 @@ interface HttpHandlerInterface extends HandlerInterface
 
 interface HttpHandlerCallbackInterface
 {
-    public function __invoke(ServerRequestInterface $request, array $data, string $endpoint, bool $whitelisted): HttpResponse;
+    public function __invoke(ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse;
 }
 
 namespace Civ13;
