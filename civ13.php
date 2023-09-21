@@ -1487,7 +1487,7 @@ class Civ13
                 $method = $this->messageHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
                 if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Method not found");
-            }), true);
+            }), true, 'str_starts_with');
 
             $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
             {
