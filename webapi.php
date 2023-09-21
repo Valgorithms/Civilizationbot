@@ -125,6 +125,7 @@ $last_path = '';
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, $last_path, $port, $socket, $vzg_ip, $civ13_ip, $external_ip, $webhook_key, $portknock, $portknock_ips, $max_attempts, $webapiFail, $webapiSnow): Response
 {
     $civ13->logger->info('[WEBAPI PATH]' . ($last_path = $request->getUri()->getPath()));
+    if (! $last_path) return new Response(Response::STATUS_NOT_FOUND);
     $response = $civ13->httpHandler->handle($request);
     if ($response instanceof ResponseInterface) {
         return $response;
