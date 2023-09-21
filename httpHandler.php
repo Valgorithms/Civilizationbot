@@ -187,6 +187,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public function __isLocal(string $ip): bool
     {
         if ($ip === $this->external_ip) return true;
+        if ($ip === '127.0.0.1') return true;
         return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE) === false;
     }
 

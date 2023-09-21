@@ -1348,7 +1348,7 @@ class Civ13
         // httpHandler
         $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/ping'): HttpResponse
         {
-            return HttpResponse::plaintext("Hello wörld!\n");
+            return HttpResponse::plaintext("Hello wörld!");
         }));
         $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/favicon.ico'): HttpResponse
         {
@@ -1390,6 +1390,34 @@ class Civ13
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
             return HttpResponse::plaintext("$message");
         }), true);
+        $this->httpHandler->offsetSet('/pull', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/pull'): HttpResponse
+        {
+            execInBackground('git pull');
+            $message = 'Updating code from GitHub...';
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
+            return HttpResponse::plaintext("$message");
+        }), true);
+        $this->httpHandler->offsetSet('/update', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/update'): HttpResponse
+        {
+            execInBackground('composer update');
+            $message = 'Updating dependencies...';
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
+            return HttpResponse::plaintext("$message");
+        }), true);
+        $this->httpHandler->offsetSet('/restart', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint = '/restart'): HttpResponse
+        {
+            $message = 'Restarting...';
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
+            $this->socket->close();
+            if (! isset($this->timers['restart'])) $this->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
+                \restart();
+                $this->discord->close();
+                die();
+            });
+            return HttpResponse::plaintext("$message");
+        }), true);
+        
+
 
         /*
         $this->httpHandler->offsetSet('/endpoint', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, string $endpoint): HttpResponse
