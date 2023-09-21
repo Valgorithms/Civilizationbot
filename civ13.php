@@ -1480,6 +1480,15 @@ class Civ13
             $server = strtolower($key);
             $server_endpoint = $endpoint . '/' . $server;
 
+            // If no parameters are passed to a server_endpoint, try to find it using the query parameters
+            $this->httpHandler->offsetSet($server_endpoint, new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($server_endpoint): HttpResponse
+            {
+                $params = $request->getQueryParams();
+                $method = $this->messageHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
+                if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
+                return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Method not found");
+            }), true);
+
             $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
