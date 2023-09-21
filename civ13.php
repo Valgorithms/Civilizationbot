@@ -1484,10 +1484,11 @@ class Civ13
             $this->httpHandler->offsetSet($server_endpoint, new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($server_endpoint): HttpResponse
             {
                 $params = $request->getQueryParams();
+                if ($params['method']) $this->logger->info('METHOD: ' . $params['method']);
                 $method = $this->messageHandler->offsetGet($server_endpoint.'/'.$params['method']) ?? [];
                 if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Method not found");
-            }), true, 'str_starts_with');
+            }), true);
 
             $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
             {
