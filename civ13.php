@@ -1436,6 +1436,280 @@ class Civ13
             );
         }));
         */
+
+        $relay = function($message, $channel, $ckey = null): ?PromiseInterface
+        {
+            if (! $ckey || ! $item = $this->verified->get('ss13', $this->sanitizeInput(explode('/', $ckey)[0]))) return $this->sendMessage($channel, $message);
+            if ($user = $this->discord->users->get('id', $item['discord'])) {
+                $embed = new Embed($this->discord);
+                $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                $embed->setDescription($message);
+                return $channel->sendEmbed($embed);
+            } 
+            if ($item) {
+                $this->logger->warning("{$item['ss13']}'s Discord ID was not found not in the primary Discord server!");
+                $this->discord->users->fetch($item['discord']);
+                return $this->sendMessage($channel, $message);
+            }
+            return $this->sendMessage($channel, $message);
+        };
+        
+        $endpoint = '/webhook';
+        foreach ($this->server_settings as $key => $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            $server = strtolower($key);
+            $server_endpoint = $endpoint . '/' . $server;
+
+            $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_asay_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} AHELP__ $ckey**: " . $message;
+
+                //$relay($message, $channel, $ckey); //Bypass moderator
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/asaymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_asay_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                //$time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                //$message = "**__{$time} ASAY__ $ckey**: $message";
+
+                $relay($message, $channel, $ckey);
+                //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/lobbymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_lobby_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_lobby_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} LOBBY__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/oocmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ooc_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ooc_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                //$time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                //$message = "**__{$time} OOC__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/icmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ic_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ic_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                //$time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                //$message = "**__{$time} OOC__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/memessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ic_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ic_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} EMOTE__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/garbage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ic_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ic_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} GARBAGE__ $ckey**: $message";
+
+                //$relay($message, $channel, $ckey);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/round_start', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_ooc_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ooc_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                $message = '';
+                if (isset($this->role_ids['round_start'])) $message .= "<@&{$this->role_ids['round_start']}>, ";
+                $message .= 'New round ';
+                if (isset($data['round']) && $game_id = $data['round']) {
+                    $this->logNewRound($server, $game_id, $time);
+                    $message .= "`$game_id` ";
+                }
+                $message .= 'has started!';
+                if ($playercount_channel = $this->discord->getChannel($this->channel_ids[$server . '-playercount']))
+                if ($existingCount = explode('-', $playercount_channel->name)[1]) {
+                    $existingCount = intval($existingCount);
+                    switch ($existingCount) {
+                        case 0:
+                            $message .= ' There are currently no players on the ' . ($key ?? $server) . ' server.';
+                            break;
+                        case 1:
+                            $message .= ' There is currently 1 player on the ' . ($key ?? $server) . ' server.';
+                            break;
+                        default:
+                            if (isset($this->role_ids['30+']) && $this->role_ids['30+'] && ($existingCount >= 30)) $message .= " <@&{$this->role_ids['30+']}>,";
+                            elseif (isset($this->role_ids['15+']) && $this->role_ids['15+'] && ($existingCount >= 15)) $message .= " <@&{$this->role_ids['15+']}>,";
+                            elseif (isset($this->role_ids['2+']) && $this->role_ids['2+'] && ($existingCount >= 2)) $message .= " <@&{$this->role_ids['2+']}>,";
+                            $message .= ' There are currently ' . $existingCount . ' players on the ' . ($key ?? $server) . ' server.';
+                            break;
+                    }
+                }
+                $this->sendMessage($channel, $message);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/respawn_notice', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            { // NYI
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/login', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_transit_channel'], $this->channel_ids['parole_notif'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_transit_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+                if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'parole_notif'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                $message = "$ckey connected to the server";
+                if (isset($data['ip'])) $message .= " with IP of {$data['ip']}";
+                if (isset($data['cid'])) $message .= " and CID of {$data['cid']}";
+                $message .= '.';
+                if (isset($this->current_rounds[$server]) && $this->current_rounds[$server]) $this->logPlayerLogin($server, $ckey, $time, $data['ip'] ?? '', $data['cid'] ?? '');
+
+                if (isset($this->paroled[$ckey])) {
+                    $message2 = '';
+                    if (isset($this->role_ids['parolemin'])) $message2 .= "<@&{$this->role_ids['parolemin']}>, ";
+                    $message2 .= "`$ckey` has logged into `$server`";
+                    $this->sendMessage($parole_notif_channel, $message2);
+                }
+
+                $relay($message, $channel, $ckey);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/logout', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_transit_channel'], $this->channel_ids['parole_notif'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_transit_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+                if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'parole_notif'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                $message = "$ckey disconnected from the server.";
+                if (isset($this->current_rounds[$server]) && $this->current_rounds[$server]) $this->logPlayerLogout($server, $ckey, $time);
+
+                if (isset($this->paroled[$ckey])) {
+                    $message2 = '';
+                    if (isset($this->role_ids['parolemin'])) $message2 .= "<@&{$this->role_ids['parolemin']}>, ";
+                    $message2 .= "`$ckey` has log out of `$server`";
+                    $this->sendMessage($parole_notif_channel, $message2);
+                }
+
+                $relay($message, $channel, $ckey);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/runtimemessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_runtime_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_runtime_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} RUNTIME__**: $message";
+
+                $relay($message, $channel);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/alogmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_adminlog_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_adminlog_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} ADMIN LOG__**: " . $message;
+
+                $relay($message, $channel);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/attacklogmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted = false, string $endpoint = '/endpoint') use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if ($server == 'tdm') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); // Disabled on TDM, use manual checking of log files instead
+                if (! isset($this->channel_ids[$server.'_attack_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Webhook Channel Not Defined');
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_attack_channel'])) return new HttpResponse(400, ['Content-Type' => 'text/plain'], 'Discord Channel Not Found');
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = ('NULL');
+                isset($data['ckey2']) ? $ckey2 = $this->sanitizeInput($data['ckey2']) : $ckey2 = null;
+                isset($data['message']) ? $message = html_entity_decode(strip_tags(urldecode($data['message']))) : $message = '(NULL)';
+                $message = "**__{$time} ATTACK LOG__**: " . strip_tags($message);
+                if ($ckey && $ckey2) if ($ckey === $ckey2) $message .= " (Self-Attack)";
+                
+                $relay($message, $channel);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+        }
     }
 
     public function filterMessage(Message $message): array
@@ -1453,6 +1727,7 @@ class Civ13
     public function sendMessage($channel, string $content, string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
+        if (is_string($channel)) $channel = $this->discord->getChannel($channel);
         if ($announce_shard && $this->sharding && $this->enabled_servers) {
             if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
             if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
