@@ -164,14 +164,27 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public function generateHelp(): string
     {   
         $array = [];
-        foreach (array_keys($this->handlers) as $command) {
-            $whitelisted = $this->whitelisted[$command] ? 'true' : 'false';
-            $array[$whitelisted][] = $command;
+        foreach (array_keys($this->handlers) as $command) $array[$command] = $this->whitelisted[$command] ? true : false;
+        $public = '';
+        $restricted = '';
+        $webhooks = '';
+        $restricted_webhooks = '';
+        
+        foreach ($array as $command => $whitelisted) {
+            if (str_starts_with($command, '/webhook/')) {
+                if ($whitelisted) $restricted_webhooks .= "`$command`, ";
+                else $webhooks .= "`$command`, ";
+            } else {
+                if ($whitelisted) $restricted .= "`$command`, ";
+                else $public .= "`$command`, ";
+            }
         }
-        $string = '';
-        if (isset($array['false'])) $string .= 'Public: `' . implode('`, `', $array['false']) . '`' . PHP_EOL;
-        if (isset($array['true'])) $string .= 'Whitelisted: `' . implode('`, `', $array['true']) . '`' . PHP_EOL;
-        return $string;
+        if (!empty($public)) $public = "Public: " . rtrim($public, ', ') . PHP_EOL;
+        if (!empty($restricted)) $restricted = "Whitelisted: " . rtrim($restricted, ', ') . PHP_EOL;
+        if (!empty($webhooks)) $webhooks = "Webhooks: " . rtrim($webhooks, ', ') . PHP_EOL;
+        if (!empty($restricted_webhooks)) $restricted_webhooks = "Whitelisted Webhooks: " . rtrim($restricted_webhooks, ', ') . PHP_EOL;
+        $result = $public . $restricted . $webhooks . $restricted_webhooks;
+        return $result;
     }
 
     public function whitelist(string $ip): bool
