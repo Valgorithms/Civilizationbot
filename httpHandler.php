@@ -94,12 +94,13 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $host = $request->getUri()->getHost();
         $port = $request->getUri()->getPort();
         $path = $request->getUri()->getPath();
-        if ($path === '' || $path === '/') $path = '/';
+        if ($path === '') $path = '/';
         $query = $request->getUri()->getQuery();
         $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
 
         //$url = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
-        if (! str_starts_with($path, '/webhook/')) $this->civ13->logger->info("[WEBAPI URL] $path");
+        if (str_starts_with($path, '/webhook/')) $this->civ13->logger->debug("[WEBAPI URL] $path");
+        else $this->civ13->logger->info("[WEBAPI URL] $path");
         //$this->civ13->logger->info("[WEBAPI PATH] $path");
         //$ext = pathinfo($query, PATHINFO_EXTENSION);
 
