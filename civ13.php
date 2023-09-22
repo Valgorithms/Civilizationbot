@@ -531,12 +531,12 @@ class Civ13
             $cids = [];
             $dates = [];
             // Get the ckey's primary identifiers
-            foreach ($collectionsArray[0] as $log) {
+            foreach ($collectionsArray['playerlogs'] as $log) {
                 if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
                 if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
                 if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
             }
-            foreach ($collectionsArray[1] as $log) {
+            foreach ($collectionsArray['bans'] as $log) {
                 if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
                 if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
                 if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
@@ -2137,8 +2137,8 @@ class Civ13
      */
     protected function afterConstruct(array $options = [], array $server_options = []): void
     {
-        $this->messageHandler = new MessageHandler($this);
         $this->httpHandler = new HttpHandler($this, [], $options['http_whitelist'] ?? [], $options['http_key'] ?? '');
+        $this->messageHandler = new MessageHandler($this);
         $this->generateServerFunctions();
         $this->generateGlobalFunctions();
         $this->logger->debug('[COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
@@ -2156,7 +2156,6 @@ class Civ13
                     $this->socket = $options['socket'];
                     $this->webapi->listen($this->socket);
                 }
-
                 $this->logger->info('------');
                 if (! $tests = $this->VarLoad('tests.json')) $tests = [];
                 $this->tests = $tests;
@@ -2214,6 +2213,18 @@ class Civ13
                 $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
 
                 $this->getVerified(); // Populate verified property with data from DB
+                if ($this->httpHandler && $this->civ13_guild_id && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { // Whitelist the IPs of all High Staff
+                    $members = $guild->members->filter(function ($member) {
+                        return $member->roles->has($this->role_ids['High Staff']);
+                    });
+                    foreach ($members as $member)
+                        if ($item = $this->getVerifiedItem($member->user))
+                            if (isset($item['ss13']) && $ckey = $item['ss13'])
+                                if ($playerlogs = $this->getCkeyLogCollections($ckey)['playerlogs'])
+                                    foreach ($playerlogs as $log)
+                                        if (isset($log['ip']))
+                                            $this->httpHandler->whitelist($log['ip']);
+                }
                 if (! $provisional = $this->VarLoad('provisional.json')) {
                     $provisional = [];
                     $this->VarSave('provisional.json', $provisional);
@@ -3384,11 +3395,14 @@ class Civ13
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
 
         $arrays = [];
+        $i = 0;
         foreach (explode('|', $file_contents) as $item) {
-            if ($log = $this->playerlogArrayToAssoc(explode(';', $item)))
+            if ($log = $this->playerlogArrayToAssoc(explode(';', $item))) {
+                $log['increment'] = ++$i;
                 $arrays[] = $log;
+            }
         }
-        return new Collection($arrays, 'uid');
+        return new Collection($arrays, 'increment');
     }
    /*
     * Creates a Collection from the playerlogs file
@@ -3419,7 +3433,7 @@ class Civ13
     {
         if ($playerlog = $this->playerlogsToCollection()->filter(function (array $item) use ($ckey) { return $item['ckey'] === $ckey; }))
             if ($bans = $this->bansToCollection()->filter(function(array $item) use ($playerlog) { return $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid']); }));
-                return [$playerlog, $bans];
+                return ['playerlogs' => $playerlog, 'bans' => $bans];
     }
     /*
     *
@@ -3434,11 +3448,11 @@ class Civ13
         $ckeys = [$ckey];
         $ips = [];
         $cids = [];
-        foreach ($collectionsArray[0] as $log) { // Get the ckey's primary identifiers
+        foreach ($collectionsArray['playerlogs'] as $log) { // Get the ckey's primary identifiers
             if (isset($log['ip'])) $ips[] = $log['ip'];
             if (isset($log['cid'])) $cids[] = $log['cid'];
         }
-        foreach ($collectionsArray[1] as $log) { // Get the ckey's primary identifiers
+        foreach ($collectionsArray['bans'] as $log) { // Get the ckey's primary identifiers
             if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
             if (isset($log['cid']) && ! in_array($log['cid'], $ips)) $cids[] = $log['cid'];
         }

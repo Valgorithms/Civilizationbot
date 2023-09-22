@@ -168,7 +168,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             $this->civ13->logger->debug("HTTP Server error: `$ip` is already whitelisted.");
             return false;
         }
-        $this->civ13->logger->debug("HTTP Server: `$ip` has been whitelisted.");
+        $this->civ13->logger->info("HTTP Server: `$ip` has been whitelisted.");
         $this->whitelist[] = $ip;
         return true;
     }
@@ -183,7 +183,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             return false;
         }
         unset($this->whitelist[$key]);
-        $this->civ13->logger->debug("HTTP Server: `$ip` has been unwhitelisted.");
+        $this->civ13->logger->info("HTTP Server: `$ip` has been unwhitelisted.");
         return true;
     }
     
