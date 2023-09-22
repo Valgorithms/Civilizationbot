@@ -156,14 +156,6 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return $this->__throwError("An endpoint for `$path` does not exist.");
     }
 
-    public function __throwError(string $error): Response
-    {
-        $this->civ13->logger->info("HTTP Server error: `$error`");
-        return Response::json(
-            ['error' => $error]
-        )->withStatus(Response::STATUS_INTERNAL_SERVER_ERROR);
-    }
-
     public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
         parent::offsetSet($offset, $callback);
@@ -216,5 +208,13 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public function __isIPv6(string $ip): bool
     {
         return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+    }
+
+    public function __throwError(string $error): Response
+    {
+        $this->civ13->logger->info("HTTP Server error: `$error`");
+        return Response::json(
+            ['error' => $error]
+        )->withStatus(Response::STATUS_INTERNAL_SERVER_ERROR);
     }
 }
