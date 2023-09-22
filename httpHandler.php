@@ -83,7 +83,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     {
         parent::__construct($civ13, $handlers);
         if ($external_ip = file_get_contents('http://ipecho.net/plain')) $this->external_ip = $external_ip;
-        $this->whitelist = $whitelist;
+        foreach ($whitelist as $ip) $this->whitelist($ip);
         $this->key = $key;
     }
 
@@ -158,13 +158,33 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return $this->__throwError("An endpoint for `$path` does not exist.");
     }
 
-    public function whitelist(string $ip)
+    public function whitelist(string $ip): bool
     {
-        if (! in_array($ip, $this->whitelist)) $this->whitelist[] = $ip;
+        if (! $this->__isValidIpAddress($ip)) {
+            $this->civ13->logger->debug("HTTP Server error: `$ip` is not a valid IP address.");
+            return false;
+        }
+        if (in_array($ip, $this->whitelist)) {
+            $this->civ13->logger->debug("HTTP Server error: `$ip` is already whitelisted.");
+            return false;
+        }
+        $this->civ13->logger->debug("HTTP Server: `$ip` has been whitelisted.");
+        $this->whitelist[] = $ip;
+        return true;
     }
-    public function unwhitelist(string $ip)
+    public function unwhitelist(string $ip): bool
     {
-        if (($key = array_search($ip, $this->whitelist)) !== false) unset($this->whitelist[$key]);
+        if (! $this->__isValidIpAddress($ip)) {
+            $this->civ13->logger->debug("HTTP Server error: `$ip` is not a valid IP address.");
+            return false;
+        }
+        if (! (($key = array_search($ip, $this->whitelist)) !== false)) {
+            $this->civ13->logger->debug("HTTP Server error: `$ip` is not already whitelisted.");
+            return false;
+        }
+        unset($this->whitelist[$key]);
+        $this->civ13->logger->debug("HTTP Server: `$ip` has been unwhitelisted.");
+        return true;
     }
     
     public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
@@ -223,6 +243,11 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public function __isIPv6(string $ip): bool
     {
         return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+    }
+
+    function __isValidIpAddress(string $ip): bool
+    {
+        return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
     public function __throwError(string $error): Response
