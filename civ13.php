@@ -3326,7 +3326,6 @@ class Civ13
     }
     public function bansToCollection(): Collection
     {
-        $ban_collection = new Collection([], 'uid');
         // Get the contents of the file
         $file_contents = '';
         foreach ($this->server_settings as $key => $settings) {
@@ -3337,12 +3336,14 @@ class Civ13
         }
         
         // Create a new collection
-        $ban_collection = new Collection([], 'uid');
+        $ban_collection = new Collection([], 'increment');
         if (! $file_contents) return $ban_collection;
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
-        foreach (explode('|||', $file_contents) as $item)
-            if ($ban = $this->banArrayToAssoc(explode(';', $item)))
-                $ban_collection->pushItem($ban);
+        $increment = 0;
+        foreach (explode('|||', $file_contents) as $item) if ($ban = $this->banArrayToAssoc(explode(';', $item))) {
+            $ban['increment'] = ++$increment;
+            $ban_collection->pushItem($ban);
+        }
         return $ban_collection;
     }
     /*
