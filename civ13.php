@@ -3292,9 +3292,10 @@ class Civ13
         $this->players = [];
         foreach ($data_json as $server) {
             if (array_key_exists('ERROR', $server)) continue;
+            $stationname = $server['stationname'] ?? '';
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
-                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = $this->sanitizeInput(urldecode($server[$key]));
+                if (isset($p[1]) && is_numeric($p[1])) $this->players[$stationname][] = $this->sanitizeInput(urldecode($server[$key]));
             }
         }
         return $this->players;
@@ -3558,7 +3559,7 @@ class Civ13
         $serverinfoTimer = function () {
             $this->serverinfoFetch(); 
             $this->serverinfoParsePlayers();
-            foreach ($this->serverinfoPlayers() as $ckey) {
+            foreach ($this->serverinfoPlayers() as $server_array) foreach ($server_array as $ckey) {
                 if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) { // Suspicious user ban rules
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
