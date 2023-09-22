@@ -1641,8 +1641,8 @@ class Civ13
                 isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                 //$message = "**__{$time} OOC__ $ckey**: $message";
 
-                //$relay($message, $channel, $ckey);
-                $this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                $relay($message, $channel, $ckey);
+                //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
