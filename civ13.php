@@ -1354,13 +1354,16 @@ class Civ13
         // httpHandler website endpoints
         $index = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
+            if ($whitelisted) {
+                $method = $this->httpHandler->offsetGet('/botlog') ?? [];
+                if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
+            }
             return new HttpResponse(
                 HttpResponse::STATUS_FOUND,
                 ['Location' => 'https://www.valzargaming.com/?login']
             );
         });
         $this->httpHandler->offsetSet('/', $index);
-        $this->httpHandler->offsetSet('/index', $index);
         $this->httpHandler->offsetSet('/index.html', $index);
         $this->httpHandler->offsetSet('/index.php', $index);
         $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse

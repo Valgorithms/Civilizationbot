@@ -151,8 +151,8 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             }
             if ($callback = $method_func()) { // Command triggered
                 $whitelisted = false;
-                if (($this->whitelisted[$endpoint] ?? false) !== false)
-                    if (! $whitelisted = $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR'], $data))
+                if (! $whitelisted = $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR'], $data))
+                    if (($this->whitelisted[$endpoint] ?? false) !== false)
                         return $this->__throwError("You do not have permission to access this endpoint.");
                 if (($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse) return $response;
                 else return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.");
@@ -169,8 +169,8 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             $array[$whitelisted][] = $command;
         }
         $string = '';
-        if (isset($array['true'])) $string .= 'Whitelisted: ' . implode(', ', $array['true']) . PHP_EOL;
-        if (isset($array['false'])) $string .= 'Public: ' . implode(', ', $array['false']) . PHP_EOL;
+        if (isset($array['false'])) $string .= 'Public: `' . implode('`, `', $array['false']) . '`' . PHP_EOL;
+        if (isset($array['true'])) $string .= 'Whitelisted: `' . implode('`, `', $array['true']) . '`' . PHP_EOL;
         return $string;
     }
 
