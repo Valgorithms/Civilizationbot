@@ -64,6 +64,7 @@ class HttpHandlerCallback implements HttpHandlerCallbackInterface
 }
 
 use Civ13\Interfaces\HttpHandlerInterface;
+use Discord\Helpers\Collection;
 use React\Http\Message\Response;
 
 class HttpHandler extends Handler implements HttpHandlerInterface
@@ -158,6 +159,19 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             }
         }
         return $this->__throwError("An endpoint for `$path` does not exist.");
+    }
+
+    public function generateHelp(?Collection $roles = null): string
+    {   
+        $array = [];
+        foreach (array_keys($this->handlers) as $command) {
+            $whitelisted = $this->whitelisted[$command] ? 'true' : 'false';
+            $array[$whitelisted][] = $command;
+        }
+        $string = '';
+        if (isset($array['true'])) $string .= 'Whitelisted: ' . implode(', ', $array['true']) . PHP_EOL;
+        if (isset($array['false'])) $string .= 'Public: ' . implode(', ', $array['false']) . PHP_EOL;
+        return $string;
     }
 
     public function whitelist(string $ip): bool

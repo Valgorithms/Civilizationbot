@@ -2145,7 +2145,8 @@ class Civ13
         $this->messageHandler = new MessageHandler($this);
         $this->generateServerFunctions();
         $this->generateGlobalFunctions();
-        $this->logger->debug('[COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
+        $this->logger->debug('[CHAT COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
+        $this->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
         
         if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
 
