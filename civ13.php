@@ -467,6 +467,12 @@ class Civ13
         $this->messageHandler->offsetSet('help', $help);
         $this->messageHandler->offsetSet('commands', $help);
 
+        $httphelp = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            return $this->reply($message, $this->httpHandler->generateHelp(), 'httphelp.txt', true);
+        });
+        $this->messageHandler->offsetSet('httphelp', $httphelp, ['Owner', 'High Staff']);
+
         $this->messageHandler->offsetSet('cpu', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (PHP_OS_FAMILY == "Windows") {

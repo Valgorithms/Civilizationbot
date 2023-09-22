@@ -161,7 +161,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return $this->__throwError("An endpoint for `$path` does not exist.");
     }
 
-    public function generateHelp(?Collection $roles = null): string
+    public function generateHelp(): string
     {   
         $array = [];
         foreach (array_keys($this->handlers) as $command) {
