@@ -1354,6 +1354,7 @@ class Civ13
             );
         });
         $this->httpHandler->offsetSet('/', $index);
+        $this->httpHandler->offsetSet('/index', $index);
         $this->httpHandler->offsetSet('/index.html', $index);
         $this->httpHandler->offsetSet('/index.php', $index);
         $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse

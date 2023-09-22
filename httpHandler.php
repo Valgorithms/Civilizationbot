@@ -114,7 +114,9 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         if ($params = $request->getQueryParams())
             if (isset($params['data']))
                 $data = json_decode(urldecode($params['data']), true);
-        $path = $request->getUri()->getPath();
+        $uri = $request->getUri();
+        $path = $uri->getPath(); // We need the .ext too!
+        $ext = pathinfo($uri->getQuery(), PATHINFO_EXTENSION);
         foreach ($this->handlers as $endpoint => $callback) {
             switch ($this->match_methods[$endpoint]) {
                 case 'exact':
