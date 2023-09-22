@@ -1346,13 +1346,16 @@ class Civ13
         }), ['Owner', 'High Staff']);
 
         // httpHandler website endpoints
-        $this->httpHandler->offsetSet('/index', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        $index = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             return new HttpResponse(
                 HttpResponse::STATUS_FOUND,
                 ['Location' => 'https://www.valzargaming.com/?login']
             );
-        }));
+        });
+        $this->httpHandler->offsetSet('/', $index);
+        $this->httpHandler->offsetSet('/index.html', $index);
+        $this->httpHandler->offsetSet('/index.php', $index);
         $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!");

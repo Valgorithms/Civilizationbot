@@ -93,7 +93,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $host = $request->getUri()->getHost();
         $port = $request->getUri()->getPort();
         $path = $request->getUri()->getPath();
-        if ($path === '' || $path === '/') $path = '/index';
+        if ($path === '' || $path === '/') $path = '/';
         $query = $request->getUri()->getQuery();
         $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
 
