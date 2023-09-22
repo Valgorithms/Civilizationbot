@@ -1491,17 +1491,17 @@ class Civ13
             $server_endpoint = $endpoint . '/' . $server;
 
             // If no parameters are passed to a server_endpoint, try to find it using the query parameters
-            $this->httpHandler->offsetSet($server_endpoint, new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($server_endpoint): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint, new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
                 $params = $request->getQueryParams();
                 //if ($params['method']) $this->logger->info("[METHOD] `{$params['method']}`");
-                $method = $this->httpHandler->offsetGet($server_endpoint.'/'.($params['method'] ?? '')) ?? [];
+                $method = $this->httpHandler->offsetGet($endpoint.'/'.($params['method'] ?? '')) ?? [];
                 if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 else {
                     if ($params['method'] ?? '') $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
                     return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
                 }
-                $this->logger->warning("[UNROUTED ENDPOINT] `$server_endpoint`");
+                $this->logger->warning("[UNROUTED ENDPOINT] `$endpoint`");
                 return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
             }), true);
 
