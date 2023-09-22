@@ -69,7 +69,7 @@ use React\Http\Message\Response;
 
 class HttpHandler extends Handler implements HttpHandlerInterface
 { // TODO
-    protected string $external_ip = '127.0.0.1';
+    public string $external_ip = '127.0.0.1';
     protected string $key = '';
     protected array $whitelist = [];
 
@@ -99,7 +99,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
 
         //$url = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
-        //$this->civ13->logger->info("[WEBAPI URL] $path");
+        $this->civ13->logger->info("[WEBAPI URL] $path");
         //$this->civ13->logger->info("[WEBAPI PATH] $path");
         //$ext = pathinfo($query, PATHINFO_EXTENSION);
 

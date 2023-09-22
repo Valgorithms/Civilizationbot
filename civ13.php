@@ -1385,6 +1385,53 @@ class Civ13
             );
         }));
 
+        // httpHandler whitelisting with DiscordWebAuth
+        if (include('dwa_secrets.php'))
+        if ($dwa_client_id = getenv('dwa_client_id'))
+        if ($dwa_client_secret = getenv('dwa_client_secret'))
+        if (include('DiscordWebAuth.php')) {
+            $dwa_sessions = [];
+            $dwa = function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use (&$dwa_sessions, $dwa_client_id, $dwa_client_secret): HttpResponse
+            {
+                $ip = $request->getServerParams()['REMOTE_ADDR'];
+                if (! isset($dwa_sessions[$ip])) $dwa_sessions[$ip] = [];
+
+                $params = $request->getQueryParams();
+                $DiscordWebAuth = new \DWA($this, $dwa_sessions, $dwa_client_id, $dwa_client_secret, $request, $params, $ip);
+                if(isset($params['code']) && isset($params['state']))
+                    return $DiscordWebAuth->getToken($params['state']);
+                elseif(isset($params['login']))
+                    return $DiscordWebAuth->login();
+                elseif(isset($params['logout']))
+                    return $DiscordWebAuth->logout();
+                elseif($DiscordWebAuth->isAuthed() && isset($params['remove']))
+                    return $DiscordWebAuth->removeToken();
+                
+                $tech_ping = '';
+                if (isset($this->technician_id)) $tech_ping = "<@{$this->technician_id}>, ";
+                if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
+                    if ($this->verified->get('discord', $DiscordWebAuth->user->id)) {
+                        if ($this->httpHandler->whitelist($ip))
+                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot']))
+                                $this->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
+                        $method = $this->httpHandler->offsetGet('/botlog') ?? [];
+                        if ($method = array_shift($method)) {
+                            return new HttpResponse(
+                                HttpResponse::STATUS_FOUND,
+                                ['Location' => "http://{$this->httpHandler->external_ip}:55555/botlog"]
+                            );
+                        }
+                    } else {
+                        if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
+                        return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
+                    }
+                }
+                //if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $tech_ping . "Something went wrong with the DiscordWebAuthentication process! Please check the logs.");
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            };
+            $this->httpHandler->offsetSet('/dwa', $dwa);
+        }
+
         // httpHandler management endpoints
         $this->httpHandler->offsetSet('/reset', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
@@ -1672,7 +1719,6 @@ class Civ13
             { // NYI
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
-
             $this->httpHandler->offsetSet($server_endpoint.'/login', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
