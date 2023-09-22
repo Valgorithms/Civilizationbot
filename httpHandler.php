@@ -69,6 +69,7 @@ use React\Http\Message\Response;
 class HttpHandler extends Handler implements HttpHandlerInterface
 { // TODO
     protected string $external_ip = '127.0.0.1';
+    protected string $key = '';
     protected array $whitelist = [];
 
     protected array $endpoints = [];
@@ -78,11 +79,12 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     protected array $descriptions = [];
 
 
-    public function __construct(Civ13 &$civ13, array $handlers = [], array $whitelist = [])
+    public function __construct(Civ13 &$civ13, array $handlers = [], array $whitelist = [], string $key = '')
     {
         parent::__construct($civ13, $handlers);
         if ($external_ip = file_get_contents('http://ipecho.net/plain')) $this->external_ip = $external_ip;
         $this->whitelist = $whitelist;
+        $this->key = $key;
     }
 
     public function handle(ServerRequestInterface $request): Response
@@ -107,7 +109,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     }
 
     public function processEndpoint(ServerRequestInterface $request): Response
-    { // TODO
+    {
         $data = [];
         if ($params = $request->getQueryParams())
             if (isset($params['data']))
@@ -147,7 +149,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             if ($callback = $method_func()) { // Command triggered
                 $whitelisted = false;
                 if (($this->whitelisted[$endpoint] ?? false) !== false)
-                    if (! $whitelisted = $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR']))
+                    if (! $whitelisted = $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR'], $data))
                         return $this->__throwError("You do not have permission to access this endpoint.");
                 if (($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse) return $response;
                 else return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.");
@@ -156,6 +158,15 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return $this->__throwError("An endpoint for `$path` does not exist.");
     }
 
+    public function whitelist(string $ip)
+    {
+        if (! in_array($ip, $this->whitelist)) $this->whitelist[] = $ip;
+    }
+    public function unwhitelist(string $ip)
+    {
+        if (($key = array_search($ip, $this->whitelist)) !== false) unset($this->whitelist[$key]);
+    }
+    
     public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
         parent::offsetSet($offset, $callback);
@@ -171,8 +182,12 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      * @param string $ip The IP address to check.
      * @return bool Returns true if the IP address is whitelisted, false otherwise.
      */
-    public function __isWhitelisted(string $ip): bool
+    public function __isWhitelisted(string $ip, array $data = []): bool
     {
+        if ($this->key)
+            if (isset($data['key']))
+                if ($data['key'] === $this->key)
+                    return true;
         return (in_array($ip, $this->whitelist) || $this->__isLocal($ip));
     }
     

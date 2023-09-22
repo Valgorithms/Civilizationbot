@@ -73,6 +73,7 @@ include 'httpHandler.php';
 $civ13_ip = gethostbyname('www.civ13.com');
 $vzg_ip = gethostbyname('www.valzargaming.com');
 $http_whitelist = [$civ13_ip, $vzg_ip];
+$http_key = getenv('WEBAPI_TOKEN') ?? '';
 
 $webapi = null;
 $socket = null;
@@ -90,6 +91,7 @@ $options = array(
     'webapi' => &$webapi,
     'socket' => &$socket,
     'http_whitelist' => $http_whitelist,
+    'http_key' => $http_key,
     
     // Configurations
 

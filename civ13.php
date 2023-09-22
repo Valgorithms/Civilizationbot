@@ -2138,7 +2138,7 @@ class Civ13
     protected function afterConstruct(array $options = [], array $server_options = []): void
     {
         $this->messageHandler = new MessageHandler($this);
-        $this->httpHandler = new HttpHandler($this, [], $options['http_whitelist'] ?? []);
+        $this->httpHandler = new HttpHandler($this, [], $options['http_whitelist'] ?? [], $options['http_key'] ?? '');
         $this->generateServerFunctions();
         $this->generateGlobalFunctions();
         $this->logger->debug('[COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
