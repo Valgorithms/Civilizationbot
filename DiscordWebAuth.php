@@ -81,7 +81,7 @@ Class DWA
 
     public function login(string $redirect_uri = null, string $scope = 'identify guilds connections'): Response
     {
-        if (!isset($redirect_uri)){
+        if (! isset($redirect_uri)){
             if (!in_array(($redirect_uri ? $redirect_uri : $this->default_redirect), $this->allowed_uri)) {
                 $this->civ13->logger->info('[DWA] Redirect URI not allowed: ' . ($redirect_uri ? $redirect_uri : $this->default_redirect) . ' => ' . $this->allowed_uri[0]);
                 return new Response(
@@ -126,7 +126,7 @@ Class DWA
             ];
 
             $token = $this->apiRequest($this->baseURL.'/oauth2/token' , $params);
-            if (!isset($token->error))
+            if (! isset($token->error))
                 $this->sessions[$this->requesting_ip]['discord_access_token'] = $token->access_token;
             return new Response(
                 Response::STATUS_FOUND,

@@ -946,7 +946,7 @@ class Civ13
         $this->messageHandler->offsetSet('fullaltcheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $ckeys = [];
-            $members = $message->guild->members->filter(function (Member $member) { return !$member->roles->has($this->role_ids['banished']); });
+            $members = $message->guild->members->filter(function (Member $member) { return ! $member->roles->has($this->role_ids['banished']); });
             foreach ($members as $member)
                 if ($item = $this->getVerifiedItem($member->id)) {
                     $ckeyinfo = $this->ckeyinfo($item['ss13']);
@@ -1010,7 +1010,7 @@ class Civ13
             foreach (explode('|||', $banlog) as $bsplit) {
                 $ban = explode(';', trim($bsplit));
                 if (isset($ban[9]))
-                    if (!isset($ban[9]) || !isset($ban[10]) || $ban[9] == '0' || $ban[10] == '0') {
+                    if (! isset($ban[9]) || ! isset($ban[10]) || $ban[9] == '0' || $ban[10] == '0') {
                         if (! $ckey) $temp[$ban[8]][] = $bsplit;
                         elseif ($ckey == $ban[8]) $temp[$ban[8]][] = $bsplit;
                     } else $oldlist[] = $bsplit;
@@ -1398,13 +1398,13 @@ class Civ13
 
                 $params = $request->getQueryParams();
                 $DiscordWebAuth = new \DWA($this, $dwa_sessions, $dwa_client_id, $dwa_client_secret, $request, $params, $ip);
-                if(isset($params['code']) && isset($params['state']))
+                if (isset($params['code']) && isset($params['state']))
                     return $DiscordWebAuth->getToken($params['state']);
-                elseif(isset($params['login']))
+                elseif (isset($params['login']))
                     return $DiscordWebAuth->login();
-                elseif(isset($params['logout']))
+                elseif (isset($params['logout']))
                     return $DiscordWebAuth->logout();
-                elseif($DiscordWebAuth->isAuthed() && isset($params['remove']))
+                elseif ($DiscordWebAuth->isAuthed() && isset($params['remove']))
                     return $DiscordWebAuth->removeToken();
                 
                 $tech_ping = '';
@@ -1857,9 +1857,9 @@ class Civ13
                             var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
                             var scrollTimeout;
                             window.onload=function(){
-                                if(window.location.href==localStorage.getItem('lastUrl')){
+                                if (window.location.href==localStorage.getItem('lastUrl')){
                                     mainScrollArea.scrollTop=localStorage.getItem('scrollTop');
-                                }else{
+                                } else {
                                     localStorage.setItem('lastUrl',window.location.href);
                                     localStorage.setItem('scrollTop',0);
                                 }
@@ -2153,7 +2153,7 @@ class Civ13
         }
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (!$verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
+        if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
         if (strlen($content)<=4096) {
             $embed = new Embed($this->discord);
             if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
@@ -2302,7 +2302,7 @@ class Civ13
                 $this->pending = new Collection([], 'discord');
                 // Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
-                foreach ($this->discord->guilds as $guild) if (!isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
+                foreach ($this->discord->guilds as $guild) if (! isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
                 $this->discord_config = $discord_config; // Declared, but not currently used for anything
                 
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
@@ -2331,7 +2331,7 @@ class Civ13
                 });
                 $this->discord->on('GUILD_CREATE', function (Guild $guild): void
                 {
-                    if (!isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
+                    if (! isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
                 });
 
                 if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
@@ -3970,7 +3970,7 @@ class Civ13
     */
    private function __relayWarningCounter(string $ckey, array $badwords_array): bool
    {
-       if (!isset($this->badwords_warnings[$ckey][$badwords_array['category']])) $this->badwords_warnings[$ckey][$badwords_array['category']] = 1;
+       if (! isset($this->badwords_warnings[$ckey][$badwords_array['category']])) $this->badwords_warnings[$ckey][$badwords_array['category']] = 1;
        else ++$this->badwords_warnings[$ckey][$badwords_array['category']];
        $this->VarSave('badwords_warnings.json', $this->badwords_warnings);
        if ($this->badwords_warnings[$ckey][$badwords_array['category']] > $badwords_array['warnings']) return false;
@@ -4016,7 +4016,7 @@ class Civ13
                     $medal_s += 5;
                     break;
             }
-            if (!isset($result[$duser[0]])) $result[$duser[0]] = 0;
+            if (! isset($result[$duser[0]])) $result[$duser[0]] = 0;
             $result[$duser[0]] += $medal_s;
         }
         fclose ($file);
@@ -4032,7 +4032,7 @@ class Civ13
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
         if ($diff = array_diff($required_roles, array_keys($this->role_ids))) { $this->logger->error('Required roles are missing from the `role_ids` config', $diff); return false; }
-        foreach ($required_roles as $role) if (!isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
+        foreach ($required_roles as $role) if (! isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
         return true;
     }
     
@@ -4069,7 +4069,7 @@ class Civ13
             ftruncate($file, 0);
             $file_contents = '';
             foreach ($this->verified as $item) {
-                if (!$member = $this->getVerifiedMember($item)) continue;
+                if (! $member = $this->getVerifiedMember($item)) continue;
                 $file_contents .= $callback($member, $item, $required_roles);
             }
             fwrite($file, $file_contents);
