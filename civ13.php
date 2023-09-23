@@ -1410,20 +1410,19 @@ class Civ13
                 $tech_ping = '';
                 if (isset($this->technician_id)) $tech_ping = "<@{$this->technician_id}>, ";
                 if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
-                    if ($this->verified->get('discord', $DiscordWebAuth->user->id)) {
-                        if ($this->httpHandler->whitelist($ip))
-                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot']))
-                                $this->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
-                        $method = $this->httpHandler->offsetGet('/botlog') ?? [];
-                        if ($method = array_shift($method)) {
-                            return new HttpResponse(
-                                HttpResponse::STATUS_FOUND,
-                                ['Location' => "http://{$this->httpHandler->external_ip}:55555/botlog"]
-                            );
-                        }
-                    } else {
+                    if (! $this->verified->get('discord', $DiscordWebAuth->user->id)) {
                         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
                         return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
+                    }
+                    if ($this->httpHandler->whitelist($ip))
+                        if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot']))
+                            $this->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
+                    $method = $this->httpHandler->offsetGet('/botlog') ?? [];
+                    if ($method = array_shift($method)) {
+                        return new HttpResponse(
+                            HttpResponse::STATUS_FOUND,
+                            ['Location' => "http://{$this->httpHandler->external_ip}:55555/botlog"]
+                        );
                     }
                 }
                 //if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $tech_ping . "Something went wrong with the DiscordWebAuthentication process! Please check the logs.");
