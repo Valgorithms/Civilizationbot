@@ -1509,18 +1509,15 @@ class Civ13
         $relay = function($message, $channel, $ckey = null): ?PromiseInterface
         {
             if (! $ckey || ! $item = $this->verified->get('ss13', $this->sanitizeInput(explode('/', $ckey)[0]))) return $this->sendMessage($channel, $message);
-            if ($user = $this->discord->users->get('id', $item['discord'])) {
-                $embed = new Embed($this->discord);
-                $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-                $embed->setDescription($message);
-                return $channel->sendEmbed($embed);
-            } 
-            if ($item) {
+            if (! $user = $this->discord->users->get('id', $item['discord'])) {
                 $this->logger->warning("{$item['ss13']}'s Discord ID was not found not in the primary Discord server!");
                 $this->discord->users->fetch($item['discord']);
                 return $this->sendMessage($channel, $message);
-            }
-            return $this->sendMessage($channel, $message);
+            } 
+            $embed = new Embed($this->discord);
+            $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+            $embed->setDescription($message);
+            return $channel->sendEmbed($embed);
         };
         
         foreach ($this->server_settings as $key => $settings) {
