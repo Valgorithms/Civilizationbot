@@ -649,7 +649,7 @@ class Civ13
         
         if (! $this->shard) {
             if (isset($this->role_ids['infantry']))
-            $this->messageHandler->offsetSet('approveme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            $approveme = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 if ($message->member->roles->has($this->role_ids['infantry']) || (isset($this->role_ids['veteran']) && $message->member->roles->has($this->role_ids['veteran']))) return $this->reply($message, 'You already have the verification role!');
                 if ($item = $this->getVerifiedItem($message->author)) {
@@ -658,7 +658,9 @@ class Civ13
                 }
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
                 return $this->reply($message, $this->verifyProcess($ckey, $message->user_id));
-            }));
+            });
+            $this->messageHandler->offsetSet('approveme', $approveme);
+            $this->messageHandler->offsetSet('aproveme', $approveme);
 
             if (file_exists($this->files['insults_path']))
             $this->messageHandler->offsetSet('insult', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
