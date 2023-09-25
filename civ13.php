@@ -1427,7 +1427,7 @@ class Civ13
                         );
                     }
                 }
-                //if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $tech_ping . "Something went wrong with the DiscordWebAuthentication process! Please check the logs.");
+
                 return new HttpResponse(HttpResponse::STATUS_OK);
             };
             $this->httpHandler->offsetSet('/dwa', $dwa);
