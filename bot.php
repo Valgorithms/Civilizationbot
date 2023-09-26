@@ -64,7 +64,7 @@ $stats = new Stats();
 $stats->init($discord);
 $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
-include 'functions.php'; // execIn ckground(), portIsAvailable()
+include 'functions.php'; // execInBackground(), portIsAvailable()
 include 'variable_functions.php';
 include 'verifier_functions.php';
 include 'civ13.php';
