@@ -89,11 +89,11 @@ $options = array(
     'logger' => $logger,
     'stats' => $stats,
 
-    'http_port' => $http_port,
     'webapi' => &$webapi,
     'socket' => &$socket,
-    'http_whitelist' => $http_whitelist,
     'http_key' => $http_key,
+    'http_port' => $http_port,
+    'http_whitelist' => $http_whitelist,
     
     // Configurations
 
