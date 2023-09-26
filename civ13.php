@@ -1424,7 +1424,7 @@ class Civ13
                     if ($method = array_shift($method)) {
                         return new HttpResponse(
                             HttpResponse::STATUS_FOUND,
-                            ['Location' => "http://{$this->httpHandler->external_ip}:55555/botlog"]
+                            ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]
                         );
                     }
                 }
@@ -1831,8 +1831,7 @@ class Civ13
         // httpHandler log endpoints
         $botlog_func = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint = '/botlog'): HttpResponse
         {
-            $port = 55555;
-            $webpage_content = function (string $return) use ($port, $endpoint) {
+            $webpage_content = function (string $return) use ($endpoint) {
                 return '<meta name="color-scheme" content="light dark"> 
                         <div class="button-container">
                             <button style="width:8%" onclick="sendGetRequest(\'pull\')">Pull</button>
@@ -1872,7 +1871,7 @@ class Civ13
                             });
                             function sendGetRequest(endpoint) {
                                 var xhr = new XMLHttpRequest();
-                                xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':" . $port . "/' + endpoint, true);
+                                xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':{$this->http_port}/' + endpoint, true);
                                 xhr.onload = function () {
                                     var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
                                     var alertContainer = document.querySelector('.alert-container');
