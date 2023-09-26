@@ -63,6 +63,8 @@ class Civ13
     
     protected HttpServer $webapi;
     protected SocketServer $socket;
+    protected string $web_address;
+    protected int $http_port;
     
     public collection $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
@@ -1398,7 +1400,7 @@ class Civ13
                 $ip = $request->getServerParams()['REMOTE_ADDR'];
                 if (! isset($dwa_sessions[$ip])) $dwa_sessions[$ip] = [];
 
-                $DiscordWebAuth = new \DWA($this, $dwa_sessions, $dwa_client_id, $dwa_client_secret, $request, $ip);
+                $DiscordWebAuth = new \DWA($this, $dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request, $ip);
                 if (isset($params['code']) && isset($params['state']))
                     return $DiscordWebAuth->getToken($params['state']);
                 elseif (isset($params['login']))
@@ -2207,10 +2209,12 @@ class Civ13
                 $this->ready = true;
                 $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
                 $this->logger->info('------');
-                if (isset($options['webapi'], $options['socket'])) {
+                if (isset($options['webapi'], $options['socket'], $options['web_address'], $options['http_port'])) {
                     $this->logger->info('setting up HttpServer API');
                     $this->webapi = $options['webapi'];
                     $this->socket = $options['socket'];
+                    $this->web_address = $options['web_address'];
+                    $this->http_port = $options['http_port'];
                     $this->webapi->listen($this->socket);
                 }
                 $this->logger->info('------');

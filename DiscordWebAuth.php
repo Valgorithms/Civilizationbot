@@ -26,7 +26,7 @@ Class DWA
     protected $originating_url = null;
     protected $allowed_uri = []; //Exact URL as added in https://discord.com/developers/applications/###/oauth2
 
-    function __construct(Civ13 &$civ13, array &$sessions, string $client_id, string $client_secret, ServerRequestInterface $request, string $requesting_ip) {
+    function __construct(Civ13 &$civ13, array &$sessions, string $client_id, string $client_secret, string $web_address, int $http_port, ServerRequestInterface $request, string $requesting_ip) {
         $this->civ13 = &$civ13;
         $this->sessions = &$sessions;
         $this->CLIENT_ID = $client_id;
@@ -34,11 +34,12 @@ Class DWA
         $this->params = $request->getQueryParams();
         $this->requesting_ip = $requesting_ip;
 
-        $this->redirect_home = 'http://' . ($this->web_address ?? $this->civ13->httpHandler->external_ip)/* . ':55555/'*/;
-        $this->allowed_uri []= $this->redirect_home . 'dwa';
+        $this->web_address = "$web_address:$http_port";
+        $this->redirect_home = "http://{$this->web_address}/";
+        $this->allowed_uri []= "{$this->redirect_home}dwa";
         
         $path = $request->getUri()->getPath();
-        $this->default_redirect = $request->getUri()->getScheme().'://'.$request->getUri()->getHost().':55555'.explode('?', $path)[0];
+        $this->default_redirect = $request->getUri()->getScheme().'://'.$request->getUri()->getHost().':'.$http_port.explode('?', $path)[0];
         $this->originating_url = $request->getHeaderLine('referer') ?? $request->getUri()->getScheme().'://'.$request->getUri()->getHost();
         
         if (isset($this->sessions[$this->requesting_ip]['discord_state']))

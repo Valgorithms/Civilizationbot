@@ -30,6 +30,8 @@ ini_set('memory_limit', '-1'); // Unlimited memory usage
 define('MAIN_INCLUDED', 1); // Token and SQL credential files may be protected locally and require this to be defined to access
 require getcwd() . '/token.php'; // $token
 include getcwd() . '/vendor/autoload.php';
+
+$web_address = 'www.civ13.com';
 $http_port = 55555;
 
 $loop = Loop::get();
@@ -91,8 +93,9 @@ $options = array(
 
     'webapi' => &$webapi,
     'socket' => &$socket,
-    'http_key' => $http_key,
+    'web_address' => $web_address,
     'http_port' => $http_port,
+    'http_key' => $http_key,
     'http_whitelist' => $http_whitelist,
     
     // Configurations
