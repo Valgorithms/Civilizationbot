@@ -98,9 +98,6 @@ $options = array(
     'http_key' => $http_key,
     'http_whitelist' => $http_whitelist,
     
-    // Configurations
-
-
     // The Verify URL is where verification requests are sent to and where the verification list is retrieved from
     // The website must return valid json when no parameters are passed to it and MUST allow POST requests including 'token', 'ckey', and 'discord'
     // Reach out to Valithor if you need help setting up your website
@@ -430,6 +427,8 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         && ! str_ends_with($errstr, 'Connection timed out')
         && ! str_ends_with($errstr, 'No route to host')
         && ! str_ends_with($errstr, 'Connection refused')
+        && ! str_ends_with($errstr, 'Temporary failure in name resolution')
+        && ! str_ends_with($errstr, 'HTTP request failed!')
     )
     {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
