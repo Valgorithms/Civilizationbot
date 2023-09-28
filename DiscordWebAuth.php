@@ -37,9 +37,8 @@ Class DWA
         $this->web_address = "$web_address:$http_port";
         $this->redirect_home = "http://{$this->web_address}/";
         $this->allowed_uri []= "{$this->redirect_home}dwa";
-        
-        $path = $request->getUri()->getPath();
-        $this->default_redirect = $request->getUri()->getScheme().'://'.$request->getUri()->getHost().':'.$http_port.explode('?', $path)[0];
+
+        $this->default_redirect = $request->getUri()->getScheme().'://'.$request->getUri()->getHost().':'.$http_port.explode('?', $request->getUri()->getPath())[0];
         $this->originating_url = $request->getHeaderLine('referer') ?? $request->getUri()->getScheme().'://'.$request->getUri()->getHost();
         
         if (isset($this->sessions[$this->requesting_ip]['discord_state']))
