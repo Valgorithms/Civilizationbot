@@ -1395,7 +1395,7 @@ class Civ13
         if ($dwa_client_secret = getenv('dwa_client_secret'))
         if (include('DiscordWebAuth.php')) {
             $dwa_sessions = [];
-            $dwa = function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use (&$dwa_sessions, $dwa_client_id, $dwa_client_secret): HttpResponse
+            $this->httpHandler->offsetSet('/dwa', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use (&$dwa_sessions, $dwa_client_id, $dwa_client_secret): HttpResponse
             {
                 $ip = $request->getServerParams()['REMOTE_ADDR'];
                 if (! isset($dwa_sessions[$ip])) $dwa_sessions[$ip] = [];
@@ -1430,8 +1430,7 @@ class Civ13
                 }
 
                 return new HttpResponse(HttpResponse::STATUS_OK);
-            };
-            $this->httpHandler->offsetSet('/dwa', $dwa);
+            }));
         }
 
         // httpHandler management endpoints
