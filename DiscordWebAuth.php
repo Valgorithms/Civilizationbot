@@ -26,13 +26,13 @@ Class DWA
     protected $originating_url = null;
     protected $allowed_uri = []; //Exact URL as added in https://discord.com/developers/applications/###/oauth2
 
-    function __construct(Civ13 &$civ13, array &$sessions, string $client_id, string $client_secret, string $web_address, int $http_port, ServerRequestInterface $request, string $requesting_ip) {
+    function __construct(Civ13 &$civ13, array &$sessions, string $client_id, string $client_secret, string $web_address, int $http_port, ServerRequestInterface $request) {
         $this->civ13 = &$civ13;
         $this->sessions = &$sessions;
         $this->CLIENT_ID = $client_id;
         $this->CLIENT_SECRET = $client_secret;
         $this->params = $request->getQueryParams();
-        $this->requesting_ip = $requesting_ip;
+        $this->requesting_ip = $request->getServerParams()['REMOTE_ADDR'];
 
         $this->web_address = "$web_address:$http_port";
         $this->redirect_home = "http://{$this->web_address}/";

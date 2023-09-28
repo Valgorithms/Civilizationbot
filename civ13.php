@@ -1400,7 +1400,7 @@ class Civ13
                 $ip = $request->getServerParams()['REMOTE_ADDR'];
                 if (! isset($dwa_sessions[$ip])) $dwa_sessions[$ip] = [];
 
-                $DiscordWebAuth = new \DWA($this, $dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request, $ip);
+                $DiscordWebAuth = new \DWA($this, $dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
                 if (isset($params['code']) && isset($params['state']))
                     return $DiscordWebAuth->getToken($params['state']);
                 elseif (isset($params['login']))
