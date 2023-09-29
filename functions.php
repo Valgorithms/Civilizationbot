@@ -18,7 +18,7 @@ if (PHP_OS_FAMILY == 'Windows') {
     };
 } else {
     function spawnChildProcess($cmd) {
-        $process = new React\ChildProcess\Process("sudo $cmd");        
+        $process = new React\ChildProcess\Process("sudo nohup $cmd");        
         $process->stdout->on('data', function ($chunk) {
             echo $chunk . PHP_EOL;
         });
@@ -51,7 +51,7 @@ if (PHP_OS_FAMILY == 'Windows') {
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w']
         ];
-        $output = "sudo $cmd > /dev/null &";
+        $output = "sudo nohup $cmd > /dev/null &";
         $proc = proc_open($output, $descriptorspec, $pipes);
         $proc_details = proc_get_status($proc);
         $pid = $proc_details['pid'];
