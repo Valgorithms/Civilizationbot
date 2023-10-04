@@ -1355,6 +1355,106 @@ class Civ13
             return $this->reply($message, 'Panic bunker is now ' . (($this->panic_bunker = ! $this->panic_bunker) ? 'enabled.' : 'disabled.'));
         }), ['Owner', 'High Staff']);
 
+        $channels_page = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        {
+            $doc = new \DOMDocument();
+            $html = $doc->createElement('html');
+            $body = $doc->createElement('body');
+
+            // CSS for .guild class
+            $guildStyle = $doc->createElement('style', '.guild { margin-bottom: 20px; }');
+            $html->appendChild($guildStyle);
+
+            // Create javascript function to send message
+            $script = $doc->createElement('script', '
+                function sendMessage(channelId) {
+                    var input = document.querySelector(`input[data-channel-id="${channelId}"]`);
+                    var message = input.value;
+                    input.value = \'\';
+                    fetch("/send-message?channel=" + encodeURIComponent(channelId) + "&message=" + encodeURIComponent(message))
+                        .then(response => response.json())
+                        .then(data => console.log(data))
+                        .catch(error => console.error(error));
+                }
+            ');
+
+            foreach ($this->discord->guilds as $guild) {
+                $guildDiv = $doc->createElement('div');
+                $guildDiv->setAttribute('class', 'guild');
+                $guildName = $doc->createElement('h3');
+                $a = $doc->createElement('a', $guild->name);
+                $a->setAttribute('href', 'https://discord.com/channels/' . $guild->id);
+                $a->setAttribute('target', '_blank');
+                $guildName->appendChild($a);
+                $guildDiv->appendChild($guildName);
+
+                $channels = [];
+                foreach ($guild->channels as $channel) {
+                    if ($channel->isTextBased()) {
+                        $channels[] = $channel;
+                    }
+                }
+
+                usort($channels, function ($a, $b) {
+                    return $a->position - $b->position;
+                });
+
+                // CSS for .channel class
+                $channelStyle = $doc->createElement('style', '.channel { margin-left: 20px; }');
+                $guildDiv->appendChild($channelStyle);
+
+                foreach ($channels as $channel) {
+                    $channelDiv = $doc->createElement('div');
+                    $channelDiv->setAttribute('class', 'channel');
+                    $channelName = $doc->createElement('p');
+                    $a = $doc->createElement('a', $channel->name);
+                    $a->setAttribute('href', 'https://discord.com/channels/' . $guild->id . '/' . $channel->id);
+                    $a->setAttribute('target', '_blank');
+                    $channelName->appendChild($a);
+                    $channelDiv->appendChild($channelName);
+
+                    // Create button and input box
+                    $button = $doc->createElement('button', 'Send Message');
+                    $input = $doc->createElement('input');
+                    $input->setAttribute('type', 'text');
+                    $input->setAttribute('placeholder', 'Enter message');
+                    $input->setAttribute('style', 'margin-left: 10px;');
+                    $input->setAttribute('data-channel-id', $channel->id); // Add data-channel-id attribute
+
+                    // Add event listener to button
+                    $button->setAttribute('onclick', "sendMessage('{$channel->id}')");
+
+                    $channelDiv->appendChild($button);
+                    $channelDiv->appendChild($input);
+                    $channelDiv->appendChild($script);
+                    $guildDiv->appendChild($channelDiv);
+                }
+
+                $body->appendChild($guildDiv);
+            }
+
+            $html->appendChild($body);
+            $doc->appendChild($html);
+
+            return HttpResponse::html($doc->saveHTML());
+        });
+        $this->httpHandler->offsetSet('/channels', $channels_page);
+
+        $this->httpHandler->offsetSet('/send-message', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        {
+            $params = $request->getQueryParams();
+
+            isset($params['channel']) ? $channelId = $params['channel'] : $channelId = null;
+            if (! $channel = $this->discord->getChannel($channelId)) return HttpResponse::json(['error' => "Channel `$channelId` not found"]);
+            if (! $channel->isTextBased()) return HttpResponse::json(['error' => "Cannot send messages to channel `$channelId`"]);
+
+            isset($params['message']) ? $message = $params['message'] : $message = null;
+            if (! $message) return HttpResponse::json(['error' => "Message not found"]);
+
+            $channel->sendMessage($message);
+            return HttpResponse::json(['success' => true]);
+        }), true);
+        
         // httpHandler website endpoints
         $index = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
@@ -3037,8 +3137,7 @@ class Civ13
     public function legacyBancheck(string $ckey): bool
     {
         foreach ($this->server_settings as $key => $settings) {
-            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
+            if (! isset($settings['enabled']) || ! $settings['enabled'] || ! isset($this->files[($server = strtolower($key)).'_bans'])) continue;
             if (file_exists($this->files[$server.'_bans']) && $file = @fopen($this->files[$server.'_bans'], 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?

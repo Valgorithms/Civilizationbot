@@ -429,6 +429,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         && ! str_ends_with($errstr, 'Connection refused')
         && ! str_ends_with($errstr, 'Temporary failure in name resolution')
         && ! str_ends_with($errstr, 'HTTP request failed!')
+        && ! str_contains($errstr, 'Undefined array key')
     )
     {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
@@ -482,7 +483,9 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
  * @return void
  */
 $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, &$last_path) {
-    if (str_starts_with($e->getMessage(), 'Received request with invalid protocol version')) return; // Ignore this error, it's not important
+    if (
+        str_starts_with($e->getMessage(), 'Received request with invalid protocol version')
+    ) return; // Ignore this error, it's not important
     $last_path = preg_replace('/(?<=key=)[^&]+/', '********', $last_path);
     $error = '[WEBAPI] ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error("[WEBAPI] $error");
