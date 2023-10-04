@@ -1355,7 +1355,7 @@ class Civ13
             return $this->reply($message, 'Panic bunker is now ' . (($this->panic_bunker = ! $this->panic_bunker) ? 'enabled.' : 'disabled.'));
         }), ['Owner', 'High Staff']);
 
-        $channels_page = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        $this->httpHandler->offsetSet('/get-channels', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             $doc = new \DOMDocument();
             $html = $doc->createElement('html');
@@ -1437,8 +1437,7 @@ class Civ13
             $doc->appendChild($html);
 
             return HttpResponse::html($doc->saveHTML());
-        });
-        $this->httpHandler->offsetSet('/channels', $channels_page);
+        }), true);
 
         $this->httpHandler->offsetSet('/send-message', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
