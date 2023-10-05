@@ -332,6 +332,7 @@ class Civ13
                         $embed->addFieldValues('Map', $data[2]);
                         $embed->addFieldValues('Gamemode', $data[3]);
                         $embed->addFieldValues('Players', $data[4]);
+                        var_dump($data);
                     } else {
                         $tdm_server_status = 'Starting';
                     }
