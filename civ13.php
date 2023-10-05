@@ -311,6 +311,52 @@ class Civ13
             $this->logger->info("Generating {$server}configexists command.");
             $this->messageHandler->offsetSet($server.'configexists', $serverconfigexists, ['Owner', 'High Staff']);
 
+            $serverstatus = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server): ?PromiseInterface
+            {
+                $embed = new Embed($this->discord);
+
+                $tdm_port = 1714;
+                $nomads_port = 1715;
+                $tdm_socket = @fsockopen('localhost', $tdm_port, $errno, $errstr, 1);
+                $tdm_server_status = is_resource($tdm_socket) ? 'Online' : 'Offline';
+                if ($tdm_server_status === 'Online') fclose($tdm_socket);
+
+                $nomads_socket = @fsockopen('localhost', $nomads_port, $errno, $errstr, 1);
+                $nomads_server_status = is_resource($nomads_socket) ? 'Online' : 'Offline';
+                if ($nomads_server_status === 'Online') fclose($nomads_socket);
+
+                if ($tdm_server_status === 'Online') {
+                    if ($data = file_get_contents($this->files['tdm_serverdata'])) {
+                        $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
+                        $embed->addFieldValues('Address', '<'.$data[1].'>');
+                        $embed->addFieldValues('Map', $data[2]);
+                        $embed->addFieldValues('Gamemode', $data[3]);
+                        $embed->addFieldValues('Players', $data[4]);
+                    } else {
+                        $tdm_server_status = 'Starting';
+                    }
+                }
+
+                if ($nomads_server_status === 'Online') {
+                    if ($data = file_get_contents($this->files['nomads_serverdata'])) {
+                        $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
+                        $embed->addFieldValues('Address', '<'.$data[1].'>');
+                        $embed->addFieldValues('Map', $data[2]);
+                        $embed->addFieldValues('Gamemode', $data[3]);
+                        $embed->addFieldValues('Players', $data[4]);
+                    } else {
+                        $nomads_server_status = 'Starting';
+                    }
+                }
+
+                $embed->setColor(0x00ff00);
+                $embed->addFieldValues('TDM Server Status', $tdm_server_status);
+                $embed->addFieldValues('Nomads Server Status', $nomads_server_status);
+
+                return $message->channel->sendEmbed($embed);
+            };
+            $this->messageHandler->offsetSet('serverstatus', $serverstatus, ['Owner', 'High Staff']);
+            
             foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
                 else {

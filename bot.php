@@ -429,6 +429,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         && ! str_ends_with($errstr, 'Connection refused')
         && ! str_ends_with($errstr, 'Temporary failure in name resolution')
         && ! str_ends_with($errstr, 'HTTP request failed!')
+        && ! str_ends_with($errstr, '(Network is unreachable)') //fsockopen()
         && ! str_contains($errstr, 'Undefined array key')
     )
     {

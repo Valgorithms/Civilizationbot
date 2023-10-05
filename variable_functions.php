@@ -132,61 +132,6 @@ $on_message = function (Civ13 $civ13, Message $message, ?array $message_filtered
         if (isset($civ13->technician_id) && isset($civ13->role_ids['Chief Technical Officer']))
             if ($message->user_id === $civ13->technician_id)
                 return $message->member->addRole($civ13->role_ids['Chief Technical Officer']);
-    if (str_starts_with($message_array['message_content_lower'], 'serverstatus')) { // See GitHub Issue #1
-        return null; // deprecated
-        /*
-        $embed = new Embed($civ13->discord);
-        $_1714 = !\portIsAvailable(1714);
-        $server_is_up = $_1714;
-        if (! $server_is_up) {
-            $embed->setColor(0x00ff00);
-            $embed->addFieldValues('TDM Server Status', 'Offline');
-        } else {
-            if ($_1714) {
-                if (! $data = file_get_contents($civ13->files['tdm_serverdata'])) {
-                    $embed->setColor(0x00ff00);
-                    $embed->addFieldValues('TDM Server Status', 'Starting');
-                } else {
-                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
-                    $embed->setColor(0x00ff00);
-                    $embed->addFieldValues('TDM Server Status', 'Online');
-                    if (isset($data[1])) $embed->addFieldValues('Address', '<'.$data[1].'>');
-                    if (isset($data[2])) $embed->addFieldValues('Map', $data[2]);
-                    if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3]);
-                    if (isset($data[4])) $embed->addFieldValues('Players', $data[4]);
-                }
-            } else {
-                $embed->setColor(0x00ff00);
-                $embed->addFieldValues('TDM Server Status', 'Offline');
-            }
-        }
-        $_1715 = !\portIsAvailable(1715);
-        $server_is_up = ($_1715);
-        if (! $server_is_up) {
-            $embed->setColor(0x00ff00);
-            $embed->addFieldValues('Nomads Server Status', 'Offline');
-        } else {
-            if ($_1714) {
-                if (! $data = file_get_contents($civ13->files['nomads_serverdata'])) {
-                    $embed->setColor(0x00ff00);
-                    $embed->addFieldValues('Nomads Server Status', 'Starting');
-                } else {
-                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
-                    $embed->setColor(0x00ff00);
-                    $embed->addFieldValues('Nomads Server Status', 'Online');
-                    if (isset($data[1])) $embed->addFieldValues('Address', '<'.$data[1].'>');
-                    if (isset($data[2])) $embed->addFieldValues('Map', $data[2]);
-                    if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3]);
-                    if (isset($data[4])) $embed->addFieldValues('Players', $data[4]);
-                }
-            } else {
-                $embed->setColor(0x00ff00);
-                $embed->addFieldValues('Nomads Server Status', 'Offline');
-            }
-        }
-        return $message->channel->sendEmbed($embed);
-        */
-    }
     return null;
 };
 
