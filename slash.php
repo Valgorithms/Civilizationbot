@@ -90,12 +90,6 @@ class Slash
             'description' => 'Show Space Station 13 server information'
         ]));
 
-        // if ($command = $commands->get('name', 'serverstatus')) $commands->delete($command->id);
-        if (! $commands->get('name', 'serverstatus')) $commands->save(new Command($this->civ13->discord, [
-            'name'        => 'serverstatus',
-            'description' => 'Show Space Station 13 server information when the webserver is offline'
-        ]));
-
         // if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
         if (! $commands->get('name', 'ckey')) $commands->save(new Command($this->civ13->discord, [
             'type'                       => Command::USER,
@@ -323,6 +317,13 @@ class Slash
 
         $this->civ13->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
         {
+            if (! $this->civ13->webserver_online) {
+                $messagebuilder = MessageBuilder::new();
+                $messagebuilder->setContent('Webserver Status: **Offline**, only showing data for locally hosted servers.');
+                $messagebuilder->addEmbed($this->civ13->generateServerstatusEmbed());
+                return $interaction->respondWithMessage($messagebuilder);
+            }
+            
             if (empty($data = $this->civ13->serverinfoParse())) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
             $embed = new Embed($this->civ13->discord);
             foreach ($data as $server)
@@ -337,13 +338,6 @@ class Slash
             if ($this->civ13->webserver_online) $messagebuilder->setContent('Webserver Status: **Online**');
             else $messagebuilder->setContent('Webserver Status: **Offline**, data is stale.');
             $messagebuilder->addEmbed($embed);
-            return $interaction->respondWithMessage($messagebuilder);
-        });
-
-        $this->civ13->discord->listenCommand('serverstatus', function (Interaction $interaction): PromiseInterface
-        {
-            $messagebuilder = MessageBuilder::new();
-            $messagebuilder->addEmbed($this->civ13->generateServerstatusEmbed());
             return $interaction->respondWithMessage($messagebuilder);
         });
 

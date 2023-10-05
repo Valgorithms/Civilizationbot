@@ -3757,8 +3757,8 @@ class Civ13
         };
         $serverinfoTimer();
         if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function () use ($serverinfoTimer) {
-            if ($this->webserver_online === 'offline') foreach ($this->localServerPlayerCount() as $server => $count) $this->playercountChannelUpdate($count, $server . '-');
-            else $serverinfoTimer();
+            if ($this->webserver_online) $serverinfoTimer();
+            else foreach ($this->localServerPlayerCount() as $server => $count) $this->playercountChannelUpdate($count, $server . '-');
         });
         return $this->timers['serverinfo_timer']; // Check players every minute
     }
@@ -3902,7 +3902,10 @@ class Civ13
                 }
             }
         }
-        $embed->setColor(0x00ff00);
+        $embed->setFooter($this->embed_footer);
+        $embed->setColor(0xe1452d);
+        $embed->setTimestamp();
+        $embed->setURL('');
         return $embed;
     }
     // This is a simplified version of serverinfoParse() that only updates the player counter
