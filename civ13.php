@@ -313,30 +313,9 @@ class Civ13
 
             $serverstatus = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server): ?PromiseInterface
             {
-                $embed = new Embed($this->discord);
-                foreach ($this->server_settings as $key => $settings) {            
-                    if (! isset($settings['ip'], $settings['port'])) {
-                        $this->logger->warning("Server {$key} is missing required settings in config!");
-                        continue;
-                    }
-                    if ($settings['ip'] !== $this->httpHandler->external_ip) continue;
-                    $k = strtolower($key);
-                    $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
-                    $server_status = is_resource($socket) ? 'Online' : 'Offline';
-                    $embed->addFieldValues($key . ' Server Status', $server_status);
-                    if ($server_status === 'Online') {
-                        fclose($socket);
-                        if ($data = file_get_contents($this->files[$k.'_serverdata'])) {
-                            $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
-                            $embed->addFieldValues('Address', '<'.$data[1].'>');
-                            $embed->addFieldValues('Map', $data[2]);
-                            $embed->addFieldValues('Gamemode', $data[3]);
-                            $embed->addFieldValues('Players', $data[4]);
-                        }
-                    }
-                }
-                $embed->setColor(0x00ff00);
-                return $message->channel->sendEmbed($embed);
+                $builder = MessageBuilder::new();
+                $builder->addEmbed($this->generateServerstatusEmbed());
+                return $message->reply($builder);
             };
             $this->messageHandler->offsetSet('serverstatus', $serverstatus, ['Owner', 'High Staff']);
             
@@ -3899,6 +3878,33 @@ class Civ13
         return $servers;
     }
 
+    public function generateServerstatusEmbed(): Embed
+    {
+        $embed = new Embed($this->discord);
+        foreach ($this->server_settings as $key => $settings) {            
+            if (! isset($settings['ip'], $settings['port'])) {
+                $this->logger->warning("Server {$key} is missing required settings in config!");
+                continue;
+            }
+            if ($settings['ip'] !== $this->httpHandler->external_ip) continue;
+            $k = strtolower($key);
+            $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
+            $server_status = is_resource($socket) ? 'Online' : 'Offline';
+            $embed->addFieldValues($key . ' Server Status', $server_status);
+            if ($server_status === 'Online') {
+                fclose($socket);
+                if ($data = file_get_contents($this->files[$k.'_serverdata'])) {
+                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
+                    $embed->addFieldValues('Address', '<'.$data[1].'>');
+                    $embed->addFieldValues('Map', $data[2]);
+                    $embed->addFieldValues('Gamemode', $data[3]);
+                    $embed->addFieldValues('Players', $data[4]);
+                }
+            }
+        }
+        $embed->setColor(0x00ff00);
+        return $embed;
+    }
     // This is a simplified version of serverinfoParse() that only updates the player counter
     public function serverinfoParsePlayers(): void
     {
