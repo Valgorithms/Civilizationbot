@@ -332,7 +332,6 @@ class Civ13
                         $embed->addFieldValues('Map', $data[2]);
                         $embed->addFieldValues('Gamemode', $data[3]);
                         $embed->addFieldValues('Players', $data[4]);
-                        var_dump($data);
                     } else {
                         $tdm_server_status = 'Starting';
                     }
@@ -3795,7 +3794,10 @@ class Civ13
             }
         };
         $serverinfoTimer();
-        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function () use ($serverinfoTimer) { $serverinfoTimer(); });
+        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function () use ($serverinfoTimer) {
+            if ($this->webserver_online === 'offline') foreach ($this->manualServerPlayerCount() as $server => $count) $this->playercountChannelUpdate($count, strtolower($server) . '-');
+            else $serverinfoTimer();
+        });
         return $this->timers['serverinfo_timer']; // Check players every minute
     }
     /*
@@ -3829,7 +3831,7 @@ class Civ13
         }
         $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
         $return = []; // This is the array we'll return
-        foreach ($this->server_settings as $k => $settings) {            
+        foreach ($this->server_settings as $k => $settings) {
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
             if (! isset($settings['supported']) || ! $settings['supported']) { 
                 $this->logger->debug("Server {$settings['name']} is not supported by the remote webserver!");
@@ -3885,6 +3887,32 @@ class Civ13
         }
         $this->playercount_ticker++;
         return $return;
+    }
+    /**
+     * Returns an array of the player count for each locally hosted server in the configuration file.
+     *
+     * @return array
+     */
+    public function manualServerPlayerCount(): array
+    {
+        $servers = [];
+        foreach ($this->server_settings as $k => $settings) {            
+            if (! isset($settings['ip'], $settings['port'])) {
+                $this->logger->warning("Server {$k} is missing required settings in config!");
+                continue;
+            }
+            if ($settings['ip'] !== $this->httpHandler->external_ip) continue;
+            $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
+            $server_status = is_resource($socket) ? 'Online' : 'Offline';
+            if ($server_status === 'Online') {
+                fclose($socket);
+                if ($data = file_get_contents($this->files[strtolower($k).'_serverdata'])) {
+                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
+                    $servers[$k] = $data[4];
+                }
+            } else $servers[$k] = 0;
+        }
+        return $servers;
     }
 
     // This is a simplified version of serverinfoParse() that only updates the player counter
