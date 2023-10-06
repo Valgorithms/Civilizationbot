@@ -1396,20 +1396,16 @@ class Civ13
                 $guildName->appendChild($a);
                 $guildDiv->appendChild($guildName);
 
-                $channels = [];
-                foreach ($guild->channels as $channel) {
-                    if ($channel->isTextBased()) {
-                        $channels[] = $channel;
-                    }
-                }
-
-                usort($channels, function ($a, $b) {
-                    return $a->position - $b->position;
-                });
-
                 // CSS for .channel class
                 $channelStyle = $doc->createElement('style', '.channel { margin-left: 20px; }');
                 $guildDiv->appendChild($channelStyle);
+                
+                $channels = [];
+                foreach ($guild->channels as $channel) if ($channel->isTextBased()) $channels[] = $channel;
+
+                usort($channels, function ($a, $b) {
+                    return $a->position - $b->position;
+                });                
 
                 foreach ($channels as $channel) {
                     $channelDiv = $doc->createElement('div');
@@ -1469,10 +1465,7 @@ class Civ13
                 $method = $this->httpHandler->offsetGet('/botlog') ?? [];
                 if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
             }
-            return new HttpResponse(
-                HttpResponse::STATUS_FOUND,
-                ['Location' => 'https://www.valzargaming.com/?login']
-            );
+            return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
         });
         $this->httpHandler->offsetSet('/', $index);
         $this->httpHandler->offsetSet('/index.html', $index);
@@ -1483,17 +1476,8 @@ class Civ13
         }));
         $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
-            if ($favicon = @file_get_contents('favicon.ico'))
-                return new HttpResponse(
-                    HttpResponse::STATUS_OK,
-                    ['Content-Type' => 'image/x-icon'],
-                    $favicon
-                );
-            return new HttpResponse(
-                HttpResponse::STATUS_NOT_FOUND,
-                ['Content-Type' => 'text/plain'],
-                "Unable to access `favicon.ico`"
-            );
+            if ($favicon = @file_get_contents('favicon.ico')) return new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon'], $favicon);
+            return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`");
         }));
 
         // httpHandler whitelisting with DiscordWebAuth
@@ -1502,10 +1486,16 @@ class Civ13
         if ($dwa_client_secret = getenv('dwa_client_secret'))
         if (include('DiscordWebAuth.php')) {
             $dwa_sessions = [];
-            $this->httpHandler->offsetSet('/dwa', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use (&$dwa_sessions, $dwa_client_id, $dwa_client_secret): HttpResponse
+            $dwa_timers = [];
+            $this->httpHandler->offsetSet('/dwa', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use (&$dwa_sessions, &$dwa_timers, $dwa_client_id, $dwa_client_secret): HttpResponse
             {
                 $ip = $request->getServerParams()['REMOTE_ADDR'];
-                if (! isset($dwa_sessions[$ip])) $dwa_sessions[$ip] = [];
+                if (! isset($dwa_sessions[$ip])) {
+                    $dwa_sessions[$ip] = [];
+                    $dwa_timers[$ip] = $this->discord->getLoop()->addTimer(30 * 60, function () use ($ip) { // Set a timer to unset the session after 30 minutes
+                        unset($dwa_sessions[$ip]);
+                    });
+                }
 
                 $DiscordWebAuth = new \DWA($this, $dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
                 if (isset($params['code']) && isset($params['state']))
@@ -1528,12 +1518,8 @@ class Civ13
                         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot']))
                             $this->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
                     $method = $this->httpHandler->offsetGet('/botlog') ?? [];
-                    if ($method = array_shift($method)) {
-                        return new HttpResponse(
-                            HttpResponse::STATUS_FOUND,
-                            ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]
-                        );
-                    }
+                    if ($method = array_shift($method))
+                        return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
                 }
 
                 return new HttpResponse(HttpResponse::STATUS_OK);
@@ -1579,19 +1565,13 @@ class Civ13
         if ($this->github)
         $this->httpHandler->offsetSet('/github', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
-            return new HttpResponse(
-                HttpResponse::STATUS_FOUND,
-                ['Location' => $this->github]
-            );
+            return new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->github]);
         }));
 
         if ($this->discord_invite)
         $this->httpHandler->offsetSet('/discord', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint ): HttpResponse
         {
-            return new HttpResponse(
-                HttpResponse::STATUS_FOUND,
-                ['Location' => $this->discord_invite]
-            );
+            return new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->discord_invite]);
         }));
 
         // httpHandler data endpoints
