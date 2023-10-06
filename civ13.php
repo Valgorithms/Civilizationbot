@@ -1369,22 +1369,19 @@ class Civ13
             $html = $doc->createElement('html');
             $body = $doc->createElement('body');
 
+            // Create input box
+            $input = $doc->createElement('input');
+            $input->setAttribute('type', 'text');
+            $input->setAttribute('placeholder', 'Enter message');
+            $input->setAttribute('style', 'margin-left: 10px;');
+            $input->setAttribute('id', 'message-input');
+            $body->appendChild($input);
+            
+            $h2 = $doc->createElement('h2', 'Guilds');
+            $body->appendChild($h2);
             // CSS for .guild class
             $guildStyle = $doc->createElement('style', '.guild { margin-bottom: 20px; }');
             $html->appendChild($guildStyle);
-
-            // Create javascript function to send message
-            $script = $doc->createElement('script', '
-                function sendMessage(channelId) {
-                    var input = document.querySelector(`input[data-channel-id="${channelId}"]`);
-                    var message = input.value;
-                    input.value = \'\';
-                    fetch("/send-message?channel=" + encodeURIComponent(channelId) + "&message=" + encodeURIComponent(message))
-                        .then(response => response.json())
-                        .then(data => console.log(data))
-                        .catch(error => console.error(error));
-                }
-            ');
 
             foreach ($this->discord->guilds as $guild) {
                 $guildDiv = $doc->createElement('div');
@@ -1419,27 +1416,30 @@ class Civ13
 
                     // Create button and input box
                     $button = $doc->createElement('button', 'Send Message');
-                    $input = $doc->createElement('input');
-                    $input->setAttribute('type', 'text');
-                    $input->setAttribute('placeholder', 'Enter message');
-                    $input->setAttribute('style', 'margin-left: 10px;');
-                    $input->setAttribute('data-channel-id', $channel->id); // Add data-channel-id attribute
-
-                    // Add event listener to button
                     $button->setAttribute('onclick', "sendMessage('{$channel->id}')");
-
                     $channelDiv->appendChild($button);
-                    $channelDiv->appendChild($input);
-                    $channelDiv->appendChild($script);
                     $guildDiv->appendChild($channelDiv);
                 }
 
                 $body->appendChild($guildDiv);
             }
 
+            // Create javascript function for /send-message
+            $script = $doc->createElement('script', '
+                function sendMessage(channelId) {
+                    var input = document.querySelector(`#message-input`);
+                    var message = input.value;
+                    input.value = \'\';
+                    fetch("/send-message?channel=" + encodeURIComponent(channelId) + "&message=" + encodeURIComponent(message))
+                        .then(response => response.json())
+                        .then(data => console.log(data))
+                        .catch(error => console.error(error));
+                }
+            ');
+            $body->appendChild($script);
+            
             $html->appendChild($body);
             $doc->appendChild($html);
-
             return HttpResponse::html($doc->saveHTML());
         }), true);
 
