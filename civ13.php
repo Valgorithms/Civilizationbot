@@ -65,6 +65,10 @@ class Civ13
     protected SocketServer $socket;
     protected string $web_address;
     protected int $http_port;
+
+    protected array $dwa_sessions = [];
+    protected array $dwa_timers = [];
+    protected array $dwa_discord_ids = [];
     
     public collection $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public collection $pending;
@@ -327,10 +331,11 @@ class Civ13
                         \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
                         \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
                         \execInBackground("python3 {$this->files[$server.'_killsudos']}");
-                        if (! isset($this->timers[$server.'host'])) $this->timers[$server.'host'] = $this->discord->getLoop()->addTimer(30, function () use ($server, $settings) {
+                        if (! isset($this->timers[$server.'host'])) $this->timers[$server.'host'] = $this->discord->getLoop()->addTimer(30, function () use ($server, $settings, $message) {
                             \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$settings['port']} -trusted -webclient -logself &");
+                            if ($message) $message->react("👍");
                         });
-                        if ($message) $message->react("👍");
+                        if ($message) $message->react("⏱️");    
                     };
                     $this->messageHandler->offsetSet($server.'host', $serverhost, ['Owner', 'High Staff']);
                 }
@@ -402,7 +407,9 @@ class Civ13
                         $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
                         $this->loop->addtimer(10, function () use ($mapto, $mapswap, $message): ?PromiseInterface
                         {
+                            if ($message) $message->react("👍");
                             return $mapswap($mapto, $message);
+                            
                         });
                         if ($message) return $message->react("⏱️");
                     };
@@ -1365,6 +1372,8 @@ class Civ13
 
         $this->httpHandler->offsetSet('/get-channels', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
+
+
             $doc = new \DOMDocument();
             $html = $doc->createElement('html');
             $body = $doc->createElement('body');
@@ -1437,6 +1446,18 @@ class Civ13
                 }
             ');
             $body->appendChild($script);
+            // Create javascript function for /send-embed
+            $script = $doc->createElement('script', '
+                function sendMessage(channelId) {
+                    var input = document.querySelector(`#message-input`);
+                    var message = input.value;
+                    input.value = \'\';
+                    fetch("/send-embed?channel=" + encodeURIComponent(channelId) + "&message=" + encodeURIComponent(message))
+                        .then(response => response.json())
+                        .then(data => console.log(data))
+                        .catch(error => console.error(error));
+                }
+            ');
             
             $html->appendChild($body);
             $doc->appendChild($html);
@@ -1455,6 +1476,26 @@ class Civ13
             if (! $message) return HttpResponse::json(['error' => "Message not found"]);
 
             $channel->sendMessage($message);
+            return HttpResponse::json(['success' => true]);
+        }), true);
+
+        $this->httpHandler->offsetSet('/send-embed', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        {
+            $params = $request->getQueryParams();
+
+            isset($params['channel']) ? $channelId = $params['channel'] : $channelId = null;
+            if (! $channel = $this->discord->getChannel($channelId)) return HttpResponse::json(['error' => "Channel `$channelId` not found"]);
+            if (! $channel->isTextBased()) return HttpResponse::json(['error' => "Cannot send messages to channel `$channelId`"]);
+
+            isset($params['message']) ? $content = $params['message'] : $content = '';
+            if (! $content) return HttpResponse::json(['error' => "Message not found"]);
+
+            $embed = new Embed($this->discord);
+            if (isset($dwa_discord_ids[$ip = $request->getServerParams()['REMOTE_ADDR']]))
+                if ($user = $this->discord->users->get('id', $this->dwa_discord_ids[$ip]))
+                    $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+            
+            //$this->sendEmbed($channel, $content, $embed);
             return HttpResponse::json(['success' => true]);
         }), true);
         
@@ -1485,19 +1526,17 @@ class Civ13
         if ($dwa_client_id = getenv('dwa_client_id'))
         if ($dwa_client_secret = getenv('dwa_client_secret'))
         if (include('DiscordWebAuth.php')) {
-            $dwa_sessions = [];
-            $dwa_timers = [];
-            $this->httpHandler->offsetSet('/dwa', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use (&$dwa_sessions, &$dwa_timers, $dwa_client_id, $dwa_client_secret): HttpResponse
+            $this->httpHandler->offsetSet('/dwa', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($dwa_client_id, $dwa_client_secret): HttpResponse
             {
                 $ip = $request->getServerParams()['REMOTE_ADDR'];
-                if (! isset($dwa_sessions[$ip])) {
-                    $dwa_sessions[$ip] = [];
-                    $dwa_timers[$ip] = $this->discord->getLoop()->addTimer(30 * 60, function () use ($ip) { // Set a timer to unset the session after 30 minutes
-                        unset($dwa_sessions[$ip]);
+                if (! isset($this->dwa_sessions[$ip])) {
+                    $this->dwa_sessions[$ip] = [];
+                    $this->dwa_timers[$ip] = $this->discord->getLoop()->addTimer(30 * 60, function () use ($ip) { // Set a timer to unset the session after 30 minutes
+                        unset($this->dwa_sessions[$ip]);
                     });
                 }
 
-                $DiscordWebAuth = new \DWA($this, $dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
+                $DiscordWebAuth = new \DWA($this, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
                 if (isset($params['code']) && isset($params['state']))
                     return $DiscordWebAuth->getToken($params['state']);
                 elseif (isset($params['login']))
@@ -1510,6 +1549,7 @@ class Civ13
                 $tech_ping = '';
                 if (isset($this->technician_id)) $tech_ping = "<@{$this->technician_id}>, ";
                 if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
+                    $this->dwa_discord_ids[$ip] = $DiscordWebAuth->user->id;
                     if (! $this->verified->get('discord', $DiscordWebAuth->user->id)) {
                         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
                         return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
@@ -2200,6 +2240,10 @@ class Civ13
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if (is_string($channel)) $channel = $this->discord->getChannel($channel);
+        if (! $channel) {
+            $this->logger->error("Channel not found: {$channel}");
+            return null;
+        }
         if ($announce_shard && $this->sharding && $this->enabled_servers) {
             if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
             if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
@@ -2215,6 +2259,25 @@ class Civ13
             return $channel->sendMessage($builder);
         }
         return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
+    }
+
+    public function sendEmbed($channel, string $content, Embed $embed, $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
+    {
+        return null;
+        $builder = MessageBuilder::new();
+        // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
+        if (is_string($channel)) $channel = $this->discord->getChannel($channel);
+        if (! $channel) {
+            $this->logger->error("Channel not found: {$channel}");
+            return null;
+        }
+        if ($announce_shard && $this->sharding && $this->enabled_servers) {
+            if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
+            if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
+            else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
+        }
+        $builder->setContent($content);
+        return $channel->sendEmbed($embed);
     }
 
     public function sendPlayerMessage($channel, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
