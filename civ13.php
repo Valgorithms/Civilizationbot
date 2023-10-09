@@ -3912,7 +3912,7 @@ class Civ13
             $server_status = is_resource($socket) ? 'Online' : 'Offline';
             if ($server_status === 'Online') {
                 fclose($socket);
-                if ($data = file_get_contents($this->files[$k.'_serverdata'])) {
+                if ($data = @file_get_contents($this->files[$k.'_serverdata'])) {
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
                     $servers[$k] = $data[4];
                 }
