@@ -3898,9 +3898,8 @@ class Civ13
      *
      * @return array
      */
-    public function localServerPlayerCount(): array
+    public function localServerPlayerCount($servers = []): array
     {
-        $servers = [];
         foreach ($this->server_settings as $key => $settings) {            
             if (! isset($settings['ip'], $settings['port'])) {
                 $this->logger->warning("Server {$key} is missing required settings in config!");
@@ -3922,7 +3921,7 @@ class Civ13
     }
 
     public function generateServerstatusEmbed(): Embed
-    {
+    {        
         $embed = new Embed($this->discord);
         foreach ($this->server_settings as $key => $settings) {            
             if (! isset($settings['ip'], $settings['port'])) {
