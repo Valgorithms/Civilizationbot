@@ -3828,14 +3828,13 @@ class Civ13
         }
         return true;
     }
-    public function serverinfoParse(): array
+    public function serverinfoParse(array $return = []): array
     {
         if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) {
-            return []; // No data to parse
+            return $return; // No data to parse
             $this->logger->warning('No serverinfo data to parse!');
         }
         $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
-        $return = []; // This is the array we'll return
         foreach ($this->server_settings as $k => $settings) {
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
             if (! isset($settings['supported']) || ! $settings['supported']) { 
@@ -3898,7 +3897,7 @@ class Civ13
      *
      * @return array
      */
-    public function localServerPlayerCount($servers = []): array
+    public function localServerPlayerCount(array $servers = []): array
     {
         foreach ($this->server_settings as $key => $settings) {            
             if (! isset($settings['ip'], $settings['port'])) {
