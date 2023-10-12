@@ -1372,8 +1372,6 @@ class Civ13
 
         $this->httpHandler->offsetSet('/get-channels', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
-
-
             $doc = new \DOMDocument();
             $html = $doc->createElement('html');
             $body = $doc->createElement('body');
