@@ -3851,7 +3851,6 @@ class Civ13
             } // Remote webserver reports server is not responding
             $return[$index]['Server'] = [false => $settings['name'] . PHP_EOL . "<byond://{$settings['ip']}:{$settings['port']}>"];
             $return[$index]['Host'] = [true => $settings['Host']];
-           
             if (isset($server['roundduration'])) {
                 $rd = explode(":", urldecode($server['roundduration']));
                 $days = floor($rd[0] / 24);
@@ -3931,15 +3930,36 @@ class Civ13
             $k = strtolower($key);
             $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
             $server_status = is_resource($socket) ? 'Online' : 'Offline';
-            $embed->addFieldValues($key . ' Server Status', $server_status);
+            if ($server_status === 'Offline') $embed->addFieldValues($key, $server_status);
             if ($server_status === 'Online') {
                 fclose($socket);
                 if ($data = file_get_contents($this->files[$k.'_serverdata'])) {
-                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
-                    $embed->addFieldValues('Address', '<'.$data[1].'>');
-                    $embed->addFieldValues('Map', $data[2]);
-                    $embed->addFieldValues('Gamemode', $data[3]);
-                    $embed->addFieldValues('Players', $data[4]);
+                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', '</b>', '<b>'], '', $data));
+                    if (isset($data[1])) $embed->addFieldValues($key, '<'.$data[1].'>');
+                    if (isset($settings['host'])) $embed->addFieldValues('Host', $settings['host'], true);
+                    if (isset($data[7])) {
+                        list($hours, $minutes) = explode(':', $data[7]);
+                        $hours = intval($hours);
+                        $minutes = intval($minutes);
+                        $days = floor($hours / 24);
+                        $hours = $hours % 24;
+                        $time = '';
+                        if ($days) $time .= $days . 'd';
+                        if ($hours) $time .= $hours . 'h';
+                        $time .= $minutes . 'm';
+                        $embed->addFieldValues('Round Time', $time, true);
+                    }
+                    if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data
+                    //if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3], true);
+                    if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
+                    if (isset($data[4])) $embed->addFieldValues('Players', $data[4], true);
+                    if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
+                    //if (isset($data[2])) $embed->addFieldValues('Map', $data[2], true);
+                    
+                    
+                    //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
+                    //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
+                    
                 }
             }
         }

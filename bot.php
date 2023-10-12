@@ -121,7 +121,7 @@ $options = array(
             'name' => 'TDM',
             'ip' => $civ13_ip,
             'port' => '1714',
-            'Host' => 'Taislin',
+            'host' => 'Taislin',
             'panic' => false,
             'legacy' => true,
             'moderate' => true,
@@ -133,7 +133,7 @@ $options = array(
             'name' => 'Nomads', // Name of the server and the prefix of the playercount channel (e.g. nomads-999)
             'ip' => $civ13_ip, // IP of the server
             'port' => '1715', // Port of the server
-            'Host' => 'Taislin', // Host of the server
+            'host' => 'Taislin', // Host of the server
             'panic' => true, // Panic mode will ban all users who are not verified
             'legacy' => true, // Legacy mode will use the file system instead of an SQL database
             'moderate' => true, // Whether chat moderation is enabled
@@ -145,7 +145,7 @@ $options = array(
             'name' => 'Persistence',
             'ip' => $vzg_ip,
             'port' => '1717',
-            'Host' => 'ValZarGaming',
+            'host' => 'ValZarGaming',
             'panic' => true,
             'legacy' => true,
             'moderate' => true,
@@ -426,12 +426,12 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         && ! str_ends_with($errstr, 'Connection timed out')
         && ! str_ends_with($errstr, 'No route to host')
-        && ! str_ends_with($errstr, 'Connection refused')
+        && ! str_ends_with($errstr, 'Connection refused') //fsockopen()
+        && ! str_ends_with($errstr, '(Network is unreachable)') //fsockopen()
+        && ! str_contains($errstr, '(Connection refused)') //fsockopen()
         && ! str_ends_with($errstr, 'Temporary failure in name resolution')
         && ! str_ends_with($errstr, 'HTTP request failed!')
-        && ! str_ends_with($errstr, '(Network is unreachable)') //fsockopen()
         && ! str_contains($errstr, 'Undefined array key')
-        && ! str_contains($errstr, '(Connection refused)')
     )
     {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
