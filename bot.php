@@ -431,6 +431,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         && ! str_ends_with($errstr, 'HTTP request failed!')
         && ! str_ends_with($errstr, '(Network is unreachable)') //fsockopen()
         && ! str_contains($errstr, 'Undefined array key')
+        && ! str_contains($errstr, '(Connection refused)')
     )
     {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
