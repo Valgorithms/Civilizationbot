@@ -3934,7 +3934,7 @@ class Civ13
      *
      * @return array
      */
-    public function localServerPlayerCount(array $servers = []): array
+    public function localServerPlayerCount(array $servers = [], array $players = []): array
     {
         foreach ($this->server_settings as $key => $settings) {            
             if (! isset($settings['ip'], $settings['port'])) {
@@ -3949,7 +3949,6 @@ class Civ13
                 fclose($socket);
                 if ($data = @file_get_contents($this->files[$k.'_serverdata'])) {
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'players=', '</b>', '<b>'], '', $data));
-                    $players = [];
                     if (isset($data[11])) { // Player list
                         $players = explode(',', $data[11]);
                         $players = array_map(fn($player) => strtolower($this->sanitizeInput($player)), $players);
