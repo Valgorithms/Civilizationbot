@@ -3943,10 +3943,7 @@ class Civ13
                         $minutes = intval($minutes);
                         $days = floor($hours / 24);
                         $hours = $hours % 24;
-                        $time = '';
-                        if ($days) $time .= $days . 'd';
-                        if ($hours) $time .= $hours . 'h';
-                        $time .= $minutes . 'm';
+                        $time = ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
                         $embed->addFieldValues('Round Time', $time, true);
                     }
                     if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data
