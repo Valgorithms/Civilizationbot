@@ -3764,7 +3764,7 @@ class Civ13
     }
     public function serverinfoTimer(): TimerInterface
     {
-        $serverinfoTimer = function () {
+        $serverinfoTimerOnline = function () {
             $this->serverinfoFetch(); 
             $this->serverinfoParsePlayers();
             foreach ($this->serverinfoPlayers() as $server_array) foreach ($server_array as $ckey) {
@@ -3798,10 +3798,50 @@ class Civ13
                 }
             }
         };
-        $serverinfoTimer();
-        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function () use ($serverinfoTimer) {
-            if ($this->webserver_online) $serverinfoTimer();
-            else foreach ($this->localServerPlayerCount() as $server => $count) $this->playercountChannelUpdate($count, $server . '-');
+        //$serverinfoTimerOnline();
+
+        $serverinfoTimerOffline = function () {
+            $arr = $this->localServerPlayerCount();
+            $servers = $arr['playercount'];
+            $server_array = $arr['playerlist'];
+            foreach ($servers as $server => $count) $this->playercountChannelUpdate($count, $server . '-');
+            foreach ($server_array as $ckey) {
+                if (is_null($ckey)) continue;
+                if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) { // Suspicious user ban rules
+                    $this->seen_players[] = $ckey;
+                    $ckeyinfo = $this->ckeyinfo($ckey);
+                    if ($ckeyinfo['altbanned']) { // Banned with a different ckey
+                        $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                        $msg = $this->ban($arr, null, '', true);
+                        if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                    } else foreach ($ckeyinfo['ips'] as $ip) {
+                        if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
+                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                            $msg = $this->ban($arr, null, '', true);
+                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                            break;
+                        } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
+                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                            $msg = $this->ban($arr, null, '', true);
+                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                            break 2;
+                        }
+                    }
+                }
+                if ($this->verified->get('ss13', $ckey)) continue;
+                //if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
+                if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
+                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
+                    $msg = $this->ban($arr, null, '', true);
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                }
+            }
+        };
+        //$serverinfoTimerOffline();
+
+        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(60, function () use ($serverinfoTimerOnline, $serverinfoTimerOffline) {
+            $timerFunction = $this->webserver_online ? $serverinfoTimerOnline : $serverinfoTimerOffline;
+            $timerFunction();
         });
         return $this->timers['serverinfo_timer']; // Check players every minute
     }
@@ -3910,12 +3950,17 @@ class Civ13
             if ($server_status === 'Online') {
                 fclose($socket);
                 if ($data = @file_get_contents($this->files[$k.'_serverdata'])) {
-                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', '</b>', '<b>'], '', $data));
+                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'players=', '</b>', '<b>'], '', $data));
+                    $players = [];
+                    if (isset($data[11])) { // Player list
+                        $players = explode(',', $data[11]);
+                        $players = array_map(fn($player) => strtolower($this->sanitizeInput($player)), $players);
+                    }
                     $servers[$k] = $data[4];
                 }
             } else $servers[$k] = 0;
         }
-        return $servers;
+        return ['playercount' => $servers, 'playerlist' => $players];
     }
 
     public function generateServerstatusEmbed(): Embed
@@ -3933,7 +3978,7 @@ class Civ13
             if ($server_status === 'Offline') $embed->addFieldValues($key, $server_status);
             if ($server_status === 'Online') {
                 fclose($socket);
-                if ($data = file_get_contents($this->files[$k.'_serverdata'])) {
+                if ($data = @file_get_contents($this->files[$k.'_serverdata'])) {
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', '</b>', '<b>'], '', $data));
                     if (isset($data[1])) $embed->addFieldValues($key, '<'.$data[1].'>');
                     if (isset($settings['host'])) $embed->addFieldValues('Host', $settings['host'], true);
