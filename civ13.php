@@ -3814,7 +3814,7 @@ class Civ13
                         $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
                         $msg = $this->ban($arr, null, '', true);
                         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                    } else foreach ($ckeyinfo['ips'] as $ip) {
+                    } else if (isset($ckeyinfo['ips'])) foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
                             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
                             $msg = $this->ban($arr, null, '', true);
