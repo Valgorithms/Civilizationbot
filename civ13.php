@@ -3046,8 +3046,8 @@ class Civ13
             ) {
                 if (
                     (isset($this->verify_url) && $this->verify_url) // Only bother with the timer if the website URL is configured
-                    && ! isset($this->timers['provisional_registration'])
-                ) $this->timers['provisional_registration'] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
+                    && ! isset($this->timers['provisional_registration_'.$discord_id])
+                ) $this->timers['provisional_registration_'.$discord_id] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if (! $member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
@@ -3155,7 +3155,7 @@ class Civ13
                         $this->VarSave('provisional.json', $this->provisional);
                     }
                     if ($this->provisionalRegistration($ckey, $discord_id)) $error = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
-                    else $error .= 'Provisional registration is already pending and a new provisional role will not be provided at this time.' . PHP_EOL . $error;
+                    else $error .= ' Provisional registration is already pending and a new provisional role will not be provided at this time.' . PHP_EOL . $error;
                 }
                 break;
             default: 
