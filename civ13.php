@@ -3945,6 +3945,7 @@ class Civ13
             $k = strtolower($key);
             $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
             $server_status = is_resource($socket) ? 'Online' : 'Offline';
+            $servers[$k] = 0;
             if ($server_status === 'Online') {
                 fclose($socket);
                 if ($data = @file_get_contents($this->files[$k.'_serverdata'])) {
@@ -3955,7 +3956,7 @@ class Civ13
                     }
                     $servers[$k] = $data[4];
                 }
-            } else $servers[$k] = 0;
+            }
         }
         return ['playercount' => $servers, 'playerlist' => $players];
     }
