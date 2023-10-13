@@ -3954,7 +3954,7 @@ class Civ13
                         $players = explode(',', $data[11]);
                         $players = array_map(fn($player) => strtolower($this->sanitizeInput($player)), $players);
                     }
-                    $servers[$k] = $data[4];
+                    if (isset($data[4])) $servers[$k] = $data[4]; // Player count
                 }
             }
         }
