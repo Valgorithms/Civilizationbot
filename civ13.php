@@ -3952,7 +3952,7 @@ class Civ13
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'players=', '</b>', '<b>'], '', $data));
                     if (isset($data[11])) { // Player list
                         $players = explode(',', $data[11]);
-                        $players = array_map(fn($player) => strtolower($this->sanitizeInput($player)), $players);
+                        $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
                     }
                     if (isset($data[4])) $servers[$k] = $data[4]; // Player count
                 }
