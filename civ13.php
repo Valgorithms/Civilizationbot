@@ -3037,30 +3037,16 @@ class Civ13
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Successfully verified Byond account `$ckey` with Discord ID <@$discord_id>.");
                 return false;
             }
-            
-            if (
-                (! isset($this->verify_url) || ! $this->verify_url) // The website URL is not configured
-                || (isset($result['error']) && $result['error'] && str_starts_with($result['error'], 'The website')) // The website could not be reached
-            ) {
-                if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
-                    if (! $member->roles->has($this->role_ids['infantry']))
-                        $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
-                if ((isset($this->verify_url) && $this->verify_url)) {
-                    if (! isset($this->timers['provisional_registration_'.$discord_id])) $this->timers['provisional_registration_'.$discord_id] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result['error']);
+            if (isset($result['error']) && $result['error']) {
+                if (str_starts_with($result['error'], 'The website') || (! isset($this->verify_url) || ! $this->verify_url)) { // The website URL is not configured or the website could not be reached
+                    if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
+                    if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
+                    if ((isset($this->verify_url) && $this->verify_url)) {
+                        if (! isset($this->timers['provisional_registration_'.$discord_id])) $this->timers['provisional_registration_'.$discord_id] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
+                        if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result['error']);
+                    }
+                    return true;
                 }
-                return true;
-            }
-            if ($result['error'] && str_starts_with($result['error'], 'Either Byond account')) {
-                if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
-                    if ($member->roles->has($this->role_ids['infantry']))
-                        $member->setRoles([], 'Provisional verification failed');
-                unset($this->provisional[$ckey]);
-                $this->VarSave('provisional.json', $this->provisional);
-                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>. " . $result['error']);
-                return false;
-            }
-            if ($result['error']) {
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if ($member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([], 'Provisional verification failed');
