@@ -3040,22 +3040,18 @@ class Civ13
             
             if (
                 (! isset($this->verify_url) || ! $this->verify_url) // The website URL is not configured
-                || (isset($result['error']) && $result['error'] && str_starts_with('The website', $result['error'])) // The website is down
+                || (isset($result['error']) && $result['error'] && str_starts_with($result['error'], 'The website')) // The website could not be reached
             ) {
-                if (
-                    (isset($this->verify_url) && $this->verify_url) // Only bother with the timer if the website URL is configured
-                    && ! isset($this->timers['provisional_registration_'.$discord_id])
-                ) $this->timers['provisional_registration_'.$discord_id] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if (! $member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
-                if (
-                    (isset($this->verify_url) && $this->verify_url) // Only send a warning if the website URL is configured
-                    && isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])
-                ) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result['error']);
+                if ((isset($this->verify_url) && $this->verify_url)) {
+                    if (! isset($this->timers['provisional_registration_'.$discord_id])) $this->timers['provisional_registration_'.$discord_id] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id> Providing provisional verification role and trying again in 30 minutes... " . $result['error']);
+                }
                 return true;
             }
-            if ($result['error'] && str_starts_with('Either Byond account', $result['error'])) {
+            if ($result['error'] && str_starts_with($result['error'], 'Either Byond account')) {
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
                     if ($member->roles->has($this->role_ids['infantry']))
                         $member->setRoles([], 'Provisional verification failed');
