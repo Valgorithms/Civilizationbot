@@ -3040,11 +3040,11 @@ class Civ13
             if (isset($result['error']) && $result['error']) {
                 if (str_starts_with($result['error'], 'The website') || (! isset($this->verify_url) || ! $this->verify_url)) { // The website URL is not configured or the website could not be reached
                     if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
-                    if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
                     if ((isset($this->verify_url) && $this->verify_url)) {
                         if (! isset($this->timers['provisional_registration_'.$discord_id])) $this->timers['provisional_registration_'.$discord_id] = $this->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
-                        if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}" . PHP_EOL . 'Providing provisional verification role and trying again in 30 minutes... ');
+                        if (! $member->roles->has($this->role_ids['infantry']) && isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}" . PHP_EOL . 'Providing provisional verification role and trying again in 30 minutes... ');
                     }
+                    if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "Provisional verification `$ckey`");
                     return true;
                 }
                 if ($member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id))
