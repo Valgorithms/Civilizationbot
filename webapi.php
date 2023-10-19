@@ -433,6 +433,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     $message .= '.';
                     break;
                 case 'logout':
+                    $civ13->checkCkey($ckey);
                     // Move this to a function in civ13.php    
                     if (isset($civ13->paroled[$ckey])
                         && isset($civ13->channel_ids['parole_notif'])
