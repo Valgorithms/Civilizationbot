@@ -3028,9 +3028,7 @@ class Civ13
             }
 
             $result = [];
-
             if (isset($this->verify_url) && $this->verify_url) $result = $this->verifyCkey($ckey, $discord_id, true);
-
             if (isset($result['success']) && $result['success']) {
                 unset($this->provisional[$ckey]);
                 $this->VarSave('provisional.json', $this->provisional);
@@ -3742,41 +3740,46 @@ class Civ13
         if ($country == '') $country = 'unknown';
         return $country;
     }
+    public function checkCkey($ckey): void
+    { // Suspicious user ban rules
+        if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
+            $this->seen_players[] = $ckey;
+            $ckeyinfo = $this->ckeyinfo($ckey);
+            if ($ckeyinfo['altbanned']) { // Banned with a different ckey
+                $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                $msg = $this->ban($arr, null, '', true);
+                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+            } else foreach ($ckeyinfo['ips'] as $ip) {
+                if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
+                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                    $msg = $this->ban($arr, null, '', true);
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                    break;
+                } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
+                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                    $msg = $this->ban($arr, null, '', true);
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                    break 2;
+                }
+            }
+        }
+        if ($this->verified->get('ss13', $ckey)) return;
+        if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) {
+            $this->__panicBan($ckey); // Require verification for Persistence rounds
+            return;
+        }
+        if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
+            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
+            $msg = $this->ban($arr, null, '', true);
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+        }
+    }
     public function serverinfoTimer(): TimerInterface
     {
         $serverinfoTimerOnline = function () {
             $this->serverinfoFetch(); 
             $this->serverinfoParsePlayers();
-            foreach ($this->serverinfoPlayers() as $server_array) foreach ($server_array as $ckey) {
-                if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) { // Suspicious user ban rules
-                    $this->seen_players[] = $ckey;
-                    $ckeyinfo = $this->ckeyinfo($ckey);
-                    if ($ckeyinfo['altbanned']) { // Banned with a different ckey
-                        $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
-                        $msg = $this->ban($arr, null, '', true);
-                        if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                    } else foreach ($ckeyinfo['ips'] as $ip) {
-                        if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
-                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
-                            $msg = $this->ban($arr, null, '', true);
-                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                            break;
-                        } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
-                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
-                            $msg = $this->ban($arr, null, '', true);
-                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                            break 2;
-                        }
-                    }
-                }
-                if ($this->verified->get('ss13', $ckey)) continue;
-                if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
-                if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
-                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                    $msg = $this->ban($arr, null, '', true);
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                }
-            }
+            foreach ($this->serverinfoPlayers() as $server_array) foreach ($server_array as $ckey) $this->checkCkey($ckey);
         };
         //$serverinfoTimerOnline();
 

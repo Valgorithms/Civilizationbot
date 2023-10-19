@@ -405,6 +405,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                     if (isset($data['message'])) $message .= html_entity_decode(urldecode($data['message']));
                     break;
                 case 'login':
+                    $civ13->checkCkey($ckey);
                     // Move this to a function in civ13.php
                     if (isset($civ13->paroled[$ckey])
                         && isset($civ13->channel_ids['parole_notif'])
