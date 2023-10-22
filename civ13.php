@@ -413,7 +413,7 @@ class Civ13
                         });
                         if ($message) return $message->react("⏱️");
                     };
-                    $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['Owner', 'High Staff']);
+                    $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['Owner', 'High Staff', 'Admin']);
                 }
             }
 
