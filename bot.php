@@ -51,9 +51,9 @@ $discord = new Discord([
         $sweep = false // Disable automatic cache sweeping if desired
     ), 
     */
-    /*'socket_options' => [
+    'socket_options' => [
         'dns' => '8.8.8.8', // can change dns
-    ],*/
+    ],
     'token' => $token,
     'loadAllMembers' => true,
     'storeMessages' => true, // Because why not?
