@@ -323,7 +323,7 @@ class Civ13
             };
             $this->messageHandler->offsetSet('serverstatus', $serverstatus, ['Owner', 'High Staff']);
             
-            foreach (['_updateserverabspaths', /*'_serverdata',*/ '_killsudos', '_dmb'] as $postfix) {
+            foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
                 else {
                     $serverhost = function (?Message $message = null) use ($server, $settings): void
