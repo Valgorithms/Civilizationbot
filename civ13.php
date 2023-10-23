@@ -323,7 +323,7 @@ class Civ13
             };
             $this->messageHandler->offsetSet('serverstatus', $serverstatus, ['Owner', 'High Staff']);
             
-            foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
+            foreach (['_updateserverabspaths', /*'_serverdata',*/ '_killsudos', '_dmb'] as $postfix) {
                 if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
                 else {
                     $serverhost = function (?Message $message = null) use ($server, $settings): void
@@ -3961,7 +3961,7 @@ class Civ13
             if ($server_status === 'Offline') $embed->addFieldValues($key, $server_status);
             if ($server_status === 'Online') {
                 fclose($socket);
-                if ($data = @file_get_contents($this->files[$k.'_serverdata'])) {
+                if (file_exists($this->files[$k.'_serverdata']) && $data = @file_get_contents($this->files[$k.'_serverdata'])) {
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', '</b>', '<b>'], '', $data));
                     if (isset($data[1])) $embed->addFieldValues($key, '<'.$data[1].'>');
                     if (isset($settings['host'])) $embed->addFieldValues('Host', $settings['host'], true);
