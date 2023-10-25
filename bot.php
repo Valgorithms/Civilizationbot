@@ -424,13 +424,19 @@ $civ13 = new Civ13($options);
 $global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13) {
     if (
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
-        && ! str_ends_with($errstr, 'Connection timed out')
+        // fsockopen
+        && ! str_ends_with($errstr, 'Connection timed out') 
+        && ! str_ends_with($errstr, '(Connection timed out)')
+        && ! str_ends_with($errstr, 'Connection refused')
+        && ! str_contains($errstr, '(Connection refused)')
+        && ! str_ends_with($errstr, 'Network is unreachable')
+        && ! str_ends_with($errstr, '(Network is unreachable)')
+
+        // Connectivity issues
         && ! str_ends_with($errstr, 'No route to host')
-        && ! str_ends_with($errstr, 'Connection refused') //fsockopen()
-        && ! str_ends_with($errstr, '(Network is unreachable)') //fsockopen()
-        && ! str_contains($errstr, '(Connection refused)') //fsockopen()
         && ! str_ends_with($errstr, 'Temporary failure in name resolution')
         && ! str_ends_with($errstr, 'HTTP request failed!')
+
         && ! str_contains($errstr, 'Undefined array key')
     )
     {
