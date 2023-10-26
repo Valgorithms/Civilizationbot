@@ -410,7 +410,7 @@ $options = array(
         ],
     ),
 );
-$options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `approveme` command. Failure to verify in a timely manner will result in an automatic removal from the server.";
+$options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `@CivilizationBot approveme` chat command. Failure to verify in a timely manner will result in an automatic removal from the server.";
 
 $cyrillic_alphabet = array( // Ban use of Cyrillic characters
     'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
