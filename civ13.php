@@ -1182,7 +1182,7 @@ class Civ13
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $keys[] = $server = strtolower($key);
-                if (! trim($tokens[0]) == $server) continue; // Check if server is valid
+                if (trim($tokens[0]) !== $server) continue; // Check if server is valid
                 if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::log_basedir)) {
                     $this->logger->warning("`{$settings['basedir']}" . self::log_basedir . "` is not defined or does not exist");
                     return $message->react("🔥");
