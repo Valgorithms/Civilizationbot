@@ -40,6 +40,24 @@ use React\Filesystem\Factory as FilesystemFactory;
 
 class Civ13
 {
+    const log_basedir = '/data/logs';
+    const playernotes_basedir = '/data/player_saves';
+    const ooc_path = '/ooc.log';
+    const admin_path = '/admin.log';
+    const discord2ooc = '/SQL/discord2ooc.txt';
+    const discord2admin = '/SQL/discord2admin.txt';
+    const discord2dm = '/SQL/discord2dm.txt';
+    const discord2ban = '/SQL/discord2ban.txt';
+    const discord2unban = '/SQL/discord2unban.txt';
+    const admins = '/SQL/admins.txt';
+    const whitelist = '/SQL/whitelist.txt';
+    const bans = '/SQL/bans.txt';
+    const playerlogs = '/SQL/playerlogs.txt';
+    const factionlist = '/SQL/factionlist.txt';
+    const sportsteams = '/SQL/sports_teams.txt';
+    const awards_path = '/SQL/awards.txt';
+    const awards_br_path = '/SQL/awards_br.txt';
+
     public bool $sharding = false;
     public bool $shard = false;
     public string $welcome_message = '';
@@ -1165,12 +1183,13 @@ class Civ13
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $keys[] = $server = strtolower($key);
                 if (! trim($tokens[0]) == $server) continue; // Check if server is valid
-                if (! isset($this->files[$server.'_log_basedir']) || ! file_exists($this->files[$server.'_log_basedir'])) {
-                    $this->logger->warning("`{$server}_log_basedir` is not defined or does not exist");
+                if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::log_basedir)) {
+                    $this->logger->warning("`{$settings['basedir']}" . self::log_basedir . "` is not defined or does not exist");
                     return $message->react("🔥");
                 }
+
                 unset($tokens[0]);
-                $results = $this->FileNav($this->files[$server.'_log_basedir'], $tokens);
+                $results = $this->FileNav($settings['basedir'] . self::log_basedir, $tokens);
                 if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
                 if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
                 if (! isset($results[2]) || ! $results[2]) return $this->reply($message, 'Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');

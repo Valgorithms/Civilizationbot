@@ -126,6 +126,7 @@ $options = array(
             'legacy' => true,
             'moderate' => true,
             'relay_method' => 'webhook',
+            'basedir' => '/home/civ13/civ13-tdm'
         ],
         'Nomads' => [
             'supported' => true, // Whether the server is supported by the remote webserver
@@ -138,6 +139,7 @@ $options = array(
             'legacy' => true, // Legacy mode will use the file system instead of an SQL database
             'moderate' => true, // Whether chat moderation is enabled
             'relay_method' => 'webhook', // How messages are relayed to the server
+            'basedir' => '/home/civ13/civ13-rp' // Base directory of the server
         ],
         'Pers' => [
             'supported' => true,
@@ -150,6 +152,7 @@ $options = array(
             'legacy' => true,
             'moderate' => true,
             'relay_method' => 'webhook',
+            'basedir' => '/home/civ13/civ13-pers' // Base directory of the server
         ],
     ],
     'legacy' => true,
@@ -214,8 +217,6 @@ $options = array(
         'nomads_playerlogs' => '/home/civ13/civ13-rp/SQL/playerlogs.txt',
         // Campaign
         'nomads_factionlist' => '/home/civ13/civ13-rp/SQL/factionlist.txt',
-        // Basedir
-        'nomads_basedir' => '/home/civ13/civ13-rp',
         
         // TDM
         'tdm_log_basedir' => '/home/civ13/civ13-tdm/data/logs',
@@ -238,8 +239,6 @@ $options = array(
         // Medals
         'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt',
         'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt',
-        // Basedir
-        'tdm_basedir' => '/home/civ13/civ13-tdm',
 
         // Persistence
         'pers_log_basedir' => '/home/civ13/civ13-pers/data/logs',
@@ -264,8 +263,6 @@ $options = array(
         // Medals
         'pers_awards_path' => '/home/civ13/civ13-pers/SQL/awards.txt',
         'pers_awards_br_path' => '/home/civ13/civ13-pers/SQL/awards_br.txt',
-        // Basedir
-        'pers_basedir' => '/home/civ13/civ13-pers',
 
         // Script paths
         'nomads_updateserverabspaths' => '/home/civ13/civ13-rp/scripts/updateserverabspaths.py',
