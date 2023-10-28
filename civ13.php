@@ -937,10 +937,13 @@ class Civ13
             $content = '';
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $file_path = strtolower($key) . '_bans';
-                if (! isset($this->files[$file_path]) || ! file_exists($this->files[$file_path]) || ! ($file = @fopen($this->files[$file_path], 'r'))) {
-                    $this->logger->warning("Could not open `$file_path` for reading.");
-                    continue;
+                if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::bans)) {
+                    $this->logger->warning("Either basedir or `" . self::bans . "` is not defined or does not exist");
+                    return $message->react("🔥");
+                }
+                if (! $file = @fopen($settings['basedir'] . self::bans, 'r')) {
+                    $this->logger->warning('Could not open `' . $settings['basedir'] . self::bans . "` for reading.");
+                    return $message->react("🔥");
                 }
                 while (($fp = fgets($file, 4096)) !== false) {
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -1184,7 +1187,7 @@ class Civ13
                 $keys[] = $server = strtolower($key);
                 if (trim($tokens[0]) !== $server) continue; // Check if server is valid
                 if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::log_basedir)) {
-                    $this->logger->warning("`{$settings['basedir']}" . self::log_basedir . "` is not defined or does not exist");
+                    $this->logger->warning("Either basedir or `" . self::log_basedir . "` is not defined or does not exist");
                     return $message->react("🔥");
                 }
 
@@ -1210,8 +1213,8 @@ class Civ13
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $keys[] = $server = strtolower($key);
-                if (trim($tokens[0]) != $key) continue;
-                if (! isset($this->files[$server.'_playerlogs']) || ! file_exists($this->files[$server.'_playerlogs']) || ! $file_contents = @file_get_contents($this->files[$server.'_playerlogs'])) return $message->react("🔥");
+                if (trim($tokens[0]) !== $server) continue;
+                if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::playerlogs) || ! $file_contents = @file_get_contents($settings['basedir'] . self::playerlogs)) return $message->react("🔥");
                 return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
             }
             return $this->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
