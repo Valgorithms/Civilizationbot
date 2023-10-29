@@ -3153,8 +3153,7 @@ class Civ13
             CURLOPT_USERAGENT => 'Civ13',
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]),
-            CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
-            CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
+            CURLOPT_CONNECTTIMEOUT => 5, // Set a connection timeout of 2 seconds
         ]);
         $result = curl_exec($ch);
         $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
