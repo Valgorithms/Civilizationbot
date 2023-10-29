@@ -3573,10 +3573,12 @@ class Civ13
     {
         $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
         if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, $context),  true)) {
+            $this->logger->debug("unable to retrieve serverinfo from {$this->serverinfo_url}");
             $this->webserverStatusChannelUpdate($this->webserver_online = false);
             return [];
         }
         $this->webserverStatusChannelUpdate($this->webserver_online = true);
+        $this->logger->debug("successfully retrieved serverinfo from {$this->serverinfo_url}");
         return $this->serverinfo = $data_json;
     }
     public function bansToCollection(): Collection
