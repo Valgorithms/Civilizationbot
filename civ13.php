@@ -532,7 +532,7 @@ class Civ13
         }));
         $this->messageHandler->offsetSet('checkip', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
-            $context = stream_context_create(['http' => ['timeout' => 2]]);
+            $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
             return $this->reply($message, @file_get_contents('http://ipecho.net/plain', false, $context));
         }));
         /**
@@ -2845,7 +2845,7 @@ class Civ13
     public function getVerified(): Collection
     {
         if (! $verified_array = $this->VarLoad('verified.json')) {
-            $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['timeout' => 2]]));
+            $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]));
             $verified_array = $json ? json_decode($json, true) : [];
             $this->VarSave('verified.json', $verified_array);
         }
@@ -3572,7 +3572,7 @@ class Civ13
     }
     public function serverinfoFetch(): array
     {
-        $context = stream_context_create(['http' => ['timeout' => 2]]);
+        $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
         if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, $context),  true)) {
             $this->webserverStatusChannelUpdate($this->webserver_online = false);
             return [];
