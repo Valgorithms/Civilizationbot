@@ -2927,8 +2927,8 @@ class Civ13
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // return the page as a string
         curl_setopt($ch, CURLOPT_HTTPGET, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
         $page = curl_exec($ch);
         curl_close($ch);
         if ($page) return $page;
@@ -3740,7 +3740,8 @@ class Civ13
         $ch = curl_init(); 
         curl_setopt($ch, CURLOPT_URL, "http://ip-api.com/json/$ip"); 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 1); // The site is usually really fast, so we don't want to wait too long
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
         $response = curl_exec($ch);
         curl_close($ch);
         $json = @json_decode($response, true);
