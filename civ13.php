@@ -3106,16 +3106,19 @@ class Civ13
             return ['success' => $success, 'error' => $error];
         }
        
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->verify_url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return the transfer as a string
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Civ13');
-        curl_setopt($ch, CURLOPT_POST, TRUE);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]));
-        curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-        $result = curl_exec($ch);
-        $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+        if (! $this->webserver_online) $http_status = 0; // Don't try to curl if the webserver is down
+        else {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $this->verify_url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return the transfer as a string
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Civ13');
+            curl_setopt($ch, CURLOPT_POST, TRUE);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]));
+            curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+            $result = curl_exec($ch);
+            $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+        }
         switch ($http_status) {
             case 200: // Verified
                 $success = true;
