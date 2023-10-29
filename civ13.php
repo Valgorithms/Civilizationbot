@@ -3058,7 +3058,7 @@ class Civ13
         if ($message) {
             $removed_items = '';
             foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
-            return $message->reply('Removed from the verified list:' . PHP_EOL . $removed_items);
+            return $this->reply($message, 'Removed from the verified list:' . PHP_EOL . $removed_items, 'unverified.txt', false, true);
         }
 
         return null;
