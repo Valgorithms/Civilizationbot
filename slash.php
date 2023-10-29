@@ -205,6 +205,14 @@ class Slash
         ]));*/
 
         $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->done(function (GuildCommandRepository $commands) {
+            // if ($command = $commands->get('name', 'unverify')) $commands->delete($command->id);
+            if (! $commands->get('name', 'unverify')) $commands->save(new Command($this->civ13->discord, [
+                'type'                       => Command::USER,
+                'name'                       => 'unverify',
+                'dm_permission'              => false,
+                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['administrator' => true]),
+            ]));
+            
             // if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
             if (! $commands->get('name', 'unban')) $commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
@@ -397,6 +405,15 @@ class Slash
         {
             $arr = ['ckey' => $interaction->data->options['ckey']->value, 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->banappeal}"];
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban($arr, $this->civ13->getVerifiedItem($interaction->user)['ss13'])));
+        });
+        
+        $this->civ13->discord->listenCommand('unverify', function (Interaction $interaction): PromiseInterface
+        {
+            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            if ($interaction->user->id !== $this->civ13->technician_id) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You do not have permission to unverify <@{$interaction->data->target_id}>"), true);
+            $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
+            $this->civ13->unverify($item['ss13'], null);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('**`' . ($admin ?? $interaction->user->displayname) . "`** unverified **`{$item['ss13']}`**."));
         });
         
         $this->civ13->discord->listenCommand('unban', function (Interaction $interaction): PromiseInterface

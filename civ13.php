@@ -3035,7 +3035,7 @@ class Civ13
         return $this->verifyCkey($item['ss13'], $discord_id);
     }
 
-    public function unverify(string $id, ?Message $message): ?PromiseInterface
+    public function unverify(string $id, ?Message $message = null): ?PromiseInterface
     {
         $verified_array = $this->VarLoad('verified.json');
         if (!$verified_array) {
