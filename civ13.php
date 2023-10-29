@@ -312,7 +312,7 @@ class Civ13
                         else return $this->reply($message, "A notes folder was found for `$ckey`, however no notes were found in it.");
 
                         $result = '';
-                        if ($contents = file_get_contents($file_path)) $result = $contents;
+                        if ($contents = @file_get_contents($file_path)) $result = $contents;
                         else return $this->reply($message, "A notes file with path `$file_path` was found for `$ckey`, however the file could not be read.");
                         
                         return $this->reply($message, $result, 'info.sav', true);
@@ -532,7 +532,8 @@ class Civ13
         }));
         $this->messageHandler->offsetSet('checkip', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
-            return $message->reply(file_get_contents('http://ipecho.net/plain'));
+            $context = stream_context_create(['http' => ['timeout' => 2]]);
+            return $message->reply(@file_get_contents('http://ipecho.net/plain', false, $context));
         }));
         /**
          * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
@@ -3527,7 +3528,8 @@ class Civ13
     }
     public function serverinfoFetch(): array
     {
-        if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, stream_context_create(array('http'=>array('timeout' => 5, )))),  true)) {
+        $context = stream_context_create(['http' => ['timeout' => 2]]);
+        if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, $context),  true)) {
             $this->webserverStatusChannelUpdate($this->webserver_online = false);
             return [];
         }
