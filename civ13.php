@@ -2835,7 +2835,8 @@ class Civ13
     */
     public function getVerified(): Collection
     {
-        if ($verified_array = json_decode(file_get_contents($this->verify_url), true)) {
+        $context = stream_context_create(['http' => ['timeout' => 2]]);
+        if ($verified_array = json_decode(@file_get_contents($this->verify_url, false, $context), true)) {
             $this->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
