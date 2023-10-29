@@ -3652,7 +3652,6 @@ class Civ13
         if (! $ckey = $this->sanitizeInput($ckey)) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->getVerifiedItem($ckey)) $ckey = $item['ss13'];
-        
         $ckeys = [$ckey];
         $ips = [];
         $cids = [];
@@ -3666,31 +3665,24 @@ class Civ13
         }
         // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
         $playerlogs = $this->playerlogsToCollection();
-        $i = 0;
-        $break = false;
-        do { // Iterate through playerlogs to find all known ckeys, ips, and cids
+        for ($i = 0; $i < 10; $i++) {
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
             foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                // $this->logger->debug('Found new match: ', $log, PHP_EOL);
                 if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
             }
+            if (! $found) break;
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
-            if ($i > 10) $break = true;
-            $i++;
-        } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
-    
-        $banlogs = $this->bansToCollection();        
-        $found = true;
-        $break = false;
-        $i = 0;
-        do { // Iterate through playerlogs to find all known ckeys, ips, and cids
+        }
+
+        $banlogs = $this->bansToCollection();
+        for ($i = 0; $i < 10; $i++) {
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
@@ -3700,12 +3692,11 @@ class Civ13
                 if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
             }
+            if (! $found) break;
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
-            $i++;
-            if ($i > 10) $break = true;
-        } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
+        }
 
         $verified = false;
         $altbanned = false;
