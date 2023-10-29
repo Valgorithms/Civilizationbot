@@ -2717,22 +2717,22 @@ class Civ13
      * @return PromiseInterface
      */
     public function banlogHandler(Message $message, string $message_content_lower): PromiseInterface 
-    { // I'm not sure if I want this function to be here, in the server functions, as a variable function, or as a slash command
-        $fc = [];
-        $keys = [];
-        foreach ($this->server_settings as $key => $settings) {
-            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $keys[] = $server = strtolower($key);
-            if ($message_content_lower !== $server) continue;
-            if (! isset($this->files[$server.'_bans']) || ! file_exists($this->files[$server.'_bans']) || ! $file_contents = @file_get_contents($this->files[$server.'_bans'])) return $message->react("🔥");
-            $fc[$server] = $file_contents;
+    {
+        $server = strtolower($message_content_lower);
+        $server_settings = array_filter($this->server_settings, function($key) use ($server) {
+            return strtolower($key) === $server;
+        }, ARRAY_FILTER_USE_KEY);
+        if (empty($server_settings)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->server_settings)) . '`');
+
+        $server_settings = reset($server_settings);
+        if (! isset($server_settings['basedir']) || ! file_exists($filename = $server_settings['basedir'] . self::bans)) {
+            $this->logger->warning("Either basedir or `" . self::bans . "` is not defined or does not exist");
+            return $message->react("🔥");
         }
-        if ($fc) {
-            $builder = MessageBuilder::new();
-            foreach ($fc as $file_contents) $builder->addFileFromContent($server.'_bans.txt', $file_contents);
-            return $message->reply($builder);
-        }
-        return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', $keys) . '`');
+
+        $builder = MessageBuilder::new();
+        $builder->addFile($this->files[$filename], $filename . '.txt');
+        return $message->reply($builder);
     }
     
     /*
@@ -2766,17 +2766,19 @@ class Civ13
     public function getVerifiedItem(Member|User|array|string $input): ?array
     {
         if (is_string($input)) {
-            if (! $input = $this->sanitizeInput($input)) return null;
+            $input = $this->sanitizeInput($input);
+            if (! $input) return null;
             if (is_numeric($input) && $item = $this->verified->get('discord', $input)) return $item;
-            elseif ($item = $this->verified->get('ss13', $input)) return $item;
-        } elseif ($input instanceof Member || $input instanceof User) {
-            if ($item = $this->verified->get('discord', $input->id)) return $item;
-        } elseif (is_array($input)) {
+            if ($item = $this->verified->get('ss13', $input)) return $item;
+        }
+        if (($input instanceof Member || $input instanceof User) && ($item = $this->verified->get('discord', $input->id))) return $item;
+        if (is_array($input)) {
             if (! isset($input['discord']) && ! isset($input['ss13'])) return null;
             if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->verified->get('discord', $this->sanitizeInput($input['discord']))) return $item;
             if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) return $item;
         }
-        return null; // If $input is not a string, array, Member, or User, return false (this should never happen)
+
+        return null;
     }
 
     /*
@@ -2786,46 +2788,33 @@ class Civ13
     public function getVerifiedMember(Member|User|array|string|null $input): ?Member
     {
         if (! $input) return null;
+
         // Get the guild (required to get the member)
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null;
+        $guild = $this->discord->guilds->get('id', $this->civ13_guild_id);
+        if (! $guild) return null;
+
         // Get Discord ID
         $id = null;
-        if ($input instanceof Member || $input instanceof User) { // If $input is a Member or User, get the Discord ID
-            $id = $input->id;
-        } elseif (is_string($input)) { // If $input is a string, it could be either a ckey or Discord ID
-            if (! $input = $this->sanitizeInput($input)) {
-                $this->logger->warning("An invalid string was passed to getVerifiedMember()");
-                return null;
-            } elseif (is_numeric($input)) { // If $input is not a number, it is probably a ckey
-                $id = $input;
-            } else {
-                if (! $item = $this->verified->get('ss13', $input)) return null;
-                $id = $item['discord'];
+        if ($input instanceof Member || $input instanceof User) $id = $input->id;
+        elseif (is_string($input)) {
+            if (is_numeric($input = $this->sanitizeInput($input))) $id = $input;
+            elseif ($item = $this->verified->get('ss13', $input)) $id = $item['discord'];
+        } elseif (is_array($input)) {
+            if (isset($input['discord'])) {
+                if (is_numeric($discordId = $this->sanitizeInput($input['discord']))) $id = $discordId;
+            } elseif (isset($input['ss13'])) {
+                if ($item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) $id = $item['discord'];
             }
-        } elseif (is_array($input)) { // If $input is an array, it could contain either a ckey or a Discord ID
-            if (! isset($input['discord']) && ! isset($input['ss13'])) return null;
-            elseif (isset($input['discord']) && is_string($input['discord']) && is_numeric($input['discord'] = $this->sanitizeInput($input['discord']))) $id = $input['discord'];
-            elseif (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->sanitizeInput($input['ss13']))) $id = $item['discord'];
-            else return null; // If $input is an array, but contains invalid data, return null
-        } // else return false; // If $input is not a string, array, Member, or User, return null (this should never happen)
-        if (! $id || ! $this->isVerified($id)) return null; // Check if Discord ID is in the verified collection
-        if ($member = $guild->members->get('id', $id)) return $member; // Get the member from the guild
-        return null;
+        }
+        if (! $id || ! $this->isVerified($id)) return null;
+        return $guild->members->get('id', $id);
     }
 
     public function getRole(string $input): ?Role
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null;
-        if (! $input) {
-            $this->logger->warning("An invalid string was passed to getRole()");
-            return null;
-        }
-        if (is_numeric($id = $this->sanitizeInput($input)))
-            if ($role = $guild->roles->get('id', $id))
-                return $role;
-        if ($role = $guild->roles->get('name', $input)) return $role;
-        $this->logger->warning("Could not find role with id or name `$input`");
-        return null;
+        if (is_numeric($input = $this->sanitizeInput($input))) return $guild->roles->get('id', $input);
+        return $guild->roles->get('name', $input);
     }
     
     /*
@@ -2836,13 +2825,12 @@ class Civ13
     */
     public function getVerified(): Collection
     {
-        $context = stream_context_create(['http' => ['timeout' => 2]]);
-        if ($verified_array = @json_decode(@file_get_contents($this->verify_url, false, $context), true)) {
+        if (! $verified_array = $this->VarLoad('verified.json')) {
+            $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['timeout' => 2]]));
+            $verified_array = $json ? json_decode($json, true) : [];
             $this->VarSave('verified.json', $verified_array);
-            return $this->verified = new Collection($verified_array, 'discord');
         }
-        if ($json = $this->VarLoad('verified.json')) return $this->verified = new Collection($json, 'discord');
-        return $this->verified = new Collection([], 'discord');
+        return $this->verified = new Collection($verified_array, 'discord');
     }
 
     public function getRoundsCollections(): array // [string $server, collection $rounds]
@@ -2850,13 +2838,13 @@ class Civ13
         $collections_array = [];
         foreach ($this->rounds as $server => $rounds) {
             $r = [];
-            foreach (array_keys($rounds) as $game_id) {
-                $round = [];
-                $round['game_id'] = $game_id;
-                $round['start'] = isset($this->rounds[$server][$game_id]['start']) ? $this->rounds[$server][$game_id]['start'] : null;
-                $round['end'] = isset($this->rounds[$server][$game_id]['end']) ? $this->rounds[$server][$game_id]['end'] : null;
-                $round['players'] = isset($this->rounds[$server][$game_id]['players']) ? $this->rounds[$server][$game_id]['players'] : [];
-                $r[] = $round;
+            foreach ($rounds as $game_id => $round) {
+                $r[] = [
+                    'game_id' => $game_id,
+                    'start' => $round['start'] ?? null,
+                    'end' => $round['end'] ?? null,
+                    'players' => $round['players'] ?? [],
+                ];
             }
             $collections_array[] = [$server => new Collection($r, 'game_id')];
         }
@@ -2865,35 +2853,35 @@ class Civ13
     
     public function logNewRound(string $server, string $game_id, string $time): void
     {
-        if (isset($this->current_rounds[$server]) && isset($this->rounds[$server][$this->current_rounds[$server]]) && $this->rounds[$server][$this->current_rounds[$server]] && $game_id !== $this->current_rounds[$server]) // If the round already exists and is not the current round
+        if (array_key_exists($server, $this->current_rounds) && array_key_exists($this->current_rounds[$server], $this->rounds[$server]) && $this->rounds[$server][$this->current_rounds[$server]] && $game_id !== $this->current_rounds[$server]) // If the round already exists and is not the current round
             $this->rounds[$server][$this->current_rounds[$server]]['end'] = $time; // Set end time of previous round
         $this->current_rounds[$server] = $game_id; // Update current round
         $this->VarSave('current_rounds.json', $this->current_rounds); // Update log of currently running game_ids
-        $this->rounds[$server][$game_id] = []; // Initialize round array
-        $this->rounds[$server][$game_id]['start'] = $time; // Set start time
-        $this->rounds[$server][$game_id]['end'] = null;
-        $this->rounds[$server][$game_id]['players'] = [];
-        $this->rounds[$server][$game_id]['interrupted'] = false;
+        $round = &$this->rounds[$server][$game_id];
+        $round = []; // Initialize round array
+        $round['start'] = $time; // Set start time
+        $round['end'] = null;
+        $round['players'] = [];
+        $round['interrupted'] = false;
         $this->VarSave('rounds.json', $this->rounds); // Update log of rounds
     }
     public function logPlayerLogin(string $server, string $ckey, string $time, string $ip = '', string $cid = ''): void
     {
-        if ($game_id = $this->current_rounds[$server]) {
-            if (! isset($this->rounds[$server][$game_id]['players'])) $this->rounds[$server][$game_id]['players'] = [];
-            if (! isset($this->rounds[$server][$game_id]['players'][$ckey])) $this->rounds[$server][$game_id]['players'][$ckey] = [];
-            if (! isset($this->rounds[$server][$game_id]['players'][$ckey]['login'])) $this->rounds[$server][$game_id]['players'][$ckey]['login'] = $time;
-            if ($ip && (! isset($this->rounds[$server][$game_id]['players'][$ckey]['ip']) || ! in_array($ip, $this->rounds[$server][$game_id]['players'][$ckey]['ip']))) $this->rounds[$server][$game_id]['players'][$ckey]['ip'][] = $ip; 
-            if ($cid && (! isset($this->rounds[$server][$game_id]['players'][$ckey]['cid']) || ! in_array($cid, $this->rounds[$server][$game_id]['players'][$ckey]['cid']))) $this->rounds[$server][$game_id]['players'][$ckey]['cid'][] = $cid;
+        if ($game_id = $this->current_rounds[$server] ?? null) {
+            $this->rounds[$server][$game_id]['players'][$ckey] = $this->rounds[$server][$game_id]['players'][$ckey] ?? [];
+            $this->rounds[$server][$game_id]['players'][$ckey]['login'] = $this->rounds[$server][$game_id]['players'][$ckey]['login'] ?? $time;
+            if ($ip && ! in_array($ip, $this->rounds[$server][$game_id]['players'][$ckey]['ip'] ?? [])) $this->rounds[$server][$game_id]['players'][$ckey]['ip'][] = $ip; 
+            if ($cid && ! in_array($cid, $this->rounds[$server][$game_id]['players'][$ckey]['cid'] ?? [])) $this->rounds[$server][$game_id]['players'][$ckey]['cid'][] = $cid;
             $this->VarSave('rounds.json', $this->rounds);
         }
     }
     public function logPlayerLogout(string $server, string $ckey, string $time): void
     {
-        if ($game_id = $this->current_rounds[$server]) {
-            if (isset($this->rounds[$server][$game_id]['players'])
-                && isset($this->rounds[$server][$game_id]['players'][$ckey])
-                && isset($this->rounds[$server][$game_id]['players'][$ckey]['login'])
-            ) $this->rounds[$server][$game_id]['players'][$ckey]['logout'] = $time;
+        if (array_key_exists($server, $this->current_rounds)
+            && array_key_exists($ckey, $this->rounds[$server][$this->current_rounds[$server]]['players'])
+            && array_key_exists('login', $this->rounds[$server][$this->current_rounds[$server]]['players'][$ckey]))
+        {
+            $this->rounds[$server][$this->current_rounds[$server]]['players'][$ckey]['logout'] = $time;
             $this->VarSave('rounds.json', $this->rounds);
         }
     }
@@ -2908,7 +2896,7 @@ class Civ13
     {
         if ($item = $this->pending->get('ss13', $ckey)) return $item['token'];
         $token = '';
-        while (strlen($token)<$length) $token .= $charset[(mt_rand(0,(strlen($charset)-1)))];
+        for ($i = 0; $i < $length; $i++) $token .= $charset[random_int(0, strlen($charset) - 1)];
         $this->pending->pushItem(['discord' => $discord_id, 'ss13' => $ckey, 'token' => $token]);
         return $token;
     }
