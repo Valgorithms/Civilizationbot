@@ -697,6 +697,7 @@ class Civ13
             });
             $this->messageHandler->offsetSet('approveme', $approveme);
             $this->messageHandler->offsetSet('aproveme', $approveme);
+            $this->messageHandler->offsetSet('approvme', $approveme);
 
             if (file_exists($this->files['insults_path']))
             $this->messageHandler->offsetSet('insult', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
