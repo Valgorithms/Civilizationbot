@@ -533,7 +533,7 @@ class Civ13
         $this->messageHandler->offsetSet('checkip', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $context = stream_context_create(['http' => ['timeout' => 2]]);
-            return $message->reply(@file_get_contents('http://ipecho.net/plain', false, $context));
+            return $this->reply($message, @file_get_contents('http://ipecho.net/plain', false, $context));
         }));
         /**
          * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
@@ -3038,7 +3038,7 @@ class Civ13
     {
         $verified_array = $this->VarLoad('verified.json');
         if (!$verified_array) {
-            if ($message) return $message->reply('Unable to load the verified list.');
+            if ($message) return $this->reply($message, 'Unable to load the verified list.');
             return null;
         }
 
@@ -3047,7 +3047,7 @@ class Civ13
         });
 
         if (! $removed) {
-            if ($message) return $message->reply("Unable to find `$id` in the verified list.");
+            if ($message) return $this->reply($message, "Unable to find `$id` in the verified list.");
             return null;
         }
 
