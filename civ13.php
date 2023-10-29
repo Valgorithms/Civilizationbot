@@ -3053,6 +3053,7 @@ class Civ13
         }
 
         $verified_array = array_values(array_diff_key($verified_array, $removed));
+        $this->verified = new Collection($verified_array, 'discord');
 
         $this->VarSave('verified.json', $verified_array);
 
