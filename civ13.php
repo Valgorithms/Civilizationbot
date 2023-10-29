@@ -3170,12 +3170,12 @@ class Civ13
     */
     public function bancheck(string $ckey, bool $bypass = false): bool
     {
-        if (! $ckey = $this->sanitizeInput($ckey)) return false;
-        $banned = ($this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey));
-        if (! $this->shard)
-            if (! $bypass && $member = $this->getVerifiedMember($ckey))
-                if ($banned && ! $member->roles->has($this->role_ids['banished'])) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
-                elseif (! $banned && $member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "bancheck ($ckey)");
+        $banned = $this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey);
+        if (! $bypass && $member = $this->getVerifiedMember($ckey)) {
+            $hasBanishedRole = $member->roles->has($this->role_ids['banished']);
+            if ($banned && ! $hasBanishedRole) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
+            elseif (! $banned && $hasBanishedRole) $member->removeRole($this->role_ids['banished'], "bancheck ($ckey)");
+        }
         return $banned;
     }
     public function legacyBancheck(string $ckey): bool
