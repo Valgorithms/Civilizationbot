@@ -3045,7 +3045,7 @@ class Civ13
             $removed = $verified_array[$key];
             unset($verified_array[$key]);
         }
-        $this->VarSave('verified.json', $verified_array);
+        if ($removed) $this->VarSave('verified.json', $verified_array);
         if ($message) return $message->reply('Removed from the verified list: ' . json_encode($removed));
         return null;
     }
