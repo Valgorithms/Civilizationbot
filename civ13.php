@@ -2731,7 +2731,7 @@ class Civ13
         }
 
         $builder = MessageBuilder::new();
-        $builder->addFile($this->files[$filename], $filename . '.txt');
+        $builder->addFile($filename);
         return $message->reply($builder);
     }
     
