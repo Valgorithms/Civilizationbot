@@ -2465,11 +2465,11 @@ class Civ13
                     $this->VarSave('ages.json', $ages);
                 }
                 $this->ages = $ages;
-                foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
-                $this->unbanTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
                 //$this->setIPs();
                 $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json";
                 $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
+                foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
+                $this->unbanTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
                 $this->pending = new Collection([], 'discord');
                 // Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
