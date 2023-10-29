@@ -3097,15 +3097,19 @@ class Civ13
         if (! $this->webserver_online) $http_status = 0; // Don't try to curl if the webserver is down
         else {
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $this->verify_url);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type' => 'application/x-www-form-urlencoded']);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return the transfer as a string
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Civ13');
-            curl_setopt($ch, CURLOPT_POST, TRUE);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]));
-            curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $this->verify_url,
+                CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_USERAGENT => 'Civ13',
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]),
+                CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
+                CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
+            ]);
             $result = curl_exec($ch);
             $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+            curl_close($ch);
         }
         switch ($http_status) {
             case 200: // Verified
@@ -3113,8 +3117,8 @@ class Civ13
                 $error = "`$ckey` - (" . $this->ages[$ckey] . ") has been verified and registered to $discord_id";
                 $this->pending->offsetUnset($discord_id);
                 $this->getVerified();
-                if (isset($this->channel_ids['staff_bot'])) $channel = $this->discord->getChannel($this->channel_ids['staff_bot']);
                 if (! $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)) return ['success' => false, 'error' => "$ckey - {$this->ages[$ckey]}) was verified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>."];
+                $channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null;
                 if (isset($this->panic_bans[$ckey])) {
                     $this->__panicUnban($ckey);
                     $error .= ' and the panic bunker ban removed.';
@@ -3142,8 +3146,8 @@ class Civ13
                 $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
-                $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";    
-                if (! $provisional) { // 
+                $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                if (! $provisional) {
                     if (! isset($this->provisional[$ckey])) {
                         $this->provisional[$ckey] = $discord_id;
                         $this->VarSave('provisional.json', $this->provisional);
@@ -3152,7 +3156,7 @@ class Civ13
                     else $error .= ' Provisional registration is already pending and a new provisional role will not be provided at this time.' . PHP_EOL . $error;
                 }
                 break;
-            default: 
+            default:
                 $error = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
         }
