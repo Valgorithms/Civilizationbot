@@ -422,8 +422,8 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
     if (
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         // fsockopen
-        //&& ! str_ends_with($errstr, 'Connection timed out') 
-        //&& ! str_ends_with($errstr, '(Connection timed out)')
+        && ! str_ends_with($errstr, 'Connection timed out') 
+        && ! str_ends_with($errstr, '(Connection timed out)')
         //&& ! str_ends_with($errstr, 'Connection refused')
         //&& ! str_contains($errstr, '(Connection refused)')
         //&& ! str_ends_with($errstr, 'Network is unreachable')
