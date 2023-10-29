@@ -755,6 +755,15 @@ class Civ13
                 return $this->reply($message, $this->registerCkey($ckey, $discord_id)['error']);
             }), ['Chief Technical Officer']);
 
+            $this->messageHandler->offsetSet('unverify', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
+            { // This function is only authorized to be used by the database administrator
+                if ($this->shard) return null;
+                if ($message->user_id != $this->technician_id) return $message->react("❌");
+                $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
+                if (! $id = $this->sanitizeInput($split_message[0])) return $this->reply($message, 'Byond username or Discord ID was not passed. Please use the format `register <byond username>; <discord id>`.');
+                return $this->unverify($id, $message);
+            }), ['Chief Technical Officer']);
+
             $this->messageHandler->offsetSet('discard', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
             {
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
@@ -3023,6 +3032,22 @@ class Civ13
             return ['success' => false, 'error' => "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
         }
         return $this->verifyCkey($item['ss13'], $discord_id);
+    }
+
+    public function unverify(string $id, ?Message $message): ?PromiseInterface
+    {
+        if (! $verified_array = $this->VarLoad('verified.json')) {
+            if ($message) return $message->reply('Unable to load the verified list');
+            return null;
+        }
+        $removed = null;
+        foreach ($verified_array as $key => $value) if ($value['ss13'] == $id || $value['discord'] == $id) {
+            $removed = $verified_array[$key];
+            unset($verified_array[$key]);
+        }
+        $this->VarSave('verified.json', $verified_array);
+        if ($message) return $message->reply('Removed from the verified list: ' . json_encode($removed));
+        return null;
     }
     
     /* 
