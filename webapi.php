@@ -306,7 +306,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
             // var_dump($params);
             if (! $whitelisted && (! isset($params['key']) || $params['key'] != $webhook_key)) return new Response(401, ['Content-Type' => 'text/plain'], 'Unauthorized');
             if (! isset($params['method']) || ! isset($params['data'])) return new Response(400, ['Content-Type' => 'text/plain'], 'Missing Parameters');
-            $data = json_decode($params['data'], true);
+            $data = @json_decode($params['data'], true);
             $time = '['.date('H:i:s', time()).']';
             $message = '';
             $ckey = '';

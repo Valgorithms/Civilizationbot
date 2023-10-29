@@ -2665,7 +2665,7 @@ class Civ13
         if ($filename === '') return null;
         if (!file_exists($this->filecache_path . $filename)) return null;
         if (($string = @file_get_contents($this->filecache_path . $filename) ?? false) === false) return null;
-        if (! $assoc_array = json_decode($string, TRUE)) return null;
+        if (! $assoc_array = @json_decode($string, TRUE)) return null;
         return $assoc_array;
     }
 
@@ -2837,7 +2837,7 @@ class Civ13
     public function getVerified(): Collection
     {
         $context = stream_context_create(['http' => ['timeout' => 2]]);
-        if ($verified_array = json_decode(@file_get_contents($this->verify_url, false, $context), true)) {
+        if ($verified_array = @json_decode(@file_get_contents($this->verify_url, false, $context), true)) {
             $this->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
@@ -3752,7 +3752,7 @@ class Civ13
         curl_setopt($ch, CURLOPT_TIMEOUT, 1); // The site is usually really fast, so we don't want to wait too long
         $response = curl_exec($ch);
         curl_close($ch);
-        $json = json_decode($response, true);
+        $json = @json_decode($response, true);
         if (! $json) return ''; // If the request timed out or if the service 429'd us
         if ($json['status'] == 'success') return $json['countryCode'] . '->' . $json['region'] . '->' . $json['city'];
     }

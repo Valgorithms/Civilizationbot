@@ -76,7 +76,7 @@ Class DWA
 
         $response = curl_exec($ch);
         curl_close($ch);
-        return json_decode($response);
+        return @json_decode($response);
     }
 
     public function login(string $redirect_uri = null, string $scope = 'identify guilds connections'): Response
