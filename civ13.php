@@ -167,7 +167,7 @@ class Civ13
     public string $rules = 'civ13.com slash rules'; // Link to the server rules
     public string $verify_url = 'http://valzargaming.com:8080/verified/'; // Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
     public string $serverinfo_url = ''; // Where the bot will retrieve server information from
-    public bool $webserver_online = false;
+    public bool $webserver_online = true;
     
     public array $folders = [];
     public array $files = [];
