@@ -746,6 +746,15 @@ class Civ13
                 return $message->react("👍");
             }), ['Owner', 'High Staff']);
             
+            $this->messageHandler->offsetSet('retryregister', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
+            { // This function is only authorized to be used by the database administrator
+                if ($this->shard) return null;
+                if ($message->user_id != $this->technician_id) return $message->react("❌");
+                foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
+                return $this->reply($message, 'Attempting to register all provisional users.');
+            }), ['Chief Technical Officer']);
+            
+            
             $this->messageHandler->offsetSet('register', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
             { // This function is only authorized to be used by the database administrator
                 if ($this->shard) return null;
