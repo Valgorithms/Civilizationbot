@@ -3182,8 +3182,7 @@ class Civ13
     {
         foreach (array_values($this->server_settings) as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled'] || ! isset($settings['basedir'])) continue;
-            if (file_exists($filepath = $settings['basedir'] . self::bans))
-                if ($file = @fopen($filepath, 'r')) {
+            if (! file_exists($filepath = $settings['basedir'] . self::bans) || ! $file = @fopen($settings['basedir'] . self::bans, 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -3199,10 +3198,9 @@ class Civ13
     }
     public function legacyPermabancheck(string $ckey): bool
     {
-        foreach ($this->server_settings as $key => $settings) {
-            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
-            if (file_exists($this->files[$server.'_bans']) && $file = @fopen($this->files[$server.'_bans'], 'r')) {
+        foreach (array_values($this->server_settings) as $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled'] || ! isset($settings['basedir'])) continue;
+            if (! file_exists($filepath = $settings['basedir'] . self::bans) || ! $file = @fopen($settings['basedir'] . self::bans, 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -3212,7 +3210,7 @@ class Civ13
                     }
                 }
                 fclose($file);
-            } else $this->logger->debug("unable to open `{$this->files[$server.'_bans']}`");
+            } else $this->logger->debug("unable to open `$filepath`");
         }
         return false;
     }
