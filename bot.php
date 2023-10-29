@@ -422,19 +422,19 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
     if (
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         // fsockopen
-        && ! str_ends_with($errstr, 'Connection timed out') 
-        && ! str_ends_with($errstr, '(Connection timed out)')
-        && ! str_ends_with($errstr, 'Connection refused')
-        && ! str_contains($errstr, '(Connection refused)')
-        && ! str_ends_with($errstr, 'Network is unreachable')
-        && ! str_ends_with($errstr, '(Network is unreachable)')
+        //&& ! str_ends_with($errstr, 'Connection timed out') 
+        //&& ! str_ends_with($errstr, '(Connection timed out)')
+        //&& ! str_ends_with($errstr, 'Connection refused')
+        //&& ! str_contains($errstr, '(Connection refused)')
+        //&& ! str_ends_with($errstr, 'Network is unreachable')
+        //&& ! str_ends_with($errstr, '(Network is unreachable)')
 
         // Connectivity issues
-        && ! str_ends_with($errstr, 'No route to host')
-        && ! str_ends_with($errstr, 'Temporary failure in name resolution')
-        && ! str_ends_with($errstr, 'HTTP request failed!')
+        //&& ! str_ends_with($errstr, 'No route to host')
+        //&& ! str_ends_with($errstr, 'Temporary failure in name resolution')
+        //&& ! str_ends_with($errstr, 'HTTP request failed!')
 
-        && ! str_contains($errstr, 'Undefined array key')
+        //&& ! str_contains($errstr, 'Undefined array key')
     )
     {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
