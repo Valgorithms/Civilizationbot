@@ -3168,7 +3168,7 @@ class Civ13
                 $error = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
         }
-        curl_close($ch);
+        if (isset($ch)) curl_close($ch);
         return ['success' => $success, 'error' => $error];
     }
     
