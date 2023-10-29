@@ -3038,7 +3038,7 @@ class Civ13
     {
         $verified_array = $this->VarLoad('verified.json');
         if (!$verified_array) {
-            if ($message) return $message->reply('Unable to load the verified list');
+            if ($message) return $message->reply('Unable to load the verified list.');
             return null;
         }
 
@@ -3047,7 +3047,7 @@ class Civ13
         });
 
         if (! $removed) {
-            if ($message) return $message->reply("Unable to find `$id` in the verified list");
+            if ($message) return $message->reply("Unable to find `$id` in the verified list.");
             return null;
         }
 
