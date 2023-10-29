@@ -262,13 +262,13 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'statistics')) $commands->delete($command->id);
-            if (! $commands->get('name', 'statistics')) $commands->save(new Command($this->civ13->discord, [
+             if ($command = $commands->get('name', 'statistics')) $commands->delete($command->id);
+            /*if (! $commands->get('name', 'statistics')) $commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'statistics',
                 'dm_permission'              => false,
                 // 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
-            ]));
+            ]));*/
             
             
             foreach (array_keys($this->civ13->server_settings) as $key) {
