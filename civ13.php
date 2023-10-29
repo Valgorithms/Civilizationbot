@@ -3053,7 +3053,7 @@ class Civ13
         }
 
         $verified_array = array_values(array_diff_key($verified_array, $removed));
-        $this->verified = new Collection($verified_array, 'discord');
+        $this->verified = new Collection($verified_array, 'discord');   
 
         $this->VarSave('verified.json', $verified_array);
 
@@ -3135,23 +3135,21 @@ class Civ13
             return ['success' => $success, 'error' => $error];
         }
        
-        if (! $this->webserver_online) $http_status = 0; // Don't try to curl if the webserver is down
-        else {
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->verify_url,
-                CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_USERAGENT => 'Civ13',
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]),
-                CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
-                CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
-            ]);
-            $result = curl_exec($ch);
-            $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
-            curl_close($ch);
-        }
+        $http_status = 0; // Don't try to curl if the webserver is down
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $this->verify_url,
+            CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERAGENT => 'Civ13',
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]),
+            CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
+            CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
+        ]);
+        $result = curl_exec($ch);
+        $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+        curl_close($ch);
         switch ($http_status) {
             case 200: // Verified
                 $success = true;
@@ -3187,6 +3185,7 @@ class Civ13
                 $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
+                $this->webserver_online = false;
                 $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 if (! $provisional) {
                     if (! isset($this->provisional[$ckey])) {
