@@ -2542,60 +2542,59 @@ class Civ13
      */
     protected function resolveOptions(array $options = []): array
     {
-        $options = array_merge([
-            'sharding' => false,
-            'shard' => false,
-            'welcome_message' => '',
-            'logger' => new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]),
-            'loop' => Loop::get(),
-            'browser' => new Browser($options['loop']),
-            'filesystem' => FileSystemFactory::create($options['loop']),
-        ], $options);
-
+        if (! isset($options['sharding']) || ! is_bool($options['sharding'])) {
+            $options['sharding'] = false;
+        }
         $this->sharding = $options['sharding'];
+        
+        if (! isset($options['shard']) || ! is_bool($options['shard'])) {
+            $options['shard'] = false;
+        }
         $this->shard = $options['shard'];
+
+        if (! isset($options['welcome_message']) || ! is_string($options['welcome_message'])) {
+            $options['welcome_message'] = '';
+        }
         $this->welcome_message = $options['welcome_message'];
+        
+        if (! isset($options['logger']) || ! ($options['logger'] instanceof Logger)) {
+            $streamHandler = new StreamHandler('php://stdout', Level::Info);
+            $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
+            $options['logger'] = new Logger(self::class, [$streamHandler]);
+        }
         $this->logger = $options['logger'];
 
-        $validations = [
-            'folders' => 'is_dir',
-            'files' => function($value) { return file_exists($value) || @touch($value); },
-            'channel_ids' => 'is_numeric',
-            'role_ids' => 'is_numeric',
-            'functions' => function($value) { return is_array($value) && array_reduce($value, function($carry, $func) { return $carry && is_callable($func); }, true); },
-        ];
-
-        foreach ($validations as $key => $validation) if (isset($options[$key])) {
-            if (is_callable($validation)) {
-                if (! $validation($options[$key])) {
-                    $this->logger->warning("`The resolved value associated with the key `$key` is not a valid value for the options array!");
-                    unset($options[$key]);
-                }
-            } elseif (! call_user_func($validation, $options[$key])) {
-                $this->logger->warning("`The resolved value associated with the key `$key` is not a valid value for the options array!");
-                unset($options[$key]);
+        if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! file_exists($value) || ! is_dir($value)) {
+            $this->logger->warning("`$value` is not a valid folder path!");
+            unset($options['folders'][$key]);
+        }
+        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || (! file_exists($value) && ! @touch($value))) {
+            $this->logger->warning("`$value` is not a valid file path!");
+            unset($options['files'][$key]);
+        }
+        if (isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $value) if (! is_numeric($value)) {
+            $this->logger->warning("`$value` is not a valid channel id!");
+            unset($options['channel_ids'][$key]);
+        }
+        if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $value) if (! is_numeric($value)) {
+            $this->logger->warning("`$value` is not a valid role id!");
+            unset($options['role_ids'][$key]);
+        }
+        if (isset($options['functions'])) foreach ($options['functions'] as $key => $array) {
+            if (! is_array($array)) {
+                $this->logger->warning("`$key` is not a valid function array!");
+                unset($options['functions'][$key]);
+                continue;
+            }
+            foreach ($array as $func) if (! is_callable($func)) {
+                $this->logger->warning("`$func` is not a valid function!");
+                unset($options['functions'][$key]);
             }
         }
-
-        /*
-        if (isset($options['functions'])) {
-            foreach ($options['functions'] as $key => $array) {
-                if (!is_array($array)) {
-                    $this->logger->warning("`$key` is not a valid function array!");
-                    unset($options['functions'][$key]);
-                    continue;
-                }
-
-                foreach ($array as $func) {
-                    if (!is_callable($func)) {
-                        $this->logger->warning("`$func` is not a valid function!");
-                        unset($options['functions'][$key]);
-                    }
-                }
-            }
-        }
-        */
-
+        
+        if (! isset($options['loop']) || ! ($options['loop'] instanceof LoopInterface)) $options['loop'] = Loop::get();
+        $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
+        $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
         return $options;
     }
     
