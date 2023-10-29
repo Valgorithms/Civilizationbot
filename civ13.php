@@ -3036,17 +3036,31 @@ class Civ13
 
     public function unverify(string $id, ?Message $message): ?PromiseInterface
     {
-        if (! $verified_array = $this->VarLoad('verified.json')) {
+        $verified_array = $this->VarLoad('verified.json');
+        if (!$verified_array) {
             if ($message) return $message->reply('Unable to load the verified list');
             return null;
         }
-        $removed = null;
-        foreach ($verified_array as $key => $value) if ($value['ss13'] == $id || $value['discord'] == $id) {
-            $removed = $verified_array[$key];
-            unset($verified_array[$key]);
+
+        $removed = array_filter($verified_array, function ($value) use ($id) {
+            return $value['ss13'] == $id || $value['discord'] == $id;
+        });
+
+        if (! $removed) {
+            if ($message) return $message->reply("Unable to find `$id` in the verified list");
+            return null;
         }
-        if ($removed) $this->VarSave('verified.json', $verified_array);
-        if ($message) return $message->reply('Removed from the verified list: ' . json_encode($removed));
+
+        $verified_array = array_values(array_diff_key($verified_array, $removed));
+
+        $this->VarSave('verified.json', $verified_array);
+
+        if ($message) {
+            $removed_items = '';
+            foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+            return $message->reply('Removed from the verified list:' . PHP_EOL . $removed_items);
+        }
+
         return null;
     }
     
