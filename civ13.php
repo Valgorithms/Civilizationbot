@@ -3994,7 +3994,7 @@ class Civ13
             if ($server_status === 'Online') {
                 fclose($socket);
                 if (file_exists($this->files[$k.'_serverdata']) && $data = @file_get_contents($this->files[$k.'_serverdata'])) {
-                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'players=', '</b>', '<b>'], '', $data));
+                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
                     if (isset($data[11])) { // Player list
                         $players = explode('&', $data[11]);
                         $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
