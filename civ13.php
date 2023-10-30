@@ -3995,7 +3995,21 @@ class Civ13
                 fclose($socket);
                 if (file_exists($this->files[$k.'_serverdata']) && $data = @file_get_contents($this->files[$k.'_serverdata'])) {
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
-                    if (isset($data[11])) { // Player list
+                    /*
+                    0 => <b>Server Status</b> {Online/Offline}
+                    1 => <b>Address</b> byond://{ip_address}
+                    2 => <b>Map</b>: {map}
+                    3 => <b>Gamemode</b>: {gamemode}
+                    4 => <b>Players</b>: {playercount}
+                    5 => realtime={realtime}
+                    6 => world.address={ip}
+                    7 => round_timer={00:00}
+                    8 => ckey_list={ckey&ckey}
+                    9 => map={map}
+                    10 => epoch={epoch}
+                    11 => season={season}
+                    */
+                    if (isset($data[8])) { // Player list
                         $players = explode('&', $data[11]);
                         $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
                     }
@@ -4022,7 +4036,21 @@ class Civ13
             if ($server_status === 'Online') {
                 fclose($socket);
                 if (file_exists($this->files[$k.'_serverdata']) && $data = @file_get_contents($this->files[$k.'_serverdata'])) {
-                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', '</b>', '<b>'], '', $data));
+                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
+                    /*
+                    0 => <b>Server Status</b> {Online/Offline}
+                    1 => <b>Address</b> byond://{ip_address}
+                    2 => <b>Map</b>: {map}
+                    3 => <b>Gamemode</b>: {gamemode}
+                    4 => <b>Players</b>: {playercount}
+                    5 => realtime={realtime}
+                    6 => world.address={ip}
+                    7 => round_timer={00:00}
+                    8 => ckey_list={ckey&ckey}
+                    9 => map={map}
+                    10 => epoch={epoch}
+                    11 => season={season}
+                    */
                     if (isset($data[1])) $embed->addFieldValues($key, '<'.$data[1].'>');
                     if (isset($settings['host'])) $embed->addFieldValues('Host', $settings['host'], true);
                     if (isset($data[7])) {
@@ -4034,14 +4062,16 @@ class Civ13
                         $time = ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
                         $embed->addFieldValues('Round Time', $time, true);
                     }
-                    if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data
+                    if (isset($data[9])) $embed->addFieldValues('Map', $data[9], true); // Appears twice in the data
                     //if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3], true);
-                    if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
-                    if (isset($data[4])) $embed->addFieldValues('Players', $data[4], true);
-                    if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
-                    //if (isset($data[2])) $embed->addFieldValues('Map', $data[2], true);
-                    
-                    
+                    if (isset($data[10])) $embed->addFieldValues('Epoch', $data[10], true);
+                    if (isset($data[8])) { // Player list
+                        $players = explode('&', $data[8]);
+                        $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
+                        if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
+                        $embed->addFieldValues('Players', $players_list, true);
+                    }
+                    if (isset($data[11])) $embed->addFieldValues('Season', $data[11], true);
                     //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
                     //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
                     
