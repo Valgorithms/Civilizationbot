@@ -3996,7 +3996,7 @@ class Civ13
                 if (file_exists($this->files[$k.'_serverdata']) && $data = @file_get_contents($this->files[$k.'_serverdata'])) {
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'players=', '</b>', '<b>'], '', $data));
                     if (isset($data[11])) { // Player list
-                        $players = explode(',', $data[11]);
+                        $players = explode('&', $data[11]);
                         $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
                     }
                     if (isset($data[4])) $servers[$k] = $data[4]; // Player count
