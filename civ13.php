@@ -2844,11 +2844,9 @@ class Civ13
     */
     public function getVerified(): Collection
     {
-        if (! $verified_array = $this->VarLoad('verified.json')) {
-            $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]));
-            $verified_array = $json ? json_decode($json, true) : [];
-            $this->VarSave('verified.json', $verified_array);
-        }
+        $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]));
+        if (! $verified_array = $json ? json_decode($json, true) : null) $verified_array = $this->VarLoad('verified.json') ?? [];
+        $this->VarSave('verified.json', $verified_array);
         return $this->verified = new Collection($verified_array, 'discord');
     }
 
