@@ -425,7 +425,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         && ! str_ends_with($errstr, 'Connection timed out') 
         && ! str_ends_with($errstr, '(Connection timed out)')
         //&& ! str_ends_with($errstr, 'Connection refused')
-        //&& ! str_contains($errstr, '(Connection refused)')
+        && ! str_contains($errstr, '(Connection refused)') // Usually happens in localServerPlayerCount
         //&& ! str_ends_with($errstr, 'Network is unreachable')
         //&& ! str_ends_with($errstr, '(Network is unreachable)')
 
