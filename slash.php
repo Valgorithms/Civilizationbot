@@ -412,7 +412,7 @@ class Slash
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             if ($interaction->user->id !== $this->civ13->technician_id) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You do not have permission to unverify <@{$interaction->data->target_id}>"), true);
             $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
-            $this->civ13->unverify($item['ss13'], null);
+            $this->civ13->unverifyCkey($item['ss13'], null);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('**`' . ($admin ?? $interaction->user->displayname) . "`** unverified **`{$item['ss13']}`**."));
         });
         
