@@ -2759,7 +2759,7 @@ class Civ13
     */
     public function sanitizeInput(string $input): string
     {
-        return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', ' '], '', strtolower($input)));
+        return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', '+', ' '], '', strtolower($input)));
     }
 
     public function isVerified(string $input): bool
