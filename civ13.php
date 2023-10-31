@@ -3045,7 +3045,7 @@ class Civ13
     public function unverifyCkey(string $id, ?Message $message = null): ?PromiseInterface
     {
         $verified_array = $this->VarLoad('verified.json');
-        if (!$verified_array) {
+        if ( !$verified_array) {
             if ($message) return $this->reply($message, 'Unable to load the verified list.');
             return null;
         }
@@ -3061,74 +3061,66 @@ class Civ13
 
         $verified_array = array_values(array_diff_key($verified_array, $removed));
         $this->verified = new Collection($verified_array, 'discord');   
-
         $this->VarSave('verified.json', $verified_array);
 
+         // Send $_POST information to the website.
+        $error = '';
+        if (isset($this->verify_url) && $this->verify_url) { // Bypass webserver deregistration if not configured
+            $http_status = 0; // Don't try to curl if the webserver is down
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $this->verify_url,
+                CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_USERAGENT => 'Civ13',
+                CURLOPT_POST => false,
+                CURLOPT_CUSTOMREQUEST => 'DELETE',
+                CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ_token, 'ckey' => $id, 'discord' => $id]),
+                CURLOPT_CONNECTTIMEOUT => 5, // Set a connection timeout of 2 seconds
+            ]);
+            $result = curl_exec($ch);
+            $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+            curl_close($ch);
+            switch ($http_status) {
+                case 200: // Verified
+                    $error = "`$id` has been unverified.";
+                    if (! $member = $this->getVerifiedMember($id)) $error = "$id was unverified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>.";
+                    $this->getVerified();
+                    $channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null;
+                    if ($member && ($member->roles->has($this->role_ids['infantry']) || $member->roles->has($this->role_ids['veteran']))) $member->setRoles([], "unverified ($id)");
+                    if ($channel) $this->sendMessage($channel, "Unverified $member.");
+                    break;
+                case 403: // Already registered
+                    $error = "ID `$id` was not already verified."; // This should have been caught above. Need to run getVerified() again?
+                    $this->getVerified();
+                    break;
+                case 404:
+                    $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    break;
+                case 503: // Database unavailable
+                    $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    break;
+                case 504: // Gateway timeout
+                    $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    break;
+                case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
+                    $this->webserver_online = false;
+                    $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    break;
+                default:
+                    $error = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    break;
+            }
+            if (isset($ch)) curl_close($ch);
+        }
+        
+        $removed_items = '';
         if ($message) {
-            $removed_items = '';
+            if ($error && $message) return $this->reply($message, $error);
             foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
             return $this->reply($message, 'Removed from the verified list:' . PHP_EOL . $removed_items, 'unverified.txt', false, true);
         }
-
         return null;
-
-         // Send $_POST information to the website. Only call this function after the getByondDesc() verification process has been completed!
-        $success = false;
-        $error = '';
-
-        // Bypass remote registration and skip straight to provisional if the remote webserver is not configured
-        if (! isset($this->verify_url) || ! $this->verify_url) { // The website URL is not configured
-            return ['success' => $success, 'error' => $error];
-        }
-        
-        $http_status = 0; // Don't try to curl if the webserver is down
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $this->verify_url,
-            CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USERAGENT => 'Civ13',
-            CURLOPT_POST => false,
-            CURLOPT_CUSTOMREQUEST => "DELETE",
-            CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ_token, 'ckey' => $id, 'discord' => $id]),
-            CURLOPT_CONNECTTIMEOUT => 5, // Set a connection timeout of 2 seconds
-        ]);
-        $result = curl_exec($ch);
-        $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
-        curl_close($ch);
-        switch ($http_status) {
-            case 200: // Verified
-                $success = true;
-                $error = "`$id` has been unverified.";
-                if (! $member = $this->getVerifiedMember($id)) return ['success' => false, 'error' => "$id was unverified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>."];
-                $this->getVerified();
-                $channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null;
-                if ($member && $member->roles->has($this->role_ids['infantry']) || $member->roles->has($this->role_ids['veteran'])) $member->setRoles([], "unverified ($id)");
-                if ($channel) $this->sendMessage($channel, "Unverified $member.");
-                break;
-            case 403: // Already registered
-                $error = "ID `$id` was not already verified."; // This should have been caught above. Need to run getVerified() again?
-                $this->getVerified();
-                break;
-            case 404:
-                $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
-                break;
-            case 503: // Database unavailable
-                $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
-                break;
-            case 504: // Gateway timeout
-                $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
-                break;
-            case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
-                $this->webserver_online = false;
-                $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
-                break;
-            default:
-                $error = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
-                break;
-        }
-        if (isset($ch)) curl_close($ch);
-        return ['success' => $success, 'error' => $error];
     }
     
     /* 
