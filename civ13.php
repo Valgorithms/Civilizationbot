@@ -3493,10 +3493,13 @@ class Civ13
         $admin ??= $this->discord->user->displayname;
         if ($this->legacy) $this->legacyUnban($ckey, $admin, $key);
         else $this->sqlUnban($ckey, $admin, $key);
-        if (! $this->shard)
-            if ($member = $this->getVerifiedMember($ckey))
-                if ($member->roles->has($this->role_ids['banished']))
-                    $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
+        if (! $this->shard && $member = $this->getVerifiedMember($ckey)) {
+            if ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
+            if ($member->roles->has($this->role_ids['permabanished'])) {
+                $member->removeRole($this->role_ids['permabanished'], "Unbanned by $admin");
+                $member->addRole($this->role_ids['infantry'], "Unbanned by $admin");
+            }
+        }
     }
 
     public function OOCMessage(string $message, string $sender, ?string $server = ''): bool
