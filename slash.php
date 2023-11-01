@@ -419,9 +419,8 @@ class Slash
         $this->civ13->discord->listenCommand('unban', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
-            $this->civ13->unban($item['ss13'], ($admin ?? $interaction->user->displayname));
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('**`' . ($admin ?? $interaction->user->displayname) . "`** unbanned **`{$item['ss13']}`**."));
+            $this->civ13->unban($item['ss13'], $admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'] ?? $interaction->user->displayname);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`$admin`** unbanned **`{$item['ss13']}`**."));
         });
 
         $this->civ13->discord->listenCommand('parole', function (Interaction $interaction): PromiseInterface
