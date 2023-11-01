@@ -3050,8 +3050,7 @@ class Civ13
 
     public function unverifyCkey(string $id, ?Message $message = null): ?PromiseInterface
     {
-        $verified_array = $this->VarLoad('verified.json');
-        if ( !$verified_array) {
+        if ( ! $verified_array = $this->VarLoad('verified.json')) {
             if ($message) return $this->reply($message, 'Unable to load the verified list.');
             return null;
         }
