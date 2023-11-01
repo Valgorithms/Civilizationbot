@@ -4322,13 +4322,13 @@ class Civ13
         $lower = strtolower($string);
         foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
             case 'exact': // ban ckey if $string contains a blacklisted phrase exactly as it is defined
-                if (preg_match('/\b' . $badwords_array['word'] . '\b/', $string)) {
+                if (preg_match('/\b' . $badwords_array['word'] . '\b/i', $lower)) {
                     $this->__relayViolation($server, $ckey, $badwords_array);
                     break 2;
                 }
                 continue 2;
             case 'cyrillic': // ban ckey if $string contains a cyrillic character
-                if (preg_match('/\p{Cyrillic}/ui', $string)) {
+                if (preg_match('/\p{Cyrillic}/ui', $lower)) {
                     $this->__relayViolation($server, $ckey, $badwords_array);
                     break 2;
                 }
