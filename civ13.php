@@ -693,7 +693,7 @@ class Civ13
                     return $message->react("👍");
                 }
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format `approveme ckey`');
-                return $this->reply($message, $this->verifyProcess($ckey, $message->user_id));
+                return $this->reply($message, $this->verifyProcess($ckey, $message->user_id, $message->member));
             });
             $this->messageHandler->offsetSet('approveme', $approveme);
             $this->messageHandler->offsetSet('aproveme', $approveme);
@@ -2995,11 +2995,17 @@ class Civ13
     * It will send a message to the user with instructions on how to verify
     * If they have, it will check if they have the verified role, and if not, it will add it
     */
-    public function verifyProcess(string $ckey, string $discord_id): string
+    public function verifyProcess(string $ckey, string $discord_id, ?Member $member = null): string
     {
         $ckey = $this->sanitizeInput($ckey);
-        if ($this->permabancheck($ckey)) return 'This account is already verified, but needs to appeal an existing ban first.';
-        if (isset($this->softbanned[$ckey]) || isset($this->softbanned[$discord_id])) return 'This account is currently under investigation.';
+        if ($this->permabancheck($ckey)) {
+            if ($member) $member->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
+            return 'This account is already verified, but needs to appeal an existing ban first.';
+        }
+        if (isset($this->softbanned[$ckey]) || isset($this->softbanned[$discord_id])) {
+            if ($member) $member->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
+            return 'This account is currently under investigation.';
+        }
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
         if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
