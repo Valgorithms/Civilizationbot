@@ -3122,12 +3122,13 @@ class Civ13
         }
         
         $removed_items = '';
+        foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        $this->logger->info("Removed from the verified list: $removed_items");
         if ($message) {
             if ($error) return $this->reply($message, $error);
-            foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
-            $this->logger->info("Removed from the verified list: $removed_items");
             return $this->reply($message, 'Removed from the verified list:' . PHP_EOL . $removed_items, 'unverified.txt', false, true);
         }
+        if ($error) $this->logger->warning($error);
         return null;
     }
     
