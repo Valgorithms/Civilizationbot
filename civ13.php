@@ -151,7 +151,7 @@ class Civ13
         'messages' => [],
         'misc' => [],
     );
-    public $server_funcs_uncalled = []; // List of functions that are available for use by other functions, but otherwise not called via a message command
+    public $server_funcs_uncalled = []; // List of callable functions that are available for use by other functions, but otherwise not called via a message command
     
     public string $command_symbol = '@Civilizationbot'; // The symbol that the bot will use to identify commands if it is not mentioned
     public string $owner_id = '196253985072611328'; // Taislin's Discord ID
@@ -3090,11 +3090,11 @@ class Civ13
             switch ($http_status) {
                 case 200: // Verified
                     $error = "`$id` has been unverified.";
-                    if (! $member = $this->getVerifiedMember($id)) $error = "$id was unverified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>.";
+                    if (! $member = $this->getVerifiedMember($id)) $error = "`$id` was unverified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>.";
                     $this->getVerified();
                     $channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null;
                     if ($member && ($member->roles->has($this->role_ids['infantry']) || $member->roles->has($this->role_ids['veteran']))) $member->setRoles([], "unverified ($id)");
-                    if ($channel) $this->sendMessage($channel, "Unverified $member.");
+                    if ($channel) $this->sendMessage($channel, "Unverified `$id`.");
                     break;
                 case 403: // Already registered
                     $error = "ID `$id` was not already verified."; // This should have been caught above. Need to run getVerified() again?
