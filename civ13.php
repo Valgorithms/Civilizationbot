@@ -3051,6 +3051,7 @@ class Civ13
     public function unverifyCkey(string $id, ?Message $message = null): ?PromiseInterface
     {
         if ( ! $verified_array = $this->VarLoad('verified.json')) {
+            $this->logger->warning('Unable to load the verified list.');
             if ($message) return $this->reply($message, 'Unable to load the verified list.');
             return null;
         }
@@ -3060,6 +3061,7 @@ class Civ13
         });
 
         if (! $removed) {
+            $this->logger->info("Unable to find `$id` in the verified list.");
             if ($message) return $this->reply($message, "Unable to find `$id` in the verified list.");
             return null;
         }
@@ -3123,6 +3125,7 @@ class Civ13
         if ($message) {
             if ($error) return $this->reply($message, $error);
             foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+            $this->logger->info("Removed from the verified list: $removed_items");
             return $this->reply($message, 'Removed from the verified list:' . PHP_EOL . $removed_items, 'unverified.txt', false, true);
         }
         return null;
