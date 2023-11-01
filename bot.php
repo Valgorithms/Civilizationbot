@@ -105,7 +105,7 @@ $options = array(
     'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
     // 'serverinfo_url' => '', // URL of the serverinfo.json file
 
-    'banappeal' => 'civ13.com slash discord',
+    'discord_formatted' => 'civ13.com slash discord',
     'rules' => 'civ13.com slash rules',
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
     'discord_invite' => 'https://civ13.com/discord',

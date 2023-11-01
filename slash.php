@@ -403,7 +403,7 @@ class Slash
 
         $this->civ13->discord->listenCommand('ban', function (Interaction $interaction): PromiseInterface
         {
-            $arr = ['ckey' => $interaction->data->options['ckey']->value, 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->banappeal}"];
+            $arr = ['ckey' => $interaction->data->options['ckey']->value, 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->discord_formatted}"];
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban($arr, $this->civ13->getVerifiedItem($interaction->user)['ss13'])));
         });
         

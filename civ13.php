@@ -163,7 +163,7 @@ class Civ13
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; // Link to the bot's github page
     public string $discord_invite = 'https://civ13.com/discord'; // Link to the Civ13 Discord server
-    public string $banappeal = 'civ13.com slash discord'; // Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
+    public string $discord_formatted = 'civ13.com slash discord'; // Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
     public string $rules = 'civ13.com slash rules'; // Link to the server rules
     public string $verify_url = 'http://valzargaming.com:8080/verified/'; // Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
     public string $serverinfo_url = ''; // Where the bot will retrieve server information from
@@ -211,7 +211,7 @@ class Civ13
         if (isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
         if (isset($options['technician_id'])) $this->technician_id = $options['technician_id'];
         if (isset($options['verify_url'])) $this->verify_url = $options['verify_url'];
-        if (isset($options['banappeal'])) $this->banappeal = $options['banappeal'];
+        if (isset($options['discord_formatted'])) $this->discord_formatted = $options['discord_formatted'];
         if (isset($options['rules'])) $this->rules = $options['rules'];
         if (isset($options['github'])) $this->github = $options['github'];
         if (isset($options['discord_invite'])) $this->discord_invite = $options['discord_invite'];
@@ -368,7 +368,7 @@ class Civ13
                             \execInBackground("python3 {$this->files[$server.'_killciv13']}");
                         });
                         if ($message) $message->react("👍");
-                        $this->OOCMessage("Server is shutting down.", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $server);
+                        $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $server);
                     };
                     $this->messageHandler->offsetSet($server.'kill', $serverkill, ['Owner', 'High Staff']);
                 }
@@ -443,7 +443,7 @@ class Civ13
                 if (! $split_message[0]) return $this->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
                 if (! $split_message[1]) return $this->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
                 if (! $split_message[2]) return $this->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
-                $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"];
+                $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->discord_formatted}"];
                 $result = $this->ban($arr, $this->getVerifiedItem($message->author)['ss13'], null, $key);
                 if ($member = $this->getVerifiedMember('id', $split_message[0]))
                     if (! $member->roles->has($this->role_ids['banished']))
@@ -1121,7 +1121,7 @@ class Civ13
             if (! $split_message[0] = $this->sanitizeInput($split_message[0])) return $this->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
             if (! isset($split_message[1]) || ! $split_message[1]) return $this->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
             if (! isset($split_message[2]) || ! $split_message[2]) return $this->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
-            $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->banappeal}"];
+            $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->discord_formatted}"];
     
             foreach ($this->server_settings as $key => $settings) { // TODO: Review this for performance and redundancy
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
@@ -3369,8 +3369,8 @@ class Civ13
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['panic']) || ! $settings['panic']) continue;
             $settings['legacy']
-                ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"], null, $server)
-                : $this->sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->banappeal}"], null, $server);
+                ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $server)
+                : $this->sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $server);
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
@@ -3870,17 +3870,17 @@ class Civ13
             $this->seen_players[] = $ckey;
             $ckeyinfo = $this->ckeyinfo($ckey);
             if ($ckeyinfo['altbanned']) { // Banned with a different ckey
-                $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
                 $msg = $this->ban($arr, null, '', true);
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
             } else foreach ($ckeyinfo['ips'] as $ip) {
                 if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
-                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
                     $msg = $this->ban($arr, null, '', true);
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     break;
                 } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
-                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
                     $msg = $this->ban($arr, null, '', true);
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     break 2;
@@ -3918,17 +3918,17 @@ class Civ13
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
                     if (isset($ckeyinfo['altbanned']) && $ckeyinfo['altbanned']) { // Banned with a different ckey
-                        $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                        $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
                         $msg = $this->ban($arr, null, '', true);
                         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     } else if (isset($ckeyinfo['ips'])) foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
-                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
                             $msg = $this->ban($arr, null, '', true);
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                             break;
                         } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
-                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->banappeal}"];
+                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
                             $msg = $this->ban($arr, null, '', true);
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                             break 2;
@@ -4361,7 +4361,7 @@ class Civ13
         if ($this->sanitizeInput($ckey) == $this->sanitizeInput($this->discord->user->displayname)) return false; // Don't ban the bot
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
         if (! $this->__relayWarningCounter($ckey, $badwords_array)) {
-            $arr = ['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->banappeal}"];
+            $arr = ['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->discord_formatted}"];
             return $this->ban($arr);
         }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
