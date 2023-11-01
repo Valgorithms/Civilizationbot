@@ -413,7 +413,7 @@ class Slash
             if ($interaction->user->id !== $this->civ13->technician_id) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You do not have permission to unverify <@{$interaction->data->target_id}>"), true);
             //$admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
             if ($response = $this->civ13->unverifyCkey($item['ss13'], null)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}>, " . $response));
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}>, there was an error when trying to unverify <@{$interaction->data->target_id}>. Please check the logs before trying again."));
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->user->id}>, attempted to unverify <@{$interaction->data->target_id}>. Please check the logs."));
         });
         
         $this->civ13->discord->listenCommand('unban', function (Interaction $interaction): PromiseInterface
