@@ -3220,7 +3220,7 @@ class Civ13
         switch ($http_status) {
             case 200: // Verified
                 $success = true;
-                $error = "`$ckey` - (" . $this->ages[$ckey] . ") has been verified and registered to $discord_id";
+                $error = "`$ckey` - ({$this->ages[$ckey]}) has been verified and registered to <@$discord_id>";
                 $this->pending->offsetUnset($discord_id);
                 $this->getVerified();
                 if (! $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)) return ['success' => false, 'error' => "$ckey - {$this->ages[$ckey]}) was verified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>."];
