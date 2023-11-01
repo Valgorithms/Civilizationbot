@@ -3080,9 +3080,8 @@ class Civ13
                 CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_USERAGENT => 'Civ13',
-                CURLOPT_POST => false,
-                CURLOPT_CUSTOMREQUEST => 'DELETE',
-                CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ_token, 'ckey' => $id, 'discord' => $id]),
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => http_build_query(['method' => 'DELETE', 'token' => $this->civ_token, 'ckey' => $id, 'discord' => $id]),
                 CURLOPT_CONNECTTIMEOUT => 5, // Set a connection timeout of 2 seconds
             ]);
             $result = curl_exec($ch);
@@ -3103,6 +3102,9 @@ class Civ13
                     break;
                 case 404:
                     $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    break;
+                case 405: // Method not allowed
+                    $error = "The method used to access the website is not allowed. Please check the configuration of the website." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>. Reason: $result";
                     break;
                 case 503: // Database unavailable
                     $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
