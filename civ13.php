@@ -2995,15 +2995,15 @@ class Civ13
     * It will send a message to the user with instructions on how to verify
     * If they have, it will check if they have the verified role, and if not, it will add it
     */
-    public function verifyProcess(string $ckey, string $discord_id, ?Member $member = null): string
+    public function verifyProcess(string $ckey, string $discord_id, ?Member $m = null): string
     {
         $ckey = $this->sanitizeInput($ckey);
         if ($this->permabancheck($ckey)) {
-            if ($member) $member->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
+            if ($m) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
             return 'This account is already verified, but needs to appeal an existing ban first.';
         }
         if (isset($this->softbanned[$ckey]) || isset($this->softbanned[$discord_id])) {
-            if ($member) $member->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
+            if ($m) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
             return 'This account is currently under investigation.';
         }
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
