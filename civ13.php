@@ -163,7 +163,7 @@ class Civ13
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; // Link to the bot's github page
     public string $discord_invite = 'https://civ13.com/discord'; // Link to the Civ13 Discord server
-    public string $discord_formatted = 'civ13.com slash discord'; // Players can appeal their bans here (cannot contain special characters like / or &, blame the current Python implementation)
+    public string $discord_formatted = 'civ13.com slash discord'; // Formatted for posting in-game (cannot contain html special characters like / or &, blame the current Python implementation)
     public string $rules = 'civ13.com slash rules'; // Link to the server rules
     public string $verify_url = 'http://valzargaming.com:8080/verified/'; // Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
     public string $serverinfo_url = ''; // Where the bot will retrieve server information from
