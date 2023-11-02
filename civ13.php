@@ -3946,7 +3946,7 @@ class Civ13
         };
         //$serverinfoTimerOffline();
 
-        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(120, function () use ($serverinfoTimerOnline, $serverinfoTimerOffline) {
+        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(180, function () use ($serverinfoTimerOnline, $serverinfoTimerOffline) {
             $timerFunction = $this->webserver_online ? $serverinfoTimerOnline : $serverinfoTimerOffline;
             $timerFunction();
         });
