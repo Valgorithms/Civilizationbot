@@ -771,7 +771,7 @@ class Civ13
                 if ($message->user_id != $this->technician_id) return $message->react("❌");
                 $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
                 if (! $id = $this->sanitizeInput($split_message[0])) return $this->reply($message, 'Byond username or Discord ID was not passed. Please use the format `register <byond username>; <discord id>`.');
-                return $this->unverifyCkey($id, $message);
+                return $this->reply($message, $this->unverifyCkey($id)['message']);
             }), ['Chief Technical Officer']);
 
             $this->messageHandler->offsetSet('discard', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
@@ -2353,7 +2353,7 @@ class Civ13
         return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
     }
 
-    public function reply(Message $message, string $content, string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
+    public function reply(Message $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if ($announce_shard && $this->sharding && $this->enabled_servers) {
@@ -3048,12 +3048,11 @@ class Civ13
         return $this->verifyCkey($item['ss13'], $discord_id);
     }
 
-    public function unverifyCkey(string $id, ?Message $message = null): ?PromiseInterface
+    public function unverifyCkey(string $id): array // ['success' => bool, 'message' => string]
     {
         if ( ! $verified_array = $this->VarLoad('verified.json')) {
             $this->logger->warning('Unable to load the verified list.');
-            if ($message) return $this->reply($message, 'Unable to load the verified list.');
-            return null;
+            return ['success' => false, 'message' => 'Unable to load the verified list.'];
         }
 
         $removed = array_filter($verified_array, function ($value) use ($id) {
@@ -3062,8 +3061,7 @@ class Civ13
 
         if (! $removed) {
             $this->logger->info("Unable to find `$id` in the verified list.");
-            if ($message) return $this->reply($message, "Unable to find `$id` in the verified list.");
-            return null;
+            return ['success' => false, 'message' => "Unable to find `$id` in the verified list."];
         }
 
         $verified_array = array_values(array_diff_key($verified_array, $removed));
@@ -3071,7 +3069,7 @@ class Civ13
         $this->VarSave('verified.json', $verified_array);
 
          // Send $_POST information to the website.
-        $error = '';
+        $message = '';
         if (isset($this->verify_url) && $this->verify_url) { // Bypass webserver deregistration if not configured
             $http_status = 0; // Don't try to curl if the webserver is down
             $ch = curl_init();
@@ -3089,35 +3087,33 @@ class Civ13
             curl_close($ch);
             switch ($http_status) {
                 case 200: // Verified
-                    $error = "`$id` has been unverified.";
-                    if (! $member = $this->getVerifiedMember($id)) $error = "`$id` was unverified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>.";
-                    $this->getVerified();
-                    $channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null;
+                    if (! $member = $this->getVerifiedMember($id)) $message = "`$id` was unverified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>.";
                     if ($member && ($member->roles->has($this->role_ids['infantry']) || $member->roles->has($this->role_ids['veteran']))) $member->setRoles([], "unverified ($id)");
-                    if ($channel) $this->sendMessage($channel, "Unverified `$id`.");
+                    if ($channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null) $this->sendMessage($channel, "Unverified `$id`.");
+                    $this->getVerified();
                     break;
                 case 403: // Already registered
-                    $error = "ID `$id` was not already verified."; // This should have been caught above. Need to run getVerified() again?
+                    $message = "ID `$id` was not already verified."; // This should have been caught above. Need to run getVerified() again?
                     $this->getVerified();
                     break;
                 case 404:
-                    $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    $message = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                     break;
                 case 405: // Method not allowed
-                    $error = "The method used to access the website is not allowed. Please check the configuration of the website." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>. Reason: $result";
+                    $message = "The method used to access the website is not allowed. Please check the configuration of the website." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>. Reason: $result";
                     break;
                 case 503: // Database unavailable
-                    $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    $message = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                     break;
                 case 504: // Gateway timeout
-                    $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    $message = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                     break;
                 case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
                     $this->webserver_online = false;
-                    $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    $message = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                     break;
                 default:
-                    $error = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    $message = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                     break;
             }
             if (isset($ch)) curl_close($ch);
@@ -3126,12 +3122,9 @@ class Civ13
         $removed_items = '';
         foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
         $this->logger->info("Removed from the verified list: $removed_items");
-        if ($message) {
-            if ($error) return $this->reply($message, $error);
-            return $this->reply($message, 'Removed from the verified list:' . PHP_EOL . $removed_items, 'unverified.txt', false, true);
-        }
-        if ($error) $this->logger->warning($error);
-        return null;
+        if ($removed_items) $message = 'Removed from the verified list: ```json' . PHP_EOL . $removed_items . PHP_EOL . '```' . PHP_EOL . $message;
+        if ($message) $this->logger->info($message);
+        return ['success' => true, 'message' => $message];
     }
     
     /* 
