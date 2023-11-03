@@ -3780,8 +3780,8 @@ class Civ13
         $ips = [];
         $cids = [];
         foreach ($collectionsArray['playerlogs'] as $log) { // Get the ckey's primary identifiers
-            if (isset($log['ip'])) $ips[] = $log['ip'];
-            if (isset($log['cid'])) $cids[] = $log['cid'];
+            if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+            if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
         }
         foreach ($collectionsArray['bans'] as $log) { // Get the ckey's primary identifiers
             if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
