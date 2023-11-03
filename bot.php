@@ -158,7 +158,7 @@ $options = array(
     'legacy' => true,
     'relay_method' => 'webhook',
     'moderate' => true,
-    'badwords' => [
+    'ooc_badwords' => [
         /* Format:
             'word' => 'bad word' // Bad word to look for
             'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] // Duration of the ban
@@ -188,6 +188,7 @@ $options = array(
         ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
         //['word' => 'RU', 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'cyrillic', 'warnings' => 2],
     ],
+    'ic_badwords' => [],
     'folders' => array(
         // 'typespess_path' => '/home/civ13/civ13-typespess',
     ),
@@ -414,7 +415,10 @@ $cyrillic_alphabet = array( // Ban use of Cyrillic characters
     'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
     'І', 'і', 'Ї', 'ї', 'Є', 'є',
 );
-foreach ($cyrillic_alphabet as $char) $options['badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
+foreach ($cyrillic_alphabet as $char) {
+    $options['ooc_badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
+    $options['ic_badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
+}
 
 if (include 'civ_token.php') $options['civ_token'] = $civ_token;
 $civ13 = new Civ13($options);

@@ -111,37 +111,11 @@ class Civ13
     public array $server_settings = [];
     public array $enabled_servers = [];
     public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
-    public bool $moderate = true; // Whether or not to moderate the servers using the badwords list
-    public array $badwords = [
-        /* Format:
-            'word' => 'bad word' // Bad word to look for
-            'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] // Duration of the ban
-            'reason' => 'reason' // Reason for the ban
-            'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] // Used to group bad words together by category
-            'method' => detection method ['exact', 'contains'] // Exact ignores partial matches, contains matches partial matchesq
-            'warnings' => 1 // Number of warnings before a ban
-        */
-        ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'contains', 'warnings' => 1], // Used to test the system
-        
-        ['word' => 'beaner', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'chink', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'coon', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'exact', 'warnings' => 1],
-        ['word' => 'fag', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'gook', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'kike', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'nigg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'nlgg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'niqq', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        ['word' => 'tranny', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'contains', 'warnings' => 1],
-        
-        ['word' => 'cunt', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
-        ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
-        ['word' => 'kys', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
-        
-        ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
-        ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'contains', 'warnings' => 2],
-    ];
-    public array $badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
+    public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list
+    public array $ooc_badwords = [];
+    public array $ooc_badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
+    public array $ic_badwords = [];
+    public array $ic_badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
     public bool $legacy = true; // If true, the bot will use the file methods instead of the SQL ones
     
     public $functions = array(
@@ -229,7 +203,8 @@ class Civ13
             }
         }
         if (isset($options['moderate']) && is_bool($options['moderate'])) $this->moderate = $options['moderate'];
-        if (isset($options['badwords']) && is_array($options['badwords'])) $this->badwords = $options['badwords'];
+        if (isset($options['ooc_badwords']) && is_array($options['ooc_badwords'])) $this->ooc_badwords = $options['ooc_badwords'];
+        if (isset($options['ic_badwords']) && is_array($options['ic_badwords'])) $this->ic_badwords = $options['ic_badwords'];
 
         if (isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
         if (isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
@@ -1807,7 +1782,7 @@ class Civ13
                 //$message = "**__{$time} OOC__ $ckey**: $message";
 
                 $relay($message, $channel, $ckey);
-                //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id, true, false);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
@@ -2451,11 +2426,16 @@ class Civ13
                     $this->VarSave('panic_bans.json', $panic_bans);
                 }
                 $this->panic_bans = $panic_bans;
-                if (! $badwords_warnings = $this->VarLoad('badwords_warnings.json')) {
-                    $badwords_warnings = [];
-                    $this->VarSave('badwords_warnings.json', $badwords_warnings);
+                if (! $ooc_badwords_warnings = $this->VarLoad('ooc_badwords_warnings.json')) {
+                    $ooc_badwords_warnings = [];
+                    $this->VarSave('ooc_badwords_warnings.json', $ooc_badwords_warnings);
                 }
-                $this->badwords_warnings = $badwords_warnings;
+                $this->ooc_badwords_warnings = $ooc_badwords_warnings;
+                if (! $ic_badwords_warnings = $this->VarLoad('ic_badwords_warnings.json')) {
+                    $ic_badwords_warnings = [];
+                    $this->VarSave('ic_badwords_warnings.json', $ic_badwords_warnings);
+                }
+                $this->ic_badwords_warnings = $ic_badwords_warnings;
                 $this->embed_footer = $this->github 
                     ? $this->github . PHP_EOL
                     : '';
@@ -4308,7 +4288,7 @@ class Civ13
         fclose($file);
         return $this->__gameChatRelay($relay_array, $channel, $moderate); // Disabled moderation as it is now done quicker using the Webhook system
     }
-    public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $moderate = true): bool
+    public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $moderate = true, ?bool $ooc = true): bool
     {
         if ($this->relay_method !== 'webhook') return false;
         if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
@@ -4322,23 +4302,23 @@ class Civ13
         
         if (! $this->ready) {
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
-            $listener = function () use ($ckey, $message, $channel_id, $moderate, &$listener) {
-                $this->gameChatWebhookRelay($ckey, $message, $channel_id, $moderate);
+            $listener = function () use ($ckey, $message, $channel_id, $moderate, $ooc, &$listener) {
+                $this->gameChatWebhookRelay($ckey, $message, $channel_id, $moderate, $ooc);
                 $this->discord->removeListener('ready', $listener);
             };
             $this->discord->on('ready', $listener);
             return true; // Assume that the function will succeed when the bot is ready
         }
         
-        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $channel, $moderate);
+        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $channel, $moderate, $ooc);
     }
-    private function __gameChatRelay(array $array, $channel, bool $moderate = true): bool
+    private function __gameChatRelay(array $array, $channel, bool $moderate = true, bool $ooc = true): bool
     {
         if (! $array || ! isset($array['ckey']) || ! isset($array['message']) || ! isset($array['server']) || ! $array['ckey'] || ! $array['message'] || ! $array['server']) {
             $this->logger->warning('__gameChatRelay() was called with an empty array or invalid content.');
             return false;
         }
-        if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $array['server']);
+        if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $ooc ? $this->ooc_badwords : $this->ic_badwords,  $ooc ? $this->ooc_badwords_warnings : $this->ic_badwords_warnings, $array['server']);
         if (! $item = $this->verified->get('ss13', $this->sanitizeInput($array['ckey']))) $this->sendMessage($channel, $array['message'], 'relay.txt', false, false);
         else {
             $embed = new Embed($this->discord);
@@ -4349,38 +4329,38 @@ class Civ13
         }
         return true;
     }
-    private function __gameChatModerate(string $ckey, string $string, string $server = 'nomads'): string
+    private function __gameChatModerate(string $ckey, string $string, array $badwords_array, array &$badword_warnings, string $server = 'nomads'): string
     {
         $lower = strtolower($string);
-        foreach ($this->badwords as $badwords_array) switch ($badwords_array['method']) {
+        foreach ($badwords_array as $badwords) switch ($badwords['method']) {
             case 'exact': // ban ckey if $string contains a blacklisted phrase exactly as it is defined
-                if (preg_match('/\b' . $badwords_array['word'] . '\b/i', $lower)) {
-                    $this->__relayViolation($server, $ckey, $badwords_array);
+                if (preg_match('/\b' . $badwords['word'] . '\b/i', $lower)) {
+                    $this->__relayViolation($server, $ckey, $badwords, $badword_warnings);
                     break 2;
                 }
                 continue 2;
             case 'cyrillic': // ban ckey if $string contains a cyrillic character
                 if (preg_match('/\p{Cyrillic}/ui', $lower)) {
-                    $this->__relayViolation($server, $ckey, $badwords_array);
+                    $this->__relayViolation($server, $ckey, $badwords, $badword_warnings);
                     break 2;
                 }
                 continue 2;
             case 'str_starts_with':
-                if (str_starts_with($lower, $badwords_array['word'])) {
-                    $this->__relayViolation($server, $ckey, $badwords_array);
+                if (str_starts_with($lower, $badwords['word'])) {
+                    $this->__relayViolation($server, $ckey, $badwords, $badword_warnings);
                     break 2;
                 }
                 continue 2;
             case 'str_ends_with':
-                if (str_ends_with($lower, $badwords_array['word'])) {
-                    $this->__relayViolation($server, $ckey, $badwords_array);
+                if (str_ends_with($lower, $badwords['word'])) {
+                    $this->__relayViolation($server, $ckey, $badwords, $badword_warnings);
                     break 2;
                 }
                 continue 2;
             case 'str_contains': // ban ckey if $string contains a blacklisted word
             default: // default to 'contains'
-                if (str_contains($lower, $badwords_array['word'])) {
-                    $this->__relayViolation($server, $ckey, $badwords_array);
+                if (str_contains($lower, $badwords['word'])) {
+                    $this->__relayViolation($server, $ckey, $badwords, $badword_warnings);
                     break 2;
                 }
                 continue 2;
@@ -4388,11 +4368,11 @@ class Civ13
         return $string;
     }
     // This function is called from the game's chat hook if a player says something that contains a blacklisted word
-    private function __relayViolation(string $server, string $ckey, array $badwords_array): string|bool // TODO: return type needs to be decided
+    private function __relayViolation(string $server, string $ckey, array $badwords_array, array &$badword_warnings): string|bool // TODO: return type needs to be decided
     {
         if ($this->sanitizeInput($ckey) == $this->sanitizeInput($this->discord->user->displayname)) return false; // Don't ban the bot
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
-        if (! $this->__relayWarningCounter($ckey, $badwords_array)) {
+        if (! $this->__relayWarningCounter($ckey, $badwords_array, $badword_warnings)) {
             $arr = ['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->discord_formatted}"];
             return $this->ban($arr);
         }
@@ -4406,12 +4386,13 @@ class Civ13
     * If they have, it will return false to indicate they should be banned
     * If they have not, it will return true to indicate they should be warned
     */
-   private function __relayWarningCounter(string $ckey, array $badwords_array): bool
+   private function __relayWarningCounter(string $ckey, array $badwords_array, array &$badword_warnings): bool
    {
-       if (! isset($this->badwords_warnings[$ckey][$badwords_array['category']])) $this->badwords_warnings[$ckey][$badwords_array['category']] = 1;
-       else ++$this->badwords_warnings[$ckey][$badwords_array['category']];
-       $this->VarSave('badwords_warnings.json', $this->badwords_warnings);
-       if ($this->badwords_warnings[$ckey][$badwords_array['category']] > $badwords_array['warnings']) return false;
+       if (! isset($badword_warnings[$ckey][$badwords_array['category']])) $badword_warnings[$ckey][$badwords_array['category']] = 1;
+       else ++$badword_warnings[$ckey][$badwords_array['category']];
+        if ($badword_warnings === $this->ic_badwords_warnings) $this->VarSave('ic_badwords_warnings.json', $badword_warnings);
+        elseif ($badword_warnings === $this->ooc_badwords_warnings) $this->VarSave('ooc_badwords_warnings.json', $badword_warnings);        
+       if ($badword_warnings[$ckey][$badwords_array['category']] > $badwords_array['warnings']) return false;
        return true;
    }
 
