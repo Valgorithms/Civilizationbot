@@ -423,7 +423,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         // fsockopen
         && ! str_ends_with($errstr, 'Connection timed out') 
         && ! str_ends_with($errstr, '(Connection timed out)')
-        //&& ! str_ends_with($errstr, 'Connection refused')
+        && ! str_ends_with($errstr, 'Connection refused') // Usually happens if the verifier server doesn't respond quickly enough
         && ! str_contains($errstr, '(Connection refused)') // Usually happens in localServerPlayerCount
         //&& ! str_ends_with($errstr, 'Network is unreachable')
         //&& ! str_ends_with($errstr, '(Network is unreachable)')
