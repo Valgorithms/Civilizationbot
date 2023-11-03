@@ -3086,7 +3086,7 @@ class Civ13
             curl_close($ch);
             switch ($http_status) {
                 case 200: // Verified
-                    if (! $member = $this->getVerifiedMember($id)) $message = "`$id` was unverified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>.";
+                    if (! $member = $this->getVerifiedMember($id)) $message = "`$id` was unverified but the member couldn't be found in the server.";
                     if ($member && ($member->roles->has($this->role_ids['infantry']) || $member->roles->has($this->role_ids['veteran']))) $member->setRoles([], "unverified ($id)");
                     if ($channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null) $this->sendMessage($channel, "Unverified `$id`.");
                     $this->getVerified();
