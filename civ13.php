@@ -1781,7 +1781,7 @@ class Civ13
                 isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                 //$message = "**__{$time} OOC__ $ckey**: $message";
 
-                $relay($message, $channel, $ckey);
+                //$relay($message, $channel, $ckey);
                 $this->gameChatWebhookRelay($ckey, $message, $channel_id, true, false);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
@@ -4264,7 +4264,7 @@ class Civ13
     * These functions handle in-game chat moderation and relay those messages to Discord
     * Players will receive warnings and bans for using blacklisted words
     */
-    public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false): bool
+    public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false, bool $ooc = true): bool
     { // The file function needs to be replaced with the new Webhook system
         if ($this->relay_method !== 'file') return false;
         if (! file_exists($file_path) || ! $file = @fopen($file_path, 'r+')) {
@@ -4286,7 +4286,7 @@ class Civ13
         }
         ftruncate($file, 0);
         fclose($file);
-        return $this->__gameChatRelay($relay_array, $channel, $moderate); // Disabled moderation as it is now done quicker using the Webhook system
+        return $this->__gameChatRelay($relay_array, $channel, $moderate, $ooc); // Disabled moderation as it is now done quicker using the Webhook system
     }
     public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $moderate = true, ?bool $ooc = true): bool
     {
@@ -4318,7 +4318,10 @@ class Civ13
             $this->logger->warning('__gameChatRelay() was called with an empty array or invalid content.');
             return false;
         }
-        if ($moderate && $this->moderate) $this->__gameChatModerate($array['ckey'], $array['message'], $ooc ? $this->ooc_badwords : $this->ic_badwords,  $ooc ? $this->ooc_badwords_warnings : $this->ic_badwords_warnings, $array['server']);
+        if ($moderate && $this->moderate) {
+            if ($ooc) $this->__gameChatModerate($array['ckey'], $array['message'], $this->ooc_badwords, $this->ooc_badwords_warnings, $array['server']);
+            else $this->__gameChatModerate($array['ckey'], $array['message'], $this->ic_badwords, $this->ic_badwords_warnings, $array['server']);
+        }
         if (! $item = $this->verified->get('ss13', $this->sanitizeInput($array['ckey']))) $this->sendMessage($channel, $array['message'], 'relay.txt', false, false);
         else {
             $embed = new Embed($this->discord);
