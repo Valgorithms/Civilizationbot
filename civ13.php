@@ -4388,7 +4388,7 @@ class Civ13
         while (! feof($file)) {
             $medal_s = 0;
             $duser = explode(';', trim(str_replace(PHP_EOL, '', fgets($file))));
-            switch ($duser[2]) {
+            if (isset($duser[2])) switch ($duser[2]) {
                 case 'long service medal':
                 case 'wounded badge':
                     $medal_s += 0.5;
