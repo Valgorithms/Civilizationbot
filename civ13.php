@@ -88,8 +88,8 @@ class Civ13
     protected array $dwa_timers = [];
     protected array $dwa_discord_ids = [];
     
-    public collection $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
-    public collection $pending;
+    public Collection $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
+    public Collection $pending;
     public array $provisional = []; // Allow provisional registration if the website is down, then try to verify when it comes back up
     public array $softbanned = []; // List of ckeys and discord IDs that are not allowed to go through the verification process
     public array $paroled = []; // List of ckeys that are no longer banned but have been paroled
@@ -2537,6 +2537,12 @@ class Civ13
                             if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_asay_channel'])) $this->gameChatFileRelay($this->files[$server.'_admin_path'], $channel);  // #asay-server
                         }
                     });
+                    if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
+                        if (! $status = $this->verifier_online) {
+                            $this->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
+                            if ($status !== $this->verifier_online) foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // If the verifier was offline, but is now online, reattempt registration of all provisional users
+                        }
+                    });
                 }
             });
 
@@ -2842,13 +2848,29 @@ class Civ13
     * It is also called when the bot receives a GUILD_MEMBER_REMOVE event
     * It is also called when the bot receives a GUILD_MEMBER_UPDATE event, but only if the user's roles have changed
     */
-    public function getVerified(): Collection
+    /**
+     * Retrieves verified users from a JSON file or an API endpoint and returns them as a Collection.
+     *
+     * @param bool $reload Whether to force a reload of the data from the cached data (JSON file) if the API endpoint is unreachable.
+     *
+     * @return Collection The verified users as a Collection.
+     */
+    public function getVerified($initialize = true): Collection
     {
         if (! $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]))) $this->verifierStatusChannelUpdate($this->verifier_online = false);
         else $this->verifierStatusChannelUpdate($this->verifier_online = true);
-        if (! $verified_array = $json ? json_decode($json, true) : null) $verified_array = $this->VarLoad('verified.json') ?? [];
-        $this->VarSave('verified.json', $verified_array);
-        return $this->verified = new Collection($verified_array, 'discord');
+        if ($verified_array = $json ? json_decode($json, true) : []) {
+            $this->VarSave('verified.json', $verified_array);
+            return $this->verified = new Collection($verified_array, 'discord');
+        }
+        if ($initialize) {
+            if (! $verified_array = $this->VarLoad('verified.json') ?? []) {
+                $this->VarSave('verified.json', $verified_array);
+                return $this->verified = new Collection($verified_array, 'discord');
+            }
+            return $this->verified = new Collection($verified_array, 'discord');
+        }
+        return $this->verified ?? new Collection($verified_array, 'discord'); 
     }
 
     public function getRoundsCollections(): array // [string $server, collection $rounds]
@@ -3091,11 +3113,11 @@ class Civ13
                     if (! $member = $this->getVerifiedMember($id)) $message = "`$id` was unverified but the member couldn't be found in the server.";
                     if ($member && ($member->roles->has($this->role_ids['infantry']) || $member->roles->has($this->role_ids['veteran']))) $member->setRoles([], "unverified ($id)");
                     if ($channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null) $this->sendMessage($channel, "Unverified `$id`.");
-                    $this->getVerified();
+                    $this->getVerified(false);
                     break;
                 case 403: // Already registered
                     $message = "ID `$id` was not already verified."; // This should have been caught above. Need to run getVerified() again?
-                    $this->getVerified();
+                    $this->getVerified(false);
                     break;
                 case 404:
                     $message = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
@@ -3216,7 +3238,7 @@ class Civ13
                 $success = true;
                 $error = "`$ckey` - ({$this->ages[$ckey]}) has been verified and registered to <@$discord_id>";
                 $this->pending->offsetUnset($discord_id);
-                $this->getVerified();
+                $this->getVerified(false);
                 if (! $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id)) return ['success' => false, 'error' => "$ckey - {$this->ages[$ckey]}) was verified but the member couldn't be found. If this error persists, contact <@{$this->technician_id}>."];
                 $channel = isset($this->channel_ids['staff_bot']) ? $this->discord->getChannel($this->channel_ids['staff_bot']) : null;
                 if (isset($this->panic_bans[$ckey])) {
@@ -3234,7 +3256,7 @@ class Civ13
                 break;
             case 403: // Already registered
                 $error = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; // This should have been caught above. Need to run getVerified() again?
-                $this->getVerified();
+                $this->getVerified(false);
                 break;
             case 404:
                 $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
