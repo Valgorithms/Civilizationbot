@@ -340,7 +340,8 @@ $options = array(
         'pers_attack_channel' => '1139614643954921593', // #attack-pers
 
         // Misc
-        'webserver-status' => '1106967195092783104', #webserver-status
+        'webserver-status' => '1106967195092783104', #webserver-{status}
+        'verifier-status' => '1170015360288829510', #verifier-{status}
         'staff_bot' => '712685552155230278', // #staff-bot
         // 'ban_appeals' => '1019718839749062687', // #ban-appeals (forum thread, unused by bot)
         'parole_logs' => '985606778916048966', // #parole-logs (for tracking)

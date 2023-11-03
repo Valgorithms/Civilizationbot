@@ -167,6 +167,7 @@ class Civ13
     public string $verify_url = 'http://valzargaming.com:8080/verified/'; // Where the bot submit verification of a ckey to and where it will retrieve the list of verified ckeys from
     public string $serverinfo_url = ''; // Where the bot will retrieve server information from
     public bool $webserver_online = true; // Whether the serverinfo webserver is online (not to be confused with the verification server)
+    public bool $verifier_online = true;
     
     public array $folders = [];
     public array $files = [];
@@ -2843,7 +2844,8 @@ class Civ13
     */
     public function getVerified(): Collection
     {
-        $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]));
+        if (! $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]))) $this->verifierStatusChannelUpdate($this->verifier_online = false);
+        else $this->verifierStatusChannelUpdate($this->verifier_online = true);
         if (! $verified_array = $json ? json_decode($json, true) : null) $verified_array = $this->VarLoad('verified.json') ?? [];
         $this->VarSave('verified.json', $verified_array);
         return $this->verified = new Collection($verified_array, 'discord');
@@ -3108,7 +3110,7 @@ class Civ13
                     $message = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                     break;
                 case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
-                    $this->webserver_online = false;
+                    $this->verifierStatusChannelUpdate($this->verifier_online = false);
                     $message = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                     break;
                 default:
@@ -3244,7 +3246,7 @@ class Civ13
                 $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
-                $this->webserver_online = false;
+                $this->verifierStatusChannelUpdate($this->verifier_online = false);
                 $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 if (! $provisional) {
                     if (! isset($this->provisional[$ckey])) {
@@ -3616,9 +3618,25 @@ class Civ13
             : 'offline';
         if ($reported_status != $status) {
             $msg = "Webserver is now **{$status}**.";
-            if ($status == 'offline') $msg .= " Webserver technician <@{$this->technician_id}> has been notified.";
+            if ($status == 'offline') $msg .= PHP_EOL . " Webserver technician <@{$this->technician_id}> has been notified.";
             $this->sendMessage($channel, $msg);
             $channel->name = "{$webserver_name}-{$status}";
+            return $channel->guild->channels->save($channel);
+        }
+        return null;
+    }
+    public function verifierStatusChannelUpdate(bool $status): ?PromiseInterface
+    {
+        if (! $channel = $this->discord->getChannel($this->channel_ids['verifier-status'])) return null;
+        [$verifier_name, $reported_status] = explode('-', $channel->name);
+        $status = $this->verifier_online
+            ? 'online'
+            : 'offline';
+        if ($reported_status != $status) {
+            $msg = "Verifier is now **{$status}**.";
+            if ($status == 'offline') $msg .= PHP_EOL . " Verifier technician <@{$this->technician_id}> has been notified.";
+            $this->sendMessage($channel, $msg);
+            $channel->name = "{$verifier_name}-{$status}";
             return $channel->guild->channels->save($channel);
         }
         return null;
