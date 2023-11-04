@@ -325,7 +325,7 @@ class Civ13
                         \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
                         \execInBackground("python3 {$this->files[$server.'_killsudos']}");
                         if (! isset($this->timers[$server.'host'])) $this->timers[$server.'host'] = $this->discord->getLoop()->addTimer(30, function () use ($server, $settings, $message) {
-                            \execInBackground("DreamDaemon {$this->files[$server.'_dmb']} {$settings['port']} -trusted -webclient -logself &");
+                            \execInBackground("nohup DreamDaemon {$this->files[$server.'_dmb']} {$settings['port']} -trusted -webclient -logself &");
                             if ($message) $message->react("👍");
                         });
                         if ($message) $message->react("⏱️");    
