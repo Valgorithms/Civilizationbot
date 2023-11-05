@@ -4232,8 +4232,7 @@ class Civ13
         // We don't want the persistence server to do this function
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
-            if (! isset($this->files[$server.'_bans']) || ! file_exists($this->files[$server.'_bans']) || ! $file = @fopen($this->files[$server.'_bans'], 'r')) return false;
+            if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::bans) || ! $file = @fopen($settings['basedir'] . self::bans , 'r')) return false;
             fclose($file);
         }
 
