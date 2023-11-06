@@ -2322,8 +2322,8 @@ class Civ13
             $verified = true;
             $member = $this->getVerifiedMember($ckey);
         }
-        $content = $urgent ? "<@{$this->role_ids['Admin']}>, " : '';
-        $content .= '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
+        $urgent_prefix = $urgent ? "<@{$this->role_ids['Admin']}>, " : '';
+        $content .= $urgent_prefix . '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
 
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if ($announce_shard && $this->sharding && $this->enabled_servers) {
