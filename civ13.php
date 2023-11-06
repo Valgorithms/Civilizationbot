@@ -792,7 +792,7 @@ class Civ13
                     return $this->reply($message, 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`');
                 }
                 if (! isset($tokens[1]) || ! $tokens[1] || ! $test_key = $tokens[1]) return $this->reply($message, 'Invalid format! You must include the name of the test, e.g. `tests list {test_key}.');
-                if (! isset($this->tests[$test_key])) return $this->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
+                if (! isset($this->tests[$test_key]) && (! isset($tokens[0]) || $tokens[0] !== 'add')) return $this->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
                 if ($tokens[0] == 'list') return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->tests[$test_key], true))->setContent('Number of questions: ' . count(array_keys($this->tests[$test_key]))));
                 if ($tokens[0] == 'delete') {
                     if (isset($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests delete {test_key}`"); // Prevents accidental deletion of tests
