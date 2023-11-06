@@ -785,48 +785,43 @@ class Civ13
             $this->messageHandler->offsetSet('tests', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 $tokens = explode(' ', trim(substr($message_filtered['message_content'], strlen($command))));
-                if (! isset($tokens[0]) || ! $tokens[0]) {
+                if (empty($tokens[0])) {
                     if (empty($this->tests)) return $this->reply($message, "No tests have been created yet! Try creating one with `tests add {test_key} {question}`");
-                    if (array_keys($this->tests)) $reply = 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`';
+                    $reply = 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`';
                     $reply .= PHP_EOL . 'Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`';
-                    return $this->reply($message, 'Available tests: `' . implode('`, `', array_keys($this->tests)) . '`');
+                    return $this->reply($message, $reply);
                 }
-                if (! isset($tokens[1]) || ! $tokens[1] || ! $test_key = $tokens[1]) return $this->reply($message, 'Invalid format! You must include the name of the test, e.g. `tests list {test_key}.');
-                if (! isset($this->tests[$test_key]) && (! isset($tokens[0]) || $tokens[0] !== 'add')) return $this->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
-                if ($tokens[0] == 'list') return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->tests[$test_key], true))->setContent('Number of questions: ' . count(array_keys($this->tests[$test_key]))));
-                if ($tokens[0] == 'delete') {
-                    if (isset($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests delete {test_key}`"); // Prevents accidental deletion of tests
-                    unset($this->tests[$test_key]);
-                    $this->VarSave('tests.json', $this->tests);
-                    return $this->reply($message, "Deleted test `$test_key`");
+                if (! $test_key = $tokens[1] ?? null) return $this->reply($message, 'Invalid format! You must include the name of the test, e.g. `tests list {test_key}.');
+                if (! isset($this->tests[$test_key]) && $tokens[0] !== 'add') return $this->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
+                switch ($tokens[0]) {
+                    case 'list':
+                        return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->tests[$test_key], true))->setContent('Number of questions: ' . count(array_keys($this->tests[$test_key]))));
+                    case 'delete':
+                        if (isset($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests delete {test_key}`"); // Prevents accidental deletion of tests
+                        unset($this->tests[$test_key]);
+                        $this->VarSave('tests.json', $this->tests);
+                        return $this->reply($message, "Deleted test `$test_key`");
+                    case 'add':
+                        if (! $question = implode(' ', array_slice($tokens, 2))) return $this->reply($message, 'Invalid format! Please use the format `tests add {test_key} {question}`');
+                        $this->tests[$test_key][] = $question;
+                        $this->VarSave('tests.json', $this->tests);
+                        return $this->reply($message, "Added question to test `$test_key`: `$question`");
+                    case 'remove':
+                        if (!isset($tokens[2]) || !is_numeric($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests remove {test_key} {question #}`");
+                        if (!isset($this->tests[$test_key][$tokens[2]])) return $this->reply($message, "Question not found in test `$test_key`! Please use the format `tests {test_key} remove {question #}`");
+                        $question = $this->tests[$test_key][$tokens[2]];
+                        unset($this->tests[$test_key][$tokens[2]]);
+                        $this->VarSave('tests.json', $this->tests);
+                        return $this->reply($message, "Removed question `{$tokens[2]}`: `$question`");
+                    case 'post':
+                        if (!isset($tokens[2]) || !is_numeric($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests post {test_key} {# of questions}`");
+                        if (count($this->tests[$test_key]) < $tokens[2]) return $this->reply($message, "Can't return more questions than exist in a test!");
+                        $test = $this->tests[$test_key]; // Copy the array, don't reference it
+                        shuffle($test);
+                        return $this->reply($message, implode(PHP_EOL, array_slice($test, 0, $tokens[2])));
+                    default:
+                        return $this->reply($message, 'Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
                 }
-                if ($tokens[0] == 'add') {
-                    unset($tokens[1], $tokens[0]);
-                    if (! $question = implode(' ', $tokens)) return $this->reply($message, 'Invalid format! Please use the format `tests add {test_key} {question}`');
-                    $this->tests[$test_key][] = $question;
-                    $this->VarSave('tests.json', $this->tests);
-                    return $this->reply($message, "Added question to test `$test_key`: `$question`");
-                }
-                if ($tokens[0] == 'remove') {
-                    if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests remove {test_key} {question #}`");
-                    if (! isset($this->tests[$test_key][$tokens[2]])) return $this->reply($message, "Question not found in test `$test_key`! Please use the format `tests {test_key} remove {question #}`");
-                    $question = $this->tests[$test_key][$tokens[2]];
-                    unset($this->tests[$test_key][$tokens[2]]);
-                    $this->VarSave('tests.json', $this->tests);
-                    return $this->reply($message, "Removed question `{$tokens[2]}`: `$question`");
-                }
-                if ($tokens[0] == 'post') {
-                    if (! isset($tokens[2]) || ! is_numeric($tokens[2])) return $this->reply($message, "Invalid format! Please use the format `tests post {test_key} {# of questions}`");
-                    if (count($this->tests[$test_key])<$tokens[2]) return $this->reply($message, "Can't return more questions than exist in a test!");
-                    $questions = [];
-                    $picked = [];
-                    while (count($questions)<$tokens[2]) if (! in_array($this->tests[$test_key][$rand = array_rand($this->tests[$test_key])], $questions)) if (! in_array($rand, $picked)) {
-                        $picked[] = $rand;
-                        $questions[] = $this->tests[$test_key][$rand];
-                    }
-                    return $this->reply($message, implode(PHP_EOL, $questions));
-                }
-                return $this->reply($message, 'Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
             }), ['Owner', 'High Staff']);
 
             if (isset($this->functions['misc']['promotable_check']) && $promotable_check = $this->functions['misc']['promotable_check']) {
