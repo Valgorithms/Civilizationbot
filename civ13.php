@@ -2316,7 +2316,7 @@ class Civ13
         return $channel->sendEmbed($embed);
     }
 
-    public function sendPlayerMessage($channel, bool $urgent = false, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
+    public function sendPlayerMessage($channel, bool $urgent, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         // Sender is the ckey or Discord displayname
         $ckey = null;
