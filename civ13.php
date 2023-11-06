@@ -791,8 +791,8 @@ class Civ13
                     $reply .= PHP_EOL . 'Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`';
                     return $this->reply($message, $reply);
                 }
-                if (! $test_key = $tokens[1] ?? null) return $this->reply($message, 'Invalid format! You must include the name of the test, e.g. `tests list {test_key}.');
-                if (! isset($this->tests[$test_key]) && $tokens[0] !== 'add') return $this->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
+                if (! isset($tokens[1])) return $this->reply($message, 'Invalid format! You must include the name of the test, e.g. `tests list {test_key}.');
+                if (! isset($this->tests[$test_key = strtolower($tokens[1])]) && $tokens[0] !== 'add') return $this->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
                 switch ($tokens[0]) {
                     case 'list':
                         return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->tests[$test_key], true))->setContent('Number of questions: ' . count(array_keys($this->tests[$test_key]))));
