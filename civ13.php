@@ -2295,7 +2295,7 @@ class Civ13
         return $channel->sendEmbed($embed);
     }
 
-    public function sendPlayerMessage($channel, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
+    public function sendPlayerMessage($channel, bool $urgent = false, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         // Sender is the ckey or Discord displayname
         $ckey = null;
@@ -2306,7 +2306,8 @@ class Civ13
             $verified = true;
             $member = $this->getVerifiedMember($ckey);
         }
-        $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
+        $content = $urgent ? "<@{$this->role_ids['Admin']}>, " : '';
+        $content .= '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
 
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if ($announce_shard && $this->sharding && $this->enabled_servers) {
@@ -3517,7 +3518,7 @@ class Civ13
             if (file_exists($this->files[$server.'_discord2ooc']) && $file = @fopen($this->files[$server.'_discord2ooc'], 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
-                if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_ooc_channel'])) $this->sendPlayerMessage($channel, $message, $sender);
+                if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_ooc_channel'])) $this->sendPlayerMessage($channel, false, $message, $sender);
                 return true; 
             }
             $this->logger->error("unable to open `{$this->files[$server.'_discord2ooc']}` for writing");
@@ -3545,7 +3546,12 @@ class Civ13
             if (file_exists($this->files[$server.'_discord2admin']) && $file = @fopen($this->files[$server.'_discord2admin'], 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
-                if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, $message, $sender);
+                $urgent = true; // Check if there are any admins on the server, if not then send the message as urgent
+                if ($playerlist = $this->localServerPlayerCount()['playerlist']) if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) if ($member->roles->has($this->role_ids['Admin'])) if ($item = $this->verified->get('discord', $member->id)) {
+                    if (in_array($item['ss13'], $playerlist)) $urgent = false;
+                    break;
+                }
+                if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, $urgent, $message, $sender);
                 return true;
             }
             $this->logger->error("unable to open `{$this->files[$server.'_discord2admin']}` for writing");
@@ -3573,7 +3579,7 @@ class Civ13
             if (file_exists($this->files[$server.'_discord2dm']) && $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
                 fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
                 fclose($file);
-                if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, $message, $sender, $recipient);
+                if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, false, $message, $sender, $recipient);
                 return true;
             }
             $this->logger->debug("unable to open `{$this->files[$server.'_discord2dm']}` for writing");
