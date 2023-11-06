@@ -3910,17 +3910,17 @@ class Civ13
             $ckeyinfo = $this->ckeyinfo($ckey);
             if ($ckeyinfo['altbanned']) { // Banned with a different ckey
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                $msg = $this->ban($arr, null, '', true);
+                $msg = $this->ban($arr, null, '', true) . ' (Alt Banned)';
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
             } else foreach ($ckeyinfo['ips'] as $ip) {
                 if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                    $msg = $this->ban($arr, null, '', true);
+                    $msg = $this->ban($arr, null, '', true) . ' (Blacklisted Country)';
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     break;
                 } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                    $msg = $this->ban($arr, null, '', true);
+                    $msg = $this->ban($arr, null, '', true) . ' (Blacklisted Region)';
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     break 2;
                 }
