@@ -411,9 +411,8 @@ $options = array(
 $options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `@CivilizationBot approveme` chat command. Failure to verify in a timely manner will result in an automatic removal from the server.";
 
 $cyrillic_alphabet = array( // Ban use of Cyrillic characters
-    'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
     'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
-    'І', 'і', 'Ї', 'ї', 'Є', 'є',
+    'і', 'ї', 'є',
 );
 foreach ($cyrillic_alphabet as $char) {
     $options['ooc_badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
