@@ -2313,6 +2313,8 @@ class Civ13
 
     public function sendPlayerMessage($channel, bool $urgent, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
+        $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
+
         // Sender is the ckey or Discord displayname
         $ckey = null;
         $member = null;
@@ -2333,16 +2335,16 @@ class Civ13
         }
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
+        if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
         if (strlen($content)<=4096) {
             $embed = new Embed($this->discord);
             if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
             if ($member) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
             $embed->setDescription($content);
             $builder->addEmbed($embed);
-            return $channel->sendMessage($builder);
+            return $channel->sendMessage($builder)->then($then, null);
         }
-        return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
+        return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
     }
 
     public function reply(Message $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
