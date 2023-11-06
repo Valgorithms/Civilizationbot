@@ -4268,11 +4268,12 @@ class Civ13
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
                 if (! $item = $this->getVerifiedMemberItems()->get('discord', $member->id)) continue;
                 $banned = $this->bancheck($item['ss13'], true);
-                if ($banned && $member->roles->has($this->role_ids['banished'])) {
+                if ($banned && ! ($member->roles->has($this->role_ids['banished']) || $member->roles->has($this->role_ids['permabanished']))) {
                     $member->addRole($this->role_ids['banished'], 'bancheck timer');
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
-                } elseif (! $banned && $member->roles->has($this->role_ids['banished'])) {
+                } elseif (! $banned && ($member->roles->has($this->role_ids['banished']) || $member->roles->has($this->role_ids['permabanished']))) {
                     $member->removeRole($this->role_ids['banished'], 'bancheck timer');
+                    $member->removeRole($this->role_ids['permabanished'], 'bancheck timer');
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
                 }
             }
