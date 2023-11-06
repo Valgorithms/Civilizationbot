@@ -96,7 +96,10 @@ class Civ13
     public array $ages = []; // $ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
     public string $minimum_age = '-21 days'; // Minimum age of a ckey
     public array $permitted = []; // List of ckeys that are permitted to use the verification command even if they don't meet the minimum account age requirement or are banned with another ckey
-    public array $blacklisted_regions = ['77.124', '77.125', '77.126', '77.127', '77.137.', '77.138.', '77.139.', '77.238.175', '77.91.69', '77.91.71', '77.91.74', '77.91.79', '77.91.88'];
+    public array $blacklisted_regions =[
+    '77.124', '77.125', '77.126', '77.127', '77.137.', '77.138.', '77.139.', '77.238.175', '77.91.69', '77.91.71', '77.91.74', '77.91.79', '77.91.88', // Region
+    '77.75.145.', // Known evaders
+    ];
     public array $blacklisted_countries = ['IL', 'ISR'];
 
     public array $timers = [];
@@ -1730,6 +1733,24 @@ class Civ13
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
+                //$message = "**__{$time} ASAY__ $ckey**: $message";
+                $message = "**__{$time}__ $message";
+
+                $relay($message, $channel, $ckey);
+                //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }), true);
+
+            $this->httpHandler->offsetSet($server_endpoint.'/urgentasaymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            {
+                if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+                if (! isset($this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+                $time = '['.date('H:i:s', time()).']';
+                isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                $message = "<@{$this->role_ids['Admin']}>, ";
+                isset($data['message']) ? $message .= strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message .= '(NULL)';
                 //$message = "**__{$time} ASAY__ $ckey**: $message";
                 $message = "**__{$time}__ $message";
 
