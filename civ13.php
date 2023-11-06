@@ -4265,19 +4265,20 @@ class Civ13
 
         $bancheckTimer = function () {
             if ($this->shard) return;
-            if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
-                if ($members = $guild->members->filter(fn ($member) => $member->roles->has($this->role_ids['banished']))) foreach ($members as $member) if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id)) if (! $this->bancheck($item['ss13'], true)) {
+            if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
+                if (! $item = $this->getVerifiedMemberItems()->get('discord', $member->id)) continue;
+                if ($this->bancheck($item['ss13'], true)) {
+                    $member->addRole($this->role_ids['banished'], 'bancheck timer');
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
+                } else {
                     $member->removeRole($this->role_ids['banished'], 'bancheck timer');
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
                 }
-                if ($members = $guild->members->filter(fn ($member) => ! $member->roles->has($this->role_ids['banished']))) foreach ($members as $member) if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id)) if ($this->bancheck($item['ss13'], true)) {
-                    $member->addRole($this->role_ids['banished'], 'bancheck timer');
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
-                }
-         };
-         $bancheckTimer();
-         if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function () use ($bancheckTimer) { $bancheckTimer(); });
-         return true;
+            }
+        };
+        $bancheckTimer();
+        if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function () use ($bancheckTimer) { $bancheckTimer(); });
+        return true;
     }
 
     /*
