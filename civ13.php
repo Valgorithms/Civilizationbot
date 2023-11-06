@@ -2490,7 +2490,7 @@ class Civ13
                 $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json";
                 $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
                 foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
-                $this->unbanTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
+                $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
                 $this->pending = new Collection([], 'discord');
                 // Initialize configurations
                 if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
@@ -4254,27 +4254,29 @@ class Civ13
      *
      * @return bool Returns true if the function executes successfully, false otherwise.
      */
-    public function unbanTimer(): bool
+    public function bancheckTimer(): bool
     {
         // We don't want the persistence server to do this function
-        foreach ($this->server_settings as $key => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::bans) || ! $file = @fopen($settings['basedir'] . self::bans , 'r')) return false;
             fclose($file);
         }
 
-        $unbanTimer = function () {
+        $bancheckTimer = function () {
             if ($this->shard) return;
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id))
-                if ($members = $guild->members->filter(fn ($member) => $member->roles->has($this->role_ids['banished'])))
-                    foreach ($members as $member) if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id))
-                        if (! $this->bancheck($item['ss13'], true)) {
-                            $member->removeRole($this->role_ids['banished'], 'unban timer');
-                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
-                        }
+                if ($members = $guild->members->filter(fn ($member) => $member->roles->has($this->role_ids['banished']))) foreach ($members as $member) if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id)) if (! $this->bancheck($item['ss13'], true)) {
+                    $member->removeRole($this->role_ids['banished'], 'bancheck timer');
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
+                }
+                if ($members = $guild->members->filter(fn ($member) => ! $member->roles->has($this->role_ids['banished']))) foreach ($members as $member) if ($item = $this->getVerifiedMemberItems()->get('discord', $member->id)) if ($this->bancheck($item['ss13'], true)) {
+                    $member->addRole($this->role_ids['banished'], 'bancheck timer');
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
+                }
          };
-         $unbanTimer();
-         if (! isset($this->timers['unban_timer'])) $this->timers['unban_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function () use ($unbanTimer) { $unbanTimer(); });
+         $bancheckTimer();
+         if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function () use ($bancheckTimer) { $bancheckTimer(); });
          return true;
     }
 
