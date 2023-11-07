@@ -3644,7 +3644,7 @@ class Civ13
             : 'offline';
         if ($reported_status != $status) {
             $msg = "Webserver is now **{$status}**.";
-            if ($status == 'offline') $msg .= PHP_EOL . " Webserver technician <@{$this->technician_id}> has been notified.";
+            if ($status == 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
             $this->sendMessage($channel, $msg);
             $channel->name = "{$webserver_name}-{$status}";
             return $channel->guild->channels->save($channel);
@@ -3660,7 +3660,7 @@ class Civ13
             : 'offline';
         if ($reported_status != $status) {
             $msg = "Verifier is now **{$status}**.";
-            if ($status == 'offline') $msg .= PHP_EOL . " Verifier technician <@{$this->technician_id}> has been notified.";
+            if ($status == 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified.";
             $this->sendMessage($channel, $msg);
             $channel->name = "{$verifier_name}-{$status}";
             return $channel->guild->channels->save($channel);
