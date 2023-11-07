@@ -1237,7 +1237,7 @@ class Civ13
             }
         }), ['Owner']);
 
-        if (isset($this->files['ranking_path']) && file_exists($this->files['ranking_path'])) {
+        if (isset($this->files['ranking_path']) && (file_exists($this->files['ranking_path']) || touch($this->files['ranking_path']))) {
             $ranking = function (): false|string
             {
                 $line_array = array();
@@ -3021,11 +3021,11 @@ class Civ13
     {
         $ckey = $this->sanitizeInput($ckey);
         if ($this->permabancheck($ckey)) {
-            if ($m) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
+            if ($m && ! $m->roles->has($this->role_ids['permabanished'])) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
             return 'This account is already verified, but needs to appeal an existing ban first.';
         }
         if (isset($this->softbanned[$ckey]) || isset($this->softbanned[$discord_id])) {
-            if ($m) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
+            if ($m && ! $m->roles->has($this->role_ids['permabanished'])) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
             return 'This account is currently under investigation.';
         }
         if ($this->verified->has($discord_id)) { $member = $this->discord->guilds->get('id', $this->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->role_ids['infantry'])) $member->setRoles([$this->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
