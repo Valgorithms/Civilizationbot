@@ -1729,7 +1729,7 @@ class Civ13
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                 //$message = "**__{$time} ASAY__ $ckey**: $message";
-                $message = "**__{$time}__ $message";
+                $message = "**__{$time}__** $message";
 
                 $relay($message, $channel, $ckey);
                 //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
@@ -1747,7 +1747,7 @@ class Civ13
                 $message = "<@{$this->role_ids['Admin']}>, ";
                 isset($data['message']) ? $message .= strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message .= '(NULL)';
                 //$message = "**__{$time} ASAY__ $ckey**: $message";
-                $message = "**__{$time}__ $message";
+                $message = "**__{$time}__** $message";
 
                 $relay($message, $channel, $ckey);
                 //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
