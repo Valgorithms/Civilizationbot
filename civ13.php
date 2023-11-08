@@ -3562,9 +3562,19 @@ class Civ13
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
                 $urgent = true; // Check if there are any admins on the server, if not then send the message as urgent
-                if ($playerlist = $this->localServerPlayerCount()['playerlist']) if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) if ($member->roles->has($this->role_ids['Admin'])) if ($item = $this->verified->get('discord', $member->id)) {
-                    if (in_array($item['ss13'], $playerlist)) $urgent = false;
-                    break;
+                if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) {
+                    $admin = false;
+                    if ($item = $this->verified->get('ss13', $sender))
+                        if ($member = $guild->members->get('id', $item['discord']))
+                            if ($member->roles->has($this->role_ids['Admin']))
+                                {$admin = true; $urgent = false;}
+                    if (! $admin)
+                        if ($playerlist = $this->localServerPlayerCount()['playerlist'])
+                            if ($admins = $guild->members->filter(function (Member $member) { return ! $member->roles->has($this->role_ids['Admin']); }))
+                                foreach ($admins as $member)
+                                    if ($item = $this->verified->get('discord', $member->id))
+                                        if (in_array($item['ss13'], $playerlist))
+                                            { $urgent = false; break; }
                 }
                 if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, $urgent, $message, $sender);
                 return true;
