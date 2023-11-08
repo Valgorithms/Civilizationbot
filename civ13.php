@@ -2324,8 +2324,7 @@ class Civ13
             $verified = true;
             $member = $this->getVerifiedMember($ckey);
         }
-        $urgent_prefix = $urgent ? "<@&{$this->role_ids['Admin']}>, " : '';
-        $content = $urgent_prefix . '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
+        $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
 
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if ($announce_shard && $this->sharding && $this->enabled_servers) {
@@ -2334,7 +2333,7 @@ class Civ13
             else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
         }
         $builder = MessageBuilder::new();
-        if ($urgent) $builder->setContent($urgent_prefix . 'an urgent message has been sent!');
+        if ($urgent) $builder->setContent("<@&{$this->role_ids['Admin']}>, an urgent message has been sent!");
         if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
         if (strlen($content)<=4096) {
