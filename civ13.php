@@ -2334,6 +2334,7 @@ class Civ13
             else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
         }
         $builder = MessageBuilder::new();
+        if ($urgent) $builder->setContent($urgent_prefix . 'an urgent message has been sent!');
         if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
         if (strlen($content)<=4096) {
