@@ -3570,7 +3570,7 @@ class Civ13
                                 {$admin = true; $urgent = false;}
                     if (! $admin)
                         if ($playerlist = $this->localServerPlayerCount()['playerlist'])
-                            if ($admins = $guild->members->filter(function (Member $member) { return ! $member->roles->has($this->role_ids['Admin']); }))
+                            if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->role_ids['Admin']); }))
                                 foreach ($admins as $member)
                                     if ($item = $this->verified->get('discord', $member->id))
                                         if (in_array($item['ss13'], $playerlist))
