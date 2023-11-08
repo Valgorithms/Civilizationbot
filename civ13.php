@@ -724,6 +724,15 @@ class Civ13
                 return $message->react("👍");
             }), ['Owner', 'High Staff']);
             
+            
+            $this->messageHandler->offsetSet('playerlist', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
+            { // This function is only authorized to be used by the database administrator
+                if ($this->shard) return null;
+                if ($message->user_id != $this->technician_id) return $message->react("❌");
+                if ($playerlist = $this->localServerPlayerCount()['playerlist']) return $this->reply($message, implode(', ', $playerlist));
+                return $this->reply($message, 'No players found.');
+            }), ['Chief Technical Officer']);
+
             $this->messageHandler->offsetSet('retryregister', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
             { // This function is only authorized to be used by the database administrator
                 if ($this->shard) return null;
