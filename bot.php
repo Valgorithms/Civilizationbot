@@ -429,7 +429,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         //&& ! str_ends_with($errstr, '(Network is unreachable)')
 
         // Connectivity issues
-        //&& ! str_ends_with($errstr, 'No route to host')
+        && ! str_ends_with($errstr, 'No route to host') // Usually happens if the verifier server is down
         //&& ! str_ends_with($errstr, 'Temporary failure in name resolution')
         //&& ! str_ends_with($errstr, 'HTTP request failed!')
 
