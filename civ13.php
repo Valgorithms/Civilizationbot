@@ -2858,7 +2858,7 @@ class Civ13
     {
         if (! $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]))) $this->verifierStatusChannelUpdate($this->verifier_online = false);
         else $this->verifierStatusChannelUpdate($this->verifier_online = true);
-        if ($verified_array = $json ? json_decode($json, true) : []) { // If the API endpoint is reachable, use the data from the API endpoint
+        if ($verified_array = $json ? json_decode($json, true) ?? [] : []) { // If the API endpoint is reachable, use the data from the API endpoint
             $this->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
