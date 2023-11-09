@@ -42,8 +42,7 @@ class Civ13
 {
     const log_basedir = '/data/logs';
     const playernotes_basedir = '/data/player_saves';
-    const ooc_path = '/ooc.log';
-    const admin_path = '/admin.log';
+    
     const discord2ooc = '/SQL/discord2ooc.txt';
     const discord2admin = '/SQL/discord2admin.txt';
     const discord2dm = '/SQL/discord2dm.txt';
@@ -57,6 +56,19 @@ class Civ13
     const sportsteams = '/SQL/sports_teams.txt';
     const awards_path = '/SQL/awards.txt';
     const awards_br_path = '/SQL/awards_br.txt';
+
+    const updateserverabspaths = '/scripts/updateserverabspaths.py';
+    const serverdata = '/serverdata.txt';
+    const killsudos = '/scripts/killsudos.py';
+    const killciv13 = '/scripts/killciv13.py';
+    const mapswap = '/scripts/mapswap.py';
+
+    const dmb = '/civ13.dmb';
+    const ooc_path = '/ooc.log';
+    const admin_path = '/admin.log';
+
+    const insults_path = 'insults.txt';
+    const ranking_path = 'ranking.txt';
 
     public bool $sharding = false;
     public bool $shard = false;
@@ -263,40 +275,39 @@ class Civ13
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
 
-            foreach (['_playernotes_basedir'] as $postfix) {
-                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
-                else {
-                    $servernotes = function (Message $message, array $message_filtered) use ($server): PromiseInterface
-                    {
-                        if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content'], strlen($server.'notes')))) return $this->reply($message, 'Missing ckey! Please use the format `notes ckey`');
-                        $first_letter_lower = strtolower(substr($ckey, 0, 1));
-                        $first_letter_upper = strtoupper(substr($ckey, 0, 1));
-                        
-                        $letter_dir = '';
-                        if (is_dir($this->files[$server.'_playernotes_basedir'] . "/$first_letter_lower")) $letter_dir = $this->files[$server.'_playernotes_basedir'] . "/$first_letter_lower";
-                        else if (is_dir($this->files[$server.'_playernotes_basedir'] . "/$first_letter_upper")) $letter_dir = $this->files[$server.'_playernotes_basedir'] . "/$first_letter_upper";
-                        else return $this->reply($message, "No notes found for any ckey starting with `$first_letter_upper`.");
+            if (! file_exists($settings['basedir'] . self::playernotes_basedir, true)) $this->logger->debug("Skipping server function `{$server}notes` because the required config files were not found.");
+            else {
+                $servernotes = function (Message $message, array $message_filtered) use ($server, $settings): PromiseInterface
+                {
+                    if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content'], strlen($server.'notes')))) return $this->reply($message, 'Missing ckey! Please use the format `notes ckey`');
+                    $first_letter_lower = strtolower(substr($ckey, 0, 1));
+                    $first_letter_upper = strtoupper(substr($ckey, 0, 1));
+                    
+                    $letter_dir = '';
+                    
+                    if (is_dir($basedir = $settings['basedir'] . self::playernotes_basedir. "/$first_letter_lower")) $letter_dir = $basedir . "/$first_letter_lower";
+                    if (is_dir($basedir = $settings['basedir'] . self::playernotes_basedir . "/$first_letter_upper")) $letter_dir = $basedir . "/$first_letter_upper";
+                    else return $this->reply($message, "No notes found for any ckey starting with `$first_letter_upper`.");
 
-                        $player_dir = '';
-                        $dirs = [];
-                        $scandir = scandir($letter_dir);
-                        if ($scandir) $dirs = array_filter($scandir, function($dir) use ($ckey) {
-                            return strtolower($dir) === strtolower($ckey)/* && is_dir($letter_dir . "/$dir")*/;
-                        });
-                        if (count($dirs) > 0) $player_dir = $letter_dir . "/" . reset($dirs);
-                        else return $this->reply($message, "No notes found for `$ckey`.");
+                    $player_dir = '';
+                    $dirs = [];
+                    $scandir = scandir($letter_dir);
+                    if ($scandir) $dirs = array_filter($scandir, function($dir) use ($ckey) {
+                        return strtolower($dir) === strtolower($ckey)/* && is_dir($letter_dir . "/$dir")*/;
+                    });
+                    if (count($dirs) > 0) $player_dir = $letter_dir . "/" . reset($dirs);
+                    else return $this->reply($message, "No notes found for `$ckey`.");
 
-                        if (file_exists($player_dir . "/info.sav")) $file_path = $player_dir . "/info.sav";
-                        else return $this->reply($message, "A notes folder was found for `$ckey`, however no notes were found in it.");
+                    if (file_exists($player_dir . "/info.sav")) $file_path = $player_dir . "/info.sav";
+                    else return $this->reply($message, "A notes folder was found for `$ckey`, however no notes were found in it.");
 
-                        $result = '';
-                        if ($contents = @file_get_contents($file_path)) $result = $contents;
-                        else return $this->reply($message, "A notes file with path `$file_path` was found for `$ckey`, however the file could not be read.");
-                        
-                        return $this->reply($message, $result, 'info.sav', true);
-                    };
-                    $this->messageHandler->offsetSet($server.'notes', $servernotes, ['Owner', 'High Staff', 'Admin']);
-                }
+                    $result = '';
+                    if ($contents = @file_get_contents($file_path)) $result = $contents;
+                    else return $this->reply($message, "A notes file with path `$file_path` was found for `$ckey`, however the file could not be read.");
+                    
+                    return $this->reply($message, $result, 'info.sav', true);
+                };
+                $this->messageHandler->offsetSet($server.'notes', $servernotes, ['Owner', 'High Staff', 'Admin']);
             }
             
             $serverconfigexists = function (?Message $message = null) use ($key): PromiseInterface|bool
@@ -319,37 +330,43 @@ class Civ13
             };
             $this->messageHandler->offsetSet('serverstatus', $serverstatus, ['Owner', 'High Staff']);
             
-            foreach (['_updateserverabspaths', '_serverdata', '_killsudos', '_dmb'] as $postfix) {
-                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
-                else {
-                    $serverhost = function (?Message $message = null) use ($server, $settings): void
-                    {
-                        \execInBackground("python3 {$this->files[$server.'_updateserverabspaths']}");
-                        \execInBackground("rm -f {$this->files[$server.'_serverdata']}");
-                        \execInBackground("python3 {$this->files[$server.'_killsudos']}");
-                        if (! isset($this->timers[$server.'host'])) $this->timers[$server.'host'] = $this->discord->getLoop()->addTimer(30, function () use ($server, $settings, $message) {
-                            \execInBackground("nohup DreamDaemon {$this->files[$server.'_dmb']} {$settings['port']} -trusted -webclient -logself &");
-                            if ($message) $message->react("👍");
-                        });
-                        if ($message) $message->react("⏱️");    
-                    };
-                    $this->messageHandler->offsetSet($server.'host', $serverhost, ['Owner', 'High Staff']);
+            $allRequiredFilesExist = true;
+            foreach ([self::serverdata, self::killsudos, self::dmb, self::updateserverabspaths] as $fp) {
+                if (! file_exists($fp)) {
+                    $this->logger->debug("Skipping server function `{$server}host` because the required config files were not found.");
+                    $allRequiredFilesExist = false;
+                    break;
                 }
             }
-            foreach (['_killciv13'] as $postfix) {
-                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
-                else {
-                    $serverkill = function (?Message $message = null) use ($server): void
-                    {
-                        $this->loop->addTimer(10, function () use ($server): void
-                        {
-                            \execInBackground("python3 {$this->files[$server.'_killciv13']}");
+            if ($allRequiredFilesExist) {
+                $serverhost = function (?Message $message = null) use ($server, $settings): void {
+                    \execInBackground('python3 ' . $settings['basedir'] . self::updateserverabspaths);
+                    \execInBackground('rm -f ' . $settings['basedir'] . self::serverdata);
+                    \execInBackground('python3 ' . $settings['basedir'] . self::killsudos);
+
+                    if (!isset($this->timers[$server.'host'])) {
+                        $this->timers[$server.'host'] = $this->discord->getLoop()->addTimer(30, function () use ($settings, $message) {
+                            \execInBackground('nohup DreamDaemon ' . $settings['basedir'] . self::dmb . ' ' . $settings['port'] . ' -trusted -webclient -logself &');
+                            if ($message) $message->react("👍");
                         });
-                        if ($message) $message->react("👍");
-                        $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $server);
-                    };
-                    $this->messageHandler->offsetSet($server.'kill', $serverkill, ['Owner', 'High Staff']);
-                }
+                    }
+                    if ($message) $message->react("⏱️");
+                };
+                $this->messageHandler->offsetSet($server.'host', $serverhost, ['Owner', 'High Staff']);
+            }
+            
+            if (! $this->getRequiredConfigFiles($postfix = '_killciv13', true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+            else {
+                $serverkill = function (?Message $message = null) use ($server, $settings): void
+                {
+                    $this->loop->addTimer(10, function () use ($settings): void
+                    {
+                        \execInBackground('python3 ' . $settings['basedir'] . self::killciv13);
+                    });
+                    if ($message) $message->react("👍");
+                    $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $server);
+                };
+                $this->messageHandler->offsetSet($server.'kill', $serverkill, ['Owner', 'High Staff']);
             }
             if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
                 $serverrestart = function (?Message $message = null) use ($server): ?PromiseInterface
@@ -375,45 +392,43 @@ class Civ13
                 $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['Owner', 'High Staff']);
             }
 
-            foreach (['_mapswap'] as $postfix) {
-                if (! $this->getRequiredConfigFiles($postfix, true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
-                else {
-                    $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server): ?PromiseInterface
+            if (! $this->getRequiredConfigFiles($postfix = '_mapswap', true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+            else {
+                $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server, $settings): ?PromiseInterface
+                {
+                    $mapswap = function (string $mapto, ?Message $message = null, ) use ($server, $settings): ?PromiseInterface
                     {
-                        $mapswap = function (string $mapto, ?Message $message = null, ) use ($server): ?PromiseInterface
-                        {
-                            if (! file_exists($this->files['map_defines_path']) || ! $file = @fopen($this->files['map_defines_path'], 'r')) {
-                                $this->logger->error("unable to open `{$this->files['map_defines_path']}` for reading.");
-                                if ($message) return $this->reply($message, "unable to open `{$this->files['map_defines_path']}` for reading.");
-                            }
+                        if (! file_exists($this->files['map_defines_path']) || ! $file = @fopen($this->files['map_defines_path'], 'r')) {
+                            $this->logger->error("unable to open `{$this->files['map_defines_path']}` for reading.");
+                            if ($message) return $this->reply($message, "unable to open `{$this->files['map_defines_path']}` for reading.");
+                        }
+                    
+                        $maps = array();
+                        while (($fp = fgets($file, 4096)) !== false) {
+                            $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
+                            if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
+                        }
+                        fclose($file);
+                        if (! in_array($mapto, $maps)) return $this->reply($message, "`$mapto` was not found in the map definitions.");
                         
-                            $maps = array();
-                            while (($fp = fgets($file, 4096)) !== false) {
-                                $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
-                                if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
-                            }
-                            fclose($file);
-                            if (! in_array($mapto, $maps)) return $this->reply($message, "`$mapto` was not found in the map definitions.");
-                            
-                            \execInBackground("python3 {$this->files[$server.'_mapswap']} $mapto");
-                            if ($message) return $this->reply($message, "Attempting to change `$server` map to `$mapto`");
-                        };
-                        $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
-                        if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->reply($message, 'You need to include the name of the map.');
-                        $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
-                        $this->loop->addtimer(10, function () use ($mapto, $mapswap, $message): ?PromiseInterface
-                        {
-                            if ($message) $message->react("👍");
-                            return $mapswap($mapto, $message);
-                            
-                        });
-                        if ($message) return $message->react("⏱️");
+                        \execInBackground('python3 ' . $settings['basedir'] . self::mapswap . " $mapto");
+                        if ($message) return $this->reply($message, "Attempting to change `$server` map to `$mapto`");
                     };
-                    $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['Owner', 'High Staff', 'Admin']);
-                }
+                    $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
+                    if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->reply($message, 'You need to include the name of the map.');
+                    $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
+                    $this->loop->addtimer(10, function () use ($mapto, $mapswap, $message): ?PromiseInterface
+                    {
+                        if ($message) $message->react("👍");
+                        return $mapswap($mapto, $message);
+                        
+                    });
+                    if ($message) return $message->react("⏱️");
+                };
+                $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['Owner', 'High Staff', 'Admin']);
             }
 
-            $serverban = function (Message $message, array $message_filtered) use ($server, $key): PromiseInterface
+            $serverban = function (Message $message, array $message_filtered) use ($server, $key, $settings): PromiseInterface
             {
                 if (! $this->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `$server ban` because the required config roles were not found.");
                 if (! $message_content = substr($message_filtered['message_content'], strlen($key.'ban'))) return $this->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
@@ -422,7 +437,7 @@ class Civ13
                 if (! $split_message[1]) return $this->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
                 if (! $split_message[2]) return $this->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
                 $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->discord_formatted}"];
-                $result = $this->ban($arr, $this->getVerifiedItem($message->author)['ss13'], null, $key);
+                $result = $this->ban($arr, $this->getVerifiedItem($message->author)['ss13'], $key, $settings);
                 if ($member = $this->getVerifiedMember('id', $split_message[0]))
                     if (! $member->roles->has($this->role_ids['banished']))
                         $member->addRole($this->role_ids['banished'], $result);
@@ -430,7 +445,7 @@ class Civ13
             };
             $this->messageHandler->offsetSet($server.'ban', $serverban, ['Owner', 'High Staff', 'Admin']);
 
-            $serverunban = function (Message $message, array $message_filtered) use ($key): PromiseInterface
+            $serverunban = function (Message $message, array $message_filtered) use ($key, $settings): PromiseInterface
             {
                 if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban')))) return $this->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
                 if (is_numeric($ckey)) {
@@ -438,7 +453,7 @@ class Civ13
                     $ckey = $item['ckey'];
                 }
                 
-                $this->unban($ckey, $admin = $this->getVerifiedItem($message->author)['ss13'], $key);
+                $this->unban($ckey, $admin = $this->getVerifiedItem($message->author)['ss13'], $key, $settings);
                 $result = "**$admin** unbanned **$ckey** from **$key**";
                 if (! $this->sharding)
                     if ($member = $this->getVerifiedMember('id', $ckey))
@@ -677,12 +692,12 @@ class Civ13
             $this->messageHandler->offsetSet('aproveme', $approveme);
             $this->messageHandler->offsetSet('approvme', $approveme);
 
-            if (file_exists($this->files['insults_path']))
+            if (file_exists(self::insults_path))
             $this->messageHandler->offsetSet('insult', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 $split_message = explode(' ', $message_filtered['message_content']); // $split_target[1] is the target
                 if ((count($split_message) <= 1 ) || ! strlen($split_message[1] === 0)) return null;
-                if (! ($file = @fopen($this->files['insults_path'], 'r'))) return $message->react("🔥");
+                if (! ($file = @fopen(self::insults_path, 'r'))) return $message->react("🔥");
                 $insults_array = array();
                 while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
                 if (count($insults_array) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $insults_array[rand(0, count($insults_array)-1)])->setAllowedMentions(['parse'=>[]]));
@@ -1113,14 +1128,16 @@ class Civ13
                     foreach ($this->server_settings as $k => $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
                         $s = strtolower($k);
-                        if (! isset($this->files[$s.'_playerlogs']) || ! file_exists($this->files[$s.'_playerlogs'])) continue;
-                        if ($playerlog = @file_get_contents($this->files[$s.'_playerlogs'])) $playerlogs[] = $playerlog;
+                        $b = $s['basedir'];
+                        if (! file_exists($fp = $b . self::playerlogs)) continue;
+                        if ($playerlog = @file_get_contents($fp)) $playerlogs[] = $playerlog;
                     }
                     if ($playerlogs) foreach ($this->server_settings as $k => $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
                         $s = strtolower($k);
-                        if (! isset($this->files[$s.'_bans']) || ! file_exists($this->files[$s.'_bans'])) continue;
-                        file_put_contents($this->files[$s.'_bans'], $banlog_update(file_get_contents($this->files[$s.'_bans']), $playerlogs, $arr['ckey']));
+                        $b = $s['basedir'];
+                        if (! file_exists($fp = $b . self::bans)) continue;
+                        file_put_contents($fp, $banlog_update(file_get_contents($fp), $playerlogs, $arr['ckey']));
                     }
                 });
             }
@@ -1150,11 +1167,12 @@ class Civ13
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
-                if (! file_exists($this->files[$server.'_admins']) || ! $file_contents = @file_get_contents($this->files[$server.'_admins'])) {
+                $basedir = $settings['basedir'];
+                if (! file_exists($basedir . self::admins) || ! $file_contents = @file_get_contents($basedir . self::admins)) {
                     $this->logger->debug("`{$server}_admins` is not a valid file path!");
                     continue;
                 }
-                $builder->addFileFromContent($server.'_admins.txt', $file_contents);
+                $builder->addFileFromContent($basedir . self::admins, $file_contents);
                 $found = true;
             }
             if (! $found) return $message->react("🔥");
@@ -1167,8 +1185,9 @@ class Civ13
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
-                if (file_exists($this->files[$server.'_factionlist'])) $builder->addfile($this->files[$server.'_factionlist'], $server.'_factionlist.txt');
-                else $this->logger->warning("`{$server}_factionlist` is not a valid file path!");
+                $basedir = $settings['basedir'];
+                if (file_exists($basedir . self::factionlist)) $builder->addfile($basedir . self::factionlist, $server.'_factionlist.txt');
+                else $this->logger->warning('`' . $basedir . self::factionlist . '` is not a valid file path!');
             }
             return $message->reply($builder);
         }), ['Owner', 'High Staff', 'Admin']);
@@ -1246,11 +1265,11 @@ class Civ13
             }
         }), ['Owner']);
 
-        if (isset($this->files['ranking_path']) && (file_exists($this->files['ranking_path']) || touch($this->files['ranking_path']))) {
+        if ((file_exists(self::ranking_path) || touch(self::ranking_path))) {
             $ranking = function (): false|string
             {
                 $line_array = array();
-                if (! $search = @fopen($this->files['ranking_path'], 'r')) return false;
+                if (! $search = @fopen(self::ranking_path, 'r')) return false;
                 while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
                 fclose($search);
 
@@ -1273,7 +1292,7 @@ class Civ13
             $rankme = function (string $ckey): false|string
             {
                 $line_array = array();
-                if (! $search = @fopen($this->files['ranking_path'], 'r')) return false;
+                if (! $search = @fopen(self::ranking_path, 'r')) return false;
                 while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
                 fclose($search);
                 
@@ -1363,7 +1382,7 @@ class Civ13
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
-                if (! $playerlogs = @file_get_contents($this->files[$server.'_playerlogs'])) {
+                if (! $playerlogs = @file_get_contents($settings['basedir'] . self::playerlogs)) {
                     $this->logger->warning("`{$server}_playerlogs` is not a valid file path!");
                     continue;
                 }
@@ -1375,11 +1394,11 @@ class Civ13
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 $server = strtolower($key);
-                if (! $bans = @file_get_contents($this->files[$server.'_bans'])) {
+                if (! $bans = @file_get_contents($settings['basedir'] . self::bans)) {
                     $this->logger->warning("`{$server}_bans` is not a valid file path!");
                     continue;
                 }
-                if (! @file_put_contents($this->files[$server.'_bans'], preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($bans, $server_playerlogs)))) {
+                if (! @file_put_contents($settings['basedir'] . self::bans, preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($bans, $server_playerlogs)))) {
                     $this->logger->warning("Error updating bans for {$server}!");
                     continue;
                 }
@@ -1676,16 +1695,16 @@ class Civ13
             $server = strtolower($key);
             $server_endpoint = '/' . $server;
 
-            $this->httpHandler->offsetSet($server_endpoint.'/bans', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/bans', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
-                if (! isset($this->files[$server.'_bans']) || ! $bans = $this->files[$server.'_bans']) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                if (! file_exists($bans = $settings['basedir'] . self::bans)) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
                 if (! $return = @file_get_contents($bans)) return HttpResponse::plaintext("Unable to read `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 return HttpResponse::plaintext($return);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($server, $settings): HttpResponse
             {
-                if (! isset($this->files[$server.'_playerlogs']) || ! $playerlogs = $this->files[$server.'_playerlogs']) return HttpResponse::plaintext("Unable to access `$playerlogs`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                if (! file_exists($playerlogs = $settings['basedir'] . self::playerlogs)) return HttpResponse::plaintext("Unable to access `$playerlogs`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
                 if (! $return = @file_get_contents($playerlogs)) return HttpResponse::plaintext("Unable to read `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 return HttpResponse::plaintext($return);
             }), true);
@@ -2541,8 +2560,8 @@ class Civ13
                         foreach ($this->server_settings as $key => $settings) {
                             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                             $server = strtolower($key);
-                            if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_ooc_channel'])) $this->gameChatFileRelay($this->files[$server.'_ooc_path'], $channel);  // #ooc-server
-                            if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_asay_channel'])) $this->gameChatFileRelay($this->files[$server.'_admin_path'], $channel);  // #asay-server
+                            if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_ooc_channel'])) $this->gameChatFileRelay($settings['basedir'] . self::ooc_path, $channel);  // #ooc-server
+                            if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_asay_channel'])) $this->gameChatFileRelay($settings['basedir'] . self::admin_path, $channel);  // #asay-server
                         }
                     });
                     if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
@@ -3040,7 +3059,7 @@ class Civ13
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                $msg = $this->ban($arr, null, '', true);
+                $msg = $this->ban($arr, null, '', [], true);
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                 return $reason;
             }
@@ -3048,9 +3067,8 @@ class Civ13
             $file_contents = '';
             foreach ($this->server_settings as $key => $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
-                if (isset($this->files[$server.'_playerlogs']) && file_exists($this->files[$server.'_playerlogs']) && $fc = @file_get_contents($this->files[$server.'_playerlogs'])) $file_contents .= $fc;
-                else $this->logger->warning("unable to open {$this->files[$server.'_playerlogs']}");
+                if (file_exists($settings['basedir'] . self::playerlogs) && $fc = @file_get_contents($settings['basedir'] . self::playerlogs)) $file_contents .= $fc;
+                else $this->logger->warning('unable to open `' . $settings['basedir'] . self::playerlogs . '`');
             }
             foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] == $ckey) { $found = true; break; }
             if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
@@ -3402,7 +3420,7 @@ class Civ13
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['panic']) || ! $settings['panic']) continue;
             $settings['legacy']
-                ? $this->legacyUnban($ckey, null, $server)
+                ? $this->legacyUnban($ckey, null, $server, $settings)
                 : $this->sqlUnban($ckey, null, $server);
             unset($this->panic_bans[$ckey]);
             $this->VarSave('panic_bans.json', $this->panic_bans);
@@ -3417,48 +3435,48 @@ class Civ13
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-    public function legacyUnban(string $ckey, ?string $admin = null, ?string $key = ''): void
+    public function legacyUnban(string $ckey, ?string $admin = null, ?string $key = '', ?array $settings = []): void
     {
         $admin = $admin ?? $this->discord->user->username;
-        $legacyUnban = function (string $ckey, string $admin, string $key)
+        $legacyUnban = function (string $ckey, string $admin, string $key, array $settings)
         {
             $server = strtolower($key);
-            if (file_exists($this->files[$server.'_discord2unban']) && $file = @fopen($this->files[$server.'_discord2unban'], 'a')) {
+            if (file_exists($settings['basedir'] . self::discord2unban) && $file = @fopen($settings['basedir'] . self::discord2unban, 'a')) {
                 fwrite($file, $admin . ":::$ckey");
                 fclose($file);
-            } else $this->logger->warning("unable to open {$this->files[$server.'_discord2unban']}");
+            } else $this->logger->warning('unable to open `' . $settings['basedir'] . self::discord2unban . '`');
         };
-        if ($key) $legacyUnban($ckey, $admin, $key);
+        if ($key && $settings) $legacyUnban($ckey, $admin, $key, $settings);
         else foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $legacyUnban($ckey, $admin, $key);
+            $legacyUnban($ckey, $admin, $key, $settings);
         }
     }
     public function sqlpersunban(string $ckey, ?string $admin = null): void
     {
         // TODO
     }
-    public function legacyBan(array $array, $admin = null, ?string $key = ''): string
+    public function legacyBan(array $array, $admin = null, ?string $key = '', ?array $settings = []): string
     {
         $admin = $admin ?? $this->discord->user->username;
-        $legacyBan = function (array $array, string $admin, string $key): string
+        $legacyBan = function (array $array, string $admin, string $key, array $settings): string
         {
             $server = strtolower($key);
             if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
-            if (file_exists($this->files[$server.'_discord2ban']) && $file = @fopen($this->files[$server.'_discord2ban'], 'a')) {
+            if (file_exists($settings['basedir'] . self::discord2ban) && $file = @fopen($settings['basedir'] . self::discord2ban, 'a')) {
                 fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
                 fclose($file);
                 return "**$admin** banned **{$array['ckey']}** from **{$key}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
             } else {
-                $this->logger->warning("unable to open {$this->files[$server.'_discord2ban']}");
-                return "unable to open `{$this->files[$server.'_discord2ban']}`" . PHP_EOL;
+                $this->logger->warning('unable to open `' . $settings['basedir'] . self::discord2ban . '`');
+                return 'unable to open `' . $settings['basedir'] . self::discord2ban . '`' . PHP_EOL;
             }
         };
-        if ($key) return $legacyBan($array, $admin, $key);
+        if ($key && $settings) return $legacyBan($array, $admin, $key, $settings);
         $result = '';
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $result .= $legacyBan($array, $admin, $key);
+            $result .= $legacyBan($array, $admin, $key, $settings);
         }
         return $result;
     }
@@ -3499,7 +3517,7 @@ class Civ13
     * Ban functions will return a string containing the results of the ban
     * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
     */
-    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, ?string $key = '', $permanent = false): string
+    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, ?string $key = '', ?array $settings = [], bool $permanent = false): string
     {
         if (! isset($array['ckey'])) return "You must specify a ckey to ban.";
         if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) return "The ckey must be a Byond username or Discord ID.";
@@ -3517,13 +3535,13 @@ class Civ13
                     if (! $permanent) $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
                     else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
                 }
-        if ($this->legacy) return $this->legacyBan($array, $admin, $key, $permanent);
-        return $this->sqlBan($array, $admin, $key, $permanent);
+        if ($this->legacy) return $this->legacyBan($array, $admin, $key, $settings);
+        return $this->sqlBan($array, $admin, $key, $settings);
     }
-    public function unban(string $ckey, ?string $admin = null, ?string $key = ''): void
+    public function unban(string $ckey, ?string $admin = null, ?string $key = '', ?array $settings = []): void
     {
         $admin ??= $this->discord->user->displayname;
-        if ($this->legacy) $this->legacyUnban($ckey, $admin, $key);
+        if ($this->legacy) $this->legacyUnban($ckey, $admin, $key, $settings);
         else $this->sqlUnban($ckey, $admin, $key);
         if (! $this->shard && $member = $this->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
@@ -3534,18 +3552,18 @@ class Civ13
         }
     }
 
-    public function OOCMessage(string $message, string $sender, ?string $server = ''): bool
+    public function OOCMessage(string $message, string $sender, ?string $server = '', ?array $settings = []): bool
     {
-        $oocmessage = function (string $message, string $sender, string $server): bool
+        $oocmessage = function (string $message, string $sender, string $server, array $settings): bool
         {
             $server = strtolower($server);
-            if (file_exists($this->files[$server.'_discord2ooc']) && $file = @fopen($this->files[$server.'_discord2ooc'], 'a')) {
+            if (file_exists($settings['basedir'] . self::discord2ooc) && $file = @fopen($settings['basedir'] . self::discord2ooc, 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
                 if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_ooc_channel'])) $this->sendPlayerMessage($channel, false, $message, $sender);
                 return true; 
             }
-            $this->logger->error("unable to open `{$this->files[$server.'_discord2ooc']}` for writing");
+            $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2ooc . '` for writing');
             return false;
         };
         $sent = false;
@@ -3553,21 +3571,21 @@ class Civ13
             if ($server) {
                 if (strtolower($server) !== strtolower($key)) continue;
                 if (! $this->server_settings[$key]['enabled'] ?? false) return false;
-                return $oocmessage($message, $sender, $key);
+                return $oocmessage($message, $sender, $key, $settings);
             } else {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $sent = $oocmessage($message, $sender, $key);
+                $sent = $oocmessage($message, $sender, $key, $settings);
             }
         }
         return $sent;
     }
 
-    public function AdminMessage(string $message, string $sender, ?string $server = ''): bool
+    public function AdminMessage(string $message, string $sender, ?string $server = '', ?array $settings = []): bool
     {
-        $adminmessage = function (string $message, string $sender, string $server): bool
+        $adminmessage = function (string $message, string $sender, string $server, array $settings): bool
         {
             $server = strtolower($server);
-            if (file_exists($this->files[$server.'_discord2admin']) && $file = @fopen($this->files[$server.'_discord2admin'], 'a')) {
+            if (file_exists($settings['basedir'] . self::discord2admin) && $file = @fopen($settings['basedir'] . self::discord2admin, 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
                 $urgent = true; // Check if there are any admins on the server, if not then send the message as urgent
@@ -3588,7 +3606,7 @@ class Civ13
                 if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, $urgent, $message, $sender);
                 return true;
             }
-            $this->logger->error("unable to open `{$this->files[$server.'_discord2admin']}` for writing");
+            $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2admin . '` for writing');
             return false;
         };
         $sent = false;
@@ -3596,27 +3614,27 @@ class Civ13
             if ($server) {
                 if (strtolower($server) !== strtolower($key)) continue;
                 if (! $this->server_settings[$key]['enabled'] ?? false) return false;
-                return $adminmessage($message, $sender, $key);
+                return $adminmessage($message, $sender, $key, $settings);
             } else {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $sent = $adminmessage($message, $sender, $key);
+                $sent = $adminmessage($message, $sender, $key, $settings);
             }
         }
         return $sent;
     }
 
-    public function DirectMessage(string $recipient, string $message, string $sender, ?string $server = ''): bool
+    public function DirectMessage(string $recipient, string $message, string $sender, ?string $server = '', ?array $settings = []): bool
     {
-        $directmessage = function (string $recipient, string $message, string $sender, string $server): bool
+        $directmessage = function (string $recipient, string $message, string $sender, string $server, array $settings): bool
         {
             $server = strtolower($server);
-            if (file_exists($this->files[$server.'_discord2dm']) && $file = @fopen($this->files[$server.'_discord2dm'], 'a')) {
+            if (file_exists($settings['basedir'] . self::discord2dm) && $file = @fopen($settings['basedir'] . self::discord2dm, 'a')) {
                 fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
                 fclose($file);
                 if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, false, $message, $sender, $recipient);
                 return true;
             }
-            $this->logger->debug("unable to open `{$this->files[$server.'_discord2dm']}` for writing");
+            $this->logger->debug('unable to open `' . $settings['basedir'] . self::discord2dm . '` for writing');
             return false;
         };
         $sent = false;
@@ -3624,10 +3642,10 @@ class Civ13
             if ($server) {
                 if (strtolower($server) !== strtolower($key)) continue;
                 if (! $this->server_settings[$key]['enabled'] ?? false) return false;
-                return $directmessage($recipient, $message, $sender, $key);
+                return $directmessage($recipient, $message, $sender, $key, $settings);
             } else {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $sent = $directmessage($recipient,$message, $sender, $key);
+                $sent = $directmessage($recipient,$message, $sender, $key, $settings);
             }
         }
         return $sent;
@@ -3702,8 +3720,8 @@ class Civ13
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
-            if (isset($this->files[$server.'_bans']) && file_exists($this->files[$server.'_bans']) && $fc = @file_get_contents($this->files[$server.'_bans'])) $file_contents .= $fc;
-            else $this->logger->warning("unable to open `{$this->files[$server.'_bans']}`");
+            if (file_exists($settings['basedir'] . self::bans) && $fc = @file_get_contents($settings['basedir'] . self::bans)) $file_contents .= $fc;
+            else $this->logger->warning('unable to open `' . $settings['basedir'] . self::bans . '`');
         }
         
         // Create a new collection
@@ -3761,8 +3779,8 @@ class Civ13
         foreach ($this->server_settings as $key => $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
-            if (isset($this->files[$server.'_playerlogs']) && file_exists($this->files[$server.'_playerlogs']) && $fc = @file_get_contents($this->files[$server.'_playerlogs'])) $file_contents .= $fc;
-            else $this->logger->warning("unable to open `{$this->files[$server.'_playerlogs']}`");
+            if (file_exists($settings['basedir'] . self::playerlogs) && $fc = @file_get_contents($settings['basedir'] . self::playerlogs)) $file_contents .= $fc;
+            else $this->logger->warning('unable to open `' . $settings['basedir'] . self::playerlogs . '`');
         }
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
 
@@ -3923,17 +3941,17 @@ class Civ13
             $ckeyinfo = $this->ckeyinfo($ckey);
             if ($ckeyinfo['altbanned']) { // Banned with a different ckey
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                $msg = $this->ban($arr, null, '', true) . ' (Alt Banned)';
+                $msg = $this->ban($arr, null, '', [], true) . ' (Alt Banned)';
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
             } else foreach ($ckeyinfo['ips'] as $ip) {
                 if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                    $msg = $this->ban($arr, null, '', true) . ' (Blacklisted Country)';
+                    $msg = $this->ban($arr, null, '', [], true) . ' (Blacklisted Country)';
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     break;
                 } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                    $msg = $this->ban($arr, null, '', true) . ' (Blacklisted Region)';
+                    $msg = $this->ban($arr, null, '', [], true) . ' (Blacklisted Region)';
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     break 2;
                 }
@@ -3946,7 +3964,7 @@ class Civ13
         }
         if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-            $msg = $this->ban($arr, null, '', true);
+            $msg = $this->ban($arr, null, '', [], true);
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
         }
     }
@@ -3971,17 +3989,17 @@ class Civ13
                     $ckeyinfo = $this->ckeyinfo($ckey);
                     if (isset($ckeyinfo['altbanned']) && $ckeyinfo['altbanned']) { // Banned with a different ckey
                         $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                        $msg = $this->ban($arr, null, '', true). ' (Alt Banned)';;
+                        $msg = $this->ban($arr, null, '', [], true). ' (Alt Banned)';;
                         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     } else if (isset($ckeyinfo['ips'])) foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
                             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                            $msg = $this->ban($arr, null, '', true) . ' (Blacklisted Country)';
+                            $msg = $this->ban($arr, null, '', [], true) . ' (Blacklisted Country)';
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                             break;
                         } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
                             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                            $msg = $this->ban($arr, null, '', true) . ' (Blacklisted Region)';
+                            $msg = $this->ban($arr, null, '', [], true) . ' (Blacklisted Region)';
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                             break 2;
                         }
@@ -3991,7 +4009,7 @@ class Civ13
                 //if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
                 if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                    $msg = $this->ban($arr, null, '', true);
+                    $msg = $this->ban($arr, null, '', [], true);
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                 }
             }
@@ -4109,7 +4127,7 @@ class Civ13
             $servers[$k] = 0;
             if ($server_status === 'Online') {
                 fclose($socket);
-                if (file_exists($this->files[$k.'_serverdata']) && $data = @file_get_contents($this->files[$k.'_serverdata'])) {
+                if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
                     /*
                     0 => <b>Server Status</b> {Online/Offline}
@@ -4151,7 +4169,7 @@ class Civ13
             if ($server_status === 'Offline') $embed->addFieldValues($key, $server_status);
             if ($server_status === 'Online') {
                 fclose($socket);
-                if (file_exists($this->files[$k.'_serverdata']) && $data = @file_get_contents($this->files[$k.'_serverdata'])) {
+                if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
                     $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
                     /*
                     0 => <b>Server Status</b> {Online/Offline}
@@ -4449,8 +4467,8 @@ class Civ13
     */
     public function recalculateRanking(): bool
     {
-        if (! isset($this->files['tdm_awards_path']) || ! isset($this->files['ranking_path'])) return false;
-        if (! file_exists($this->files['tdm_awards_path']) || ! file_exists($this->files['ranking_path'])) return false;
+        if (! isset($this->files['tdm_awards_path'])) return false;
+        if (! file_exists($this->files['tdm_awards_path']) || ! file_exists(self::ranking_path)) return false;
         if (! $file = @fopen($this->files['tdm_awards_path'], 'r')) return false;
         $result = array();
         while (! feof($file)) {
@@ -4487,7 +4505,7 @@ class Civ13
         }
         fclose ($file);
         arsort($result);
-        if (! $file = @fopen($this->files['ranking_path'], 'w')) return false;
+        if (! $file = @fopen(self::ranking_path, 'w')) return false;
         foreach ($result as $ckey => $score) fwrite($file, "$score;$ckey" . PHP_EOL); // Is this the proper behavior, or should we truncate the file first?
         fclose ($file);
         return true;
