@@ -275,7 +275,7 @@ class Civ13
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server = strtolower($key);
 
-            if (! file_exists($settings['basedir'] . self::playernotes_basedir, true)) $this->logger->debug("Skipping server function `{$server}notes` because the required config files were not found.");
+            if (! file_exists($settings['basedir'] . self::playernotes_basedir)) $this->logger->debug("Skipping server function `{$server}notes` because the required config files were not found.");
             else {
                 $servernotes = function (Message $message, array $message_filtered) use ($server, $settings): PromiseInterface
                 {
@@ -355,7 +355,8 @@ class Civ13
                 $this->messageHandler->offsetSet($server.'host', $serverhost, ['Owner', 'High Staff']);
             }
             
-            if (! $this->getRequiredConfigFiles($postfix = '_killciv13', true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+            
+            if (! file_exists($settings['basedir'] . self::killciv13)) $this->logger->debug("Skipping server function `{$server}kill` because the required config files were not found.");
             else {
                 $serverkill = function (?Message $message = null) use ($server, $settings): void
                 {
@@ -392,8 +393,9 @@ class Civ13
                 $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['Owner', 'High Staff']);
             }
 
-            if (! $this->getRequiredConfigFiles($postfix = '_mapswap', true)) $this->logger->debug("Skipping server function `$server{$postfix}` because the required config files were not found.");
+            if (! file_exists($settings['basedir'] . self::mapswap)) $this->logger->debug("Skipping server function `{$server}mapswap` because the required config files were not found.");
             else {
+
                 $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server, $settings): ?PromiseInterface
                 {
                     $mapswap = function (string $mapto, ?Message $message = null, ) use ($server, $settings): ?PromiseInterface
