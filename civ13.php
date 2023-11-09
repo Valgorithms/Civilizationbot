@@ -4521,28 +4521,6 @@ class Civ13
         foreach ($required_roles as $role) if (! isset($this->role_ids[$role]) || ! $guild->roles->get('id', $this->role_ids[$role])) { $this->logger->error("$role role is missing from the guild"); return false; }
         return true;
     }
-    
-    // Check that all required files are properly declared in the bot's config and exist in the guild
-    public function getRequiredConfigFiles(string $postfix = '', bool $defaults = true, array $lists = []): array|false
-    {
-        $l = [];
-        if ($defaults) {
-            $defaultLists = [];
-            foreach ($this->server_settings as $key => $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $defaultLists[] = strtolower($key) . $postfix;
-            }
-            foreach ($defaultLists as $file_path) if (isset($this->files[$file_path]) && ! in_array($file_path, $l)) array_unshift($l, $file_path);
-            else $this->logger->warning("Default `$postfix` file `$file_path` was either missing from the `files` config or already included in the list");
-            if (empty($l)) $this->logger->debug("No default `$postfix` files were found in the `files` config");
-        }
-        if ($lists) foreach ($lists as $file_path) if (isset($this->files[$file_path]) && ! in_array($file_path, $l)) array_unshift($l, $file_path);
-        if (empty($l)) {
-            $this->logger->warning("No `$postfix` files were found");
-            return false;
-        }
-        return $l;
-    }
 
     /*
     * This function is used to update the contents of files based on the roles of verified members
@@ -4568,7 +4546,12 @@ class Civ13
     {
         $required_roles = ['veteran'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $file_paths = $this->getRequiredConfigFiles($postfix, $defaults, $lists)) return false;
+        $file_paths = [];
+        foreach (array_values($this->server_settings) as $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::whitelist)) continue;
+            $file_paths[] = $settings['basedir'] . self::whitelist;
+        }
 
         $callback = function (Member $member, array $item, array $required_roles): string
         {
@@ -4587,7 +4570,12 @@ class Civ13
     {
         $required_roles = ['red', 'blue', 'organizer'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $file_paths = $this->getRequiredConfigFiles($postfix, $defaults, $lists)) return false;
+        $file_paths = [];
+        foreach (array_values($this->server_settings) as $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::factionlist)) continue;
+            $file_paths[] = $settings['basedir'] . self::whitelist;
+        }
 
         $callback = function (Member $member, array $item, array $required_roles): string
         {
@@ -4625,7 +4613,12 @@ class Civ13
             'Mentor' => ['Mentor', '16384'],
         ];
         if (! $this->hasRequiredConfigRoles(array_keys($required_roles))) return false;
-        if (! $file_paths = $this->getRequiredConfigFiles($postfix, $defaults, $lists)) return false;
+        $file_paths = [];
+        foreach (array_values($this->server_settings) as $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::admins)) continue;
+            $file_paths[] = $settings['basedir'] . self::admins;
+        }
 
         $callback = function (Member $member, array $item, array $required_roles): string
         {
