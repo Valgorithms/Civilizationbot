@@ -4574,7 +4574,7 @@ class Civ13
         foreach (array_values($this->server_settings) as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::factionlist)) continue;
-            $file_paths[] = $settings['basedir'] . self::whitelist;
+            $file_paths[] = $settings['basedir'] . self::factionlist;
         }
 
         $callback = function (Member $member, array $item, array $required_roles): string
