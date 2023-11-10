@@ -4528,13 +4528,26 @@ class Civ13
     */
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
     {
-        foreach ($file_paths as $fp) if (file_exists($fp)) {
-            $file_contents = '';
-            foreach ($this->verified as $item)
-                if ($member = $this->getVerifiedMember($item))
-                    $file_contents .= $callback($member, $item, $required_roles);
-            if ($file_contents) file_put_contents($fp, $file_contents);
+        $callbackParams = (new \ReflectionFunction($callback))->getParameters();
+        if (
+            !(
+                (new \ReflectionFunction($callback))->getNumberOfParameters() === 3 && // Function must expect 3 parameters
+                count($callbackParams) === 3 && // There must be 3 parameters availble to pass to the function
+                $callbackParams[0] !== null && $callbackParams[0] instanceof \Discord\Parts\User\Member &&
+                $callbackParams[1] !== null && is_array($callbackParams[1]) &&
+                $callbackParams[2] !== null && is_array($callbackParams[2])
+            )
+        ) {
+            $this->logger->error('updateFilesFromMemberRoles() was called with an invalid callback function');
+            return;
         }
+        
+        $file_contents = '';
+        foreach ($this->verified as $item)
+            if ($member = $this->getVerifiedMember($item))
+                $file_contents .= $callback($member, $item, $required_roles);
+        if ($file_contents) foreach ($file_paths as $fp)
+            if (file_exists($fp)) file_put_contents($fp, $file_contents);
     }
 
     // This function is used to update the whitelist files
