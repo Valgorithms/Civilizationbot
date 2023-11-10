@@ -4552,9 +4552,8 @@ class Civ13
     }
 
     // This function is used to update the whitelist files
-    public function whitelistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_whitelist'): bool
+    public function whitelistUpdate(?array $required_roles = ['veteran']): bool
     {
-        $required_roles = ['veteran'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         $file_paths = [];
         foreach (array_values($this->server_settings) as $settings) {
@@ -4576,9 +4575,8 @@ class Civ13
     }
 
     // This function is used to update the campaign whitelist files
-    public function factionlistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_factionlist'): bool
+    public function factionlistUpdate(?array $required_roles = ['red', 'blue', 'organizer']): bool
     {
-        $required_roles = ['red', 'blue', 'organizer'];
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         $file_paths = [];
         foreach (array_values($this->server_settings) as $settings) {
@@ -4607,21 +4605,23 @@ class Civ13
      * @param string $postfix The postfix to use for the file names.
      * @return bool Returns true if the update was successful, false otherwise.
      */
-    public function adminlistUpdate(array $lists = [], bool $defaults = true, string $postfix = '_admins'): bool
-    {
+    public function adminlistUpdate(
         $required_roles = [
-            'Owner' => ['Host', '65535'],
-            'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
-            'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
-            'Head Admin' => ['Head Admin', '16382'],
-            'Manager' => ['Manager', '16382'],
-            'Supervisor' => ['Supervisor', '16382'],
-            'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
-            'Event Admin' => ['Event Admin', '16254'],
-            'Moderator' => ['Moderator', '8708'], // Moderators will also have the Admin role, but it takes priority
-            'Admin' => ['Admin', '12158'],
-            'Mentor' => ['Mentor', '16384'],
-        ];
+        'Owner' => ['Host', '65535'],
+        'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
+        'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
+        'Head Admin' => ['Head Admin', '16382'],
+        'Manager' => ['Manager', '16382'],
+        'Supervisor' => ['Supervisor', '16382'],
+        'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
+        'Event Admin' => ['Event Admin', '16254'],
+        'Moderator' => ['Moderator', '8708'], // Moderators will also have the Admin role, but it takes priority
+        'Admin' => ['Admin', '12158'],
+        'Mentor' => ['Mentor', '16384'],
+        ]
+    ): bool
+    {
+        
         if (! $this->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         $file_paths = [];
         foreach (array_values($this->server_settings) as $settings) {
