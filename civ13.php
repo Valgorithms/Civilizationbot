@@ -4528,8 +4528,8 @@ class Civ13
     */
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
     {
-        foreach ($file_paths as $file_path) {
-            if (! file_exists($this->files[$file_path]) || ! $file = @fopen($this->files[$file_path], 'a')) continue;
+        foreach ($file_paths as $fp) {
+            if (! file_exists($fp) || ! $file = @fopen($fp, 'a')) continue;
             ftruncate($file, 0);
             $file_contents = '';
             foreach ($this->verified as $item) {
