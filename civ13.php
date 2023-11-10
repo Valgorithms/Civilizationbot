@@ -4546,8 +4546,9 @@ class Civ13
         foreach ($this->verified as $item)
             if ($member = $this->getVerifiedMember($item))
                 $file_contents .= $callback($member, $item, $required_roles);
-        if ($file_contents) foreach ($file_paths as $fp)
-            if (file_exists($fp)) file_put_contents($fp, $file_contents);
+        if ($file_contents) foreach ($file_paths as $fp) if (file_exists($fp))
+            if (file_put_contents($fp, $file_contents) === false) // Attempt to write to the file
+                $this->logger->error("Failed to write to file `$fp`"); // Log an error if the write failed
     }
 
     // This function is used to update the whitelist files
