@@ -3049,7 +3049,7 @@ class Civ13
         $ckey = $this->sanitizeInput($ckey);
         if ($this->permabancheck($ckey)) {
             if ($m && ! $m->roles->has($this->role_ids['permabanished'])) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
-            return 'This account is already verified, but needs to appeal an existing ban first.';
+            return 'This account needs to appeal an existing ban first.';
         }
         if (isset($this->softbanned[$ckey]) || isset($this->softbanned[$discord_id])) {
             if ($m && ! $m->roles->has($this->role_ids['permabanished'])) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
