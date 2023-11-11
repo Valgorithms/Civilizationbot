@@ -3427,7 +3427,7 @@ class Civ13
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['panic']) || ! $settings['panic']) continue;
             $settings['legacy']
-                ? $this->legacyUnban($ckey, null, $server, $settings)
+                ? $this->legacyUnban($ckey, null, $settings)
                 : $this->sqlUnban($ckey, null, $server);
             unset($this->panic_bans[$ckey]);
             $this->VarSave('panic_bans.json', $this->panic_bans);
@@ -3442,21 +3442,20 @@ class Civ13
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
-    public function legacyUnban(string $ckey, ?string $admin = null, ?string $key = '', ?array $settings = []): void
+    public function legacyUnban(string $ckey, ?string $admin = null, ?array $settings = []): void
     {
         $admin = $admin ?? $this->discord->user->username;
-        $legacyUnban = function (string $ckey, string $admin, string $key, array $settings)
+        $legacyUnban = function (string $ckey, string $admin, array $settings)
         {
-            $server = strtolower($key);
             if (file_exists($settings['basedir'] . self::discord2unban) && $file = @fopen($settings['basedir'] . self::discord2unban, 'a')) {
                 fwrite($file, $admin . ":::$ckey");
                 fclose($file);
             } else $this->logger->warning('unable to open `' . $settings['basedir'] . self::discord2unban . '`');
         };
-        if ($key && $settings) $legacyUnban($ckey, $admin, $key, $settings);
-        else foreach ($this->server_settings as $key => $settings) {
+        if ($settings) $legacyUnban($ckey, $admin, $settings);
+        else foreach (array_values($this->server_settings) as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $legacyUnban($ckey, $admin, $key, $settings);
+            $legacyUnban($ckey, $admin, $settings);
         }
     }
     public function sqlpersunban(string $ckey, ?string $admin = null): void
@@ -3468,7 +3467,6 @@ class Civ13
         $admin = $admin ?? $this->discord->user->username;
         $legacyBan = function (array $array, string $admin, string $key, array $settings): string
         {
-            $server = strtolower($key);
             if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
             if (file_exists($settings['basedir'] . self::discord2ban) && $file = @fopen($settings['basedir'] . self::discord2ban, 'a')) {
                 fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
@@ -3542,13 +3540,13 @@ class Civ13
                     if (! $permanent) $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
                     else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
                 }
-        if ($this->legacy) return $this->legacyBan($array, $admin, $key, $settings);
+        if ($this->legacy) return $this->legacyBan($array, $admin, $settings);
         return $this->sqlBan($array, $admin, $key, $settings);
     }
     public function unban(string $ckey, ?string $admin = null, ?string $key = '', ?array $settings = []): void
     {
         $admin ??= $this->discord->user->displayname;
-        if ($this->legacy) $this->legacyUnban($ckey, $admin, $key, $settings);
+        if ($this->legacy) $this->legacyUnban($ckey, $admin, $settings);
         else $this->sqlUnban($ckey, $admin, $key);
         if (! $this->shard && $member = $this->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
