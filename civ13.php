@@ -4535,8 +4535,8 @@ class Civ13
         if (
             !(
                 (new \ReflectionFunction($callback))->getNumberOfParameters() === 3 && // Function must expect 3 parameters
-                count($callbackParams) === 3 && // There must be 3 parameters availble to pass to the function
-                $callbackParams[0] !== null && $callbackParams[0] instanceof \Discord\Parts\User\Member &&
+                //count($callbackParams) === 3 && // There must be 3 parameters availble to pass to the function
+                $callbackParams[0] !== null && $callbackParams[0] instanceof Member &&
                 $callbackParams[1] !== null && is_array($callbackParams[1]) &&
                 $callbackParams[2] !== null && is_array($callbackParams[2])
             )
