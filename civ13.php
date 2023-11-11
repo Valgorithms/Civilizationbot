@@ -331,8 +331,13 @@ class Civ13
             $this->messageHandler->offsetSet('serverstatus', $serverstatus, ['Owner', 'High Staff']);
             
             $allRequiredFilesExist = true;
-            foreach ([self::serverdata, self::killsudos, self::dmb, self::updateserverabspaths] as $fp) {
-                if (! file_exists($fp = $settings['basedir'] . $fp)) {
+            foreach ([
+                $settings['basedir'] . self::serverdata,
+                $settings['basedir'] . self::killsudos,
+                $settings['basedir'] . self::dmb,
+                $settings['basedir'] . self::updateserverabspaths
+            ] as $fp) {
+                if (! file_exists($fp)) {
                     $this->logger->debug("Skipping server function `{$server}host` because the required config file `{$fp}` was not found.");
                     $allRequiredFilesExist = false;
                     break;
