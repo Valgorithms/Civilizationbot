@@ -332,7 +332,7 @@ class Civ13
             
             $allRequiredFilesExist = true;
             foreach ([self::serverdata, self::killsudos, self::dmb, self::updateserverabspaths] as $fp) {
-                if (! file_exists($fp)) {
+                if (! file_exists($fp = $settings['basedir'] . $fp)) {
                     $this->logger->debug("Skipping server function `{$server}host` because the required config file `{$fp}` was not found.");
                     $allRequiredFilesExist = false;
                     break;
