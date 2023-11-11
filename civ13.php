@@ -4531,6 +4531,7 @@ class Civ13
     */
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
     {
+        /* This is currently not working as intended
         $callbackParams = (new \ReflectionFunction($callback))->getParameters();
         if (
             !(
@@ -4544,6 +4545,7 @@ class Civ13
             $this->logger->error('updateFilesFromMemberRoles() was called with an invalid callback function');
             return;
         }
+        */
         
         $file_contents = '';
         foreach ($this->verified as $item)
