@@ -1284,10 +1284,13 @@ class Civ13
                 $msg = '';
                 foreach ($line_array as $line) {
                     $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-                    $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
-                    if (($topsum += 1) > 10) break;
+                    if(isset($sline[1]) && $sline[1]) {
+                        $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
+                        if (($topsum += 1) > 10) break;
+                    }
                 }
-                return $msg;
+                if ($msg) return $msg;
+                return 'No rankings found.';
             };
             $this->messageHandler->offsetSet('ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($ranking): PromiseInterface
             {
