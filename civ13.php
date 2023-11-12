@@ -1140,7 +1140,6 @@ class Civ13
                     }
                     if ($playerlogs) foreach ($this->server_settings as $k => $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
-                        $s = strtolower($k);
                         $b = $s['basedir'];
                         if (! file_exists($fp = $b . self::bans)) continue;
                         file_put_contents($fp, $banlog_update(file_get_contents($fp), $playerlogs, $arr['ckey']));
