@@ -1132,13 +1132,13 @@ class Civ13
                 $server = strtolower($key);
                 if (! isset($this->timers['banlog_update_'.$server])) $this->timers['banlog_update_'.$server] = $this->discord->getLoop()->addTimer(30, function () use ($banlog_update, $arr) {
                     $playerlogs = [];
-                    foreach ($this->server_settings as $k => $s) {
+                    foreach (array_values($this->server_settings) as $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
                         $b = $s['basedir'];
                         if (! file_exists($fp = $b . self::playerlogs)) continue;
                         if ($playerlog = @file_get_contents($fp)) $playerlogs[] = $playerlog;
                     }
-                    if ($playerlogs) foreach ($this->server_settings as $k => $s) {
+                    if ($playerlogs) foreach (array_values($this->server_settings) as $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
                         $b = $s['basedir'];
                         if (! file_exists($fp = $b . self::bans)) continue;
