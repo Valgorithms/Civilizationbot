@@ -1094,9 +1094,10 @@ class Civ13
             }
 
             $updated = [];
-            foreach (array_values($temp) as $ban)
+            foreach ($temp as $ban) {
                 if (is_array($ban)) $updated = array_merge($updated, $ban);
                 else $updated[] = $ban;
+            }
             
             if (empty($updated)) return preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
             return trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
