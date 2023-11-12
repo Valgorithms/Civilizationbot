@@ -1073,28 +1073,29 @@ class Civ13
             $oldlist = [];
             foreach (explode('|||', $banlog) as $bsplit) {
                 $ban = explode(';', trim($bsplit));
-                if (isset($ban[9]))
-                    if (! isset($ban[9]) || ! isset($ban[10]) || $ban[9] == '0' || $ban[10] == '0') {
-                        if (! $ckey) $temp[$ban[8]][] = $bsplit;
-                        elseif ($ckey == $ban[8]) $temp[$ban[8]][] = $bsplit;
-                    } else $oldlist[] = $bsplit;
+                if (isset($ban[8])) {
+                    if ($ckey && $ckey != $ban[8]) continue;
+                    if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') $oldlist[] = $bsplit;
+                } else $temp[$ban[8]][] = $bsplit;
             }
-            foreach ($playerlogs as $playerlog)
-            foreach (explode('|', $playerlog) as $lsplit) {
-                $log = explode(';', trim($lsplit));
-                foreach (array_values($temp) as &$b2) foreach ($b2 as &$arr) {
-                    $a = explode(';', $arr);
-                    if ($a[8] == $log[0]) {
-                        $a[9] = $log[2];
-                        $a[10] = $log[1];
-                        $arr = implode(';', $a);
-                    }
-                }
+            foreach ($playerlogs as $playerlog) {
+                $logs = explode('|', $playerlog);
+                array_map(function ($lsplit) use (&$temp) {
+                    $log = explode(';', trim($lsplit));
+                    array_walk_recursive($temp, function (&$arr) use ($log) {
+                        $a = explode(';', $arr);
+                        if ($a[8] == $log[0]) {
+                            $a[9] = $log[2];
+                            $a[10] = $log[1];
+                            $arr = implode(';', $a);
+                        }
+                    });
+                }, $logs);
             }
 
             $updated = [];
             foreach (array_values($temp) as $ban)
-                if (is_array($ban)) foreach (array_values($ban) as $b) $updated[] = $b;
+                if (is_array($ban)) $updated = array_merge($updated, $ban);
                 else $updated[] = $ban;
             
             if (empty($updated)) return preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
@@ -1134,14 +1135,12 @@ class Civ13
                     $playerlogs = [];
                     foreach (array_values($this->server_settings) as $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
-                        $b = $s['basedir'];
-                        if (! file_exists($fp = $b . self::playerlogs)) continue;
+                        if (! file_exists($fp = $s['basedir'] . self::playerlogs)) continue;
                         if ($playerlog = @file_get_contents($fp)) $playerlogs[] = $playerlog;
                     }
                     if ($playerlogs) foreach (array_values($this->server_settings) as $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
-                        $b = $s['basedir'];
-                        if (! file_exists($fp = $b . self::bans)) continue;
+                        if (! file_exists($fp = $s['basedir'] . self::bans)) continue;
                         file_put_contents($fp, $banlog_update(file_get_contents($fp), $playerlogs, $arr['ckey']));
                     }
                 });
