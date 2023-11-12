@@ -4642,7 +4642,7 @@ class Civ13
             foreach (array_keys($required_roles) as $role)
                 if ($member->roles->has($this->role_ids[$role]))
                     if (! in_array($member->id, $checked_ids)) {
-                        $string .= $item['ss13'] . ';' . $required_roles[$role][0] . ';' . $required_roles[$role][1] . '|||' . PHP_EOL;
+                        $string .= "{$item['ss13']};{$required_roles[$role][0]};{$required_roles[$role][1]}|||" . PHP_EOL;
                         $checked_ids[] = $member->id;
                     }
             return $string;
