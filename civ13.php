@@ -1084,7 +1084,7 @@ class Civ13
                     $log = explode(';', trim($lsplit));
                     array_walk_recursive($temp, function (&$arr) use ($log) {
                         $a = explode(';', $arr);
-                        if ($a[8] == $log[0]) {
+                        if (isset($a[8]) && $a[8] == $log[0]) {
                             $a[9] = $log[2];
                             $a[10] = $log[1];
                             $arr = implode(';', $a);
