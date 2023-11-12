@@ -1134,7 +1134,6 @@ class Civ13
                     $playerlogs = [];
                     foreach ($this->server_settings as $k => $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
-                        $s = strtolower($k);
                         $b = $s['basedir'];
                         if (! file_exists($fp = $b . self::playerlogs)) continue;
                         if ($playerlog = @file_get_contents($fp)) $playerlogs[] = $playerlog;
