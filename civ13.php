@@ -1383,30 +1383,27 @@ class Civ13
             }));
         }
 
-        $this->messageHandler->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface
-        {   
-            $server_playerlogs = [];
-            foreach ($this->server_settings as $key => $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
-                if (! $playerlogs = @file_get_contents($settings['basedir'] . self::playerlogs)) {
-                    $this->logger->warning("`{$server}_playerlogs` is not a valid file path!");
-                    continue;
+        $this->messageHandler->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface {
+            $server_playerlogs = array_filter(array_map(function ($settings) {
+                if (! isset($settings['enabled']) || !$settings['enabled']) return null;
+                if (! $playerlogs = @file_get_contents($fp = $settings['basedir'] . self::playerlogs)) {
+                    $this->logger->warning("`$fp` is not a valid file path!");
+                    return null;
                 }
-                $server_playerlogs[] = $playerlogs;
-            }
+                return $playerlogs;
+            }, $this->server_settings));
+
             if (! $server_playerlogs) return $message->react("🔥");
-            
+
             $updated = false;
-            foreach ($this->server_settings as $key => $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
-                if (! $bans = @file_get_contents($settings['basedir'] . self::bans)) {
-                    $this->logger->warning("`{$server}_bans` is not a valid file path!");
+            foreach ($this->server_settings as $settings) {
+                if (!isset($settings['enabled']) || !$settings['enabled']) continue;
+                if (! $bans = @file_get_contents( $fp = $settings['basedir'] . self::bans)) {
+                    $this->logger->warning("`$fp` is not a valid file path!");
                     continue;
                 }
-                if (! @file_put_contents($settings['basedir'] . self::bans, preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($bans, $server_playerlogs)))) {
-                    $this->logger->warning("Error updating bans for {$server}!");
+                if (! @file_put_contents($fp = $settings['basedir'] . self::bans, preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($bans, $server_playerlogs)))) {
+                    $this->logger->warning("Error updating bans for {$fp}!");
                     continue;
                 }
                 $updated = true;
