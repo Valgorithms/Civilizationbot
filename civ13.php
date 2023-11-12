@@ -3418,7 +3418,7 @@ class Civ13
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['panic']) || ! $settings['panic']) continue;
             $settings['legacy']
-                ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $server)
+                ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $server, $settings)
                 : $this->sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $server);
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
@@ -3543,7 +3543,7 @@ class Civ13
                     if (! $permanent) $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
                     else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
                 }
-        if ($this->legacy) return $this->legacyBan($array, $admin, $settings);
+        if ($this->legacy) return $this->legacyBan($array, $admin, $key, $settings);
         return $this->sqlBan($array, $admin, $key, $settings);
     }
     public function unban(string $ckey, ?string $admin = null, ?string $key = '', ?array $settings = []): void
