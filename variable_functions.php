@@ -128,7 +128,7 @@ $on_message = function (Civ13 $civ13, Message $message, ?array $message_filtered
         $random_responses = ['You can see a full list of commands by using the `help` command.'];
         if (count($random_responses) > 0) return $civ13->sendMessage($message->channel, "<@{$message->author->id}>, " . $random_responses[rand(0, count($random_responses)-1)]);
     }
-    if ($message_array['message_content'] == 'dev')
+    if ($message_array['message_content'] === 'dev')
         if (isset($civ13->technician_id) && isset($civ13->role_ids['Chief Technical Officer']))
             if ($message->user_id === $civ13->technician_id)
                 return $message->member->addRole($civ13->role_ids['Chief Technical Officer']);
