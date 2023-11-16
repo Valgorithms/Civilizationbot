@@ -124,11 +124,11 @@ $on_message = function (Civ13 $civ13, Message $message, ?array $message_filtered
 { // on message
     $message_array = $message_filtered ?? $civ13->filterMessage($message);
     if (! $message_array['called']) return null; // Not a command
-    if (! $message_array['message_content']) { // No command given
+    if (! $message_array['message_content_lower']) { // No command given
         $random_responses = ['You can see a full list of commands by using the `help` command.'];
         if (count($random_responses) > 0) return $civ13->sendMessage($message->channel, "<@{$message->author->id}>, " . $random_responses[rand(0, count($random_responses)-1)]);
     }
-    if ($message_array['message_content'] === 'dev')
+    if ($message_array['message_content_lower'] === 'dev')
         if (isset($civ13->technician_id) && isset($civ13->role_ids['Chief Technical Officer']))
             if ($message->user_id === $civ13->technician_id)
                 return $message->member->addRole($civ13->role_ids['Chief Technical Officer']);
