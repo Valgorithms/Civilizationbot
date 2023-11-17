@@ -164,7 +164,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme): void
     foreach (array_keys($this->server_settings) as $key => $settings) {
         $server = strtolower($key);
 
-        if (isset($settings['ip'], $settings['port'])) $civ13->discord->listenCommand($server.'_restart', function (Interaction $interaction) use ($civ13, $server, $key, $settings): void
+        if (isset($settings['ip'], $settings['port'])) $civ13->discord->listenCommand($server.'_restart', function (Interaction $interaction) use ($server, $key, $settings): void
         {
             $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$settings['ip']}:{$settings['port']}>"));
             if ($serverrestart = array_shift($this->messageHandler->offsetGet($server.'restart'))) $serverrestart();
