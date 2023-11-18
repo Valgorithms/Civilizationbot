@@ -29,8 +29,14 @@ use React\Http\Message\Response as HttpResponse;
 
 class HttpHandlerCallback implements HttpHandlerCallbackInterface
 {
-    private $callback;
+    private \Closure $callback;
 
+    /**
+     * Constructs a new instance of the HttpHandler class.
+     *
+     * @param callable $callback The callback function to be executed.
+     * @throws \InvalidArgumentException If the callback does not have the expected parameters or type hints.
+     */
     public function __construct(callable $callback)
     {
         $reflection = new \ReflectionFunction($callback);
@@ -38,28 +44,38 @@ class HttpHandlerCallback implements HttpHandlerCallbackInterface
 
         $expectedParameterTypes = [ServerRequestInterface::class, 'array', 'bool', 'string'];
 
-        if (count($parameters) !== $count = count($expectedParameterTypes)) {
-            throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
-        }
+        if (count($parameters) !== $count = count($expectedParameterTypes)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
 
         foreach ($parameters as $index => $parameter) {
-            if (! $parameter->hasType()) {
-                throw new \InvalidArgumentException("Parameter $index must have a type hint.");
-            }
+            if (! $parameter->hasType()) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
 
-            $type = $parameter->getType()->getName();
+            $type = $parameter->getType(); // This could be done all on one line, but it's easier to read this way and makes the compiler happy
+            if ($type !== null && $type instanceof \ReflectionNamedType) $type = $type->getName();
 
-            if ($type !== $expectedParameterTypes[$index]) {
-                throw new \InvalidArgumentException("Parameter $index must be of type {$expectedParameterTypes[$index]}.");
-            }
+            if ($type !== $expectedParameterTypes[$index]) throw new \InvalidArgumentException("Parameter $index must be of type {$expectedParameterTypes[$index]}.");
         }
 
         $this->callback = $callback;
     }
 
+    /**
+     * Invokes the HTTP handler.
+     *
+     * @param ServerRequestInterface $request The server request.
+     * @param array $data The data array.
+     * @param bool $whitelisted Indicates if the request is whitelisted.
+     * @param string $endpoint The endpoint string.
+     * @return HttpResponse The HTTP response.
+     */
     public function __invoke(ServerRequestInterface $request, array $data = [], bool $whitelisted = false, string $endpoint = ''): HttpResponse
     {
         return call_user_func($this->callback, $request, $data, $whitelisted, $endpoint);
+    }
+
+    public function reject(string $part, string $id): HttpResponse
+    {
+        // $this->civ13->logger->info("[WEBAPI] Failed: $part, $id"); // This should be logged by the handler, not the callback
+        return new HttpResponse(($id ? 404 : 400), ['Content-Type' => 'text/plain'], ($id ? 'Invalid' : 'Missing').' '.$part);
     }
 }
 
