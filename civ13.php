@@ -2505,13 +2505,13 @@ class Civ13
                     $members = $guild->members->filter(function ($member) {
                         return $member->roles->has($this->role_ids['High Staff']);
                     });
-                    /* foreach ($members as $member)
+                    foreach ($members as $member)
                         if ($item = $this->getVerifiedItem($member->user))
                             if (isset($item['ss13']) && $ckey = $item['ss13'])
                                 if ($playerlogs = $this->getCkeyLogCollections($ckey)['playerlogs'])
                                     foreach ($playerlogs as $log)
                                         if (isset($log['ip']))
-                                            $this->httpHandler->whitelist($log['ip']); */
+                                            $this->httpHandler->whitelist($log['ip']);
                 }
                 if (! $provisional = $this->VarLoad('provisional.json')) {
                     $provisional = [];
