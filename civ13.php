@@ -3181,7 +3181,6 @@ class Civ13
         foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
         if ($removed_items) $message = 'Removed from the verified list: ```json' . PHP_EOL . $removed_items . PHP_EOL . '```' . PHP_EOL . $message;
         if ($message) $this->logger->info($message);
-        else $this->logger->info("Removed from the verified list: $removed_items");
         return ['success' => true, 'message' => $message];
     }
     
