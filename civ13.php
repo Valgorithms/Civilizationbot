@@ -3177,8 +3177,7 @@ class Civ13
             if (isset($ch)) curl_close($ch);
         }
         
-        $removed_items = '';
-        foreach ($removed as $item) $removed_items .= json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        $removed_items = implode(PHP_EOL, array_map(fn($item) => json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), $removed));
         if ($removed_items) $message .= 'Removed from the verified list: ```json' . PHP_EOL . $removed_items . PHP_EOL . '```' . PHP_EOL . $message;
         if ($message) $this->logger->info($message);
         return ['success' => true, 'message' => $message];
