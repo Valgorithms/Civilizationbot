@@ -127,7 +127,22 @@ $options = array(
             'legacy' => true,
             'moderate' => true,
             'relay_method' => 'webhook',
-            'basedir' => '/home/civ13/civ13-tdm'
+            'basedir' => '/home/civ13/civ13-tdm', // Base directory of the server
+            // Primary channels
+            'discussion' => '799952134426591273', #tdm
+            'playercount' => '1048777462898761789', // tdm-#
+            // Chat relay channels
+            'ooc' => '1107016184328622233', // #ooc-tdm
+            'lobby' => '1107021760483831988', // #lobby-tdm
+            'asay' => '1107016769169801216', // #asay-tdm
+            'ic' => '1121531682198138920', // #ic-tdm
+            // Log channels
+            'transit' => '1107020747622326313', // #transit-tdm
+            'adminlog' => '1107024305927225455', // #adminlog-tdm
+            'debug' => '1106248157798600715', // #debug-tdm (debugging)
+            'garbage' => '1107018726307528735', // #garbage-tdm
+            'runtime' => '1107017103883632792', // #runtime-tdm
+            'attack' => '1107017830160936980', // #attack-tdm
         ],
         'Nomads' => [
             'supported' => true, // Whether the server is supported by the remote webserver
@@ -141,7 +156,22 @@ $options = array(
             'legacy' => true, // Legacy mode will use the file system instead of an SQL database
             'moderate' => true, // Whether chat moderation is enabled
             'relay_method' => 'webhook', // How messages are relayed to the server
-            'basedir' => '/home/civ13/civ13-rp' // Base directory of the server
+            'basedir' => '/home/civ13/civ13-rp', // Base directory of the server
+            // Primary channels
+            'discussion' => '799952084505067581', #nomads
+            'playercount' => '1048777424894185484', // nomads-#
+            // Chat relay channels
+            'ooc' => '1110001963405418616', // #ooc-nomads
+            'lobby' => '1110001986134347856', // #lobby-nomads
+            'asay' => '1110002005977604186', // #asay-nomads
+            'ic' => '1121531739114852432', // #ic-nomads
+            // Log channels
+            'transit' => '1110002027469221989', // #transit-nomads
+            'adminlog' => '1110002047123738624', // #adminlog-nomads
+            'debug' => '1106248132779593758', // #debug-nomads (debugging)
+            'garbage' => '1110002493259251752', // #garbage-nomads
+            'runtime' => '1110002671936602132', // #runtime-nomads
+            'attack' => '1110002697383448648', // #attack-nomads
         ],
         'Pers' => [
             'supported' => true,
@@ -155,7 +185,22 @@ $options = array(
             'legacy' => true,
             'moderate' => true,
             'relay_method' => 'webhook',
-            'basedir' => '/home/civ13/civ13-pers' // Base directory of the server
+            'basedir' => '/home/civ13/civ13-pers', // Base directory of the server
+            // Primary channels
+            'discussion' => '799951945346711552', #pers
+            'playercount' => '1090788345082298369', // pers-#
+            // Chat relay channels
+            'ooc' => '1139614228408455388', // #ooc-pers
+            'lobby' => '1139614248222343282', // #lobby-pers
+            'asay' => '1139614266299785278', // #asay-pers
+            'ic' => '1139614281512529941', // #ic-pers
+            // Log channels
+            'transit' => '1139614542700216420', // #transit-pers
+            'adminlog' => '1139614564577722448', // #adminlog-pers
+            'debug' => '1139614582931984575', // #debug-pers (debugging)
+            'garbage' => '1139614596789964820', // #garbage-pers
+            'runtime' => '1139614629081915492', // #runtime-pers
+            'attack' => '1139614643954921593', // #attack-pers
         ],
     ],
     'legacy' => true,
