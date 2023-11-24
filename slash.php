@@ -366,7 +366,7 @@ class Slash
             $reason = 'unknown';
             $found = false;
 
-            foreach ($this->civ13->server_settings as $key => $settings) {
+            foreach ($this->civ13->server_settings as $settings) {
                 if (file_exists($settings['basedir'] . $this->civ13::bans) && ($file = @fopen($settings['basedir'] . $this->civ13::bans, 'r'))) {
                     while (($fp = fgets($file, 4096)) !== false) {
                         $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -376,7 +376,7 @@ class Slash
                             $reason = $linesplit[3];
                             $admin = $linesplit[4];
                             $date = $linesplit[5];
-                            $response .= "**{$item['ss13']}** has been **$type** banned from **$key** on **$date** for **$reason** by $admin." . PHP_EOL;
+                            $response .= "**{$item['ss13']}** has been **$type** banned from **{$settings['name']}** on **$date** for **$reason** by $admin." . PHP_EOL;
                         }
                     }
                     fclose($file);
