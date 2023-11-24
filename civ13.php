@@ -1415,7 +1415,7 @@ class Civ13
 
         $this->messageHandler->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface {
             if (! $guild = $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $message->react("🔥");
-            if (! $members = $guild->members->filter(function (Member $member) { return ! $member->roles->has($this->role_ids['veteran']) && ! $member->roles->has($this->role_ids['infantry']) && ! $member->roles->has($this->role_ids['banished']) && ! $member->roles->has($this->role_ids['permabanished']); })) return $message->react("👎");
+            if (! $members = $guild->members->filter(function (Member $member) { return ! $member->roles->has($this->role_ids['veteran']) && ! $member->roles->has($this->role_ids['infantry']) && ! $member->roles->has($this->role_ids['banished']) && ! $member->roles->has($this->role_ids['permabanished']) && ! $member->roles->has($this->role_ids['dungeon']); })) return $message->react("👎");
             foreach ($members as $member) if ($this->getVerifiedItem($member)) $member->addRole($this->role_ids['infantry'], 'fixroles');
             return $message->react("👍");
         }), ['Owner', 'High Staff']);
