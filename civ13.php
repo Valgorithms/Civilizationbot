@@ -3339,7 +3339,7 @@ class Civ13
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                    if ((count($linesplit)>=8) && ($linesplit[8]=$ckey)) {
+                    if ((count($linesplit)>=8) && ($linesplit[8] === $ckey)) {
                         fclose($file);
                         return true;
                     }
