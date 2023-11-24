@@ -199,7 +199,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme): void
         // send follow up (instead of respond)
         $interaction->sendFollowUpMessage(MessageBuilder...);
       });
-    }
+    });
     */
 };
 /*$on_ready = function (Civ13 $civ13): void

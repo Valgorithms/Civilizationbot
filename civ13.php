@@ -271,15 +271,13 @@ class Civ13
     protected function generateServerFunctions(): void
     {
         // messageHandler
-        foreach ($this->server_settings as $key => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
-
-            if (! file_exists($settings['basedir'] . self::playernotes_basedir)) $this->logger->debug("Skipping server function `{$server}notes` because the required config files were not found.");
+            if (! file_exists($settings['basedir'] . self::playernotes_basedir)) $this->logger->debug("Skipping server function `{$settings['key']}notes` because the required config files were not found.");
             else {
-                $servernotes = function (Message $message, array $message_filtered) use ($server, $settings): PromiseInterface
+                $servernotes = function (Message $message, array $message_filtered) use ($settings): PromiseInterface
                 {
-                    if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content'], strlen($server.'notes')))) return $this->reply($message, 'Missing ckey! Please use the format `notes ckey`');
+                    if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content'], strlen("{$settings['key']}notes")))) return $this->reply($message, 'Missing ckey! Please use the format `notes ckey`');
                     $first_letter_lower = strtolower(substr($ckey, 0, 1));
                     $first_letter_upper = strtoupper(substr($ckey, 0, 1));
                     
@@ -307,22 +305,22 @@ class Civ13
                     
                     return $this->reply($message, $result, 'info.sav', true);
                 };
-                $this->messageHandler->offsetSet($server.'notes', $servernotes, ['Owner', 'High Staff', 'Admin']);
+                $this->messageHandler->offsetSet("{$settings['key']}notes", $servernotes, ['Owner', 'High Staff', 'Admin']);
             }
             
-            $serverconfigexists = function (?Message $message = null) use ($key): PromiseInterface|bool
+            $serverconfigexists = function (?Message $message = null) use ($settings): PromiseInterface|bool
             {
-                if (isset($this->server_settings[$key])) {
+                if (isset($settings['key'])) {
                     if ($message) return $message->react("👍");
                     return true;
                 }
                 if ($message) return $message->react("👎");
                 return false;
             };
-            $this->logger->info("Generating {$server}configexists command.");
-            $this->messageHandler->offsetSet($server.'configexists', $serverconfigexists, ['Owner', 'High Staff']);
+            $this->logger->info("Generating {$settings['key']}configexists command.");
+            $this->messageHandler->offsetSet("{$settings['key']}configexists", $serverconfigexists, ['Owner', 'High Staff']);
 
-            $serverstatus = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server): ?PromiseInterface
+            $serverstatus = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]): ?PromiseInterface
             {
                 $builder = MessageBuilder::new();
                 $builder->addEmbed($this->generateServerstatusEmbed());
@@ -338,49 +336,49 @@ class Civ13
                 $settings['basedir'] . self::updateserverabspaths
             ] as $fp) {
                 if (! file_exists($fp)) {
-                    $this->logger->debug("Skipping server function `{$server}host` because the required config file `{$fp}` was not found.");
+                    $this->logger->debug("Skipping server function `{$settings['key']}host` because the required config file `$fp` was not found.");
                     $allRequiredFilesExist = false;
                     break;
                 }
             }
             if ($allRequiredFilesExist) {
-                $serverhost = function (?Message $message = null) use ($server, $settings): void {
+                $serverhost = function (?Message $message = null) use ($settings): void {
                     \execInBackground('python3 ' . $settings['basedir'] . self::updateserverabspaths);
                     \execInBackground('rm -f ' . $settings['basedir'] . self::serverdata);
                     \execInBackground('python3 ' . $settings['basedir'] . self::killsudos);
 
-                    if (!isset($this->timers[$server.'host'])) {
-                        $this->timers[$server.'host'] = $this->discord->getLoop()->addTimer(30, function () use ($settings, $message) {
+                    if (!isset($this->timers["{$settings['key']}host"])) {
+                        $this->timers["{$settings['key']}host"] = $this->discord->getLoop()->addTimer(30, function () use ($settings, $message) {
                             \execInBackground('nohup DreamDaemon ' . $settings['basedir'] . self::dmb . ' ' . $settings['port'] . ' -trusted -webclient -logself &');
                             if ($message) $message->react("👍");
                         });
                     }
                     if ($message) $message->react("⏱️");
                 };
-                $this->messageHandler->offsetSet($server.'host', $serverhost, ['Owner', 'High Staff']);
+                $this->messageHandler->offsetSet("{$settings['key']}host", $serverhost, ['Owner', 'High Staff']);
             }
             
             
-            if (! file_exists($settings['basedir'] . self::killciv13)) $this->logger->debug("Skipping server function `{$server}kill` because the required config files were not found.");
+            if (! file_exists($settings['basedir'] . self::killciv13)) $this->logger->debug("Skipping server function `{$settings['key']}kill` because the required config files were not found.");
             else {
-                $serverkill = function (?Message $message = null) use ($server, $settings): void
+                $serverkill = function (?Message $message = null) use ($settings): void
                 {
                     $this->loop->addTimer(10, function () use ($settings): void
                     {
                         \execInBackground('python3 ' . $settings['basedir'] . self::killciv13);
                     });
                     if ($message) $message->react("👍");
-                    $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $server);
+                    $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $settings['key']);
                 };
-                $this->messageHandler->offsetSet($server.'kill', $serverkill, ['Owner', 'High Staff']);
+                $this->messageHandler->offsetSet("{$settings['key']}kill", $serverkill, ['Owner', 'High Staff']);
             }
-            if ($this->messageHandler->offsetExists($server.'host') && $this->messageHandler->offsetExists($server.'kill')) {
-                $serverrestart = function (?Message $message = null) use ($server): ?PromiseInterface
+            if ($this->messageHandler->offsetExists("{$settings['key']}host") && $this->messageHandler->offsetExists("{$settings['key']}kill")) {
+                $serverrestart = function (?Message $message = null) use ($settings): ?PromiseInterface
                 {
-                    $this->loop->addTimer(10, function () use ($server): void
+                    $this->loop->addTimer(10, function () use ($settings): void
                     {
-                        $kill = $this->messageHandler->offsetGet($server.'kill') ?? [];
-                        $host = $this->messageHandler->offsetGet($server.'host') ?? [];
+                        $kill = $this->messageHandler->offsetGet("{$settings['key']}kill") ?? [];
+                        $host = $this->messageHandler->offsetGet("{$settings['key']}host") ?? [];
                         if (
                             ($kill = array_shift($kill))
                             && ($host = array_shift($host))
@@ -390,20 +388,20 @@ class Civ13
                             {$host();});
                         }
                     });
-                    if ($message) $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
-                    else $this->OOCMessage("Server is now restarting.", $this->discord->user->displayname, $server);
+                    if ($message) $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $settings['key']);
+                    else $this->OOCMessage("Server is now restarting.", $this->discord->user->displayname, $settings['key']);
                     if ($message) return $message->react("👍");
                     return null;
                 };
-                $this->messageHandler->offsetSet($server.'restart', $serverrestart, ['Owner', 'High Staff']);
+                $this->messageHandler->offsetSet("{$settings['key']}restart", $serverrestart, ['Owner', 'High Staff']);
             }
 
-            if (! file_exists($settings['basedir'] . self::mapswap)) $this->logger->debug("Skipping server function `{$server}mapswap` because the required config files were not found.");
+            if (! file_exists($settings['basedir'] . self::mapswap)) $this->logger->debug("Skipping server function `{$settings['key']}mapswap` because the required config files were not found.");
             else {
 
-                $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($server, $settings): ?PromiseInterface
+                $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($settings): ?PromiseInterface
                 {
-                    $mapswap = function (string $mapto, ?Message $message = null, ) use ($server, $settings): ?PromiseInterface
+                    $mapswap = function (string $mapto, ?Message $message = null, ) use ($settings): ?PromiseInterface
                     {
                         if (! file_exists($this->files['map_defines_path']) || ! $file = @fopen($this->files['map_defines_path'], 'r')) {
                             $this->logger->error("unable to open `{$this->files['map_defines_path']}` for reading.");
@@ -419,11 +417,11 @@ class Civ13
                         if (! in_array($mapto, $maps)) return $this->reply($message, "`$mapto` was not found in the map definitions.");
                         
                         \execInBackground('python3 ' . $settings['basedir'] . self::mapswap . " $mapto");
-                        if ($message) return $this->reply($message, "Attempting to change `$server` map to `$mapto`");
+                        if ($message) return $this->reply($message, "Attempting to change `{$settings['key']}` map to `$mapto`");
                     };
-                    $split_message = explode($server.'mapswap ', $message_filtered['message_content']);
+                    $split_message = explode("{$settings['key']}mapswap ", $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->reply($message, 'You need to include the name of the map.');
-                    $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $server);
+                    $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $settings['key']);
                     $this->loop->addtimer(10, function () use ($mapto, $mapswap, $message): ?PromiseInterface
                     {
                         if ($message) $message->react("👍");
@@ -432,48 +430,47 @@ class Civ13
                     });
                     if ($message) return $message->react("⏱️");
                 };
-                $this->messageHandler->offsetSet($server.'mapswap', $servermapswap, ['Owner', 'High Staff', 'Admin']);
+                $this->messageHandler->offsetSet("{$settings['key']}mapswap", $servermapswap, ['Owner', 'High Staff', 'Admin']);
             }
 
-            $serverban = function (Message $message, array $message_filtered) use ($server, $key, $settings): PromiseInterface
+            $serverban = function (Message $message, array $message_filtered) use ($settings): PromiseInterface
             {
-                if (! $this->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `$server ban` because the required config roles were not found.");
-                if (! $message_content = substr($message_filtered['message_content'], strlen($key.'ban'))) return $this->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
+                if (! $this->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `{$settings['key']} ban` because the required config roles were not found.");
+                if (! $message_content = substr($message_filtered['message_content'], strlen("{$settings['key']}ban"))) return $this->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
                 $split_message = explode('; ', $message_content); // $split_target[1] is the target
                 if (! $split_message[0]) return $this->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
                 if (! $split_message[1]) return $this->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
                 if (! $split_message[2]) return $this->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
                 $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->discord_formatted}"];
-                $result = $this->ban($arr, $this->getVerifiedItem($message->author)['ss13'], $key, $settings);
+                $result = $this->ban($arr, $this->getVerifiedItem($message->author)['ss13'], $settings);
                 if ($member = $this->getVerifiedMember('id', $split_message[0]))
                     if (! $member->roles->has($this->role_ids['banished']))
                         $member->addRole($this->role_ids['banished'], $result);
                 return $this->reply($message, $result);
             };
-            $this->messageHandler->offsetSet($server.'ban', $serverban, ['Owner', 'High Staff', 'Admin']);
+            $this->messageHandler->offsetSet("{$settings['key']}ban", $serverban, ['Owner', 'High Staff', 'Admin']);
 
-            $serverunban = function (Message $message, array $message_filtered) use ($key, $settings): PromiseInterface
+            $serverunban = function (Message $message, array $message_filtered) use ($settings): PromiseInterface
             {
-                if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($key.'unban')))) return $this->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
+                if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen("{$settings['key']}unban")))) return $this->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
                 if (is_numeric($ckey)) {
                     if (! $item = $this->getVerifiedItem($ckey)) return $this->reply($message, "No data found for Discord ID `$ckey`.");
                     $ckey = $item['ckey'];
                 }
                 
-                $this->unban($ckey, $admin = $this->getVerifiedItem($message->author)['ss13'], $key, $settings);
-                $result = "**$admin** unbanned **$ckey** from **$key**";
+                $this->unban($ckey, $admin = $this->getVerifiedItem($message->author)['ss13'], $settings);
+                $result = "**$admin** unbanned **$ckey** from **{$settings['key']}**";
                 if (! $this->sharding)
                     if ($member = $this->getVerifiedMember('id', $ckey))
                         if ($member->roles->has($this->role_ids['banished']))
                             $member->removeRole($this->role_ids['banished'], $result);
                 return $this->reply($message, $result);
             };
-            $this->messageHandler->offsetSet($server.'unban',  $serverunban, ['Owner', 'High Staff', 'Admin']);
+            $this->messageHandler->offsetSet("{$settings['key']}unban",  $serverunban, ['Owner', 'High Staff', 'Admin']);
         }
         // httpHandler
-        foreach ($this->server_settings as $key => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
 
             //TODO
         }
@@ -883,12 +880,11 @@ class Civ13
         $this->messageHandler->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
                 switch (strtolower($message->channel->name)) {
-                    case "ooc-{$server}":                    
-                        if ($this->OOCMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $key)) return $message->react("📧");
+                    case "ooc-{$settings['key']}":                    
+                        if ($this->OOCMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -899,12 +895,11 @@ class Civ13
         $this->messageHandler->offsetSet('asay', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
                 switch (strtolower($message->channel->name)) {
-                    case "asay-{$server}":
-                        if ($this->AdminMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $key)) return $message->react("📧");
+                    case "asay-{$settings['key']}":
+                        if ($this->AdminMessage($message_filtered['message_content'], $this->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -933,14 +928,13 @@ class Civ13
             $explode = explode(';', $message_filtered['message_content']);
             $recipient = $this->sanitizeInput(substr(array_shift($explode), strlen($command)));
             $msg = implode(' ', $explode);
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
                 switch (strtolower($message->channel->name)) {
-                    case "asay-{$server}":
-                    case "ic-{$server}":
-                    case "ooc-{$server}":
-                        if ($this->DirectMessage($recipient, $msg, $this->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $key)) return $message->react("📧");
+                    case "asay-{$settings['key']}":
+                    case "ic-{$settings['key']}":
+                    case "ooc-{$settings['key']}":
+                        if ($this->DirectMessage($recipient, $msg, $this->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -959,7 +953,7 @@ class Civ13
             $reason = 'unknown';
             $found = false;
             $content = '';
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::bans)) {
                     $this->logger->warning("Either basedir or `" . self::bans . "` is not defined or does not exist");
@@ -971,13 +965,13 @@ class Civ13
                 }
                 while (($fp = fgets($file, 4096)) !== false) {
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                    if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($ckey))) {
+                    if ((count($linesplit)>=8) && ($linesplit[8] === strtolower($ckey))) {
                         $found = true;
                         $type = $linesplit[0];
                         $reason = $linesplit[3];
                         $admin = $linesplit[4];
                         $date = $linesplit[5];
-                        $content .= "**$ckey** has been **$type** banned from **$key** on **$date** for **$reason** by $admin." . PHP_EOL;
+                        $content .= "**$ckey** has been **$type** banned from **{$settings['name']}** on **$date** for **$reason** by $admin." . PHP_EOL;
                     }
                 }
                 fclose($file);
@@ -1084,7 +1078,7 @@ class Civ13
                     $log = explode(';', trim($lsplit));
                     array_walk_recursive($temp, function (&$arr) use ($log) {
                         $a = explode(';', $arr);
-                        if (isset($a[8]) && $a[8] == $log[0]) {
+                        if (isset($a[8]) && $a[8] === $log[0]) {
                             $a[9] = $log[2];
                             $a[10] = $log[1];
                             $arr = implode(';', $a);
@@ -1129,17 +1123,16 @@ class Civ13
             if (! isset($split_message[2]) || ! $split_message[2]) return $this->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
             $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->discord_formatted}"];
     
-            foreach ($this->server_settings as $key => $settings) { // TODO: Review this for performance and redundancy
+            foreach ($this->server_settings as $settings) { // TODO: Review this for performance and redundancy
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
-                if (! isset($this->timers['banlog_update_'.$server])) $this->timers['banlog_update_'.$server] = $this->discord->getLoop()->addTimer(30, function () use ($banlog_update, $arr) {
+                if (! isset($this->timers["banlog_update_{$settings['key']}"])) $this->timers["banlog_update_{$settings['key']}"] = $this->discord->getLoop()->addTimer(30, function () use ($banlog_update, $arr) {
                     $playerlogs = [];
-                    foreach (array_values($this->server_settings) as $s) {
+                    foreach ($this->server_settings as $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
                         if (! file_exists($fp = $s['basedir'] . self::playerlogs)) continue;
                         if ($playerlog = @file_get_contents($fp)) $playerlogs[] = $playerlog;
                     }
-                    if ($playerlogs) foreach (array_values($this->server_settings) as $s) {
+                    if ($playerlogs) foreach ($this->server_settings as $s) {
                         if (! isset($s['enabled']) || ! $s['enabled']) continue;
                         if (! file_exists($fp = $s['basedir'] . self::bans)) continue;
                         file_put_contents($fp, $banlog_update(file_get_contents($fp), $playerlogs, $arr['ckey']), FILE_APPEND);
@@ -1169,12 +1162,11 @@ class Civ13
         {            
             $builder = MessageBuilder::new();
             $found = false;
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
                 $basedir = $settings['basedir'];
                 if (! file_exists($basedir . self::admins) || ! $file_contents = @file_get_contents($basedir . self::admins)) {
-                    $this->logger->debug("`{$server}_admins` is not a valid file path!");
+                    $this->logger->debug("`{$settings['key']}_admins` is not a valid file path!");
                     continue;
                 }
                 $builder->addFileFromContent($basedir . self::admins, $file_contents);
@@ -1187,11 +1179,10 @@ class Civ13
         $this->messageHandler->offsetSet('factionlist', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {            
             $builder = MessageBuilder::new()->setContent('Faction Lists');
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $server = strtolower($key);
                 $basedir = $settings['basedir'];
-                if (file_exists($basedir . self::factionlist)) $builder->addfile($basedir . self::factionlist, $server.'_factionlist.txt');
+                if (file_exists($basedir . self::factionlist)) $builder->addfile($basedir . self::factionlist, "{$settings['key']}_factionlist.txt");
                 else $this->logger->warning('`' . $basedir . self::factionlist . '` is not a valid file path!');
             }
             return $message->reply($builder);
@@ -1208,10 +1199,10 @@ class Civ13
         {
             $tokens = explode(';', $message_content);
             $keys = [];
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $keys[] = $server = strtolower($key);
-                if (trim($tokens[0]) !== $server) continue; // Check if server is valid
+                $keys[] = $settings['key'];
+                if (trim($tokens[0]) !== $settings['key']) continue; // Check if server is valid
                 if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::log_basedir)) {
                     $this->logger->warning("Either basedir or `" . self::log_basedir . "` is not defined or does not exist");
                     return $message->react("🔥");
@@ -1236,10 +1227,10 @@ class Civ13
         {
             $tokens = explode(';', trim(substr($message_filtered['message_content'], strlen($command))));
             $keys = [];
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $keys[] = $server = strtolower($key);
-                if (trim($tokens[0]) !== $server) continue;
+                $keys[] = $settings['key'];
+                if (trim($tokens[0]) !== $settings['key']) continue;
                 if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::playerlogs) || ! $file_contents = @file_get_contents($settings['basedir'] . self::playerlogs)) return $message->react("🔥");
                 return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
             }
@@ -1259,7 +1250,7 @@ class Civ13
         {
             if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
             if (! in_array($state, ['on', 'off'])) return $this->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
-            if ($state == 'on') {
+            if ($state === 'on') {
                 \execInBackground("cd {$this->folders['typespess_path']}");
                 \execInBackground('git pull');
                 \execInBackground("sh {$this->files['typespess_launch_server_path']}&");
@@ -1308,7 +1299,7 @@ class Civ13
                 $result = '';
                 foreach ($line_array as $line) {
                     $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-                    if ($sline[1] == $ckey) {
+                    if ($sline[1] === $ckey) {
                         $found = true;
                         $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
                     };
@@ -1334,7 +1325,7 @@ class Civ13
                 while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
                     $found = true;
                     $duser = explode(';', $line);
-                    if ($duser[0] == $ckey) {
+                    if ($duser[0] === $ckey) {
                         switch ($duser[2]) {
                             case 'long service medal': $medal_s = '<:long_service:705786458874707978>'; break;
                             case 'combat medical badge': $medal_s = '<:combat_medical_badge:706583430141444126>'; break;
@@ -1352,7 +1343,7 @@ class Civ13
                     }
                 }
                 if ($result != '') return $result;
-                if (! $found && ($result == '')) return 'No medals found for this ckey.';
+                if (! $found && ($result === '')) return 'No medals found for this ckey.';
             };
             $this->messageHandler->offsetSet('medals', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($medals): PromiseInterface
             {
@@ -1370,7 +1361,7 @@ class Civ13
                 while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
                     $found = true;
                     $duser = explode(';', $line);
-                    if ($duser[0] == $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
+                    if ($duser[0] === $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
                 }
                 if (! $found) return 'No medals found for this ckey.';
                 return $result;
@@ -1708,10 +1699,9 @@ class Civ13
             return $channel->sendEmbed($embed);
         };
         
-        foreach ($this->server_settings as $key => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
-            $server_endpoint = '/' . $server;
+            $server_endpoint = '/' . $settings['key'];
 
             $this->httpHandler->offsetSet($server_endpoint.'/bans', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
@@ -1720,7 +1710,7 @@ class Civ13
                 return HttpResponse::plaintext($return);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($server, $settings): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if (! file_exists($playerlogs = $settings['basedir'] . self::playerlogs)) return HttpResponse::plaintext("Unable to access `$playerlogs`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
                 if (! $return = @file_get_contents($playerlogs)) return HttpResponse::plaintext("Unable to read `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -1729,10 +1719,9 @@ class Civ13
         }
 
         $endpoint = '/webhook';
-        foreach ($this->server_settings as $key => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
-            $server_endpoint = $endpoint . '/' . $server;
+            $server_endpoint = $endpoint . '/' . $settings['key'];
 
             // If no parameters are passed to a server_endpoint, try to find it using the query parameters
             $this->httpHandler->offsetSet($server_endpoint, new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
@@ -1749,11 +1738,11 @@ class Civ13
                 return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_asay_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_asay_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1765,11 +1754,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/asaymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/asaymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_asay_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_asay_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1782,11 +1771,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/urgentasaymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/urgentasaymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_asay_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_asay_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_asay_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1800,11 +1789,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/lobbymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/lobbymessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_lobby_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_lobby_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_lobby_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_lobby_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1816,11 +1805,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/oocmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/oocmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_ooc_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ooc_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_ooc_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_ooc_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 //$time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1832,11 +1821,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/icmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/icmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_ic_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_ic_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 //$time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1848,11 +1837,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/memessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/memessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_ic_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_ic_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_ic_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1864,11 +1853,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/garbage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/garbage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_adminlog_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_adminlog_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_adminlog_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_adminlog_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1880,36 +1869,36 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/round_start', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/round_start', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids[$settings['key']])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$settings['key']])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 $message = '';
                 if (isset($this->role_ids['round_start'])) $message .= "<@&{$this->role_ids['round_start']}>, ";
                 $message .= 'New round ';
                 if (isset($data['round']) && $game_id = $data['round']) {
-                    $this->logNewRound($server, $game_id, $time);
+                    $this->logNewRound($settings['key'], $game_id, $time);
                     $message .= "`$game_id` ";
                 }
                 $message .= 'has started!';
-                if ($playercount_channel = $this->discord->getChannel($this->channel_ids[$server . '-playercount']))
+                if ($playercount_channel = $this->discord->getChannel($this->channel_ids["{$settings['key']}-playercount"]))
                 if ($existingCount = explode('-', $playercount_channel->name)[1]) {
                     $existingCount = intval($existingCount);
                     switch ($existingCount) {
                         case 0:
-                            $message .= ' There are currently no players on the ' . ($key ?? $server) . ' server.';
+                            $message .= " There are currently no players on the {$settings['name']} server.";
                             break;
                         case 1:
-                            $message .= ' There is currently 1 player on the ' . ($key ?? $server) . ' server.';
+                            $message .= " There is currently 1 player on the {$settings['name']} server.";
                             break;
                         default:
                             if (isset($this->role_ids['30+']) && $this->role_ids['30+'] && ($existingCount >= 30)) $message .= " <@&{$this->role_ids['30+']}>,";
                             elseif (isset($this->role_ids['15+']) && $this->role_ids['15+'] && ($existingCount >= 15)) $message .= " <@&{$this->role_ids['15+']}>,";
                             elseif (isset($this->role_ids['2+']) && $this->role_ids['2+'] && ($existingCount >= 2)) $message .= " <@&{$this->role_ids['2+']}>,";
-                            $message .= ' There are currently ' . $existingCount . ' players on the ' . ($key ?? $server) . ' server.';
+                            $message .= " There are currently $existingCount players on the {$settings['name']} server.";
                             break;
                     }
                 }
@@ -1917,15 +1906,15 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/respawn_notice', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/respawn_notice', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             { // NYI
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
-            $this->httpHandler->offsetSet($server_endpoint.'/login', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/login', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_transit_channel'], $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_transit_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_transit_channel"], $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_transit_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
@@ -1934,12 +1923,12 @@ class Civ13
                 if (isset($data['ip'])) $message .= " with IP of {$data['ip']}";
                 if (isset($data['cid'])) $message .= " and CID of {$data['cid']}";
                 $message .= '.';
-                if (isset($this->current_rounds[$server]) && $this->current_rounds[$server]) $this->logPlayerLogin($server, $ckey, $time, $data['ip'] ?? '', $data['cid'] ?? '');
+                if (isset($this->current_rounds[$settings['key']]) && $this->current_rounds[$settings['key']]) $this->logPlayerLogin($settings['key'], $ckey, $time, $data['ip'] ?? '', $data['cid'] ?? '');
 
                 if (isset($this->paroled[$ckey])) {
                     $message2 = '';
                     if (isset($this->role_ids['parolemin'])) $message2 .= "<@&{$this->role_ids['parolemin']}>, ";
-                    $message2 .= "`$ckey` has logged into `$server`";
+                    $message2 .= "`$ckey` has logged into `{$settings['name']}`";
                     $this->sendMessage($parole_notif_channel, $message2);
                 }
 
@@ -1947,22 +1936,22 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/logout', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/logout', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_transit_channel'], $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_transit_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_transit_channel"], $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_transit_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 if (! $parole_notif_channel = $this->discord->getChannel($channel_id = $this->channel_ids['parole_notif'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 $message = "$ckey disconnected from the server.";
-                if (isset($this->current_rounds[$server]) && $this->current_rounds[$server]) $this->logPlayerLogout($server, $ckey, $time);
+                if (isset($this->current_rounds[$settings['key']]) && $this->current_rounds[$settings['key']]) $this->logPlayerLogout($settings['key'], $ckey, $time);
 
                 if (isset($this->paroled[$ckey])) {
                     $message2 = '';
                     if (isset($this->role_ids['parolemin'])) $message2 .= "<@&{$this->role_ids['parolemin']}>, ";
-                    $message2 .= "`$ckey` has log out of `$server`";
+                    $message2 .= "`$ckey` has log out of `{$settings['name']}`";
                     $this->sendMessage($parole_notif_channel, $message2);
                 }
 
@@ -1970,11 +1959,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/runtimemessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/runtimemessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_runtime_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_runtime_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_runtime_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_runtime_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1985,11 +1974,11 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/alogmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/alogmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$server.'_adminlog_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_adminlog_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($this->channel_ids["{$settings['key']}_adminlog_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_adminlog_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
@@ -1999,12 +1988,12 @@ class Civ13
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/attacklogmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($key, $server, $relay): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/attacklogmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings, $relay): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if ($server == 'tdm') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); // Disabled on TDM, use manual checking of log files instead
-                if (! isset($this->channel_ids[$server.'_attack_channel'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids[$server.'_attack_channel'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if ($settings['key'] === 'tdm') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); // Disabled on TDM, use manual checking of log files instead
+                if (! isset($this->channel_ids["{$settings['key']}_attack_channel"])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($channel_id = $this->channel_ids["{$settings['key']}_attack_channel"])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = null;
@@ -2254,11 +2243,11 @@ class Civ13
                                 }
                             </style>
                             <div class='nav-container'>"
-                                . ($endpoint == '/botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
+                                . ($endpoint === '/botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
                             . "</div>
                             <div class='reload-container'>
                                 <div class='checkbox-container'>
-                                    <input type='checkbox' id='auto-reload-checkbox' " . (isset($_COOKIE['auto-reload']) && $_COOKIE['auto-reload'] == 'true' ? 'checked' : '') . ">
+                                    <input type='checkbox' id='auto-reload-checkbox' " . (isset($_COOKIE['auto-reload']) && $_COOKIE['auto-reload'] === 'true' ? 'checked' : '') . ">
                                     <label for='auto-reload-checkbox'>Auto Reload</label>
                                 </div>
                                 <button id='reload-button'>Reload</button>
@@ -2575,11 +2564,10 @@ class Civ13
                     {
                         if ($this->relay_method !== 'file') return null;
                         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
-                        foreach ($this->server_settings as $key => $settings) {
+                        foreach ($this->server_settings as $settings) {
                             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                            $server = strtolower($key);
-                            if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_ooc_channel'])) $this->gameChatFileRelay($settings['basedir'] . self::ooc_path, $channel);  // #ooc-server
-                            if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $guild->channels->get('id', $this->channel_ids[$server.'_asay_channel'])) $this->gameChatFileRelay($settings['basedir'] . self::admin_path, $channel);  // #asay-server
+                            if (isset($this->channel_ids["{$settings['key']}_ooc_channel"]) && $channel = $guild->channels->get('id', $this->channel_ids["{$settings['key']}_ooc_channel"])) $this->gameChatFileRelay($settings['basedir'] . self::ooc_path, $channel);  // #ooc-server
+                            if (isset($this->channel_ids["{$settings['key']}_asay_channel"]) && $channel = $guild->channels->get('id', $this->channel_ids["{$settings['key']}_asay_channel"])) $this->gameChatFileRelay($settings['basedir'] . self::admin_path, $channel);  // #asay-server
                         }
                     });
                     if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
@@ -2788,10 +2776,9 @@ class Civ13
      */
     public function banlogHandler(Message $message, string $message_content_lower): PromiseInterface 
     {
-        $server = strtolower($message_content_lower);
-        $server_settings = array_filter($this->server_settings, function($key) use ($server) {
-            return strtolower($key) === $server;
-        }, ARRAY_FILTER_USE_KEY);
+        $server_settings = array_filter($this->server_settings, function($settings) use ($message_content_lower) {
+            return $settings['key'] === strtolower($message_content_lower);
+        });
         if (empty($server_settings)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->server_settings)) . '`');
 
         $server_settings = reset($server_settings);
@@ -3077,18 +3064,18 @@ class Civ13
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                $msg = $this->ban($arr, null, '', [], true);
+                $msg = $this->ban($arr, null, [], true);
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                 return $reason;
             }
             $found = false;
             $file_contents = '';
-            foreach ($this->server_settings as $key => $settings) {
+            foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 if (file_exists($settings['basedir'] . self::playerlogs) && $fc = @file_get_contents($settings['basedir'] . self::playerlogs)) $file_contents .= $fc;
                 else $this->logger->warning('unable to open `' . $settings['basedir'] . self::playerlogs . '`');
             }
-            foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] == $ckey) { $found = true; break; }
+            foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] === $ckey) { $found = true; break; }
             if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
             return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
@@ -3120,7 +3107,7 @@ class Civ13
         }
 
         $removed = array_filter($verified_array, function ($value) use ($id) {
-            return $value['ss13'] == $id || $value['discord'] == $id;
+            return $value['ss13'] === $id || $value['discord'] === $id;
         });
 
         if (! $removed) {
@@ -3346,13 +3333,13 @@ class Civ13
     }
     public function legacyBancheck(string $ckey): bool
     {
-        foreach (array_values($this->server_settings) as $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled'] || ! isset($settings['basedir'])) continue;
             if (file_exists($settings['basedir'] . self::bans) && $file = @fopen($settings['basedir'] . self::bans, 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                    if ((count($linesplit)>=8) && ($linesplit[8] == $ckey)) {
+                    if ((count($linesplit)>=8) && ($linesplit[8]=$ckey)) {
                         fclose($file);
                         return true;
                     }
@@ -3364,13 +3351,13 @@ class Civ13
     }
     public function legacyPermabancheck(string $ckey): bool
     {
-        foreach (array_values($this->server_settings) as $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled'] || ! isset($settings['basedir'])) continue;
             if (file_exists($settings['basedir'] . self::bans) && $file = @fopen($settings['basedir'] . self::bans, 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                    if ((count($linesplit)>=8) && ($linesplit[8] == $ckey) && ($linesplit[0] == 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
+                    if ((count($linesplit)>=8) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
                         fclose($file);
                         return true;
                     }
@@ -3420,24 +3407,24 @@ class Civ13
     }
     public function __panicBan(string $ckey): void
     {
-        if (! $this->bancheck($ckey, true)) foreach ($this->server_settings as $server => $settings) {
+        if (! $this->bancheck($ckey, true)) foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['panic']) || ! $settings['panic']) continue;
             $settings['legacy']
-                ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $server, $settings)
-                : $this->sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $server);
+                ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $settings)
+                : $this->sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $settings);
             $this->panic_bans[$ckey] = true;
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
     }
     public function __panicUnban(string $ckey): void
     {
-        foreach ($this->server_settings as $server => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['panic']) || ! $settings['panic']) continue;
             $settings['legacy']
                 ? $this->legacyUnban($ckey, null, $settings)
-                : $this->sqlUnban($ckey, null, $server);
+                : $this->sqlUnban($ckey, null, $settings);
             unset($this->panic_bans[$ckey]);
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
@@ -3447,7 +3434,7 @@ class Civ13
     * These Legacy and SQL functions should not be called directly
     * Define $legacy = true/false and use ban/unban methods instead
     */
-    public function sqlUnban($array, $admin = null, ?string $key = ''): string
+    public function sqlUnban($array, $admin = null, ?array $settings = []): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
@@ -3462,39 +3449,39 @@ class Civ13
             } else $this->logger->warning('unable to open `' . $settings['basedir'] . self::discord2unban . '`');
         };
         if ($settings) $legacyUnban($ckey, $admin, $settings);
-        else foreach (array_values($this->server_settings) as $settings) {
-            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $legacyUnban($ckey, $admin, $settings);
+        else foreach ($this->server_settings as $s) {
+            if (! isset($s['enabled']) || ! $s['enabled']) continue;
+            $legacyUnban($ckey, $admin, $s);
         }
     }
     public function sqlpersunban(string $ckey, ?string $admin = null): void
     {
         // TODO
     }
-    public function legacyBan(array $array, $admin = null, ?string $key = '', ?array $settings = []): string
+    public function legacyBan(array $array, $admin = null, ?array $settings = []): string
     {
         $admin = $admin ?? $this->discord->user->username;
-        $legacyBan = function (array $array, string $admin, string $key, array $settings): string
+        $legacyBan = function (array $array, string $admin, array $settings): string
         {
             if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
             if (file_exists($settings['basedir'] . self::discord2ban) && $file = @fopen($settings['basedir'] . self::discord2ban, 'a')) {
                 fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
                 fclose($file);
-                return "**$admin** banned **{$array['ckey']}** from **{$key}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
+                return "**$admin** banned **{$array['ckey']}** from **{$settings['key']}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
             } else {
                 $this->logger->warning('unable to open `' . $settings['basedir'] . self::discord2ban . '`');
                 return 'unable to open `' . $settings['basedir'] . self::discord2ban . '`' . PHP_EOL;
             }
         };
-        if ($key && $settings) return $legacyBan($array, $admin, $key, $settings);
+        if ($settings) return $legacyBan($array, $admin, $settings);
         $result = '';
-        foreach ($this->server_settings as $key => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $result .= $legacyBan($array, $admin, $key, $settings);
+            $result .= $legacyBan($array, $admin, $settings);
         }
         return $result;
     }
-    public function sqlBan(array $array, $admin = null, ?string $key = ''): string
+    public function sqlBan(array $array, $admin = null, ?string $settings = ''): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
@@ -3531,12 +3518,12 @@ class Civ13
     * Ban functions will return a string containing the results of the ban
     * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
     */
-    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, ?string $key = '', ?array $settings = [], bool $permanent = false): string
+    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, ?array $settings = [], bool $permanent = false): string
     {
         if (! isset($array['ckey'])) return "You must specify a ckey to ban.";
         if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) return "The ckey must be a Byond username or Discord ID.";
         if (! isset($array['duration'])) return "You must specify a duration to ban for.";
-        if ($array['duration'] == '999 years') $permanent = true;
+        if ($array['duration'] === '999 years') $permanent = true;
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
         $array['ckey'] = $this->sanitizeInput($array['ckey']);
         if (is_numeric($array['ckey'])) {
@@ -3549,14 +3536,14 @@ class Civ13
                     if (! $permanent) $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
                     else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
                 }
-        if ($this->legacy) return $this->legacyBan($array, $admin, $key, $settings);
-        return $this->sqlBan($array, $admin, $key, $settings);
+        if ($this->legacy) return $this->legacyBan($array, $admin, $settings);
+        return $this->sqlBan($array, $admin, $settings);
     }
-    public function unban(string $ckey, ?string $admin = null, ?string $key = '', ?array $settings = []): void
+    public function unban(string $ckey, ?string $admin = null,?array $settings = []): void
     {
         $admin ??= $this->discord->user->displayname;
         if ($this->legacy) $this->legacyUnban($ckey, $admin, $settings);
-        else $this->sqlUnban($ckey, $admin, $key);
+        else $this->sqlUnban($ckey, $admin, $settings);
         if (! $this->shard && $member = $this->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
             if ($member->roles->has($this->role_ids['permabanished'])) {
@@ -3566,39 +3553,37 @@ class Civ13
         }
     }
 
-    public function OOCMessage(string $message, string $sender, ?string $server = '', ?array $settings = []): bool
+    public function OOCMessage(string $message, string $sender, ?array $settings = []): bool
     {
-        $oocmessage = function (string $message, string $sender, string $server, array $settings): bool
+        $oocmessage = function (string $message, string $sender, array $settings): bool
         {
-            $server = strtolower($server);
             if (file_exists($settings['basedir'] . self::discord2ooc) && $file = @fopen($settings['basedir'] . self::discord2ooc, 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
-                if (isset($this->channel_ids[$server.'_ooc_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_ooc_channel'])) $this->sendPlayerMessage($channel, false, $message, $sender);
+                if (isset($this->channel_ids["{$settings['key']}_ooc_channel"]) && $channel = $this->discord->getChannel($this->channel_ids["{$settings['key']}_ooc_channel"])) $this->sendPlayerMessage($channel, false, $message, $sender);
                 return true; 
             }
             $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2ooc . '` for writing');
             return false;
         };
         $sent = false;
-        foreach ($this->server_settings as $key => $settings) {
-            if ($server) {
-                if (strtolower($server) !== strtolower($key)) continue;
-                if (! $this->server_settings[$key]['enabled'] ?? false) return false;
-                return $oocmessage($message, $sender, $key, $settings);
+        foreach ($this->server_settings as $s) {
+            if ($settings) {
+                if ($settings['key'] !== $settings['key']) continue;
+                if (! $s['enabled'] ?? false) return false;
+                return $oocmessage($message, $sender, $settings);
             } else {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $sent = $oocmessage($message, $sender, $key, $settings);
+                $sent = $oocmessage($message, $sender, $settings);
             }
         }
         return $sent;
     }
 
-    public function AdminMessage(string $message, string $sender, ?string $server = '', ?array $settings = []): bool
+    public function AdminMessage(string $message, string $sender,?array $settings = []): bool
     {
-        $adminmessage = function (string $message, string $sender, string $server, array $settings): bool
+        $adminmessage = function (string $message, string $sender, array $settings): bool
         {
-            $server = strtolower($server);
             if (file_exists($settings['basedir'] . self::discord2admin) && $file = @fopen($settings['basedir'] . self::discord2admin, 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
@@ -3617,49 +3602,48 @@ class Civ13
                                         if (in_array($item['ss13'], $playerlist))
                                             { $urgent = false; break; }
                 }
-                if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, $urgent, $message, $sender);
+                if (isset($this->channel_ids["{$settings['key']}_asay_channel"]) && $channel = $this->discord->getChannel($this->channel_ids["{$settings['key']}_asay_channel"])) $this->sendPlayerMessage($channel, $urgent, $message, $sender);
                 return true;
             }
             $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2admin . '` for writing');
             return false;
         };
         $sent = false;
-        foreach ($this->server_settings as $key => $settings) {
-            if ($server) {
-                if (strtolower($server) !== strtolower($key)) continue;
-                if (! $this->server_settings[$key]['enabled'] ?? false) return false;
-                return $adminmessage($message, $sender, $key, $settings);
+        foreach ($this->server_settings as $s) {
+            if ($settings['key']) {
+                if ($settings['key'] !== $s['key']) continue;
+                if (! $s['enabled'] ?? false) return false;
+                return $adminmessage($message, $sender, $settings);
             } else {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $sent = $adminmessage($message, $sender, $key, $settings);
+                $sent = $adminmessage($message, $sender, $settings);
             }
         }
         return $sent;
     }
 
-    public function DirectMessage(string $recipient, string $message, string $sender, ?string $server = '', ?array $settings = []): bool
+    public function DirectMessage(string $recipient, string $message, string $sender, ?array $settings = []): bool
     {
-        $directmessage = function (string $recipient, string $message, string $sender, string $server, array $settings): bool
+        $directmessage = function (string $recipient, string $message, string $sender, array $settings): bool
         {
-            $server = strtolower($server);
             if (file_exists($settings['basedir'] . self::discord2dm) && $file = @fopen($settings['basedir'] . self::discord2dm, 'a')) {
                 fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
                 fclose($file);
-                if (isset($this->channel_ids[$server.'_asay_channel']) && $channel = $this->discord->getChannel($this->channel_ids[$server.'_asay_channel'])) $this->sendPlayerMessage($channel, false, $message, $sender, $recipient);
+                if (isset($this->channel_ids["{$settings['key']}_asay_channel"]) && $channel = $this->discord->getChannel($this->channel_ids["{$settings['key']}_asay_channel"])) $this->sendPlayerMessage($channel, false, $message, $sender, $recipient);
                 return true;
             }
             $this->logger->debug('unable to open `' . $settings['basedir'] . self::discord2dm . '` for writing');
             return false;
         };
         $sent = false;
-        foreach ($this->server_settings as $key => $settings) {
-            if ($server) {
-                if (strtolower($server) !== strtolower($key)) continue;
-                if (! $this->server_settings[$key]['enabled'] ?? false) return false;
-                return $directmessage($recipient, $message, $sender, $key, $settings);
+        foreach ($this->server_settings as  $s) {
+            if ($settings['key']) {
+                if ($settings['key'] !== $s['key']) continue;
+                if (! $s['enabled'] ?? false) return false;
+                return $directmessage($recipient, $message, $sender, $settings);
             } else {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $sent = $directmessage($recipient,$message, $sender, $key, $settings);
+                if (! isset($s['enabled']) || ! $s['enabled']) continue;
+                $sent = $directmessage($recipient, $message, $sender, $settings);
             }
         }
         return $sent;
@@ -3692,7 +3676,7 @@ class Civ13
             : 'offline';
         if ($reported_status != $status) {
             $msg = "Webserver is now **{$status}**.";
-            if ($status == 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
+            if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
             $this->sendMessage($channel, $msg);
             $channel->name = "{$webserver_name}-{$status}";
             return $channel->guild->channels->save($channel);
@@ -3708,7 +3692,7 @@ class Civ13
             : 'offline';
         if ($reported_status != $status) {
             $msg = "Verifier is now **{$status}**.";
-            if ($status == 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified.";
+            if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified.";
             $this->sendMessage($channel, $msg);
             $channel->name = "{$verifier_name}-{$status}";
             return $channel->guild->channels->save($channel);
@@ -3731,9 +3715,8 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach ($this->server_settings as $key => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
             if (file_exists($settings['basedir'] . self::bans) && $fc = @file_get_contents($settings['basedir'] . self::bans)) $file_contents .= $fc;
             else $this->logger->warning('unable to open `' . $settings['basedir'] . self::bans . '`');
         }
@@ -3790,9 +3773,8 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach ($this->server_settings as $key => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            $server = strtolower($key);
             if (file_exists($settings['basedir'] . self::playerlogs) && $fc = @file_get_contents($settings['basedir'] . self::playerlogs)) $file_contents .= $fc;
             else $this->logger->warning('unable to open `' . $settings['basedir'] . self::playerlogs . '`');
         }
@@ -3933,7 +3915,7 @@ class Civ13
         curl_close($ch);
         $json = @json_decode($response, true);
         if (! $json) return ''; // If the request timed out or if the service 429'd us
-        if ($json['status'] == 'success') return $json['countryCode'] . '->' . $json['region'] . '->' . $json['city'];
+        if ($json['status'] === 'success') return $json['countryCode'] . '->' . $json['region'] . '->' . $json['city'];
     }
     function IP2Country(string $ip): string
     {
@@ -3955,17 +3937,17 @@ class Civ13
             $ckeyinfo = $this->ckeyinfo($ckey);
             if ($ckeyinfo['altbanned']) { // Banned with a different ckey
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                $msg = $this->ban($arr, null, '', [], true) . ' (Alt Banned)';
+                $msg = $this->ban($arr, null, [], true) . ' (Alt Banned)';
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
             } else foreach ($ckeyinfo['ips'] as $ip) {
                 if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                    $msg = $this->ban($arr, null, '', [], true) . ' (Blacklisted Country)';
+                    $msg = $this->ban($arr, null, [], true) . ' (Blacklisted Country)';
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     break;
                 } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                    $msg = $this->ban($arr, null, '', [], true) . ' (Blacklisted Region)';
+                    $msg = $this->ban($arr, null, [], true) . ' (Blacklisted Region)';
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     break 2;
                 }
@@ -3978,7 +3960,7 @@ class Civ13
         }
         if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-            $msg = $this->ban($arr, null, '', [], true);
+            $msg = $this->ban($arr, null, [], true);
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
         }
     }
@@ -4003,17 +3985,17 @@ class Civ13
                     $ckeyinfo = $this->ckeyinfo($ckey);
                     if (isset($ckeyinfo['altbanned']) && $ckeyinfo['altbanned']) { // Banned with a different ckey
                         $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                        $msg = $this->ban($arr, null, '', [], true). ' (Alt Banned)';;
+                        $msg = $this->ban($arr, null, [], true). ' (Alt Banned)';;
                         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                     } else if (isset($ckeyinfo['ips'])) foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
                             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                            $msg = $this->ban($arr, null, '', [], true) . ' (Blacklisted Country)';
+                            $msg = $this->ban($arr, null, [], true) . ' (Blacklisted Country)';
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                             break;
                         } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
                             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                            $msg = $this->ban($arr, null, '', [], true) . ' (Blacklisted Region)';
+                            $msg = $this->ban($arr, null, [], true) . ' (Blacklisted Region)';
                             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                             break 2;
                         }
@@ -4023,7 +4005,7 @@ class Civ13
                 //if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
                 if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                    $msg = $this->ban($arr, null, '', [], true);
+                    $msg = $this->ban($arr, null, [], true);
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
                 }
             }
@@ -4129,16 +4111,15 @@ class Civ13
      */
     public function localServerPlayerCount(array $servers = [], array $players = []): array
     {
-        foreach ($this->server_settings as $key => $settings) {            
+        foreach ($this->server_settings as $settings) {            
             if (! isset($settings['ip'], $settings['port'])) {
-                $this->logger->warning("Server {$key} is missing required settings in config!");
+                $this->logger->warning("Server {$settings['key']} is missing required settings in config!");
                 continue;
             }
             if ($settings['ip'] !== $this->httpHandler->external_ip) continue;
-            $k = strtolower($key);
             $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
             $server_status = is_resource($socket) ? 'Online' : 'Offline';
-            $servers[$k] = 0;
+            $servers[$settings['key']] = 0;
             if ($server_status === 'Online') {
                 fclose($socket);
                 if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
@@ -4161,7 +4142,7 @@ class Civ13
                         $players = explode('&', $data[11]);
                         $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
                     }
-                    if (isset($data[4])) $servers[$k] = $data[4]; // Player count
+                    if (isset($data[4])) $servers[$settings['key']] = $data[4]; // Player count
                 }
             }
         }
@@ -4171,16 +4152,15 @@ class Civ13
     public function generateServerstatusEmbed(): Embed
     {        
         $embed = new Embed($this->discord);
-        foreach ($this->server_settings as $key => $settings) {            
+        foreach ($this->server_settings as $settings) {            
             if (! isset($settings['ip'], $settings['port'])) {
-                $this->logger->warning("Server {$key} is missing required settings in config!");
+                $this->logger->warning("Server {$settings['key']} is missing required settings in config!");
                 continue;
             }
             if ($settings['ip'] !== $this->httpHandler->external_ip) continue;
-            $k = strtolower($key);
             $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
             $server_status = is_resource($socket) ? 'Online' : 'Offline';
-            if ($server_status === 'Offline') $embed->addFieldValues($key, $server_status);
+            if ($server_status === 'Offline') $embed->addFieldValues($settings['name'], $server_status);
             if ($server_status === 'Online') {
                 fclose($socket);
                 if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
@@ -4199,7 +4179,7 @@ class Civ13
                     10 => season={season}
                     11 => ckey_list={ckey&ckey}
                     */
-                    if (isset($data[1])) $embed->addFieldValues($key, '<'.$data[1].'>');
+                    if (isset($data[1])) $embed->addFieldValues($settings['name'], '<'.$data[1].'>');
                     if (isset($settings['host'])) $embed->addFieldValues('Host', $settings['host'], true);
                     if (isset($data[7])) {
                         list($hours, $minutes) = explode(':', $data[7]);
@@ -4273,7 +4253,7 @@ class Civ13
      */
     public function joinRoles(Member $member): ?PromiseInterface
     {
-        if ($member->guild_id == $this->civ13_guild_id && $item = $this->verified->get('discord', $member->id)) {
+        if ($member->guild_id === $this->civ13_guild_id && $item = $this->verified->get('discord', $member->id)) {
             if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
             else {
                 if (($item['ss13'] && isset($this->softbanned[$item['ss13']])) || isset($this->softbanned[$member->id])) return null;
@@ -4285,7 +4265,7 @@ class Civ13
                 return $member->setroles([$this->role_ids['infantry']], "verified join {$item['ss13']}");
             }
         }
-        if (isset($this->welcome_message, $this->channel_ids['get-approved']) && $this->welcome_message && $member->guild_id == $this->civ13_guild_id)
+        if (isset($this->welcome_message, $this->channel_ids['get-approved']) && $this->welcome_message && $member->guild_id === $this->civ13_guild_id)
             if ($channel = $this->discord->getChannel($this->channel_ids['get-approved']))
                 return $this->sendMessage($channel, "<@{$member->id}>, " . $this->welcome_message);
         return null;
@@ -4449,7 +4429,7 @@ class Civ13
     // This function is called from the game's chat hook if a player says something that contains a blacklisted word
     private function __relayViolation(string $server, string $ckey, array $badwords_array, array &$badword_warnings): string|bool // TODO: return type needs to be decided
     {
-        if ($this->sanitizeInput($ckey) == $this->sanitizeInput($this->discord->user->displayname)) return false; // Don't ban the bot
+        if ($this->sanitizeInput($ckey) === $this->sanitizeInput($this->discord->user->displayname)) return false; // Don't ban the bot
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
         if (! $this->__relayWarningCounter($ckey, $badwords_array, $badword_warnings)) {
             $arr = ['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->discord_formatted}"];
@@ -4457,7 +4437,7 @@ class Civ13
         }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
-        foreach (array_keys($this->server_settings) as $key) if (strtolower($server) == strtolower($key)) return $this->DirectMessage($ckey, $warning, $this->discord->user->displayname, $key);
+        foreach ($this->server_settings as $settings) if (strtolower($server) === $settings['key']) return $this->DirectMessage($ckey, $warning, $this->discord->user->displayname, $settings);
         return false;
     }
     /*
@@ -4570,7 +4550,7 @@ class Civ13
     {
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         $file_paths = [];
-        foreach (array_values($this->server_settings) as $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::whitelist)) continue;
             $file_paths[] = $settings['basedir'] . self::whitelist;
@@ -4593,7 +4573,7 @@ class Civ13
     {
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         $file_paths = [];
-        foreach (array_values($this->server_settings) as $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::factionlist)) continue;
             $file_paths[] = $settings['basedir'] . self::factionlist;
@@ -4638,7 +4618,7 @@ class Civ13
         
         if (! $this->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         $file_paths = [];
-        foreach (array_values($this->server_settings) as $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::admins)) continue;
             $file_paths[] = $settings['basedir'] . self::admins;
