@@ -366,9 +366,8 @@ class Slash
             $reason = 'unknown';
             $found = false;
 
-            foreach (array_keys($this->civ13->server_settings) as $key) {
-                $file_path = strtolower($key) . '_bans';
-                if (isset($this->civ13->files[$file_path]) && file_exists($this->civ13->files[$file_path]) && ($file = @fopen($this->civ13->files[$file_path], 'r'))) {
+            foreach ($this->civ13->server_settings as $key => $settings) {
+                if (file_exists($settings['basedir'] . $this->civ13::bans) && ($file = @fopen($settings['basedir'] . $this->civ13::bans, 'r'))) {
                     while (($fp = fgets($file, 4096)) !== false) {
                         $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
                         if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {

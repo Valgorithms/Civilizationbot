@@ -244,155 +244,21 @@ $options = array(
         // Fun
         'insults_path' => 'insults.txt',
         'ranking_path' => 'ranking.txt',
-        'status_path' => 'status.txt',
-        
+        'status_path' => 'status.txt',      
         // Defines
         'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
-        
-        // Nomads
-        'nomads_log_basedir' => '/home/civ13/civ13-rp/data/logs',
-        'nomads_playernotes_basedir' => '/home/civ13/civ13-rp/data/player_saves',
-        'nomads_ooc_path' => '/home/civ13/civ13-rp/ooc.log',
-        'nomads_admin_path' => '/home/civ13/civ13-rp/admin.log',
-        'nomads_discord2ooc' => '/home/civ13/civ13-rp/SQL/discord2ooc.txt',
-        'nomads_discord2admin' => '/home/civ13/civ13-rp/SQL/discord2admin.txt',
-        'nomads_discord2dm' => '/home/civ13/civ13-rp/SQL/discord2dm.txt',
-        'nomads_discord2ban' => '/home/civ13/civ13-rp/SQL/discord2ban.txt',
-        'nomads_discord2unban' => '/home/civ13/civ13-rp/SQL/discord2unban.txt',
-        'nomads_admins' => '/home/civ13/civ13-rp/SQL/admins.txt',
-        'nomads_whitelist' => '/home/civ13/civ13-rp/SQL/whitelist.txt',
-        'nomads_bans' => '/home/civ13/civ13-rp/SQL/bans.txt',
-        'nomads_playerlogs' => '/home/civ13/civ13-rp/SQL/playerlogs.txt',
-        // Campaign
-        'nomads_factionlist' => '/home/civ13/civ13-rp/SQL/factionlist.txt',
-        
-        // TDM
-        'tdm_log_basedir' => '/home/civ13/civ13-tdm/data/logs',
-        'tdm_playernotes_basedir' => '/home/civ13/civ13-tdm/data/player_saves',
-        'tdm_ooc_path' => '/home/civ13/civ13-tdm/ooc.log',
-        'tdm_admin_path' => '/home/civ13/civ13-tdm/admin.log',
-        'tdm_discord2ooc' => '/home/civ13/civ13-tdm/SQL/discord2ooc.txt',
-        'tdm_discord2admin' => '/home/civ13/civ13-tdm/SQL/discord2admin.txt',
-        'tdm_discord2dm' => '/home/civ13/civ13-tdm/SQL/discord2dm.txt',
-        'tdm_discord2ban' => '/home/civ13/civ13-tdm/SQL/discord2ban.txt',
-        'tdm_discord2unban' => '/home/civ13/civ13-tdm/SQL/discord2unban.txt',
-        'tdm_admins' => '/home/civ13/civ13-tdm/SQL/admins.txt',
-        'tdm_whitelist' => '/home/civ13/civ13-tdm/SQL/whitelist.txt',
-        'tdm_bans' => '/home/civ13/civ13-tdm/SQL/bans.txt',
-        'tdm_playerlogs' => '/home/civ13/civ13-tdm/SQL/playerlogs.txt',
-        // Campaign
-        'tdm_factionlist' => '/home/civ13/civ13-tdm/SQL/factionlist.txt',
-        // Football
-        'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt',
-        // Medals
-        'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt',
-        'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt',
-
-        // Persistence
-        'pers_log_basedir' => '/home/civ13/civ13-pers/data/logs',
-        'pers_playernotes_basedir' => '/home/civ13/civ13-pers/data/player_saves',
-        'pers_ooc_path' => '/home/civ13/civ13-pers/ooc.log',
-        'pers_admin_path' => '/home/civ13/civ13-pers/admin.log',
-        'pers_discord2ooc' => '/home/civ13/civ13-pers/SQL/discord2ooc.txt',
-        'pers_discord2admin' => '/home/civ13/civ13-pers/SQL/discord2admin.txt',
-        'pers_discord2dm' => '/home/civ13/civ13-pers/SQL/discord2dm.txt',
-        'pers_discord2ban' => '/home/civ13/civ13-pers/SQL/discord2ban.txt',
-        'pers_discord2unban' => '/home/civ13/civ13-pers/SQL/discord2unban.txt',
-        'pers_admins' => '/home/civ13/civ13-pers/SQL/admins.txt',
-        'pers_whitelist' => '/home/civ13/civ13-pers/SQL/whitelist.txt',
-        'pers_bans' => '/home/civ13/civ13-pers/SQL/bans.txt',
-        'pers_playerlogs' => '/home/civ13/civ13-pers/SQL/playerlogs.txt',
-        'pers_awards_path' => '/home/civ13/civ13-pers/SQL/awards.txt',
-        'pers_awards_br_path' => '/home/civ13/civ13-pers/SQL/awards_br.txt',
-        // Campaign
-        'pers_factionlist' => '/home/civ13/civ13-pers/SQL/factionlist.txt',
-        // Football
-        'pers_sportsteams' => '/home/civ13/civ13-pers/SQL/sports_teams.txt',
-        // Medals
-        'pers_awards_path' => '/home/civ13/civ13-pers/SQL/awards.txt',
-        'pers_awards_br_path' => '/home/civ13/civ13-pers/SQL/awards_br.txt',
-
-        // Script paths
-        'nomads_updateserverabspaths' => '/home/civ13/civ13-rp/scripts/updateserverabspaths.py',
-        'nomads_serverdata' => '/home/civ13/civ13-rp/serverdata.txt',
-        'nomads_dmb' => '/home/civ13/civ13-rp/civ13.dmb',
-        'nomads_killsudos' => '/home/civ13/civ13-rp/scripts/killsudos.py',
-        'nomads_killciv13' => '/home/civ13/civ13-rp/scripts/killciv13.py',
-        'nomads_mapswap' => '/home/civ13/civ13-rp/scripts/mapswap.py',
-
-        'tdm_updateserverabspaths' => '/home/civ13/civ13-tdm/scripts/updateserverabspaths.py',
-        'tdm_serverdata' => '/home/civ13/civ13-tdm/serverdata.txt',
-        'tdm_dmb' => '/home/civ13/civ13-tdm/civ13.dmb',
-        'tdm_killsudos' => '/home/civ13/civ13-tdm/scripts/killsudos.py',
-        'tdm_killciv13' => '/home/civ13/civ13-tdm/scripts/killciv13.py',
-        'tdm_mapswap' => '/home/civ13/civ13-tdm/scripts/mapswap.py',
-
-        'pers_updateserverabspaths' => '/home/civ13/civ13-pers/scripts/updateserverabspaths.py',
-        'pers_serverdata' => '/home/civ13/civ13-pers/serverdata.txt',
-        'pers_dmb' => '/home/civ13/civ13-pers/civ13.dmb',
-        'pers_killsudos' => '/home/civ13/civ13-pers/scripts/killsudos.py',
-        'pers_killciv13' => '/home/civ13/civ13-pers/scripts/killciv13.py',
-        'pers_mapswap' => '/home/civ13/civ13-pers/scripts/mapswap.py',
-
+  
+        'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt', // Football Teams
+        'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt', // Medals
+        'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt', // Battle Royale Medals
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
         
     ),
     'channel_ids' => array(
         'get-approved' => '690025163634376738', #get-approved
-
-        /* Nomad */
-        'nomads' => '799952084505067581', #nomads
-        'nomads-playercount' => '1048777424894185484', // nomads-#
-
-        'nomads_ooc_channel' => '1110001963405418616', // #ooc-nomads
-        'nomads_lobby_channel' => '1110001986134347856', // #lobby-nomads
-        'nomads_asay_channel' => '1110002005977604186', // #asay-nomads
-        'nomads_ic_channel' => '1121531739114852432', // #ic-nomads
-
-        'nomads_transit_channel' => '1110002027469221989', // #transit-nomads
-        'nomads_adminlog_channel' => '1110002047123738624', // #adminlog-nomads
-        'nomads_debug_channel' => '1106248132779593758', // #debug-nomads (debugging)
-        'nomads_garbage_channel' => '1110002493259251752', // #garbage-nomads
-        'nomads_runtime_channel' => '1110002671936602132', // #runtime-nomads
-        'nomads_attack_channel' => '1110002697383448648', // #attack-nomads
-
-        /* TDM */
-        'tdm' => '799952134426591273', #tdm
-        'tdm-playercount' => '1048777462898761789', // tdm-#
-
-        'tdm_ooc_channel' => '1107016184328622233', // #ooc-tdm
-        'tdm_lobby_channel' => '1107021760483831988', // #lobby-tdm
-        'tdm_asay_channel' => '1107016769169801216', // #asay-tdm
-        'tdm_ic_channel' => '1121531682198138920', // #ic-tdm
-
-        'tdm_transit_channel' => '1107020747622326313', // #transit-tdm
-        'tdm_adminlog_channel' => '1107024305927225455', // #adminlog-tdm
-        'tdm_debug_channel' => '1106248157798600715', // #debug-tdm (debugging)
-        'tdm_garbage_channel' => '1107018726307528735', // #garbage-tdm
-        'tdm_runtime_channel' => '1107017103883632792', // #runtime-tdm
-        'tdm_attack_channel' => '1107017830160936980', // #attack-tdm
-
-        /* Persistence */ 
-        'pers' => '799951945346711552', #pers
-        'pers-playercount' => '1090788345082298369', // pers-#
-
-        'pers_ooc_channel' => '1139614228408455388', // #ooc-pers
-        'pers_lobby_channel' => '1139614248222343282', // #lobby-pers
-        'pers_asay_channel' => '1139614266299785278', // #asay-pers
-        'pers_ic_channel' => '1139614281512529941', // #ic-pers
-        
-        'pers_transit_channel' => '1139614542700216420', // #transit-pers
-        'pers_adminlog_channel' => '1139614564577722448', // #adminlog-pers
-        'pers_debug_channel' => '1139614582931984575', // #debug-pers (debugging)
-        'pers_garbage_channel' => '1139614596789964820', // #garbage-pers
-        'pers_runtime_channel' => '1139614629081915492', // #runtime-pers
-        'pers_attack_channel' => '1139614643954921593', // #attack-pers
-
-        // Misc
         'webserver-status' => '1106967195092783104', #webserver-{status}
         'verifier-status' => '1170015360288829510', #verifier-{status}
         'staff_bot' => '712685552155230278', // #staff-bot
-        // 'ban_appeals' => '1019718839749062687', // #ban-appeals (forum thread, unused by bot)
         'parole_logs' => '985606778916048966', // #parole-logs (for tracking)
         'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
     ),
