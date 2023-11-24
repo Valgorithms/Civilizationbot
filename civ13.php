@@ -3978,7 +3978,7 @@ class Civ13
             $arr = $this->localServerPlayerCount();
             $servers = $arr['playercount'];
             $server_array = $arr['playerlist'];
-            foreach ($servers as $server => $count) $this->playercountChannelUpdate("{$server}-", $count); // This needs to be updated to pass $settings instead of "{$server}-""
+            foreach ($servers as $server => $count) $this->playercountChannelUpdate($server, $count); // This needs to be updated to pass $settings instead of "{$server}-""
             foreach ($server_array as $ckey) {
                 if (is_null($ckey)) continue;
                 if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) { // Suspicious user ban rules
@@ -4024,10 +4024,15 @@ class Civ13
     * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
     * It is called on ready and every 5 minutes
     */
-    private function playercountChannelUpdate(string|array $key, int $count = 0): bool
+    private function playercountChannelUpdate(string|array $settings, int $count = 0): bool
     {
-        if (is_string($key)) $settings['playercount'] = $key;
-        else $settings = $key;
+        if (is_string($settings)) {
+            $filteredSettings = array_filter($this->server_settings, function ($item) use ($settings) {
+                return $item['key'] === $settings;
+            });
+            if (! empty($filteredSettings)) $settings = reset($filteredSettings);
+            else $settings = [];
+        }
 
         if (! $channel = $this->discord->getChannel($settings['playercount'])) {
             $this->logger->warning("Channel {$settings['playercount']} doesn't exist!");
