@@ -16,14 +16,14 @@ use React\Promise\PromiseInterface;
 
 $status_changer_random = function (Civ13 $civ13): bool
 { // on ready
-    if (! $civ13->files['status_path']) {
+    if (! $civ13::status) {
         unset($civ13->timers['status_changer_timer']);
-        $civ13->logger->warning('status_path is not defined');
+        $civ13->logger->warning('status is not defined');
         return false;
     }
-    if (! $status_array = file($civ13->files['status_path'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
+    if (! $status_array = file($civ13::status, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
         unset($civ13->timers['status_changer_timer']);
-        $civ13->logger->warning("unable to open file `{$civ13->files['status_path']}`");
+        $civ13->logger->warning('unable to open file `' . $civ13::status . '`');
         return false;
     }
     list($status, $type, $state) = explode('; ', $status_array[array_rand($status_array)]);

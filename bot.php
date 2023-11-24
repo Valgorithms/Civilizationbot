@@ -241,10 +241,6 @@ $options = array(
         // 'typespess_path' => '/home/civ13/civ13-typespess',
     ),
     'files' => array( // Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
-        // Fun
-        'insults_path' => 'insults.txt',
-        'ranking_path' => 'ranking.txt',
-        'status_path' => 'status.txt',      
         // Defines
         'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
   

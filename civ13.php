@@ -69,6 +69,7 @@ class Civ13
 
     const insults_path = 'insults.txt';
     const ranking_path = 'ranking.txt';
+    const status = 'status.txt';
 
     public bool $sharding = false;
     public bool $shard = false;
