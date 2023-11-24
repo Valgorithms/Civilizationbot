@@ -327,7 +327,7 @@ class Slash
         {
             if (! $this->civ13->webserver_online) {
                 $content = 'Webserver Status: **Offline**, only showing data for locally hosted servers.' . PHP_EOL;
-                foreach ($this->civ13->server_settings as $key => $settings) $content .= "$key: {$settings['ip']}:{$settings['port']}" . PHP_EOL;
+                foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}" . PHP_EOL;
                 $messagebuilder = MessageBuilder::new();
                 $messagebuilder->setContent($content);
                 $messagebuilder->addEmbed($this->civ13->generateServerstatusEmbed());
@@ -347,7 +347,7 @@ class Slash
             $messagebuilder = MessageBuilder::new();
             if ($this->civ13->webserver_online) $content = 'Webserver Status: **Online**' . PHP_EOL;
             else $content = 'Webserver Status: **Offline**, data is stale.' . PHP_EOL;
-            foreach (array_keys($this->civ13->server_settings) as $key => $settings) $content .= "$key: {$settings['ip']}:{$settings['port']}";
+            foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}";
             $messagebuilder->setContent($content);
             $messagebuilder->addEmbed($embed);
             return $interaction->respondWithMessage($messagebuilder);
