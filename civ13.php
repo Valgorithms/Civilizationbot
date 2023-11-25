@@ -690,11 +690,11 @@ class Civ13
             $this->messageHandler->offsetSet('insult', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 $split_message = explode(' ', $message_filtered['message_content']); // $split_target[1] is the target
-                if ((count($split_message) <= 1 ) || ! strlen($split_message[1] === 0)) return null;
-                if (! ($file = @fopen(self::insults_path, 'r'))) return $message->react("🔥");
-                $insults_array = array();
-                while (($fp = fgets($file, 4096)) !== false) $insults_array[] = $fp;
-                if (count($insults_array) > 0) return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $insults_array[rand(0, count($insults_array)-1)])->setAllowedMentions(['parse'=>[]]));
+                if (count($split_message) <= 1 || strlen($split_message[1]) === 0) return null;
+                if (! empty($insults_array = file(self::insults_path, FILE_IGNORE_NEW_LINES))) {
+                    $random_insult = $insults_array[array_rand($insults_array)];
+                    return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $random_insult)->setAllowedMentions(['parse' => []]));
+                }
                 return $this->reply($message, 'No insults found!');
             }));
 
