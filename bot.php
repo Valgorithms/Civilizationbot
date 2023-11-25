@@ -244,7 +244,7 @@ $options = array(
         // Defines
         'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
   
-        'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt', // Football Teams
+        'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt', // Football Teams (This is only used for the 'sportsteams' chat command)
         'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt', // Medals
         'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt', // Battle Royale Medals
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',

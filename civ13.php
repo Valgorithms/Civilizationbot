@@ -1379,12 +1379,11 @@ class Civ13
 
             $updated = false;
             foreach ($this->server_settings as $settings) {
-                if (!isset($settings['enabled']) || !$settings['enabled']) continue;
-                if (! $bans = @file_get_contents( $fp = $settings['basedir'] . self::bans)) {
-                    $this->logger->warning("`$fp` is not a valid file path!");
-                    continue;
-                }
-                if (! @file_put_contents($fp = $settings['basedir'] . self::bans, preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($bans, $server_playerlogs)), FILE_APPEND)) {
+                if (! isset($settings['enabled']) || !$settings['enabled']) continue;
+                $fp = $settings['basedir'] . self::bans;
+                $existingContent = @file_get_contents($fp);
+                $newContent = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($existingContent, $server_playerlogs));
+                if ($newContent !== $existingContent) if (! file_put_contents($fp, $newContent, FILE_APPEND)) {
                     $this->logger->warning("Error updating bans for {$fp}!");
                     continue;
                 }
