@@ -97,14 +97,12 @@ $options = array(
     'http_port' => $http_port,
     'http_key' => $http_key,
     'http_whitelist' => $http_whitelist,
-    
     // The Verify URL is where verification requests are sent to and where the verification list is retrieved from
     // The website must return valid json when no parameters are passed to it and MUST allow POST requests including 'token', 'ckey', and 'discord'
     // Reach out to Valithor if you need help setting up your website
     'webserver_url' => 'www.valzargaming.com',
     'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
     // 'serverinfo_url' => '', // URL of the serverinfo.json file
-
     'discord_formatted' => 'civ13.com slash discord',
     'rules' => 'civ13.com slash rules',
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
@@ -113,6 +111,9 @@ $options = array(
     'owner_id' => '196253985072611328', // Taislin
     'technician_id' => '116927250145869826', // Valithor
     'civ13_guild_id' => '468979034571931648', // Civ13
+    'legacy' => true,
+    'relay_method' => 'webhook',
+    'moderate' => true,
     'server_settings' => [ // Server specific settings, listed in the order in which they appear on the VZG server list.
         'TDM' => [
             'supported' => true,
@@ -202,9 +203,6 @@ $options = array(
             'attack' => '1139614643954921593', // #attack-pers
         ],
     ],
-    'legacy' => true,
-    'relay_method' => 'webhook',
-    'moderate' => true,
     'ooc_badwords' => [
         /* Format:
             'word' => 'bad word' // Bad word to look for
@@ -279,13 +277,11 @@ $options = array(
         'red' => '1132678312301428886', // Redmenia
         'blue' => '1132678353070067802', // Blugoslavia
         'organizer' => '1089060051425165362', // Admin / Faction Organizer
-
         // Notification pings
         'round_start' => '1110597830403424328', // Round Start Ping
         '2+' => '981963719804346418', // LowPopStart
         '15+' => '981963721817620511', // 15+ Popping
         '30+' => '981963696895062106', // 30+ Popping
-
         // Server channels
         'tdm' => '753768519203684445',
         'nomads' => '753768513671397427',
@@ -314,7 +310,38 @@ $options = array(
         ],
     ),
 );
+// Write server settings, channel IDs, and role IDs to a single JSON file
 
+/*
+$json = json_encode([
+    //'server_settings' => $options['server_settings'],
+    'github' => $options['github'],
+    'command_symbol' => $options['command_symbol'],
+    'owner_id' => $options['owner_id'],
+    'technician_id' => $options['technician_id'],
+    'civ13_guild_id' => $options['civ13_guild_id'],
+    'discord_invite' => $options['discord_invite'],
+    'discord_formatted' => $options['discord_formatted'],
+    'rules' => $options['rules'],
+    'relay_method' => $options['relay_method'],
+    'sharding' => $options['sharding'],
+    'shard' => $options['shard'],
+    'legacy' => $options['legacy'],
+    'moderate' => $options['moderate'],
+    'webserver_url' => $options['webserver_url'],
+    'verify_url' => $options['verify_url'],
+    'channel_ids' => $options['channel_ids'],
+    'role_ids' => $options['role_ids'],
+    'files' => $options['files'],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+file_put_contents("config.json", $json);
+
+// Load configurations from the JSON file
+$loadedData = [];
+$json = file_get_contents("config.json");
+$loadedData = json_decode($json, true);
+foreach ($loadedData as $key => $value) $options[$key] = $value;
+*/
 
 $options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `@CivilizationBot approveme` chat command. Failure to verify in a timely manner will result in an automatic removal from the server.";
 
