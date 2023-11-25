@@ -71,6 +71,7 @@ include 'civ13.php';
 include 'Handler.php';
 include 'messageHandler.php';
 include 'httpHandler.php';
+include 'civ_token.php';
 
 // TODO: Add a timer and a callable function to update these IP addresses every 12 hours
 $civ13_ip = gethostbyname('www.civ13.com');
@@ -81,25 +82,25 @@ $http_key = getenv('WEBAPI_TOKEN') ?? '';
 $webapi = null;
 $socket = null;
 $options = array(
+    'github' => 'https://github.com/VZGCoders/Civilizationbot',
+    'command_symbol' => '@Civilizationbot',
+    'owner_id' => '196253985072611328', // Taislin
+    'technician_id' => '116927250145869826', // Valithor
+    'civ13_guild_id' => '468979034571931648', // Civ13
+    'discord_invite' => 'https://civ13.com/discord',
+    'discord_formatted' => 'civ13.com slash discord',
+    'rules' => 'civ13.com slash rules',
+    'relay_method' => 'webhook',
     'sharding' => false, // Enable sharding of the bot, allowing it to be run on multiple servers without conflicts, and suppressing certain responses where a shard may be handling the request
     'shard' => false, // Whether this instance is a shard
+    'legacy' => true, // Whether to use the filesystem or SQL database system
+    'moderate' => true, // Whether to moderate in-game chat
     // The Verify URL is where verification requests are sent to and where the verification list is retrieved from
     // The website must return valid json when no parameters are passed to it and MUST allow POST requests including 'token', 'ckey', and 'discord'
     // Reach out to Valithor if you need help setting up your website
     'webserver_url' => 'www.valzargaming.com',
     'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
-    // 'serverinfo_url' => '', // URL of the serverinfo.json file
-    'discord_formatted' => 'civ13.com slash discord',
-    'rules' => 'civ13.com slash rules',
-    'github' => 'https://github.com/VZGCoders/Civilizationbot',
-    'discord_invite' => 'https://civ13.com/discord',
-    'command_symbol' => '@Civilizationbot',
-    'owner_id' => '196253985072611328', // Taislin
-    'technician_id' => '116927250145869826', // Valithor
-    'civ13_guild_id' => '468979034571931648', // Civ13
-    'legacy' => true,
-    'relay_method' => 'webhook',
-    'moderate' => true,
+    // 'serverinfo_url' => '', // URL of the serverinfo.json file, defaults to the webserver if left blank
     'ooc_badwords' => [
         /* Format:
             'word' => 'bad word' // Bad word to look for
@@ -184,7 +185,28 @@ $options = array(
         'nomads' => '753768513671397427',
         'pers' => '753768492834095235',
     ),
+);
+$options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `{$options['command_symbol']} approveme` chat command. Failure to verify in a timely manner will result in an automatic removal from the server.";
+foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я', 'і', 'ї', 'є'] as $char) { // // Ban use of Cyrillic characters
+    $options['ooc_badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
+    $options['ic_badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
+}
 
+// Write editable configurations to a single JSON file
+/*
+$json = json_encode($options, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+file_put_contents("config.json", $json);
+*/
+
+// Load configurations from the JSON file
+/*
+$loadedData = [];
+$json = file_get_contents("config.json");
+$loadedData = json_decode($json, true);
+foreach ($loadedData as $key => $value) $options[$key] = $value;
+*/
+
+$hidden_options = [
     'loop' => $loop,
     'discord' => $discord,
     'browser' => $browser,
@@ -198,6 +220,7 @@ $options = array(
     'http_port' => $http_port,
     'http_key' => $http_key,
     'http_whitelist' => $http_whitelist,
+    'civ_token' => getenv('CIV_TOKEN') ?? 'CHANGEME',
     'server_settings' => [ // Server specific settings, listed in the order in which they appear on the VZG server list.
         'TDM' => [
             'supported' => true,
@@ -309,45 +332,11 @@ $options = array(
             'mass_promotion_check' => $mass_promotion_check,
         ],
     ),
-);
-$options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `{$options['command_symbol']} approveme` chat command. Failure to verify in a timely manner will result in an automatic removal from the server.";
-foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я', 'і', 'ї', 'є'] as $char) { // // Ban use of Cyrillic characters
-    $options['ooc_badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
-    $options['ic_badwords'][] = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
-}
-if (include 'civ_token.php') $options['civ_token'] = $civ_token;
+];
+$options = array_merge($options, $hidden_options);
 
-// Write editable configurations to a single JSON file
-/*
-$json = json_encode([
-    //'server_settings' => $options['server_settings'],
-    'github' => $options['github'],
-    'command_symbol' => $options['command_symbol'],
-    'owner_id' => $options['owner_id'],
-    'technician_id' => $options['technician_id'],
-    'civ13_guild_id' => $options['civ13_guild_id'],
-    'discord_invite' => $options['discord_invite'],
-    'discord_formatted' => $options['discord_formatted'],
-    'rules' => $options['rules'],
-    'relay_method' => $options['relay_method'],
-    'sharding' => $options['sharding'],
-    'shard' => $options['shard'],
-    'legacy' => $options['legacy'],
-    'moderate' => $options['moderate'],
-    'webserver_url' => $options['webserver_url'],
-    'verify_url' => $options['verify_url'],
-    'channel_ids' => $options['channel_ids'],
-    'role_ids' => $options['role_ids'],
-    'files' => $options['files'],
-], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-file_put_contents("config.json", $json);
 
-// Load configurations from the JSON file
-$loadedData = [];
-$json = file_get_contents("config.json");
-$loadedData = json_decode($json, true);
-foreach ($loadedData as $key => $value) $options[$key] = $value;
-*/
+
 
 $civ13 = new Civ13($options);
 $global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13) {
