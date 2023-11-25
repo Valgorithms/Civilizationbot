@@ -113,7 +113,6 @@ $options = array(
     'owner_id' => '196253985072611328', // Taislin
     'technician_id' => '116927250145869826', // Valithor
     'civ13_guild_id' => '468979034571931648', // Civ13
-    'verifier_feed_channel_id' => '1032411190695055440', // Channel VZG Verifier webhooks verification messages to
     'server_settings' => [ // Server specific settings, listed in the order in which they appear on the VZG server list.
         'TDM' => [
             'supported' => true,
@@ -241,14 +240,11 @@ $options = array(
         // 'typespess_path' => '/home/civ13/civ13-typespess',
     ),
     'files' => array( // Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
-        // Defines
         'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
-  
         'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt', // Football Teams (This is only used for the 'sportsteams' chat command)
         'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt', // Medals
         'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt', // Battle Royale Medals
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
-        
     ),
     'channel_ids' => array(
         'get-approved' => '690025163634376738', #get-approved
@@ -318,6 +314,8 @@ $options = array(
         ],
     ),
 );
+
+
 $options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `@CivilizationBot approveme` chat command. Failure to verify in a timely manner will result in an automatic removal from the server.";
 
 foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я', 'і', 'ї', 'є'] as $char) { // // Ban use of Cyrillic characters

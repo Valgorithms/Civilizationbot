@@ -147,7 +147,6 @@ class Civ13
     public string $technician_id = '116927250145869826'; // Valithor Obsidion's Discord ID
     public string $embed_footer = ''; // Footer for embeds, this is set in the ready event
     public string $civ13_guild_id = '468979034571931648'; // Guild ID for the Civ13 server
-    public string $verifier_feed_channel_id = '1032411190695055440'; // Channel where the bot will listen for verification notices and then update its verified cache accordingly
     public string $civ_token = ''; // Token for use with $verify_url, this is not the same as the bot token and should be kept secret
 
     public string $github = 'https://github.com/VZGCoders/Civilizationbot'; // Link to the bot's github page
@@ -206,7 +205,6 @@ class Civ13
         if (isset($options['github'])) $this->github = $options['github'];
         if (isset($options['discord_invite'])) $this->discord_invite = $options['discord_invite'];
         if (isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];
-        if (isset($options['verifier_feed_channel_id'])) $this->verifier_feed_channel_id = $options['verifier_feed_channel_id'];
         if (isset($options['civ_token'])) $this->civ_token = $options['civ_token'];
         if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
         if (isset($options['webserver_url'])) $this->webserver_url = $options['webserver_url'];

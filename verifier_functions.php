@@ -9,7 +9,7 @@ $civ_listeners = function (Civ13 $civ13): void // Handles Verified and Veteran c
 { // on ready
     $civ13->discord->on('message', function (Message $message) use ($civ13): void
     {
-        if ($message->channel_id == $civ13->verifier_feed_channel_id) $civ13->getVerified(); // Other bots should webhook to this channel to trigger a refresh
+        //
     });
     
     $civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) use ($civ13): void
