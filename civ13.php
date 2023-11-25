@@ -532,10 +532,13 @@ class Civ13
         {
             $high_rank_check = function (Message $message, array $allowed_ranks = []): bool
             {
-                $resolved_ranks = [];
-                foreach ($allowed_ranks as $rank) if (isset($this->role_ids[$rank])) $resolved_ranks[] = $this->role_ids[$rank];
-                foreach ($message->member->roles as $role) if (in_array($role->id, $resolved_ranks)) return true;
-                return false;
+                $resolved_ranks = array_map(function ($rank) {
+                    return isset($this->role_ids[$rank]) ? $this->role_ids[$rank] : null;
+                }, $allowed_ranks);
+
+                return count(array_filter($resolved_ranks, function ($rank) use ($message) {
+                    return $message->member->roles->has($rank);
+                })) > 0;
             };
             $high_staff = $high_rank_check($message, ['Owner', 'High Staff']);
             if (! $id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
