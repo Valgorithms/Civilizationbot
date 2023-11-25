@@ -4057,7 +4057,7 @@ class Civ13
             $this->logger->warning('No serverinfo data to parse!');
         }
         $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
-        foreach ($this->server_settings as $k => $settings) {
+        foreach ($this->server_settings as $settings) {
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
             if (! isset($settings['supported']) || ! $settings['supported']) { 
                 $this->logger->debug("Server {$settings['name']} is not supported by the remote webserver!");
@@ -4231,11 +4231,11 @@ class Civ13
         // $relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); // We need to declare stationname in world.dm first
 
         $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
-        foreach ($this->server_settings as $k => $settings) {            
+        foreach ($this->server_settings as $settings) {            
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
             if (! isset($settings['supported']) || ! $settings['supported']) { $index++; continue; } // Server is not supported by the remote webserver and won't appear in data
             if (! isset($settings['name'])) { 
-                $this->logger->warning("Server {$k} is missing a name in config!");
+                $this->logger->warning("Server {$settings['name']} is missing a name in config!");
                 $index++; continue;
             } // Server is missing required settings in config 
             if (array_key_exists('ERROR', $server)) { $index++; continue; } // Remote webserver reports server is not responding
