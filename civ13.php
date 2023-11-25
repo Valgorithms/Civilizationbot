@@ -211,13 +211,9 @@ class Civ13
         if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
         if (isset($options['webserver_url'])) $this->webserver_url = $options['webserver_url'];
         if (isset($options['legacy']) && is_bool($options['legacy'])) $this->legacy = $options['legacy'];
-        if (isset($options['relay_method'])) {
-            if (is_string($options['relay_method'])) {
-                $relay_method = strtolower($options['relay_method']);
-                if (in_array($relay_method, ['file', 'webhook']))
-                    $this->relay_method = $relay_method;
-            }
-        }
+        if (isset($options['relay_method']) && is_string($options['relay_method']))
+            if (in_array($relay_method = strtolower($options['relay_method']), ['file', 'webhook']))
+                $this->relay_method = $relay_method;
         if (isset($options['moderate']) && is_bool($options['moderate'])) $this->moderate = $options['moderate'];
         if (isset($options['ooc_badwords']) && is_array($options['ooc_badwords'])) $this->ooc_badwords = $options['ooc_badwords'];
         if (isset($options['ic_badwords']) && is_array($options['ic_badwords'])) $this->ic_badwords = $options['ic_badwords'];
@@ -509,22 +505,12 @@ class Civ13
         $this->messageHandler->offsetSet('cpu', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (PHP_OS_FAMILY == "Windows") {
-                $p = shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select PercentProcessorTime"');
-                $p = preg_replace('/\s+/', ' ', $p); // reduce spaces
-                $p = str_replace('PercentProcessorTime', '', $p);
-                $p = str_replace('--------------------', '', $p);
-                $p = preg_replace('/\s+/', ' ', $p); // reduce spaces
-                $load_array = explode(' ', $p);
-
-                $x=0;
-                $load = '';
-                foreach ($load_array as $line) if (trim($line) && $x == 0) { $load = "CPU Usage: $line%" . PHP_EOL; break; }
-                return $this->reply($message, $load);
+                $load_array = explode(' ', trim(shell_exec('powershell -command "gwmi Win32_PerfFormattedData_PerfOS_Processor | select -ExpandProperty PercentProcessorTime"')));
+                return $this->reply($message, "CPU Usage: {$load_array[0]}%");
             } else { // Linux
-                $cpu_load = ($cpu_load_array = sys_getloadavg())
-                    ? $cpu_load = array_sum($cpu_load_array) / count($cpu_load_array)
-                    : '-1';
-                return $this->reply($message, "CPU Usage: $cpu_load%");
+                $cpu_load = sys_getloadavg();
+                $cpu_usage = $cpu_load ? array_sum($cpu_load) / count($cpu_load) : -1;
+                return $this->reply($message, "CPU Usage: $cpu_usage%");
             }
             return $this->reply($message, 'Unrecognized operating system!');
         }));
