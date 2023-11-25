@@ -83,20 +83,6 @@ $socket = null;
 $options = array(
     'sharding' => false, // Enable sharding of the bot, allowing it to be run on multiple servers without conflicts, and suppressing certain responses where a shard may be handling the request
     'shard' => false, // Whether this instance is a shard
-
-    'loop' => $loop,
-    'discord' => $discord,
-    'browser' => $browser,
-    'filesystem' => $filesystem,
-    'logger' => $logger,
-    'stats' => $stats,
-
-    'webapi' => &$webapi,
-    'socket' => &$socket,
-    'web_address' => $web_address,
-    'http_port' => $http_port,
-    'http_key' => $http_key,
-    'http_whitelist' => $http_whitelist,
     // The Verify URL is where verification requests are sent to and where the verification list is retrieved from
     // The website must return valid json when no parameters are passed to it and MUST allow POST requests including 'token', 'ckey', and 'discord'
     // Reach out to Valithor if you need help setting up your website
@@ -114,6 +100,104 @@ $options = array(
     'legacy' => true,
     'relay_method' => 'webhook',
     'moderate' => true,
+    'ooc_badwords' => [
+        /* Format:
+            'word' => 'bad word' // Bad word to look for
+            'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] // Duration of the ban
+            'reason' => 'reason' // Reason for the ban
+            'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] // Used to group bad words together by category
+            'method' => detection method ['exact', 'str_contains', 'str_ends_with', 'str_starts_with'] // Exact ignores partial matches, str_contains matches partial matches, etc.
+            'warnings' => 1 // Number of warnings before a ban
+        */
+        ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'str_contains', 'warnings' => 1], // Used to test the system
+        
+        ['word' => 'beaner', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        ['word' => 'chink', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        ['word' => 'coon', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'exact', 'warnings' => 1],
+        ['word' => 'fag', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        ['word' => 'gook', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        ['word' => 'kike', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        ['word' => 'nigg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        ['word' => 'nlgg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        ['word' => 'niqq', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        ['word' => 'tranny', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+        
+        ['word' => 'cunt', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
+        ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
+        ['word' => 'kys', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
+        
+        ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
+        ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
+        //['word' => 'RU', 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'cyrillic', 'warnings' => 2],
+    ],
+    'ic_badwords' => [],
+    'folders' => array(
+        // 'typespess_path' => '/home/civ13/civ13-typespess',
+    ),
+    'files' => array( // Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
+        'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
+        'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt', // Football Teams (This is only used for the 'sportsteams' chat command)
+        'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt', // Medals
+        'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt', // Battle Royale Medals
+        // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
+    ),
+    'channel_ids' => array(
+        'get-approved' => '690025163634376738', #get-approved
+        'webserver-status' => '1106967195092783104', #webserver-{status}
+        'verifier-status' => '1170015360288829510', #verifier-{status}
+        'staff_bot' => '712685552155230278', // #staff-bot
+        'parole_logs' => '985606778916048966', // #parole-logs (for tracking)
+        'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
+    ),
+    'role_ids' => array(
+        // Discord ranks
+        'Owner' => '468980650914086913', // Civ13 Discord Server Owner
+        'Chief Technical Officer' => '791450326455681034', // Civ13 Debug Host / Database admin
+        'Host' => '677873806513274880', // Civ13 Server Host
+        'Head Admin' => '487608503553490965',
+        'Manager' => '496004389950193667',
+        'High Staff' => '792826030796308503',
+        'Supervisor' => '561770271300911105',
+        'Event Admin' => '774435124611514368',
+        'Admin' => '468982360659066912',
+        'Moderator' => '823302316743589938',
+        'Mentor' => '469297467918254085',
+        'veteran' => '468983261708681216', // Promoted
+        'infantry' => '468982790772228127', // Verified
+        'banished' => '710328377210306641', // Banned in-game
+        'permabanished' => '1126137099209425017', // Permanently banned in-game
+        'dungeon' => '547186843746304020', // Dungeon, for those who have had their Discord permissions revoked
+        'paroled' => '745336314689355796', // On parole
+        'parolemin' => '743971427929030748', // Parole Admin
+        
+        // Factions
+        'red' => '1132678312301428886', // Redmenia
+        'blue' => '1132678353070067802', // Blugoslavia
+        'organizer' => '1089060051425165362', // Admin / Faction Organizer
+        // Notification pings
+        'round_start' => '1110597830403424328', // Round Start Ping
+        '2+' => '981963719804346418', // LowPopStart
+        '15+' => '981963721817620511', // 15+ Popping
+        '30+' => '981963696895062106', // 30+ Popping
+        // Server channels
+        'tdm' => '753768519203684445',
+        'nomads' => '753768513671397427',
+        'pers' => '753768492834095235',
+    ),
+
+    'loop' => $loop,
+    'discord' => $discord,
+    'browser' => $browser,
+    'filesystem' => $filesystem,
+    'logger' => $logger,
+    'stats' => $stats,
+
+    'webapi' => &$webapi,
+    'socket' => &$socket,
+    'web_address' => $web_address,
+    'http_port' => $http_port,
+    'http_key' => $http_key,
+    'http_whitelist' => $http_whitelist,
     'server_settings' => [ // Server specific settings, listed in the order in which they appear on the VZG server list.
         'TDM' => [
             'supported' => true,
@@ -203,90 +287,6 @@ $options = array(
             'attack' => '1139614643954921593', // #attack-pers
         ],
     ],
-    'ooc_badwords' => [
-        /* Format:
-            'word' => 'bad word' // Bad word to look for
-            'duration' => duration ['1 minute', '1 hour', '1 day', '1 week', '1 month', '999 years'] // Duration of the ban
-            'reason' => 'reason' // Reason for the ban
-            'category' => rule category ['racism/discrimination', 'toxic', 'advertisement'] // Used to group bad words together by category
-            'method' => detection method ['exact', 'str_contains', 'str_ends_with', 'str_starts_with'] // Exact ignores partial matches, str_contains matches partial matches, etc.
-            'warnings' => 1 // Number of warnings before a ban
-        */
-        ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'str_contains', 'warnings' => 1], // Used to test the system
-        
-        ['word' => 'beaner', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        ['word' => 'chink', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        ['word' => 'coon', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'exact', 'warnings' => 1],
-        ['word' => 'fag', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        ['word' => 'gook', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        ['word' => 'kike', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        ['word' => 'nigg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        ['word' => 'nlgg', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        ['word' => 'niqq', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        ['word' => 'tranny', 'duration' => '999 years', 'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-        
-        ['word' => 'cunt', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
-        ['word' => 'retard', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
-        ['word' => 'kys', 'duration' => '1 minute', 'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
-        
-        ['word' => 'discord.gg', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
-        ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
-        //['word' => 'RU', 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'cyrillic', 'warnings' => 2],
-    ],
-    'ic_badwords' => [],
-    'folders' => array(
-        // 'typespess_path' => '/home/civ13/civ13-typespess',
-    ),
-    'files' => array( // Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
-        'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
-        'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt', // Football Teams (This is only used for the 'sportsteams' chat command)
-        'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt', // Medals
-        'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt', // Battle Royale Medals
-        // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
-    ),
-    'channel_ids' => array(
-        'get-approved' => '690025163634376738', #get-approved
-        'webserver-status' => '1106967195092783104', #webserver-{status}
-        'verifier-status' => '1170015360288829510', #verifier-{status}
-        'staff_bot' => '712685552155230278', // #staff-bot
-        'parole_logs' => '985606778916048966', // #parole-logs (for tracking)
-        'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
-    ),
-    'role_ids' => array(
-        // Discord ranks
-        'Owner' => '468980650914086913', // Civ13 Discord Server Owner
-        'Chief Technical Officer' => '791450326455681034', // Civ13 Debug Host / Database admin
-        'Host' => '677873806513274880', // Civ13 Server Host
-        'Head Admin' => '487608503553490965',
-        'Manager' => '496004389950193667',
-        'High Staff' => '792826030796308503',
-        'Supervisor' => '561770271300911105',
-        'Event Admin' => '774435124611514368',
-        'Admin' => '468982360659066912',
-        'Moderator' => '823302316743589938',
-        'Mentor' => '469297467918254085',
-        'veteran' => '468983261708681216', // Promoted
-        'infantry' => '468982790772228127', // Verified
-        'banished' => '710328377210306641', // Banned in-game
-        'permabanished' => '1126137099209425017', // Permanently banned in-game
-        'dungeon' => '547186843746304020', // Dungeon, for those who have had their Discord permissions revoked
-        'paroled' => '745336314689355796', // On parole
-        'parolemin' => '743971427929030748', // Parole Admin
-        
-        // Factions
-        'red' => '1132678312301428886', // Redmenia
-        'blue' => '1132678353070067802', // Blugoslavia
-        'organizer' => '1089060051425165362', // Admin / Faction Organizer
-        // Notification pings
-        'round_start' => '1110597830403424328', // Round Start Ping
-        '2+' => '981963719804346418', // LowPopStart
-        '15+' => '981963721817620511', // 15+ Popping
-        '30+' => '981963696895062106', // 30+ Popping
-        // Server channels
-        'tdm' => '753768519203684445',
-        'nomads' => '753768513671397427',
-        'pers' => '753768492834095235',
-    ),
     'functions' => array(
         'ready' => [
             // 'on_ready' => $on_ready,
