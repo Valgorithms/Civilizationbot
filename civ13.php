@@ -418,7 +418,7 @@ class Civ13
                     };
                     $split_message = explode("{$settings['key']}mapswap ", $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->reply($message, 'You need to include the name of the map.');
-                    $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $settings['key']);
+                    $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $settings);
                     $this->loop->addtimer(10, function () use ($mapto, $mapswap, $message): ?PromiseInterface
                     {
                         if ($message) $message->react("👍");
@@ -4610,7 +4610,6 @@ class Civ13
         ]
     ): bool
     {
-        
         if (! $this->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         $file_paths = [];
         foreach ($this->server_settings as $settings) {
