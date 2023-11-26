@@ -413,7 +413,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
         str_starts_with($e->getMessage(), 'Received request with invalid protocol version')
     ) return; // Ignore this error, it's not important
     $last_path = preg_replace('/(?<=key=)[^&]+/', '********', $last_path);
-    $error = '[WEBAPI] ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . '] ' . str_replace('\n', PHP_EOL, $e->getTraceAsString());
+    $error = "[WEBAPI] {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error("[WEBAPI] $error");
     if ($request) $civ13->logger->error('[WEBAPI] Request: ' .  preg_replace('/(?<=key=)[^&]+/', '********', $request->getRequestTarget()));
     if (str_starts_with($e->getMessage(), 'The response callback')) {
@@ -421,7 +421,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
         if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
             $builder = \Discord\Builders\MessageBuilder::new()
                 ->setContent('Restarting due to error in HttpServer API...' . PHP_EOL . "Last path: `$last_path`")
-                ->addFileFromContent("httpserver_error.txt",preg_replace('/(?<=key=)[^&]+/', '********', $error));
+                ->addFileFromContent('httpserver_error.txt', preg_replace('/(?<=key=)[^&]+/', '********', $error));
             $channel->sendMessage($builder);
         }
         $socket->close();

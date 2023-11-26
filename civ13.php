@@ -1548,6 +1548,11 @@ class Civ13
         $this->httpHandler->offsetSet('/', $index);
         $this->httpHandler->offsetSet('/index.html', $index);
         $this->httpHandler->offsetSet('/index.php', $index);
+        $robots = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        {
+            return HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /');
+        });
+        $this->httpHandler->offsetSet('/robots.txt', $robots);
         $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!");
