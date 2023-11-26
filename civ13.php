@@ -1453,17 +1453,22 @@ class Civ13
                 foreach ($channels as $channel) {
                     $channelDiv = $doc->createElement('div');
                     $channelDiv->setAttribute('class', 'channel');
-                    $channelName = $doc->createElement('p');
+
+                    $channelName = $doc->createElement('div');
+                    $channelSpan = $doc->createElement('span');
                     $a = $doc->createElement('a', $channel->name);
                     $a->setAttribute('href', 'https://discord.com/channels/' . $guild->id . '/' . $channel->id);
                     $a->setAttribute('target', '_blank');
-                    $channelName->appendChild($a);
-                    $channelDiv->appendChild($channelName);
+                    $channelSpan->appendChild($a);
+                    $channelName->appendChild($channelSpan);
 
                     // Create button and input box
                     $button = $doc->createElement('button', 'Send Message');
                     $button->setAttribute('onclick', "sendMessage('{$channel->id}')");
-                    $channelDiv->appendChild($button);
+                    $channelName->appendChild($doc->createTextNode(' ')); // Add space here
+                    $channelName->appendChild($button);
+
+                    $channelDiv->appendChild($channelName);
                     $guildDiv->appendChild($channelDiv);
                 }
 
