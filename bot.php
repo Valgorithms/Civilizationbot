@@ -1,4 +1,5 @@
 <?php
+$testing = false; // Set to true to disable certain features that may be disruptive to the server when testing locally
 
 /*
  * This file is a part of the Civ13 project.
@@ -408,7 +409,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
  * @param string $last_path The last path that was accessed.
  * @return void
  */
-$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, &$last_path) {
+$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, &$last_path, $testing) {
     if (
         str_starts_with($e->getMessage(), 'Received request with invalid protocol version')
     ) return; // Ignore this error, it's not important
@@ -418,7 +419,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
     if ($request) $civ13->logger->error('[WEBAPI] Request: ' .  preg_replace('/(?<=key=)[^&]+/', '********', $request->getRequestTarget()));
     if (str_starts_with($e->getMessage(), 'The response callback')) {
         $civ13->logger->info('[WEBAPI] ERROR - RESTART');
-        if (isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
+        if (! $testing && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
             $builder = \Discord\Builders\MessageBuilder::new()
                 ->setContent('Restarting due to error in HttpServer API...' . PHP_EOL . "Last path: `$last_path`")
                 ->addFileFromContent('httpserver_error.txt', preg_replace('/(?<=key=)[^&]+/', '********', $error));
