@@ -88,13 +88,13 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public string $external_ip = '127.0.0.1';
     protected string $key = '';
     protected array $whitelist = [];
+    protected array $ratelimits = [];
 
     protected array $endpoints = [];
     
     protected array $whitelisted = [];
     protected array $match_methods = [];
     protected array $descriptions = [];
-
 
     public function __construct(Civ13 &$civ13, array $handlers = [], array $whitelist = [], string $key = '')
     {
@@ -171,8 +171,11 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                 if (! $whitelisted = $this->__isWhitelisted($request->getServerParams()['REMOTE_ADDR'], $data))
                     if (($this->whitelisted[$endpoint] ?? false) !== false)
                         return $this->__throwError("You do not have permission to access this endpoint.");
-                if (($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse) return $response;
-                else return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.");
+                if ($this->isRateLimited($endpoint, $request->getServerParams()['REMOTE_ADDR']))
+                    return $this->__throwError("You are being rate limited.", Response::STATUS_TOO_MANY_REQUESTS);
+                if (!($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse)
+                    return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.");
+                return $response;
             }
         }
         return $this->__throwError("An endpoint for `$path` does not exist.");
@@ -233,6 +236,60 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return true;
     }
     
+    /**
+     * Sets the rate limit for a specific endpoint.
+     *
+     * @param string $endpoint The endpoint to set the rate limit for.
+     * @param int $limit The maximum number of requests allowed within the time window.
+     * @param int $window The time window in seconds.
+     * @return HttpHandler Returns the HttpHandler instance.
+     */
+    public function setRateLimit(string $endpoint, int $limit, int $window): HttpHandler
+    {
+        $this->ratelimits[$endpoint] = [
+            'limit' => $limit,
+            'window' => $window,
+            'requests' => [],
+        ];
+        return $this;
+    }
+
+    /**
+     * Checks if a request exceeds the rate limit for a specific endpoint.
+     *
+     * @param string $endpoint The endpoint to check the rate limit for.
+     * @param string $ip The IP address of the request.
+     * @return bool Returns true if the request exceeds the rate limit, false otherwise.
+     */
+    public function isRateLimited(string $endpoint, string $ip): bool
+    {
+        if (! isset($this->ratelimits[$endpoint])) return false;
+
+        $rateLimit = $this->ratelimits[$endpoint];
+        $currentTime = time();
+
+        // Remove expired requests from the rate limit tracking
+        $rateLimit['requests'] = array_filter($rateLimit['requests'], function ($request) use ($currentTime, $rateLimit) {
+            return ($currentTime - $request['time']) <= $rateLimit['window'];
+        });
+
+        // Check if the number of requests exceeds the limit for the given IP address
+        $requestsFromIp = array_filter($rateLimit['requests'], function ($request) use ($ip) {
+            return $request['ip'] === $ip;
+        });
+
+        if (count($requestsFromIp) >= $rateLimit['limit']) return true;
+
+        // Add the current request to the rate limit tracking
+        $rateLimit['requests'][] = [
+            'ip' => $ip,
+            'time' => $currentTime,
+        ];
+        $this->ratelimits[$endpoint] = $rateLimit;
+
+        return false;
+    }
+
     public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
         parent::offsetSet($offset, $callback);
@@ -296,11 +353,11 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
-    public function __throwError(string $error): Response
+    public function __throwError(string $error, int $status = Response::STATUS_INTERNAL_SERVER_ERROR): Response
     {
         $this->civ13->logger->info("HTTP Server error: `$error`");
         return Response::json(
             ['error' => $error]
-        )->withStatus(Response::STATUS_INTERNAL_SERVER_ERROR);
+        )->withStatus($status);
     }
 }
