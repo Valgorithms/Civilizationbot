@@ -1553,6 +1553,11 @@ class Civ13
             return HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /');
         });
         $this->httpHandler->offsetSet('/robots.txt', $robots);
+        $sitemap = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        {
+            return HttpResponse::xml('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
+        });
+        $this->httpHandler->offsetSet('/sitemap.xml', $sitemap);
         $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!");
