@@ -1565,7 +1565,7 @@ class Civ13
         }));
         $this->httpHandler->offsetSet('/favicon.ico', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
-            if ($favicon = @file_get_contents('favicon.ico')) return new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon'], $favicon);
+            if ($favicon = @file_get_contents('favicon.ico')) return new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon', 'Cache-Control' => 'public, max-age=2592000'], $favicon);
             return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`");
         }));
 
