@@ -184,7 +184,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                 if (! $whitelisted = $this->__isWhitelisted($this->last_ip, $data))
                     if (($this->whitelisted[$endpoint] ?? false) !== false)
                         return $this->__throwError("You do not have permission to access this endpoint.", Response::STATUS_FORBIDDEN);
-                if ($this->isRateLimited($endpoint, $this->last_ip))
+                if ($this->isRateLimited($endpoint, $this->last_ip)) // This is called before the callback is executed so it will be rate limited even if the callback fails and to save processing time
                     return $this->__throwError("The resource is being rate limited.", Response::STATUS_TOO_MANY_REQUESTS);
                 if (!($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse)
                     return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.", Response::STATUS_INTERNAL_SERVER_ERROR);
@@ -193,7 +193,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                     if ($lastRequest['status'] !== $status = $response->getStatusCode()) // Status code could be null or otherwise different if the callback changed it
                         $lastRequest['status'] = $status;
                     if (in_array($status, [Response::STATUS_UNAUTHORIZED, Response::STATUS_FORBIDDEN, Response::STATUS_NOT_FOUND, Response::STATUS_TOO_MANY_REQUESTS, Response::STATUS_INTERNAL_SERVER_ERROR]))
-                        $this->addRequestToRateLimit('invalid', $this->last_ip, time(), $status);
+                        $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
                 }
                 return $response;
             }
@@ -303,7 +303,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      */
     public function isRateLimited(string $endpoint, string $ip): ?int
     {
-        if (isset($this->ratelimits[$endpoint])) $this->addRequestToRateLimit($endpoint, $ip, time(), null);
+        if (isset($this->ratelimits[$endpoint])) $this->addRequestToRateLimit($endpoint, $ip);
         return $this->__getRateLimitExpiration($endpoint, $ip);
     }
     public function __getRateLimitExpiration(string $endpoint, string $ip): ?int
@@ -336,7 +336,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return null;
     }
 
-    private function addRequestToRateLimit(string $endpoint, string $ip, ?int $currentTime, ?int $status): void
+    private function addRequestToRateLimit(string $endpoint, string $ip, ?int $status = null, ?int $currentTime = null): void
     {
         if (! $currentTime) $currentTime = time();
         $rateLimit = $this->ratelimits[$endpoint] ?? [];
@@ -415,8 +415,9 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     {
         if ($status === Response::STATUS_INTERNAL_SERVER_ERROR) $this->civ13->logger->info("HTTP error for IP: `$this->last_ip`: `$error`");
         if (in_array($status, [Response::STATUS_UNAUTHORIZED, Response::STATUS_FORBIDDEN, Response::STATUS_NOT_FOUND, Response::STATUS_TOO_MANY_REQUESTS, Response::STATUS_INTERNAL_SERVER_ERROR])) {
-            $this->addRequestToRateLimit('invalid', $this->last_ip, time(), $status);
-            $this->addRequestToRateLimit('abuse', $this->last_ip, time(), $status);
+            $time = time();
+            $this->addRequestToRateLimit('invalid', $this->last_ip, $status, $time);
+            $this->addRequestToRateLimit('abuse', $this->last_ip, $status, $time);
         }
         return Response::json(
             ['error' => $error]
