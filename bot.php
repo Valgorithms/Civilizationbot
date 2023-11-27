@@ -72,7 +72,7 @@ include 'civ13.php';
 include 'Handler.php';
 include 'messageHandler.php';
 include 'httpHandler.php';
-include 'civ_token.php';
+include 'civ_token.php'; // $civ_token
 
 // TODO: Add a timer and a callable function to update these IP addresses every 12 hours
 $civ13_ip = gethostbyname('www.civ13.com');
@@ -221,7 +221,7 @@ $hidden_options = [
     'http_port' => $http_port,
     'http_key' => $http_key,
     'http_whitelist' => $http_whitelist,
-    'civ_token' => getenv('CIV_TOKEN') ?? 'CHANGEME',
+    'civ_token' => getenv('CIV_TOKEN') ?? $civ_token ?? 'CHANGEME',
     'server_settings' => [ // Server specific settings, listed in the order in which they appear on the VZG server list.
         'TDM' => [
             'supported' => true,
