@@ -340,7 +340,7 @@ $options = array_merge($options, $hidden_options);
 
 
 $civ13 = new Civ13($options);
-$global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13) {
+$global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13, $testing) {
     if (
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         // fsockopen
@@ -361,7 +361,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
     {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
         if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
-        $channel->sendMessage($msg);
+        if (! $testing) $channel->sendMessage($msg);
     }
 };
 set_error_handler($global_error_handler);
