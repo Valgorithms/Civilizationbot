@@ -2286,7 +2286,7 @@ class Civ13
                             </script>";
             };
             if ($return = @file_get_contents('botlog.txt')) return HttpResponse::html($webpage_content($return));
-            return HttpResponse::plaintext("Unable to access `botlog.txt`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+            return $this->httpHandler->__throwError('Unable to access `botlog.txt`', HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
         });
         $this->httpHandler->offsetSet('/botlog', $botlog_func, true);
         $this->httpHandler->offsetSet('/botlog2', $botlog_func, true);
