@@ -119,13 +119,13 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->last_ip = $request->getServerParams()['REMOTE_ADDR'];
         if ($retry_after = $this->isGlobalRateLimited($this->last_ip) ?? $this->isInvalidLimited($this->last_ip)) return $this->__throwError("You are being rate limited. Retry after $retry_after seconds.", Response::STATUS_TOO_MANY_REQUESTS);
 
-        $scheme = $request->getUri()->getScheme();
-        $host = $request->getUri()->getHost();
-        $port = $request->getUri()->getPort();
+        //$scheme = $request->getUri()->getScheme();
+        //$host = $request->getUri()->getHost();
+        //$port = $request->getUri()->getPort();
         $path = $request->getUri()->getPath();
         if ($path === '') $path = '/';
-        $query = $request->getUri()->getQuery();
-        $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
+        //$query = $request->getUri()->getQuery();
+        //$fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
 
         //$url = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
         if (str_starts_with($path, '/webhook/')) $this->civ13->logger->debug("[WEBAPI URL] $path");
