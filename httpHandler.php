@@ -39,19 +39,14 @@ class HttpHandlerCallback implements HttpHandlerCallbackInterface
      */
     public function __construct(callable $callback)
     {
-        $reflection = new \ReflectionFunction($callback);
-        $parameters = $reflection->getParameters();
-
         $expectedParameterTypes = [ServerRequestInterface::class, 'array', 'bool', 'string'];
-
+        
+        $parameters = (new \ReflectionFunction($callback))->getParameters();
         if (count($parameters) !== $count = count($expectedParameterTypes)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
-
         foreach ($parameters as $index => $parameter) {
             if (! $parameter->hasType()) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
-
-            $type = $parameter->getType(); // This could be done all on one line, but it's easier to read this way and makes the compiler happy
-            if ($type !== null && $type instanceof \ReflectionNamedType) $type = $type->getName();
-
+            $type = $parameter->getType();
+            if ($type instanceof \ReflectionNamedType) $type = $type->getName();
             if ($type !== $expectedParameterTypes[$index]) throw new \InvalidArgumentException("Parameter $index must be of type {$expectedParameterTypes[$index]}.");
         }
 
