@@ -2543,8 +2543,8 @@ class Civ13
                 
                 $this->discord->on('message', function (Message $message): void
                 {
-                    $message_filtered = $this->filterMessage($message);
-                    if (! $this->messageHandler->handle($message, $message_filtered)) { // This section will be deprecated in the future
+                    if ($message->user->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
+                    if (! $this->messageHandler->handle($message, $message_filtered = $this->filterMessage($message))) { // This section will be deprecated in the future
                         if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message, $message_filtered); // Variable functions
                         else $this->logger->debug('No message variable functions found!');
                     }
