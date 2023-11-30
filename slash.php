@@ -365,7 +365,6 @@ class Slash
             $response = '';
             $reason = 'unknown';
             $found = false;
-
             foreach ($this->civ13->server_settings as $settings) {
                 if (file_exists($settings['basedir'] . $this->civ13::bans) && ($file = @fopen($settings['basedir'] . $this->civ13::bans, 'r'))) {
                     while (($fp = fgets($file, 4096)) !== false) {
