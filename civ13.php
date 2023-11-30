@@ -4475,47 +4475,32 @@ class Civ13
     public function recalculateRanking(): bool
     {
         if (! isset($this->files['tdm_awards_path'])) return false;
-        if (! file_exists($this->files['tdm_awards_path']) || ! file_exists(self::ranking_path)) return false;
-        if (! $file = @fopen($this->files['tdm_awards_path'], 'r')) return false;
+        if (! file_exists($this->files['tdm_awards_path']) || ! touch(self::ranking_path)) return false;
+        if (! $lines = file($this->files['tdm_awards_path'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
         $result = array();
-        while (! feof($file)) {
+        foreach ($lines as $line) {
             $medal_s = 0;
-            $duser = explode(';', trim(str_replace(PHP_EOL, '', fgets($file))));
-            if (isset($duser[2])) switch ($duser[2]) {
-                case 'long service medal':
-                case 'wounded badge':
-                    $medal_s += 0.5;
-                    break;
-                case 'tank destroyer silver badge':
-                case 'wounded silver badge':
-                    $medal_s += 0.75;
-                    break;
-                case 'wounded gold badge':
-                    $medal_s += 1;
-                    break;
-                case 'assault badge':
-                case 'tank destroyer gold badge':
-                    $medal_s += 1.5;
-                    break;
-                case 'combat medical badge':
-                    $medal_s += 2;
-                    break;
-                case 'iron cross 1st class':
-                    $medal_s += 3;
-                    break;
-                case 'iron cross 2nd class':
-                    $medal_s += 5;
-                    break;
-            }
+            $duser = explode(';', trim($line));
+            $medalScores = [
+                'long service medal' => 0.5,
+                'wounded badge' => 0.5,
+                'tank destroyer silver badge' => 0.75,
+                'wounded silver badge' => 0.75,
+                'wounded gold badge' => 1,
+                'assault badge' => 1.5,
+                'tank destroyer gold badge' => 1.5,
+                'combat medical badge' => 2,
+                'iron cross 1st class' => 3,
+                'iron cross 2nd class' => 5,
+            ];
             if (! isset($result[$duser[0]])) $result[$duser[0]] = 0;
+            if (isset($duser[2]) && isset($medalScores[$duser[2]])) $medal_s += $medalScores[$duser[2]];
             $result[$duser[0]] += $medal_s;
         }
-        fclose ($file);
         arsort($result);
         if (file_put_contents(self::ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
             return "$score;$ckey";
         }, array_keys($result), $result))) === false) return false;
-        fclose ($file);
         return true;
     }
 
@@ -4615,17 +4600,17 @@ class Civ13
      */
     public function adminlistUpdate(
         $required_roles = [
-        'Owner' => ['Host', '65535'],
-        'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
-        'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
-        'Head Admin' => ['Head Admin', '16382'],
-        'Manager' => ['Manager', '16382'],
-        'Supervisor' => ['Supervisor', '16382'],
-        'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
-        'Event Admin' => ['Event Admin', '16254'],
-        'Moderator' => ['Moderator', '8708'], // Moderators will also have the Admin role, but it takes priority
-        'Admin' => ['Admin', '12158'],
-        'Mentor' => ['Mentor', '16384'],
+            'Owner' => ['Host', '65535'],
+            'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
+            'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
+            'Head Admin' => ['Head Admin', '16382'],
+            'Manager' => ['Manager', '16382'],
+            'Supervisor' => ['Supervisor', '16382'],
+            'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
+            'Event Admin' => ['Event Admin', '16254'],
+            'Moderator' => ['Moderator', '8708'], // Moderators will also have the Admin role, but it takes priority
+            'Admin' => ['Admin', '12158'],
+            'Mentor' => ['Mentor', '16384'],
         ]
     ): bool
     {
