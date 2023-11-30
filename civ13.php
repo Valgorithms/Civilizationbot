@@ -4454,14 +4454,18 @@ class Civ13
     * If they have, it will return false to indicate they should be banned
     * If they have not, it will return true to indicate they should be warned
     */
-   private function __relayWarningCounter(string $ckey, array $badwords_array, array &$badword_warnings): bool
-   {
-       if (! isset($badword_warnings[$ckey][$badwords_array['category']])) $badword_warnings[$ckey][$badwords_array['category']] = 1;
-       else ++$badword_warnings[$ckey][$badwords_array['category']];
-        if ($badword_warnings === $this->ic_badwords_warnings) $this->VarSave('ic_badwords_warnings.json', $badword_warnings);
-        elseif ($badword_warnings === $this->ooc_badwords_warnings) $this->VarSave('ooc_badwords_warnings.json', $badword_warnings);        
-       if ($badword_warnings[$ckey][$badwords_array['category']] > $badwords_array['warnings']) return false;
-       return true;
+    private function __relayWarningCounter(string $ckey, array $badwords_array, array &$badword_warnings): bool
+    {
+        if (! isset($badword_warnings[$ckey][$badwords_array['category']])) $badword_warnings[$ckey][$badwords_array['category']] = 1;
+        else ++$badword_warnings[$ckey][$badwords_array['category']];
+
+        $filename = '';
+        if ($badword_warnings === $this->ic_badwords_warnings) $filename = 'ic_badwords_warnings.json';
+        elseif ($badword_warnings === $this->ooc_badwords_warnings) $filename = 'ooc_badwords_warnings.json';
+        if ($filename !== '') $this->VarSave($filename, $badword_warnings);
+
+        if ($badword_warnings[$ckey][$badwords_array['category']] > $badwords_array['warnings']) return false;
+        return true;
    }
 
     /*
