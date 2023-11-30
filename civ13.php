@@ -4512,8 +4512,9 @@ class Civ13
         }
         fclose ($file);
         arsort($result);
-        if (! $file = @fopen(self::ranking_path, 'w')) return false;
-        foreach ($result as $ckey => $score) fwrite($file, "$score;$ckey" . PHP_EOL); // Is this the proper behavior, or should we truncate the file first?
+        if (file_put_contents(self::ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
+            return "$score;$ckey";
+        }, array_keys($result), $result))) === false) return false;
         fclose ($file);
         return true;
     }
