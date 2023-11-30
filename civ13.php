@@ -1490,7 +1490,7 @@ class Civ13
             $body->appendChild($script);
             // Create javascript function for /send-embed
             $script = $doc->createElement('script', '
-                function sendMessage(channelId) {
+                function sendEmbed(channelId) {
                     var input = document.querySelector(`#message-input`);
                     var message = input.value;
                     input.value = \'\';
@@ -1500,6 +1500,7 @@ class Civ13
                         .catch(error => console.error(error));
                 }
             ');
+            $body->appendChild($script);
             
             $html->appendChild($body);
             $doc->appendChild($html);
