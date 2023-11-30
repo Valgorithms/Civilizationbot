@@ -90,7 +90,7 @@ class Civ13
     public Logger $logger;
     public $stats;
 
-    public $filecache_path = '';
+    public string $filecache_path = '';
     
     protected HttpServer $webapi;
     protected SocketServer $socket;
@@ -134,13 +134,13 @@ class Civ13
     public array $ic_badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
     public bool $legacy = true; // If true, the bot will use the file methods instead of the SQL ones
     
-    public $functions = array(
+    public array $functions = array(
         'ready' => [],
         'ready_slash' => [],
         'messages' => [],
         'misc' => [],
     );
-    public $server_funcs_uncalled = []; // List of callable functions that are available for use by other functions, but otherwise not called via a message command
+    public array $server_funcs_uncalled = []; // List of callable functions that are available for use by other functions, but otherwise not called via a message command
     
     public string $command_symbol = '@Civilizationbot'; // The symbol that the bot will use to identify commands if it is not mentioned
     public string $owner_id = '196253985072611328'; // Taislin's Discord ID
