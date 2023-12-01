@@ -1537,7 +1537,7 @@ class Civ13
             if (! $content) return HttpResponse::json(['error' => "Message not found"]);
 
             $builder = MessageBuilder::new();
-            if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]) && $user = $this->discord->users->get('id', $this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) {
+            if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]) && $user = $this->discord->users->get('id', $this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) { // This will not work if the user didn't login with oauth2 during this runtime session (i.e. the bot was restarted)
                 $embed = new Embed($this->discord);
                 $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
                 $embed->addField('Message', $content);
