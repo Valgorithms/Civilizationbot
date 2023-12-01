@@ -1465,8 +1465,11 @@ class Civ13
                     // Create button and input box
                     $button = $doc->createElement('button', 'Send Message');
                     $button->setAttribute('onclick', "sendMessage('{$channel->id}')");
+                    $button2 = $doc->createElement('button', 'Send Embed');
+                    $button2->setAttribute('onclick', "sendEmbed('{$channel->id}')");
                     $channelName->appendChild($doc->createTextNode(' ')); // Add space here
                     $channelName->appendChild($button);
+                    $channelName->appendChild($button2);
 
                     $channelDiv->appendChild($channelName);
                     $guildDiv->appendChild($channelDiv);
@@ -1533,12 +1536,20 @@ class Civ13
             isset($params['message']) ? $content = $params['message'] : $content = '';
             if (! $content) return HttpResponse::json(['error' => "Message not found"]);
 
-            $embed = new Embed($this->discord);
-            if (isset($dwa_discord_ids[$ip = $request->getServerParams()['REMOTE_ADDR']]))
-                if ($user = $this->discord->users->get('id', $this->dwa_discord_ids[$ip]))
-                    $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+            $builder = MessageBuilder::new();
+            if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]) && $user = $this->discord->users->get('id', $this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) {
+                $embed = new Embed($this->discord);
+                $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                $embed->addField('Message', $content);
+                $builder->addEmbed($embed);
+            } else {
+                $builder->setContent($content);
+                $this->logger->info("Either the IP was not associated with a user or no user could be found.");
+                $this->logger->info("IP: {$request->getServerParams()['REMOTE_ADDR']}");
+                if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) $this->logger->info("Discord ID: {$this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]}");
+            }
             
-            //$this->sendEmbed($channel, $content, $embed);
+            $channel->sendMessage($builder); // TODO: Add a built-in function for using MessageBuilder with included embeds
             return HttpResponse::json(['success' => true]);
         }), true);
         
@@ -2544,7 +2555,7 @@ class Civ13
                 
                 $this->discord->on('message', function (Message $message): void
                 {
-                    if ($message->user->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
+                    if ($message->author->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
                     if (! $this->messageHandler->handle($message, $message_filtered = $this->filterMessage($message))) { // This section will be deprecated in the future
                         if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message, $message_filtered); // Variable functions
                         else $this->logger->debug('No message variable functions found!');
