@@ -1638,7 +1638,7 @@ class Civ13
                         return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
                 }
 
-                return new HttpResponse(HttpResponse::STATUS_OK);
+                return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
             }));
         }
 
