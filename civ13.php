@@ -1576,6 +1576,17 @@ class Civ13
         });
         $this->httpHandler->offsetSet('/sitemap.xml', $sitemap);
         $this->httpHandler->setRateLimit('/sitemap.xml', 1, 10); // 1 request per 10 seconds
+        $security = new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        {
+            return HttpResponse::plaintext('Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
+            "Contact: {$this->github}}" . PHP_EOL .
+            'Preferred-Languages: en' . PHP_EOL . 
+            "Canonical: http://{$this->httpHandler->external_ip}:{$this->http_port}/.well-known/security.txt" . PHP_EOL . 
+            'Policy: http://valzargaming.com/legal' . PHP_EOL . 
+            'Acknowledgments: http://valzargaming.com/partners');
+        });
+        $this->httpHandler->offsetSet('/.well-known/security.txt', $security);
+        $this->httpHandler->setRateLimit('/.well-known/security.txt', 1, 10); // 1 request per 10 seconds
         $this->httpHandler->offsetSet('/ping', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!");

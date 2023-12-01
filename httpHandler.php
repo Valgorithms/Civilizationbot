@@ -320,7 +320,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $requestsFromIp = array_filter($rateLimit['requests'], function ($request) use ($ip) {
             return $request['ip'] === $ip;
         });
-        if (count($requestsFromIp) >= $rateLimit['limit']) {
+        if (count($requestsFromIp) > $rateLimit['limit']) {
             $earliestRequest = min(array_column($requestsFromIp, 'time'));
             $expirationTime = $earliestRequest + $rateLimit['window'];
             $retry_after = $expirationTime - $currentTime; // Return the number of seconds until the rate limit expires
