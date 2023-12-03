@@ -63,8 +63,6 @@ $options['functions'] = [
         'on_message2' => $on_message2,
     ],
     'misc' => [ // Custom functions, can be called by other functions or externally
-        'recalculate_ranking' => $recalculate_ranking,
-        'ooc_relay' => $ooc_relay,
         'timer_function' => $timer_function,
         'status_changer' => $status_changer, // $status_changer = $civ13->functions->['misc']['status_changer']
     ],
