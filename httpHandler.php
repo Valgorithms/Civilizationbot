@@ -27,7 +27,7 @@ use Civ13\Interfaces\HttpHandlerCallbackInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response as HttpResponse;
 
-class HttpHandlerCallback implements HttpHandlerCallbackInterface
+final class HttpHandlerCallback implements HttpHandlerCallbackInterface
 {
     private \Closure $callback;
 
