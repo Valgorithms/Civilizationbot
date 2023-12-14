@@ -2913,7 +2913,7 @@ class Civ13
      *
      * @return Collection The verified users as a Collection.
      */
-    public function getVerified($initialize = true): Collection
+    public function getVerified(bool $initialize = true): Collection
     {
         if (! $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]))) $this->verifierStatusChannelUpdate($this->verifier_online = false);
         else $this->verifierStatusChannelUpdate($this->verifier_online = true);
@@ -3484,7 +3484,7 @@ class Civ13
     {
         // TODO
     }
-    public function legacyBan(array $array, $admin = null, ?array $settings = []): string
+    public function legacyBan(array $array, ?string $admin = null, ?array $settings = []): string
     {
         $admin = $admin ?? $this->discord->user->username;
         $legacyBan = function (array $array, string $admin, array $settings): string
@@ -3606,7 +3606,7 @@ class Civ13
         return $sent;
     }
 
-    public function AdminMessage(string $message, string $sender,?array $settings = []): bool
+    public function AdminMessage(string $message, string $sender, ?array $settings = []): bool
     {
         $adminmessage = function (string $message, string $sender, array $settings): bool
         {
@@ -3956,7 +3956,7 @@ class Civ13
         if ($country == '') $country = 'unknown';
         return $country;
     }
-    public function checkCkey($ckey): void
+    public function checkCkey(string $ckey): void
     { // Suspicious user ban rules
         if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
             $this->seen_players[] = $ckey;
@@ -4343,7 +4343,7 @@ class Civ13
     /*
     * This function is used to change the bot's status on Discord
     */
-    public function statusChanger(Activity $activity, $state = 'online'): void
+    public function statusChanger(Activity $activity, string $state = 'online'): void
     {
         $this->discord->updatePresence($activity, false, $state);
     }

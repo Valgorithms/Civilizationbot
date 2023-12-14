@@ -16,6 +16,7 @@ use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\Permissions\RolePermission;
 use Discord\Repository\Guild\GuildCommandRepository;
+use Discord\Repository\Interaction\GlobalCommandRepository;
 
 class Slash
 {
@@ -34,7 +35,7 @@ class Slash
     {
         // 
     }
-    public function updateCommands($commands): void
+    public function updateCommands(GlobalCommandRepository $commands): void
     {
         if ($this->civ13->shard) return; // Only run on the first shard
 
@@ -124,7 +125,7 @@ class Slash
 
         // if ($command = $commands->get('name', 'ban')) $commands->delete($command->id);
         if (! $commands->get('name', 'ban')) {
-            $command = new \Discord\Parts\Interactions\Command\Command($this->civ13->discord, [
+            $commands->save(new Command($this->civ13->discord, [
                 'name'			=> 'ban',
                 'description'	=> 'Ban a ckey from the Civ13.com servers',
                 'dm_permission' => false,
@@ -149,8 +150,7 @@ class Slash
                         'required'		=> true,
                     ],
                 ]
-            ]);
-            $commands->save($command);
+            ]));
         }
 
         // if ($command = $commands->get('name', 'panic')) $commands->delete($command->id);
