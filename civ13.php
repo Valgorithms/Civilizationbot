@@ -3493,7 +3493,7 @@ class Civ13
             if (file_exists($settings['basedir'] . self::discord2ban) && $file = @fopen($settings['basedir'] . self::discord2ban, 'a')) {
                 fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
                 fclose($file);
-                return "**$admin** banned **{$array['ckey']}** from **{$settings['key']}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
+                return "**$admin** banned **{$array['ckey']}** from **{$settings['name']}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
             } else {
                 $this->logger->warning('unable to open `' . $settings['basedir'] . self::discord2ban . '`');
                 return 'unable to open `' . $settings['basedir'] . self::discord2ban . '`' . PHP_EOL;
