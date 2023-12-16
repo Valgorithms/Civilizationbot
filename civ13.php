@@ -4345,7 +4345,7 @@ class Civ13
     */
     public function statusChanger(Activity $activity, string $state = 'online'): void
     {
-        $this->discord->updatePresence($activity, false, $state);
+        if (! $this->shard) $this->discord->updatePresence($activity, false, $state);
     }
 
     /*
