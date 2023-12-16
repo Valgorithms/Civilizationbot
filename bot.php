@@ -293,7 +293,7 @@ $hidden_options = [
             'legacy' => true,
             'moderate' => true,
             'relay_method' => 'webhook',
-            'basedir' => 'VPS/civ13-rp', // Base directory of the server
+            'basedir' => '/home/valithor/VPS/civ13-rp', // Base directory of the server
             // Primary channels
             'discussion' => '799951945346711552', #pers
             'playercount' => '1090788345082298369', // pers-#
