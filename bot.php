@@ -287,13 +287,13 @@ $hidden_options = [
             'name' => 'Persistence',
             'key' => 'pers',
             'ip' => $vzg_ip,
-            'port' => '1717',
+            'port' => '1716',
             'host' => 'ValZarGaming',
             'panic' => true,
             'legacy' => true,
             'moderate' => true,
             'relay_method' => 'webhook',
-            'basedir' => '/home/civ13/civ13-pers', // Base directory of the server
+            'basedir' => 'VPS/civ13-rp', // Base directory of the server
             // Primary channels
             'discussion' => '799951945346711552', #pers
             'playercount' => '1090788345082298369', // pers-#
