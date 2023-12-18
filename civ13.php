@@ -4543,10 +4543,10 @@ class Civ13
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
     {
         /* This is currently not working as intended
-        $callbackParams = (new \ReflectionFunction($callback))->getParameters();
+        $callbackParams = new \ReflectionFunction($callback);
         if (
             !(
-                (new \ReflectionFunction($callback))->getNumberOfParameters() === 3 && // Function must expect 3 parameters
+                $callbackParams->getNumberOfParameters() === 3 && // Function must expect 3 parameters
                 //count($callbackParams) === 3 && // There must be 3 parameters availble to pass to the function
                 $callbackParams[0] !== null && $callbackParams[0] instanceof Member &&
                 $callbackParams[1] !== null && is_array($callbackParams[1]) &&
