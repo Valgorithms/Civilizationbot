@@ -3016,9 +3016,8 @@ class Civ13
      */
     public function getByondPage(string $ckey): string|false 
     { // Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and added the generated token to their description first!
-        $url = 'http://www.byond.com/members/'.urlencode($ckey).'?format=text';
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_URL, 'http://www.byond.com/members/'.urlencode($ckey).'?format=text');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // return the page as a string
         curl_setopt($ch, CURLOPT_HTTPGET, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
