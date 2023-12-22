@@ -1045,7 +1045,7 @@ class Civ13
 
         $this->messageHandler->offsetSet('refresh', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
-            if ($this->getVerified()) return $message->react("👍");
+            if ($this->getVerified(false)) return $message->react("👍");
             return $message->react("👎");
         }), ['Owner', 'High Staff', 'Admin']);
 
