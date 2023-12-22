@@ -2849,8 +2849,7 @@ class Civ13
     public function getVerifiedItem(Member|User|array|string $input): ?array
     {
         if (is_string($input)) {
-            $input = $this->sanitizeInput($input);
-            if (! $input) return null;
+            if (! $input = $this->sanitizeInput($input)) return null;
             if (is_numeric($input) && $item = $this->verified->get('discord', $input)) return $item;
             if ($item = $this->verified->get('ss13', $input)) return $item;
         }
