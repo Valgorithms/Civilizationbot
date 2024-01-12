@@ -325,7 +325,7 @@ class Civ13
             
             $allRequiredFilesExist = true;
             foreach ([
-                $settings['basedir'] . self::serverdata,
+                //$settings['basedir'] . self::serverdata, // This file is created by the server host process but it doesn't need to exist for the server to be hosted, only deleted
                 $settings['basedir'] . self::killsudos,
                 $settings['basedir'] . self::dmb,
                 $settings['basedir'] . self::updateserverabspaths
@@ -339,7 +339,7 @@ class Civ13
             if ($allRequiredFilesExist) {
                 $serverhost = function (?Message $message = null) use ($settings): void {
                     \execInBackground('python3 ' . $settings['basedir'] . self::updateserverabspaths);
-                    \execInBackground('rm -f ' . $settings['basedir'] . self::serverdata);
+                    if (file_exists($settings['basedir'] . self::serverdata)) \execInBackground('rm -f ' . $settings['basedir'] . self::serverdata);
                     \execInBackground('python3 ' . $settings['basedir'] . self::killsudos);
 
                     if (!isset($this->timers["{$settings['key']}host"])) {
