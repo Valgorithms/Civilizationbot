@@ -363,7 +363,7 @@ class Civ13
                         \execInBackground('python3 ' . $settings['basedir'] . self::killciv13);
                     });
                     if ($message) $message->react("👍");
-                    $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $settings['key']);
+                    $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $settings);
                 };
                 $this->messageHandler->offsetSet("{$settings['key']}kill", $serverkill, ['Owner', 'High Staff']);
             }
@@ -383,8 +383,8 @@ class Civ13
                             {$host();});
                         }
                     });
-                    if ($message) $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $settings['key']);
-                    else $this->OOCMessage("Server is now restarting.", $this->discord->user->displayname, $settings['key']);
+                    if ($message) $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $settings);
+                    else $this->OOCMessage("Server is now restarting.", $this->discord->user->displayname, $settings);
                     if ($message) return $message->react("👍");
                     return null;
                 };
@@ -3699,9 +3699,8 @@ class Civ13
             ? 'online'
             : 'offline';
         if ($reported_status != $status) {
-            $msg = "Webserver is now **{$status}**.";
-            if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
-            $this->sendMessage($channel, $msg);
+            //if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
+            $this->sendMessage($channel, "Webserver is now **{$status}**.");
             $channel->name = "{$webserver_name}-{$status}";
             return $channel->guild->channels->save($channel);
         }
@@ -3715,9 +3714,8 @@ class Civ13
             ? 'online'
             : 'offline';
         if ($reported_status != $status) {
-            $msg = "Verifier is now **{$status}**.";
             //if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified.";
-            $this->sendMessage($channel, $msg);
+            $this->sendMessage($channel, "Verifier is now **{$status}**.");
             $channel->name = "{$verifier_name}-{$status}";
             return $channel->guild->channels->save($channel);
         }
