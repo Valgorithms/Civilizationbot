@@ -342,12 +342,13 @@ class Civ13
                     if (file_exists($settings['basedir'] . self::serverdata)) \execInBackground('rm -f ' . $settings['basedir'] . self::serverdata);
                     \execInBackground('python3 ' . $settings['basedir'] . self::killsudos);
 
-                    if (!isset($this->timers["{$settings['key']}host"])) {
+                    if (! isset($this->timers["{$settings['key']}host"])) {
                         $this->timers["{$settings['key']}host"] = $this->discord->getLoop()->addTimer(30, function () use ($settings, $message) {
                             \execInBackground('nohup DreamDaemon ' . $settings['basedir'] . self::dmb . ' ' . $settings['port'] . ' -trusted -webclient -logself &');
                             if ($message) $message->react("👍");
+                            unset($this->timers["{$settings['key']}host"]);
                         });
-                    }
+                    } else $this->logger->info("Server host timer already exists for {$settings['key']}.");
                     if ($message) $message->react("⏱️");
                 };
                 $this->messageHandler->offsetSet("{$settings['key']}host", $serverhost, ['Owner', 'High Staff']);
@@ -3721,6 +3722,21 @@ class Civ13
         }
         return null;
     }
+    /*public function statusChannelUpdate(bool $status, string $channel_id): ?PromiseInterface
+    {
+        if (! $channel = $this->discord->getChannel($channel_id)) return null;
+        [$server_name, $reported_status] = explode('-', $channel->name);
+        $status_string = $status
+            ? 'online'
+            : 'offline';
+        if ($reported_status != $status_string) {
+            //if ($status === 'offline') $msg .= PHP_EOL . "Server technician <@{$this->technician_id}> has been notified.";
+            $this->sendMessage($channel, "Server is now **{$status_string}**.");
+            $channel->name = "{$server_name}-{$status_string}";
+            return $channel->guild->channels->save($channel);
+        }
+        return null;
+    }*/
     public function serverinfoFetch(): array
     {
         $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
