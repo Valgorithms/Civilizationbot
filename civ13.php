@@ -337,7 +337,8 @@ class Civ13
                 }
             }
             if ($allRequiredFilesExist) {
-                $serverhost = function (?Message $message = null) use ($settings): void {
+                $serverhost = function (?Message $message = null) use ($settings): void
+                {
                     \execInBackground('python3 ' . $settings['basedir'] . self::updateserverabspaths);
                     if (file_exists($settings['basedir'] . self::serverdata)) \execInBackground('rm -f ' . $settings['basedir'] . self::serverdata);
                     \execInBackground('python3 ' . $settings['basedir'] . self::killsudos);
@@ -359,11 +360,12 @@ class Civ13
             else {
                 $serverkill = function (?Message $message = null) use ($settings): void
                 {
-                    $this->loop->addTimer(10, function () use ($settings): void
+                    $this->loop->addTimer(10, function () use ($settings, $message): void
                     {
                         \execInBackground('python3 ' . $settings['basedir'] . self::killciv13);
+                        if ($message) $message->react("👍");
                     });
-                    if ($message) $message->react("👍");
+                    if ($message) $message->react("⏱️");
                     $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $settings);
                 };
                 $this->messageHandler->offsetSet("{$settings['key']}kill", $serverkill, ['Owner', 'High Staff']);
@@ -371,7 +373,7 @@ class Civ13
             if ($this->messageHandler->offsetExists("{$settings['key']}host") && $this->messageHandler->offsetExists("{$settings['key']}kill")) {
                 $serverrestart = function (?Message $message = null) use ($settings): ?PromiseInterface
                 {
-                    $this->loop->addTimer(10, function () use ($settings): void
+                    $this->loop->addTimer(10, function () use ($settings, $message): void
                     {
                         $kill = $this->messageHandler->offsetGet("{$settings['key']}kill") ?? [];
                         $host = $this->messageHandler->offsetGet("{$settings['key']}host") ?? [];
@@ -380,13 +382,16 @@ class Civ13
                             && ($host = array_shift($host))
                         ) {
                             $kill();
-                            $this->loop->addTimer(10, function () use ($host): void
-                            {$host();});
+                            $this->loop->addTimer(10, function () use ($host, $message): void
+                            {
+                                $host();
+                                if ($message) $message->react("👍");
+                            });
                         }
                     });
                     if ($message) $this->OOCMessage("Server is now restarting.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $settings);
                     else $this->OOCMessage("Server is now restarting.", $this->discord->user->displayname, $settings);
-                    if ($message) return $message->react("👍");
+                    if ($message) $message->react("⏱️");
                     return null;
                 };
                 $this->messageHandler->offsetSet("{$settings['key']}restart", $serverrestart, ['Owner', 'High Staff']);
