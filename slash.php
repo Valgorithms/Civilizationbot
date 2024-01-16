@@ -404,12 +404,14 @@ class Slash
         
         $this->civ13->discord->listenCommand('unverify', function (Interaction $interaction): PromiseInterface
         {
-            if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            if ($interaction->user->id !== $this->civ13->technician_id) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You do not have permission to unverify <@{$interaction->data->target_id}>"), true);
-            //$admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
-            $result = $this->civ13->unverifyCkey($item['ss13']);
-            if (! $result['success']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($result['message']), true);
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($result['message']));
+            return $interaction->acknowledge()->then(function () use ($interaction) { // wait until the bot says "Is thinking..."
+                if (! $item = $this->civ13->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+                if ($interaction->user->id !== $this->civ13->technician_id) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You do not have permission to unverify <@{$interaction->data->target_id}>"), true);
+                //$admin = $this->civ13->getVerifiedItem($interaction->user->id)['ss13'];
+                $result = $this->civ13->unverifyCkey($item['ss13']);
+                if (! $result['success']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($result['message']), true);
+                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($result['message']));
+            });
         });
         
         $this->civ13->discord->listenCommand('unban', function (Interaction $interaction): PromiseInterface
