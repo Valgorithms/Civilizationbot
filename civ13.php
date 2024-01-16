@@ -1234,7 +1234,7 @@ class Civ13
         $this->messageHandler->offsetSet('stop', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command)//: PromiseInterface
         {
             $promise = $message->react("🛑");
-            $promise->done(function () { $this->stop(); });
+            $promise->then(function () { $this->stop(); });
             //return $promise; // Pending PromiseInterfaces v3
             return null;
         }), ['Owner', 'High Staff']);
@@ -2563,7 +2563,7 @@ class Civ13
                 
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
-                if (! $this->shard) $this->discord->application->commands->freshen()->done(function (GlobalCommandRepository $commands): void
+                if (! $this->shard) $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
                 {
                     $this->slash->updateCommands($commands);
                     if (! empty($this->functions['ready_slash'])) foreach (array_values($this->functions['ready_slash']) as $func) $func($this, $commands);

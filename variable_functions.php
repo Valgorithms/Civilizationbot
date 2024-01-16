@@ -193,7 +193,7 @@ $slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme): void
     /*For deferred interactions
     $civ13->discord->listenCommand('',  function (Interaction $interaction) use ($civ13) {
       // code is expected to be slow, defer the interaction
-      $interaction->acknowledge()->done(function () use ($interaction, $civ13) { // wait until the bot says "Is thinking..."
+      $interaction->acknowledge()->then(function () use ($interaction, $civ13) { // wait until the bot says "Is thinking..."
         // do heavy code here (up to 15 minutes)
         // ...
         // send follow up (instead of respond)

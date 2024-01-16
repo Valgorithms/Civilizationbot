@@ -183,7 +183,7 @@ Class DWA
             if (isset($connection->type)){
                 $this->sessions[$this->requesting_ip]['oauth_' . $connection->type . '_id'] = $connection->id;
                 $this->sessions[$this->requesting_ip]['oauth_' . $connection->type . '_name'] = $connection->name;
-                if ($connection->type == 'steam'){
+                if ($connection->type == 'steam') {
                     $this->sessions[$this->requesting_ip]['oauth_steam_url'] = 'https://steamcommunity.com/profiles/'.$connection->id.'/';
                 }
             }

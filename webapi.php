@@ -287,7 +287,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
               });
             }
 
-            $promise->done(function () use ($results) {
+            $promise->then(function () use ($results) {
               return new Response (200, ['Content-Type' => 'application/json'], json_encode($results));
             }, function () use ($results) {
               // return with error ?

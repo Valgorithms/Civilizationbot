@@ -201,7 +201,7 @@ class Slash
             'dm_permission' => false,
         ]));*/
 
-        $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->done(function (GuildCommandRepository $commands) {
+        $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands) {
             // if ($command = $commands->get('name', 'unverify')) $commands->delete($command->id);
             if (! $commands->get('name', 'unverify')) $commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
