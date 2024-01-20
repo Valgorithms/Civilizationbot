@@ -3080,7 +3080,7 @@ class Civ13
     public function verifyProcess(string $ckey, string $discord_id, ?Member $m = null): string
     {
         $ckey = $this->sanitizeInput($ckey);
-        if ($this->permabancheck($ckey)) {
+        if (! isset($this->permitted[$ckey]) && $this->permabancheck($ckey)) {
             if ($m && ! $m->roles->has($this->role_ids['permabanished'])) $m->addRole($this->role_ids['permabanished'], "permabancheck $ckey");
             return 'This account needs to appeal an existing ban first.';
         }
@@ -3092,7 +3092,7 @@ class Civ13
         if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
-            if (! $this->checkByondAge($age) && ! isset($this->permitted[$ckey])) {
+            if (! isset($this->permitted[$ckey]) && ! $this->checkByondAge($age)) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
                 $msg = $this->ban($arr, null, [], true);
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
@@ -3975,7 +3975,7 @@ class Civ13
     }
     public function checkCkey(string $ckey): void
     { // Suspicious user ban rules
-        if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) {
+        if (! isset($this->permitted[$ckey]) && ! in_array($ckey, $this->seen_players)) {
             $this->seen_players[] = $ckey;
             $ckeyinfo = $this->ckeyinfo($ckey);
             if ($ckeyinfo['altbanned']) { // Banned with a different ckey
@@ -4001,7 +4001,7 @@ class Civ13
             $this->__panicBan($ckey); // Require verification for Persistence rounds
             return;
         }
-        if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
+        if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey))) { //Ban new accounts
             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
             $msg = $this->ban($arr, null, [], true);
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
@@ -4023,7 +4023,7 @@ class Civ13
             foreach ($servers as $server => $count) $this->playercountChannelUpdate($server, $count); // This needs to be updated to pass $settings instead of "{$server}-""
             foreach ($server_array as $ckey) {
                 if (is_null($ckey)) continue;
-                if (! in_array($ckey, $this->seen_players) && ! isset($this->permitted[$ckey])) { // Suspicious user ban rules
+                if (! isset($this->permitted[$ckey]) && ! in_array($ckey, $this->seen_players)) { // Suspicious user ban rules
                     $this->seen_players[] = $ckey;
                     $ckeyinfo = $this->ckeyinfo($ckey);
                     if (isset($ckeyinfo['altbanned']) && $ckeyinfo['altbanned']) { // Banned with a different ckey
@@ -4046,7 +4046,7 @@ class Civ13
                 }
                 if ($this->verified->get('ss13', $ckey)) continue;
                 //if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
-                if (! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey)) && ! isset($this->permitted[$ckey])) { //Ban new accounts
+                if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey))) { //Ban new accounts
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
                     $msg = $this->ban($arr, null, [], true);
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
