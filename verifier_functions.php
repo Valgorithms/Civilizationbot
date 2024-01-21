@@ -25,7 +25,12 @@ $civ_listeners = function (Civ13 $civ13): void // Handles Verified and Veteran c
             if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
             if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
             if ($civ13->getVerifiedItem($member)) return null; // Don't kick if they have been verified
-            if ($member_future->roles->has($civ13->role_ids['infantry']) || $member_future->roles->has($civ13->role_ids['veteran'])) return null; // Don't kick if they have a verified role
+            if (
+                $member_future->roles->has($civ13->role_ids['infantry']) ||
+                $member_future->roles->has($civ13->role_ids['veteran']) ||
+                $member_future->roles->has($civ13->role_ids['banished']) ||
+                $member_future->roles->has($civ13->role_ids['permabanished'])
+            ) return null; // Don't kick if they have an verified or banned role
             return $guild->members->kick($member_future, 'Not verified');
         });
     });
