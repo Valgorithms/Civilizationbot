@@ -1856,8 +1856,8 @@ class Civ13
             $this->httpHandler->offsetSet($server_endpoint.'/icmessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$settings['ic']])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $this->discord->getChannel($channel_id = $this->channel_ids[$settings['ic']])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($settings['ic'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $this->discord->getChannel($channel_id = $settings['ic'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 //$time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1872,8 +1872,8 @@ class Civ13
             $this->httpHandler->offsetSet($server_endpoint.'/memessage', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$settings['ic']])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $this->discord->getChannel($channel_id = $this->channel_ids[$settings['ic']])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($settings['ic'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $this->discord->getChannel($channel_id = $settings['ic'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data['ckey']) ? $ckey = $this->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
@@ -1904,8 +1904,8 @@ class Civ13
             $this->httpHandler->offsetSet($server_endpoint.'/round_start', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if ($this->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                if (! isset($this->channel_ids[$settings['key']])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (! $channel = $this->discord->getChannel($this->channel_ids[$settings['key']])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! isset($settings['discussion'])) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                if (! $channel = $this->discord->getChannel($settings['discussion'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                 $time = '['.date('H:i:s', time()).']';
                 $message = '';
@@ -1916,7 +1916,7 @@ class Civ13
                     $message .= "`$game_id` ";
                 }
                 $message .= 'has started!';
-                if ($playercount_channel = $this->discord->getChannel($this->channel_ids["{$settings['key']}-playercount"]))
+                if ($playercount_channel = $this->discord->getChannel($settings['playercount']))
                 if ($existingCount = explode('-', $playercount_channel->name)[1]) {
                     $existingCount = intval($existingCount);
                     switch ($existingCount) {
