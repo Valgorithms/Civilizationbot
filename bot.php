@@ -237,7 +237,7 @@ $hidden_options = [
             'relay_method' => 'webhook',
             'basedir' => '/home/civ13/civ13-tdm', // Base directory of the server
             // Primary channels
-            'discussion' => '799952134426591273', #tdm
+            'discussion' => '799952134426591273', // #tdm
             'playercount' => '1048777462898761789', // tdm-#
             // Chat relay channels
             'ooc' => '1107016184328622233', // #ooc-tdm
@@ -266,7 +266,7 @@ $hidden_options = [
             'relay_method' => 'webhook', // How messages are relayed to the server
             'basedir' => '/home/civ13/civ13-rp', // Base directory of the server
             // Primary channels
-            'discussion' => '799952084505067581', #nomads
+            'discussion' => '799952084505067581', // #nomads
             'playercount' => '1048777424894185484', // nomads-#
             // Chat relay channels
             'ooc' => '1110001963405418616', // #ooc-nomads
@@ -295,7 +295,7 @@ $hidden_options = [
             'relay_method' => 'webhook',
             'basedir' => '/home/valithor/VPS/civ13-rp', // Base directory of the server
             // Primary channels
-            'discussion' => '799951945346711552', #pers
+            'discussion' => '799951945346711552', // #pers
             'playercount' => '1090788345082298369', // pers-#
             // Chat relay channels
             'ooc' => '1139614228408455388', // #ooc-pers
