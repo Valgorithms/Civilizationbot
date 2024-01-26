@@ -177,6 +177,7 @@ $options = array(
         'blue' => '1132678353070067802', // Blugoslavia
         'organizer' => '1089060051425165362', // Admin / Faction Organizer
         // Notification pings
+        'mapswap' => '1200520534262284288', // Map Swap Ping
         'round_start' => '1110597830403424328', // Round Start Ping
         '2+' => '981963719804346418', // LowPopStart
         '15+' => '981963721817620511', // 15+ Popping

@@ -423,6 +423,11 @@ class Civ13
                     $split_message = explode("{$settings['key']}mapswap ", $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->reply($message, 'You need to include the name of the map.');
                     $this->OOCMessage("Server is now changing map to `$mapto`.", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->displayname, $settings);
+                    if (isset($settings['discussion']) && $channel = $this->discord->getChannel($settings['discussion'])) {
+                        $msg = "Server is now changing map to `$mapto`.";
+                        if (isset($this->role_ids['mapswap']) && $role = $this->role_ids['mapswap']); $msg = "<@&$role>, $msg";
+                        $channel->sendMessage($msg);
+                    }
                     $this->loop->addtimer(10, function () use ($mapto, $mapswap, $message): ?PromiseInterface
                     {
                         if ($message) $message->react("👍");
