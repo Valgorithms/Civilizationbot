@@ -67,6 +67,13 @@ $civ_listeners = function (Civ13 $civ13): void // Handles Verified and Veteran c
     
     $civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old) use ($civ13): void
     {
+        if (! $member_old) { // Not enough information is known about the change, so we will update everything
+            $civ13->whitelistUpdate();
+            $civ13->getVerified();
+            $civ13->factionlistUpdate();
+            $civ13->adminlistUpdate();
+            return;
+        }
         if ($member->roles->has($civ13->role_ids['veteran']) !== $member_old->roles->has($civ13->role_ids['veteran'])) $civ13->whitelistUpdate();
         if ($member->roles->has($civ13->role_ids['infantry']) !== $member_old->roles->has($civ13->role_ids['infantry'])) $civ13->getVerified();
         $faction_roles = [
