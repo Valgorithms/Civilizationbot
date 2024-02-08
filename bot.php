@@ -354,7 +354,8 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
 
         // Connectivity issues
         && ! str_ends_with($errstr, 'No route to host') // Usually happens if the verifier server is down
-        //&& ! str_ends_with($errstr, 'Temporary failure in name resolution')
+        && ! str_ends_with($errstr, 'No address associated with hostname') // Either the DNS or the VPS is acting up
+        && ! str_ends_with($errstr, 'Temporary failure in name resolution') // Either the DNS or the VPS is acting up
         //&& ! str_ends_with($errstr, 'HTTP request failed!')
 
         //&& ! str_contains($errstr, 'Undefined array key')
