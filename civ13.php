@@ -4389,7 +4389,7 @@ class Civ13
 
         $relay_array = [];
         while (($fp = fgets($file, 4096)) !== false) {
-            $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp));
+            $fp = html_entity_decode(str_replace(PHP_EOL, '', $fp)); // Parsing HTML will remove any instances of < and >, so we need to decode them first. Players can use these characters in their messages too, and that behavior must be moderated by the game instead.
             $string = substr($fp, strpos($fp, '/')+1);
             if ($string && $ckey = $this->sanitizeInput(substr($string, 0, strpos($string, ':'))))
                 $relay_array[] = ['ckey' => $ckey, 'message' => $fp, 'server' => explode('-', $channel->name)[0]];
@@ -4409,7 +4409,6 @@ class Civ13
             $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
             return false;
         }
-        
         if (! $this->ready) {
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
             $listener = function () use ($ckey, $message, $channel_id, $moderate, $ooc, &$listener) {
