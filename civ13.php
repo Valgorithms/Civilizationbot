@@ -2925,8 +2925,13 @@ class Civ13
      */
     public function getVerified(bool $initialize = true): Collection
     {
-        if (! $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]))) $this->verifierStatusChannelUpdate($this->verifier_online = false);
-        else $this->verifierStatusChannelUpdate($this->verifier_online = true);
+        $http_response_header = null;
+        if (! $json = @file_get_contents($this->verify_url, false, stream_context_create(['http' => ['connect_timeout' => 5]]))) {
+            $this->verifierStatusChannelUpdate($this->verifier_online = false);
+        } else {
+            $header = implode(' ', $http_response_header); // This is populated invisibly by file_get_contents
+            $this->verifierStatusChannelUpdate($this->verifier_online = strpos($header, '502') === false);
+        }
         if ($verified_array = $json ? json_decode($json, true) ?? [] : []) { // If the API endpoint is reachable, use the data from the API endpoint
             $this->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
@@ -3188,6 +3193,9 @@ class Civ13
                 case 405: // Method not allowed
                     $message = "The method used to access the website is not allowed. Please check the configuration of the website." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>. Reason: $result";
                     break;
+                case 502: // NGINX's PHP-CGI workers are unavailable
+                    $message = "The website's PHP-CGI workers are currently unavailable. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                    break;
                 case 503: // Database unavailable
                     $message = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                     break;
@@ -3321,6 +3329,9 @@ class Civ13
                 break;
             case 404:
                 $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                break;
+            case 502: // NGINX's PHP-CGI workers are unavailable
+                $error = "The website's PHP-CGI workers are currently unavailable. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 503: // Database unavailable
                 $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
