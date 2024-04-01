@@ -699,7 +699,7 @@ class Civ13
             $this->messageHandler->offsetSet('insult', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 $split_message = explode(' ', $message_filtered['message_content']); // $split_target[1] is the target
-                if (count($split_message) <= 1 || strlen($split_message[1]) === 0) return null;
+                if (count($split_message) <= 1 || strlen($split_message[1]) === 0) $split_message[1] = "<@{$message->user_id}>";
                 if (! empty($insults_array = file(self::insults_path, FILE_IGNORE_NEW_LINES))) {
                     $random_insult = $insults_array[array_rand($insults_array)];
                     return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $random_insult)->setAllowedMentions(['parse' => []]));
@@ -940,8 +940,8 @@ class Civ13
             if ($this->sharding) return null;
             return $this->reply($message, 'You need to be in any of the #ic, #asay, or #ooc channels to use this command.');
         });
-        $this->messageHandler->offsetSet('dm', $directmessage, ['Owner', 'High Staff', 'Admin']);
-        $this->messageHandler->offsetSet('pm', $directmessage, ['Owner', 'High Staff', 'Admin']);
+        $this->messageHandler->offsetSet('dm', $directmessage, ['Owner', 'High Staff', 'Admin', 'Moderator']);
+        $this->messageHandler->offsetSet('pm', $directmessage, ['Owner', 'High Staff', 'Admin', 'Moderator']);
 
         $this->messageHandler->offsetSet('bancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
             if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
