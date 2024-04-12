@@ -1806,8 +1806,8 @@ class Civ13
                 //$message = "**__{$time} ASAY__ $ckey**: $message";
                 $message = "**__{$time}__** $message";
 
-                $relay($message, $channel, $ckey);
-                //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                if (str_contains($data['message'], $this->discord->user->displayname)) $this->gameChatWebhookRelay($ckey, $message, $channel_id); // Message was probably meant for the bot
+                else $relay($message, $channel, $ckey); //Bypass moderator
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
