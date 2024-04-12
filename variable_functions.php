@@ -43,7 +43,7 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
 $ranking = function (Civ13 $civ13): false|string
 {
     $line_array = array();
-    if (! isset($civ13->files['ranking_path']) || ! file_exists($civ13->files['ranking_path']) || ! $search = @fopen($civ13->files['ranking_path'], 'r')) return false;
+    if (! file_exists(Civ13::ranking_path) || ! $search = @fopen(Civ13::ranking_path, 'r')) return false;
     while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
     fclose($search);
 
@@ -59,7 +59,7 @@ $ranking = function (Civ13 $civ13): false|string
 $rankme = function (Civ13 $civ13, string $ckey): false|string
 {
     $line_array = array();
-    if (! file_exists($civ13->files['ranking_path']) || ! $search = @fopen($civ13->files['ranking_path'], 'r')) return false;
+    if (! file_exists(Civ13::ranking_path) || ! touch(Civ13::ranking_path) || ! $search = @fopen(Civ13::ranking_path, 'r')) return false;
     while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
     fclose($search);
     
