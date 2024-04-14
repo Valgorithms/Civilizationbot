@@ -4676,7 +4676,7 @@ class Civ13
             'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
 	    'Admin' => ['Admin', '16254'],
 	    'Moderator' => ['Moderator', '25088'],
-	    'Developer' => ['Developer', '7288'], // To be put outside of the admins list
+	    //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
             'Mentor' => ['Mentor', '16384'],
         ]
     ): bool
