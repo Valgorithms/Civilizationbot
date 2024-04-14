@@ -3328,6 +3328,18 @@ class Civ13
             case 403: // Already registered
                 $error = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; // This should have been caught above. Need to run getVerified() again?
                 $this->getVerified(false);
+                // Check if the user is already verified and add the role if it's missing
+                if (! $guild = $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) break;
+                if (! $members = $guild->members->filter(function (Member $member) {
+                    return ! $member->roles->has($this->role_ids['veteran'])
+                        && ! $member->roles->has($this->role_ids['infantry'])
+                        && ! $member->roles->has($this->role_ids['banished'])
+                        && ! $member->roles->has($this->role_ids['permabanished'])
+                        && ! $member->roles->has($this->role_ids['dungeon']);
+                })) break;
+                if (! $member = $members->get('id', $discord_id)) break;
+                if (! $m = $this->getVerifiedMember($member)) break;
+                $m->addRole($this->role_ids['infantry'], "approveme verified ($ckey)");
                 break;
             case 404:
                 $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
@@ -4650,9 +4662,7 @@ class Civ13
     /**
      * Updates admin lists with required roles and permissions.
      *
-     * @param array $lists An array of lists to update.
-     * @param bool $defaults Whether to use default permissions if another role is not found first.
-     * @param string $postfix The postfix to use for the file names.
+     * @param array $required_roles An array of required roles and their corresponding permissions.
      * @return bool Returns true if the update was successful, false otherwise.
      */
     public function adminlistUpdate(
