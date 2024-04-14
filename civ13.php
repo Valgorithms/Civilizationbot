@@ -4674,9 +4674,9 @@ class Civ13
             'Manager' => ['Manager', '16382'],
             'Supervisor' => ['Supervisor', '16382'],
             'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
-            'Event Admin' => ['Event Admin', '16254'],
-            'Moderator' => ['Moderator', '8708'], // Moderators will also have the Admin role, but it takes priority
-            'Admin' => ['Admin', '12158'],
+	    'Admin' => ['Admin', '16254'],
+	    'Moderator' => ['Moderator', '25088'],
+	    //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
             'Mentor' => ['Mentor', '16384'],
         ]
     ): bool
