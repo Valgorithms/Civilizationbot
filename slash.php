@@ -158,10 +158,42 @@ class Slash
             'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['manage_guild' => true]),
         ]));
 
+        // if ($command = $commands->get('name', 'join_campaign')) $commands->delete($command->id);
         if (! $commands->get('name', 'join_campaign')) $commands->save(new Command($this->civ13->discord, [
             'name'                       => 'join_campaign',
             'description'                => 'Get a role to join the campaign',
             'dm_permission'              => false,
+        ]));
+
+        // if ($command = $commands->get('name', 'assign_faction')) $commands->delete($command->id);
+        if (! $commands->get('name', 'assign_faction')) $commands->save(new Command($this->civ13->discord, [
+            'name'                       => 'assign_faction',
+            'description'                => 'Assign someone to a faction',
+            'dm_permission'              => false,
+            'options'		             => [
+                [
+                    'name'			=> 'ckey',
+                    'description'	=> 'Byond username (or Discord ID)',
+                    'type'			=>  3,
+                    'required'		=> true,
+                ],
+                [
+                    'name'			=> 'team',
+                    'description'	=> 'Team to assign the user to',
+                    'type'			=>  3,
+                    'required'		=> true,
+                    "choices"       => [
+                        [
+                            "name" => "Red",
+                            "value" => "red"
+                        ],
+                        [
+                            "name" => "Blue",
+                            "value" => "blue"
+                        ]
+                    ]
+                ]
+            ]
         ]));
 
         // if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
@@ -574,6 +606,28 @@ class Slash
             $roleIds = [$this->civ13->role_ids['red'], $this->civ13->role_ids['blue']];
             $interaction->member->addRole($redCount > $blueCount ? $this->civ13->role_ids['blue'] : ($blueCount > $redCount ? $this->civ13->role_ids['red'] : $roleIds[array_rand($roleIds)]));
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('A faction has been assigned'), true);
+        });
+
+        $this->civ13->discord->listenCommand('assign_faction', function (Interaction $interaction): PromiseInterface
+        {
+            if (! $interaction->member->roles->has($this->civ13->role_ids['organizer'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You do not have permission to assign factions!'), true);
+            
+            if (! $target_id = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
+            if (! $target_member = $this->civ13->getVerifiedMember($target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The member is either not currently verified with a byond username or do not exist in the cache yet"), true);
+            if (! $target_team = $interaction->data->options['team']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid team.'), true);
+            if (! isset($this->civ13->role_ids[$target_team]) || ! $role_id = $this->civ13->role_ids[$target_team]) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Invalid team: `$target_team`."), true);
+            //if ($target_member->roles->has($this->civ13->role_ids['red']) || $target_member->roles->has($this->civ13->role_ids['blue'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The member is already in a faction! Please remove their current faction role first."), true); // Don't assign if they already have a faction role
+
+            $promise = $target_member->addRole($role_id);
+            $success = function () use ($interaction, $target_team, $target_member)
+            { // If there is a different team role, remove it
+                $new_member = $this->civ13->discord->guilds->get('id', $target_member->guild_id)->members->get('id', $target_member->id); // Refresh the member
+                if ($target_team === 'red' && $new_member->roles->has($this->civ13->role_ids['blue'])) return $this->civ13->then($new_member->removeRole($this->civ13->role_ids['blue']));
+                if ($target_team === 'blue' && $new_member->roles->has($this->civ13->role_ids['red'])) return $this->civ13->then($new_member->removeRole($this->civ13->role_ids['red']));
+            };
+            $this->civ13->then($promise, $success);
+
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The `<@$role_id>` faction has been assigned to <@{$target_member->id}>")->setAllowedMentions(['parse'=>['users']]), true);
         });
 
         $this->civ13->discord->listenCommand('approveme', function (Interaction $interaction): PromiseInterface

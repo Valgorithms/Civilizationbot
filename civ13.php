@@ -77,6 +77,8 @@ class Civ13
     
     public MessageHandler $messageHandler;
     public HttpHandler $httpHandler;
+    public \Closure $onFulfilledDefault;
+    public \Closure $onRejectedDefault;
 
     public Slash $slash;
     
@@ -2652,6 +2654,15 @@ class Civ13
         }
         $this->logger = $options['logger'];
 
+        $this->onFulfilledDefault = function ($result): void
+        {
+            $this->logger->debug('Promise resolved with type of: `' . gettype($result) . '`');
+        };
+        $this->onRejectedDefault = function ($reason): void
+        {
+            $this->logger->error("Promise rejected with reason: `$reason'`");
+        };
+
         if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! file_exists($value) || ! is_dir($value)) {
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
@@ -2684,6 +2695,19 @@ class Civ13
         $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
         return $options;
+    }
+
+    /**
+     * Chains a callback to be executed when the promise is fulfilled or rejected.
+     *
+     * @param PromiseInterface $promise The promise to chain with.
+     * @param callable|null $onFulfilled The callback to execute when the promise is fulfilled. If null, the default callback will be used.
+     * @param callable|null $onRejected The callback to execute when the promise is rejected. If null, the default callback will be used.
+     * @return PromiseInterface The new promise that will be fulfilled or rejected based on the result of the callback.
+     */
+    public function then(PromiseInterface $promise, ?callable $onFulfilled = null, ?callable $onRejected = null): PromiseInterface
+    {
+        return $promise->then($onFulfilled ?? $this->onFulfilledDefault, $onRejected ?? $this->onRejectedDefault);
     }
     
     /**
@@ -4674,9 +4698,9 @@ class Civ13
             'Manager' => ['Manager', '16382'],
             'Supervisor' => ['Supervisor', '16382'],
             'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
-	    'Admin' => ['Admin', '16254'],
-	    'Moderator' => ['Moderator', '25088'],
-	    //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
+            'Admin' => ['Admin', '16254'],
+            'Moderator' => ['Moderator', '25088'],
+            //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
             'Mentor' => ['Mentor', '16384'],
         ]
     ): bool
