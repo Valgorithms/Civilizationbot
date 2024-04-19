@@ -644,9 +644,7 @@ class Slash
                     return null;
                 };
                 $promise = null;
-                foreach (['red', 'blue'] as $team) {
-                    $promise instanceof PromiseInterface ? $promise->then($remove_role($target_member, $team), $this->civ13->onRejectedDefault) : $promise = $remove_role($target_member, $team);
-                }
+                foreach (['red', 'blue'] as $team) $promise instanceof PromiseInterface ? $promise->then($remove_role($target_member, $team), $this->civ13->onRejectedDefault) : $promise = $remove_role($target_member, $team);
                 if ($promise instanceof PromiseInterface) $this->civ13->then($promise);
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The faction roles have been removed from <@{$target_member->id}>"), true);
             }
