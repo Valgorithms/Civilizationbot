@@ -69,6 +69,7 @@ include 'functions.php'; // execInBackground(), portIsAvailable()
 include 'variable_functions.php';
 include 'verifier_functions.php';
 include 'civ13.php';
+include 'BYOND.php';
 include 'Handler.php';
 include 'messageHandler.php';
 include 'httpHandler.php';

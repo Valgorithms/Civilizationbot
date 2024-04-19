@@ -8,6 +8,7 @@
 
 namespace Civ13;
 
+use Byond;
 use Civ13\Slash;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
@@ -70,6 +71,8 @@ class Civ13
     const insults_path = 'insults.txt';
     const ranking_path = 'ranking.txt';
     const status = 'status.txt';
+
+    public Byond $byond;
 
     public bool $sharding = false;
     public bool $shard = false;
@@ -2694,6 +2697,8 @@ class Civ13
         if (! isset($options['loop']) || ! ($options['loop'] instanceof LoopInterface)) $options['loop'] = Loop::get();
         $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
+
+        $this->byond = new Byond();
         return $options;
     }
 
@@ -3048,62 +3053,9 @@ class Civ13
     public function checkToken(string $discord_id): bool
     { // Check if the user set their token
         if (! $item = $this->pending->get('discord', $discord_id)) return false; // User is not in pending collection (This should never happen and is probably a programming error)
-        if (! $page = $this->getByondPage($item['ss13'])) return false; // Website could not be retrieved or the description wasn't found
-        if ($item['token'] != $this->getByondDesc($page)) return false; // Token does not match the description
+        if (! $page = $this->byond->getProfilePage($item['ss13'])) return false; // Website could not be retrieved or the description wasn't found
+        if ($item['token'] != $this->byond->__extractProfileDesc($page)) return false; // Token does not match the description
         return true; // Token matches
-    }
-    
-    /*
-     * This function is used to retrieve the 50 character token from the BYOND website
-     */
-    public function getByondPage(string $ckey): string|false 
-    { // Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and added the generated token to their description first!
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'http://www.byond.com/members/'.urlencode($ckey).'?format=text');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // return the page as a string
-        curl_setopt($ch, CURLOPT_HTTPGET, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
-        $page = curl_exec($ch);
-        curl_close($ch);
-        if ($page) return $page;
-        return false;        
-    }
-    
-    /*
-     * This function is used to retrieve the 50 character token from the BYOND website
-     */
-    public function getByondDesc(string $page): string|false 
-    {
-        if ($desc = substr($page, (strpos($page , 'desc')+8), 50)) return $desc; // PHP versions older than 8.0.0 will return false if the desc isn't found, otherwise an empty string will be returned
-        return false;
-    }
-    
-    /*
-     * This function is used to parse a BYOND account's age
-     * */
-    public function parseByondAge(string $page): string|false
-    {
-		if (preg_match("^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])^", $age = substr($page, (strpos($page , 'joined')+10), 10))) return $age;
-        return false;
-    }
-    public function getByondAge(string $ckey): string|false
-    {
-        if (isset($this->ages[$ckey])) return $this->ages[$ckey];
-        if ($age = $this->parseByondAge($this->getByondPage($ckey))) {
-            $this->ages[$ckey] = $age;
-            $this->VarSave('ages.json', $this->ages);
-            return $this->ages[$ckey];
-        }
-        return false;
-    }
-    /*
-     * This function is used determine if a byond account is old enough to play on the server
-     * false is returned if the account is too young, true is returned if the account is old enough
-     */
-    public function checkByondAge(string $age): bool
-    {
-        return strtotime($age) <= strtotime($this->minimum_age);
     }
 
     /*
@@ -3128,7 +3080,7 @@ class Civ13
         if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
-            if (! isset($this->permitted[$ckey]) && ! $this->checkByondAge($age)) {
+            if (! isset($this->permitted[$ckey]) && ! $this->checkProfileAge($age)) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
                 $msg = $this->ban($arr, null, [], true);
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
@@ -3143,7 +3095,7 @@ class Civ13
             }
             foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] === $ckey) { $found = true; break; }
             if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
-            return 'Login to your profile at https://secure.byond.com/members/-/account and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
+            return 'Login to your profile at ' . $this->byond::PROFILE . ' and enter this token as your description: `' . $this->generateByondToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
         return $this->verifyNew($discord_id)['error']; // ['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
     }
@@ -3243,6 +3195,34 @@ class Civ13
         if ($removed_items) $message .= PHP_EOL . 'Removed from the verified list: ```json' . PHP_EOL . $removed_items . PHP_EOL . '```' . PHP_EOL . $message;
         if ($message) $this->logger->info($message);
         return ['success' => true, 'message' => $message];
+    }
+
+    /**
+     * Retrieves the age associated with the given ckey.
+     *
+     * @param string $ckey The ckey to retrieve the age for.
+     * @return string|false The age associated with the ckey, or false if not found.
+     */
+    public function getByondAge(string $ckey): string|false
+    {
+        if (isset($this->ages[$ckey])) return $this->ages[$ckey];
+        if ($age = $this->byond->getByondAge($ckey)) {
+            $this->ages[$ckey] = $age;
+            $this->VarSave('ages.json', $this->ages);
+            return $this->ages[$ckey];
+        }
+        return false;
+    }
+
+    /**
+     * This function is used to determine if a BYOND account is old enough to play on the server.
+     *
+     * @param string $age The age of the BYOND account in the format "YYYY-MM-DD".
+     * @return bool Returns true if the account is old enough, false otherwise.
+     */
+    public function checkProfileAge(string $age): bool
+    {
+        return strtotime($age) <= strtotime($this->minimum_age);
     }
     
     /* 
@@ -4055,7 +4035,7 @@ class Civ13
             $this->__panicBan($ckey); // Require verification for Persistence rounds
             return;
         }
-        if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey))) { //Ban new accounts
+        if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkProfileAge($age = $this->getByondAge($ckey))) { //Ban new accounts
             $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
             $msg = $this->ban($arr, null, [], true);
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
@@ -4100,7 +4080,7 @@ class Civ13
                 }
                 if ($this->verified->get('ss13', $ckey)) continue;
                 //if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
-                if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey))) { //Ban new accounts
+                if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkProfileAge($age = $this->getByondAge($ckey))) { //Ban new accounts
                     $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
                     $msg = $this->ban($arr, null, [], true);
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
