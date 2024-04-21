@@ -3740,9 +3740,12 @@ class Civ13
             : 'offline';
         if ($reported_status != $status) {
             //if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
-            $this->sendMessage($channel, "Webserver is now **{$status}**.");
             $channel->name = "{$webserver_name}-{$status}";
-            return $channel->guild->channels->save($channel);
+            $success = function ($result) use ($channel, $status) {
+                $channel_new = $this->discord->getChannel($channel->id);
+                $this->sendMessage($channel_new, "Webserver is now **{$status}**.");
+            };
+            return $this->then($channel->guild->channels->save($channel), $success);
         }
         return null;
     }
@@ -3755,9 +3758,12 @@ class Civ13
             : 'offline';
         if ($reported_status != $status) {
             //if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified.";
-            $this->sendMessage($channel, "Verifier is now **{$status}**.");
             $channel->name = "{$verifier_name}-{$status}";
-            return $channel->guild->channels->save($channel);
+            $success = function ($result) use ($channel, $status) {
+                $channel_new = $this->discord->getChannel($channel->id);
+                $this->sendMessage($channel_new, "Verifier is now **{$status}**.");
+            };
+            return $this->then($channel->guild->channels->save($channel), $success);
         }
         return null;
     }
