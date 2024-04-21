@@ -193,6 +193,10 @@ class Slash
                             'value' => 'blue'
                         ],
                         [
+                            'name' => 'Random',
+                            'value' => 'random'
+                        ],
+                        [
                             'name' => 'None',
                             'value' => 'none'
                         ]
@@ -619,6 +623,8 @@ class Slash
             if (! $target_id = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
             if (! $target_member = $this->civ13->getVerifiedMember($target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The member is either not currently verified with a byond username or do not exist in the cache yet"), true);
             if (! $target_team = $interaction->data->options['team']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid team.'), true);
+            $teams = ['red', 'blue'];
+            if ($target_team === 'random') $target_team = array_rand($teams);
             $role_id = null;
             if ($target_team !== 'none' && (! isset($this->civ13->role_ids[$target_team]) || ! $role_id = $this->civ13->role_ids[$target_team])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Team not configured: `$target_team`"), true);
             if ($role_id && $target_member->roles->has($role_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The member is already in this faction!"), true);
@@ -643,7 +649,7 @@ class Slash
                     return null;
                 };
                 $promise = null;
-                foreach (['red', 'blue'] as $team) $promise instanceof PromiseInterface ? $promise->then($remove_role($target_member, $team), $this->civ13->onRejectedDefault) : $promise = $remove_role($target_member, $team);
+                foreach ($teams as $team) $promise instanceof PromiseInterface ? $promise->then($remove_role($target_member, $team), $this->civ13->onRejectedDefault) : $promise = $remove_role($target_member, $team);
                 if ($promise instanceof PromiseInterface) $this->civ13->then($promise);
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The faction roles have been removed from <@{$target_member->id}>"), true);
             }
