@@ -3742,8 +3742,11 @@ class Civ13
             //if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
             $channel->name = "{$webserver_name}-{$status}";
             $success = function ($result) use ($channel, $status) {
-                $channel_new = $this->discord->getChannel($channel->id);
-                $this->sendMessage($channel_new, "Webserver is now **{$status}**.");
+                $this->loop->addTimer(2, function () use ($channel, $status): void
+                {
+                    $channel_new = $this->discord->getChannel($channel->id);
+                    $this->sendMessage($channel_new, "Webserver is now **{$status}**.");
+                });
             };
             return $this->then($channel->guild->channels->save($channel), $success);
         }
