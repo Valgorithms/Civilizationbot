@@ -605,9 +605,9 @@ class Slash
         $this->civ13->discord->listenCommand('join_campaign', function (Interaction $interaction): PromiseInterface
         {
             //return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Factions are not ready to be assigned yet'), true);
-            if (! $this->civ13->getVerifiedItem($interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You are either not currently verified with a byond username or do not exist in the cache yet"), true);
+            if (! $this->civ13->getVerifiedItem($interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are either not currently verified with a byond username or do not exist in the cache yet'), true);
             
-            foreach ($interaction->member->roles as $role) if ($role->id === $this->civ13->role_ids['red'] || $role->id === $this->civ13->role_ids['blue']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You're already in a faction!"), true);
+            foreach ($interaction->member->roles as $role) if ($role->id === $this->civ13->role_ids['red'] || $role->id === $this->civ13->role_ids['blue']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are already in a faction!'), true);
 
             $redCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['red']))->count();
             $blueCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['blue']))->count();
@@ -621,14 +621,14 @@ class Slash
             if (! $interaction->member->roles->has($this->civ13->role_ids['organizer'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You do not have permission to assign factions!'), true);
             
             if (! $target_id = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
-            if (! $target_member = $this->civ13->getVerifiedMember($target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The member is either not currently verified with a byond username or do not exist in the cache yet"), true);
+            if (! $target_member = $this->civ13->getVerifiedMember($target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is either not currently verified with a byond username or do not exist in the cache yet'), true);
             if (! $target_team = $interaction->data->options['team']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid team.'), true);
             $teams = ['red', 'blue'];
             if ($target_team === 'random') $target_team = array_rand($teams);
             $role_id = null;
             if ($target_team !== 'none' && (! isset($this->civ13->role_ids[$target_team]) || ! $role_id = $this->civ13->role_ids[$target_team])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Team not configured: `$target_team`"), true);
-            if ($role_id && $target_member->roles->has($role_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The member is already in this faction!"), true);
-            //if ($target_member->roles->has($this->civ13->role_ids['red']) || $target_member->roles->has($this->civ13->role_ids['blue'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The member is already in a faction! Please remove their current faction role first."), true); // Don't assign if they already have a faction role
+            if ($role_id && $target_member->roles->has($role_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in this faction!'), true);
+            //if ($target_member->roles->has($this->civ13->role_ids['red']) || $target_member->roles->has($this->civ13->role_ids['blue'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in a faction! Please remove their current faction role first.'), true); // Don't assign if they already have a faction role
 
             if ($target_team === 'red' || $target_team === 'blue') {
                 $remove_role = function () use ($target_team, $target_member): ?PromiseInterface
@@ -662,7 +662,7 @@ class Slash
             if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$this->civ13->sanitizeInput($interaction->data->options['ckey']->value)])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('This account is currently under investigation.'));
             if (! $item = $this->civ13->verified->get('discord', $interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->verifyProcess($interaction->data->options['ckey']->value, $interaction->member->id, $interaction->member)), true);
             $interaction->member->setRoles([$this->civ13->role_ids['infantry']], "approveme {$item['ss13']}");
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Welcome to the Server! Your roles have been set and you should now have access to the rest of the server.'), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Welcome to {$interaction->member->guild->name}}! Your roles have been set and you should now have access to the rest of the server."), true);
         });
     }
 }
