@@ -357,6 +357,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         && ! str_ends_with($errstr, 'No route to host') // Usually happens if the verifier server is down
         && ! str_ends_with($errstr, 'No address associated with hostname') // Either the DNS or the VPS is acting up
         && ! str_ends_with($errstr, 'Temporary failure in name resolution') // Either the DNS or the VPS is acting up
+        && ! str_ends_with($errstr, 'Bad Gateway') // Usually happens if the verifier server's PHP-CGI is down
         //&& ! str_ends_with($errstr, 'HTTP request failed!')
 
         //&& ! str_contains($errstr, 'Undefined array key')
