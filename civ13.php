@@ -67,9 +67,9 @@ class Civ13
     const dmb = '/civ13.dmb';
     const ooc_path = '/ooc.log';
     const admin_path = '/admin.log';
+    const ranking_path = '/ranking.txt';
 
     const insults_path = 'insults.txt';
-    const ranking_path = 'ranking.txt';
     const status = 'status.txt';
 
     public Byond $byond;
@@ -371,7 +371,7 @@ class Civ13
                         if ($message) $message->react("👍");
                     });
                     if ($message) $message->react("⏱️");
-                    $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author['ss13'] ?? $this->discord->user->id) ?? $this->discord->user->displayname, $settings);
+                    $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $this->getVerifiedItem($message->author)['ss13'] ?? $this->discord->user->id ?? $this->discord->user->displayname, $settings);
                 };
                 $this->messageHandler->offsetSet("{$settings['key']}kill", $serverkill, ['Owner', 'High Staff']);
             }
@@ -1268,61 +1268,68 @@ class Civ13
             }
         }), ['Owner']);
 
-        if ((file_exists(self::ranking_path) || touch(self::ranking_path))) {
-            $ranking = function (): false|string
-            {
-                $line_array = array();
-                if (! $search = @fopen(self::ranking_path, 'r')) return false;
-                while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-                fclose($search);
-
-                $topsum = 1;
-                $msg = '';
-                foreach ($line_array as $line) {
-                    $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-                    if(isset($sline[1]) && $sline[1]) {
-                        $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
-                        if (($topsum += 1) > 10) break;
+        
+        $ranking = function (string $path): false|string
+        {
+            $line_array = array();
+            if (! file_exists($path) || ! $search = @fopen($path, 'r')) return false;
+            while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+            fclose($search);
+        
+            $topsum = 1;
+            $msg = '';
+            foreach ($line_array as $line) {
+                $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+                $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
+                if (($topsum += 1) > 10) break;
+            }
+            return $msg;
+        };
+        $rankme = function (string $path, string $ckey): false|string
+        {
+            $line_array = array();
+            if (! file_exists($path) || ! touch($path) || ! $search = @fopen($path, 'r')) return false;
+            while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+            fclose($search);
+            
+            $found = false;
+            $result = '';
+            foreach ($line_array as $line) {
+                $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+                if ($sline[1] == $ckey) {
+                    $found = true;
+                    $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
+                };
+            }
+            if (! $found) return "No medals found for ckey `$ckey`.";
+            return $result;
+        };
+        foreach ($this->server_settings as $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            if (! isset($settings['name'], $settings['key'])) continue;
+            $path = $settings['basedir'].self::ranking_path;
+            if ((file_exists($path) || touch($path))) {
+                $this->messageHandler->offsetSet($settings['key'].'ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($ranking, $path): PromiseInterface
+                {
+                    if (! $this->recalculateRanking()) return $this->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
+                    if (! $msg = $ranking($path)) return $this->reply($message, 'There was an error trying to recalculate ranking!');
+                    return $this->reply($message, $msg, 'ranking.txt');
+                }));
+    
+                $this->messageHandler->offsetSet($settings['key'].'rankme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($rankme, $path): PromiseInterface
+                {
+                    if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
+                        if (! $item = $this->getVerifiedItem($message->author)) return $this->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
+                        $ckey = $item['ss13'];
                     }
-                }
-                if ($msg) return $msg;
-                return 'No rankings found.';
-            };
-            $this->messageHandler->offsetSet('ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($ranking): PromiseInterface
-            {
-                if (! $this->recalculateRanking()) return $this->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                if (! $msg = $ranking()) return $this->reply($message, 'There was an error trying to recalculate ranking!');
-                return $this->reply($message, $msg, 'ranking.txt');
-            }));
-
-            $rankme = function (string $ckey): false|string
-            {
-                $line_array = array();
-                if (! $search = @fopen(self::ranking_path, 'r')) return false;
-                while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-                fclose($search);
-                
-                $found = false;
-                $result = '';
-                foreach ($line_array as $line) {
-                    $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-                    if ($sline[1] === $ckey) {
-                        $found = true;
-                        $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
-                    };
-                }
-                if (! $found) return "No medals found for ckey `$ckey`.";
-                return $result;
-            };
-            $this->messageHandler->offsetSet('rankme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($rankme): PromiseInterface
-            {
-                if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
-                if (! $this->recalculateRanking()) return $this->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                if (! $msg = $rankme($ckey)) return $this->reply($message, 'There was an error trying to get your ranking!');
-                return $this->sendMessage($message->channel, $msg, 'rank.txt');
-                // return $this->reply($message, "Your ranking is too long to display.");
-            }));
-        }
+                    if (! $this->recalculateRanking()) return $this->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
+                    if (! $msg = $rankme($path, $ckey)) return $this->reply($message, 'There was an error trying to get your ranking!');
+                    return $this->sendMessage($message->channel, $msg, 'rank.txt');
+                    // return $this->reply($message, "Your ranking is too long to display.");
+                }));
+            }
+        };
+        
         if (isset($this->files['tdm_awards_path']) && file_exists($this->files['tdm_awards_path'])) {
             $medals = function (string $ckey): false|string
             {
@@ -1381,6 +1388,14 @@ class Civ13
                 // return $this->reply($message, "Too many medals to display.");
             }));
         }
+
+        $this->messageHandler->offsetSet('dumpappcommands', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface {
+            $application_commands = $this->discord->__get('application_commands');
+            $names = [];
+            foreach ($application_commands as $command) $names[] = $command->getName();
+            $namesString = '`' . implode('`, `', $names) . '`';
+            return $message->reply('Application commands: ' . $namesString);
+        }), ['Owner', 'High Staff']);
 
         $this->messageHandler->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface {
             $server_playerlogs = array_filter(array_map(function ($settings) {
@@ -2157,9 +2172,9 @@ class Civ13
                                             } else {
                                                 setTimeout(function() {
                                                     location.reload();
-                                                }, 5000);
+                                                }, 60000);
                                             }
-                                        }, 5000);
+                                        }, 60000);
                                     }
                                 };
                                 xhr.send();
@@ -2622,8 +2637,14 @@ class Civ13
                         }
                     });
                 }
-            });
 
+                if ($application_commands = $this->discord->__get('application_commands')) {
+                    $names = [];
+                    foreach ($application_commands as $command) $names[] = $command->getName();
+                    $namesString = '`' . implode('`, `', $names) . '`';
+                    $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . $namesString);
+                }
+            });
         }
     }
     
@@ -2659,7 +2680,12 @@ class Civ13
 
         $this->onFulfilledDefault = function ($result): void
         {
-            $this->logger->debug('Promise resolved with type of: `' . gettype($result) . '`');
+            $output = 'Promise resolved with type of: `' . gettype($result) . '`';
+            if (is_object($result)) {
+                $output .= ' and class of: `' . get_class($result) . '`';
+                $output .= ' with properties: `' . implode('`, `', array_keys(get_object_vars($result))) . '`';
+            }
+            $this->logger->debug($output);
         };
         $this->onRejectedDefault = function ($reason): void
         {
@@ -4559,33 +4585,39 @@ class Civ13
     */
     public function recalculateRanking(): bool
     {
-        if (! isset($this->files['tdm_awards_path'])) return false;
-        if (! file_exists($this->files['tdm_awards_path']) || ! touch(self::ranking_path)) return false;
-        if (! $lines = file($this->files['tdm_awards_path'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
-        $result = array();
-        foreach ($lines as $line) {
-            $medal_s = 0;
-            $duser = explode(';', trim($line));
-            $medalScores = [
-                'long service medal' => 0.5,
-                'wounded badge' => 0.5,
-                'tank destroyer silver badge' => 0.75,
-                'wounded silver badge' => 0.75,
-                'wounded gold badge' => 1,
-                'assault badge' => 1.5,
-                'tank destroyer gold badge' => 1.5,
-                'combat medical badge' => 2,
-                'iron cross 1st class' => 3,
-                'iron cross 2nd class' => 5,
-            ];
-            if (! isset($result[$duser[0]])) $result[$duser[0]] = 0;
-            if (isset($duser[2]) && isset($medalScores[$duser[2]])) $medal_s += $medalScores[$duser[2]];
-            $result[$duser[0]] += $medal_s;
+        foreach ($this->server_settings as $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            if (! isset($settings['basedir'])) continue;
+            $awards_path = $settings['basedir'] . self::awards_path;
+            if ( ! file_exists($awards_path) || ! touch($awards_path)) return false;
+            $ranking_path = $settings['basedir'] . self::ranking_path;
+            if ( ! file_exists($ranking_path) || ! touch($ranking_path)) return false;
+            if (! $lines = file($awards_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
+            $result = array();
+            foreach ($lines as $line) {
+                $medal_s = 0;
+                $duser = explode(';', trim($line));
+                $medalScores = [
+                    'long service medal' => 0.5,
+                    'wounded badge' => 0.5,
+                    'tank destroyer silver badge' => 0.75,
+                    'wounded silver badge' => 0.75,
+                    'wounded gold badge' => 1,
+                    'assault badge' => 1.5,
+                    'tank destroyer gold badge' => 1.5,
+                    'combat medical badge' => 2,
+                    'iron cross 1st class' => 3,
+                    'iron cross 2nd class' => 5,
+                ];
+                if (! isset($result[$duser[0]])) $result[$duser[0]] = 0;
+                if (isset($duser[2]) && isset($medalScores[$duser[2]])) $medal_s += $medalScores[$duser[2]];
+                $result[$duser[0]] += $medal_s;
+            }
+            arsort($result);
+            if (file_put_contents($ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
+                return "$score;$ckey";
+            }, array_keys($result), $result))) === false) return false;
         }
-        arsort($result);
-        if (file_put_contents(self::ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
-            return "$score;$ckey";
-        }, array_keys($result), $result))) === false) return false;
         return true;
     }
 

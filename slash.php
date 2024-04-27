@@ -39,6 +39,9 @@ class Slash
     public function updateCommands(GlobalCommandRepository $commands): void
     {
         if ($this->civ13->shard) return; // Only run on the first shard
+        $names = [];
+        foreach ($commands as $command) if ($command->name) $names[] = $command->name;
+        if ($names) $this->civ13->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
 
         // if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
         if (! $commands->get('name', 'ping')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
@@ -205,18 +208,6 @@ class Slash
             ]
         ])));
 
-        // if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
-        if (! $commands->get('name', 'ranking')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
-            'name'        => 'ranking',
-            'description' => 'See the ranks of the top players on the Civ13 server'
-        ])));
-
-        // if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
-        if (! $commands->get('name', 'rankme')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
-            'name'        => 'rankme',
-            'description' => 'See your ranking on the Civ13 server'
-        ])));
-
         /* Deprecated, use the /rankme or chat command instead
         if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
         if (! $commands->get('name', 'rank')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
@@ -243,6 +234,10 @@ class Slash
         ])));*/
 
         $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands) {
+            $names = [];
+            foreach ($commands as $command) if ($command->name) $names[] = $command->name;
+            if ($names) $this->civ13->logger->debug('[GUILD APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
+
             // if ($command = $commands->get('name', 'unverify')) $commands->delete($command->id);
             if (! $commands->get('name', 'unverify')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
@@ -300,7 +295,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
             ])));
 
-             if ($command = $commands->get('name', 'statistics')) $commands->delete($command->id);
+            if ($command = $commands->get('name', 'statistics')) $commands->delete($command->id);
             /*if (! $commands->get('name', 'statistics')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'statistics',
@@ -308,19 +303,72 @@ class Slash
                 // 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
             ])));*/
             
-            
-            foreach (array_keys($this->civ13->server_settings) as $key) {
-                $server = strtolower($key);
-                if ($command = $commands->get('name', $server.'_restart')) $commands->delete($command->id);
-                /* if (! $commands->get('name', $server.'_restart')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
+            foreach ($this->civ13->server_settings as $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+                if (! isset($settings['name'], $settings['key'])) continue;
+                if ($command = $commands->get('name', "{$settings['key']}_restart")) $commands->delete($command->id);
+                /* if (! $commands->get('name', {$settings['key']}.'_restart')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
                     'type'                       => Command::CHAT_INPUT,
-                    'name'                       => "{$server}_restart",
-                    'description'                => "Restart the {$key} server",
+                    'name'                       => "{$settings['key']}_restart",
+                    'description'                => "Restart the {$settings['name']} server",
                     'dm_permission'              => false,
                     'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
                 ]))); */
             }
+            
+            $server_choices = [];
+            foreach ($this->civ13->server_settings as $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+                if (! isset($settings['name'], $settings['key'])) continue;
+                $server_choices[] = [
+                    'name' => $settings['name'],
+                    'value' => $settings['key']
+                ];
+            };
+            if ($server_choices) { // Only add the ranking commands if there are servers to choose from
+                // if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
+                if (! $commands->get('name', 'rank')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
+                    'name'                => 'rank',
+                    'description'         => 'See your ranking on the Civ13 server',
+                    'dm_permission'       => false,
+                    'options'             => [
+                        [
+                            'name'        => 'server',
+                            'description' => 'Which server to look up rankings for',
+                            'type'        =>  3,
+                            'required'    => true,
+                            'choices'     => $server_choices
+                        ],
+                        [
+                            'name'        => 'ckey',
+                            'description' => 'Byond.com username',
+                            'type'        =>  3,
+                            'required'    => false
+                        ]
+                    ]
+                ])));
 
+                // if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
+                if (! $commands->get('name', 'ranking')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
+                    'name'                => 'ranking',
+                    'description'         => 'See the ranks of the top players on the Civ13 server',
+                    'dm_permission'       => false,
+                    'options'             => [
+                        [
+                            'name'        => 'server',
+                            'description' => 'Which server to look up rankings for',
+                            'type'        =>  3,
+                            'required'    => true,
+                            'choices'     => $server_choices
+                        ]
+                    ]
+                ])));
+            } else { // Remove the ranking commands if there are no servers to choose from
+                //if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
+                //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
+            }
+            
+            
             // if ($command = $commands->get('name', 'approveme')) $commands->delete($command->id);
             if (! $commands->get('name', 'approveme')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
                 'name'                       => 'approveme',
@@ -404,6 +452,7 @@ class Slash
             $reason = 'unknown';
             $found = false;
             foreach ($this->civ13->server_settings as $settings) {
+                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 if (file_exists($settings['basedir'] . $this->civ13::bans) && ($file = @fopen($settings['basedir'] . $this->civ13::bans, 'r'))) {
                     while (($fp = fgets($file, 4096)) !== false) {
                         $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -654,6 +703,58 @@ class Slash
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The faction roles have been removed from <@{$target_member->id}>"), true);
             }
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Invalid team: `$target_team`."), true);
+        });
+
+        $rankme = function (string $path, string $ckey): false|string
+        {
+            $line_array = array();
+            if (! file_exists($path) || ! touch($path) || ! $search = @fopen($path, 'r')) return false;
+            while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+            fclose($search);
+            
+            $found = false;
+            $result = '';
+            foreach ($line_array as $line) {
+                $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+                if ($sline[1] == $ckey) {
+                    $found = true;
+                    $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
+                };
+            }
+            if (! $found) return "No medals found for ckey `$ckey`.";
+            return $result;
+        };
+
+        $this->civ13->discord->listenCommand('rank', function (Interaction $interaction) use ($rankme): PromiseInterface
+        { //TODO
+            if (! $ckey = $interaction->data->options['ckey']->value ?? $this->civ13->verified->get('discord', $interaction->member->id)['ss13'] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->member->id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            $server = $interaction->data->options['server']->value;
+            if ($ranking = $rankme($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path, $ckey)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` is not currently ranked on the `$server` server."), true);
+        });
+
+        $ranking = function (string $path): false|string
+        {
+            $line_array = array();
+            if (! file_exists($path) || ! $search = @fopen($path, 'r')) return false;
+            while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+            fclose($search);
+        
+            $topsum = 1;
+            $msg = '';
+            foreach ($line_array as $line) {
+                $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+                $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
+                if (($topsum += 1) > 10) break;
+            }
+            return $msg;
+        };
+        
+        $this->civ13->discord->listenCommand('ranking', function (Interaction $interaction) use ($ranking): PromiseInterface
+        { //TODO
+            $server = $interaction->data->options['server']->value;
+            if ($ranking = $ranking($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Ranking for the `$server` server are not currently available."), true);
         });
 
         $this->civ13->discord->listenCommand('approveme', function (Interaction $interaction): PromiseInterface
