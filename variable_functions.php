@@ -153,7 +153,8 @@ $slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme): void
     
     $civ13->discord->listenCommand('ranking', function (Interaction $interaction) use ($civ13, $ranking): void
     {
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking($civ13)), true);
+        if ($ranking = $ranking($civ13)) $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking($civ13)), true);
+        else $interaction->respondWithMessage(MessageBuilder::new()->setContent('Rankings are not currently available.'), true);
     });
     $civ13->discord->listenCommand('rankme', function (Interaction $interaction) use ($civ13, $rankme): void
     {
