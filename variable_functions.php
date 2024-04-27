@@ -158,7 +158,10 @@ $slash_init = function (Civ13 $civ13, $commands) use ($ranking, $rankme): void
     $civ13->discord->listenCommand('rankme', function (Interaction $interaction) use ($civ13, $rankme): void
     {
         if (! $item = $civ13->verified->get('discord', $interaction->member->id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        else $interaction->respondWithMessage(MessageBuilder::new()->setContent($rankme($civ13, $item['ss13'])), true);
+        else {
+            if ($ranking = $rankme($civ13, $item['ss13'])) $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking), true);
+            else $interaction->respondWithMessage(MessageBuilder::new()->setContent('Rankings are not currently available.'), true);
+        }
     });
 
     foreach (array_keys($this->server_settings) as $key => $settings) {
