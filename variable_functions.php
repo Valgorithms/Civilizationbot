@@ -40,50 +40,6 @@ $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): vo
     if (! isset($civ13->timers['status_changer_timer'])) $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function () use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
 };
 
-/*
-$medals = function (Civ13 $civ13, string $ckey): false|string
-{
-    $result = '';
-    if (! file_exists($civ13->files['tdm_awards_path']) || ! $search = @fopen($civ13->files['tdm_awards_path'], 'r')) return false;
-    $found = false;
-    while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
-        $found = true;
-        $duser = explode(';', $line);
-        if ($duser[0] == $ckey) {
-            switch ($duser[2]) {
-                case 'long service medal': $medal_s = '<:long_service:705786458874707978>'; break;
-                case 'combat medical badge': $medal_s = '<:combat_medical_badge:706583430141444126>'; break;
-                case 'tank destroyer silver badge': $medal_s = '<:tank_silver:705786458882965504>'; break;
-                case 'tank destroyer gold badge': $medal_s = '<:tank_gold:705787308926042112>'; break;
-                case 'assault badge': $medal_s = '<:assault:705786458581106772>'; break;
-                case 'wounded badge': $medal_s = '<:wounded:705786458677706904>'; break;
-                case 'wounded silver badge': $medal_s = '<:wounded_silver:705786458916651068>'; break;
-                case 'wounded gold badge': $medal_s = '<:wounded_gold:705786458845216848>'; break;
-                case 'iron cross 1st class': $medal_s = '<:iron_cross1:705786458572587109>'; break;
-                case 'iron cross 2nd class': $medal_s = '<:iron_cross2:705786458849673267>'; break;
-                default:  $medal_s = '<:long_service:705786458874707978>';
-            }
-            $result .= "**{$duser[1]}:** {$medal_s} **{$duser[2]}**, *{$duser[4]}*, {$duser[5]}" . PHP_EOL;
-        }
-    }
-    if ($result != '') return $result;
-    if (! $found && ($result == '')) return 'No medals found for this ckey.';
-};
-$brmedals = function (Civ13 $civ13, string $ckey): string
-{
-    $result = '';
-    if (! file_exists($civ13->files['tdm_awards_br_path']) || ! $search = @fopen($civ13->files['tdm_awards_br_path'], 'r')) return 'Error getting file.';
-    $found = false;
-    while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
-        $found = true;
-        $duser = explode(';', $line);
-        if ($duser[0] == $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
-    }
-    if (! $found) return 'No medals found for this ckey.';
-    return $result;
-};
-*/
-
 $on_message = function (Civ13 $civ13, Message $message, ?array $message_filtered = null): ?PromiseInterface
 { // on message
     $message_array = $message_filtered ?? $civ13->filterMessage($message);
@@ -120,7 +76,7 @@ $slash_init = function (Civ13 $civ13, $commands): void
 
         if (isset($settings['ip'], $settings['port'])) $civ13->discord->listenCommand($server.'_restart', function (Interaction $interaction) use ($server, $key, $settings): void
         {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up $key <byond://{$settings['ip']}:{$settings['port']}>"));
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `$key` <byond://{$settings['ip']}:{$settings['port']}>"));
             if ($serverrestart = array_shift($this->messageHandler->offsetGet($server.'restart'))) $serverrestart();
         });
     }
