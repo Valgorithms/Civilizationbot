@@ -728,6 +728,9 @@ class Slash
         $this->civ13->discord->listenCommand('rank', function (Interaction $interaction) use ($rankme): PromiseInterface
         { //TODO
             if (! $ckey = $interaction->data->options['ckey']->value ?? $this->civ13->verified->get('discord', $interaction->member->id)['ss13'] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->member->id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            if (is_numeric($ckey = $this->civ13->sanitizeInput($ckey)))
+                if (! $ckey = $this->civ13->verified->get('discord', $ckey)['ss13'])
+                    return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The Discord ID `$ckey` is not currently verified with a Byond username or it does not exist in the cache yet"), true);
             $server = $interaction->data->options['server']->value;
             if ($ranking = $rankme($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path, $ckey)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` is not currently ranked on the `$server` server."), true);
