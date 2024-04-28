@@ -298,7 +298,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'attack' => '1139614643954921593', // #attack-pers
     ],
 ];
-foreach ($server_settings as $key => $value) $server_settings[$key]['key'] = $key; // Individual settings will get passed around and lose their key, so we need to reassign it
+foreach ($server_settings as $key => $value) $server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
 $hidden_options = [
     'loop' => $loop,
