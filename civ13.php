@@ -2172,9 +2172,9 @@ class Civ13
                                             } else {
                                                 setTimeout(function() {
                                                     location.reload();
-                                                }, 60000);
+                                                }, 90000);
                                             }
-                                        }, 60000);
+                                        }, 90000);
                                     }
                                 };
                                 xhr.send();
