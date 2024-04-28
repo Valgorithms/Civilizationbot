@@ -1316,7 +1316,7 @@ class Civ13
                     return $this->reply($message, $msg, 'ranking.txt');
                 }));
     
-                $this->messageHandler->offsetSet($settings['key'].'rankme', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($rankme, $path): PromiseInterface
+                $this->messageHandler->offsetSet($settings['key'].'rank', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($rankme, $path): PromiseInterface
                 {
                     if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
                         if (! $item = $this->getVerifiedItem($message->author)) return $this->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
