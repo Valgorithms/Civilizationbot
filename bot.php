@@ -209,6 +209,97 @@ $loadedData = json_decode($json, true);
 foreach ($loadedData as $key => $value) $options[$key] = $value;
 */
 
+$server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
+    'tdm' => [
+        'supported' => true,
+        'enabled' => true,
+        'name' => 'TDM',
+        //'key' => 'tdm', // This must match the top-level key in the server_settings array
+        'ip' => $civ13_ip,
+        'port' => '1714',
+        'host' => 'Taislin',
+        'panic' => false,
+        'legacy' => true,
+        'moderate' => true,
+        'relay_method' => 'webhook',
+        'basedir' => '/home/civ13/civ13-tdm', // Base directory of the server
+        // Primary channels
+        'discussion' => '799952134426591273', // #tdm
+        'playercount' => '1048777462898761789', // tdm-#
+        // Chat relay channels
+        'ooc' => '1107016184328622233', // #ooc-tdm
+        'lobby' => '1107021760483831988', // #lobby-tdm
+        'asay' => '1107016769169801216', // #asay-tdm
+        'ic' => '1121531682198138920', // #ic-tdm
+        // Log channels
+        'transit' => '1107020747622326313', // #transit-tdm
+        'adminlog' => '1107024305927225455', // #adminlog-tdm
+        'debug' => '1106248157798600715', // #debug-tdm (debugging)
+        'garbage' => '1107018726307528735', // #garbage-tdm
+        'runtime' => '1107017103883632792', // #runtime-tdm
+        'attack' => '1107017830160936980', // #attack-tdm
+    ],
+    'nomads' => [
+        'supported' => true, // Whether the server is supported by the remote webserver
+        'enabled' => true, // Whether the server should have commands handled by the bot
+        'name' => 'Nomads', // Name of the server and the prefix of the playercount channel (e.g. nomads-999)
+        //'key' => 'nomads', // This must match the top-level key in the server_settings array
+        'ip' => $civ13_ip, // IP of the server
+        'port' => '1715', // Port of the server
+        'host' => 'Taislin', // Host of the server
+        'panic' => true, // Panic mode will ban all users who are not verified
+        'legacy' => true, // Legacy mode will use the file system instead of an SQL database
+        'moderate' => true, // Whether chat moderation is enabled
+        'relay_method' => 'webhook', // How messages are relayed to the server
+        'basedir' => '/home/civ13/civ13-rp', // Base directory of the server
+        // Primary channels
+        'discussion' => '799952084505067581', // #nomads
+        'playercount' => '1048777424894185484', // nomads-#
+        // Chat relay channels
+        'ooc' => '1110001963405418616', // #ooc-nomads
+        'lobby' => '1110001986134347856', // #lobby-nomads
+        'asay' => '1110002005977604186', // #asay-nomads
+        'ic' => '1121531739114852432', // #ic-nomads
+        // Log channels
+        'transit' => '1110002027469221989', // #transit-nomads
+        'adminlog' => '1110002047123738624', // #adminlog-nomads
+        'debug' => '1106248132779593758', // #debug-nomads (debugging)
+        'garbage' => '1110002493259251752', // #garbage-nomads
+        'runtime' => '1110002671936602132', // #runtime-nomads
+        'attack' => '1110002697383448648', // #attack-nomads
+    ],
+    'pers' => [
+        'supported' => true,
+        'enabled' => false,
+        'name' => 'Persistence',
+        //'key' => 'pers', // This must match the top-level key in the server_settings array
+        'ip' => $vzg_ip,
+        'port' => '1716',
+        'host' => 'ValZarGaming',
+        'panic' => true,
+        'legacy' => true,
+        'moderate' => true,
+        'relay_method' => 'webhook',
+        'basedir' => '/home/valithor/VPS/civ13-rp', // Base directory of the server
+        // Primary channels
+        'discussion' => '799951945346711552', // #pers
+        'playercount' => '1090788345082298369', // pers-#
+        // Chat relay channels
+        'ooc' => '1139614228408455388', // #ooc-pers
+        'lobby' => '1139614248222343282', // #lobby-pers
+        'asay' => '1139614266299785278', // #asay-pers
+        'ic' => '1139614281512529941', // #ic-pers
+        // Log channels
+        'transit' => '1139614542700216420', // #transit-pers
+        'adminlog' => '1139614564577722448', // #adminlog-pers
+        'debug' => '1139614582931984575', // #debug-pers (debugging)
+        'garbage' => '1139614596789964820', // #garbage-pers
+        'runtime' => '1139614629081915492', // #runtime-pers
+        'attack' => '1139614643954921593', // #attack-pers
+    ],
+];
+foreach ($server_settings as $key => $value) $server_settings[$key]['key'] = $key; // Individual settings will get passed around and lose their key, so we need to reassign it
+
 $hidden_options = [
     'loop' => $loop,
     'discord' => $discord,
@@ -224,95 +315,7 @@ $hidden_options = [
     'http_key' => $http_key,
     'http_whitelist' => $http_whitelist,
     'civ_token' => getenv('CIV_TOKEN') ?? $civ_token ?? 'CHANGEME',
-    'server_settings' => [ // Server specific settings, listed in the order in which they appear on the VZG server list.
-        'TDM' => [
-            'supported' => true,
-            'enabled' => true,
-            'name' => 'TDM',
-            'key' => 'tdm',
-            'ip' => $civ13_ip,
-            'port' => '1714',
-            'host' => 'Taislin',
-            'panic' => false,
-            'legacy' => true,
-            'moderate' => true,
-            'relay_method' => 'webhook',
-            'basedir' => '/home/civ13/civ13-tdm', // Base directory of the server
-            // Primary channels
-            'discussion' => '799952134426591273', // #tdm
-            'playercount' => '1048777462898761789', // tdm-#
-            // Chat relay channels
-            'ooc' => '1107016184328622233', // #ooc-tdm
-            'lobby' => '1107021760483831988', // #lobby-tdm
-            'asay' => '1107016769169801216', // #asay-tdm
-            'ic' => '1121531682198138920', // #ic-tdm
-            // Log channels
-            'transit' => '1107020747622326313', // #transit-tdm
-            'adminlog' => '1107024305927225455', // #adminlog-tdm
-            'debug' => '1106248157798600715', // #debug-tdm (debugging)
-            'garbage' => '1107018726307528735', // #garbage-tdm
-            'runtime' => '1107017103883632792', // #runtime-tdm
-            'attack' => '1107017830160936980', // #attack-tdm
-        ],
-        'Nomads' => [
-            'supported' => true, // Whether the server is supported by the remote webserver
-            'enabled' => true, // Whether the server should have commands handled by the bot
-            'name' => 'Nomads', // Name of the server and the prefix of the playercount channel (e.g. nomads-999)
-            'key' => 'nomads',
-            'ip' => $civ13_ip, // IP of the server
-            'port' => '1715', // Port of the server
-            'host' => 'Taislin', // Host of the server
-            'panic' => true, // Panic mode will ban all users who are not verified
-            'legacy' => true, // Legacy mode will use the file system instead of an SQL database
-            'moderate' => true, // Whether chat moderation is enabled
-            'relay_method' => 'webhook', // How messages are relayed to the server
-            'basedir' => '/home/civ13/civ13-rp', // Base directory of the server
-            // Primary channels
-            'discussion' => '799952084505067581', // #nomads
-            'playercount' => '1048777424894185484', // nomads-#
-            // Chat relay channels
-            'ooc' => '1110001963405418616', // #ooc-nomads
-            'lobby' => '1110001986134347856', // #lobby-nomads
-            'asay' => '1110002005977604186', // #asay-nomads
-            'ic' => '1121531739114852432', // #ic-nomads
-            // Log channels
-            'transit' => '1110002027469221989', // #transit-nomads
-            'adminlog' => '1110002047123738624', // #adminlog-nomads
-            'debug' => '1106248132779593758', // #debug-nomads (debugging)
-            'garbage' => '1110002493259251752', // #garbage-nomads
-            'runtime' => '1110002671936602132', // #runtime-nomads
-            'attack' => '1110002697383448648', // #attack-nomads
-        ],
-        'Pers' => [
-            'supported' => true,
-            'enabled' => false,
-            'name' => 'Persistence',
-            'key' => 'pers',
-            'ip' => $vzg_ip,
-            'port' => '1716',
-            'host' => 'ValZarGaming',
-            'panic' => true,
-            'legacy' => true,
-            'moderate' => true,
-            'relay_method' => 'webhook',
-            'basedir' => '/home/valithor/VPS/civ13-rp', // Base directory of the server
-            // Primary channels
-            'discussion' => '799951945346711552', // #pers
-            'playercount' => '1090788345082298369', // pers-#
-            // Chat relay channels
-            'ooc' => '1139614228408455388', // #ooc-pers
-            'lobby' => '1139614248222343282', // #lobby-pers
-            'asay' => '1139614266299785278', // #asay-pers
-            'ic' => '1139614281512529941', // #ic-pers
-            // Log channels
-            'transit' => '1139614542700216420', // #transit-pers
-            'adminlog' => '1139614564577722448', // #adminlog-pers
-            'debug' => '1139614582931984575', // #debug-pers (debugging)
-            'garbage' => '1139614596789964820', // #garbage-pers
-            'runtime' => '1139614629081915492', // #runtime-pers
-            'attack' => '1139614643954921593', // #attack-pers
-        ],
-    ],
+    'server_settings' => $server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
     'functions' => array(
         'ready' => [
             // 'on_ready' => $on_ready,
