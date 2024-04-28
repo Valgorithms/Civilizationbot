@@ -1269,61 +1269,26 @@ class Civ13
         }), ['Owner']);
 
         
-        $ranking = function (string $path): false|string
-        {
-            $line_array = array();
-            if (! file_exists($path) || ! $search = @fopen($path, 'r')) return false;
-            while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-            fclose($search);
-        
-            $topsum = 1;
-            $msg = '';
-            foreach ($line_array as $line) {
-                $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-                $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
-                if (($topsum += 1) > 10) break;
-            }
-            return $msg;
-        };
-        $rankme = function (string $path, string $ckey): false|string
-        {
-            $line_array = array();
-            if (! file_exists($path) || ! touch($path) || ! $search = @fopen($path, 'r')) return false;
-            while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-            fclose($search);
-            
-            $found = false;
-            $result = '';
-            foreach ($line_array as $line) {
-                $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-                if ($sline[1] == $ckey) {
-                    $found = true;
-                    $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
-                };
-            }
-            if (! $found) return "No medals found for ckey `$ckey`.";
-            return $result;
-        };
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['name'], $settings['key'])) continue;
             $path = $settings['basedir'].self::ranking_path;
             if ((file_exists($path) || touch($path))) {
-                $this->messageHandler->offsetSet($settings['key'].'ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($ranking, $path): PromiseInterface
+                $this->messageHandler->offsetSet($settings['key'].'ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
                 {
                     if (! $this->recalculateRanking()) return $this->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                    if (! $msg = $ranking($path)) return $this->reply($message, 'There was an error trying to recalculate ranking!');
+                    if (! $msg = $this->getRanking($path)) return $this->reply($message, 'There was an error trying to recalculate ranking!');
                     return $this->reply($message, $msg, 'ranking.txt');
                 }));
     
-                $this->messageHandler->offsetSet($settings['key'].'rank', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($rankme, $path): PromiseInterface
+                $this->messageHandler->offsetSet($settings['key'].'rank', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
                 {
                     if (! $ckey = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
                         if (! $item = $this->getVerifiedItem($message->author)) return $this->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
                         $ckey = $item['ss13'];
                     }
                     if (! $this->recalculateRanking()) return $this->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                    if (! $msg = $rankme($path, $ckey)) return $this->reply($message, 'There was an error trying to get your ranking!');
+                    if (! $msg = $this->getRank($path, $ckey)) return $this->reply($message, 'There was an error trying to get your ranking!');
                     return $this->sendMessage($message->channel, $msg, 'rank.txt');
                     // return $this->reply($message, "Your ranking is too long to display.");
                 }));
@@ -4619,6 +4584,57 @@ class Civ13
             }, array_keys($result), $result))) === false) return false;
         }
         return true;
+    }
+
+    /**
+     * Retrieves the ranking from a file and returns it as a formatted string.
+     *
+     * @param string $path The path to the file containing the ranking data.
+     * @return false|string Returns the top 10 ranks as a string if found, or false if the file does not exist or cannot be opened.
+     */
+    
+    public function getRanking(string $path): false|string
+    {
+        $line_array = array();
+        if (! file_exists($path) || ! $search = @fopen($path, 'r')) return false;
+        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+        fclose($search);
+    
+        $topsum = 1;
+        $msg = '';
+        foreach ($line_array as $line) {
+            $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+            $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
+            if (($topsum += 1) > 10) break;
+        }
+        return $msg;
+    }
+
+    /**
+     * Retrieves the rank for a given ckey from a file.
+     *
+     * @param string $path The path to the file containing the ranking data.
+     * @param string $ckey The ckey to search for.
+     * @return false|string Returns the rank for the ckey as a string if found, or false if the file does not exist or cannot be accessed.
+     */
+    public function getRank(string $path, string $ckey): false|string
+    {
+        $line_array = array();
+        if (! file_exists($path) || ! touch($path) || ! $search = @fopen($path, 'r')) return false;
+        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+        fclose($search);
+        
+        $found = false;
+        $result = '';
+        foreach ($line_array as $line) {
+            $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+            if ($sline[1] == $ckey) {
+                $found = true;
+                $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
+            };
+        }
+        if (! $found) return "No medals found for ckey `$ckey`.";
+        return $result;
     }
 
     // Check that all required roles are properly declared in the bot's config and exist in the guild

@@ -705,58 +705,21 @@ class Slash
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Invalid team: `$target_team`."), true);
         });
 
-        $rankme = function (string $path, string $ckey): false|string
-        {
-            $line_array = array();
-            if (! file_exists($path) || ! touch($path) || ! $search = @fopen($path, 'r')) return false;
-            while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-            fclose($search);
-            
-            $found = false;
-            $result = '';
-            foreach ($line_array as $line) {
-                $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-                if ($sline[1] == $ckey) {
-                    $found = true;
-                    $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
-                };
-            }
-            if (! $found) return "No medals found for ckey `$ckey`.";
-            return $result;
-        };
-
-        $this->civ13->discord->listenCommand('rank', function (Interaction $interaction) use ($rankme): PromiseInterface
+        $this->civ13->discord->listenCommand('rank', function (Interaction $interaction): PromiseInterface
         { //TODO
             if (! $ckey = $interaction->data->options['ckey']->value ?? $this->civ13->verified->get('discord', $interaction->member->id)['ss13'] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->member->id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             if (is_numeric($ckey = $this->civ13->sanitizeInput($ckey)))
                 if (! $ckey = $this->civ13->verified->get('discord', $ckey)['ss13'])
                     return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The Discord ID `$ckey` is not currently verified with a Byond username or it does not exist in the cache yet"), true);
             $server = $interaction->data->options['server']->value;
-            if ($ranking = $rankme($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path, $ckey)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking), true);
+            if ($ranking = $this->civ13->getRank($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path, $ckey)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` is not currently ranked on the `$server` server."), true);
         });
-
-        $ranking = function (string $path): false|string
-        {
-            $line_array = array();
-            if (! file_exists($path) || ! $search = @fopen($path, 'r')) return false;
-            while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-            fclose($search);
         
-            $topsum = 1;
-            $msg = '';
-            foreach ($line_array as $line) {
-                $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-                $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
-                if (($topsum += 1) > 10) break;
-            }
-            return $msg;
-        };
-        
-        $this->civ13->discord->listenCommand('ranking', function (Interaction $interaction) use ($ranking): PromiseInterface
+        $this->civ13->discord->listenCommand('ranking', function (Interaction $interaction): PromiseInterface
         { //TODO
             $server = $interaction->data->options['server']->value;
-            if ($ranking = $ranking($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking), true);
+            if ($ranking = $this->civ13->getRanking($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent($ranking), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Ranking for the `$server` server are not currently available."), true);
         });
 
