@@ -46,6 +46,21 @@ $on_message = function (Civ13 $civ13, Message $message, ?array $message_filtered
     if (! $message_array['called']) return null; // Not a command
     if (! $message_array['message_content_lower']) { // No command given
         $random_responses = ['You can see a full list of commands by using the `help` command.'];
+        $random_responses = [
+            'You can see a full list of commands by using the `help` command.',
+            'I\'m sorry, I can\'t do that, Dave.',
+            '404 Error: Humor not found.',
+            'Hmm, looks like someone called me to just enjoy my company.',
+            'Seems like I\'ve been summoned!',
+            'I see you\'ve summoned the almighty ' . ($civ13->discord->username ?? $civ13->discord->displayname) . ', ready to dazzle you with... absolutely nothing!',
+            'Ah, the sweet sound of my name being called!',
+            'I\'m here, reporting for duty!',
+            'Greetings, human! It appears you\'ve summoned me to bask in my digital presence.',
+            'You rang? Or was that just a pocket dial in the digital realm?',
+            'Ah, the classic call and no command combo!',
+            'I\'m here, at your service!',
+            'You\'ve beckoned, and here I am!'
+        ];
         if (count($random_responses) > 0) return $civ13->sendMessage($message->channel, "<@{$message->author->id}>, " . $random_responses[rand(0, count($random_responses)-1)]);
     }
     if ($message_array['message_content_lower'] === 'dev')
