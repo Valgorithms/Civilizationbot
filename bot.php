@@ -154,6 +154,7 @@ $options = array(
     ),
     'role_ids' => array(
         // Discord ranks
+        // Staff Roles
         'Owner' => '468980650914086913', // Civ13 Discord Server Owner
         'Chief Technical Officer' => '791450326455681034', // Civ13 Debug Host / Database admin
         'Host' => '677873806513274880', // Civ13 Server Host
@@ -165,13 +166,14 @@ $options = array(
         'Admin' => '468982360659066912',
         'Moderator' => '823302316743589938',
         'Mentor' => '469297467918254085',
+        'Parolemin' => '743971427929030748', // Parole Admin
+        // Player Roles
         'veteran' => '468983261708681216', // Promoted
         'infantry' => '468982790772228127', // Verified
         'banished' => '710328377210306641', // Banned in-game
         'permabanished' => '1126137099209425017', // Permanently banned in-game
         'dungeon' => '547186843746304020', // Dungeon, for those who have had their Discord permissions revoked
         'paroled' => '745336314689355796', // On parole
-        'parolemin' => '743971427929030748', // Parole Admin
         
         // Factions
         'red' => '1132678312301428886', // Redmenia

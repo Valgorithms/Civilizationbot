@@ -75,7 +75,7 @@ $civ_listeners = function (Civ13 $civ13): void // Handles Verified and Veteran c
             return;
         }
         if ($member->roles->has($civ13->role_ids['veteran']) !== $member_old->roles->has($civ13->role_ids['veteran'])) $civ13->whitelistUpdate();
-        if ($member->roles->has($civ13->role_ids['infantry']) !== $member_old->roles->has($civ13->role_ids['infantry'])) $civ13->getVerified();
+        elseif ($member->roles->has($civ13->role_ids['infantry']) !== $member_old->roles->has($civ13->role_ids['infantry'])) $civ13->getVerified();
         $faction_roles = [
             'red',
             'blue',

@@ -1952,7 +1952,7 @@ class Civ13
 
                 if (isset($this->paroled[$ckey])) {
                     $message2 = '';
-                    if (isset($this->role_ids['parolemin'])) $message2 .= "<@&{$this->role_ids['parolemin']}>, ";
+                    if (isset($this->role_ids['Parolemin'])) $message2 .= "<@&{$this->role_ids['Parolemin']}>, ";
                     $message2 .= "`$ckey` has logged into `{$settings['name']}`";
                     $this->sendMessage($parole_notif_channel, $message2);
                 }
@@ -1975,7 +1975,7 @@ class Civ13
 
                 if (isset($this->paroled[$ckey])) {
                     $message2 = '';
-                    if (isset($this->role_ids['parolemin'])) $message2 .= "<@&{$this->role_ids['parolemin']}>, ";
+                    if (isset($this->role_ids['Parolemin'])) $message2 .= "<@&{$this->role_ids['Parolemin']}>, ";
                     $message2 .= "`$ckey` has log out of `{$settings['name']}`";
                     $this->sendMessage($parole_notif_channel, $message2);
                 }

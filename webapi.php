@@ -416,7 +416,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         && $parole_log_channel = $civ13->discord->getChannel($civ13->channel_ids['parole_notif'])
                     ) {
                         $message2 = '';
-                        if (isset($civ13->role_ids['parolemin'])) $message2 .= "<@&{$civ13->role_ids['parolemin']}>, ";
+                        if (isset($civ13->role_ids['Parolemin'])) $message2 .= "<@&{$civ13->role_ids['Parolemin']}>, ";
                         $message2 .= "`$ckey` has logged into `$server`";
                         $parole_log_channel->sendMessage($message2);
                     }
@@ -444,7 +444,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
                         && $parole_log_channel = $civ13->discord->getChannel($civ13->channel_ids['parole_notif'])
                     ) {
                         $message2 = '';
-                        if (isset($civ13->role_ids['parolemin'])) $message2 .= "<@&{$civ13->role_ids['parolemin']}>, ";
+                        if (isset($civ13->role_ids['Parolemin'])) $message2 .= "<@&{$civ13->role_ids['Parolemin']}>, ";
                         $message2 .= "`$ckey` has log out of `$server`";
                         $parole_log_channel->sendMessage($message2);
                     }
