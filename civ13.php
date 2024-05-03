@@ -1171,12 +1171,11 @@ class Civ13
             $found = false;
             foreach ($this->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $basedir = $settings['basedir'];
-                if (! file_exists($basedir . self::admins) || ! $file_contents = @file_get_contents($basedir . self::admins)) {
-                    $this->logger->debug('`' . $basedir . self::admins . '` is not a valid file path!');
+                if (! file_exists($path = $settings['basedir'] . self::admins) || ! $file_contents = @file_get_contents($path)) {
+                    $this->logger->debug("`$path` is not a valid file path!");
                     continue;
                 }
-                $builder->addFileFromContent($basedir . self::admins, $file_contents);
+                $builder->addFileFromContent($path, $file_contents);
                 $found = true;
             }
             if (! $found) return $message->react("🔥");
@@ -1187,19 +1186,23 @@ class Civ13
         {            
             $builder = MessageBuilder::new()->setContent('Faction Lists');
             foreach ($this->server_settings as $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $basedir = $settings['basedir'];
-                if (file_exists($basedir . self::factionlist)) $builder->addfile($basedir . self::factionlist, 'factionlist.txt');
-                else $this->logger->warning('`' . $basedir . self::factionlist . '` is not a valid file path!');
+                if (! isset($settings['enabled'], $settings['basedir']) || ! $settings['enabled']) continue;
+                if (file_exists($path = $settings['basedir'] . self::factionlist)) $builder->addfile($path, $settings['key'] . '_factionlist.txt');
+                else $this->logger->warning("`$path is not a valid file path!");
             }
             return $message->reply($builder);
         }), ['Owner', 'High Staff', 'Admin']);
 
         if (isset($this->files['tdm_sportsteams']) && file_exists($this->files['tdm_sportsteams']))
         $this->messageHandler->offsetSet('sportsteams', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
-        {            
-            if (! $file_contents = @file_get_contents($this->files['tdm_sportsteams'])) return $message->react("🔥");
-            return $message->reply(MessageBuilder::new()->addFileFromContent('sports_teams.txt', $file_contents));
+        {   
+            $builder = MessageBuilder::new()->setContent('Sports Teams');      
+            foreach ($this->server_settings as $settings) {
+                if (! isset($settings['enabled'], $settings['basedir']) || ! $settings['enabled']) continue;
+                if (file_exists($path = $settings['basedir'] . self::sportsteams)) $builder->addfile($path, $settings['key'] . '_sports_teams.txt');
+                else $this->logger->warning("`$path is not a valid file path!");
+            }
+            return $message->reply($builder);
         }), ['Owner', 'High Staff', 'Admin']);
 
         $log_handler = function (Message $message, string $message_content): PromiseInterface
