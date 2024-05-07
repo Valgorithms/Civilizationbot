@@ -1652,6 +1652,24 @@ class Civ13
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $message);
             return HttpResponse::plaintext("$message");
         }), true);
+        $this->httpHandler->offsetSet('/githubupdated', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        {
+            if ($signature = $request->getHeaderLine('X-Hub-Signature')) {
+                $hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
+                if (strcmp($signature, $hash) == 0) {
+                    execInBackground('git reset --hard origin/main');
+                    $this->loop->addTimer(5, function () { execInBackground('git pull'); });
+                }
+                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, 'GitHub push event webhook received, updating code...');
+                return new HttpResponse(HttpResponse::STATUS_OK);
+            }
+            $headers = $request->getHeaders();
+            $this->logger->warning("Unauthorized Request Headers on `$endpoint` endpoint: ", $headers);
+            $tech_ping = '';
+            if (isset($this->technician_id)) $tech_ping = "<@{$this->technician_id}>, ";
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $tech_ping . "Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
+            return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
+        }));
         $this->httpHandler->offsetSet('/pull', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             execInBackground('git pull');
@@ -2372,6 +2390,49 @@ class Civ13
         }
         $builder->setContent($content);
         return $channel->sendEmbed($embed);
+    }
+    
+    /**
+     * Checks if a role has a higher position than the bot's role and has the permission to manage roles.
+     *
+     * @param string $role_id The ID of the role to check.
+     * @param Guild $guild The guild object.
+     * @return bool Returns true if the role has a higher position and has the permission to manage roles, false otherwise.
+     */
+    function checkRolePosition(string $role_id, Guild $guild): bool
+    {
+        if ($role_id == $guild->id) return false;
+        if (! $bot = $guild->members->get('id', $this->discord->id)) return false;
+        if (! $role = $guild->roles->get('id', $role_id)) return false;
+        foreach ($bot->roles as $brole) if ($brole->position > $role->position && $brole->permissions->manage_roles) return true;
+        return false;
+    }
+    
+    /**
+     * Returns the highest role from a collection of roles.
+     *
+     * @param Collection $roles The collection of roles.
+     * @return Role|null The highest role, or null if the collection is empty.
+     */
+    function getHighestRole(Collection $roles): ?Role
+    {
+        return array_reduce($roles->toArray(), function ($prev, $role) {
+            if ($prev === null) return $role;
+            return ($this->comparePositionTo($role, $prev) > 0 ? $role : $prev);
+        });
+    }
+
+    /**
+     * Compares the position of two Role objects and returns the result.
+     *
+     * @param Role $role The first Role object to compare.
+     * @param Role $role2 The second Role object to compare.
+     * @return int Returns -1 if $role is positioned before $role2, 0 if they have the same position, and 1 if $role is positioned after $role2.
+     */
+    function comparePositionTo(Role $role, Role $role2): int
+    {
+        if ($role->position === $role2->position) return $role2->id <=> $role->id;
+        return $role->position <=> $role2->position;
     }
 
     public function sendPlayerMessage($channel, bool $urgent, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
