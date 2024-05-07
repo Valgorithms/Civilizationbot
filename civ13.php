@@ -1661,10 +1661,7 @@ class Civ13
                     $this->loop->addTimer(5, function () { execInBackground('git pull'); });
                 }
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, 'GitHub push event webhook received, updating code...');
-                if (isset($this->timers['update_pending']) && $this->timers['update_pending'] instanceof TimerInterface) {
-                    $this->loop->cancelTimer($this->timers['update_pending']);
-                    unset($this->timers['update_pending']);
-                }
+                if (isset($this->timers['update_pending']) && $this->timers['update_pending'] instanceof TimerInterface) $this->loop->cancelTimer($this->timers['update_pending']);
                 $this->timers['update_pending'] = $this->loop->addTimer(300, function () {
                     \restart();
                     $this->discord->close();
