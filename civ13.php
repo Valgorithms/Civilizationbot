@@ -1447,7 +1447,8 @@ class Civ13
                     return $membersData;
                 })
                 ->then(function ($membersData) use ($message) {
-                    return $message->reply(json_encode($membersData, JSON_PRETTY_PRINT));
+                    $message->react('👍');
+                    return $message->reply(MessageBuilder::new()->addFileFromContent('new_members.json', json_encode($membersData, JSON_PRETTY_PRINT)));
                 });
 
             $message->react('⏱️');
