@@ -1717,9 +1717,12 @@ class Civ13
                     });
                     if (isset($this->timers['update_pending']) && $this->timers['update_pending'] instanceof TimerInterface) $this->loop->cancelTimer($this->timers['update_pending']);
                     $this->timers['update_pending'] = $this->loop->addTimer(300, function () {
-                        \restart();
-                        $this->discord->close();
-                        die();
+                        $this->socket->close();
+                        $this->loop->addTimer(3, function () {
+                            \restart();
+                            $this->discord->close();
+                            die();
+                        });
                     });
                     return new HttpResponse(HttpResponse::STATUS_OK);
                 //}
