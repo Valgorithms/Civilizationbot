@@ -1411,6 +1411,51 @@ class Civ13
             return $this->reply($message, 'Panic bunker is now ' . (($this->panic_bunker = ! $this->panic_bunker) ? 'enabled.' : 'disabled.'));
         }), ['Owner', 'High Staff']);
 
+        $this->messageHandler->offsetSet('newmembers', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            $newMembers = $message->guild->members->toArray(); // Check all members without filtering by date (it's too slow and not necessary because we're only displaying the 10 most recent members anyway)
+            // usort MIGHT be too slow if there are thousands of members. It currently resolves in less than a second with 669 members, but this is a future-proofed method.
+            $promise = \React\Promise\resolve($newMembers)
+                ->then(function ($members) {
+                    return \React\Promise\all($members);
+                })
+                ->then(function ($members) {
+                    usort($members, function ($a, $b) {
+                        return $b->joined_at->getTimestamp() - $a->joined_at->getTimestamp();
+                    });
+                    return \React\Promise\map($members, function ($member) {
+                        return [
+                            'username' => $member->user->username,
+                            'id' => $member->user->id,
+                            'join_date' => $member->joined_at->format('Y-m-d H:i:s')
+                        ];
+                    });
+                })
+                ->then(function ($sortedMembers) use ($message) {
+                    $memberCount = 10; // Number of members to display
+                    $mostRecentMembers = array_slice($sortedMembers, 0, $memberCount);
+                    // if (count($mostRecentMembers) < $memberCount) $memberCount = count($mostRecentMembers); // If there are less than 10 members, display all of them
+
+                    $membersData = [];
+                    foreach ($mostRecentMembers as $member) {
+                        $membersData[] = [
+                            'username' => $member['username'],
+                            'id' => $member['id'],
+                            'join_date' => $member['join_date']
+                        ];
+                    }
+                    return $membersData;
+                })
+                ->then(function ($membersData) use ($message) {
+                    return $message->reply(json_encode($membersData, JSON_PRETTY_PRINT));
+                });
+
+            $message->react('⏱️');
+            return $promise;
+        }), ['Owner', 'High Staff', 'Admin']);
+
+        
+
         $this->httpHandler->offsetSet('/get-channels', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             $doc = new \DOMDocument();
@@ -1655,22 +1700,32 @@ class Civ13
         $this->httpHandler->offsetSet('/githubupdated', new httpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
         {
             if ($signature = $request->getHeaderLine('X-Hub-Signature')) {
-                $hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
-                if (strcmp($signature, $hash) == 0) {
-                    execInBackground('git reset --hard origin/main');
-                    $this->loop->addTimer(5, function () { execInBackground('git pull'); });
-                }
-                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, 'GitHub push event webhook received, updating code...');
-                if (isset($this->timers['update_pending']) && $this->timers['update_pending'] instanceof TimerInterface) $this->loop->cancelTimer($this->timers['update_pending']);
-                $this->timers['update_pending'] = $this->loop->addTimer(300, function () {
-                    \restart();
-                    $this->discord->close();
-                    die();
-                });
-                return new HttpResponse(HttpResponse::STATUS_OK);
+                // Secret isn't working right now, so we're not using it
+                //$hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
+                //if (strcmp($signature, $hash) == 0) {
+                    //if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, 'GitHub push event webhook received');
+                    if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, 'Updating code from GitHub... (1/3)');
+                    execInBackground('git pull');
+                    $this->loop->addTimer(5, function () {
+                        if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
+                        execInBackground('git reset --hard origin/main');
+                    });
+                    $this->loop->addTimer(10, function () {
+                        if ($channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, 'Updating code from GitHub... (3/3)');
+                        execInBackground('git pull');
+                    });
+                    if (isset($this->timers['update_pending']) && $this->timers['update_pending'] instanceof TimerInterface) $this->loop->cancelTimer($this->timers['update_pending']);
+                    $this->timers['update_pending'] = $this->loop->addTimer(300, function () {
+                        \restart();
+                        $this->discord->close();
+                        die();
+                    });
+                    return new HttpResponse(HttpResponse::STATUS_OK);
+                //}
             }
             $headers = $request->getHeaders();
-            $this->logger->warning("Unauthorized Request Headers on `$endpoint` endpoint: ", $headers);
+            //$this->logger->warning("Unauthorized Request Headers on `$endpoint` endpoint: ", $headers);
+            //$this->logger->warning("Signature: $signature, Hash: $hash");
             $tech_ping = '';
             if (isset($this->technician_id)) $tech_ping = "<@{$this->technician_id}>, ";
             if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $tech_ping . "Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
