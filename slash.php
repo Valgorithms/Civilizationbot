@@ -120,7 +120,7 @@ class Slash
                 [
                     'name'        => 'ckey',
                     'description' => 'Byond.com username',
-                    'type'        => 3,
+                    'type'        => Command::MESSAGE,
                     'required'    => true,
                 ]
             ]
@@ -136,19 +136,19 @@ class Slash
                 [
                     'name'			=> 'ckey',
                     'description'	=> 'The byond username being banned',
-                    'type'			=> 3,
+                    'type'			=> Command::MESSAGE,
                     'required'		=> true,
                 ],
                 [
                     'name'			=> 'duration',
                     'description'	=> 'How long to ban the user for (e.g. 999 years)',
-                    'type'			=> 3,
+                    'type'			=> Command::MESSAGE,
                     'required'		=> true,
                 ],
                 [
                     'name'			=> 'reason',
                     'description'	=> 'Why the user is being banned',
-                    'type'			=> 3,
+                    'type'			=> Command::MESSAGE,
                     'required'		=> true,
                 ],
             ]
@@ -178,13 +178,13 @@ class Slash
                 [
                     'name'			=> 'ckey',
                     'description'	=> 'Byond username (or Discord ID)',
-                    'type'			=> 3,
+                    'type'			=> Command::MESSAGE,
                     'required'		=> true,
                 ],
                 [
                     'name'			=> 'team',
                     'description'	=> 'Team to assign the user to',
-                    'type'			=> 3,
+                    'type'			=> Command::MESSAGE,
                     'required'		=> true,
                     'choices'       => [
                         [
@@ -335,14 +335,14 @@ class Slash
                         [
                             'name'        => 'server',
                             'description' => 'Which server to look up rankings for',
-                            'type'        => 3,
+                            'type'        => Command::MESSAGE,
                             'required'    => true,
                             'choices'     => $server_choices
                         ],
                         [
                             'name'        => 'ckey',
                             'description' => 'Byond.com username',
-                            'type'        => 3,
+                            'type'        => Command::MESSAGE,
                             'required'    => false
                         ]
                     ]
@@ -357,7 +357,7 @@ class Slash
                         [
                             'name'        => 'server',
                             'description' => 'Which server to look up rankings for',
-                            'type'        => 3,
+                            'type'        => Command::MESSAGE,
                             'required'    => true,
                             'choices'     => $server_choices
                         ]
@@ -378,7 +378,7 @@ class Slash
                     [
                         'name'        => 'ckey',
                         'description' => 'Byond.com username',
-                        'type'        => 3,
+                        'type'        => Command::MESSAGE,
                         'required'    => true,
                     ]
                 ]
