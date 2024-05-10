@@ -14,6 +14,7 @@ use React\Promise\PromiseInterface;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Interactions\Command\Command;
+use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\User\Member;
 use Discord\Parts\Permissions\RolePermission;
 use Discord\Repository\Guild\GuildCommandRepository;
@@ -120,7 +121,7 @@ class Slash
                 [
                     'name'        => 'ckey',
                     'description' => 'Byond.com username',
-                    'type'        => Command::MESSAGE,
+                    'type'        => Option::STRING,
                     'required'    => true,
                 ]
             ]
@@ -136,19 +137,19 @@ class Slash
                 [
                     'name'			=> 'ckey',
                     'description'	=> 'The byond username being banned',
-                    'type'			=> Command::MESSAGE,
+                    'type'			=> Option::STRING,
                     'required'		=> true,
                 ],
                 [
                     'name'			=> 'duration',
                     'description'	=> 'How long to ban the user for (e.g. 999 years)',
-                    'type'			=> Command::MESSAGE,
+                    'type'			=> Option::STRING,
                     'required'		=> true,
                 ],
                 [
                     'name'			=> 'reason',
                     'description'	=> 'Why the user is being banned',
-                    'type'			=> Command::MESSAGE,
+                    'type'			=> Option::STRING,
                     'required'		=> true,
                 ],
             ]
@@ -178,13 +179,13 @@ class Slash
                 [
                     'name'			=> 'ckey',
                     'description'	=> 'Byond username (or Discord ID)',
-                    'type'			=> Command::MESSAGE,
+                    'type'			=> Option::STRING,
                     'required'		=> true,
                 ],
                 [
                     'name'			=> 'team',
                     'description'	=> 'Team to assign the user to',
-                    'type'			=> Command::MESSAGE,
+                    'type'			=> Option::STRING,
                     'required'		=> true,
                     'choices'       => [
                         [
@@ -335,14 +336,14 @@ class Slash
                         [
                             'name'        => 'server',
                             'description' => 'Which server to look up rankings for',
-                            'type'        => Command::MESSAGE,
+                            'type'        => Option::STRING,
                             'required'    => true,
                             'choices'     => $server_choices
                         ],
                         [
                             'name'        => 'ckey',
                             'description' => 'Byond.com username',
-                            'type'        => Command::MESSAGE,
+                            'type'        => Option::STRING,
                             'required'    => false
                         ]
                     ]
@@ -357,7 +358,7 @@ class Slash
                         [
                             'name'        => 'server',
                             'description' => 'Which server to look up rankings for',
-                            'type'        => Command::MESSAGE,
+                            'type'        => Option::STRING,
                             'required'    => true,
                             'choices'     => $server_choices
                         ]
@@ -378,7 +379,7 @@ class Slash
                     [
                         'name'        => 'ckey',
                         'description' => 'Byond.com username',
-                        'type'        => Command::MESSAGE,
+                        'type'        => Option::STRING,
                         'required'    => true,
                     ]
                 ]
