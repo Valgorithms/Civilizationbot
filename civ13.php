@@ -745,7 +745,7 @@ class Civ13
             $this->messageHandler->offsetSet('fullbancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 foreach ($message->guild->members as $member)
-                    if ($item = $this->getVerifiedItem($member->id))
+                    if ($item = $this->getVerifiedItem($member))
                         $this->bancheck($item['ss13']);
                 return $message->react("👍");
             }), ['Owner', 'High Staff']);
@@ -1048,7 +1048,7 @@ class Civ13
         $this->messageHandler->offsetSet('unpermit', $revoke, ['Owner', 'High Staff', 'Admin']); // Alias for revoke
         
         if (isset($this->role_ids['paroled'], $this->channel_ids['parole_logs'])) {
-            $parole = function (Message $message, array $message_filtered, string $command): PromiseInterface
+            $this->messageHandler->offsetSet('parole', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 if (! $item = $this->getVerifiedItem($id = $this->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
                 $this->paroleCkey($ckey = $item['ss13'], $message->user_id, true);
@@ -1058,8 +1058,7 @@ class Civ13
                         $member->addRole($this->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
                 if ($channel = $this->discord->getChannel($this->channel_ids['parole_logs'])) $this->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
-            };
-            $this->messageHandler->offsetSet('parole', new MessageHandlerCallback($parole), ['Owner', 'High Staff', 'Admin']);
+            }), ['Owner', 'High Staff', 'Admin']);
         }
 
         $this->messageHandler->offsetSet('refresh', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
@@ -2655,7 +2654,7 @@ class Civ13
                         return $member->roles->has($this->role_ids['High Staff']);
                     });
                     foreach ($members as $member)
-                        if ($item = $this->getVerifiedItem($member->user))
+                        if ($item = $this->getVerifiedItem($member))
                             if (isset($item['ss13']) && $ckey = $item['ss13'])
                                 if ($playerlogs = $this->getCkeyLogCollections($ckey)['playerlogs'])
                                     foreach ($playerlogs as $log)
