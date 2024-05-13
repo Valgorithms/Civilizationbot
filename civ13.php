@@ -371,8 +371,7 @@ class Civ13
                         if ($message) $message->react("👍");
                     });
                     if ($message) $message->react("⏱️");
-                    if ($message && $message->user_id) $sender = $this->getVerifiedItem($message->user_id)['ss13'];
-                    else $sender = $this->discord->user->id ?? $this->discord->user->displayname;
+                    $sender = ($message && $message->user_id) ? $this->getVerifiedItem($message->user_id)['ss13'] : ($this->discord->user->id ?? $this->discord->user->displayname);
                     $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->discord_formatted}", $sender, $settings);
                 };
                 $this->messageHandler->offsetSet("{$settings['key']}kill", $serverkill, ['Owner', 'High Staff']);
