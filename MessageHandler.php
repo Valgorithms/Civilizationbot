@@ -310,6 +310,7 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                         throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
                     } elseif (! $this->checkRank($message->member->roles, $this->required_permissions[$command] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
                 }
+                $this->civ13->logger->debug("Command '$command' triggered");
                 return $callback($message, $message_filtered, $command);
             }
         }
