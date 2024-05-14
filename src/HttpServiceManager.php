@@ -192,7 +192,7 @@ class HttpServiceManager
                 $params = $request->getQueryParams();
 
                 isset($params['channel']) ? $channelId = $params['channel'] : $channelId = null;
-                if (! $channel = $this->civ13->discord->getChannel($channelId)) return HttpResponse::json(['error' => "Channel `$channelId` not found"]);
+                if (! $channelId || ! $channel = $this->civ13->discord->getChannel($channelId)) return HttpResponse::json(['error' => "Channel `$channelId` not found"]);
                 if (! $channel->isTextBased()) return HttpResponse::json(['error' => "Cannot send messages to channel `$channelId`"]);
 
                 isset($params['message']) ? $message = $params['message'] : $message = null;
