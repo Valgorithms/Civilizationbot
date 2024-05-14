@@ -3,7 +3,7 @@ use Civ13\Civ13;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
 
-Class DWA
+Class DiscordWebAuth
 {
     public Civ13 $civ13;
     protected array $sessions;

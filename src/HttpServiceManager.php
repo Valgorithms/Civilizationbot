@@ -18,6 +18,7 @@ use React\Promise\PromiseInterface;
 use React\Socket\SocketServer;
 
 require_once 'HttpHandler.php';
+require_once 'DiscordWebAuth.php';
 
 class HttpServiceManager
 {
@@ -288,46 +289,44 @@ class HttpServiceManager
             if (include('dwa_secrets.php'))
             if ($dwa_client_id = getenv('dwa_client_id'))
             if ($dwa_client_secret = getenv('dwa_client_secret'))
-            if (include('DiscordWebAuth.php')) {
-                $this->httpHandler->offsetSet('/dwa', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($dwa_client_id, $dwa_client_secret): HttpResponse
-                {
-                    $ip = $request->getServerParams()['REMOTE_ADDR'];
-                    if (! isset($this->dwa_sessions[$ip])) {
-                        $this->dwa_sessions[$ip] = [];
-                        $this->dwa_timers[$ip] = $this->civ13->discord->getLoop()->addTimer(30 * 60, function () use ($ip) { // Set a timer to unset the session after 30 minutes
-                            unset($this->dwa_sessions[$ip]);
-                        });
-                    }
+            $this->httpHandler->offsetSet('/dwa', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($dwa_client_id, $dwa_client_secret): HttpResponse
+            {
+                $ip = $request->getServerParams()['REMOTE_ADDR'];
+                if (! isset($this->dwa_sessions[$ip])) {
+                    $this->dwa_sessions[$ip] = [];
+                    $this->dwa_timers[$ip] = $this->civ13->discord->getLoop()->addTimer(30 * 60, function () use ($ip) { // Set a timer to unset the session after 30 minutes
+                        unset($this->dwa_sessions[$ip]);
+                    });
+                }
 
-                    $DiscordWebAuth = new \DWA($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
-                    if (isset($params['code']) && isset($params['state']))
-                        return $DiscordWebAuth->getToken($params['state']);
-                    elseif (isset($params['login']))
-                        return $DiscordWebAuth->login();
-                    elseif (isset($params['logout']))
-                        return $DiscordWebAuth->logout();
-                    elseif ($DiscordWebAuth->isAuthed() && isset($params['remove']))
-                        return $DiscordWebAuth->removeToken();
-                    
-                    $tech_ping = '';
-                    if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
-                    if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
-                        $this->dwa_discord_ids[$ip] = $DiscordWebAuth->user->id;
-                        if (! $this->civ13->verified->get('discord', $DiscordWebAuth->user->id)) {
-                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
-                            return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
-                        }
-                        if ($this->httpHandler->whitelist($ip))
-                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']))
-                                $this->civ13->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
-                        $method = $this->httpHandler->offsetGet('/botlog') ?? [];
-                        if ($method = array_shift($method))
-                            return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
+                $DiscordWebAuth = new \DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
+                if (isset($params['code']) && isset($params['state']))
+                    return $DiscordWebAuth->getToken($params['state']);
+                elseif (isset($params['login']))
+                    return $DiscordWebAuth->login();
+                elseif (isset($params['logout']))
+                    return $DiscordWebAuth->logout();
+                elseif ($DiscordWebAuth->isAuthed() && isset($params['remove']))
+                    return $DiscordWebAuth->removeToken();
+                
+                $tech_ping = '';
+                if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
+                if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
+                    $this->dwa_discord_ids[$ip] = $DiscordWebAuth->user->id;
+                    if (! $this->civ13->verified->get('discord', $DiscordWebAuth->user->id)) {
+                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
+                        return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
                     }
+                    if ($this->httpHandler->whitelist($ip))
+                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']))
+                            $this->civ13->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
+                    $method = $this->httpHandler->offsetGet('/botlog') ?? [];
+                    if ($method = array_shift($method))
+                        return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
+                }
 
-                    return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
-                }));
-            }
+                return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
+            }));
 
             // HttpHandler management endpoints
             $this->httpHandler->offsetSet('/reset', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse

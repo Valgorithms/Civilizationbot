@@ -2583,7 +2583,12 @@ class Civ13
         return $result;
     }
 
-    // Check that all required roles are properly declared in the bot's config and exist in the guild
+    /**
+     * Check that all required roles are properly declared in the bot's config and exist in the guild.
+     *
+     * @param array $required_roles An array of required role names.
+     * @return bool Returns true if all required roles exist, false otherwise.
+     */
     public function hasRequiredConfigRoles(array $required_roles = []): bool
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) { $this->logger->error('Guild ' . $this->civ13_guild_id . ' is missing from the bot'); return false; }
@@ -2592,28 +2597,17 @@ class Civ13
         return true;
     }
 
-    /*
-    * This function is used to update the contents of files based on the roles of verified members
-    * The callback function is used to determine what to write to the file
-    */
+    /**
+     * This function is used to update the contents of files based on the roles of verified members.
+     * The callback function is used to determine what to write to the file.
+     *
+     * @param callable $callback The callback function that determines what to write to the file.
+     * @param array $file_paths An array of file paths to update.
+     * @param array $required_roles An array of required roles for the members.
+     * @return void
+     */
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
-    {
-        /* This is currently not working as intended
-        $callbackParams = new \ReflectionFunction($callback);
-        if (
-            !(
-                $callbackParams->getNumberOfParameters() === 3 && // Function must expect 3 parameters
-                //count($callbackParams) === 3 && // There must be 3 parameters availble to pass to the function
-                $callbackParams[0] !== null && $callbackParams[0] instanceof Member &&
-                $callbackParams[1] !== null && is_array($callbackParams[1]) &&
-                $callbackParams[2] !== null && is_array($callbackParams[2])
-            )
-        ) {
-            $this->logger->error('updateFilesFromMemberRoles() was called with an invalid callback function');
-            return;
-        }
-        */
-        
+    {        
         $file_contents = '';
         foreach ($this->verified as $item)
             if ($member = $this->getVerifiedMember($item))
