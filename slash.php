@@ -397,7 +397,7 @@ class Slash
 
         $this->civ13->discord->listenCommand('help', function (Interaction $interaction): PromiseInterface
         {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->messageHandler->generateHelp($interaction->member->roles)), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->messageServiceManager->generateHelp($interaction->member->roles)), true);
         });
 
         $this->civ13->discord->listenCommand('stats', function (Interaction $interaction): PromiseInterface
