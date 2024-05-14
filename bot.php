@@ -69,12 +69,6 @@ $filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; // execInBackground(), portIsAvailable()
 include 'variable_functions.php';
 include 'verifier_functions.php';
-include 'civ13.php';
-include 'BYOND.php';
-//include 'src\Handler.php';
-//include 'src\MessageHandler.php';
-//include 'src\HttpHandler.php';
-//include 'src\HttpServiceManager.php';
 include 'civ_token.php'; // $civ_token
 
 // TODO: Add a timer and a callable function to update these IP addresses every 12 hours
@@ -377,14 +371,10 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
 };
 set_error_handler($global_error_handler);
 
-//include 'webapi.php'; // $socket, $webapi, webapiFail(), webapiSnow();
 use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
-//use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-//@include getcwd() . '/webapi_token_env.php'; // putenv("WEBAPI_TOKEN='YOUR_TOKEN_HERE'");
-//$webhook_key = getenv('WEBAPI_TOKEN') ?? 'CHANGEME'; // The token is used to verify that the sender is legitimate and not a malicious actor
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $http_port), [], $civ13->loop);
 $last_path = '';
 /**

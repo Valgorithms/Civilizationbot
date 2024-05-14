@@ -49,7 +49,17 @@ class HttpServiceManager
         $this->civ13->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
     }
 
-    public function populateWhitelist()
+    public function handle(...$args)
+    {
+        $this->httpHandler->handle($args);
+    }
+
+    public function offsetSet(...$args)
+    {
+        $this->httpHandler->offsetSet(...$args);
+    }
+
+    private function populateWhitelist()
     {
         if ($this->httpHandler && $this->civ13->civ13_guild_id && $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) { // Whitelist the IPs of all High Staff
             $members = $guild->members->filter(function ($member) {
@@ -65,7 +75,7 @@ class HttpServiceManager
         }
     }
 
-    public function generateListeners()
+    private function generateListeners()
     {
         $this->civ13->logger->info('Setting up HttpServer ready listener');
         $this->civ13->discord->once('ready', function () {
