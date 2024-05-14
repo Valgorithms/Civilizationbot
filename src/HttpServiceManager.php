@@ -338,7 +338,7 @@ class HttpServiceManager
                 execInBackground('git reset --hard origin/main');
                 $message = 'Forcefully moving the HEAD back to origin/main...';
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-                return HttpResponse::plaintext("$message");
+                return HttpResponse::plaintext($message);
             }), true);
             $this->httpHandler->offsetSet('/githubupdated', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
@@ -392,14 +392,14 @@ class HttpServiceManager
                 execInBackground('git pull');
                 $message = 'Updating code from GitHub...';
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-                return HttpResponse::plaintext("$message");
+                return HttpResponse::plaintext($message);
             }), true);
             $this->httpHandler->offsetSet('/update', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
                 execInBackground('composer update');
                 $message = 'Updating dependencies...';
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-                return HttpResponse::plaintext("$message");
+                return HttpResponse::plaintext($message);
             }), true);
             $this->httpHandler->offsetSet('/restart', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
@@ -411,7 +411,7 @@ class HttpServiceManager
                     $this->civ13->discord->close();
                     die();
                 });
-                return HttpResponse::plaintext("$message");
+                return HttpResponse::plaintext($message);
             }), true);
 
             // HttpHandler redirect endpoints
