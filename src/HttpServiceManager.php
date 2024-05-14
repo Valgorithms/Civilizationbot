@@ -364,6 +364,15 @@ class HttpServiceManager
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
                 return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
             }));
+
+            $this->httpHandler->offsetSet('/cancelupdaterestart', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+            {
+                if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) {
+                    $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
+                    return HttpResponse::plaintext('Restart cancelled.');
+                }
+                return HttpResponse::plaintext('No restart pending.');
+            }));
             $this->httpHandler->offsetSet('/pull', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
                 execInBackground('git pull');
