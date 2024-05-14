@@ -11,6 +11,8 @@ namespace Civ13\Interfaces;
 use Discord\Parts\Channel\Message;
 use React\Promise\PromiseInterface;
 
+require_once 'Handler.php';
+
 interface MessageHandlerInterface extends HandlerInterface
 {
     public function handle(Message $message): ?PromiseInterface;

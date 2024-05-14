@@ -11,6 +11,8 @@ namespace Civ13\Interfaces;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response as HttpResponse;
 
+require_once 'Handler.php';
+
 interface HttpHandlerInterface extends HandlerInterface
 {
     public function handle(ServerRequestInterface $request): HttpResponse;
@@ -75,7 +77,7 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
 }
 
 use Civ13\Interfaces\HttpHandlerInterface;
-use Discord\Helpers\Collection;
+//use Discord\Helpers\Collection;
 use React\Http\Message\Response;
 
 class HttpHandler extends Handler implements HttpHandlerInterface

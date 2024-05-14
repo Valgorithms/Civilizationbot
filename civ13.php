@@ -1610,9 +1610,8 @@ class Civ13
      */
     protected function afterConstruct(array $options = [], array $server_options = []): void
     {
-        require 'HttpServiceManager.php';
         $this->httpServiceManager = new HttpServiceManager($this);
-        
+
         $this->messageHandler = new MessageHandler($this);
         $this->generateServerFunctions();
         $this->generateGlobalFunctions();

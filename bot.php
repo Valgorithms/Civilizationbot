@@ -31,6 +31,7 @@ ini_set('memory_limit', '-1'); // Unlimited memory usage
 define('MAIN_INCLUDED', 1); // Token and SQL credential files may be protected locally and require this to be defined to access
 require getcwd() . '/token.php'; // $token
 include getcwd() . '/vendor/autoload.php';
+include 'vendor/autoload.php';
 
 $web_address = 'www.civ13.com';
 $http_port = 55555;
@@ -70,9 +71,10 @@ include 'variable_functions.php';
 include 'verifier_functions.php';
 include 'civ13.php';
 include 'BYOND.php';
-include 'Handler.php';
-include 'MessageHandler.php';
-include 'HttpHandler.php';
+//include 'src\Handler.php';
+//include 'src\MessageHandler.php';
+//include 'src\HttpHandler.php';
+//include 'src\HttpServiceManager.php';
 include 'civ_token.php'; // $civ_token
 
 // TODO: Add a timer and a callable function to update these IP addresses every 12 hours

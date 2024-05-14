@@ -17,6 +17,8 @@ use React\Http\Message\Response as HttpResponse;
 use React\Promise\PromiseInterface;
 use React\Socket\SocketServer;
 
+require_once 'HttpHandler.php';
+
 class HttpServiceManager
 {
     public Civ13 $civ13;
