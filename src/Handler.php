@@ -51,8 +51,8 @@ use \Traversable;
 
 class Handler implements HandlerInterface
 {
-    protected Civ13 $civ13;
-    protected array $handlers = [];
+    public Civ13 $civ13;
+    public array $handlers = [];
     
     public function __construct(Civ13 &$civ13, array $handlers = [])
     {

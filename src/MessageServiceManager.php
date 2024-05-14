@@ -1261,6 +1261,11 @@ class MessageServiceManager
 
     private function __declareListener()
     {
+        if (! $this->messageHandler->handlers) {
+            $this->civ13->logger->debug('No message handlers found!');
+            return;
+        }
+
         $this->civ13->discord->on('message', function (Message $message): void
         {
             if ($message->author->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
