@@ -313,7 +313,12 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                     } elseif (! $this->checkRank($message->member->roles, $this->required_permissions[$command] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
                 }
                 $this->civ13->logger->debug("Command '$command' triggered");
-                return $callback($message, $message_filtered, $command);
+                try {
+                    return $callback($message, $message_filtered, $command);
+                } catch (\Exception $e) {
+                    $this->civ13->logger->error('Message Handler error: `A callback for `' . $command . '` failed with error `' . $e->getMessage() . '`');
+                    return $this->civ13->reply($message, 'An error occurred while processing your command.');
+                }
             }
         }
         if (empty($this->handlers)) $this->civ13->logger->info('No message handlers found!');
