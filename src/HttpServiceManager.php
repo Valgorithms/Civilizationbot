@@ -51,7 +51,6 @@ class HttpServiceManager
     {
         $this->__populateWhitelist();
         $this->__generateEndpoints();
-        $this->__generateServerEndpoints();
         $this->civ13->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
     }
 
@@ -83,18 +82,8 @@ class HttpServiceManager
 
     private function __generateEndpoints()
     {
-        $this->civ13->logger->info('Setting up HttpServer ready listener');
         $this->civ13->discord->once('ready', function () {
-            if (isset($this->civ13->options['webapi'], $this->civ13->options['socket'], $this->civ13->options['web_address'], $this->civ13->options['http_port'])) {
-                $this->civ13->logger->info('------');
-                $this->civ13->logger->info('setting up HttpServer API');
-                $this->civ13->logger->info('------');
-                $this->webapi = $this->civ13->options['webapi'];
-                $this->socket = $this->civ13->options['socket'];
-                $this->web_address = $this->civ13->options['web_address'];
-                $this->http_port = $this->civ13->options['http_port'];
-                $this->webapi->listen($this->socket);
-            } else {
+            if (! isset($this->civ13->options['webapi'], $this->civ13->options['socket'], $this->civ13->options['web_address'], $this->civ13->options['http_port'])) {
                 $this->civ13->logger->warning('HttpServer API not set up! Missing variables in options.');
                 $this->civ13->logger->warning('Missing webapi variable: ' . (isset($this->civ13->options['webapi']) ? 'false' : 'true'));
                 $this->civ13->logger->warning('Missing socket variable: ' . (isset($this->civ13->options['socket']) ? 'false' : 'true'));
@@ -102,6 +91,14 @@ class HttpServiceManager
                 $this->civ13->logger->warning('Missing http_port variable: ' . (isset($this->civ13->options['http_port']) ? 'false' : 'true'));
                 return;
             }
+            $this->civ13->logger->info('------');
+            $this->civ13->logger->info('setting up HttpServer API');
+            $this->civ13->logger->info('------');
+            $this->webapi = $this->civ13->options['webapi'];
+            $this->socket = $this->civ13->options['socket'];
+            $this->web_address = $this->civ13->options['web_address'];
+            $this->http_port = $this->civ13->options['http_port'];
+            $this->webapi->listen($this->socket);
 
             $this->httpHandler->offsetSet('/get-channels', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
@@ -718,6 +715,8 @@ class HttpServiceManager
             $this->httpHandler->offsetSet('/botlog', $botlog_func, true);
             $this->httpHandler->offsetSet('/botlog2', $botlog_func, true);
         });
+
+        $this->__generateServerEndpoints();
     }
 
     private function __generateServerEndpoints()
