@@ -432,7 +432,7 @@ class MessageServiceManager
             if (isset($this->civ13->functions['misc']['promotable_check']) && $promotable_check = $this->civ13->functions['misc']['promotable_check']) {
                 $promotable = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($promotable_check): PromiseInterface
                 {
-                    if (! $promotable_check($this, $this->civ13->sanitizeInput(substr($message_filtered['message_content'], strlen($command))))) return $message->react("👎");
+                    if (! $promotable_check($this->civ13, $this->civ13->sanitizeInput(substr($message_filtered['message_content'], strlen($command))))) return $message->react("👎");
                     return $message->react("👍");
                 });
                 $this->offsetSet('promotable', $promotable, ['Owner', 'High Staff']);
@@ -441,14 +441,14 @@ class MessageServiceManager
             if (isset($this->civ13->functions['misc']['mass_promotion_loop']) && $mass_promotion_loop = $this->civ13->functions['misc']['mass_promotion_loop'])
             $this->offsetSet('mass_promotion_loop', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($mass_promotion_loop): PromiseInterface
             {
-                if (! $mass_promotion_loop($this)) return $message->react("👎");
+                if (! $mass_promotion_loop($this->civ13)) return $message->react("👎");
                 return $message->react("👍");
             }), ['Owner', 'High Staff']);
 
             if (isset($this->civ13->functions['misc']['mass_promotion_check']) && $mass_promotion_check = $this->civ13->functions['misc']['mass_promotion_check'])
             $this->offsetSet('mass_promotion_check', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($mass_promotion_check): PromiseInterface
             {
-                if ($promotables = $mass_promotion_check($this)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
+                if ($promotables = $mass_promotion_check($this->civ13)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
                 return $message->react("👎");
             }), ['Owner', 'High Staff']);
             //
@@ -1264,7 +1264,7 @@ class MessageServiceManager
         {
             if ($message->author->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
             if (! $this->handle($message, $message_filtered = $this->civ13->filterMessage($message))) { // This section will be deprecated in the future
-                if (! empty($this->civ13->functions['message'])) foreach ($this->civ13->functions['message'] as $func) $func($this, $message, $message_filtered); // Variable functions
+                if (! empty($this->civ13->functions['message'])) foreach ($this->civ13->functions['message'] as $func) $func($this->civ13, $message, $message_filtered); // Variable functions
                 else $this->civ13->logger->debug('No message variable functions found!');
             }
         });
