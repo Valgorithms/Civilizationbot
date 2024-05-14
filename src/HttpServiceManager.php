@@ -382,6 +382,7 @@ class HttpServiceManager
             {
                 if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) {
                     $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
+                    unset($this->civ13->timers['update_pending']);
                     return HttpResponse::plaintext('Restart cancelled.');
                 }
                 return HttpResponse::plaintext('No restart pending.');
