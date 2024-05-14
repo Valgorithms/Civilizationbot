@@ -29,9 +29,7 @@ class MessageServiceManager
 
     public function __afterConstruct()
     {
-        $this->__generateServerFunctions();
-        $this->__generateGlobalFunctions();
-        $this->__declareListener();
+        $this->__generateGlobalMessageCommands();
         $this->civ13->logger->debug('[CHAT COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
     }
 
@@ -68,7 +66,7 @@ class MessageServiceManager
      * The `approveme` function verifies a user's identity and assigns them the `infantry` role.
      * And more! (see the code for more details)
      */
-    private function __generateGlobalFunctions(): void
+    private function __generateGlobalMessageCommands(): void
     { // TODO: add infantry and veteran roles to all non-staff command parameters except for `approveme`
         // MessageHandler
         $this->offsetSet('ping', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
@@ -1023,6 +1021,8 @@ class MessageServiceManager
             $message->react('⏱️');
             return $promise;
         }), ['Owner', 'High Staff', 'Admin']);
+        
+        $this->__generateServerMessageCommands();
     }
 
     /**
@@ -1042,7 +1042,7 @@ class MessageServiceManager
      * 
      * @return void
      */
-    private function __generateServerFunctions(): void
+    private function __generateServerMessageCommands(): void
     {
         foreach ($this->civ13->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
@@ -1178,7 +1178,6 @@ class MessageServiceManager
 
             if (! file_exists($settings['basedir'] . Civ13::mapswap)) $this->civ13->logger->debug("Skipping server function `{$settings['key']}mapswap` because the required config files were not found.");
             else {
-
                 $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($settings): ?PromiseInterface
                 {
                     $mapswap = function (string $mapto, ?Message $message = null, ) use ($settings): ?PromiseInterface
@@ -1256,6 +1255,8 @@ class MessageServiceManager
             };
             $this->offsetSet("{$settings['key']}unban",  $serverunban, ['Owner', 'High Staff', 'Admin']);
         }
+        
+        $this->__declareListener();
     }
 
     private function __declareListener()
