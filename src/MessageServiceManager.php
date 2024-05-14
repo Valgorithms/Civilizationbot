@@ -24,13 +24,14 @@ class MessageServiceManager
     public function __construct(Civ13 &$civ13) {
         $this->civ13 = $civ13;
         $this->messageHandler = new MessageHandler($this->civ13);
-        $this->afterConstruct();
+        $this->__afterConstruct();
     }
 
-    public function afterConstruct()
+    public function __afterConstruct()
     {
-        $this->generateServerFunctions();
-        $this->generateGlobalFunctions();
+        $this->__generateServerFunctions();
+        $this->__generateGlobalFunctions();
+        $this->__declareListener();
         $this->civ13->logger->debug('[CHAT COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
     }
 
@@ -59,7 +60,6 @@ class MessageServiceManager
         return $this->messageHandler->offsetExists(...$args);
     }
 
-
     /*
      * The generated functions include `ping`, `help`, `cpu`, `approveme`, and `insult`.
      * The `ping` function replies with "Pong!" when called.
@@ -68,7 +68,7 @@ class MessageServiceManager
      * The `approveme` function verifies a user's identity and assigns them the `infantry` role.
      * And more! (see the code for more details)
      */
-    private function generateGlobalFunctions(): void
+    private function __generateGlobalFunctions(): void
     { // TODO: add infantry and veteran roles to all non-staff command parameters except for `approveme`
         // MessageHandler
         $this->offsetSet('ping', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
@@ -1042,7 +1042,7 @@ class MessageServiceManager
      * 
      * @return void
      */
-    private function generateServerFunctions(): void
+    private function __generateServerFunctions(): void
     {
         foreach ($this->civ13->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
@@ -1256,5 +1256,17 @@ class MessageServiceManager
             };
             $this->offsetSet("{$settings['key']}unban",  $serverunban, ['Owner', 'High Staff', 'Admin']);
         }
+    }
+
+    private function __declareListener()
+    {
+        $this->civ13->discord->on('message', function (Message $message): void
+        {
+            if ($message->author->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
+            if (! $this->handle($message, $message_filtered = $this->civ13->filterMessage($message))) { // This section will be deprecated in the future
+                if (! empty($this->civ13->functions['message'])) foreach ($this->civ13->functions['message'] as $func) $func($this, $message, $message_filtered); // Variable functions
+                else $this->civ13->logger->debug('No message variable functions found!');
+            }
+        });
     }
 }

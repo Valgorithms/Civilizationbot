@@ -36,17 +36,17 @@ class HttpServiceManager
     public function __construct(Civ13 &$civ13) {
         $this->civ13 = $civ13;
         $this->httpHandler = new HttpHandler($this->civ13, [], $this->civ13->options['http_whitelist'] ?? [], $this->civ13->options['http_key'] ?? '');
-        $this->afterConstruct();
+        $this->__afterConstruct();
     }
 
     /*
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
-    protected function afterConstruct()
+    protected function __afterConstruct()
     {
-        $this->populateWhitelist();
-        $this->generateListeners();
+        $this->__populateWhitelist();
+        $this->__generateListeners();
         $this->civ13->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
     }
 
@@ -60,7 +60,7 @@ class HttpServiceManager
         $this->httpHandler->offsetSet(...$args);
     }
 
-    private function populateWhitelist()
+    private function __populateWhitelist()
     {
         if ($this->httpHandler && $this->civ13->civ13_guild_id && $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) { // Whitelist the IPs of all High Staff
             $members = $guild->members->filter(function ($member) {
@@ -76,7 +76,7 @@ class HttpServiceManager
         }
     }
 
-    private function generateListeners()
+    private function __generateListeners()
     {
         $this->civ13->logger->info('Setting up HttpServer ready listener');
         $this->civ13->discord->once('ready', function () {

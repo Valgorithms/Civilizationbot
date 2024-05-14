@@ -168,7 +168,10 @@ class Civ13
     /**
      * Creates a Civ13 client instance.
      * 
-     * @throws E_USER_ERROR
+     * @param array $options An array of options for configuring the client.
+     * @param array $server_options An array of options for configuring the server.
+     * @throws E_USER_ERROR If the code is not running in a CLI environment.
+     * @throws E_USER_WARNING If the ext-gmp extension is not loaded.
      */
     public function __construct(array $options = [], array $server_options = [])
     {
@@ -242,6 +245,12 @@ class Civ13
         $this->afterConstruct($options, $server_options);
     }
 
+    /**
+     * Filters the message and extracts relevant information.
+     *
+     * @param Message $message The message to filter.
+     * @return array An array containing the filtered message content, the lowercased message content, and a flag indicating if the message was called.
+     */
     public function filterMessage(Message $message): array
     {
         if (! $message->guild || $message->guild->owner_id != $this->owner_id)  return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
@@ -254,6 +263,16 @@ class Civ13
         return ['message_content' => $message_content, 'message_content_lower' => strtolower($message_content), 'called' => $called];
     }
 
+    /**
+     * Sends a message to the specified channel.
+     *
+     * @param mixed $channel The channel to send the message to. Can be a channel ID or a Channel object.
+     * @param string $content The content of the message.
+     * @param string $file_name The name of the file to attach to the message. Default is 'message.txt'.
+     * @param bool $prevent_mentions Whether to prevent mentions in the message. Default is false.
+     * @param bool $announce_shard Whether to announce the shard in the message. Default is true.
+     * @return PromiseInterface|null A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
+     */
     public function sendMessage($channel, string $content, string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
@@ -279,6 +298,16 @@ class Civ13
         return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
     }
 
+    /**
+     * Sends an embed message to a channel.
+     *
+     * @param mixed $channel The channel to send the message to.
+     * @param string $content The content of the message.
+     * @param Embed $embed The embed object to send.
+     * @param bool $prevent_mentions (Optional) Whether to prevent mentions in the message. Default is false.
+     * @param bool $announce_shard (Optional) Whether to announce the shard. Default is true.
+     * @return PromiseInterface|null A promise that resolves to the sent message, or null if the channel is not found.
+     */
     public function sendEmbed($channel, string $content, Embed $embed, $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         return null;
@@ -341,6 +370,19 @@ class Civ13
         return $role->position <=> $role2->position;
     }
 
+    /**
+     * Sends a player message to a channel.
+     *
+     * @param ChannelInterface $channel The channel to send the message to.
+     * @param bool $urgent Whether the message is urgent or not.
+     * @param string $content The content of the message.
+     * @param string $sender The sender of the message (ckey or Discord displayname).
+     * @param string $recipient The recipient of the message (optional).
+     * @param string $file_name The name of the file to attach to the message (default: 'message.txt').
+     * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
+     * @param bool $announce_shard Whether to announce the shard in the message (default: true).
+     * @return PromiseInterface|null A promise that resolves to the sent message, or null if the message couldn't be sent.
+     */
     public function sendPlayerMessage($channel, bool $urgent, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
     {
         $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
@@ -377,6 +419,16 @@ class Civ13
         return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
     }
 
+    /**
+     * Sends a reply message.
+     *
+     * @param Message $message The original message to reply to.
+     * @param string $content The content of the reply message.
+     * @param string $file_name The name of the file to attach to the reply message (default: 'message.txt').
+     * @param bool $prevent_mentions Whether to prevent mentions in the reply message (default: false).
+     * @param bool $announce_shard Whether to announce the shard in the reply message (default: true).
+     * @return PromiseInterface|null A promise that resolves to the sent reply message, or null if the reply message could not be sent.
+     */
     public function reply(Message $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
@@ -509,14 +561,6 @@ class Civ13
                     else $this->logger->debug('No ready slash functions found!');
                 });
                 
-                $this->discord->on('message', function (Message $message): void
-                {
-                    if ($message->author->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
-                    if (! $this->messageServiceManager->handle($message, $message_filtered = $this->filterMessage($message))) { // This section will be deprecated in the future
-                        if (! empty($this->functions['message'])) foreach ($this->functions['message'] as $func) $func($this, $message, $message_filtered); // Variable functions
-                        else $this->logger->debug('No message variable functions found!');
-                    }
-                });
                 $this->discord->on('GUILD_MEMBER_ADD', function (Member $guildmember): void
                 {
                     if ($this->shard) return;                    
@@ -704,7 +748,7 @@ class Civ13
      * FOR %F IN ("%SystemRoot%\servicing\Packages\Microsoft-Windows-GroupPolicy-ClientExtensions-Package~*.mum") DO (DISM /Online /NoRestart /Add-Package:"%F")
      */
     
-     /**
+    /**
      * Saves an associative array to a file in JSON format.
      *
      * @param string $filename The name of the file to save the data to.
@@ -797,34 +841,48 @@ class Civ13
         return $message->reply($builder);
     }
     
-    /*
-    * This function is used to get either sanitize a ckey or a Discord snowflake
-    */
+    /**
+     * Sanitizes the input (either a ckey or a Discord snowflake) by removing specific characters and converting it to lowercase.
+     *
+     * @param string $input The input string to be sanitized.
+     * @return string The sanitized input string.
+     */
     public function sanitizeInput(string $input): string
     {
         return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', '+', ' '], '', strtolower($input)));
     }
 
+    /**
+     * Checks if the input is verified.
+     *
+     * @param string $input The input to be checked.
+     * @return bool Returns true if the input is verified, false otherwise.
+     */
     public function isVerified(string $input): bool
     {
         return $this->verified->get('ss13', $input) ?? (is_numeric($input) && ($this->verified->get('discord', $input)));
     }
     
-    /*
-    * This function is used to fetch the bot's cache of verified members that are currently found in the Civ13 Discord server
-    * If the bot is not in the Civ13 Discord server, it will return the bot's cache of verified members
-    */
+    /**
+     * Fetches the bot's cache of verified members that are currently found in the Civ13 Discord server.
+     * If the bot is not in the Civ13 Discord server, it will return the bot's cache of verified members.
+     *
+     * @return Collection The collection of verified member items.
+     */
     public function getVerifiedMemberItems(): Collection
     {
         if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->verified->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
         return $this->verified;
     }
 
-    /*
-    * This function is used to get a verified item from a ckey or Discord ID
-    * If the user is verified, it will return an array containing the verified item
-    * It will return false if the user is not verified
-    */
+    /**
+     * This function is used to get a verified item from a ckey or Discord ID.
+     * If the user is verified, it will return an array containing the verified item.
+     * It will return false if the user is not verified.
+     *
+     * @param Member|User|array|string $input The input value to search for the verified item.
+     * @return array|null The verified item as an array, or null if not found.
+     */
     public function getVerifiedItem(Member|User|array|string $input): ?array
     {
         if (is_string($input)) {
@@ -842,10 +900,13 @@ class Civ13
         return null;
     }
 
-    /*
-    * This function is used to get a Member object from a ckey or Discord ID
-    * It will return false if the user is not verified, if the user is not in the Civ13 Discord server, or if the bot is not in the Civ13 Discord server
-    */
+    /**
+     * This function is used to get a Member object from a ckey or Discord ID.
+     * It will return false if the user is not verified, if the user is not in the Civ13 Discord server, or if the bot is not in the Civ13 Discord server.
+     *
+     * @param Member|User|array|string|null $input The input parameter can be a Member object, User object, an array, a string, or null.
+     * @return Member|null The Member object if found, or null if not found or not verified.
+     */
     public function getVerifiedMember(Member|User|array|string|null $input): ?Member
     {
         if (! $input) return null;
@@ -871,6 +932,12 @@ class Civ13
         return $guild->members->get('id', $id);
     }
 
+    /**
+     * Retrieves the Role object based on the given input.
+     *
+     * @param string $input The input to search for the Role.
+     * @return Role|null The Role object if found, or null if not found.
+     */
     public function getRole(string $input): ?Role
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null;
@@ -911,6 +978,11 @@ class Civ13
         return $this->verified ?? new Collection($verified_array, 'discord'); 
     }
 
+    /**
+     * Retrieves an array of collections containing information about rounds.
+     *
+     * @return array An array of collections, where each collection represents a server and its rounds.
+     */
     public function getRoundsCollections(): array // [string $server, collection $rounds]
     {
         $collections_array = [];
@@ -929,6 +1001,14 @@ class Civ13
         return $collections_array;
     }
     
+    /**
+     * Logs a new round in the game.
+     *
+     * @param string $server The server name.
+     * @param string $game_id The game ID.
+     * @param string $time The current time.
+     * @return void
+     */
     public function logNewRound(string $server, string $game_id, string $time): void
     {
         if (array_key_exists($server, $this->current_rounds) && array_key_exists($this->current_rounds[$server], $this->rounds[$server]) && $this->rounds[$server][$this->current_rounds[$server]] && $game_id !== $this->current_rounds[$server]) // If the round already exists and is not the current round
@@ -943,6 +1023,16 @@ class Civ13
         $round['interrupted'] = false;
         $this->VarSave('rounds.json', $this->rounds); // Update log of rounds
     }
+    /**
+     * Logs the login of a player.
+     *
+     * @param string $server The server name.
+     * @param string $ckey The player's ckey.
+     * @param string $time The login time.
+     * @param string $ip The player's IP address (optional).
+     * @param string $cid The player's CID (optional).
+     * @return void
+     */
     public function logPlayerLogin(string $server, string $ckey, string $time, string $ip = '', string $cid = ''): void
     {
         if ($game_id = $this->current_rounds[$server] ?? null) {
@@ -953,6 +1043,14 @@ class Civ13
             $this->VarSave('rounds.json', $this->rounds);
         }
     }
+    /**
+     * Logs the logout time of a player.
+     *
+     * @param string $server The server name.
+     * @param string $ckey The player's ckey.
+     * @param string $time The logout time.
+     * @return void
+     */
     public function logPlayerLogout(string $server, string $ckey, string $time): void
     {
         if (array_key_exists($server, $this->current_rounds)
@@ -979,13 +1077,19 @@ class Civ13
         return $token;
     }
 
-    /*
-     * This function is used to verify a BYOND account
-     * The function first checks if the discord_id is in the pending collection
-     * If the discord_id is not in the pending collection, the function returns false
-     * The function then attempts to retrieve the 50 character token from the BYOND website
-     * If the token found on the BYOND website does not match the token in the pending collection, the function returns false
-     * If the token matches, the function returns true
+    /**
+     * This function is used to verify a BYOND account.
+     * 
+     * The function first checks if the discord_id is in the pending collection.
+     * If the discord_id is not in the pending collection, the function returns false.
+     * 
+     * The function then attempts to retrieve the 50 character token from the BYOND website.
+     * If the token found on the BYOND website does not match the token in the pending collection, the function returns false.
+     * 
+     * If the token matches, the function returns true.
+     * 
+     * @param string $discord_id The Discord ID of the user to verify.
+     * @return bool Returns true if the token matches, false otherwise.
      */
     public function checkToken(string $discord_id): bool
     { // Check if the user set their token
@@ -995,13 +1099,18 @@ class Civ13
         return true; // Token matches
     }
 
-    /*
-    * This function is used to check if the user has verified their account
-    * If the have not, it checks to see if they have ever played on the server before
-    * If they have not, it sends a message stating that they need to join the server first
-    * It will send a message to the user with instructions on how to verify
-    * If they have, it will check if they have the verified role, and if not, it will add it
-    */
+    /**
+     * This function is used to check if the user has verified their account.
+     * If they have not, it checks to see if they have ever played on the server before.
+     * If they have not, it sends a message stating that they need to join the server first.
+     * It will send a message to the user with instructions on how to verify.
+     * If they have, it will check if they have the verified role, and if not, it will add it.
+     *
+     * @param string $ckey The ckey of the user.
+     * @param string $discord_id The Discord ID of the user.
+     * @param Member|null $m The Discord member object (optional).
+     * @return string The verification status message.
+     */
     public function verifyProcess(string $ckey, string $discord_id, ?Member $m = null): string
     {
         $ckey = $this->sanitizeInput($ckey);
@@ -1037,10 +1146,15 @@ class Civ13
         return $this->verifyNew($discord_id)['error']; // ['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
     }
 
-    /*
-    * This function is called when a user still needs to set their token in their BYOND description and call the approveme prompt
-    * It will check if the token is valid, then add the user to the verified list
-    */
+    /**
+     * This function is called when a user still needs to set their token in their BYOND description and call the approveme prompt.
+     * It will check if the token is valid, then add the user to the verified list.
+     *
+     * @param string $discord_id The Discord ID of the user to verify.
+     * @return array An array with the verification result. The array contains the following keys:
+     *   - 'success' (bool): Indicates whether the verification was successful.
+     *   - 'error' (string): If 'success' is false, this contains the error message.
+     */
     public function verifyNew(string $discord_id): array // ['success' => bool, 'error' => string]
     { // Attempt to verify a user
         if (! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->technician_id}>."];
@@ -1054,6 +1168,13 @@ class Civ13
         return $this->verifyCkey($item['ss13'], $discord_id);
     }
 
+    /**
+     * Removes a ckey from the verified list and sends a DELETE request to a website.
+     *
+     * @param string $id The ckey to be removed.
+     * @return array An array with the success status and a message.
+     *               ['success' => bool, 'message' => string]
+     */
     public function unverifyCkey(string $id): array // ['success' => bool, 'message' => string]
     {
         if ( ! $verified_array = $this->VarLoad('verified.json')) {
@@ -1162,12 +1283,16 @@ class Civ13
         return strtotime($age) <= strtotime($this->minimum_age);
     }
     
-    /* 
-    * This function is called when a user has set their token in their BYOND description and attempts to verify
-    * It is also used to handle errors coming from the webserver
-    * If the website is down, it will add the user to the provisional list and set a timer to try to verify them again in 30 minutes
-    * If the user is allowed to be granted a provisional role, it will return true
-    */
+    /**
+     * This function is called when a user has set their token in their BYOND description and attempts to verify.
+     * It is also used to handle errors coming from the webserver.
+     * If the website is down, it will add the user to the provisional list and set a timer to try to verify them again in 30 minutes.
+     * If the user is allowed to be granted a provisional role, it will return true.
+     *
+     * @param string $ckey The BYOND ckey of the user.
+     * @param string $discord_id The Discord ID of the user.
+     * @return bool Returns true if the user is allowed to be granted a provisional role, false otherwise.
+     */
     public function provisionalRegistration(string $ckey, string $discord_id): bool
     {
         $provisionalRegistration = function (string $ckey, string $discord_id) use (&$provisionalRegistration) {
@@ -1208,11 +1333,16 @@ class Civ13
         };
         return $provisionalRegistration($ckey, $discord_id);
     }
-    /*
-    * This function is called when a user has already set their token in their BYOND description and called the approveme prompt
-    * If the Discord ID or ckey is already in the SQL database, it will return an error message stating that the ckey is already verified
-    * otherwise it will add the user to the SQL database and the verified list, remove them from the pending list, and give them the verified role
-    */
+    /**
+     * This function is called when a user has already set their token in their BYOND description and called the approveme prompt.
+     * If the Discord ID or ckey is already in the SQL database, it will return an error message stating that the ckey is already verified.
+     * Otherwise, it will add the user to the SQL database and the verified list, remove them from the pending list, and give them the verified role.
+     *
+     * @param string $ckey The ckey of the user.
+     * @param string $discord_id The Discord ID of the user.
+     * @param bool $provisional (Optional) Whether the registration is provisional or not. Default is false.
+     * @return array An array with 'success' (bool) and 'error' (string) keys indicating the success status and error message, if any.
+     */
     public function verifyCkey(string $ckey, string $discord_id, bool $provisional = false): array // ['success' => bool, 'error' => string]
     { // Send $_POST information to the website. Only call this function after the getByondDesc() verification process has been completed!
         $success = false;
@@ -1314,14 +1444,16 @@ class Civ13
         return ['success' => $success, 'error' => $error];
     }
     
-    /*
-    * This function determines whether a ckey is currently banned from the server
-    * It is called when a user is verified to determine whether they should be given the banished role or have it taken away
-    * It will check the nomads_bans.txt and tdm_bans.txt files for the ckey
-    * If the ckey is found in either file, it will return true
-    * Otherwise it will return false
-    * If the $bypass parameter is set to true, it will not add or remove the banished role from the user
-    */
+    /**
+     * Determines whether a ckey is currently banned from the server.
+     *
+     * This function is called when a user is verified to determine whether they should be given the banished role or have it taken away.
+     * It checks the nomads_bans.txt and tdm_bans.txt files for the ckey.
+     *
+     * @param string $ckey The ckey to check for banishment.
+     * @param bool $bypass (optional) If set to true, the function will not add or remove the banished role from the user.
+     * @return bool Returns true if the ckey is found in either ban file, false otherwise.
+     */
     public function bancheck(string $ckey, bool $bypass = false): bool
     {
         $banned = $this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey);
@@ -1332,6 +1464,12 @@ class Civ13
         }
         return $banned;
     }
+    /**
+     * Checks if a given ckey is banned based on legacy ban data.
+     *
+     * @param string $ckey The ckey to check for ban.
+     * @return bool Returns true if the ckey is banned, false otherwise.
+     */
     public function legacyBancheck(string $ckey): bool
     {
         foreach ($this->server_settings as $settings) {
@@ -1350,6 +1488,12 @@ class Civ13
         }
         return false;
     }
+    /**
+     * Checks if a player with the given ckey is permabanned based on legacy settings.
+     *
+     * @param string $ckey The ckey of the player to check.
+     * @return bool Returns true if the player is permabanned, false otherwise.
+     */
     public function legacyPermabancheck(string $ckey): bool
     {
         foreach ($this->server_settings as $settings) {
@@ -1368,17 +1512,37 @@ class Civ13
         }
         return false;
     }
+    /**
+     * Checks if a player with the given ckey is banned.
+     *
+     * @param string $ckey The ckey of the player to check.
+     * @return bool Returns true if the player is banned, false otherwise.
+     */
     public function sqlBancheck(string $ckey): bool
     {
         // TODO
         return false;
     }
+    /**
+     * Checks if a player with the given ckey is permabanned.
+     *
+     * @param string $ckey The ckey of the player to check.
+     * @return bool Returns true if the player is permabanned, false otherwise.
+     */
     public function sqlPermabancheck(string $ckey): bool
     {
         // TODO
         return false;
     }
 
+    /**
+     * Paroles or unparoles a player identified by their ckey.
+     *
+     * @param string $ckey The ckey of the player.
+     * @param string $admin The admin who is performing the action.
+     * @param bool $state The state of the player's parole. Default is true.
+     * @return array The updated list of paroled players.
+     */
     public function paroleCkey(string $ckey, string $admin, bool $state = true): array
     {
         if ($state) $this->paroled[$ckey] = $admin;
@@ -1387,18 +1551,26 @@ class Civ13
         return $this->paroled;
     }
 
-    /*
-    * This function allows a ckey to bypass the verification process entirely
-    * NOTE: This function is only authorized to be used by the database administrator
-    */
+    /**
+     * This function allows a ckey to bypass the verification process entirely.
+     * NOTE: This function is only authorized to be used by the database administrator.
+     *
+     * @param string $ckey The ckey to register.
+     * @param string $discord_id The Discord ID associated with the ckey.
+     * @return array An array containing the success status and error message (if any).
+     */
     public function registerCkey(string $ckey, string $discord_id): array // ['success' => bool, 'error' => string]
     {
         $this->permitCkey($ckey, true);
         return $this->verifyCkey($ckey, $discord_id);
     }
-    /*
-    * This function allows a ckey to bypass the panic bunker
-    */
+    /**
+     * Allows a ckey to bypass the panic bunker.
+     *
+     * @param string $ckey The ckey to permit or revoke access for.
+     * @param bool $allow Whether to allow or revoke access for the ckey.
+     * @return array The updated list of permitted ckeys.
+     */
     public function permitCkey(string $ckey, bool $allow = true): array
     {
         if ($allow) $this->permitted[$ckey] = true;
