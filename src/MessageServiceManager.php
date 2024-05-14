@@ -40,24 +40,24 @@ class MessageServiceManager
         return $this->messageHandler->generateHelp($roles);
     }
 
-    public function handle(...$args)
+    public function handle(Message $message): ?PromiseInterface
     {
-        return $this->messageHandler->handle(...$args);
+        return $this->messageHandler->handle($message);
     }
 
-    public function offsetGet(...$args)
+    public function offsetGet(int|string $offset): array
     {
-        return $this->messageHandler->offsetGet(...$args);
+        return $this->messageHandler->offsetGet($offset);
     }
     
-    public function offsetSet(...$args)
+    public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): MessageHandler
     {
-        return $this->messageHandler->offsetSet(...$args);
+        return $this->messageHandler->offsetSet($offset, $callback, $required_permissions, $method, $description);
     }
 
-    public function offsetExists(...$args)
+    public function offsetExists(int|string $offset): bool
     {
-        return $this->messageHandler->offsetExists(...$args);
+        return $this->messageHandler->offsetExists($offset);
     }
 
     /*
