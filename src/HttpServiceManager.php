@@ -39,6 +39,10 @@ class HttpServiceManager
         $this->__afterConstruct();
     }
 
+    public function __destruct() {
+        $this->socket->close();
+    }
+
     /*
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.

@@ -61,9 +61,10 @@ $discord = new Discord([
     'storeMessages' => true, // Because why not?
     'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::MESSAGE_CONTENT,
 ]);
-include 'stats_object.php'; 
-$stats = new Stats();
-$stats->init($discord);
+if (include __DIR__ . '/src/Stats.php') {
+    $stats = new Stats();
+    $stats->init($discord);
+}
 $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; // execInBackground(), portIsAvailable()
