@@ -40,7 +40,7 @@ class HttpServiceManager
     }
 
     public function __destruct() {
-        $this->socket->close();
+        if (isset($this->socket)) $this->socket->close();
     }
 
     /*
