@@ -1752,7 +1752,7 @@ class Civ13
      * @param bool $allow Whether to add or remove the user from the softbanned array.
      * @return array The updated softbanned array.
      */
-    public function softban($id, $allow = true): array
+    public function softban(string $id, bool $allow = true): array
     {
         if ($allow) $this->softbanned[$id] = true;
         else unset($this->softbanned[$id]);
