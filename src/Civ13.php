@@ -560,14 +560,100 @@ class Civ13
                     if (! empty($this->functions['ready_slash'])) foreach (array_values($this->functions['ready_slash']) as $func) $func($this, $commands);
                     else $this->logger->debug('No ready slash functions found!');
                 });
-                
-                $this->discord->on('GUILD_MEMBER_ADD', function (Member $guildmember): void
+
+                $this->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
                 {
                     if ($this->shard) return;                    
-                    $this->joinRoles($guildmember);
-                    if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $guildmember);
+                    $this->joinRoles($member);
+                    if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $member);
                     else $this->logger->debug('No message functions found!');
+
+                    $this->getVerified();
+                    if (isset($this->timers["add_{$member->id}"])) {
+                        $this->discord->getLoop()->cancelTimer($this->timers["add_{$member->id}"]);
+                        unset($this->timers["add_{$member->id}"]);
+                    }
+                    $this->timers["add_{$member->id}"] = $this->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
+                    { // Kick member if they have not verified
+                        $this->getVerified();
+                        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null; // Guild not found (bot not in guild)
+                        if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
+                        if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
+                        if (
+                            $member_future->roles->has($this->role_ids['infantry']) ||
+                            $member_future->roles->has($this->role_ids['veteran']) ||
+                            $member_future->roles->has($this->role_ids['banished']) ||
+                            $member_future->roles->has($this->role_ids['permabanished'])
+                        ) return null; // Don't kick if they have an verified or banned role
+                        return $guild->members->kick($member_future, 'Not verified');
+                    });
                 });
+
+                $this->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
+                {
+                    $this->getVerified();
+                    if ($member->roles->has($this->role_ids['veteran'])) $this->whitelistUpdate();
+                    $faction_roles = [
+                        'red',
+                        'blue',
+                    ];
+                    foreach ($faction_roles as $role_id) if ($member->roles->has($this->role_ids[$role_id])) { $this->factionlistUpdate(); break;}
+                    $admin_roles = [
+                        'Owner',
+                        'Chief Technical Officer',
+                        'Head Admin',
+                        'Manager',
+                        'High Staff',
+                        'Supervisor',
+                        'Event Admin',
+                        'Admin',
+                        'Moderator',
+                        'Mentor',
+                        'veteran',
+                        'infantry',
+                        'banished',
+                        'paroled',
+                    ];
+                    foreach ($admin_roles as $role) if ($member->roles->has($this->role_ids[$role])) { $this->adminlistUpdate(); break; }
+                });
+
+                $this->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
+                {
+                    if (! $member_old) { // Not enough information is known about the change, so we will update everything
+                        $this->whitelistUpdate();
+                        $this->getVerified();
+                        $this->factionlistUpdate();
+                        $this->adminlistUpdate();
+                        return;
+                    }
+                    if ($member->roles->has($this->role_ids['veteran']) !== $member_old->roles->has($this->role_ids['veteran'])) $this->whitelistUpdate();
+                    elseif ($member->roles->has($this->role_ids['infantry']) !== $member_old->roles->has($this->role_ids['infantry'])) $this->getVerified();
+                    $faction_roles = [
+                        'red',
+                        'blue',
+                    ];
+                    foreach ($faction_roles as $role) 
+                        if ($member->roles->has($this->role_ids[$role]) !== $member_old->roles->has($this->role_ids[$role])) { $this->factionlistUpdate(); break;}
+                    $admin_roles = [
+                        'Owner',
+                        'Chief Technical Officer',
+                        'Head Admin',
+                        'Manager',
+                        'High Staff',
+                        'Supervisor',
+                        'Event Admin',
+                        'Admin',
+                        'Moderator',
+                        'Mentor',
+                        'veteran',
+                        'infantry',
+                        'banished',
+                        'paroled',
+                    ];
+                    foreach ($admin_roles as $role) 
+                        if ($member->roles->has($this->role_ids[$role]) !== $member_old->roles->has($this->role_ids[$role])) { $this->adminlistUpdate(); break;}
+                });
+
                 $this->discord->on('GUILD_CREATE', function (Guild $guild): void
                 {
                     if (! isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);

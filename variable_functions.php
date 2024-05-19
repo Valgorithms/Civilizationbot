@@ -7,12 +7,7 @@
  */ 
 
 use Civ13\Civ13;
-use Discord\Builders\MessageBuilder;
-use Discord\Parts\Channel\Message;
-//use Discord\Parts\Embed\Embed;
-use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\Activity;
-use React\Promise\PromiseInterface;
 
 $status_changer_random = function (Civ13 $civ13): bool
 { // on ready
@@ -38,88 +33,6 @@ $status_changer_random = function (Civ13 $civ13): bool
 $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
 { // on ready
     if (! isset($civ13->timers['status_changer_timer'])) $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, function () use ($civ13, $status_changer_random) { $status_changer_random($civ13); });
-};
-
-$on_message = function (Civ13 $civ13, Message $message, ?array $message_filtered = null): ?PromiseInterface
-{ // on message
-    $message_array = $message_filtered ?? $civ13->filterMessage($message);
-    if (! $message_array['called']) return null; // Not a command
-    if (! $message_array['message_content_lower']) { // No command given
-        $random_responses = ['You can see a full list of commands by using the `help` command.'];
-        $random_responses = [
-            'You can see a full list of commands by using the `help` command.',
-            'I\'m sorry, I can\'t do that, Dave.',
-            '404 Error: Humor not found.',
-            'Hmm, looks like someone called me to just enjoy my company.',
-            'Seems like I\'ve been summoned!',
-            'I see you\'ve summoned the almighty ' . ($civ13->discord->username ?? $civ13->discord->displayname) . ', ready to dazzle you with... absolutely nothing!',
-            'Ah, the sweet sound of my name being called!',
-            'I\'m here, reporting for duty!',
-            'Greetings, human! It appears you\'ve summoned me to bask in my digital presence.',
-            'You rang? Or was that just a pocket dial in the digital realm?',
-            'Ah, the classic call and no command combo!',
-            'I\'m here, at your service!',
-            'You\'ve beckoned, and here I am!'
-        ];
-        if (count($random_responses) > 0) return $civ13->sendMessage($message->channel, "<@{$message->author->id}>, " . $random_responses[rand(0, count($random_responses)-1)]);
-    }
-    if ($message_array['message_content_lower'] === 'dev')
-        if (isset($civ13->technician_id) && isset($civ13->role_ids['Chief Technical Officer']))
-            if ($message->user_id === $civ13->technician_id)
-                return $message->member->addRole($civ13->role_ids['Chief Technical Officer']);
-    return null;
-};
-
-$slash_init = function (Civ13 $civ13, $commands): void
-{ // ready_slash, requires other functions to work
-    $civ13->discord->listenCommand('pull', function (Interaction $interaction) use ($civ13): void
-    {
-        $civ13->logger->info('[GIT PULL]');
-        \execInBackground('git pull');
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating code from GitHub...'));
-    });
-    
-    $civ13->discord->listenCommand('update', function (Interaction $interaction) use ($civ13): void
-    {
-        $civ13->logger->info('[COMPOSER UPDATE]');
-        \execInBackground('composer update');
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
-    });
-
-    foreach (array_keys($this->server_settings) as $key => $settings) {
-        $server = strtolower($key);
-
-        if (isset($settings['ip'], $settings['port'])) $civ13->discord->listenCommand($server.'_restart', function (Interaction $interaction) use ($server, $key, $settings): void
-        {
-            $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `$key` <byond://{$settings['ip']}:{$settings['port']}>"));
-            if ($serverrestart = array_shift($this->messageHandler->offsetGet($server.'restart'))) $serverrestart();
-        });
-    }
-
-    /* Deprecated
-    $civ13->discord->listenCommand('medals', function (Interaction $interaction) use ($civ13, $medals): void
-    {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        else $interaction->respondWithMessage(MessageBuilder::new()->setContent($medals($civ13, $item['ss13'])), true);
-    });*/
-    /* Deprecated
-    $civ13->discord->listenCommand('brmedals', function (Interaction $interaction) use ($civ13, $brmedals): void
-    {
-        if (! $item = $civ13->verified->get('discord', $interaction->data->target_id)) $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-        else $interaction->respondWithMessage(MessageBuilder::new()->setContent($brmedals($civ13, $item['ss13'])), true);
-    });*/
-
-    /*For deferred interactions
-    $civ13->discord->listenCommand('',  function (Interaction $interaction) use ($civ13) {
-      // code is expected to be slow, defer the interaction
-      $interaction->acknowledge()->then(function () use ($interaction, $civ13) { // wait until the bot says "Is thinking..."
-        // do heavy code here (up to 15 minutes)
-        // ...
-        // send follow up (instead of respond)
-        $interaction->sendFollowUpMessage(MessageBuilder...);
-      });
-    });
-    */
 };
 /*$on_ready = function (Civ13 $civ13): void
 {    

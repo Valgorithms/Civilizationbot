@@ -304,19 +304,6 @@ class Slash
                 // 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
             ])));*/
             
-            foreach ($this->civ13->server_settings as $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                if (! isset($settings['name'], $settings['key'])) continue;
-                if ($command = $commands->get('name', "{$settings['key']}_restart")) $commands->delete($command->id);
-                /* if (! $commands->get('name', {$settings['key']}.'_restart')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
-                    'type'                       => Command::CHAT_INPUT,
-                    'name'                       => "{$settings['key']}_restart",
-                    'description'                => "Restart the {$settings['name']} server",
-                    'dm_permission'              => false,
-                    'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
-                ]))); */
-            }
-            
             $server_choices = [];
             foreach ($this->civ13->server_settings as $settings) {
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
@@ -330,7 +317,7 @@ class Slash
                 // if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
                 if (! $commands->get('name', 'rank')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
                     'name'                => 'rank',
-                    'description'         => 'See your ranking on the Civ13 server',
+                    'description'         => 'See your ranking on a Civ13 server',
                     'dm_permission'       => false,
                     'options'             => [
                         [
@@ -352,7 +339,7 @@ class Slash
                 // if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
                 if (! $commands->get('name', 'ranking')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
                     'name'                => 'ranking',
-                    'description'         => 'See the ranks of the top players on the Civ13 server',
+                    'description'         => 'See the ranks of the top players on a Civ13 server',
                     'dm_permission'       => false,
                     'options'             => [
                         [
@@ -364,9 +351,27 @@ class Slash
                         ]
                     ]
                 ])));
+
+                if (! $commands->get('name', 'restart_server')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
+                    'type'                       => Command::CHAT_INPUT,
+                    'name'                       => "restart_server",
+                    'description'                => "Restart a Civ13 server",
+                    'dm_permission'              => false,
+                    'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+                    'options'             => [
+                        [
+                            'name'        => 'server',
+                            'description' => 'Which server to restart',
+                            'type'        => Option::STRING,
+                            'required'    => true,
+                            'choices'     => $server_choices
+                        ]
+                    ]
+                ])));
             } else { // Remove the ranking commands if there are no servers to choose from
                 //if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
                 //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
+                //if ($command = $commands->get('name', 'restart_server')) $commands->delete($command->id);
             }
             
             
@@ -390,6 +395,37 @@ class Slash
     }
     public function declareListeners(): void
     {
+        $this->civ13->discord->listenCommand('pull', function (Interaction $interaction): PromiseInterface
+        {
+            $this->civ13->logger->info('[GIT PULL]');
+            execInBackground('git pull');
+            $this->civ13->loop->addTimer(5, function () {
+                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
+                execInBackground('git reset --hard origin/main');
+            });
+            $this->civ13->loop->addTimer(10, function () {
+                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
+                execInBackground('git pull');
+            });
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating code from GitHub...'));
+        });
+        
+        $this->civ13->discord->listenCommand('update', function (Interaction $interaction): PromiseInterface
+        {
+            $this->civ13->logger->info('[COMPOSER UPDATE]');
+            \execInBackground('composer update');
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
+        });
+        $this->civ13->discord->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface
+        {
+            $settings = $this->civ13->server_settings[$interaction->data->options['server']->value];
+            if ($serverrestart = array_shift($this->civ13->messageServiceManager->messageHandler->offsetGet("{$settings['key']}restart"))) {
+                $serverrestart();
+                return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `{$settings['name']}` <byond://{$settings['ip']}:{$settings['port']}>"));
+            }
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No restart function found for `{$settings['name']}`"));
+        });
+        
         $this->civ13->discord->listenCommand('ping', function (Interaction $interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));

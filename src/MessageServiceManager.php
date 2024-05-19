@@ -40,7 +40,33 @@ class MessageServiceManager
 
     public function handle(Message $message): ?PromiseInterface
     {
-        return $this->messageHandler->handle($message);
+        if ($return = $this->messageHandler->handle($message)) return $return;
+        $message_array = $this->civ13->filterMessage($message);
+        if (! $message_array['called']) return null; // Not a command
+        if (! $message_array['message_content_lower']) { // No command given
+            $random_responses = ['You can see a full list of commands by using the `help` command.'];
+            $random_responses = [
+                'You can see a full list of commands by using the `help` command.',
+                'I\'m sorry, I can\'t do that, Dave.',
+                '404 Error: Humor not found.',
+                'Hmm, looks like someone called me to just enjoy my company.',
+                'Seems like I\'ve been summoned!',
+                'I see you\'ve summoned the almighty ' . ($this->civ13->discord->username ?? $this->civ13->discord->displayname) . ', ready to dazzle you with... absolutely nothing!',
+                'Ah, the sweet sound of my name being called!',
+                'I\'m here, reporting for duty!',
+                'Greetings, human! It appears you\'ve summoned me to bask in my digital presence.',
+                'You rang? Or was that just a pocket dial in the digital realm?',
+                'Ah, the classic call and no command combo!',
+                'I\'m here, at your service!',
+                'You\'ve beckoned, and here I am!'
+            ];
+            if (count($random_responses) > 0) return $this->civ13->reply($message, $random_responses[rand(0, count($random_responses)-1)]);
+        }
+        if ($message_array['message_content_lower'] === 'dev')
+            if (isset($this->civ13->technician_id) && isset($this->civ13->role_ids['Chief Technical Officer']))
+                if ($message->user_id === $this->civ13->technician_id)
+                    return $message->member->addRole($this->civ13->role_ids['Chief Technical Officer']);
+        return null;
     }
 
     public function offsetGet(int|string $offset): array

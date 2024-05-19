@@ -320,13 +320,12 @@ $hidden_options = [
             // 'on_ready' => $on_ready,
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
-            'civ_listeners' => $civ_listeners, // TODO: Move into civ13.php
         ],
         'ready_slash' => [
-            'slash_init' => $slash_init,
+            //
         ],
         'message' => [
-            'on_message' => $on_message,
+            //
         ],
         'GUILD_MEMBER_ADD' => [
             // 
