@@ -9,8 +9,6 @@
 namespace Civ13\Interfaces;
 
 use Discord\Helpers\Collection;
-use Discord\Parts\User\Member;
-use React\Promise\PromiseInterface;
 use \ArrayIterator;
 use \Traversable;
 
@@ -45,7 +43,6 @@ namespace Civ13;
 
 use Civ13\Interfaces\HandlerInterface;
 use Discord\Helpers\Collection;
-use Discord\Parts\User\Member;
 use \ArrayIterator;
 use \Traversable;
 
