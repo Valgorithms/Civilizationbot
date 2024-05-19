@@ -321,15 +321,6 @@ $hidden_options = [
             'status_changer_timer' => $status_changer_timer,
             'status_changer_random' => $status_changer_random,
         ],
-        'ready_slash' => [
-            //
-        ],
-        'message' => [
-            //
-        ],
-        'GUILD_MEMBER_ADD' => [
-            // 
-        ],
         'misc' => [ // Custom functions
             'promotable_check' => $promotable_check,
             'mass_promotion_loop' => $mass_promotion_loop,
