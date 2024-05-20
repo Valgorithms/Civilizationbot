@@ -1987,12 +1987,12 @@ class Civ13
     {
         $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
         if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, $context),  true)) {
-            $this->logger->debug("unable to retrieve serverinfo from {$this->serverinfo_url}");
+            $this->logger->debug("Unable to retrieve serverinfo from `{$this->serverinfo_url}`");
             $this->webserverStatusChannelUpdate($this->webserver_online = false);
             return [];
         }
         $this->webserverStatusChannelUpdate($this->webserver_online = true);
-        $this->logger->debug("successfully retrieved serverinfo from {$this->serverinfo_url}");
+        $this->logger->debug("Successfully retrieved serverinfo from `{$this->serverinfo_url}`");
         return $this->serverinfo = $data_json;
     }
     public function bansToCollection(): Collection
@@ -2509,25 +2509,20 @@ class Civ13
             $this->logger->warning('No serverinfo players data to parse!');
             return; // No data to parse
         }
-
-        // $relevant_servers = array_filter($this->serverinfo, fn($server) => in_array($server['stationname'], ['TDM', 'Nomads', 'Persistence'])); // We need to declare stationname in world.dm first
-
-        $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
-        foreach ($this->server_settings as $settings) {            
+        foreach ($this->server_settings as $settings) {
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
-            if (! isset($settings['supported']) || ! $settings['supported']) { $index++; continue; } // Server is not supported by the remote webserver and won't appear in data
-            if (! isset($settings['name'])) { 
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            if (! isset($settings['supported']) || ! $settings['supported']) continue; // Server is not supported by the remote webserver and won't appear in data
+            if (! isset($settings['name'])) { // Server is missing required settings in config 
                 $this->logger->warning("Server {$settings['name']} is missing a name in config!");
-                $index++; continue;
-            } // Server is missing required settings in config 
-            if (array_key_exists('ERROR', $server)) { $index++; continue; } // Remote webserver reports server is not responding
-
+                continue;
+            }
+            if (array_key_exists('ERROR', $server)) continue; // Remote webserver reports server is not responding
             $p1 = (isset($server['players'])
                 ? $server['players']
                 : count(array_map(fn($player) => $this->sanitizeInput(urldecode($player)), array_filter($server, function (string $key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY)))
             );
             $this->playercountChannelUpdate($settings, $p1);
-            $index++; // TODO: Remove this once we have stationname in world.dm
         }
         $this->playercount_ticker++;
     }
