@@ -2402,39 +2402,38 @@ class Civ13
      */
     public function localServerPlayerCount(array $servers = [], array $players = []): array
     {
-        foreach ($this->server_settings as $settings) {            
+        foreach ($this->server_settings as $settings) {        
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;    
             if (! isset($settings['ip'], $settings['port'])) {
                 $this->logger->warning("Server {$settings['key']} is missing required settings in config!");
                 continue;
             }
             if ($settings['ip'] !== $this->httpServiceManager->httpHandler->external_ip) continue;
-            $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
-            $server_status = is_resource($socket) ? 'Online' : 'Offline';
             $servers[$settings['key']] = 0;
-            if ($server_status === 'Online') {
-                fclose($socket);
-                if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
-                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
-                    /*
-                    0 => <b>Server Status</b> {Online/Offline}
-                    1 => <b>Address</b> byond://{ip_address}
-                    2 => <b>Map</b>: {map}
-                    3 => <b>Gamemode</b>: {gamemode}
-                    4 => <b>Players</b>: {playercount}
-                    5 => realtime={realtime}
-                    6 => world.address={ip}
-                    7 => round_timer={00:00}
-                    8 => map={map}
-                    9 => epoch={epoch}
-                    10 => season={season}
-                    11 => ckey_list={ckey&ckey}
-                    */
-                    if (isset($data[11])) { // Player list
-                        $players = explode('&', $data[11]);
-                        $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
-                    }
-                    if (isset($data[4])) $servers[$settings['key']] = $data[4]; // Player count
+            $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
+            if (! is_resource($socket)) continue;
+            fclose($socket);
+            if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
+                $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
+                /*
+                0 => <b>Server Status</b> {Online/Offline}
+                1 => <b>Address</b> byond://{ip_address}
+                2 => <b>Map</b>: {map}
+                3 => <b>Gamemode</b>: {gamemode}
+                4 => <b>Players</b>: {playercount}
+                5 => realtime={realtime}
+                6 => world.address={ip}
+                7 => round_timer={00:00}
+                8 => map={map}
+                9 => epoch={epoch}
+                10 => season={season}
+                11 => ckey_list={ckey&ckey}
+                */
+                if (isset($data[11])) { // Player list
+                    $players = explode('&', $data[11]);
+                    $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
                 }
+                if (isset($data[4])) $servers[$settings['key']] = $data[4]; // Player count
             }
         }
         return ['playercount' => $servers, 'playerlist' => $players];
@@ -2443,64 +2442,64 @@ class Civ13
     public function generateServerstatusEmbed(): Embed
     {        
         $embed = new Embed($this->discord);
+        $embed->setFooter($this->embed_footer);
+        $embed->setColor(0xe1452d);
+        $embed->setTimestamp();
+        $embed->setURL('');
         foreach ($this->server_settings as $settings) {            
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['ip'], $settings['port'])) {
                 $this->logger->warning("Server {$settings['key']} is missing required settings in config!");
                 continue;
             }
             if ($settings['ip'] !== $this->httpServiceManager->httpHandler->external_ip) continue;
-            $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
-            $server_status = is_resource($socket) ? 'Online' : 'Offline';
-            if ($server_status === 'Offline') $embed->addFieldValues($settings['name'], $server_status);
-            if ($server_status === 'Online') {
-                fclose($socket);
-                if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
-                    $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
-                    /*
-                    0 => <b>Server Status</b> {Online/Offline}
-                    1 => <b>Address</b> byond://{ip_address}
-                    2 => <b>Map</b>: {map}
-                    3 => <b>Gamemode</b>: {gamemode}
-                    4 => <b>Players</b>: {playercount}
-                    5 => realtime={realtime}
-                    6 => world.address={ip}
-                    7 => round_timer={00:00}
-                    8 => map={map}
-                    9 => epoch={epoch}
-                    10 => season={season}
-                    11 => ckey_list={ckey&ckey}
-                    */
-                    if (isset($data[1])) $embed->addFieldValues($settings['name'], '<'.$data[1].'>');
-                    if (isset($settings['host'])) $embed->addFieldValues('Host', $settings['host'], true);
-                    if (isset($data[7])) {
-                        list($hours, $minutes) = explode(':', $data[7]);
-                        $hours = intval($hours);
-                        $minutes = intval($minutes);
-                        $days = floor($hours / 24);
-                        $hours = $hours % 24;
-                        $time = ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
-                        $embed->addFieldValues('Round Time', $time, true);
-                    }
-                    if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data
-                    //if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3], true);
-                    if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
-                    if (isset($data[11])) { // Player list
-                        $players = explode('&', $data[11]);
-                        $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
-                        if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
-                        $embed->addFieldValues('Players', $players_list, true);
-                    }
-                    if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
-                    //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
-                    //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
-                    
+            if (! is_resource($socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1))) {
+                $embed->addFieldValues($settings['name'], 'Offline');
+                continue;
+            }
+            fclose($socket);
+            if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
+                $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
+                /*
+                0 => <b>Server Status</b> {Online/Offline}
+                1 => <b>Address</b> byond://{ip_address}
+                2 => <b>Map</b>: {map}
+                3 => <b>Gamemode</b>: {gamemode}
+                4 => <b>Players</b>: {playercount}
+                5 => realtime={realtime}
+                6 => world.address={ip}
+                7 => round_timer={00:00}
+                8 => map={map}
+                9 => epoch={epoch}
+                10 => season={season}
+                11 => ckey_list={ckey&ckey}
+                */
+                if (isset($data[1])) $embed->addFieldValues($settings['name'], '<'.$data[1].'>');
+                if (isset($settings['host'])) $embed->addFieldValues('Host', $settings['host'], true);
+                if (isset($data[7])) {
+                    list($hours, $minutes) = explode(':', $data[7]);
+                    $hours = intval($hours);
+                    $minutes = intval($minutes);
+                    $days = floor($hours / 24);
+                    $hours = $hours % 24;
+                    $time = ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
+                    $embed->addFieldValues('Round Time', $time, true);
                 }
+                if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data
+                //if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3], true);
+                if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
+                if (isset($data[11])) { // Player list
+                    $players = explode('&', $data[11]);
+                    $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
+                    if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
+                    $embed->addFieldValues('Players', $players_list, true);
+                }
+                if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
+                //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
+                //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
+                
             }
         }
-        $embed->setFooter($this->embed_footer);
-        $embed->setColor(0xe1452d);
-        $embed->setTimestamp();
-        $embed->setURL('');
         return $embed;
     }
     // This is a simplified version of serverinfoParse() that only updates the player counter
