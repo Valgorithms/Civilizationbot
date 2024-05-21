@@ -1502,7 +1502,7 @@ class Civ13
                 $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 502: // NGINX's PHP-CGI workers are unavailable
-                $error = "The website's PHP-CGI workers are currently unavailable. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
+                $error = 'The website\'s PHP-CGI workers are currently unavailable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
                 break;
             case 503: // Database unavailable
                 $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->technician_id}>.";
