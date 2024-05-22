@@ -538,8 +538,8 @@ class Slash
                 if ($interaction->user->id !== $this->civ13->technician_id) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("You do not have permission to unverify <@{$interaction->data->target_id}>"), true);
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Unverifying `{$item['ss13']}`..."))->then(function ($message) use ($interaction, $item) {
                     $response = $this->civ13->unverifyCkey($item['ss13']);
+                    $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Processed request to unverify `{$item['ss13']}`."));
                     if (! $response['success']) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($response['message']), true);
-                    return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Processed request to unverify `{$item['ss13']}`."));
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($response['message']), true);
                 });
             });
