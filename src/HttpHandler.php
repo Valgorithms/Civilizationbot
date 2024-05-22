@@ -142,7 +142,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     }
 
     public function processEndpoint(ServerRequestInterface $request): Response
-    { // TODO: Split these handlers into separate arrays for exact, starts with, ends with, and contains
+    {
         $data = [];
         if ($params = $request->getQueryParams())
             if (isset($params['data']))
@@ -152,7 +152,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         //$ext = pathinfo($uri->getQuery(), PATHINFO_EXTENSION);
         foreach ($this->handlers as $endpoint => $callback) {
             switch ($this->match_methods[$endpoint]) {
-                case 'exact':
+                case 'exact': // TODO: Add support for offsetExists for exact matches to prevent unnecessary checks and move the logic outside of the loop
                     $method_func = function () use ($callback, $endpoint, $path): ?callable
                     {
                         if ($endpoint == $path) return $callback;
@@ -338,6 +338,15 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return null;
     }
 
+    /**
+     * Adds a request to the rate limit for a specific endpoint.
+     *
+     * @param string $endpoint The endpoint to add the request to.
+     * @param string $ip The IP address of the request.
+     * @param int|null $status The status code of the request (optional).
+     * @param int|null $currentTime The current time (optional).
+     * @return void
+     */
     private function addRequestToRateLimit(string $endpoint, string $ip, ?int $status = null, ?int $currentTime = null): void
     {
         if (! $currentTime) $currentTime = time();
@@ -350,13 +359,47 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->ratelimits[$endpoint] = $rateLimit;
     }
 
+    /**
+     * Sets the value at the specified offset and associates it with the provided callback.
+     *
+     * @param int|string $offset The offset to set the value at.
+     * @param callable $callback The callback to associate with the value.
+     * @param bool|null $whitelisted (optional) Whether the offset is whitelisted. Default is false.
+     * @param string|null $method (optional) The matching method. Default is 'exact'.
+     * @param string|null $description (optional) The description for the offset. Default is an empty string.
+     * @return HttpHandler Returns the updated HttpHandler instance.
+     */
     public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
         parent::offsetSet($offset, $callback);
         $this->whitelisted[$offset] = $whitelisted;
         $this->match_methods[$offset] = $method;
         $this->descriptions[$offset] = $description;
+        if ($method === 'exact') $this->__reorderHandlers();
         return $this;
+    }
+
+    /**
+     * Reorders the handlers based on the match methods.
+     *
+     * This method separates the handlers into two arrays: $exactHandlers and $otherHandlers.
+     * Handlers with a match method of 'exact' are stored in $exactHandlers, while the rest are stored in $otherHandlers.
+     * The two arrays are then merged and assigned back to the $handlers property, ensuring that exact matches are checked first.
+     *
+     * @return void
+     */
+    private function __reorderHandlers()
+    {
+        $exactHandlers = [];
+        $otherHandlers = [];
+        foreach ($this->handlers as $command => $handler) {
+            if ($this->match_methods[$command] === 'exact') {
+                $exactHandlers[$command] = $handler;
+            } else {
+                $otherHandlers[$command] = $handler;
+            }
+        }
+        $this->handlers = $exactHandlers + $otherHandlers;
     }
 
     /**
