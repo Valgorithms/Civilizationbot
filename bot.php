@@ -381,15 +381,6 @@ $last_path = '';
  */
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, &$last_path): Response//Interface
 {
-    $scheme = $request->getUri()->getScheme();
-    $host = $request->getUri()->getHost();
-    $port = $request->getUri()->getPort();
-    $path = $request->getUri()->getPath();
-    if ($path === '' || $path[0] !== '/' || $path === '/') $path = '/index';
-    $query = $request->getUri()->getQuery();
-    $fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
-    $last_path = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
-    //$civ13->logger->info('[WEBAPI URI] ' . preg_replace('/(?<=key=)[^&]+/', '********', $last_path););
     return $civ13->httpServiceManager->httpHandler->handle($request);
 });
 /**

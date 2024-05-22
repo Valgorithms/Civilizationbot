@@ -142,7 +142,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     }
 
     public function processEndpoint(ServerRequestInterface $request): Response
-    {
+    { // TODO: Split these handlers into separate arrays for exact, starts with, ends with, and contains
         $data = [];
         if ($params = $request->getQueryParams())
             if (isset($params['data']))
