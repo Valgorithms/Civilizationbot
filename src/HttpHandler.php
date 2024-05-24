@@ -123,9 +123,8 @@ class HttpHandler extends Handler implements HttpHandlerInterface
 
         //$scheme = $request->getUri()->getScheme();
         //$host = $request->getUri()->getHost();
-        //$port = $request->getUri()->getPort();
-        $path = $request->getUri()->getPath();
-        if ($path === '') $path = '/';
+        //$port = $request->getUri()->getPort();        
+        if (! $path = $request->getUri()->getPath()) $path = '/';
         //$query = $request->getUri()->getQuery();
         //$fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
 
@@ -138,7 +137,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         try {
             $response = $this->processEndpoint($request);
         } catch (\Throwable $e) {
-            $this->civ13->logger->error('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` failed with error `' . $e->getMessage() . '`');
+            $this->civ13->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`");
             return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
         }
         if ($response instanceof HttpResponse) return $response;
