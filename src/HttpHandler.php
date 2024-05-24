@@ -82,7 +82,7 @@ use Civ13\Interfaces\HttpHandlerInterface;
 class HttpHandler extends Handler implements HttpHandlerInterface
 { // TODO
     public string $external_ip = '127.0.0.1';
-    protected string $key = '';
+    private string $key = '';
     protected array $whitelist = [];
     protected array $ratelimits = [];
 
@@ -94,6 +94,14 @@ class HttpHandler extends Handler implements HttpHandlerInterface
 
     public string $last_ip = '';
 
+    /**
+     * Constructor for the HttpHandler class.
+     *
+     * @param Civ13 &$civ13 The Civ13 object.
+     * @param array $handlers An array of handlers.
+     * @param array $whitelist An array of IP addresses to whitelist.
+     * @param string $key The key for authentication.
+     */
     public function __construct(Civ13 &$civ13, array $handlers = [], array $whitelist = [], string $key = '')
     {
         parent::__construct($civ13, $handlers);
@@ -103,6 +111,9 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->afterConstruct();
     }
 
+    /**
+     * Sets the default rate limits for different types of requests.
+     */
     public function afterConstruct()
     {
         $this->setRateLimit('global10minutes', 10000, 600); // 10,000 requests per 10 minutes
