@@ -381,7 +381,7 @@ $last_path = '';
  */
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, &$last_path): Response//Interface
 {
-    return $civ13->httpServiceManager->httpHandler->handle($request);
+    return $civ13->httpServiceManager->handle($request);
 });
 /**
  * Handles errors thrown by the web API.

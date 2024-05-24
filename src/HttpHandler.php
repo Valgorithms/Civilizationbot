@@ -78,7 +78,6 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
 
 use Civ13\Interfaces\HttpHandlerInterface;
 //use Discord\Helpers\Collection;
-use React\Http\Message\Response;
 
 class HttpHandler extends Handler implements HttpHandlerInterface
 { // TODO
@@ -111,10 +110,16 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->setRateLimit('abuse', 100, 86400); // 100 invalid requests per day
     }
 
-    public function handle(ServerRequestInterface $request): Response
+    /**
+     * Handles the incoming HTTP request.
+     *
+     * @param ServerRequestInterface $request The incoming HTTP request.
+     * @return HttpResponse The HTTP response.
+     */
+    public function handle(ServerRequestInterface $request): HttpResponse
     {
         $this->last_ip = $request->getServerParams()['REMOTE_ADDR'];
-        if ($retry_after = $this->isGlobalRateLimited($this->last_ip) ?? $this->isInvalidLimited($this->last_ip)) return $this->__throwError("You are being rate limited. Retry after $retry_after seconds.", Response::STATUS_TOO_MANY_REQUESTS);
+        if ($retry_after = $this->isGlobalRateLimited($this->last_ip) ?? $this->isInvalidLimited($this->last_ip)) return $this->__throwError("You are being rate limited. Retry after $retry_after seconds.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
 
         //$scheme = $request->getUri()->getScheme();
         //$host = $request->getUri()->getHost();
@@ -134,14 +139,14 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             $response = $this->processEndpoint($request);
         } catch (\Throwable $e) {
             $this->civ13->logger->error('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` failed with error `' . $e->getMessage() . '`');
-            return new Response(Response::STATUS_INTERNAL_SERVER_ERROR);
+            return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
         }
-        if ($response instanceof Response) return $response;
-        $this->civ13->logger->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` resulted in an object that did not implement the ResponseInterface.`');
-        return new Response(Response::STATUS_INTERNAL_SERVER_ERROR);
+        if ($response instanceof HttpResponse) return $response;
+        $this->civ13->logger->warning('HTTP Server error: `An endpoint for `' . $request->getUri()->getPath() . '` resulted in an object that did not implement the HttpResponseInterface.`');
+        return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
     }
 
-    public function processEndpoint(ServerRequestInterface $request): Response
+    public function processEndpoint(ServerRequestInterface $request): HttpResponse
     {
         $data = [];
         if ($params = $request->getQueryParams())
@@ -185,22 +190,22 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                 $whitelisted = false;
                 if (! $whitelisted = $this->__isWhitelisted($this->last_ip, $data))
                     if (($this->whitelisted[$endpoint] ?? false) !== false)
-                        return $this->__throwError("You do not have permission to access this endpoint.", Response::STATUS_FORBIDDEN);
+                        return $this->__throwError("You do not have permission to access this endpoint.", HttpResponse::STATUS_FORBIDDEN);
                 if ($this->isRateLimited($endpoint, $this->last_ip)) // This is called before the callback is executed so it will be rate limited even if the callback fails and to save processing time
-                    return $this->__throwError("The resource is being rate limited.", Response::STATUS_TOO_MANY_REQUESTS);
+                    return $this->__throwError("The resource is being rate limited.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
                 if (!($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse)
-                    return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid response.", Response::STATUS_INTERNAL_SERVER_ERROR);
+                    return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid HttpResponse.", HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 if (isset($this->ratelimits[$endpoint]['requests']) && $requests = $this->ratelimits[$endpoint]['requests']) {
                     $lastRequest = end($requests);
                     if ($lastRequest['status'] !== $status = $response->getStatusCode()) // Status code could be null or otherwise different if the callback changed it
                         $lastRequest['status'] = $status;
-                    if (in_array($status, [Response::STATUS_UNAUTHORIZED, Response::STATUS_FORBIDDEN, Response::STATUS_NOT_FOUND, Response::STATUS_TOO_MANY_REQUESTS, Response::STATUS_INTERNAL_SERVER_ERROR]))
+                    if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR]))
                         $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
                 }
                 return $response;
             }
         }
-        return $this->__throwError("An endpoint for `$path` does not exist.", Response::STATUS_NOT_FOUND);
+        return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
     }
 
     public function generateHelp(): string
@@ -456,15 +461,15 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
-    public function __throwError(string $error, int $status = Response::STATUS_INTERNAL_SERVER_ERROR): Response
+    public function __throwError(string $error, int $status = HttpResponse::STATUS_INTERNAL_SERVER_ERROR): HttpResponse
     {
-        if ($status === Response::STATUS_INTERNAL_SERVER_ERROR) $this->civ13->logger->info("HTTP error for IP: `$this->last_ip`: `$error`");
-        if (in_array($status, [Response::STATUS_UNAUTHORIZED, Response::STATUS_FORBIDDEN, Response::STATUS_NOT_FOUND, Response::STATUS_TOO_MANY_REQUESTS, Response::STATUS_INTERNAL_SERVER_ERROR])) {
+        if ($status === HttpResponse::STATUS_INTERNAL_SERVER_ERROR) $this->civ13->logger->info("HTTP error for IP: `$this->last_ip`: `$error`");
+        if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR])) {
             $time = time();
             $this->addRequestToRateLimit('invalid', $this->last_ip, $status, $time);
             $this->addRequestToRateLimit('abuse', $this->last_ip, $status, $time);
         }
-        return Response::json(
+        return HttpResponse::json(
             ['error' => $error]
         )->withStatus($status);
     }

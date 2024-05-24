@@ -54,9 +54,9 @@ class HttpServiceManager
         $this->civ13->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
     }
 
-    public function handle(...$args)
+    public function handle(ServerRequestInterface $request): HttpResponse
     {
-        $this->httpHandler->handle($args);
+        return $this->httpHandler->handle($request);
     }
 
     public function offsetSet(...$args)
