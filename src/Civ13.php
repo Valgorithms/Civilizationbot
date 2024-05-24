@@ -1825,16 +1825,15 @@ class Civ13
             $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2ooc . '` for writing');
             return false;
         };
+        if ($settings) {
+            if (! isset($this->server_settings[$settings['key']])) return false;
+            if (! $settings['enabled'] ?? false) return false;
+            return $oocmessage($message, $sender, $settings);
+        }
         $sent = false;
-        foreach ($this->server_settings as $s) {
-            if ($settings) {
-                if ($settings['key'] !== $settings['key']) continue;
-                if (! $s['enabled'] ?? false) return false;
-                return $oocmessage($message, $sender, $settings);
-            } else {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $sent = $oocmessage($message, $sender, $settings);
-            }
+        foreach ($this->server_settings as $settings) {
+            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            if ($result = $oocmessage($message, $sender, $settings)) $sent = $result;
         }
         return $sent;
     }
