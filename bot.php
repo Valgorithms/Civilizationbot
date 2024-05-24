@@ -368,7 +368,6 @@ use React\Http\HttpServer;
 use React\Http\Message\Response;
 use Psr\Http\Message\ServerRequestInterface;
 $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $http_port), [], $civ13->loop);
-$last_path = '';
 /**
  * This code block creates a new HttpServer object and defines a callback function that handles incoming HTTP requests.
  * The function extracts information from the request URI such as scheme, host, port, path, query and fragment.
@@ -379,7 +378,7 @@ $last_path = '';
  * @param ServerRequestInterface $request The HTTP request object.
  * @return Response The HTTP response object.
  */
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13, &$last_path): Response//Interface
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13): Response//Interface
 {
     return $civ13->httpServiceManager->handle($request);
 });
