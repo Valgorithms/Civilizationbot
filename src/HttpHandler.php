@@ -163,14 +163,19 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      */
     private function __getCallback(ServerRequestInterface $request): ?array
     {
-        $path = $request->getUri()->getPath(); // We need the .ext too!
-        //$ext = pathinfo($uri->getQuery(), PATHINFO_EXTENSION);
+        //$ext = pathinfo($request->getUri()->getQuery(), PATHINFO_EXTENSION); // We need the .ext too!
+
+        if (isset($this->handlers[$path = $request->getUri()->getPath()]))
+            if ($this->match_methods[$path] === 'exact')
+                return ['callback' => $this->handlers[$path], 'endpoint' => $path];
+        
         foreach ($this->handlers as $endpoint => $callback) {
             switch ($this->match_methods[$endpoint]) {
-                case 'exact': // TODO: Add support for offsetExists for exact matches to prevent unnecessary checks and move the logic outside of the loop
+                default:
+                case 'str_starts_with':
                     $method_func = function () use ($callback, $endpoint, $path): ?callable
                     {
-                        if ($endpoint == $path) return $callback;
+                        if (str_starts_with($endpoint, $path)) return $callback;
                         return null;
                     };
                     break;
@@ -188,13 +193,14 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                         return null;
                     };
                     break;
-                case 'str_starts_with':
-                default:
-                    $method_func = function () use ($callback, $endpoint, $path): ?callable
+                case 'exact': //We've reached the end of the non-exact matches
+                    return null;
+                    /*$method_func = function () use ($callback, $endpoint, $path): ?callable
                     {
-                        if (str_starts_with($endpoint, $path)) return $callback;
+                        if ($endpoint == $path) return $callback;
                         return null;
                     };
+                    break;*/
             }
             if ($callback = $method_func()) return ['callback' => $callback, 'endpoint' => $endpoint];
         }
@@ -461,7 +467,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                 $otherHandlers[$command] = $handler;
             }
         }
-        $this->handlers = $exactHandlers + $otherHandlers;
+        $this->handlers = $otherHandlers + $exactHandlers;
     }
 
     /**
