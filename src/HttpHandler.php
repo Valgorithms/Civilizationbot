@@ -225,6 +225,11 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return $response;
     }
     
+    /**
+     * Generates a help message containing information about the available commands and their whitelisting status.
+     *
+     * @return string The generated help message.
+     */
     public function generateHelp(): string
     {   
         $array = [];
@@ -251,6 +256,12 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return $result;
     }
 
+    /**
+     * Whitelists an IP address.
+     *
+     * @param string $ip The IP address to whitelist.
+     * @return bool Returns true if the IP address was successfully whitelisted, false otherwise.
+     */
     public function whitelist(string $ip): bool
     {
         if (! $this->__isValidIpAddress($ip)) {
@@ -265,6 +276,12 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->whitelist[] = $ip;
         return true;
     }
+    /**
+     * Removes an IP address from the whitelist.
+     *
+     * @param string $ip The IP address to be removed from the whitelist.
+     * @return bool Returns true if the IP address was successfully removed, false otherwise.
+     */
     public function unwhitelist(string $ip): bool
     {
         if (! $this->__isValidIpAddress($ip)) {
@@ -298,6 +315,12 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return $this;
     }
 
+    /**
+     * Checks if the given IP address is globally rate limited.
+     *
+     * @param string $ip The IP address to check.
+     * @return int|null The maximum expiration time in seconds if the IP is rate limited, or null if it is not rate limited.
+     */
     public function isGlobalRateLimited(string $ip): ?int
     {
         $globalEndpoints = ['global10minutes'];
@@ -308,6 +331,12 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return (empty($expirations) ? null : max($expirations));
     }
 
+    /**
+     * Checks if the given IP address has any invalid limited endpoints and returns the maximum expiration time.
+     *
+     * @param string $ip The IP address to check.
+     * @return int|null The maximum expiration time in seconds, or null if there are no invalid limited endpoints.
+     */
     public function isInvalidLimited(string $ip): ?int
     {
         $invalidEndpoints = ['invalid', 'abuse'];
