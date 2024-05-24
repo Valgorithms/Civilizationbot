@@ -110,46 +110,49 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->setRateLimit('abuse', 100, 86400); // 100 invalid requests per day
     }
 
+    
     /**
-     * Handles the incoming HTTP request.
+     * Handles the HTTP request and returns an HTTP response.
      *
-     * @param ServerRequestInterface $request The incoming HTTP request.
-     * @return HttpResponse The HTTP response.
+     * @param ServerRequestInterface $request The HTTP request object.
+     * @return HttpResponse The HTTP response object.
      */
     public function handle(ServerRequestInterface $request): HttpResponse
     {
         $this->last_ip = $request->getServerParams()['REMOTE_ADDR'];
         if ($retry_after = $this->isGlobalRateLimited($this->last_ip) ?? $this->isInvalidLimited($this->last_ip)) return $this->__throwError("You are being rate limited. Retry after $retry_after seconds.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
-
         //$scheme = $request->getUri()->getScheme();
         //$host = $request->getUri()->getHost();
         //$port = $request->getUri()->getPort();        
         if (! $path = $request->getUri()->getPath()) $path = '/';
         //$query = $request->getUri()->getQuery();
+        //$ext = pathinfo($query, PATHINFO_EXTENSION);
         //$fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
-
         //$url = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
         if (str_starts_with($path, '/webhook/')) $this->civ13->logger->debug("[WEBAPI URL] $path");
         else $this->civ13->logger->info("[WEBAPI URL] $path");
-        //$this->civ13->logger->info("[WEBAPI PATH] $path");
-        //$ext = pathinfo($query, PATHINFO_EXTENSION);
-
         try {
-            return $this->processEndpoint($request);
+            if (! $array = $this->__getCallback($request)) return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
+            $data = [];
+            if ($params = $request->getQueryParams())
+                if (isset($params['data']))
+                    $data = @json_decode(urldecode($params['data']), true);
+            return $this->__processCallback($request, $data, $array['callback'], $array['endpoint']);
         } catch (\Throwable $e) {
             $this->civ13->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`");
             return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
         }
     }
 
-    public function processEndpoint(ServerRequestInterface $request): HttpResponse
+    /**
+     * Retrieves the callback and endpoint based on the request path.
+     *
+     * @param ServerRequestInterface $request The server request object.
+     * @return array|null An array containing the callback and endpoint if found, or null if not found.
+     */
+    private function __getCallback(ServerRequestInterface $request): ?array
     {
-        $data = [];
-        if ($params = $request->getQueryParams())
-            if (isset($params['data']))
-                $data = @json_decode(urldecode($params['data']), true);
-        $uri = $request->getUri();
-        $path = $uri->getPath(); // We need the .ext too!
+        $path = $request->getUri()->getPath(); // We need the .ext too!
         //$ext = pathinfo($uri->getQuery(), PATHINFO_EXTENSION);
         foreach ($this->handlers as $endpoint => $callback) {
             switch ($this->match_methods[$endpoint]) {
@@ -182,28 +185,39 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                         return null;
                     };
             }
-            if ($callback = $method_func()) { // Command triggered
-                $whitelisted = false;
-                if (! $whitelisted = $this->__isWhitelisted($this->last_ip, $data))
-                    if (($this->whitelisted[$endpoint] ?? false) !== false)
-                        return $this->__throwError("You do not have permission to access this endpoint.", HttpResponse::STATUS_FORBIDDEN);
-                if ($this->isRateLimited($endpoint, $this->last_ip)) // This is called before the callback is executed so it will be rate limited even if the callback fails and to save processing time
-                    return $this->__throwError("The resource is being rate limited.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
-                if (!($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse)
-                    return $this->__throwError("Callback for the endpoint `$path` is disabled due to an invalid HttpResponse.", HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                if (isset($this->ratelimits[$endpoint]['requests']) && $requests = $this->ratelimits[$endpoint]['requests']) {
-                    $lastRequest = end($requests);
-                    if ($lastRequest['status'] !== $status = $response->getStatusCode()) // Status code could be null or otherwise different if the callback changed it
-                        $lastRequest['status'] = $status;
-                    if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR]))
-                        $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
-                }
-                return $response;
-            }
+            if ($callback = $method_func()) return ['callback' => $callback, 'endpoint' => $endpoint];
         }
-        return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
     }
-
+    
+    /**
+     * Executes the HTTP handler.
+     *
+     * @param mixed $request The HTTP request object.
+     * @param mixed $data The data to be passed to the callback function.
+     * @param callable $callback The callback function to be executed.
+     * @param string $endpoint The endpoint being accessed.
+     * @return HttpResponse The HTTP response object.
+     */
+    private function __processCallback($request, $data, $callback, $endpoint): HttpResponse
+    {
+        $whitelisted = false;
+        if (! $whitelisted = $this->__isWhitelisted($this->last_ip, $data))
+            if (($this->whitelisted[$endpoint] ?? false) !== false)
+                return $this->__throwError("You do not have permission to access this endpoint.", HttpResponse::STATUS_FORBIDDEN);
+        if ($this->isRateLimited($endpoint, $this->last_ip)) // This is called before the callback is executed so it will be rate limited even if the callback fails and to save processing time
+            return $this->__throwError("The resource is being rate limited.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
+        if (!($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse)
+            return $this->__throwError("Callback for the endpoint `{$request->getUri()->getPath()}` is disabled due to an invalid HttpResponse.", HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+        if (isset($this->ratelimits[$endpoint]['requests']) && $requests = $this->ratelimits[$endpoint]['requests']) {
+            $lastRequest = end($requests);
+            if ($lastRequest['status'] !== $status = $response->getStatusCode()) // Status code could be null or otherwise different if the callback changed it
+                $lastRequest['status'] = $status;
+            if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR]))
+                $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
+        }
+        return $response;
+    }
+    
     public function generateHelp(): string
     {   
         $array = [];
