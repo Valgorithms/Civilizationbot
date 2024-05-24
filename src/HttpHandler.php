@@ -200,21 +200,28 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      */
     private function __processCallback($request, $data, $callback, $endpoint): HttpResponse
     {
-        $whitelisted = false;
+        // Check if the endpoint and IP address are whitelisted
         if (! $whitelisted = $this->__isWhitelisted($this->last_ip, $data))
             if (($this->whitelisted[$endpoint] ?? false) !== false)
                 return $this->__throwError("You do not have permission to access this endpoint.", HttpResponse::STATUS_FORBIDDEN);
+
+        // Check if the endpoint is rate limited
         if ($this->isRateLimited($endpoint, $this->last_ip)) // This is called before the callback is executed so it will be rate limited even if the callback fails and to save processing time
             return $this->__throwError("The resource is being rate limited.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
+
+        // Execute the callback and validate the response
         if (!($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse)
             return $this->__throwError("Callback for the endpoint `{$request->getUri()->getPath()}` is disabled due to an invalid HttpResponse.", HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+
+        // Update the rate limit requests
         if (isset($this->ratelimits[$endpoint]['requests']) && $requests = $this->ratelimits[$endpoint]['requests']) {
             $lastRequest = end($requests);
             if ($lastRequest['status'] !== $status = $response->getStatusCode()) // Status code could be null or otherwise different if the callback changed it
-                $lastRequest['status'] = $status;
+            $lastRequest['status'] = $status;
             if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR]))
-                $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
+            $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
         }
+
         return $response;
     }
     
