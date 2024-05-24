@@ -1816,11 +1816,11 @@ class Civ13
     {
         $oocmessage = function (string $message, string $sender, array $settings): bool
         {
-            if (file_exists($settings['basedir'] . self::discord2ooc) && $file = @fopen($settings['basedir'] . self::discord2ooc, 'a')) {
+            if (isset($settings['basedir']) && file_exists($settings['basedir'] . self::discord2ooc) && $file = @fopen($settings['basedir'] . self::discord2ooc, 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
                 if (isset($settings['ooc']) && $channel = $this->discord->getChannel($settings['ooc'])) $this->sendPlayerMessage($channel, false, $message, $sender);
-                return true; 
+                return true;
             }
             $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2ooc . '` for writing');
             return false;
