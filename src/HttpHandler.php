@@ -111,10 +111,15 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->afterConstruct();
     }
 
+    public function afterConstruct(): void
+    {
+        $this->__setDefaultRatelimits();
+    }
+
     /**
      * Sets the default rate limits for different types of requests.
      */
-    public function afterConstruct()
+    private function __setDefaultRatelimits(): void
     {
         $this->setRateLimit('global10minutes', 10000, 600); // 10,000 requests per 10 minutes
         $this->setRateLimit('invalid', 10, 300); // 10 invalid requests per 5 minutes
@@ -456,7 +461,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      *
      * @return void
      */
-    private function __reorderHandlers()
+    private function __reorderHandlers(): void
     {
         $exactHandlers = [];
         $otherHandlers = [];
