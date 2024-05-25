@@ -457,7 +457,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      *
      * This method separates the handlers into two arrays: $exactHandlers and $otherHandlers.
      * Handlers with a match method of 'exact' are stored in $exactHandlers, while the rest are stored in $otherHandlers.
-     * The two arrays are then merged and assigned back to the $handlers property, ensuring that exact matches are checked first.
+     * The two arrays are then merged and assigned back to the $handlers property, ensuring that exact matches are checked last.
      *
      * @return void
      */
