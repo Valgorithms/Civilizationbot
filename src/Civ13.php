@@ -450,6 +450,193 @@ class Civ13
     }
 
     /**
+     * Loads or initializes the variables used by the Civ13 class.
+     * This method loads the values from JSON files or initializes them if the files do not exist.
+     * It also handles the interruption of rounds if the bot was restarted during a round.
+     */
+    private function __loadOrInitializeVariables(): void
+    {
+        if (! $tests = $this->VarLoad('tests.json')) $tests = [];
+        $this->tests = $tests;
+        if (! $rounds = $this->VarLoad('rounds.json')) {
+            $rounds = [];
+            $this->VarSave('rounds.json', $rounds);
+        }
+        $this->rounds = $rounds;
+        if (! $current_rounds = $this->VarLoad('current_rounds.json')) {
+            $current_rounds = [];
+            $this->VarSave('current_rounds.json', $current_rounds);
+        }
+        $this->current_rounds = $current_rounds;
+        // If the bot was restarted during a round, mark it as interrupted and do not continue tracking the current round
+        if ($this->current_rounds) {
+            $updated = false;
+            foreach ($this->current_rounds as $server => $game_id) if (isset($this->rounds[$server]) && isset($this->rounds[$server][$game_id])) {
+                $this->rounds[$server][$game_id]['interrupted'] = true;
+                $this->current_rounds[$server] = '';
+                $updated = true;
+            }
+            if ($updated) {
+                $this->VarSave('current_rounds.json', $this->current_rounds);
+                $this->VarSave('rounds.json', $this->rounds);
+            }
+        }
+        if (! $paroled = $this->VarLoad('paroled.json')) {
+            $paroled = [];
+            $this->VarSave('paroled.json', $paroled);
+        }
+        $this->paroled = $paroled;
+        if (! $permitted = $this->VarLoad('permitted.json')) {
+            $permitted = [];
+            $this->VarSave('permitted.json', $permitted);
+        }
+        $this->permitted = $permitted;
+        if (! $softbanned = $this->VarLoad('softbanned.json')) {
+            $softbanned = [];
+            $this->VarSave('softbanned.json', $softbanned);
+        }
+        $this->softbanned = $softbanned;
+        if (! $panic_bans = $this->VarLoad('panic_bans.json')) {
+            $panic_bans = [];
+            $this->VarSave('panic_bans.json', $panic_bans);
+        }
+        $this->panic_bans = $panic_bans;
+        if (! $ooc_badwords_warnings = $this->VarLoad('ooc_badwords_warnings.json')) {
+            $ooc_badwords_warnings = [];
+            $this->VarSave('ooc_badwords_warnings.json', $ooc_badwords_warnings);
+        }
+        $this->ooc_badwords_warnings = $ooc_badwords_warnings;
+        if (! $ic_badwords_warnings = $this->VarLoad('ic_badwords_warnings.json')) {
+            $ic_badwords_warnings = [];
+            $this->VarSave('ic_badwords_warnings.json', $ic_badwords_warnings);
+        }
+        $this->ic_badwords_warnings = $ic_badwords_warnings;
+        $this->embed_footer = $this->github 
+            ? $this->github . PHP_EOL
+            : '';
+        $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
+
+        if (! $provisional = $this->VarLoad('provisional.json')) {
+            $provisional = [];
+            $this->VarSave('provisional.json', $provisional);
+        }
+        $this->provisional = $provisional;
+        if (! $ages = $this->VarLoad('ages.json')) {
+            $ages = [];
+            $this->VarSave('ages.json', $ages);
+        }
+        $this->ages = $ages;
+        foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
+        
+        $this->pending = new Collection([], 'discord');
+        if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
+        foreach ($this->discord->guilds as $guild) if (! isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
+        $this->discord_config = $discord_config; // Declared, but not currently used for anything
+
+        $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json";
+    }
+
+    public function declareListeners(): void
+    {
+        $this->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
+        {
+            if ($this->shard) return;                    
+            $this->joinRoles($member);
+            if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $member);
+            else $this->logger->debug('No message functions found!');
+
+            $this->getVerified();
+            if (isset($this->timers["add_{$member->id}"])) {
+                $this->discord->getLoop()->cancelTimer($this->timers["add_{$member->id}"]);
+                unset($this->timers["add_{$member->id}"]);
+            }
+            $this->timers["add_{$member->id}"] = $this->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
+            { // Kick member if they have not verified
+                $this->getVerified();
+                if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null; // Guild not found (bot not in guild)
+                if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
+                if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
+                if (
+                    $member_future->roles->has($this->role_ids['infantry']) ||
+                    $member_future->roles->has($this->role_ids['veteran']) ||
+                    $member_future->roles->has($this->role_ids['banished']) ||
+                    $member_future->roles->has($this->role_ids['permabanished'])
+                ) return null; // Don't kick if they have an verified or banned role
+                return $guild->members->kick($member_future, 'Not verified');
+            });
+        });
+
+        $this->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
+        {
+            $this->getVerified();
+            if ($member->roles->has($this->role_ids['veteran'])) $this->whitelistUpdate();
+            $faction_roles = [
+                'red',
+                'blue',
+            ];
+            foreach ($faction_roles as $role_id) if ($member->roles->has($this->role_ids[$role_id])) { $this->factionlistUpdate(); break;}
+            $admin_roles = [
+                'Owner',
+                'Chief Technical Officer',
+                'Head Admin',
+                'Manager',
+                'High Staff',
+                'Supervisor',
+                'Event Admin',
+                'Admin',
+                'Moderator',
+                'Mentor',
+                'veteran',
+                'infantry',
+                'banished',
+                'paroled',
+            ];
+            foreach ($admin_roles as $role) if ($member->roles->has($this->role_ids[$role])) { $this->adminlistUpdate(); break; }
+        });
+
+        $this->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
+        {
+            if (! $member_old) { // Not enough information is known about the change, so we will update everything
+                $this->whitelistUpdate();
+                $this->getVerified();
+                $this->factionlistUpdate();
+                $this->adminlistUpdate();
+                return;
+            }
+            if ($member->roles->has($this->role_ids['veteran']) !== $member_old->roles->has($this->role_ids['veteran'])) $this->whitelistUpdate();
+            elseif ($member->roles->has($this->role_ids['infantry']) !== $member_old->roles->has($this->role_ids['infantry'])) $this->getVerified();
+            $faction_roles = [
+                'red',
+                'blue',
+            ];
+            foreach ($faction_roles as $role) 
+                if ($member->roles->has($this->role_ids[$role]) !== $member_old->roles->has($this->role_ids[$role])) { $this->factionlistUpdate(); break;}
+            $admin_roles = [
+                'Owner',
+                'Chief Technical Officer',
+                'Head Admin',
+                'Manager',
+                'High Staff',
+                'Supervisor',
+                'Event Admin',
+                'Admin',
+                'Moderator',
+                'Mentor',
+                'veteran',
+                'infantry',
+                'banished',
+                'paroled',
+            ];
+            foreach ($admin_roles as $role) 
+                if ($member->roles->has($this->role_ids[$role]) !== $member_old->roles->has($this->role_ids[$role])) { $this->adminlistUpdate(); break;}
+        });
+
+        $this->discord->on('GUILD_CREATE', function (Guild $guild): void
+        {
+            if (! isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
+        });
+    }
+    /**
      * This method is called after the object is constructed.
      * It initializes various properties, starts timers, and starts handling events.
      *
@@ -469,192 +656,18 @@ class Civ13
                 $this->ready = true;
                 $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
                 $this->logger->info('------');
-                if (! $tests = $this->VarLoad('tests.json')) $tests = [];
-                $this->tests = $tests;
-                if (! $rounds = $this->VarLoad('rounds.json')) {
-                    $rounds = [];
-                    $this->VarSave('rounds.json', $rounds);
-                }
-                $this->rounds = $rounds;
-                if (! $current_rounds = $this->VarLoad('current_rounds.json')) {
-                    $current_rounds = [];
-                    $this->VarSave('current_rounds.json', $current_rounds);
-                }
-                $this->current_rounds = $current_rounds;
-                // If the bot was restarted during a round, mark it as interrupted and do not continue tracking the current round
-                if ($this->current_rounds) {
-                    $updated = false;
-                    foreach ($this->current_rounds as $server => $game_id) if (isset($this->rounds[$server]) && isset($this->rounds[$server][$game_id])) {
-                        $this->rounds[$server][$game_id]['interrupted'] = true;
-                        $this->current_rounds[$server] = '';
-                        $updated = true;
-                    }
-                    if ($updated) {
-                        $this->VarSave('current_rounds.json', $this->current_rounds);
-                        $this->VarSave('rounds.json', $this->rounds);
-                    }
-                }
-                if (! $paroled = $this->VarLoad('paroled.json')) {
-                    $paroled = [];
-                    $this->VarSave('paroled.json', $paroled);
-                }
-                $this->paroled = $paroled;
-                if (! $permitted = $this->VarLoad('permitted.json')) {
-                    $permitted = [];
-                    $this->VarSave('permitted.json', $permitted);
-                }
-                $this->permitted = $permitted;
-                if (! $softbanned = $this->VarLoad('softbanned.json')) {
-                    $softbanned = [];
-                    $this->VarSave('softbanned.json', $softbanned);
-                }
-                $this->softbanned = $softbanned;
-                if (! $panic_bans = $this->VarLoad('panic_bans.json')) {
-                    $panic_bans = [];
-                    $this->VarSave('panic_bans.json', $panic_bans);
-                }
-                $this->panic_bans = $panic_bans;
-                if (! $ooc_badwords_warnings = $this->VarLoad('ooc_badwords_warnings.json')) {
-                    $ooc_badwords_warnings = [];
-                    $this->VarSave('ooc_badwords_warnings.json', $ooc_badwords_warnings);
-                }
-                $this->ooc_badwords_warnings = $ooc_badwords_warnings;
-                if (! $ic_badwords_warnings = $this->VarLoad('ic_badwords_warnings.json')) {
-                    $ic_badwords_warnings = [];
-                    $this->VarSave('ic_badwords_warnings.json', $ic_badwords_warnings);
-                }
-                $this->ic_badwords_warnings = $ic_badwords_warnings;
-                $this->embed_footer = $this->github 
-                    ? $this->github . PHP_EOL
-                    : '';
-                $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
-
+               
+                $this->__loadOrInitializeVariables();
                 $this->getVerified(); // Populate verified property with data from DB
-                
-                if (! $provisional = $this->VarLoad('provisional.json')) {
-                    $provisional = [];
-                    $this->VarSave('provisional.json', $provisional);
-                }
-                $this->provisional = $provisional;
-                if (! $ages = $this->VarLoad('ages.json')) {
-                    $ages = [];
-                    $this->VarSave('ages.json', $ages);
-                }
-                $this->ages = $ages;
-                //$this->setIPs();
-                $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json";
                 $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
-                foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
                 $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
-                $this->pending = new Collection([], 'discord');
-                // Initialize configurations
-                if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
-                foreach ($this->discord->guilds as $guild) if (! isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
-                $this->discord_config = $discord_config; // Declared, but not currently used for anything
                 
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
                 if (! $this->shard) $this->slash->setup();
+                $this->declareListeners();
 
-                $this->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
-                {
-                    if ($this->shard) return;                    
-                    $this->joinRoles($member);
-                    if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $member);
-                    else $this->logger->debug('No message functions found!');
-
-                    $this->getVerified();
-                    if (isset($this->timers["add_{$member->id}"])) {
-                        $this->discord->getLoop()->cancelTimer($this->timers["add_{$member->id}"]);
-                        unset($this->timers["add_{$member->id}"]);
-                    }
-                    $this->timers["add_{$member->id}"] = $this->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
-                    { // Kick member if they have not verified
-                        $this->getVerified();
-                        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null; // Guild not found (bot not in guild)
-                        if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
-                        if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
-                        if (
-                            $member_future->roles->has($this->role_ids['infantry']) ||
-                            $member_future->roles->has($this->role_ids['veteran']) ||
-                            $member_future->roles->has($this->role_ids['banished']) ||
-                            $member_future->roles->has($this->role_ids['permabanished'])
-                        ) return null; // Don't kick if they have an verified or banned role
-                        return $guild->members->kick($member_future, 'Not verified');
-                    });
-                });
-
-                $this->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
-                {
-                    $this->getVerified();
-                    if ($member->roles->has($this->role_ids['veteran'])) $this->whitelistUpdate();
-                    $faction_roles = [
-                        'red',
-                        'blue',
-                    ];
-                    foreach ($faction_roles as $role_id) if ($member->roles->has($this->role_ids[$role_id])) { $this->factionlistUpdate(); break;}
-                    $admin_roles = [
-                        'Owner',
-                        'Chief Technical Officer',
-                        'Head Admin',
-                        'Manager',
-                        'High Staff',
-                        'Supervisor',
-                        'Event Admin',
-                        'Admin',
-                        'Moderator',
-                        'Mentor',
-                        'veteran',
-                        'infantry',
-                        'banished',
-                        'paroled',
-                    ];
-                    foreach ($admin_roles as $role) if ($member->roles->has($this->role_ids[$role])) { $this->adminlistUpdate(); break; }
-                });
-
-                $this->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
-                {
-                    if (! $member_old) { // Not enough information is known about the change, so we will update everything
-                        $this->whitelistUpdate();
-                        $this->getVerified();
-                        $this->factionlistUpdate();
-                        $this->adminlistUpdate();
-                        return;
-                    }
-                    if ($member->roles->has($this->role_ids['veteran']) !== $member_old->roles->has($this->role_ids['veteran'])) $this->whitelistUpdate();
-                    elseif ($member->roles->has($this->role_ids['infantry']) !== $member_old->roles->has($this->role_ids['infantry'])) $this->getVerified();
-                    $faction_roles = [
-                        'red',
-                        'blue',
-                    ];
-                    foreach ($faction_roles as $role) 
-                        if ($member->roles->has($this->role_ids[$role]) !== $member_old->roles->has($this->role_ids[$role])) { $this->factionlistUpdate(); break;}
-                    $admin_roles = [
-                        'Owner',
-                        'Chief Technical Officer',
-                        'Head Admin',
-                        'Manager',
-                        'High Staff',
-                        'Supervisor',
-                        'Event Admin',
-                        'Admin',
-                        'Moderator',
-                        'Mentor',
-                        'veteran',
-                        'infantry',
-                        'banished',
-                        'paroled',
-                    ];
-                    foreach ($admin_roles as $role) 
-                        if ($member->roles->has($this->role_ids[$role]) !== $member_old->roles->has($this->role_ids[$role])) { $this->adminlistUpdate(); break;}
-                });
-
-                $this->discord->on('GUILD_CREATE', function (Guild $guild): void
-                {
-                    if (! isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
-                });
-
-                if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
+                if ($this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
                     $this->logger->info('chat relay timer started');
                     if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function ()
                     {
