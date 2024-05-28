@@ -1285,6 +1285,13 @@ class MessageServiceManager
         $this->__declareListener();
     }
 
+    /**
+     * Declares the listener for handling incoming messages.
+     * If no message handlers are found, it logs a debug message and returns.
+     * Otherwise, it sets up an event listener for the 'message' event and handles the message.
+     *
+     * @return void
+     */
     private function __declareListener()
     {
         if (! $this->messageHandler->handlers) {

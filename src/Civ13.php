@@ -554,12 +554,7 @@ class Civ13
                 
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
-                if (! $this->shard) $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
-                {
-                    $this->slash->updateCommands($commands);
-                    if (! empty($this->functions['ready_slash'])) foreach (array_values($this->functions['ready_slash']) as $func) $func($this, $commands);
-                    else $this->logger->debug('No ready slash functions found!');
-                });
+                if (! $this->shard) $this->slash->setup();
 
                 $this->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
                 {
