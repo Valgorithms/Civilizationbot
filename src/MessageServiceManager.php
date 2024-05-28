@@ -1206,7 +1206,7 @@ class MessageServiceManager
             else {
                 $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($settings): ?PromiseInterface
                 {
-                    $mapswap = function (string $mapto, ?Message $message = null, ) use ($settings): ?PromiseInterface
+                    $mapswap = function (string $mapto, ?Message $message = null) use ($settings): ?PromiseInterface
                     {
                         if (! file_exists($this->civ13->files['map_defines_path']) || ! $file = @fopen($this->civ13->files['map_defines_path'], 'r')) {
                             $this->civ13->logger->error("unable to open `{$this->civ13->files['map_defines_path']}` for reading.");

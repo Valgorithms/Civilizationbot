@@ -1693,7 +1693,7 @@ class Civ13
     * These Legacy and SQL functions should not be called directly
     * Define $legacy = true/false and use ban/unban methods instead
     */
-    public function sqlUnban($array, $admin = null, ?array $settings = []): string
+    public function sqlUnban($array, ?string $admin = null, ?array $settings = []): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
@@ -1740,7 +1740,7 @@ class Civ13
         }
         return $result;
     }
-    public function sqlBan(array $array, $admin = null, ?string $settings = ''): string
+    public function sqlBan(array $array, ?string $admin = null, ?string $settings = ''): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }

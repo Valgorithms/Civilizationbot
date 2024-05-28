@@ -57,7 +57,7 @@ Class DiscordWebAuth
         }
     }
 
-    private function apiRequest(string $url = '', $post = null)
+    private function apiRequest(string $url = '', object|array|null $post = null)
     {
         $ch = curl_init($url);
 
@@ -79,7 +79,7 @@ Class DiscordWebAuth
         return @json_decode($response);
     }
 
-    public function login(string $redirect_uri = null, string $scope = 'identify guilds connections'): Response
+    public function login(?string $redirect_uri = null, ?string $scope = 'identify guilds connections'): Response
     {
         if (! isset($redirect_uri)){
             if (!in_array(($redirect_uri ? $redirect_uri : $this->default_redirect), $this->allowed_uri)) {
