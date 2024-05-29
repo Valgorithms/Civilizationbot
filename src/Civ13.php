@@ -696,7 +696,7 @@ class Civ13
                         $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . $namesString);
                     }
                 }
-                $this->relayTimer();
+                $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
             });
         }
     }
