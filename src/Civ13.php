@@ -844,10 +844,20 @@ class Civ13
      * @param array $assoc_array The associative array to be saved.
      * @return bool Returns true if the data was successfully saved, false otherwise.
      */
-    public function VarSave(string $filename = '', array $assoc_array = []): bool
+    public function VarSave(string $filename, array $assoc_array = []): bool
     {
-        if ($filename === '') return false;
-        if (file_put_contents($this->filecache_path . $filename, json_encode($assoc_array)) === false) return false;
+        if ($filename === '') {
+            $this->logger->warning('Unable to save data to file: Filename is empty');
+            return false;
+        }
+        
+        $filePath = $this->filecache_path . $filename;
+        $jsonData = json_encode($assoc_array);
+        
+        if (file_put_contents($filePath, $jsonData) === false) {
+            $this->logger->warning("Unable to save data to file: $filePath");
+            return false;
+        }
         return true;
     }
     /**
@@ -858,10 +868,29 @@ class Civ13
      */
     public function VarLoad(string $filename = ''): ?array
     {
-        if ($filename === '') return null;
-        if (!file_exists($this->filecache_path . $filename)) return null;
-        if (($string = @file_get_contents($this->filecache_path . $filename) ?? false) === false) return null;
-        if (! $assoc_array = @json_decode($string, TRUE)) return null;
+        if ($filename === '') {
+            $this->logger->warning('Unable to load data from file: Filename is empty');
+            return null;
+        }
+        
+        $filePath = $this->filecache_path . $filename;
+        
+        if (! file_exists($filePath)) {
+            $this->logger->debug("File does not exist: $filePath");
+            return null;
+        }
+        
+        $jsonData = @file_get_contents($filePath);
+        if ($jsonData === false) {
+            $this->logger->warning("Unable to load data from file: $filePath");
+            return null;
+        }
+        
+        $assoc_array = @json_decode($jsonData, true);
+        if ($assoc_array === null) {
+            $this->logger->warning("Unable to decode JSON data from file: $filePath");
+            return null;
+        }
         return $assoc_array;
     }
 
