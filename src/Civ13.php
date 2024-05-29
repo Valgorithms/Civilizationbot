@@ -1983,6 +1983,11 @@ class Civ13
         }
         return null;
     }*/
+    /**
+     * Fetches server information from the specified URL.
+     *
+     * @return array The server information as an associative array.
+     */
     public function serverinfoFetch(): array
     {
         $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
@@ -2081,6 +2086,12 @@ class Civ13
         }
         return true;
     }
+    /**
+     * Parses the server information and returns an array of parsed data.
+     *
+     * @param array $return The array to store the parsed data (optional).
+     * @return array The array containing the parsed server information.
+     */
     public function serverinfoParse(array $return = []): array
     {
         if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) {
@@ -2187,6 +2198,11 @@ class Civ13
         return ['playercount' => $servers, 'playerlist' => $players];
     }
 
+    /**
+     * Generates a server status embed.
+     *
+     * @return Embed The generated server status embed.
+     */
     public function generateServerstatusEmbed(): Embed
     {        
         $embed = new Embed($this->discord);
@@ -2385,7 +2401,12 @@ class Civ13
             if (file_put_contents($fp, $file_contents) === false) // Attempt to write to the file
                 $this->logger->error("Failed to write to file `$fp`"); // Log an error if the write failed
     }
-    // This function is used to update the whitelist files
+    /**
+     * Updates the whitelist based on the member roles.
+     *
+     * @param array|null $required_roles The required roles for whitelisting. Default is ['veteran'].
+     * @return bool Returns true if the whitelist update is successful, false otherwise.
+     */
     public function whitelistUpdate(?array $required_roles = ['veteran']): bool
     {
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
@@ -2407,7 +2428,12 @@ class Civ13
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
         return true;
     }
-    // This function is used to update the campaign whitelist files
+    /**
+     * Updates the faction list based on the required roles.
+     *
+     * @param array|null $required_roles The required roles for updating the faction list. Default is ['red', 'blue', 'organizer'].
+     * @return bool Returns true if the faction list is successfully updated, false otherwise.
+     */
     public function factionlistUpdate(?array $required_roles = ['red', 'blue', 'organizer']): bool
     {
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
