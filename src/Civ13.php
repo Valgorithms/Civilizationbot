@@ -534,7 +534,7 @@ class Civ13
         if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
     }
 
-    public function declareListeners(): void
+    private function declareListeners(): void
     {
         $this->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
         {
@@ -634,7 +634,7 @@ class Civ13
             if (! isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
         });
     }
-    public function relayTimer(): void
+    private function relayTimer(): void
     {
         if ($this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
             $this->logger->info('chat relay timer started');
