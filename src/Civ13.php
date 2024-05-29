@@ -999,10 +999,7 @@ class Civ13
     public function getVerifiedMember(Member|User|array|string|null $input): ?Member
     {
         if (! $input) return null;
-
-        // Get the guild (required to get the member)
-        $guild = $this->discord->guilds->get('id', $this->civ13_guild_id);
-        if (! $guild) return null;
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null;
 
         // Get Discord ID
         $id = null;
