@@ -636,6 +636,28 @@ class Civ13
             if (! isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
         });
     }
+    public function relayTimer(): void
+    {
+        if ($this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
+            $this->logger->info('chat relay timer started');
+            if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function ()
+            {
+                if ($this->relay_method !== 'file') return null;
+                if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
+                foreach ($this->server_settings as $settings) {
+                    if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+                    if (isset($settings['ooc']) && $channel = $guild->channels->get('id', $settings['ooc'])) $this->gameChatFileRelay($settings['basedir'] . self::ooc_path, $channel);  // #ooc-server
+                    if (isset($settings['asay']) && $channel = $guild->channels->get('id', $settings['asay'])) $this->gameChatFileRelay($settings['basedir'] . self::admin_path, $channel);  // #asay-server
+                }
+            });
+            if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
+                if (! $status = $this->verifier_online) {
+                    $this->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
+                    if ($status !== $this->verifier_online) foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // If the verifier was offline, but is now online, reattempt registration of all provisional users
+                }
+            });
+        }
+    }
     /**
      * This method is called after the object is constructed.
      * It initializes various properties, starts timers, and starts handling events.
@@ -664,35 +686,17 @@ class Civ13
                 
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
-                if (! $this->shard) $this->slash->setup();
-                $this->declareListeners();
-
-                if ($this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
-                    $this->logger->info('chat relay timer started');
-                    if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function ()
-                    {
-                        if ($this->relay_method !== 'file') return null;
-                        if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
-                        foreach ($this->server_settings as $settings) {
-                            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                            if (isset($settings['ooc']) && $channel = $guild->channels->get('id', $settings['ooc'])) $this->gameChatFileRelay($settings['basedir'] . self::ooc_path, $channel);  // #ooc-server
-                            if (isset($settings['asay']) && $channel = $guild->channels->get('id', $settings['asay'])) $this->gameChatFileRelay($settings['basedir'] . self::admin_path, $channel);  // #asay-server
-                        }
-                    });
-                    if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
-                        if (! $status = $this->verifier_online) {
-                            $this->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
-                            if ($status !== $this->verifier_online) foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // If the verifier was offline, but is now online, reattempt registration of all provisional users
-                        }
-                    });
+                if (! $this->shard) {
+                    $this->slash->setup();
+                    $this->declareListeners();
+                    if ($application_commands = $this->discord->__get('application_commands')) {
+                        $names = [];
+                        foreach ($application_commands as $command) $names[] = $command->getName();
+                        $namesString = '`' . implode('`, `', $names) . '`';
+                        $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . $namesString);
+                    }
                 }
-
-                if ($application_commands = $this->discord->__get('application_commands')) {
-                    $names = [];
-                    foreach ($application_commands as $command) $names[] = $command->getName();
-                    $namesString = '`' . implode('`, `', $names) . '`';
-                    $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . $namesString);
-                }
+                $this->relayTimer();
             });
         }
     }
