@@ -680,7 +680,6 @@ class Civ13
                 $this->__loadOrInitializeVariables();
                 $this->getVerified(); // Populate verified property with data from DB
                 $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
-                $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
                 
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
@@ -688,6 +687,7 @@ class Civ13
                     require 'slash.php';
                     $this->slash = new Slash($this);
                     $this->declareListeners();
+                    $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
                 }
                 $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
             });
