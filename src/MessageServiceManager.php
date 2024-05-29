@@ -154,16 +154,16 @@ class MessageServiceManager
             $high_staff = $high_rank_check($message, ['Owner', 'High Staff']);
             if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
             if (is_numeric($id)) {
-                if (! $item = $this->civ13->getVerifiedItem($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
+                if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
                 $ckey = $item['ss13'];
             } else $ckey = $id;
             if (! $collectionsArray = $this->civ13->getCkeyLogCollections($ckey)) return $this->civ13->reply($message, 'No data found for that ckey.');
 
             $embed = new Embed($this->civ13->discord);
             $embed->setTitle($ckey);
-            if ($item = $this->civ13->getVerifiedItem($ckey)) {
+            if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) {
                 $ckey = $item['ss13'];
-                if ($member = $this->civ13->getVerifiedMember($item))
+                if ($member = $this->civ13->verifier->getVerifiedMember($item))
                     $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
             }
             $ckeys = [$ckey];
@@ -248,7 +248,7 @@ class MessageServiceManager
             foreach ($ckeys as $key) if ($key != $ckey) if ($this->civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
 
             $verified = 'No';
-            if ($this->civ13->verified->get('ss13', $ckey)) $verified = 'Yes';
+            if ($this->civ13->verifier->verified->get('ss13', $ckey)) $verified = 'Yes';
             if (! empty($ckeys) && $ckeys) {
                 foreach ($ckeys as $c) if (! isset($ckey_age[$c])) ($age = $this->civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
                 $ckey_age_string = '';
@@ -267,7 +267,7 @@ class MessageServiceManager
             if (! empty($dates) && $dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
             if ($verified) $embed->addfieldValues('Verified', $verified, true);
             $discords = [];
-            if ($ckeys) foreach ($ckeys as $c) if ($item = $this->civ13->verified->get('ss13', $c)) $discords[] = $item['discord'];
+            if ($ckeys) foreach ($ckeys as $c) if ($item = $this->civ13->verifier->verified->get('ss13', $c)) $discords[] = $item['discord'];
             if ($discords) {
                 foreach ($discords as &$id) $id = "<@{$id}>";
                 $embed->addfieldValues('Discord', implode(', ', $discords));
@@ -286,12 +286,12 @@ class MessageServiceManager
             $approveme = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 if ($message->member->roles->has($this->civ13->role_ids['infantry']) || (isset($this->civ13->role_ids['veteran']) && $message->member->roles->has($this->civ13->role_ids['veteran']))) return $this->civ13->reply($message, 'You already have the verification role!');
-                if ($item = $this->civ13->getVerifiedItem($message->author)) {
+                if ($item = $this->civ13->verifier->getVerifiedItem($message->author)) {
                     $message->member->setRoles([$this->civ13->role_ids['infantry']], "approveme {$item['ss13']}");
                     return $message->react("👍");
                 }
                 if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
-                return $this->civ13->reply($message, $this->civ13->verifyProcess($ckey, $message->user_id, $message->member));
+                return $this->civ13->reply($message, $this->civ13->verifier->process($ckey, $message->user_id, $message->member));
             });
             $this->offsetSet('approveme', $approveme);
             $this->offsetSet('aproveme', $approveme);
@@ -310,12 +310,12 @@ class MessageServiceManager
             }));
 
             $this->offsetSet('discord2ckey', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
-                if (! $item = $this->civ13->verified->get('discord', $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$id` is not registered to any byond username");
+                if (! $item = $this->civ13->verifier->verified->get('discord', $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$id` is not registered to any byond username");
                 return $this->civ13->reply($message, "`$id` is registered to `{$item['ss13']}`");
             }));
 
             $this->offsetSet('ckey2discord', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
-                if (! $item = $this->civ13->verified->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$ckey` is not registered to any discord id");
+                if (! $item = $this->civ13->verifier->verified->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$ckey` is not registered to any discord id");
                 return $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
             }));
 
@@ -323,23 +323,23 @@ class MessageServiceManager
             {
                 //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
                 if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                    if (! $item = $this->civ13->getVerifiedItem($ckey = $message->user_id)) return $this->civ13->reply($message, "You are not registered to any byond username");
+                    if (! $item = $this->civ13->verifier->getVerifiedItem($ckey = $message->user_id)) return $this->civ13->reply($message, "You are not registered to any byond username");
                     return $this->civ13->reply($message, "You are registered to `{$item['ss13']}`");
                 }
                 if (is_numeric($ckey)) {
-                    if (! $item = $this->civ13->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`$ckey` is not registered to any ckey");
+                    if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`$ckey` is not registered to any ckey");
                     if (! $age = $this->civ13->getByondAge($item['ss13'])) return $this->civ13->reply($message, "`{$item['ss13']}` does not exist");
                     return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
                 }
                 if (! $age = $this->civ13->getByondAge($ckey)) return $this->civ13->reply($message, "`$ckey` does not exist");
-                if ($item = $this->civ13->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+                if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
                 return $this->civ13->reply($message, "`$ckey` is not registered to any discord id ($age)");
             }));
 
             $this->offsetSet('fullbancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 foreach ($message->guild->members as $member)
-                    if ($item = $this->civ13->getVerifiedItem($member))
+                    if ($item = $this->civ13->verifier->getVerifiedItem($member))
                         $this->civ13->bancheck($item['ss13']);
                 return $message->react("👍");
             }), ['Owner', 'High Staff']);
@@ -357,7 +357,7 @@ class MessageServiceManager
             { // This function is only authorized to be used by the database administrator
                 if ($this->civ13->shard) return null;
                 if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-                foreach ($this->civ13->provisional as $ckey => $discord_id) $this->civ13->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
+                foreach ($this->civ13->verifier->provisional as $ckey => $discord_id) $this->civ13->verifier->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
                 return $this->civ13->reply($message, 'Attempting to register all provisional users.');
             }), ['Chief Technical Officer']);
             
@@ -369,7 +369,7 @@ class MessageServiceManager
                 $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
                 if (! $ckey = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
                 if (! is_numeric($discord_id = $this->civ13->sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
-                return $this->civ13->reply($message, $this->civ13->registerCkey($ckey, $discord_id)['error']);
+                return $this->civ13->reply($message, $this->civ13->verifier->register($ckey, $discord_id)['error']);
             }), ['Chief Technical Officer']);
 
             $this->offsetSet('unverify', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
@@ -378,20 +378,20 @@ class MessageServiceManager
                 if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
                 $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
                 if (! $id = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username or Discord ID was not passed. Please use the format `register <byond username>; <discord id>`.');
-                return $this->civ13->reply($message, $this->civ13->unverifyCkey($id)['message']);
+                return $this->civ13->reply($message, $this->civ13->verifier->unverify($id)['message']);
             }), ['Chief Technical Officer']);
 
             $this->offsetSet('discard', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
             {
                 if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
                 $string = "`$ckey` will no longer attempt to be automatically registered.";
-                if (isset($this->civ13->provisional[$ckey])) {
-                    if ($member = $message->guild->members->get($this->civ13->provisional[$ckey])) {
+                if (isset($this->civ13->verifier->provisional[$ckey])) {
+                    if ($member = $message->guild->members->get($this->civ13->verifier->provisional[$ckey])) {
                         $member->removeRole($this->civ13->role_ids['infantry']);
                         $string .= " The <@&{$this->civ13->role_ids['infantry']}> role has been removed from $member.";
                     }
-                    unset($this->civ13->provisional[$ckey]);
-                    $this->civ13->VarSave('provisional.json', $this->civ13->provisional);
+                    unset($this->civ13->verifier->provisional[$ckey]);
+                    $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional);
                 }
                 return $this->civ13->reply($message, $string);
             }), ['Owner', 'High Staff', 'Admin']);
@@ -399,10 +399,10 @@ class MessageServiceManager
             if (isset($this->civ13->role_ids['paroled'], $this->civ13->channel_ids['parole_logs'])) {
                 $release = function (Message $message, array $message_filtered, string $command): ?PromiseInterface
                 {
-                    if (! $item = $this->civ13->getVerifiedItem($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
+                    if (! $item = $this->civ13->verifier->getVerifiedItem($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
                     $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, false);
-                    $admin = $this->civ13->getVerifiedItem($message->author)['ss13'];
-                    if ($member = $this->civ13->getVerifiedMember($item))
+                    $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
+                    if ($member = $this->civ13->verifier->getVerifiedMember($item))
                         if ($member->roles->has($this->civ13->role_ids['paroled']))
                             $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
                     if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->user_id}>).");
@@ -485,7 +485,7 @@ class MessageServiceManager
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 switch (strtolower($message->channel->name)) {
                     case "ooc-{$settings['key']}":                    
-                        if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
+                        if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -500,7 +500,7 @@ class MessageServiceManager
                 if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
                 switch (strtolower($message->channel->name)) {
                     case "asay-{$settings['key']}":
-                        if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
+                        if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -511,7 +511,7 @@ class MessageServiceManager
         $this->offsetSet('globalooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
+            if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
             if ($this->civ13->sharding) return null;
             return $message->react("🔥");
         }), ['Owner', 'High Staff', 'Admin']);
@@ -519,7 +519,7 @@ class MessageServiceManager
         $this->offsetSet('globalasay', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
+            if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
             if ($this->civ13->sharding) return null;
             return $message->react("🔥");
         }), ['Owner', 'High Staff', 'Admin']);
@@ -535,7 +535,7 @@ class MessageServiceManager
                     case "asay-{$settings['key']}":
                     case "ic-{$settings['key']}":
                     case "ooc-{$settings['key']}":
-                        if ($this->civ13->DirectMessage($recipient, $msg, $this->civ13->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
+                        if ($this->civ13->DirectMessage($recipient, $msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -548,7 +548,7 @@ class MessageServiceManager
         $this->offsetSet('bancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
             if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
             if (is_numeric($ckey)) {
-                if (! $item = $this->civ13->verified->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
+                if (! $item = $this->civ13->verifier->verified->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
                 $ckey = $item['ss13'];
             }
             $reason = 'unknown';
@@ -578,7 +578,7 @@ class MessageServiceManager
                 fclose($file);
             }
             if (! $found) $content .= "No bans were found for **$ckey**." . PHP_EOL;
-            elseif (isset($this->civ13->role_ids['banished']) && $member = $this->civ13->getVerifiedMember($ckey))
+            elseif (isset($this->civ13->role_ids['banished']) && $member = $this->civ13->verifier->getVerifiedMember($ckey))
                 if (! $member->roles->has($this->civ13->role_ids['banished']))
                     $member->addRole($this->civ13->role_ids['banished']);
             return $this->civ13->reply($message, $content, 'bancheck.txt');
@@ -607,7 +607,7 @@ class MessageServiceManager
             $ckeys = [];
             $members = $message->guild->members->filter(function (Member $member) { return ! $member->roles->has($this->civ13->role_ids['banished']); });
             foreach ($members as $member)
-                if ($item = $this->civ13->getVerifiedItem($member->id)) {
+                if ($item = $this->civ13->verifier->getVerifiedItem($member->id)) {
                     $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
                     if (count($ckeyinfo['ckeys']) > 1)
                         $ckeys = array_unique(array_merge($ckeys, $ckeyinfo['ckeys']));
@@ -644,10 +644,10 @@ class MessageServiceManager
         if (isset($this->civ13->role_ids['paroled'], $this->civ13->channel_ids['parole_logs'])) {
             $this->offsetSet('parole', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
-                if (! $item = $this->civ13->getVerifiedItem($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
+                if (! $item = $this->civ13->verifier->getVerifiedItem($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
                 $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, true);
-                $admin = $this->civ13->getVerifiedItem($message->author)['ss13'];
-                if ($member = $this->civ13->getVerifiedMember($item))
+                $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
+                if ($member = $this->civ13->verifier->getVerifiedMember($item))
                     if (! $member->roles->has($this->civ13->role_ids['paroled']))
                         $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
                 if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
@@ -657,7 +657,7 @@ class MessageServiceManager
 
         $this->offsetSet('refresh', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
-            if ($this->civ13->getVerified(false)) return $message->react("👍");
+            if ($this->civ13->verifier->getVerified(false)) return $message->react("👍");
             return $message->react("👎");
         }), ['Owner', 'High Staff', 'Admin']);
 
@@ -739,15 +739,15 @@ class MessageServiceManager
                     }
                 });
             }
-            return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->getVerifiedItem($message->author)['ss13']));
+            return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13']));
         }), ['Owner', 'High Staff', 'Admin']);
         
         $this->offsetSet('unban', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             if (is_numeric($ckey = $this->civ13->sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], trim(strlen($command))))))
-                if (! $item = $this->civ13->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
+                if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
                 else $ckey = $item['ss13'];
-            $this->civ13->unban($ckey, $admin = $this->civ13->getVerifiedItem($message->author)['ss13']);
+            $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
             return $this->civ13->reply($message, "**$admin** unbanned **$ckey**");
         }), ['Owner', 'High Staff', 'Admin']);
 
@@ -880,7 +880,7 @@ class MessageServiceManager
                 $this->offsetSet($settings['key'].'rank', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
                 {
                     if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                        if (! $item = $this->civ13->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
+                        if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
                         $ckey = $item['ss13'];
                     }
                     if (! $this->civ13->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
@@ -995,7 +995,7 @@ class MessageServiceManager
                     && ! $member->roles->has($this->civ13->role_ids['permabanished'])
                     && ! $member->roles->has($this->civ13->role_ids['dungeon']);
             })) return $message->react("👎");
-            foreach ($members as $member) if ($this->civ13->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['infantry'], 'fixroles');
+            foreach ($members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['infantry'], 'fixroles');
             return $message->react("👍");
         }), ['Owner', 'High Staff']);
 
@@ -1170,7 +1170,7 @@ class MessageServiceManager
                         if ($message) $message->react("👍");
                     });
                     if ($message) $message->react("⏱️");
-                    $sender = ($message && $message->user_id) ? $this->civ13->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->user->id ?? $this->civ13->discord->user->displayname);
+                    $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->user->id ?? $this->civ13->discord->user->displayname);
                     $this->civ13->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender, $settings);
                 };
                 $this->offsetSet("{$settings['key']}kill", $serverkill, ['Owner', 'High Staff']);
@@ -1194,7 +1194,7 @@ class MessageServiceManager
                             });
                         }
                     });
-                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $settings);
+                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $settings);
                     else $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->discord->user->displayname, $settings);
                     if ($message) $message->react("⏱️");
                     return null;
@@ -1226,7 +1226,7 @@ class MessageServiceManager
                     };
                     $split_message = explode("{$settings['key']}mapswap ", $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->civ13->reply($message, 'You need to include the name of the map.');
-                    $this->civ13->OOCMessage("Server is now changing map to `$mapto`.", $this->civ13->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $settings);
+                    $this->civ13->OOCMessage("Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $settings);
                     if (isset($settings['discussion']) && $channel = $this->civ13->discord->getChannel($settings['discussion'])) {
                         $msg = "Server is now changing map to `$mapto`.";
                         if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";
@@ -1255,8 +1255,8 @@ class MessageServiceManager
                 $maxlen = 150 - strlen(" Appeal at {$this->civ13->discord_formatted}");
                 if (strlen($split_message[2]) > $maxlen) return $this->civ13->reply($message, "Ban reason is too long! Please limit it to `$maxlen` characters.");
                 $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
-                $result = $this->civ13->ban($arr, $this->civ13->getVerifiedItem($message->author)['ss13'], $settings);
-                if ($member = $this->civ13->getVerifiedMember('id', $split_message[0]))
+                $result = $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $settings);
+                if ($member = $this->civ13->verifier->getVerifiedMember('id', $split_message[0]))
                     if (! $member->roles->has($this->civ13->role_ids['banished']))
                         $member->addRole($this->civ13->role_ids['banished'], $result);
                 return $this->civ13->reply($message, $result);
@@ -1267,14 +1267,14 @@ class MessageServiceManager
             {
                 if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen("{$settings['key']}unban")))) return $this->civ13->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
                 if (is_numeric($ckey)) {
-                    if (! $item = $this->civ13->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
+                    if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
                     $ckey = $item['ckey'];
                 }
                 
-                $this->civ13->unban($ckey, $admin = $this->civ13->getVerifiedItem($message->author)['ss13'], $settings);
+                $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $settings);
                 $result = "**$admin** unbanned **$ckey** from **{$settings['key']}**";
                 if (! $this->civ13->sharding)
-                    if ($member = $this->civ13->getVerifiedMember('id', $ckey))
+                    if ($member = $this->civ13->verifier->getVerifiedMember('id', $ckey))
                         if ($member->roles->has($this->civ13->role_ids['banished']))
                             $member->removeRole($this->civ13->role_ids['banished'], $result);
                 return $this->civ13->reply($message, $result);

@@ -71,7 +71,7 @@ class HttpServiceManager
                 return $member->roles->has($this->civ13->role_ids['High Staff']);
             });
             foreach ($members as $member)
-                if ($item = $this->civ13->getVerifiedItem($member))
+                if ($item = $this->civ13->verifier->getVerifiedItem($member))
                     if (isset($item['ss13']) && $ckey = $item['ss13'])
                         if ($playerlogs = $this->civ13->getCkeyLogCollections($ckey)['playerlogs'])
                             foreach ($playerlogs as $log)
@@ -316,7 +316,7 @@ class HttpServiceManager
                 if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
                 if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
                     $this->dwa_discord_ids[$ip] = $DiscordWebAuth->user->id;
-                    if (! $this->civ13->verified->get('discord', $DiscordWebAuth->user->id)) {
+                    if (! $this->civ13->verifier->verified->get('discord', $DiscordWebAuth->user->id)) {
                         if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
                         return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
                     }
@@ -429,7 +429,7 @@ class HttpServiceManager
             // HttpHandler data endpoints
             $this->httpHandler->offsetSet('/verified', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
-                return HttpResponse::json($this->civ13->verified->toArray());
+                return HttpResponse::json($this->civ13->verifier->verified->toArray());
             }), true);
 
 
@@ -723,7 +723,7 @@ class HttpServiceManager
     {
         $relay = function($message, $channel, $ckey = null): ?PromiseInterface
         {
-            if (! $ckey || ! $item = $this->civ13->verified->get('ss13', $this->civ13->sanitizeInput(explode('/', $ckey)[0]))) return $this->civ13->sendMessage($channel, $message);
+            if (! $ckey || ! $item = $this->civ13->verifier->verified->get('ss13', $this->civ13->sanitizeInput(explode('/', $ckey)[0]))) return $this->civ13->sendMessage($channel, $message);
             if (! $user = $this->civ13->discord->users->get('id', $item['discord'])) {
                 $this->civ13->logger->warning("{$item['ss13']}'s Discord ID was not found not in the primary Discord server!");
                 $this->civ13->discord->users->fetch($item['discord']);
