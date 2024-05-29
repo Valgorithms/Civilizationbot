@@ -3,7 +3,7 @@
 /*
  * This file is a part of the Civ13 project.
  *
- * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
+ * Copyright (c) 2024-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
 namespace Civ13;
