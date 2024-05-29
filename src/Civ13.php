@@ -531,7 +531,7 @@ class Civ13
         foreach ($this->discord->guilds as $guild) if (! isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
         $this->discord_config = $discord_config; // Declared, but not currently used for anything
 
-        $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json";
+        if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
     }
 
     public function declareListeners(): void
@@ -668,8 +668,6 @@ class Civ13
     {
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
-        
-        if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
 
         if (isset($this->discord)) {
             $this->discord->once('ready', function () use ($options) {
