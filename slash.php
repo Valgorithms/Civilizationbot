@@ -34,16 +34,22 @@ class Slash
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
-    protected function afterConstruct()
+    private function afterConstruct()
     {
-        //
+        $this->setup();
+        if ($application_commands = $this->civ13->discord->__get('application_commands')) {
+            $names = [];
+            foreach ($application_commands as $command) $names[] = $command->getName();
+            $namesString = '`' . implode('`, `', $names) . '`';
+            $this->civ13->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . $namesString);
+        }
     }
 
     /**
      * Sets up the bot by updating commands, guild commands, and declaring listeners.
      * This method should be called in the scope of $this->discord->once('ready', fn() => $this->setup());
      */
-    public function setup(): void
+    private function setup(): void
     {
         if ($this->setup) return;
         $this->__updateCommands();

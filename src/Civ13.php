@@ -222,8 +222,6 @@ class Civ13
         if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
         elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
         else $this->logger->error('No Discord instance or options passed in options!');
-        require 'slash.php';
-        $this->slash = new Slash($this);
         
         if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->logger->warning('No functions passed in options!');
@@ -687,14 +685,9 @@ class Civ13
                 if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
                 else $this->logger->debug('No ready functions found!');
                 if (! $this->shard) {
-                    $this->slash->setup();
+                    require 'slash.php';
+                    $this->slash = new Slash($this);
                     $this->declareListeners();
-                    if ($application_commands = $this->discord->__get('application_commands')) {
-                        $names = [];
-                        foreach ($application_commands as $command) $names[] = $command->getName();
-                        $namesString = '`' . implode('`, `', $names) . '`';
-                        $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . $namesString);
-                    }
                 }
                 $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
             });
