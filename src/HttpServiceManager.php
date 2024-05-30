@@ -1097,9 +1097,9 @@ class HttpServiceManager
                 $this->civ13->logger->error("Failed to read file: `$file`");
                 continue;
             }
-            $this->httpHandler->offsetSet($endpoint = "$file", new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($fileContent): HttpResponse {
+            $this->httpHandler->offsetSet("$file", new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($fileContent): HttpResponse {
                 return HttpResponse::html($fileContent);
-            }), true);
+            }));
             //$this->civ13->logger->debug("Registered HTML endpoint: `$endpoint`");
         }
     }
