@@ -23,6 +23,8 @@ require_once 'DiscordWebAuth.php';
 class HttpServiceManager
 {
     const HTMLDIR = '/html';
+    readonly string $basedir;
+
     public Civ13 $civ13;
     public HttpHandler $httpHandler;
     public HttpServer $webapi;
@@ -33,8 +35,6 @@ class HttpServiceManager
     protected array $dwa_sessions = [];
     protected array $dwa_timers = [];
     protected array $dwa_discord_ids = [];
-
-    public string $basedir;
 
     public function __construct(Civ13 &$civ13) {
         $this->civ13 = $civ13;
