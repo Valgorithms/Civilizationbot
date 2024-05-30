@@ -267,12 +267,6 @@ class HttpServiceManager
                 return HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /');
             });
             $this->httpHandler->offsetSet('/robots.txt', $robots);
-            $sitemap = new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
-            {
-                return HttpResponse::xml('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
-            });
-            $this->httpHandler->offsetSet('/sitemap.xml', $sitemap);
-            $this->httpHandler->setRateLimit('/sitemap.xml', 1, 10); // 1 request per 10 seconds
             $security = new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
                 return HttpResponse::plaintext('Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
@@ -1085,21 +1079,30 @@ class HttpServiceManager
         if (! is_dir($dirPath = $this->basedir . self::HTMLDIR))
             if (! mkdir($dirPath, 0664, true))
                 return $this->civ13->logger->error('Failed to create `/html` directory');
-
         $files = [];
         foreach (new \DirectoryIterator($dirPath) as $file) {
             if ($file->isDot() || !$file->isFile() || $file->getExtension() !== 'html') continue;
             $files[] = substr($file->getPathname(), strlen($dirPath));
         }
-        foreach ($files as $file) {
+        $xml = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        foreach ($files as &$file) {
             if (! $fileContent = file_get_contents(substr(self::HTMLDIR, 1) . $file)) {
                 $this->civ13->logger->error("Failed to read file: `$file`");
+                unset($file);
                 continue;
             }
-            $this->httpHandler->offsetSet("$file", new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($fileContent): HttpResponse {
+            $this->httpHandler->offsetSet($file, new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($fileContent): HttpResponse {
                 return HttpResponse::html($fileContent);
             }));
+            $xml .= "<url><loc>$file</loc></url>";
             //$this->civ13->logger->debug("Registered HTML endpoint: `$endpoint`");
         }
+        $xml .= '</urlset>';
+        $sitemap = new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($xml): HttpResponse
+        {
+            return HttpResponse::xml($xml);
+        });
+        $this->httpHandler->offsetSet('/sitemap.xml', $sitemap);
+        $this->httpHandler->setRateLimit('/sitemap.xml', 1, 10); // 1 request per 10 seconds
     }
 }
