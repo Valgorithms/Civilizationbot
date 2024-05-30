@@ -1084,7 +1084,7 @@ class HttpServiceManager
             if ($file->isDot() || !$file->isFile() || $file->getExtension() !== 'html') continue;
             $files[] = substr($file->getPathname(), strlen($dirPath));
         }
-        $xml = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . /*<?xml-stylesheet type="text/xsl" href="sitemap.xsl"?> .*/ '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         foreach ($files as &$file) {
             if (! $fileContent = file_get_contents(substr(self::HTMLDIR, 1) . $file)) {
                 $this->civ13->logger->error("Failed to read file: `$file`");
@@ -1098,11 +1098,50 @@ class HttpServiceManager
             //$this->civ13->logger->debug("Registered HTML endpoint: `$endpoint`");
         }
         $xml .= '</urlset>';
-        $sitemap = new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($xml): HttpResponse
+        $sitemapxml = new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($xml): HttpResponse
         {
             return HttpResponse::xml($xml);
         });
-        $this->httpHandler->offsetSet('/sitemap.xml', $sitemap);
+        $this->httpHandler->offsetSet('/sitemap.xml', $sitemapxml);
         $this->httpHandler->setRateLimit('/sitemap.xml', 1, 10); // 1 request per 10 seconds
+
+        $sitemalxsl = new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+        {
+            $xml = '<?xml version="1.0" encoding="UTF-8"?>
+                <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                <xsl:output method="html" indent="yes"/>
+
+                <xsl:template match="/">
+                    <html>
+                    <head>
+                    <title>Sitemap</title>
+                    <meta http-equiv="Cache-Control" content="max-age=31536000, public"/>
+                    <style>
+                        body { font-family: Arial, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                    </style>
+                    </head>
+                    <body>
+                    <h1>Sitemap</h1>
+                    <table>
+                        <tr>
+                        <th>URL</th>
+                        </tr>
+                        <xsl:for-each select="urlset/url">
+                        <tr>
+                            <td><a href="{loc}"><xsl:value-of select="loc"/></a></td>
+                        </tr>
+                        </xsl:for-each>
+                    </table>
+                    </body>
+                    </html>
+                </xsl:template>
+                </xsl:stylesheet>';
+            return HttpResponse::xml($xml);
+        });
+        //$this->httpHandler->offsetSet('/sitemap.xsl', $sitemalxsl);
+        //$this->httpHandler->setRateLimit('/sitemap.xsl', 1, 10); // 1 request per 10 seconds
     }
 }
