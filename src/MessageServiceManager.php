@@ -545,6 +545,17 @@ class MessageServiceManager
         $this->offsetSet('dm', $directmessage, ['Owner', 'High Staff', 'Admin', 'Moderator']);
         $this->offsetSet('pm', $directmessage, ['Owner', 'High Staff', 'Admin', 'Moderator']);
 
+        $this->offsetSet('bancheck_centcom', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        {
+            if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
+            if (is_numeric($ckey)) {
+                if (! $item = $this->civ13->verifier->verified->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
+                $ckey = $item['ss13'];
+            }
+            if (! $json = $this->civ13->bansearch_centcom($ckey)) return $this->civ13->reply($message, "Unable to locate bans were found for **$ckey** on centcom.melonmesa.com.");
+            if ($json === '[]') return $this->civ13->reply($message, "No bans were found for **$ckey** on centcom.melonmesa.com.");
+            return $this->civ13->reply($message, $json, $ckey.'_bans.json', true);
+        }));
         $this->offsetSet('bancheck', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) {
             if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
             if (is_numeric($ckey)) {

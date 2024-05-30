@@ -1343,6 +1343,33 @@ class Civ13
         return strtotime($age) <= strtotime($this->minimum_age);
     }
     
+    public function bansearch_centcom(string $ckey, bool $prettyprint = true): string|false
+    {
+        $json = false;
+        $centcom_url = 'https://centcom.melonmesa.com';
+        $ban_search = '/ban/search/';
+        $url = $centcom_url . $ban_search . $ckey;
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        if (! $response) {
+            $this->logger->warning("Failed to retrieve data from $url");
+            return false;
+        }
+        
+        if (! $json = $prettyprint ? json_encode(json_decode($response), JSON_PRETTY_PRINT) : $response) {
+            $this->logger->warning("Failed to decode JSON data from $url");
+            return false;
+        }
+
+        return $json;
+    }
     /**
      * Sends a message containing the list of bans for all servers.
      *

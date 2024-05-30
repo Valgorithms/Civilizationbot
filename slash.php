@@ -573,24 +573,8 @@ class Slash
 
         $this->civ13->discord->listenCommand('bansearch_centcom', function (Interaction $interaction): PromiseInterface
         {
-            $centcom_url = 'https://centcom.melonmesa.com';
-            $ban_search = '/ban/search/';
-            $ckey = $interaction->data->options['ckey']->value;
-            $url = $centcom_url . $ban_search . $ckey;
-
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPGET, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
-            $response = curl_exec($ch);
-            curl_close($ch);
-            if (! $response) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to fetch data from $url"), true);
-            
-            if (! $json = json_encode(json_decode($response), JSON_PRETTY_PRINT)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to parse data from $url"), true);
+            if (! $json = $this->civ13->bansearch_centcom($ckey = $interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to locate bans were found for **$ckey** on centcom.melonmesa.com."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($ckey.'_bans.json', $json), true);
-            
         });
 
         $this->civ13->discord->listenCommand('ban', function (Interaction $interaction): PromiseInterface

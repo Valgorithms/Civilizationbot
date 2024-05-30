@@ -746,6 +746,17 @@ class HttpServiceManager
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             $server_endpoint = '/' . $settings['key'];
 
+            $this->httpHandler->offsetSet('/bancheck_centcom', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
+            {
+                $params = $request->getQueryParams();
+                if (! isset($params['ckey'])) return HttpResponse::plaintext("`ckey` must be included as a query parameter")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                if (is_numeric($ckey = $params['ckey'])) {
+                    if (! $item = $this->civ13->verifier->verified->get('discord', $ckey)) return HttpResponse::plaintext("Unable to locate Byond username for Discord ID `$ckey`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                    $ckey = $item['ss13'];
+                }
+                if (! $json = $this->civ13->bansearch_centcom($ckey, false)) return HttpResponse::plaintext("Unable to locate bans for `$ckey` on CentCom")->withStatus(HttpResponse::STATUS_OK);                
+                return new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'application/json'], $json);
+            }));
             $this->httpHandler->offsetSet($server_endpoint.'/bans', new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($settings): HttpResponse
             {
                 if (! file_exists($bans = $settings['basedir'] . Civ13::bans)) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
