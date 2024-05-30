@@ -1087,8 +1087,7 @@ class HttpServiceManager
                 return $this->civ13->logger->error('Failed to create `/html` directory');
 
         $files = [];
-        $directory = new \DirectoryIterator($dirPath);
-        foreach ($directory as $file) {
+        foreach (new \DirectoryIterator($dirPath) as $file) {
             if ($file->isDot() || !$file->isFile() || $file->getExtension() !== 'html') continue;
             $files[] = substr($file->getPathname(), strlen($dirPath));
         }
