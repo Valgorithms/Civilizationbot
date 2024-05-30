@@ -149,6 +149,21 @@ class Slash
                 ]
             ])));
 
+            // if ($command = $commands->get('name', 'bansearch')) $commands->delete($command->id);
+            if (! $commands->get('name', 'bansearch_centcom')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
+                'name'                       => 'bansearch_centcom',
+                'description'                => 'Check if a ckey is banned on centcom.melonmesa.com',
+                'dm_permission'              => false,
+                'options'                    => [
+                    [
+                        'name'        => 'ckey',
+                        'description' => 'Byond.com username',
+                        'type'        => Option::STRING,
+                        'required'    => true,
+                    ]
+                ]
+            ])));
+
             // if ($command = $commands->get('name', 'ban')) $commands->delete($command->id);
             if (! $commands->get('name', 'ban')) $this->civ13->then($commands->save(new Command($this->civ13->discord, [
                 'name'			=> 'ban',
@@ -549,6 +564,28 @@ class Slash
         {
             if ($this->civ13->bancheck($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is currently banned on one of the Civ13.com servers."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is not currently banned on one of the Civ13.com servers."), true);
+        });
+
+        $this->civ13->discord->listenCommand('bansearch_centcom', function (Interaction $interaction): PromiseInterface
+        {
+            $centcom_url = 'https://centcom.melonmesa.com';
+            $ban_search = '/ban/search/';
+            $ckey = $interaction->data->options['ckey']->value;
+            $url = $centcom_url . $ban_search . $ckey;
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+            $response = curl_exec($ch);
+            curl_close($ch);
+            if (! $response) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to fetch data from $url"), true);
+            
+            if (! $json = json_encode(json_decode($response), JSON_PRETTY_PRINT)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to parse data from $url"), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($ckey.'_bans.json', $json), true);
+            
         });
 
         $this->civ13->discord->listenCommand('ban', function (Interaction $interaction): PromiseInterface
