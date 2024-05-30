@@ -1079,8 +1079,7 @@ class HttpServiceManager
         $directory = new \DirectoryIterator($dirPath);
         foreach ($directory as $file) {
             if ($file->isDot() || !$file->isFile() || $file->getExtension() !== 'html') continue;
-            $files[] = $fileName = substr($file->getPathname(), strlen($dirPath));
-            $this->civ13->logger->info("Found file: `$fileName`");
+            $files[] = substr($file->getPathname(), strlen($dirPath));
         }
         foreach ($files as $file) {
             if (! $fileContent = file_get_contents(substr(self::HTMLDIR, 1) . $file)) {
@@ -1090,7 +1089,7 @@ class HttpServiceManager
             $this->httpHandler->offsetSet($endpoint = "$file", new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($fileContent): HttpResponse {
                 return HttpResponse::html($fileContent);
             }), true);
-            $this->civ13->logger->info("Registered HTML endpoint: `$endpoint`");
+            //$this->civ13->logger->debug("Registered HTML endpoint: `$endpoint`");
         }
     }
 }
