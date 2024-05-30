@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>civ13.com</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 0;
+            text-align: center;
+        }
+        nav {
+            background-color: #444;
+            overflow: hidden;
+        }
+        nav a {
+            float: left;
+            display: block;
+            color: #fff;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+        nav a:hover {
+            background-color: #555;
+        }
+        .container {
+            padding: 20px;
+        }
+        footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+        .main-content {
+            margin-top: 20px;
+        }
+        .content-box {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .content-box h2 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Welcome to civ13.com</h1>
+</header>
+
+<nav>
+    <a href="#home">Home</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+</nav>
+
+<div class="container">
+    <div id="home" class="main-content content-box">
+        <h2>Home</h2>
+        <p>Welcome to the home page of civ13.com! Here you'll find the latest news and updates about our community and projects.</p>
+    </div>
+    <div id="about" class="main-content content-box">
+        <h2>About</h2>
+        <p>civ13.com is dedicated to providing the best resources and community for Civ13 enthusiasts. Learn more about our mission and values here.</p>
+    </div>
+    <div id="contact" class="main-content content-box">
+        <h2>Contact</h2>
+        <p>If you have any questions, feel free to reach out to us via our contact form or email us directly at contact@civ13.com.</p>
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2024 civ13.com. All rights reserved.</p>
+</footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const links = document.querySelectorAll('nav a');
+        const sections = document.querySelectorAll('.main-content');
+        
+        function clearActive() {
+            links.forEach(link => link.classList.remove('active'));
+            sections.forEach(section => section.style.display = 'none');
+        }
+        
+        function setActive(sectionId) {
+            clearActive();
+            document.querySelector(`nav a[href="#${sectionId}"]`).classList.add('active');
+            document.getElementById(sectionId).style.display = 'block';
+        }
+
+        links.forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                const sectionId = this.getAttribute('href').substring(1);
+                setActive(sectionId);
+            });
+        });
+
+        // Initialize the first section as active
+        setActive('home');
+    });
+</script>
+
+</body>
+</html>

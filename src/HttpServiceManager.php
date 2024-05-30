@@ -22,6 +22,7 @@ require_once 'DiscordWebAuth.php';
 
 class HttpServiceManager
 {
+    const HTMLDIR = '/html';
     public Civ13 $civ13;
     public HttpHandler $httpHandler;
     public HttpServer $webapi;
@@ -33,9 +34,12 @@ class HttpServiceManager
     protected array $dwa_timers = [];
     protected array $dwa_discord_ids = [];
 
+    public string $basedir;
+
     public function __construct(Civ13 &$civ13) {
         $this->civ13 = $civ13;
         $this->httpHandler = new HttpHandler($this->civ13, [], $this->civ13->options['http_whitelist'] ?? [], $this->civ13->options['http_key'] ?? '');
+        $this->basedir = getcwd();
         $this->__afterConstruct();
     }
 
@@ -251,6 +255,8 @@ class HttpServiceManager
                     $method = $this->httpHandler->offsetGet('/botlog') ?? [];
                     if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 }
+                $method = $this->httpHandler->offsetGet('/home.html') ?? [];
+                if ($method = array_shift($method)) return $method($request, $data, $whitelisted, $endpoint);
                 return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
             });
             $this->httpHandler->offsetSet('/', $index);
@@ -717,6 +723,7 @@ class HttpServiceManager
         });
 
         $this->__generateServerEndpoints();
+        $this->__generateWebsiteEndpoints();
     }
 
     private function __generateServerEndpoints()
@@ -1059,6 +1066,31 @@ class HttpServiceManager
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
             */
+        }
+    }
+
+    private function __generateWebsiteEndpoints()
+    {
+        if (! is_dir($dirPath = $this->basedir . self::HTMLDIR))
+            if (! mkdir($dirPath, 0664, true))
+                return $this->civ13->logger->error('Failed to create `/html` directory');
+
+        $files = [];
+        $directory = new \DirectoryIterator($dirPath);
+        foreach ($directory as $file) {
+            if ($file->isDot() || !$file->isFile() || $file->getExtension() !== 'html') continue;
+            $files[] = $fileName = substr($file->getPathname(), strlen($dirPath));
+            $this->civ13->logger->info("Found file: `$fileName`");
+        }
+        foreach ($files as $file) {
+            if (! $fileContent = file_get_contents(substr(self::HTMLDIR, 1) . $file)) {
+                $this->civ13->logger->error("Failed to read file: `$file`");
+                continue;
+            }
+            $this->httpHandler->offsetSet($endpoint = "$file", new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint) use ($fileContent): HttpResponse {
+                return HttpResponse::html($fileContent);
+            }), true);
+            $this->civ13->logger->info("Registered HTML endpoint: `$endpoint`");
         }
     }
 }
