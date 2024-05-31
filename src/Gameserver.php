@@ -320,4 +320,26 @@ class GameServer {
         $embed->color = hexdec('FF0000');
         return $embed;
     }
+    public function __toString(): string
+    {
+        return $this->name;
+    }
+    public function __toArray(): array
+    {
+        $array = get_object_vars($this);
+        unset($array['civ13']);
+        return $array;
+    }
+    public function __serialize(): array
+    {
+        return $this->__toArray();
+    }
+    public function __debugInfo(): array
+    {
+        return $this->__toArray();
+    }
+    public function __destruct()
+    {
+        foreach ($this->timers as $timer) $this->civ13->discord->getLoop()->cancelTimer($timer);
+    }
 }
