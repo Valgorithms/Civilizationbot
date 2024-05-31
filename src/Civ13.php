@@ -116,6 +116,10 @@ class Civ13
     public array $current_rounds = [];
     public array $rounds = [];
 
+    /**
+     * @var Gameserver[]
+     */
+    public array $gameservers = [];
     public array $server_settings = [];
     public array $enabled_servers = [];
     public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
@@ -236,6 +240,9 @@ class Civ13
         $this->enabled_servers = array_keys(array_filter($this->server_settings, function($settings) {
             return isset($settings['enabled']) && $settings['enabled'];
         }));
+
+        if (isset($settings['gameservers'])) foreach ($settings['gameservers'] as $gameserver)
+            if (is_array($gameserver)) $this->addGameServer(new Gameserver($this, $gameserver));
         
         $this->afterConstruct($options, $server_options);
     }
@@ -247,7 +254,7 @@ class Civ13
      * @param array $server_options An array of server options.
      * @return void
      */
-    protected function afterConstruct(array $options = [], array $server_options = []): void
+    private function afterConstruct(array $options = [], array $server_options = []): void
     {
         $this->byond = new Byond();
         $this->verifier = new Verifier($this, $options);
@@ -282,7 +289,7 @@ class Civ13
      * @param array $options An array of options to be resolved.
      * @return array The resolved options array.
      */
-    protected function resolveOptions(array &$options = []): array
+    private function resolveOptions(array &$options = []): array
     {
         if (! isset($options['sharding']) || ! is_bool($options['sharding'])) {
             $options['sharding'] = false;
@@ -440,6 +447,19 @@ class Civ13
         $this->discord_config = $discord_config; // Declared, but not currently used for anything
 
         if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
+    }
+    /**
+     * Adds a game server to the list of game servers.
+     *
+     * If the number of game servers exceeds 5, a warning message will be logged.
+     *
+     * @param Gameserver $gameserver The game server to add.
+     * @return void
+     */
+    private function addGameServer(Gameserver $gameserver): void
+    {
+        if (count($this->gameservers) > 5) trigger_error('Configuring more than 5 gameservers are not supported and you will likely experience issues.', E_USER_WARNING);
+        $this->gameservers[] = $gameserver;
     }
 
     /**
