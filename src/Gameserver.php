@@ -322,7 +322,7 @@ class GameServer {
     }
     public function __toString(): string
     {
-        return $this->name;
+        return $this->key;
     }
     public function __toArray(): array
     {
