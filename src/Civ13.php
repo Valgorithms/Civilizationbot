@@ -1550,7 +1550,7 @@ class Civ13
     {
         if (! $this->bancheck($ckey, true)) foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if (! isset($settings['panic']) || ! $settings['panic']) continue;
+            if (! isset($settings['panic_bunker']) || ! $settings['panic_bunker']) continue;
             $settings['legacy']
                 ? $this->legacyBan(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $settings)
                 : $this->sqlBan(['ckey' => $ckey, 'reason' => '1 hour', 'duration' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"], null, $settings);
@@ -1562,7 +1562,7 @@ class Civ13
     {
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if (! isset($settings['panic']) || ! $settings['panic']) continue;
+            if (! isset($settings['panic_bunker']) || ! $settings['panic_bunker']) continue;
             $settings['legacy']
                 ? $this->legacyUnban($ckey, null, $settings)
                 : $this->sqlUnban($ckey, null, $settings);

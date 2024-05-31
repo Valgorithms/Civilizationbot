@@ -197,9 +197,9 @@ class Slash
                 ]
             ]));
 
-            // if ($command = $commands->get('name', 'panic')) $commands->delete($command->id);
-            if (! $commands->get('name', 'panic')) $this->save($commands, new Command($this->civ13->discord, [
-                'name'                       => 'panic',
+            // if ($command = $commands->get('name', 'panic_bunker')) $commands->delete($command->id);
+            if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->civ13->discord, [
+                'name'                       => 'panic_bunker',
                 'description'                => 'Toggles the panic bunker',
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['manage_guild' => true]),
@@ -743,7 +743,7 @@ class Slash
             return $interaction->respondWithMessage($messagebuilder, true);
         });
         
-        $this->civ13->discord->listenCommand('panic', function (Interaction $interaction): PromiseInterface
+        $this->civ13->discord->listenCommand('panic_bunker', function (Interaction $interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')));
         });

@@ -1010,7 +1010,7 @@ class MessageServiceManager
             return $message->react("👍");
         }), ['Owner', 'High Staff']);
 
-        $this->offsetSet('panic', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+        $this->offsetSet('panic_bunker', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             return $this->civ13->reply($message, 'Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.'));
         }), ['Owner', 'High Staff']);
