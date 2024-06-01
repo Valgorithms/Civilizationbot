@@ -1673,8 +1673,7 @@ class Civ13
                     if (! $permanent) $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
                     else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
                 }
-        if ($this->legacy) return $this->legacyBan($array, $admin, $settings);
-        return $this->sqlBan($array, $admin, $settings);
+        return $this->legacy ? $this->legacyBan($array, $admin, $settings) : $this->sqlBan($array, $admin, $settings);
     }
     public function unban(string $ckey, ?string $admin = null,?array $settings = []): void
     {
