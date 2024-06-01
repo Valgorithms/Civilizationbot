@@ -10,14 +10,19 @@
 namespace Civ13;
 
 use Discord\Parts\Embed\Embed;
+use Discord\Parts\User\Member;
 use React\EventLoop\TimerInterface;
 
 class GameServer {
     public Civ13 $civ13;
 
     // Resolved paths
+    private readonly string $serverdata;
     private readonly string $discord2unban;
     private readonly string $discord2ban;
+    private readonly string $admins;
+    private readonly string $whitelist;
+    private readonly string $factionlist;
 
     // Required settings
     public string $basedir; // The base directory of the server on the local filesystem.
@@ -118,8 +123,12 @@ class GameServer {
     }
     private function afterConstruct()
     {
+        $this->serverdata = $this->basedir . Civ13::serverdata;
         $this->discord2unban = $this->basedir . Civ13::discord2unban;
         $this->discord2ban = $this->basedir . Civ13::discord2ban;
+        $this->admins = $this->basedir . Civ13::admins;
+        $this->whitelist = $this->basedir . Civ13::whitelist;
+        $this->factionlist = $this->basedir . Civ13::factionlist;
     }
     
     
@@ -140,7 +149,7 @@ class GameServer {
         if (! is_resource($socket)) return [];
         fclose($socket);
         $playercount = 0;
-        if (file_exists($this->basedir . Civ13::serverdata) && $data = @file_get_contents($this->basedir . Civ13::serverdata)) {
+        if (file_exists($this->serverdata) && $data = @file_get_contents($this->serverdata)) {
             $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
             /*
             0 => <b>Server Status</b> {Online/Offline}
@@ -310,6 +319,97 @@ class GameServer {
     private function sqlUnban($array, ?string $admin = null): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
+    }
+
+    /**
+     * Updates the whitelist based on the member roles.
+     *
+     * @param array|null $required_roles The required roles for whitelisting. Default is ['veteran'].
+     * @return bool Returns true if the whitelist update is successful, false otherwise.
+     */
+    public function whitelistUpdate(?array $required_roles = ['veteran']): bool
+    {
+        if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
+        if (! $this->enabled) return false;
+        if (! isset($this->basedir) || ! file_exists($this->whitelist)) return false;
+        $file_paths = [];
+        $file_paths[] = $this->whitelist;
+
+        $callback = function (Member $member, array $item, array $required_roles): string
+        {
+            $string = '';
+            foreach ($required_roles as $role)
+                if ($member->roles->has($this->civ13->role_ids[$role]))
+                    $string .= "{$item['ss13']} = {$item['discord']}" . PHP_EOL;
+            return $string;
+        };
+        $this->civ13->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
+        return true;
+    }
+    /**
+     * Updates the faction list based on the required roles.
+     *
+     * @param array|null $required_roles The required roles for updating the faction list. Default is ['red', 'blue', 'organizer'].
+     * @return bool Returns true if the faction list is successfully updated, false otherwise.
+     */
+    public function factionlistUpdate(?array $required_roles = ['red', 'blue', 'organizer']): bool
+    {
+        if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
+        if (! $this->enabled) return false;
+        if (! isset($this->basedir) || ! file_exists($this->factionlist)) return false;
+        $file_paths = [];
+        $file_paths[] = $this->factionlist;
+
+        $callback = function (Member $member, array $item, array $required_roles): string
+        {
+            $string = '';
+            foreach ($required_roles as $role)
+                if ($member->roles->has($this->civ13->role_ids[$role]))
+                    $string .= "{$item['ss13']};{$role}" . PHP_EOL;
+            return $string;
+        };
+        $this->civ13->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
+        return true;
+    }
+    /**
+     * Updates admin lists with required roles and permissions.
+     *
+     * @param array $required_roles An array of required roles and their corresponding permissions.
+     * @return bool Returns true if the update was successful, false otherwise.
+     */
+    public function adminlistUpdate(
+        $required_roles = [
+            'Owner' => ['Host', '65535'],
+            'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
+            'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
+            'Head Admin' => ['Head Admin', '16382'],
+            'Manager' => ['Manager', '16382'],
+            'Supervisor' => ['Supervisor', '16382'],
+            'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
+            'Admin' => ['Admin', '16254'],
+            'Moderator' => ['Moderator', '25088'],
+            //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
+            'Mentor' => ['Mentor', '16384'],
+        ]
+    ): bool
+    {
+        if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
+        if (! isset($this->enabled) || ! $this->enabled) return false;
+        if (! isset($this->basedir) || ! file_exists($this->admins)) return false;
+        $file_paths[] = $this->admins;
+
+        $callback = function (Member $member, array $item, array $required_roles): string
+        {
+            $string = '';
+            $checked_ids = [];
+            foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->civ13->role_ids[$role])) if (! in_array($member->id, $checked_ids)) {
+                $string .= "{$item['ss13']};{$required_roles[$role][0]};{$required_roles[$role][1]}|||" . PHP_EOL;
+                $checked_ids[] = $member->id;
+            }
+            return $string;
+        };
+        $this->civ13->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
+        return true;
     }
 
     public function toEmbed(): Embed
