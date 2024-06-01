@@ -1064,6 +1064,11 @@ class Civ13
 
         $this->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
         {
+            /*foreach ($this->gameservers as $server) {
+                $server->whitelistUpdate()
+                $server->factionlistUpdate()
+                $server->adminlistUpdate();
+            }*/
             if (! $member_old) { // Not enough information is known about the change, so we will update everything
                 $this->whitelistUpdate();
                 $this->verifier->getVerified();
@@ -1650,7 +1655,7 @@ class Civ13
      * Ban functions will return a string containing the results of the ban
      * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
      */
-    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, ?array $settings = [], bool $permanent = false): string
+    public function ban(array $array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, ?array $settings = [], bool $permanent = false): string
     {
         if (! isset($array['ckey'])) return "You must specify a ckey to ban.";
         if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) return "The ckey must be a Byond username or Discord ID.";

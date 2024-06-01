@@ -257,7 +257,7 @@ class GameServer {
      * Ban functions will return a string containing the results of the ban
      * Unban functions will return nothing, but may contain error-handling messages that can be passed to $logger->warning()
      */
-    public function ban(array &$array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, bool $permanent = false): string
+    public function ban(array $array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, bool $permanent = false): string
     {
         if (! isset($array['ckey'])) return "You must specify a ckey to ban.";
         if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) return "The ckey must be a Byond username or Discord ID.";
