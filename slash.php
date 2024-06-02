@@ -40,8 +40,7 @@ class Slash
         if ($application_commands = $this->civ13->discord->__get('application_commands')) {
             $names = [];
             foreach ($application_commands as $command) $names[] = $command->getName();
-            $namesString = '`' . implode('`, `', $names) . '`';
-            $this->civ13->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . $namesString);
+            $this->civ13->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
         }
     }
     /**
