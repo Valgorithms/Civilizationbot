@@ -557,11 +557,12 @@ class Slash
                     if (! $member->roles->has($this->civ13->role_ids['banished']))
                         $member->addRole($this->civ13->role_ids['banished']);
                 if (strlen($response)<=2000) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($response), true);
-                elseif (strlen($response)<=4096) {
+                if (strlen($response)<=4096) {
                     $embed = new Embed($this->civ13->discord);
                     $embed->setDescription($response);
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed));
-                } else return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("The ranking is too long to display. Please use the chat command instead."), true);
+                }
+                return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($item['ss13'].'_bans.json', $response), true);
             });
         });
 
