@@ -330,7 +330,7 @@ class Verifier
             CURLOPT_USERAGENT => 'Civ13',
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ13->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]),
-            CURLOPT_TIMEOUT, 5, // Set a timeout of 5 seconds
+            CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
             CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
         ]);
         $result = curl_exec($ch);
@@ -443,7 +443,7 @@ class Verifier
                 CURLOPT_USERAGENT => 'Civ13',
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => http_build_query(['method' => 'DELETE', 'token' => $this->civ13->civ_token, 'ckey' => $id, 'discord' => $id]),
-                CURLOPT_TIMEOUT, 5, // Set a timeout of 5 seconds
+                CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
                 CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
             ]);
             $result = curl_exec($ch);
