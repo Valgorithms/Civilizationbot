@@ -494,8 +494,9 @@ class Slash
 
         $this->civ13->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
         {
+            $content = '';
             if (! $this->civ13->webserver_online) {
-                $content = 'Webserver Status: **Offline**, only showing data for locally hosted servers.' . PHP_EOL;
+                //'Webserver Status: **Offline**, only showing data for locally hosted servers.' . PHP_EOL;
                 foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}" . PHP_EOL;
                 $messagebuilder = MessageBuilder::new();
                 $messagebuilder->setContent($content);
@@ -514,8 +515,8 @@ class Slash
             $embed->setTimestamp();
             $embed->setURL('');
             $messagebuilder = MessageBuilder::new();
-            if ($this->civ13->webserver_online) $content = 'Webserver Status: **Online**' . PHP_EOL;
-            else $content = 'Webserver Status: **Offline**, data is stale.' . PHP_EOL;
+            //if ($this->civ13->webserver_online) $content = 'Webserver Status: **Online**' . PHP_EOL;
+            //else $content = 'Webserver Status: **Offline**, data is stale.' . PHP_EOL;
             foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}";
             $messagebuilder->setContent($content);
             $messagebuilder->addEmbed($embed);
