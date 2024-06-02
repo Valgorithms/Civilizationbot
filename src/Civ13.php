@@ -313,7 +313,7 @@ class Civ13
         }
         $this->logger = $options['logger'];
 
-        $this->onFulfilledDefault = function ($result): void
+        $this->onFulfilledDefault = function ($result)
         {
             $output = 'Promise resolved with type of: `' . gettype($result) . '`';
             if (is_object($result)) {
@@ -321,6 +321,7 @@ class Civ13
                 $output .= ' with properties: `' . implode('`, `', array_keys(get_object_vars($result))) . '`';
             }
             $this->logger->debug($output);
+            return $result;
         };
         $this->onRejectedDefault = function ($reason): void
         {
