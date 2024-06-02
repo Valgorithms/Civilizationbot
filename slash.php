@@ -496,15 +496,12 @@ class Slash
         {
             $content = '';
             if (! $this->civ13->webserver_online) {
-                //'Webserver Status: **Offline**, only showing data for locally hosted servers.' . PHP_EOL;
                 foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}" . PHP_EOL;
-                $messagebuilder = MessageBuilder::new();
-                $messagebuilder->setContent($content);
-                $messagebuilder->addEmbed($this->civ13->generateServerstatusEmbed());
-                return $interaction->respondWithMessage($messagebuilder);
+                return $interaction->respondWithMessage(MessageBuilder::new()->setContent($content)->addEmbed($this->civ13->generateServerstatusEmbed()));
             }
             
             if (empty($data = $this->civ13->serverinfoParse())) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
+            foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}";
             $embed = new Embed($this->civ13->discord);
             foreach ($data as $server)
                 foreach ($server as $key => $array)
@@ -514,13 +511,7 @@ class Slash
             $embed->setColor(0xe1452d);
             $embed->setTimestamp();
             $embed->setURL('');
-            $messagebuilder = MessageBuilder::new();
-            //if ($this->civ13->webserver_online) $content = 'Webserver Status: **Online**' . PHP_EOL;
-            //else $content = 'Webserver Status: **Offline**, data is stale.' . PHP_EOL;
-            foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}";
-            $messagebuilder->setContent($content);
-            $messagebuilder->addEmbed($embed);
-            return $interaction->respondWithMessage($messagebuilder);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($content)->addEmbed($embed));
         });
 
         $this->civ13->discord->listenCommand('ckey', function (Interaction $interaction): PromiseInterface
