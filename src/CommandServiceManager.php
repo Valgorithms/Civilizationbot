@@ -8,7 +8,6 @@
 
 namespace Civ13;
 
-use Civ13\MessageHandlerCallback;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\RegisteredCommand;
 use Discord\Parts\Channel\Message;
@@ -73,8 +72,12 @@ class CommandServiceManager
      */
     private function validateInteractionCallback(array $command): bool
     {
-        if (! isset($command['name'], $command['interaction_handler'], $command['interaction_listener']) || ! is_callable($command['interaction_handler'])) {
-            $this->civ13->logger->warning('Invalid command callback for ' . $command['name'] . ' command');
+        if (! isset($command['name']) || ! $command['name']) {
+            $this->civ13->logger->warning('Invalid command name');
+            return false;
+        }
+        if (! isset($command['interaction_handler'], $command['interaction_listener']) || ! is_callable($command['interaction_handler'])) {
+            $this->civ13->logger->warning("Invalid Interaction handler");
             return false;
         }
         if (! $reflection = new ReflectionFunction($command['interaction_handler'])) {
@@ -171,7 +174,14 @@ class CommandServiceManager
     {
         $createCommand = function ($command): bool
         {
-            if (! isset($command['message_handler'])) return false;
+            if (! isset($command['name']) || ! $command['name']) {
+                $this->civ13->logger->warning('Invalid command name');
+                return false;
+            }
+            if (! isset($command['message_handler']) || ! is_callable($command['message_handler']) || ! $command['message_handler'] instanceof MessageHandlerCallback) {
+                $this->civ13->logger->warning("Invalid Message handler for `{$command['name']}` command");
+                return false;
+            }
             $this->civ13->messageServiceManager->offsetSet(
                 $command['name'],
                 $command['message_handler'],
@@ -216,7 +226,14 @@ class CommandServiceManager
     {
         $createCommand = function (array $command): bool
         {
-            if (! isset($command['http_handler'])) return false;
+            if (! isset($command['name']) || ! $command['name']) {
+                $this->civ13->logger->warning('Invalid command name');
+                return false;
+            }
+            if (! isset($command['http_handler']) || ! is_callable($command['http_handler']) || ! $command['message_handler'] instanceof HttpHandlerCallback) {
+                $this->civ13->logger->warning("Invalid HTTP handler for `{$command['name']}` command");
+                return false;
+            }
             $this->civ13->httpServiceManager->offsetSet(
                 $command['name'],
                 $command['http_handler'],
