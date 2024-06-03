@@ -125,6 +125,7 @@ class CommandServiceManager
         $array = [];
         $ping = [
             'name'                              => 'ping',                                                                          // Name of the command.
+            'alias'                             => [],                                                                              // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
             'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
@@ -182,13 +183,17 @@ class CommandServiceManager
                 $this->civ13->logger->warning("Invalid Message handler for `{$command['name']}` command");
                 return false;
             }
-            $this->civ13->messageServiceManager->offsetSet(
-                $command['name'],
-                $command['message_handler'],
-                (isset ($command['message_role_permissions']) && is_array($command['message_role_permissions'])) ? $command['message_role_permissions'] : [],
-                (isset ($command['message_method']) && is_string($command['message_method'])) ? $command['message_method'] : 'str_starts_with',
-                (isset ($command['message_usage']) && is_string($command['message_usage'])) ? $command['message_usage'] : '',
-            );
+            $names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
+            $names[] = $command['name'];
+            foreach ($names as $name) {
+                $this->civ13->messageServiceManager->offsetSet(
+                    $name,
+                    $command['message_handler'],
+                    (isset($command['message_role_permissions']) && is_array($command['message_role_permissions'])) ? $command['message_role_permissions'] : [],
+                    (isset($command['message_method']) && is_string($command['message_method'])) ? $command['message_method'] : 'str_starts_with',
+                    (isset($command['message_usage']) && is_string($command['message_usage'])) ? $command['message_usage'] : '',
+                );
+            }
             return true;
         };
         foreach ($this->global_commands as $global_command) $createCommand($global_command);
@@ -234,15 +239,19 @@ class CommandServiceManager
                 $this->civ13->logger->warning("Invalid HTTP handler for `{$command['name']}` command");
                 return false;
             }
-            $this->civ13->httpServiceManager->offsetSet(
-                $command['name'],
-                $command['http_handler'],
-                (isset($command['http_whitelisted']) && $command['http_whitelisted']),
-                (isset($command['http_whitelisted']) && $command['http_whitelisted']) ? $command['http_whitelisted'] : 'exact',
-                (isset($command['http_usage']) && $command['http_usage']) ? $command['http_usage'] : '',
-            );
-            if (isset($command['http_limit'], $command['http_window']) && is_numeric($command['http_limit']) && is_numeric($command['http_window'])) {
-                $this->civ13->httpServiceManager->setRateLimit($command['name'], $command['http_limit'], $command['http_window']);
+            $names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
+            $names[] = $command['name'];
+            foreach ($names as $name) {
+                $this->civ13->httpServiceManager->offsetSet(
+                    $name,
+                    $command['http_handler'],
+                    (isset($command['http_whitelisted']) && $command['http_whitelisted']),
+                    (isset($command['http_whitelisted']) && $command['http_whitelisted']) ? $command['http_whitelisted'] : 'exact',
+                    (isset($command['http_usage']) && $command['http_usage']) ? $command['http_usage'] : '',
+                );
+                if (isset($command['http_limit'], $command['http_window']) && is_numeric($command['http_limit']) && is_numeric($command['http_window'])) {
+                    $this->civ13->httpServiceManager->setRateLimit($command['name'], $command['http_limit'], $command['http_window']);
+                }
             }
             return true;
         };
