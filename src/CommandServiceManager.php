@@ -71,7 +71,7 @@ class CommandServiceManager
      * @param array $command The command to validate.
      * @return bool Returns true if the command callback is valid, false otherwise.
      */
-    private function validateCommandCallback(array $command): bool
+    private function validateInteractionCallback(array $command): bool
     {
         if (! isset($command['name'], $command['interaction_handler'], $command['interaction_listener']) || ! is_callable($command['interaction_handler'])) {
             $this->civ13->logger->warning('Invalid command callback for ' . $command['name'] . ' command');
@@ -195,7 +195,7 @@ class CommandServiceManager
         if ($this->global_commands) {
             $this->civ13->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
             {
-                foreach ($this->global_commands as $command) if ($this->validateCommandCallback($command)) {
+                foreach ($this->global_commands as $command) if ($this->validateInteractionCallback($command)) {
                     if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_listener']);
                     $this->listenCommand($command['name'], $command('interaction_handler'));
                 }
@@ -204,7 +204,7 @@ class CommandServiceManager
         }
         if ($this->guild_commands) {
             foreach (array_keys($this->guild_commands) as $key) if ($guild = $this->civ13->discord->guilds->get('id', $key)) $guild->commands->freshen()->then(function (GuildCommandRepository $commands) use ($key) {
-                foreach ($this->guild_commands[$key] as $command) if ($this->validateCommandCallback($command)) {
+                foreach ($this->guild_commands[$key] as $command) if ($this->validateInteractionCallback($command)) {
                     if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_listener']);
                     $this->listenCommand($command['name'], $command['interaction_handler']);
                 }
