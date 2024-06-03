@@ -1714,20 +1714,15 @@ class Civ13
         if (! isset($this->permitted[$ckey]) && ! in_array($ckey, $this->seen_players)) {
             $this->seen_players[] = $ckey;
             $ckeyinfo = $this->ckeyinfo($ckey);
+            $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
             if ($ckeyinfo['altbanned']) { // Banned with a different ckey
-                $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                $msg = $this->ban($arr, null, [], true) . ' (Alt Banned)';
-                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $this->ban($ban, null, [], true) . ' (Alt Banned)');
             } else foreach ($ckeyinfo['ips'] as $ip) {
                 if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
-                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                    $msg = $this->ban($arr, null, [], true) . ' (Blacklisted Country)';
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $this->ban($ban, null, [], true) . ' (Blacklisted Country)');
                     break;
-                } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
-                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                    $msg = $this->ban($arr, null, [], true) . ' (Blacklisted Region)';
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+                } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { // IP Segments
+                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $this->ban($ban, null, [], true) . ' (Blacklisted Region)');
                     break 2;
                 }
             }
@@ -1737,10 +1732,9 @@ class Civ13
             $this->__panicBan($ckey); // Require verification for Persistence rounds
             return;
         }
-        if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey))) { //Ban new accounts
-            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` must register on Discord and be manually approved to play. ($age)"];
-            $msg = $this->ban($arr, null, [], true);
-            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
+        if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey))) { // Force new accounts to register in Discord
+            $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` must register on Discord and be manually approved to play. ($age)"];
+            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $this->ban($ban, null, [], true));
         }
     }
     /**
