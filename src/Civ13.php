@@ -9,6 +9,7 @@
 namespace Civ13;
 
 use Byond;
+use ReflectionFunction;
 use Civ13\Slash;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
@@ -312,9 +313,14 @@ class Civ13
             $options['logger'] = new Logger(self::class, [$streamHandler]);
         }
         $this->logger = $options['logger'];
-
-        $this->onFulfilledDefault = function ($result)
-        {
+        $onFulfilledDefaultValid = false;
+        if (isset($options['onFulfilledDefault']) && is_callable($options['onFulfilledDefault'])) {
+            if ($reflection = new ReflectionFunction($options['onFulfilledDefault']))
+                if ($returnType = $reflection->getReturnType())
+                    if ($returnType->getName() !== 'void')
+                        { $this->onFulfilledDefault = $options['onFulfilledDefault']; $onFulfilledDefaultValid = true; }
+        }
+        if (! $onFulfilledDefaultValid) $this->onFulfilledDefault = function ($result) {
             $output = 'Promise resolved with type of: `' . gettype($result) . '`';
             if (is_object($result)) {
                 $output .= ' and class of: `' . get_class($result) . '`';
@@ -323,7 +329,14 @@ class Civ13
             $this->logger->debug($output);
             return $result;
         };
-        $this->onRejectedDefault = function ($reason): void
+        $onRejectedDefaultValid = false;
+        if (isset($options['onRejectedDefault']) && is_callable($options['onRejectedDefault'])) {
+            if ($reflection = new ReflectionFunction($options['onRejectedDefault']))
+                if ($returnType = $reflection->getReturnType())
+                    if ($returnType->getName() === 'void')
+                        { $this->onRejectedDefault = $options['onRejectedDefault']; $onRejectedDefaultValid = true; }
+        }
+        if (! $onRejectedDefaultValid) $this->onRejectedDefault = function ($reason): void
         {
             $this->logger->error("Promise rejected with reason: `$reason'`");
         };
