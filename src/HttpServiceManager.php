@@ -63,9 +63,9 @@ class HttpServiceManager
         return $this->httpHandler->handle($request);
     }
 
-    public function offsetSet(...$args)
+    public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
-        $this->httpHandler->offsetSet(...$args);
+        return $this->httpHandler->offsetSet($offset, $callback, $whitelisted, $method, $description);
     }
 
     private function __populateWhitelist()
