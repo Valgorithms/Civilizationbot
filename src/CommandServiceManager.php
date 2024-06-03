@@ -127,8 +127,9 @@ class CommandServiceManager
             'name'                              => 'ping',                                                                          // Name of the command.
             'alias'                             => [],                                                                              // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
-            'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
             'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
+            'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
+            'http_method'                       => 'exact',                                                                         // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
             'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
             'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
             'http_window'                       => null,                                                                            // The time window in seconds.
@@ -164,6 +165,7 @@ class CommandServiceManager
     private function loadCommands(): void
     {   
         foreach ($this->populateCommands() as $command) {
+            if (! $this->isUnique($command)) continue;
             if (! isset($command['guilds']) || ! $command['guilds']) {
                 $this->global_commands[] = $command;
                 continue;
@@ -197,8 +199,23 @@ class CommandServiceManager
             return true;
         };
         foreach ($this->global_commands as $global_command) $createCommand($global_command);
-        foreach ($this->guild_commands as $guild_command) if (in_array($guild_command['name'], array_column($this->global_commands, 'name'))) continue;
+        foreach ($this->guild_commands as $guild_command) $createCommand($guild_command);
     }
+    /**
+     * Checks if a command is unique.
+     *
+     * @param array $command The command to check.
+     * @return bool Returns true if the command's name does not already exist in the global commands arrays, false otherwise.
+     */
+    private function isUnique($command): bool
+    {
+        $names = [];
+        $names[] = $command['name'];
+        $names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
+        foreach ($names as $name) if (isset($this->global_commands[$name])) return false;
+        return true;
+    }
+
     /**
      * Sets up the interaction commands for the bot.
      * This method registers global and guild commands for the bot's Discord application.
@@ -246,7 +263,7 @@ class CommandServiceManager
                     $name,
                     $command['http_handler'],
                     (isset($command['http_whitelisted']) && $command['http_whitelisted']),
-                    (isset($command['http_whitelisted']) && $command['http_whitelisted']) ? $command['http_whitelisted'] : 'exact',
+                    (isset($command['http_method']) && $command['http_method']) ? $command['http_method'] : 'exact',
                     (isset($command['http_usage']) && $command['http_usage']) ? $command['http_usage'] : '',
                 );
                 if (isset($command['http_limit'], $command['http_window']) && is_numeric($command['http_limit']) && is_numeric($command['http_window'])) {
@@ -256,10 +273,7 @@ class CommandServiceManager
             return true;
         };
         foreach ($this->global_commands as $global_command) $createCommand($global_command);
-        foreach ($this->guild_commands as $guild_command) {
-            if (in_array($guild_command['name'], array_column($this->global_commands, 'name'))) continue;
-            $createCommand($guild_command);
-        }
+        foreach ($this->guild_commands as $guild_command) $createCommand($guild_command);
     }
     
     public function getHelpMessagebuilder(?string $guild_id = null): MessageBuilder
