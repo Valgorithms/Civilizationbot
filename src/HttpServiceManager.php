@@ -67,6 +67,10 @@ class HttpServiceManager
     {
         return $this->httpHandler->offsetSet($offset, $callback, $whitelisted, $method, $description);
     }
+    public function setRateLimit(string $endpoint, int $limit, int $window): HttpHandler
+    {
+        return $this->httpHandler->setRateLimit($endpoint, $limit, $window);
+    }
 
     private function __populateWhitelist()
     {
