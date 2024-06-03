@@ -2559,4 +2559,14 @@ class Civ13
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
         return true;
     }
+    
+    // Magic Methods
+    public function __destruct()
+    {
+        if (isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer']->cancel();
+    }
+    public function __toString(): string
+    {
+        return self::class;
+    }
 }
