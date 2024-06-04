@@ -8,6 +8,7 @@
 
 namespace Civ13;
 
+use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\RegisteredCommand;
 use Discord\Parts\Channel\Message;
@@ -19,6 +20,7 @@ use Discord\Parts\User\Member;
 use Discord\Parts\Permissions\RolePermission;
 use Discord\Repository\Guild\GuildCommandRepository;
 use Discord\Repository\Interaction\GlobalCommandRepository;
+use Monolog\Logger;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response as HttpResponse;
 use React\Promise\PromiseInterface;
@@ -26,13 +28,22 @@ use ReflectionFunction;
 
 class CommandServiceManager
 {
+    public Discord $discord;
+    public Logger $logger;
+    public HttpServiceManager $httpServiceManager;
+    public MessageServiceManager $messageServiceManager;
     public Civ13 $civ13;
-    private bool $setup = false;
 
     public array $global_commands = [];
     public array $guild_commands = [];
 
-    public function __construct(Civ13 &$civ13) {
+    private readonly bool $setup;
+
+    public function __construct(Discord &$discord, HttpServiceManager &$httpServiceManager, MessageServiceManager &$messageServiceManager, Civ13 &$civ13) {
+        $this->discord = $discord;
+        $this->logger = $discord->getLogger();
+        $this->httpServiceManager = $httpServiceManager;
+        $this->messageServiceManager = $messageServiceManager;
         $this->civ13 = $civ13;
         $this->afterConstruct();
     }
@@ -43,11 +54,13 @@ class CommandServiceManager
     */
     private function afterConstruct()
     {
+        $this->httpServiceManager = $this->httpServiceManager;
+        $this->messageServiceManager = $this->httpServiceManager;
         $this->setup();
-        if ($application_commands = $this->civ13->discord->__get('application_commands')) {
+        if ($application_commands = $this->discord->__get('application_commands')) {
             $names = [];
             foreach ($application_commands as $command) $names[] = $command->getName();
-            $this->civ13->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
+            $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
         }
     }
     /**
@@ -56,7 +69,7 @@ class CommandServiceManager
      */
     private function setup(): void
     {
-        if ($this->setup) return;
+        if (isset($this->setup)) return;
         $this->loadCommands();
         $this->setupMessageCommands();
         $this->setupInteractionCommands();
@@ -73,23 +86,23 @@ class CommandServiceManager
     private function validateInteractionCallback(array $command): bool
     {
         if (! isset($command['name']) || ! $command['name']) {
-            $this->civ13->logger->warning('Invalid command name');
+            $this->logger->warning('Invalid command name');
             return false;
         }
         if (! isset($command['interaction_handler'], $command['interaction_listener']) || ! is_callable($command['interaction_handler'])) {
-            $this->civ13->logger->warning("Invalid Interaction handler");
+            $this->logger->warning("Invalid Interaction handler");
             return false;
         }
         if (! $reflection = new ReflectionFunction($command['interaction_handler'])) {
-            $this->civ13->logger->warning('Invalid reflection for ' . $command['name'] . ' command');
+            $this->logger->warning('Invalid reflection for ' . $command['name'] . ' command');
             return false;
         }
         if (! $returnType = $reflection->getReturnType()) {
-            $this->civ13->logger->warning('Invalid return type for ' . $command['name'] . ' command');
+            $this->logger->warning('Invalid return type for ' . $command['name'] . ' command');
             return false;
         }
         if ($returnType->getName() !== 'PromiseInterface') {
-            $this->civ13->logger->warning('Invalid return type for ' . $command['name'] . ' command');
+            $this->logger->warning('Invalid return type for ' . $command['name'] . ' command');
             return false;
         }
 
@@ -106,7 +119,7 @@ class CommandServiceManager
      */
     private function listenCommand($name, ?callable $callback = null, ?callable $autocomplete_callback = null): RegisteredCommand
     {
-        return $this->civ13->discord->listenCommand($name, $callback, $autocomplete_callback);
+        return $this->discord->listenCommand($name, $callback, $autocomplete_callback);
     }
     /**
      * Saves a command to the specified repository.
@@ -148,7 +161,7 @@ class CommandServiceManager
             'interaction_listener' => [
                 'description'                   => 'Replies with Pong!',
                 'dm_permission'                 => false,                   // Whether the command can be used in DMs.
-                'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]))
+                'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
             ],
             'interaction_handler' => function (Interaction $interaction): PromiseInterface {
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
@@ -178,17 +191,17 @@ class CommandServiceManager
         $createCommand = function ($command): bool
         {
             if (! isset($command['name']) || ! $command['name']) {
-                $this->civ13->logger->warning('Invalid command name');
+                $this->logger->warning('Invalid command name');
                 return false;
             }
             if (! isset($command['message_handler']) || ! is_callable($command['message_handler']) || ! $command['message_handler'] instanceof MessageHandlerCallback) {
-                $this->civ13->logger->warning("Invalid Message handler for `{$command['name']}` command");
+                $this->logger->warning("Invalid Message handler for `{$command['name']}` command");
                 return false;
             }
             $names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
             $names[] = $command['name'];
             foreach ($names as $name) {
-                $this->civ13->messageServiceManager->offsetSet(
+                $this->messageServiceManager->offsetSet(
                     $name,
                     $command['message_handler'],
                     (isset($command['message_role_permissions']) && is_array($command['message_role_permissions'])) ? $command['message_role_permissions'] : [],
@@ -225,22 +238,22 @@ class CommandServiceManager
     private function setupInteractionCommands(): void
     {
         if ($this->global_commands) {
-            $this->civ13->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
+            $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
             {
                 foreach ($this->global_commands as $command) if ($this->validateInteractionCallback($command)) {
                     if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_listener']);
                     $this->listenCommand($command['name'], $command('interaction_handler'));
                 }
-                $this->civ13->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->global_commands)) . '`');
+                $this->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->global_commands)) . '`');
             });
         }
         if ($this->guild_commands) {
-            foreach (array_keys($this->guild_commands) as $key) if ($guild = $this->civ13->discord->guilds->get('id', $key)) $guild->commands->freshen()->then(function (GuildCommandRepository $commands) use ($key) {
+            foreach (array_keys($this->guild_commands) as $key) if ($guild = $this->discord->guilds->get('id', $key)) $guild->commands->freshen()->then(function (GuildCommandRepository $commands) use ($key) {
                 foreach ($this->guild_commands[$key] as $command) if ($this->validateInteractionCallback($command)) {
                     if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_listener']);
                     $this->listenCommand($command['name'], $command['interaction_handler']);
                 }
-                foreach (array_keys($this->guild_commands) as $guild_id) $this->civ13->logger->debug("[GUILD APPLICATION COMMAND LIST FOR GUILD `$guild_id`]" . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->guild_commands[$guild_id])) . '`');
+                foreach (array_keys($this->guild_commands) as $guild_id) $this->logger->debug("[GUILD APPLICATION COMMAND LIST FOR GUILD `$guild_id`]" . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->guild_commands[$guild_id])) . '`');
             });
         }
     }
@@ -249,17 +262,17 @@ class CommandServiceManager
         $createCommand = function (array $command): bool
         {
             if (! isset($command['name']) || ! $command['name']) {
-                $this->civ13->logger->warning('Invalid command name');
+                $this->logger->warning('Invalid command name');
                 return false;
             }
             if (! isset($command['http_handler']) || ! is_callable($command['http_handler']) || ! $command['message_handler'] instanceof HttpHandlerCallback) {
-                $this->civ13->logger->warning("Invalid HTTP handler for `{$command['name']}` command");
+                $this->logger->warning("Invalid HTTP handler for `{$command['name']}` command");
                 return false;
             }
             $names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
             $names[] = $command['name'];
             foreach ($names as $name) {
-                $this->civ13->httpServiceManager->offsetSet(
+                $this->httpServiceManager->offsetSet(
                     $name,
                     $command['http_handler'],
                     (isset($command['http_whitelisted']) && $command['http_whitelisted']),
@@ -267,7 +280,7 @@ class CommandServiceManager
                     (isset($command['http_usage']) && $command['http_usage']) ? $command['http_usage'] : '',
                 );
                 if (isset($command['http_limit'], $command['http_window']) && is_numeric($command['http_limit']) && is_numeric($command['http_window'])) {
-                    $this->civ13->httpServiceManager->setRateLimit($command['name'], $command['http_limit'], $command['http_window']);
+                    $this->httpServiceManager->setRateLimit($command['name'], $command['http_limit'], $command['http_window']);
                 }
             }
             return true;
@@ -287,7 +300,7 @@ class CommandServiceManager
         $description = $this->getGlobalHelpString();
         $description .= $this->getGuildHelpString($guild_id);
         if (strlen($description) > 4096) return false;
-        $embed = new Embed($this->civ13->discord);
+        $embed = new Embed($this->discord);
         $embed->setTitle('Slash Commands');
         $embed->setDescription($description);
         $embed->setColor(0xe1452d);
@@ -318,7 +331,7 @@ class CommandServiceManager
             if ($guild_id && isset($this->guild_commands[$guild_id])) {
                 foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $string .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
             } else foreach (array_keys($this->guild_commands) as $guild_id) {
-                $string .= '__' . $this->civ13->discord->guilds->get('id', $guild_id)->name . '__' . PHP_EOL;
+                $string .= '__' . $this->discord->guilds->get('id', $guild_id)->name . '__' . PHP_EOL;
                 foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $string .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
             }
         }
@@ -328,85 +341,85 @@ class CommandServiceManager
     private function __updateCommands(): void
     {
         if ($this->civ13->shard) return; // Only run on the first shard
-        $this->civ13->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
+        $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
         {
             $names = [];
             foreach ($commands as $command) if ($command->name) $names[] = $command->name;
-            if ($names) $this->civ13->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
+            if ($names) $this->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
 
             // if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
-            if (! $commands->get('name', 'ping')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'ping')) $this->save($commands, new Command($this->discord, [
                 'name'        => 'ping',
                 'description' => 'Replies with Pong!',
             ]));
 
             // if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
-            if (! $commands->get('name', 'help')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'help')) $this->save($commands, new Command($this->discord, [
                 'name'          => 'help',
                 'description'   => 'View a list of available commands',
                 'dm_permission' => false,
             ]));
 
             // if ($command = $commands->get('name', 'pull')) $commands->delete($command->id);
-            if (! $commands->get('name', 'pull')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'pull')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'pull',
                     'description'                => "Update the bot's code",
                     'dm_permission'              => false,
-                    'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+                    'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'update')) $commands->delete($command->id);
-            if (! $commands->get('name', 'update')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'update')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'update',
                     'description'                => "Update the bot's dependencies",
                     'dm_permission'              => false,
-                    'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+                    'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'stats')) $commands->delete($command->id);
-            if (! $commands->get('name', 'stats')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'stats')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'stats',
                 'description'                => 'Get runtime information about the bot',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
-            if (! $commands->get('name', 'invite')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'invite')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'invite',
                     'description'                => 'Bot invite link',
                     'dm_permission'              => false,
-                    'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['manage_guild' => true]),
+                    'default_member_permissions' => (string) new RolePermission($this->discord, ['manage_guild' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'players')) $commands->delete($command->id);
-            if (! $commands->get('name', 'players')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'players')) $this->save($commands, new Command($this->discord, [
                 'name'        => 'players',
                 'description' => 'Show Space Station 13 server information'
             ]));
 
             // if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
-            if (! $commands->get('name', 'ckey')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'ckey')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'ckey',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'bancheck')) $commands->delete($command->id);
-            if (! $commands->get('name', 'bancheck')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'bancheck')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'bancheck',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'bancheck_ckey')) $commands->delete($command->id);
-            if (! $commands->get('name', 'bancheck_ckey')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'bancheck_ckey')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'bancheck_ckey',
                 'description'                => 'Check if a ckey is banned on the server',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
                 'options'                    => [
                     [
                         'name'        => 'ckey',
@@ -418,7 +431,7 @@ class CommandServiceManager
             ]));
 
             // if ($command = $commands->get('name', 'bansearch')) $commands->delete($command->id);
-            if (! $commands->get('name', 'bansearch_centcom')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'bansearch_centcom')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'bansearch_centcom',
                 'description'                => 'Check if a ckey is banned on centcom.melonmesa.com',
                 'dm_permission'              => false,
@@ -433,11 +446,11 @@ class CommandServiceManager
             ]));
 
             // if ($command = $commands->get('name', 'ban')) $commands->delete($command->id);
-            if (! $commands->get('name', 'ban')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'ban')) $this->save($commands, new Command($this->discord, [
                 'name'			=> 'ban',
                 'description'	=> 'Ban a ckey from the Civ13.com servers',
                 'dm_permission' => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
                 'options'		=> [
                     [
                         'name'			=> 'ckey',
@@ -461,22 +474,22 @@ class CommandServiceManager
             ]));
 
             // if ($command = $commands->get('name', 'panic_bunker')) $commands->delete($command->id);
-            if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'panic_bunker',
                 'description'                => 'Toggles the panic bunker',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['manage_guild' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['manage_guild' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'join_campaign')) $commands->delete($command->id);
-            if (! $commands->get('name', 'join_campaign')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'join_campaign')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'join_campaign',
                 'description'                => 'Get a role to join the campaign',
                 'dm_permission'              => false,
             ]));
 
             // if ($command = $commands->get('name', 'assign_faction')) $commands->delete($command->id);
-            if (! $commands->get('name', 'assign_faction')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'assign_faction')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'assign_faction',
                 'description'                => 'Assign someone to a faction',
                 'dm_permission'              => false,
@@ -516,7 +529,7 @@ class CommandServiceManager
 
             /* Deprecated, use the /rankme or chat command instead
             if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
-            if (! $commands->get('name', 'rank')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'rank')) $this->save($commands, new Command($this->discord, [
                 'type'          => Command::USER,
                 'name'          => 'rank',
                 'dm_permission' => false,
@@ -524,7 +537,7 @@ class CommandServiceManager
 
             /* Deprecated, use the chat command instead
             if ($command = $commands->get('name', 'medals')) $commands->delete($command->id);
-            if (! $commands->get('name', 'medals')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'medals')) $this->save($commands, new Command($this->discord, [
                 'type'          => Command::USER,
                 'name'          => 'medals',
                 'dm_permission' => false,
@@ -533,86 +546,86 @@ class CommandServiceManager
 
             /* Deprecated, use the chat command instead
             if ($command = $commands->get('name', 'brmedals')) $commands->delete($command->id);
-            if (! $commands->get('name', 'brmedals')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'brmedals')) $this->save($commands, new Command($this->discord, [
                 'type'          => Command::USER,
                 'name'          => 'brmedals',
                 'dm_permission' => false,
             ]));*/
 
             if (! empty($this->civ13->functions['ready_slash'])) foreach (array_values($this->civ13->functions['ready_slash']) as $func) $func($this, $commands); // Will be deprecated in the future
-            else $this->civ13->logger->debug('No ready slash functions found!');
+            else $this->logger->debug('No ready slash functions found!');
         });
     }
     private function __updateGuildCommands(): void
     {
-        $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands) {
+        $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands) {
             $names = [];
             foreach ($commands as $command) if ($command->name) $names[] = $command->name;
-            if ($names) $this->civ13->logger->debug('[GUILD APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
+            if ($names) $this->logger->debug('[GUILD APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
 
             // if ($command = $commands->get('name', 'unverify')) $commands->delete($command->id);
-            if (! $commands->get('name', 'unverify')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'unverify')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'unverify',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['administrator' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['administrator' => true]),
             ]));
             
             // if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
-            if (! $commands->get('name', 'unban')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'unban')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'unban',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'parole')) $commands->delete($command->id);
-            if (! $commands->get('name', 'parole')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'parole')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permit',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
             
             /* Deprecated
             if ($command = $commands->get('name', 'permitted')) $commands->delete($command->id);
-            if (! $commands->get('name', 'permitted')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'permitted')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permitted',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));*/
 
             // if ($command = $commands->get('name', 'permit')) $commands->delete($command->id);
-            if (! $commands->get('name', 'permit')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'permit')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permit',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'revoke')) $commands->delete($command->id);
-            if (! $commands->get('name', 'revoke')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'revoke')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'revoke',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['moderate_members' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
             // if ($command = $commands->get('name', 'ckeyinfo')) $commands->delete($command->id);
-            if (! $commands->get('name', 'ckeyinfo')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'ckeyinfo')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'ckeyinfo',
                 'dm_permission'              => false,
-                'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));
 
             if ($command = $commands->get('name', 'statistics')) $commands->delete($command->id);
-            /*if (! $commands->get('name', 'statistics')) $this->save($commands, new Command($this->civ13->discord, [
+            /*if (! $commands->get('name', 'statistics')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'statistics',
                 'dm_permission'              => false,
-                // 'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+                // 'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));*/
             
             $server_choices = [];
@@ -626,7 +639,7 @@ class CommandServiceManager
             };
             if ($server_choices) { // Only add the ranking commands if there are servers to choose from
                 // if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
-                if (! $commands->get('name', 'rank')) $this->save($commands, new Command($this->civ13->discord, [
+                if (! $commands->get('name', 'rank')) $this->save($commands, new Command($this->discord, [
                     'name'                => 'rank',
                     'description'         => 'See your ranking on a Civ13 server',
                     'dm_permission'       => false,
@@ -648,7 +661,7 @@ class CommandServiceManager
                 ]));
 
                 // if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
-                if (! $commands->get('name', 'ranking')) $this->save($commands, new Command($this->civ13->discord, [
+                if (! $commands->get('name', 'ranking')) $this->save($commands, new Command($this->discord, [
                     'name'                => 'ranking',
                     'description'         => 'See the ranks of the top players on a Civ13 server',
                     'dm_permission'       => false,
@@ -663,12 +676,12 @@ class CommandServiceManager
                     ]
                 ]));
 
-                if (! $commands->get('name', 'restart_server')) $this->save($commands, new Command($this->civ13->discord, [
+                if (! $commands->get('name', 'restart_server')) $this->save($commands, new Command($this->discord, [
                     'type'                       => Command::CHAT_INPUT,
                     'name'                       => "restart_server",
                     'description'                => "Restart a Civ13 server",
                     'dm_permission'              => false,
-                    'default_member_permissions' => (string) new RolePermission($this->civ13->discord, ['view_audit_log' => true]),
+                    'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
                     'options'             => [
                         [
                             'name'        => 'server',
@@ -687,7 +700,7 @@ class CommandServiceManager
             
             
             // if ($command = $commands->get('name', 'approveme')) $commands->delete($command->id);
-            if (! $commands->get('name', 'approveme')) $this->save($commands, new Command($this->civ13->discord, [
+            if (! $commands->get('name', 'approveme')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'approveme',
                 'description'                => 'Verification process',
                 'dm_permission'              => false,
@@ -704,58 +717,58 @@ class CommandServiceManager
     }
     private function __declareListeners(): void
     {
-        $this->civ13->discord->listenCommand('pull', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('pull', function (Interaction $interaction): PromiseInterface
         {
-            $this->civ13->logger->info('[GIT PULL]');
+            $this->logger->info('[GIT PULL]');
             execInBackground('git pull');
             $this->civ13->loop->addTimer(5, function () {
-                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
+                if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
                 execInBackground('git reset --hard origin/main');
             });
             $this->civ13->loop->addTimer(10, function () {
-                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
+                if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
                 execInBackground('git pull');
             });
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating code from GitHub...'));
         });
         
-        $this->civ13->discord->listenCommand('update', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('update', function (Interaction $interaction): PromiseInterface
         {
-            $this->civ13->logger->info('[COMPOSER UPDATE]');
+            $this->logger->info('[COMPOSER UPDATE]');
             \execInBackground('composer update');
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
         });
-        $this->civ13->discord->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface
         {
             $settings = $this->civ13->server_settings[$interaction->data->options['server']->value];
-            if ($serverrestart = array_shift($this->civ13->messageServiceManager->messageHandler->offsetGet("{$settings['key']}restart"))) {
+            if ($serverrestart = array_shift($this->messageServiceManager->messageHandler->offsetGet("{$settings['key']}restart"))) {
                 $serverrestart();
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `{$settings['name']}` <byond://{$settings['ip']}:{$settings['port']}>"));
             }
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No restart function found for `{$settings['name']}`"));
         });
         
-        $this->civ13->discord->listenCommand('ping', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('ping', function (Interaction $interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
         });
 
-        $this->civ13->discord->listenCommand('help', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('help', function (Interaction $interaction): PromiseInterface
         {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->messageServiceManager->generateHelp($interaction->member->roles)), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->messageServiceManager->generateHelp($interaction->member->roles)), true);
         });
 
-        $this->civ13->discord->listenCommand('stats', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('stats', function (Interaction $interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()));
         });
         
-        $this->civ13->discord->listenCommand('invite', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('invite', function (Interaction $interaction): PromiseInterface
         {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->discord->application->getInviteURLAttribute('8')), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->discord->application->getInviteURLAttribute('8')), true);
         });
 
-        $this->civ13->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
         {
             $content = '';
             if (! $this->civ13->webserver_online) {
@@ -765,7 +778,7 @@ class CommandServiceManager
             
             if (empty($data = $this->civ13->serverinfoParse())) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
             foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}";
-            $embed = new Embed($this->civ13->discord);
+            $embed = new Embed($this->discord);
             foreach ($data as $server)
                 foreach ($server as $key => $array)
                     foreach ($array as $inline => $value)
@@ -777,13 +790,13 @@ class CommandServiceManager
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent($content)->addEmbed($embed));
         });
 
-        $this->civ13->discord->listenCommand('ckey', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('ckey', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss13']}`"), true);
         });
 
-        $this->civ13->discord->listenCommand('bancheck', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('bancheck', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             return $interaction->acknowledge()->then(function () use ($interaction, $item) { // wait until the bot says "Is thinking..."
@@ -813,7 +826,7 @@ class CommandServiceManager
                         $member->addRole($this->civ13->role_ids['banished']);
                 if (strlen($response)<=2000) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($response), true);
                 if (strlen($response)<=4096) {
-                    $embed = new Embed($this->civ13->discord);
+                    $embed = new Embed($this->discord);
                     $embed->setDescription($response);
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed));
                 }
@@ -821,26 +834,26 @@ class CommandServiceManager
             });
         });
 
-        $this->civ13->discord->listenCommand('bancheck_ckey', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('bancheck_ckey', function (Interaction $interaction): PromiseInterface
         {
             if ($this->civ13->bancheck($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is currently banned on one of the Civ13.com servers."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is not currently banned on one of the Civ13.com servers."), true);
         });
 
-        $this->civ13->discord->listenCommand('bansearch_centcom', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('bansearch_centcom', function (Interaction $interaction): PromiseInterface
         {
             if (! $json = $this->civ13->bansearch_centcom($ckey = $interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to locate bans were found for **$ckey** on centcom.melonmesa.com."), true);
             if ($json === '[]') return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No bans were found for **$ckey** on centcom.melonmesa.com."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($ckey.'_bans.json', $json), true);
         });
 
-        $this->civ13->discord->listenCommand('ban', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('ban', function (Interaction $interaction): PromiseInterface
         {
             $arr = ['ckey' => $interaction->data->options['ckey']->value, 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->discord_formatted}"];
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($interaction->user)['ss13'])));
         });
         
-        $this->civ13->discord->listenCommand('unverify', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('unverify', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             return $interaction->acknowledge()->then(function () use ($interaction, $item) { // wait until the bot says "Is thinking..."
@@ -854,14 +867,14 @@ class CommandServiceManager
             });
         });
         
-        $this->civ13->discord->listenCommand('unban', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('unban', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->unban($item['ss13'], $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'] ?? $interaction->user->displayname);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`$admin`** unbanned **`{$item['ss13']}`**."));
         });
 
-        $this->civ13->discord->listenCommand('parole', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('parole', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->paroleCkey($ckey = $item['ss13'], $interaction->user->id, true);
@@ -869,11 +882,11 @@ class CommandServiceManager
             if ($member = $this->civ13->verifier->getVerifiedMember($item))
                 if (! $member->roles->has($this->civ13->role_ids['paroled']))
                     $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->displayname}) paroled `$ckey`");
-            if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$interaction->user->id}>).");
+            if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$interaction->user->id}>).");
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` (<@{$item['discord']}>) has been placed on parole."), true);
         });
 
-        $this->civ13->discord->listenCommand('release', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('release', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->getVerifiedItem($interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->paroleCkey($ckey = $item['ss13'], $interaction->user->id, false);
@@ -881,12 +894,12 @@ class CommandServiceManager
             if ($member = $this->civ13->verifier->getVerifiedMember($item))
                 if ($member->roles->has($this->civ13->role_ids['paroled']))
                     $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->displayname}) released `$ckey`");
-            if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$interaction->user->id}>).");
+            if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$interaction->user->id}>).");
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` (<@{$item['discord']}>) has been released on parole."), true);
         });
 
         /* Deprecated
-        $this->civ13->discord->listenCommand('permitted', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('permitted', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $response = "**`{$item['ss13']}`** is not currently permitted to bypass Byond account restrictions.";
@@ -895,27 +908,27 @@ class CommandServiceManager
         });
         */
         
-        $this->civ13->discord->listenCommand('permit', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('permit', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->permitCkey($item['ss13']);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** has permitted **`{$item['ss13']}`** to bypass Byond account restrictions."));
         });
 
-        $this->civ13->discord->listenCommand('revoke', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('revoke', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->permitCkey($item['ss13'], false);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** has removed permission from **`{$item['ss13']}`** to bypass Byond account restrictions."));
         });
 
-        $this->civ13->discord->listenCommand('ckeyinfo', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('ckeyinfo', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             return $interaction->acknowledge()->then(function () use ($interaction, $item) { // wait until the bot says "Is thinking..."
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating ckeyinfo for `{$item['ss13']}`..."), true)->then(function ($message) use ($interaction, $item) {
                     $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
-                    $embed = new Embed($this->civ13->discord);
+                    $embed = new Embed($this->discord);
                     $embed->setTitle($item['ss13']);
                     if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
                     if (! empty($ckeyinfo['ckeys'])) {
@@ -943,7 +956,7 @@ class CommandServiceManager
             });
         });
 
-        $this->civ13->discord->listenCommand('statistics', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('statistics', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->verified->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $game_ids = [];
@@ -952,7 +965,7 @@ class CommandServiceManager
             $regions = [];
             // $cids = [];
             $players = [];
-            $embed = new Embed($this->civ13->discord);
+            $embed = new Embed($this->discord);
             $embed->setTitle($item['ss13']);
             if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
             foreach ($this->civ13->getRoundsCollections() as $server => $arr) foreach ($arr as $collection) {
@@ -1000,12 +1013,12 @@ class CommandServiceManager
             return $interaction->respondWithMessage($messagebuilder, true);
         });
         
-        $this->civ13->discord->listenCommand('panic_bunker', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('panic_bunker', function (Interaction $interaction): PromiseInterface
         {
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')));
         });
 
-        $this->civ13->discord->listenCommand('join_campaign', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('join_campaign', function (Interaction $interaction): PromiseInterface
         {
             //return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Factions are not ready to be assigned yet'), true);
             if (! $this->civ13->verifier->getVerifiedItem($interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are either not currently verified with a byond username or do not exist in the cache yet'), true);
@@ -1019,7 +1032,7 @@ class CommandServiceManager
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('A faction has been assigned'), true);
         });
 
-        $this->civ13->discord->listenCommand('assign_faction', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('assign_faction', function (Interaction $interaction): PromiseInterface
         {
             if (! $interaction->member->roles->has($this->civ13->role_ids['organizer'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You do not have permission to assign factions!'), true);
             
@@ -1036,7 +1049,7 @@ class CommandServiceManager
             if ($target_team === 'red' || $target_team === 'blue') {
                 $remove_role = function () use ($target_team, $target_member): ?PromiseInterface
                 { // If there is a different team role, remove it
-                    $new_member = $this->civ13->discord->guilds->get('id', $target_member->guild_id)->members->get('id', $target_member->id); // Refresh the member
+                    $new_member = $this->discord->guilds->get('id', $target_member->guild_id)->members->get('id', $target_member->id); // Refresh the member
                     if ($target_team === 'red' && $new_member->roles->has($this->civ13->role_ids['blue'])) return $this->civ13->then($new_member->removeRole($this->civ13->role_ids['blue']));
                     if ($target_team === 'blue' && $new_member->roles->has($this->civ13->role_ids['red'])) return $this->civ13->then($new_member->removeRole($this->civ13->role_ids['red']));
                     return null;
@@ -1047,7 +1060,7 @@ class CommandServiceManager
             if ($target_team === 'none') {
                 $remove_role = function(Member $member, string $team): ?PromiseInterface
                 {
-                    $new_member = $this->civ13->discord->guilds->get('id', $member->guild_id)->members->get('id', $member->id); // Refresh the member
+                    $new_member = $this->discord->guilds->get('id', $member->guild_id)->members->get('id', $member->id); // Refresh the member
                     if ($new_member->roles->has($this->civ13->role_ids[$team])) return $new_member->removeRole($this->civ13->role_ids[$team]);
                     return null;
                 };
@@ -1059,7 +1072,7 @@ class CommandServiceManager
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Invalid team: `$target_team`."), true);
         });
 
-        $this->civ13->discord->listenCommand('rank', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('rank', function (Interaction $interaction): PromiseInterface
         {
             if (! $ckey = $interaction->data->options['ckey']->value ?? $this->civ13->verifier->verified->get('discord', $interaction->member->id)['ss13'] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->member->id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             return $interaction->acknowledge()->then(function () use ($interaction, $ckey) { // wait until the bot says "Is thinking..."
@@ -1075,7 +1088,7 @@ class CommandServiceManager
             });
         });
         
-        $this->civ13->discord->listenCommand('ranking', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('ranking', function (Interaction $interaction): PromiseInterface
         { //TODO
             return $interaction->acknowledge()->then(function () use ($interaction) { // wait until the bot says "Is thinking..."
                 $server = $interaction->data->options['server']->value;
@@ -1084,7 +1097,7 @@ class CommandServiceManager
             });
         });
 
-        $this->civ13->discord->listenCommand('approveme', function (Interaction $interaction): PromiseInterface
+        $this->discord->listenCommand('approveme', function (Interaction $interaction): PromiseInterface
         {
             if ($interaction->member->roles->has($this->civ13->role_ids['infantry']) || $interaction->member->roles->has($this->civ13->role_ids['veteran'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
             if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$this->civ13->sanitizeInput($interaction->data->options['ckey']->value)])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('This account is currently under investigation.'));

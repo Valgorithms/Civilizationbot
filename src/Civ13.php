@@ -84,6 +84,7 @@ class Civ13
     public Slash $slash;
     public HttpServiceManager $httpServiceManager;
     public MessageServiceManager $messageServiceManager;
+    public CommandServiceManager $commandServiceManager;
     
     public string $webserver_url = 'www.valzargaming.com'; // The URL of the webserver that the bot pulls server information from
 
@@ -181,11 +182,15 @@ class Civ13
 
         // x86 need gmp extension for big integer operation
         if (PHP_INT_SIZE === 4 && ! BigInt::init()) trigger_error('ext-gmp is not loaded. Permissions will NOT work correctly!', E_USER_WARNING);
-        
+
         $options = $this->resolveOptions($options);
         $this->options = &$options;
-        
-        $this->loop = $options['loop'];
+        if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
+        elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
+        else $this->logger->error('No Discord instance or options passed in options!');
+        $this->logger =  $options['logger'] ?? $this->discord->getLogger();
+        $this->loop = $options['loop'] ?? $this->discord->getLoop();
+
         $this->browser = $options['browser'];
         $this->filesystem = $options['filesystem'];
         $this->stats = $options['stats'];
@@ -220,10 +225,6 @@ class Civ13
         if (isset($options['minimum_age']) && is_string($options['minimum_age'])) $this->minimum_age = $options['minimum_age'];
         if (isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) $this->blacklisted_regions = $options['blacklisted_regions'];
         if (isset($options['blacklsited_countries']) && is_array($options['blacklisted_countries'])) $this->blacklisted_countries = $options['blacklisted_countries'];
-                
-        if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
-        elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
-        else $this->logger->error('No Discord instance or options passed in options!');
         
         if (isset($options['functions'])) foreach (array_keys($options['functions']) as $key1) foreach ($options['functions'][$key1] as $key2 => $func) $this->functions[$key1][$key2] = $func;
         else $this->logger->warning('No functions passed in options!');
@@ -261,6 +262,7 @@ class Civ13
         $this->verifier = new Verifier($this, $options);
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
+        //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->logger, $this->httpServiceManager, $this->messageServiceManager, $this);
 
         if (isset($this->discord)) {
             $this->discord->once('ready', function () use ($options) {
@@ -312,7 +314,6 @@ class Civ13
             $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
             $options['logger'] = new Logger(self::class, [$streamHandler]);
         }
-        $this->logger = $options['logger'];
         $onFulfilledDefaultValid = false;
         if (isset($options['onFulfilledDefault']) && is_callable($options['onFulfilledDefault'])) {
             if ($reflection = new ReflectionFunction($options['onFulfilledDefault']))
