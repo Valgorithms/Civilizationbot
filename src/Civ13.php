@@ -258,33 +258,30 @@ class Civ13
      */
     private function afterConstruct(array $options = [], array $server_options = []): void
     {
-        $this->byond = new Byond();
         $this->verifier = new Verifier($this, $options);
         $this->httpServiceManager = new HttpServiceManager($this);
-        $this->messageServiceManager = new MessageServiceManager($this);
-        //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->logger, $this->httpServiceManager, $this->messageServiceManager, $this);
-
-        if (isset($this->discord)) {
-            $this->discord->once('ready', function () use ($options) {
-                $this->ready = true;
-                $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
-                $this->logger->info('------');
-               
-                $this->__loadOrInitializeVariables();
-                $this->verifier->getVerified(); // Populate verified property with data from DB
-                $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
-                
-                if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
-                else $this->logger->debug('No ready functions found!');
-                if (! $this->shard) {
-                    require 'slash.php';
-                    $this->slash = new Slash($this);
-                    $this->declareListeners();
-                    $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
-                }
-                $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
-            });
-        }
+        if (isset($this->discord)) $this->discord->once('ready', function () use ($options) {
+            $this->byond = new Byond();
+            $this->messageServiceManager = new MessageServiceManager($this);
+            //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->logger, $this->httpServiceManager, $this->messageServiceManager, $this);
+            $this->ready = true;
+            $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
+            $this->logger->info('------');
+            
+            $this->__loadOrInitializeVariables();
+            $this->verifier->getVerified(); // Populate verified property with data from DB
+            $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
+            
+            if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
+            else $this->logger->debug('No ready functions found!');
+            if (! $this->shard) {
+                require 'slash.php';
+                $this->slash = new Slash($this);
+                $this->declareListeners();
+                $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
+            }
+            $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
+        });
     }
     /**
      * Resolves the given options array by validating and setting default values for each option.
