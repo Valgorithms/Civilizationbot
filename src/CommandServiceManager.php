@@ -290,6 +290,44 @@ class CommandServiceManager
         foreach ($this->global_commands as $global_command) $createCommand($global_command);
         foreach ($this->guild_commands as $guild_command) $createCommand($guild_command);
     }
+    private function setupDefaultHelpCommands():void
+    {
+        $help = [
+            'name'                              => 'help',                                                                          // Name of the command.
+            'alias'                             => [],                                                                              // Aliases for the command.
+            'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
+            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
+            'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
+            'http_method'                       => 'exact',                                                                         // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
+            'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
+            'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
+            'http_window'                       => null,                                                                            // The time window in seconds.
+            'help_usage'                        => 'Replied with information about a command (or all if none specified).',          // Used when generating the help message/embed/file/etc. used in this class.
+            'message_usage'                     => 'Replied with information about a command (or all if none specified).',          // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
+            'interaction_usage'                 => 'Replied with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
+            'http_usage'                        => 'Replied with information about an endpoint (or all if none specified).',        // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
+            'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            {
+                if (! $desired_command = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $message->reply($this->getHelpString());
+
+                return $message->reply('Pong!');
+            }),
+            'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+            { // TODO: Add function to generate help for the http handler
+                return HttpResponse::plaintext($this->getGlobalHelpString());
+            }),
+            'interaction_listener' => [
+                'description'                   => 'Replied with information about an interaction (or all if none specified).',
+                'dm_permission'                 => false,                   // Whether the command can be used in DMs.
+                'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
+            ],
+            'interaction_handler' => function (Interaction $interaction): PromiseInterface {
+                //
+                return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
+            },
+            
+        ];
+    }
     
     public function getHelpMessageBuilder(?string $guild_id = null, ?string $command = null, ?MessageBuilder $messagebuilder = new MessageBuilder()): MessageBuilder
     {
