@@ -165,7 +165,8 @@ class CommandServiceManager
                 'dm_permission'                 => false,                   // Whether the command can be used in DMs.
                 'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
             ],
-            'interaction_handler' => function (Interaction $interaction): PromiseInterface {
+            'interaction_handler' => function (Interaction $interaction): PromiseInterface
+            {
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
             },
         ];
@@ -315,14 +316,14 @@ class CommandServiceManager
             'http_usage'                        => 'Replied with information about an endpoint (or all if none specified).',        // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
             'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command_name): PromiseInterface
             {
-                if (! $desired_command = trim(substr($message_filtered['message_content_lower'], strlen($command_name)))) return $message->reply($this->getHelpString());
-                if (isset($this->guild_commands[$message->guild_id]) && $this->guild_commands[$message->guild_id] && $this->guild_commands[$message->guild_id][$desired_command]) return $message->reply($this->getHelpString($message->guild_id, $desired_command));
-                if (isset($global_commands[$desired_command])) return $message->reply($this->getHelpString(null, $desired_command));
+                if (! $desired_command_name = trim(substr($message_filtered['message_content_lower'], strlen($command_name)))) return $message->reply($this->getHelpMessageBuilder());
+                if (isset($this->guild_commands[$message->guild_id]) && $this->guild_commands[$message->guild_id] && isset($this->guild_commands[$message->guild_id][$desired_command_name]) && $this->guild_commands[$message->guild_id][$desired_command_name]) return $message->reply($this->getHelpString($message->guild_id, $desired_command_name));
+                if (isset($global_commands[$desired_command_name])) return $message->reply($this->getHelpString(null, $desired_command_name));
                 return $message->reply('Command not found!');
             }),
             'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
-            { // TODO: Add function to generate help for the http handler
-                return HttpResponse::plaintext($this->getGlobalHelpString());
+            {
+                return HttpResponse::plaintext($this->getHelpString());
             }),
             'interaction_listener' => [
                 'description'                   => 'Replied with information about an interaction (or all if none specified).',
@@ -330,9 +331,14 @@ class CommandServiceManager
                 'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
             ],
             'interaction_handler' => function (Interaction $interaction): PromiseInterface {
-                //
-                return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
+                return $interaction->respondWithMessage($this->getHelpMessageBuilder());
             },
+            'interaction_listener' => [
+                'description'                   => 'Replies with Pong!',
+                'dm_permission'                 => false,                   // Whether the command can be used in DMs.
+                'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
+            ],
+            
             
         ];
     }
@@ -340,7 +346,7 @@ class CommandServiceManager
     public function getHelpMessageBuilder(?string $guild_id = null, ?string $command = null, ?MessageBuilder $messagebuilder = new MessageBuilder()): MessageBuilder
     {
         if ($embed = $this->getHelpEmbed($guild_id, $command)) return $messagebuilder->addEmbed($embed);
-        return $messagebuilder->addFileFromContent('commands.txt', $this->getHelpString());
+        return $messagebuilder->addFileFromContent('commands.txt', $this->getHelpString($guild_id, $command));
     }
     public function getHelpEmbed(?string $guild_id = null, ?string $command_name = null): Embed|false
     {
