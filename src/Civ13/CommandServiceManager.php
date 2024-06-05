@@ -182,10 +182,17 @@ class CommandServiceManager
         foreach ($this->populateCommands() as $command) {
             if (! $this->isUnique($command)) continue;
             if (! isset($command['guilds']) || ! $command['guilds']) {
-                $this->global_commands[] = $command;
+                $this->global_commands[$command['name']] = $command;
+                $names = $command['name'];
+                $names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
+                foreach ($names as $name) $this->global_commands[$name] = $command;
                 continue;
             }
-            foreach ($command['guilds'] as $guild_id) $this->guild_commands[$guild_id][] = $command;
+            foreach ($command['guilds'] as $guild_id) {
+                $names = [$command['name']];
+                $names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
+                foreach ($names as $name) $this->guild_commands[$guild_id][$name] = $command;
+            }
         }
     }
     private function setupMessageCommands(): void
@@ -306,11 +313,12 @@ class CommandServiceManager
             'message_usage'                     => 'Replied with information about a command (or all if none specified).',          // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
             'interaction_usage'                 => 'Replied with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
             'http_usage'                        => 'Replied with information about an endpoint (or all if none specified).',        // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
-            'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command_name): PromiseInterface
             {
-                if (! $desired_command = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $message->reply($this->getHelpString());
-
-                return $message->reply('Pong!');
+                if (! $desired_command = trim(substr($message_filtered['message_content_lower'], strlen($command_name)))) return $message->reply($this->getHelpString());
+                if (isset($this->guild_commands[$message->guild_id]) && $this->guild_commands[$message->guild_id] && $this->guild_commands[$message->guild_id][$desired_command]) return $message->reply($this->getHelpString($message->guild_id, $desired_command));
+                if (isset($global_commands[$desired_command])) return $message->reply($this->getHelpString(null, $desired_command));
+                return $message->reply('Command not found!');
             }),
             'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             { // TODO: Add function to generate help for the http handler
@@ -334,9 +342,9 @@ class CommandServiceManager
         if ($embed = $this->getHelpEmbed($guild_id, $command)) return $messagebuilder->addEmbed($embed);
         return $messagebuilder->addFileFromContent('commands.txt', $this->getHelpString());
     }
-    public function getHelpEmbed(?string $guild_id = null, ?string $command = null): Embed|false
+    public function getHelpEmbed(?string $guild_id = null, ?string $command_name = null): Embed|false
     {
-        if (! $description = $this->getGlobalHelpString($command) . $this->getGuildHelpString($guild_id, $command)) return false;
+        if (! $description = $this->getGlobalHelpString($command_name) . $this->getGuildHelpString($guild_id, $command_name)) return false;
         if (strlen($description) > 4096) return false;
         $embed = new Embed($this->discord);
         $embed->setTitle('Slash Commands');
@@ -350,10 +358,10 @@ class CommandServiceManager
     {
         return $this->getGlobalHelpString($command) . $this->getGuildHelpString($guild_id, $command);
     }
-    public function getGlobalHelpString(?string $command = null, ?string $help = ''): string
+    public function getGlobalHelpString(?string $command_name = null, ?string $help = ''): string
     {
         if (! $this->global_commands) return $help;
-        if ($command && $command = $this->global_commands[$command]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+        if (isset($this->global_commands[$command_name]) && $command = $this->global_commands[$command_name]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
         $help .= '# Global Commands' . PHP_EOL;
         foreach ($this->global_commands as $command) if (isset($command['help_usage'])) $help .= "{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
         return $help;
@@ -368,13 +376,13 @@ class CommandServiceManager
      * @param Guild|null $guild The guild object. Defaults to null.
      * @return string The help string for guild commands.
      */
-    public function getGuildHelpString(?string $guild_id = null, ?string $command = null, ?string $help = '', ?Guild $guild = null): string
+    public function getGuildHelpString(?string $guild_id = null, ?string $command_name = null, ?string $help = '', ?Guild $guild = null): string
     {
         if (! $this->guild_commands) return $help;
         if ($guild_id && ! $guild = $this->discord->guilds->get('id', $guild_id)) return $help;
         $help .= '# Guild Commands' . PHP_EOL;
         if ($guild && isset($this->guild_commands[$guild_id]) && $this->guild_commands[$guild_id]) {
-            if ($command && $command = $this->guild_commands[$command]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+            if ($command_name && $command = $this->guild_commands[$command_name]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
             foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
             return $help;
         }
