@@ -13,6 +13,7 @@ use Discord\Builders\MessageBuilder;
 use Discord\Helpers\RegisteredCommand;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
+use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\Interactions\Command\Option;
@@ -74,6 +75,7 @@ class CommandServiceManager
         $this->setupMessageCommands();
         $this->setupInteractionCommands();
         $this->setupHTTPCommands();
+        //$this->setupDefaultHelpCommands();
         $this->setup = true;
     }
 
@@ -289,16 +291,14 @@ class CommandServiceManager
         foreach ($this->guild_commands as $guild_command) $createCommand($guild_command);
     }
     
-    public function getHelpMessagebuilder(?string $guild_id = null): MessageBuilder
+    public function getHelpMessageBuilder(?string $guild_id = null, ?string $command = null, ?MessageBuilder $messagebuilder = new MessageBuilder()): MessageBuilder
     {
-        $messagebuilder = new MessageBuilder();
-        if ($embed = $this->getHelpEmbed()) return $messagebuilder->addEmbed($embed);
-        return $messagebuilder->addFileFromContent('commands.txt', $this->getHelpString()); 
+        if ($embed = $this->getHelpEmbed($guild_id, $command)) return $messagebuilder->addEmbed($embed);
+        return $messagebuilder->addFileFromContent('commands.txt', $this->getHelpString());
     }
-    public function getHelpEmbed(?string $guild_id = null): Embed|false
+    public function getHelpEmbed(?string $guild_id = null, ?string $command = null): Embed|false
     {
-        $description = $this->getGlobalHelpString();
-        $description .= $this->getGuildHelpString($guild_id);
+        if (! $description = $this->getGlobalHelpString($command) . $this->getGuildHelpString($guild_id, $command)) return false;
         if (strlen($description) > 4096) return false;
         $embed = new Embed($this->discord);
         $embed->setTitle('Slash Commands');
@@ -308,34 +308,45 @@ class CommandServiceManager
         $embed->setTimestamp();
         return $embed;
     }
-    public function getHelpString(?string $guild_id = null): string
+    public function getHelpString(?string $guild_id = null, ?string $command = null): string
     {
-        $string = $this->getGlobalHelpString();
-        $string .= $this->getGuildHelpString($guild_id);
-        return $string;
+        return $this->getGlobalHelpString($command) . $this->getGuildHelpString($guild_id, $command);
     }
-    public function getGlobalHelpString(): string
+    public function getGlobalHelpString(?string $command = null, ?string $help = ''): string
     {
-        $string = '';
-        if (($this->global_commands)) {
-            $string .= '# Global Commands' . PHP_EOL;
-            foreach ($this->global_commands as $command) if (isset($command['help_usage'])) $string .= "{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
-        }
-        return $string;
+        if (! $this->global_commands) return $help;
+        if ($command && $command = $this->global_commands[$command]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+        $help .= '# Global Commands' . PHP_EOL;
+        foreach ($this->global_commands as $command) if (isset($command['help_usage'])) $help .= "{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+        return $help;
+        
     }
-    public function getGuildHelpString(?string $guild_id = null): string
+    /**
+     * Retrieves the help string for guild commands.
+     *
+     * @param string|null $guild_id The ID of the guild. Defaults to null.
+     * @param string|null $command The name of the command. Defaults to null.
+     * @param string $help The existing help string. Defaults to an empty string.
+     * @param Guild|null $guild The guild object. Defaults to null.
+     * @return string The help string for guild commands.
+     */
+    public function getGuildHelpString(?string $guild_id = null, ?string $command = null, ?string $help = '', ?Guild $guild = null): string
     {
-        $string = '';
-        if ($this->guild_commands) {
-            $string .= '# Guild Commands' . PHP_EOL;
-            if ($guild_id && isset($this->guild_commands[$guild_id])) {
-                foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $string .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
-            } else foreach (array_keys($this->guild_commands) as $guild_id) {
-                $string .= '__' . $this->discord->guilds->get('id', $guild_id)->name . '__' . PHP_EOL;
-                foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $string .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
-            }
+        if (! $this->guild_commands) return $help;
+        if ($guild_id && ! $guild = $this->discord->guilds->get('id', $guild_id)) return $help;
+        $help .= '# Guild Commands' . PHP_EOL;
+        if ($guild && isset($this->guild_commands[$guild_id]) && $this->guild_commands[$guild_id]) {
+            if ($command && $command = $this->guild_commands[$command]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+            foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+            return $help;
         }
-        return $string;
+        foreach (array_keys($this->guild_commands) as $guild_id) {
+            if (! $guild = $this->discord->guilds->get('id', $guild_id)) continue;
+            if (! $this->guild_commands[$guild_id]) continue;
+            $help .= "__{$guild->name} ({$guild_id})___" . PHP_EOL;
+            foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+        }
+        return $help;
     }
 
     private function __updateCommands(): void
