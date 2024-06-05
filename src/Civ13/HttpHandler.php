@@ -6,23 +6,6 @@
  * Copyright (c) 2023-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
-namespace Civ13\Interfaces;
-
-use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Message\Response as HttpResponse;
-
-require_once 'Handler.php';
-
-interface HttpHandlerInterface extends HandlerInterface
-{
-    public function handle(ServerRequestInterface $request): HttpResponse;
-}
-
-interface HttpHandlerCallbackInterface
-{
-    public function __invoke(ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse;
-}
-
 namespace Civ13;
 
 use Civ13\Interfaces\HttpHandlerCallbackInterface;

@@ -1,4 +1,5 @@
 <?php
+namespace Discord;
 
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;

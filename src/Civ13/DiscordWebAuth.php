@@ -1,4 +1,13 @@
 <?php
+
+/*
+ * This file is a part of the Civ13 project.
+ *
+ * Copyright (c) 2024-present Valithor Obsidion <valithor@valzargaming.com>
+ */
+
+namespace Discord;
+
 use Civ13\Civ13;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;

@@ -6,23 +6,6 @@
  * Copyright (c) 2023-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
-namespace Civ13\Interfaces;
-
-use Discord\Parts\Channel\Message;
-use React\Promise\PromiseInterface;
-
-require_once 'Handler.php';
-
-interface MessageHandlerInterface extends HandlerInterface
-{
-    public function handle(Message $message): ?PromiseInterface;
-}
-
-interface MessageHandlerCallbackInterface
-{
-    public function __invoke(Message $message, array $message_filtered, string $command): ?PromiseInterface;
-}
-
 namespace Civ13;
 
 use Civ13\Interfaces\MessageHandlerCallbackInterface;

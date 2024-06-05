@@ -33,9 +33,6 @@ use React\Http\Browser;
 use React\EventLoop\TimerInterface;
 use React\Filesystem\Factory as FilesystemFactory;
 
-require_once 'BYOND.php';
-require_once 'Verifier.php';
-
 class Civ13
 {
     const log_basedir = '/data/logs';
@@ -183,12 +180,12 @@ class Civ13
         // x86 need gmp extension for big integer operation
         if (PHP_INT_SIZE === 4 && ! BigInt::init()) trigger_error('ext-gmp is not loaded. Permissions will NOT work correctly!', E_USER_WARNING);
 
+        $this->logger =  $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
         $options = $this->resolveOptions($options);
         $this->options = &$options;
         if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
         elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
         else $this->logger->error('No Discord instance or options passed in options!');
-        $this->logger =  $options['logger'] ?? $this->discord->getLogger();
         $this->loop = $options['loop'] ?? $this->discord->getLoop();
 
         $this->browser = $options['browser'];
@@ -275,7 +272,6 @@ class Civ13
             if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
             else $this->logger->debug('No ready functions found!');
             if (! $this->shard) {
-                require 'slash.php';
                 $this->slash = new Slash($this);
                 $this->declareListeners();
                 $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned

@@ -1,5 +1,4 @@
 <?php
-$testing = false; // Set to true to disable certain features that may be disruptive to the server when testing locally
 
 /*
  * This file is a part of the Civ13 project.
@@ -7,8 +6,12 @@ $testing = false; // Set to true to disable certain features that may be disrupt
  * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
  */
 
+namespace Civ13;
+
+use \Exception;
 use Civ13\Civ13;
 use Discord\Discord;
+use Discord\Stats;
 //use \Discord\Helpers\CacheConfig;
 use React\EventLoop\Loop;
 //use \WyriHaximus\React\Cache\Redis as RedisCache;
@@ -21,6 +24,7 @@ use Monolog\Handler\StreamHandler;
 use Discord\WebSockets\Intents;
 use React\Http\Browser;
 
+$testing = false; // Set to true to disable certain features that may be disruptive to the server when testing locally
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
@@ -61,10 +65,9 @@ $discord = new Discord([
     'storeMessages' => true, // Because why not?
     'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::MESSAGE_CONTENT,
 ]);
-if (include __DIR__ . '/src/Stats.php') {
-    $stats = new Stats();
-    $stats->init($discord);
-}
+
+$stats = new Stats();
+$stats->init($discord);
 $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; // execInBackground(), portIsAvailable()

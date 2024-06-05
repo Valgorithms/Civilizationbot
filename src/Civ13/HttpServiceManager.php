@@ -9,6 +9,7 @@
 namespace Civ13;
 
 use Discord\Builders\MessageBuilder;
+use Discord\DiscordWebAuth;
 use Discord\Parts\Embed\Embed;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\TimerInterface;
@@ -16,9 +17,6 @@ use React\Http\HttpServer;
 use React\Http\Message\Response as HttpResponse;
 use React\Promise\PromiseInterface;
 use React\Socket\SocketServer;
-
-require_once 'HttpHandler.php';
-require_once 'DiscordWebAuth.php';
 
 class HttpServiceManager
 {
@@ -306,7 +304,7 @@ class HttpServiceManager
                     });
                 }
 
-                $DiscordWebAuth = new \DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
+                $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
                 if (isset($params['code']) && isset($params['state']))
                     return $DiscordWebAuth->getToken($params['state']);
                 elseif (isset($params['login']))

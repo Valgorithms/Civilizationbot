@@ -36,7 +36,9 @@
     },
     "autoload": {
         "psr-4": {
-            "Civ13\\": "src/"
+            "Byond\\": "src/Byond/",
+            "Civ13\\": "src/Civ13/",
+            "Discord\\": "src/Discord/"
         }
     }
 }

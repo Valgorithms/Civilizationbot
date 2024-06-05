@@ -14,8 +14,6 @@ use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Member;
 use React\Promise\PromiseInterface;
 
-require_once 'MessageHandler.php';
-
 class MessageServiceManager
 {
     public Civ13 $civ13;
