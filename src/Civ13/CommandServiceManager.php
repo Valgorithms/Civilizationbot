@@ -546,6 +546,7 @@ class CommandServiceManager
                 ]
             ]));
 
+            if ($command = $commands->get('name', 'panic')) $commands->delete($command->id);
             // if ($command = $commands->get('name', 'panic_bunker')) $commands->delete($command->id);
             if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'panic_bunker',
