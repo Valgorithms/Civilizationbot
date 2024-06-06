@@ -266,8 +266,11 @@ class Civ13
             $this->messageServiceManager = new MessageServiceManager($this);
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__loadOrInitializeVariables();
-            $this->verifier->getVerified(); // Populate verified property with data from DB
-            $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
+            $this->loop->addTimer(10, function () { // Delay certain functions until the bot is ready
+                $this->verifier->getVerified(); // Populate verified property with data from DB
+                $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
+                $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
+            });
             
             if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
             else $this->logger->debug('No ready functions found!');
@@ -276,7 +279,6 @@ class Civ13
                 $this->declareListeners();
                 $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
             }
-            $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
         });
     }
     /**
