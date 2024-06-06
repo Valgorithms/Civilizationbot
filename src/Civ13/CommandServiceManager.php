@@ -42,10 +42,10 @@ class CommandServiceManager
 
     public function __construct(Discord &$discord, HttpServiceManager &$httpServiceManager, MessageServiceManager &$messageServiceManager, Civ13 &$civ13) {
         $this->discord = $discord;
-        $this->logger = $discord->getLogger();
         $this->httpServiceManager = $httpServiceManager;
         $this->messageServiceManager = $messageServiceManager;
         $this->civ13 = $civ13;
+        $this->logger = $civ13->logger;
         $this->afterConstruct();
     }
 
@@ -75,7 +75,7 @@ class CommandServiceManager
         $this->setupMessageCommands();
         $this->setupInteractionCommands();
         $this->setupHTTPCommands();
-        //$this->setupDefaultHelpCommands();
+        $this->setupDefaultHelpCommands();
         $this->setup = true;
     }
 
@@ -140,7 +140,7 @@ class CommandServiceManager
         $array = [];
         $ping = [
             'name'                              => 'ping',                                                                          // Name of the command.
-            'alias'                             => [],                                                                              // Aliases for the command.
+            'alias'                             => ['/ping'],                                                                       // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
             'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
@@ -302,7 +302,7 @@ class CommandServiceManager
     {
         $help = [
             'name'                              => 'help',                                                                          // Name of the command.
-            'alias'                             => [],                                                                              // Aliases for the command.
+            'alias'                             => ['/help'],                                                                       // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
             'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
@@ -338,9 +338,11 @@ class CommandServiceManager
                 'dm_permission'                 => false,                   // Whether the command can be used in DMs.
                 'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
             ],
-            
-            
         ];
+        if ($this->isUnique($help)) {
+            $this->global_commands['help'] = $help;
+            $this->global_commands['/help'] = $help;
+        }
     }
     
     public function getHelpMessageBuilder(?string $guild_id = null, ?string $command = null, ?MessageBuilder $messagebuilder = new MessageBuilder()): MessageBuilder
