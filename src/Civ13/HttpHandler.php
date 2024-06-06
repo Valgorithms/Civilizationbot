@@ -525,7 +525,8 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public function __throwError(string $error, int $status = HttpResponse::STATUS_INTERNAL_SERVER_ERROR): HttpResponse
     {
         if ($status === HttpResponse::STATUS_INTERNAL_SERVER_ERROR) $this->civ13->logger->info("HTTP error for IP: `$this->last_ip`: `$error`");
-        if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR])) {
+        //if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR])) {
+        if (strval($status)[0] === '4' || strval($status)[0] === '5') { // 4xx or 5xx (client or server error)
             $time = time();
             $this->addRequestToRateLimit('invalid', $this->last_ip, $status, $time);
             $this->addRequestToRateLimit('abuse', $this->last_ip, $status, $time);
