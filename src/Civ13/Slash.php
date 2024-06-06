@@ -132,13 +132,13 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'invite')) $commands->delete($command);
-            if (! $commands->get('name', 'invite')) $this->save($commands, new Command($this->discord, [
+            if ($command = $commands->get('name', 'invite')) $commands->delete($command);
+            /*if (! $commands->get('name', 'invite')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'invite',
                     'description'                => 'Bot invite link',
                     'dm_permission'              => false,
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['manage_guild' => true]),
-            ]));
+            ]));*/
 
             // if ($command = $commands->get('name', 'players')) $commands->delete($command);
             if (! $commands->get('name', 'players')) $this->save($commands, new Command($this->discord, [
