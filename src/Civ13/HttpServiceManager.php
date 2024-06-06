@@ -1013,12 +1013,17 @@ class HttpServiceManager
                     $this->civ13->sendMessage($parole_notif_channel, $message2);
                 }
 
-                $ckeyinfo = $this->civ13->ckeyinfo($ckey);
-                if ($ckeyinfo['altbanned'] && ! isset($this->civ13->permitted[$ckey]))
-                    if (isset($this->civ13->channel_ids['staff_bot']) && $staffbot = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']))
-                        $this->civ13->sendMessage($staffbot, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, [], true) . ' (Alt Banned)');
-
                 $relay($message, $channel, $ckey);
+                if (isset($this->civ13->permitted[$ckey])) return new HttpResponse(HttpResponse::STATUS_OK);
+                
+                if (! $this->civ13->checkByondAge($age = $this->civ13->getByondAge($ckey))) {
+                    $ban = $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, [], true) . " ($age)";
+                    if (isset($this->civ13->channel_ids['staff_bot']) && $staffbot = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($staffbot, $ban);
+                }                
+                if ($ckeyinfo = $this->civ13->ckeyinfo($ckey)) if ($ckeyinfo['altbanned']) {
+                    $ban = $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, [], true) . ' (Alt Banned)';
+                    if (isset($this->civ13->channel_ids['staff_bot']) && $staffbot = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($staffbot, $ban);
+                }
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
