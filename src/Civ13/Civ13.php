@@ -482,7 +482,21 @@ class Civ13
      */
     public function then(PromiseInterface $promise, ?callable $onFulfilled = null, ?callable $onRejected = null): PromiseInterface
     {
-        return $promise->then($onFulfilled ?? $this->onFulfilledDefault, $onRejected ?? $this->onRejectedDefault);
+        if (! $onRejected) $onRejectedDefault = function ($reason) use ($promise, $onFulfilled): void
+        { // TODO: Add a check for Discord disconnects and refire the promise
+            $this->logger->error("Promise rejected with reason: `$reason'`");
+            if (str_starts_with($reason, 'Promise rejected with reason: `RuntimeException: Connection to tls://discord.com:443 timed out after 60 seconds (ETIMEDOUT)')) { // Promise attempted to resolve while Discord was disconnected
+                ob_start();
+                var_dump($promise);
+                $debug_string = ob_get_clean();
+                $this->logger->error("Original promise dump: $debug_string");
+                ob_start();
+                var_dump($onFulfilled);
+                $debug_string = ob_get_clean();
+                $this->logger->error("onFulfilled callback dump: $debug_string");
+            }
+        };
+        return $promise->then($onFulfilled ?? $this->onFulfilledDefault, $onRejected ?? $onRejectedDefault ?? $this->onRejectedDefault);
     }
 
     /**
