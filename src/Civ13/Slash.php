@@ -330,7 +330,7 @@ class Slash
             // if ($command = $commands->get('name', 'parole')) $commands->delete($command);
             if (! $commands->get('name', 'parole')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
-                'name'                       => 'permit',
+                'name'                       => 'parole',
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
