@@ -260,7 +260,7 @@ class Civ13
         if (isset($this->discord)) $this->discord->once('ready', function () use ($options) {
             $this->byond = new Byond();
             $this->messageServiceManager = new MessageServiceManager($this);
-            //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->logger, $this->httpServiceManager, $this->messageServiceManager, $this);
+            //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->ready = true;
             $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
             $this->logger->info('------');
