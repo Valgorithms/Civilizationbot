@@ -95,20 +95,20 @@ class Slash
             foreach ($commands as $command) if ($command->name) $names[] = $command->name;
             if ($names) $this->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
 
-            // if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'ping')) $commands->delete($command);
             if (! $commands->get('name', 'ping')) $this->save($commands, new Command($this->discord, [
                 'name'        => 'ping',
                 'description' => 'Replies with Pong!',
             ]));
 
-            // if ($command = $commands->get('name', 'ping')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'ping')) $commands->delete($command);
             if (! $commands->get('name', 'help')) $this->save($commands, new Command($this->discord, [
                 'name'          => 'help',
                 'description'   => 'View a list of available commands',
                 'dm_permission' => false,
             ]));
 
-            // if ($command = $commands->get('name', 'pull')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'pull')) $commands->delete($command);
             if (! $commands->get('name', 'pull')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'pull',
                     'description'                => "Update the bot's code",
@@ -116,7 +116,7 @@ class Slash
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'update')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'update')) $commands->delete($command);
             if (! $commands->get('name', 'update')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'update',
                     'description'                => "Update the bot's dependencies",
@@ -124,7 +124,7 @@ class Slash
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'stats')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'stats')) $commands->delete($command);
             if (! $commands->get('name', 'stats')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'stats',
                 'description'                => 'Get runtime information about the bot',
@@ -132,7 +132,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'invite')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'invite')) $commands->delete($command);
             if (! $commands->get('name', 'invite')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'invite',
                     'description'                => 'Bot invite link',
@@ -140,13 +140,13 @@ class Slash
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['manage_guild' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'players')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'players')) $commands->delete($command);
             if (! $commands->get('name', 'players')) $this->save($commands, new Command($this->discord, [
                 'name'        => 'players',
                 'description' => 'Show Space Station 13 server information'
             ]));
 
-            // if ($command = $commands->get('name', 'ckey')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'ckey')) $commands->delete($command);
             if (! $commands->get('name', 'ckey')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'ckey',
@@ -154,7 +154,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'bancheck')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'bancheck')) $commands->delete($command);
             if (! $commands->get('name', 'bancheck')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'bancheck',
@@ -162,7 +162,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'bancheck_ckey')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'bancheck_ckey')) $commands->delete($command);
             if (! $commands->get('name', 'bancheck_ckey')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'bancheck_ckey',
                 'description'                => 'Check if a ckey is banned on the server',
@@ -178,7 +178,7 @@ class Slash
                 ]
             ]));
 
-            // if ($command = $commands->get('name', 'bansearch')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'bansearch')) $commands->delete($command);
             if (! $commands->get('name', 'bansearch_centcom')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'bansearch_centcom',
                 'description'                => 'Check if a ckey is banned on centcom.melonmesa.com',
@@ -193,7 +193,7 @@ class Slash
                 ]
             ]));
 
-            // if ($command = $commands->get('name', 'ban')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'ban')) $commands->delete($command);
             if (! $commands->get('name', 'ban')) $this->save($commands, new Command($this->discord, [
                 'name'			=> 'ban',
                 'description'	=> 'Ban a ckey from the Civ13.com servers',
@@ -221,7 +221,8 @@ class Slash
                 ]
             ]));
 
-            // if ($command = $commands->get('name', 'panic_bunker')) $commands->delete($command->id);
+            if ($command = $commands->get('name', 'panic')) $commands->delete($command);
+            // if ($command = $commands->get('name', 'panic_bunker')) $commands->delete($command);
             if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'panic_bunker',
                 'description'                => 'Toggles the panic bunker',
@@ -229,14 +230,14 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['manage_guild' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'join_campaign')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'join_campaign')) $commands->delete($command);
             if (! $commands->get('name', 'join_campaign')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'join_campaign',
                 'description'                => 'Get a role to join the campaign',
                 'dm_permission'              => false,
             ]));
 
-            // if ($command = $commands->get('name', 'assign_faction')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'assign_faction')) $commands->delete($command);
             if (! $commands->get('name', 'assign_faction')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'assign_faction',
                 'description'                => 'Assign someone to a faction',
@@ -276,7 +277,7 @@ class Slash
             ]));
 
             /* Deprecated, use the /rankme or chat command instead
-            if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
+            if ($command = $commands->get('name', 'rank')) $commands->delete($command);
             if (! $commands->get('name', 'rank')) $this->save($commands, new Command($this->discord, [
                 'type'          => Command::USER,
                 'name'          => 'rank',
@@ -284,7 +285,7 @@ class Slash
             ]));*/
 
             /* Deprecated, use the chat command instead
-            if ($command = $commands->get('name', 'medals')) $commands->delete($command->id);
+            if ($command = $commands->get('name', 'medals')) $commands->delete($command);
             if (! $commands->get('name', 'medals')) $this->save($commands, new Command($this->discord, [
                 'type'          => Command::USER,
                 'name'          => 'medals',
@@ -293,7 +294,7 @@ class Slash
             */
 
             /* Deprecated, use the chat command instead
-            if ($command = $commands->get('name', 'brmedals')) $commands->delete($command->id);
+            if ($command = $commands->get('name', 'brmedals')) $commands->delete($command);
             if (! $commands->get('name', 'brmedals')) $this->save($commands, new Command($this->discord, [
                 'type'          => Command::USER,
                 'name'          => 'brmedals',
@@ -311,7 +312,7 @@ class Slash
             foreach ($commands as $command) if ($command->name) $names[] = $command->name;
             if ($names) $this->logger->debug('[GUILD APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
 
-            // if ($command = $commands->get('name', 'unverify')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'unverify')) $commands->delete($command);
             if (! $commands->get('name', 'unverify')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'unverify',
@@ -319,7 +320,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['administrator' => true]),
             ]));
             
-            // if ($command = $commands->get('name', 'unban')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'unban')) $commands->delete($command);
             if (! $commands->get('name', 'unban')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'unban',
@@ -327,7 +328,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'parole')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'parole')) $commands->delete($command);
             if (! $commands->get('name', 'parole')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permit',
@@ -336,7 +337,7 @@ class Slash
             ]));
             
             /* Deprecated
-            if ($command = $commands->get('name', 'permitted')) $commands->delete($command->id);
+            if ($command = $commands->get('name', 'permitted')) $commands->delete($command);
             if (! $commands->get('name', 'permitted')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permitted',
@@ -344,7 +345,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));*/
 
-            // if ($command = $commands->get('name', 'permit')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'permit')) $commands->delete($command);
             if (! $commands->get('name', 'permit')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permit',
@@ -352,7 +353,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'revoke')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'revoke')) $commands->delete($command);
             if (! $commands->get('name', 'revoke')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'revoke',
@@ -360,7 +361,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
-            // if ($command = $commands->get('name', 'ckeyinfo')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'ckeyinfo')) $commands->delete($command);
             if (! $commands->get('name', 'ckeyinfo')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'ckeyinfo',
@@ -368,7 +369,7 @@ class Slash
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));
 
-            if ($command = $commands->get('name', 'statistics')) $commands->delete($command->id);
+            if ($command = $commands->get('name', 'statistics')) $commands->delete($command);
             /*if (! $commands->get('name', 'statistics')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'statistics',
@@ -386,7 +387,7 @@ class Slash
                 ];
             };
             if ($server_choices) { // Only add the ranking commands if there are servers to choose from
-                // if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
+                // if ($command = $commands->get('name', 'rank')) $commands->delete($command);
                 if (! $commands->get('name', 'rank')) $this->save($commands, new Command($this->discord, [
                     'name'                => 'rank',
                     'description'         => 'See your ranking on a Civ13 server',
@@ -408,7 +409,7 @@ class Slash
                     ]
                 ]));
 
-                // if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
+                // if ($command = $commands->get('name', 'ranking')) $commands->delete($command);
                 if (! $commands->get('name', 'ranking')) $this->save($commands, new Command($this->discord, [
                     'name'                => 'ranking',
                     'description'         => 'See the ranks of the top players on a Civ13 server',
@@ -441,13 +442,13 @@ class Slash
                     ]
                 ]));
             } else { // Remove the ranking commands if there are no servers to choose from
-                //if ($command = $commands->get('name', 'rank')) $commands->delete($command->id);
-                //if ($command = $commands->get('name', 'ranking')) $commands->delete($command->id);
-                //if ($command = $commands->get('name', 'restart_server')) $commands->delete($command->id);
+                //if ($command = $commands->get('name', 'rank')) $commands->delete($command);
+                //if ($command = $commands->get('name', 'ranking')) $commands->delete($command);
+                //if ($command = $commands->get('name', 'restart_server')) $commands->delete($command);
             }
             
             
-            // if ($command = $commands->get('name', 'approveme')) $commands->delete($command->id);
+            // if ($command = $commands->get('name', 'approveme')) $commands->delete($command);
             if (! $commands->get('name', 'approveme')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'approveme',
                 'description'                => 'Verification process',
