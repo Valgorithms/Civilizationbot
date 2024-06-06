@@ -190,7 +190,7 @@ class CommandServiceManager
             if (! isset($command['guilds']) || ! $command['guilds']) {
                 $this->global_commands[$command['name']] = $command;
                 $names = [$command['name']];
-                $names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
+                //$names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
                 foreach ($names as $name) {
                     $command['name'] = $name;
                     $this->global_commands[$name] = $command;
@@ -199,7 +199,7 @@ class CommandServiceManager
             }
             foreach ($command['guilds'] as $guild_id) {
                 $names = [$command['name']];
-                $names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
+                //$names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
                 foreach ($names as $name) $this->guild_commands[$guild_id][$name] = $command;
             }
         }
@@ -216,8 +216,8 @@ class CommandServiceManager
                 $this->logger->warning("Invalid Message handler for `{$command['name']}` command");
                 return false;
             }
-            $names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
             $names[] = $command['name'];
+            //$names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
             foreach ($names as $name) {
                 $this->messageServiceManager->offsetSet(
                     $name,
@@ -242,7 +242,7 @@ class CommandServiceManager
     {
         $names = [];
         $names[] = $command['name'];
-        $names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
+        //$names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
         foreach ($names as $name) if (isset($this->global_commands[$name])) return false;
         return true;
     }
@@ -259,6 +259,7 @@ class CommandServiceManager
             $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
             {
                 foreach ($this->global_commands as $command) if ($this->validateInteractionCallback($command)) {
+                    if (str_starts_with($command['name'], '/')) continue; // Skip slash commands for now
                     if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_listener']);
                     $this->listenCommand($command['name'], $command('interaction_handler'));
                 }
@@ -295,8 +296,8 @@ class CommandServiceManager
                 $this->logger->warning("Invalid HTTP handler for `{$command['name']}` command. Not an instance of HttpHandlerCallback.");
                 return false;
             }
-            $names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
             $names[] = $command['name'];
+            //$names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
             foreach ($names as $name) {
                 $this->httpServiceManager->offsetSet(
                     $name,
