@@ -221,7 +221,6 @@ class Slash
                 ]
             ]));
 
-            if ($command = $commands->get('name', 'panic')) $commands->delete($command);
             // if ($command = $commands->get('name', 'panic_bunker')) $commands->delete($command);
             if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'panic_bunker',
