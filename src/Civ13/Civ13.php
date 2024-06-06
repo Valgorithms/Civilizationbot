@@ -321,6 +321,10 @@ class Civ13
                 $output .= ' and class of: `' . get_class($result) . '`';
                 $output .= ' with properties: `' . implode('`, `', array_keys(get_object_vars($result))) . '`';
                 if (isset($result->scriptData)) $output .= " and scriptData of: `{$result->scriptData}`";
+                $output .= PHP_EOL;
+                ob_start();
+                var_dump($result);
+                $output .= ob_get_clean();
             }
             $this->logger->debug($output);
             return $result;
