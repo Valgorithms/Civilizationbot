@@ -135,7 +135,8 @@ class Verifier
             ? 'online'
             : 'offline';
         if ($reported_status != $status) {
-            //if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified.";
+            //if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been not
+            if ($channel->name === "{$verifier_name}-{$status}") return null;
             $channel->name = "{$verifier_name}-{$status}";
             $success = function ($result) use ($channel, $status) {
                 $this->civ13->loop->addTimer(2, function () use ($channel, $status): void
