@@ -267,7 +267,6 @@ class Civ13
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__loadOrInitializeVariables();
             $this->loop->addTimer(10, function () { // Delay certain functions until the bot is ready
-                $this->verifier->getVerified(); // Populate verified property with data from DB
                 $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
                 $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
             });
@@ -1088,44 +1087,9 @@ class Civ13
 
         $this->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
         {
-            /*foreach ($this->gameservers as $server) {
-                $server->whitelistUpdate()
-                $server->factionlistUpdate()
-                $server->adminlistUpdate();
-            }*/
-            if (! $member_old) { // Not enough information is known about the change, so we will update everything
-                $this->whitelistUpdate();
-                $this->verifier->getVerified();
-                $this->factionlistUpdate();
-                $this->adminlistUpdate();
-                return;
-            }
-            if ($member->roles->has($this->role_ids['veteran']) !== $member_old->roles->has($this->role_ids['veteran'])) $this->whitelistUpdate();
-            elseif ($member->roles->has($this->role_ids['infantry']) !== $member_old->roles->has($this->role_ids['infantry'])) $this->verifier->getVerified();
-            $faction_roles = [
-                'red',
-                'blue',
-            ];
-            foreach ($faction_roles as $role) 
-                if ($member->roles->has($this->role_ids[$role]) !== $member_old->roles->has($this->role_ids[$role])) { $this->factionlistUpdate(); break;}
-            $admin_roles = [
-                'Owner',
-                'Chief Technical Officer',
-                'Head Admin',
-                'Manager',
-                'High Staff',
-                'Supervisor',
-                'Event Admin',
-                'Admin',
-                'Moderator',
-                'Mentor',
-                'veteran',
-                'infantry',
-                'banished',
-                'paroled',
-            ];
-            foreach ($admin_roles as $role) 
-                if ($member->roles->has($this->role_ids[$role]) !== $member_old->roles->has($this->role_ids[$role])) { $this->adminlistUpdate(); break;}
+            if ($this->shard) return;
+            if (! empty($this->functions['GUILD_MEMBER_UPDATE'])) foreach ($this->functions['GUILD_MEMBER_UPDATE'] as $func) $func($this, $member);
+            else $this->logger->debug('No GUILD_MEMBER_UPDATE functions found!');
         });
 
         $this->discord->on('GUILD_CREATE', function (Guild $guild): void

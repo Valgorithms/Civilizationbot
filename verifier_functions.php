@@ -11,8 +11,8 @@ use Discord\Parts\User\Member;
 // g) They have been *recently* active on any of the Civ13.com servers (Determined by admin review)
 $promotable_check = function (Civ13 $civ13, string $identifier): bool
 {
-    if (! $civ13->verified && ! $civ13->getVerified()) return false; // Unable to get info from DB
-    if (! $item = $civ13->getVerifiedMemberItems()->get('ss13', htmlspecialchars($identifier)) ?? $civ13->getVerifiedMemberItems()->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; // a&e, ckey and/or discord id exists in DB and member is in the Discord server
+    if (! $civ13->verifier->verified && ! $civ13->verifier->getVerified()) return false; // Unable to get info from DB
+    if (! $item = $civ13->verifier->getVerifiedMemberItems()->get('ss13', htmlspecialchars($identifier)) ?? $civ13->verifier->getVerifiedMemberItems()->get('discord', str_replace(['<@', '<@!', '>'], '', $identifier))) return false; // a&e, ckey and/or discord id exists in DB and member is in the Discord server
     if (strtotime($item['create_time']) > strtotime('-1 year')) return false; // b, 1 year
     if (($item['seen_tdm'] + $item['seen_nomads'] + $item['seen_pers'])<100) return false; // c, 100 seen
     if ($civ13->bancheck($item['ss13'])) return false; // d, must not have active ban
@@ -23,7 +23,7 @@ $mass_promotion_check = function (Civ13 $civ13) use ($promotable_check): array|f
     if (! $guild = $civ13->discord->guilds->get('id', $civ13->civ13_guild_id)) return false;
     if (! $members = $guild->members->filter(function (Member $member) use ($civ13) { return $member->roles->has($civ13->role_ids['infantry']); } )) return false;
     $promotables = [];
-    foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [(string) $member, $member->displayname, $civ13->verified->get('discord', $member->id)['ss13']];
+    foreach ($members as $member) if ($promotable_check($civ13, $member->id)) $promotables[] = [(string) $member, $member->displayname, $civ13->verifier->verified->get('discord', $member->id)['ss13']];
     return $promotables;
 };
 $mass_promotion_loop = function (Civ13 $civ13) use ($promotable_check): bool // Not implemented
