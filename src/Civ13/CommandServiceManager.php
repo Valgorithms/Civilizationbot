@@ -357,11 +357,7 @@ class CommandServiceManager
                 'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
             ],
         ];
-        if ($this->isUnique($help)) {
-            $this->global_commands['help'] = $help;
-            $help['name'] = '/help';
-            $this->global_commands['/help'] = $help;
-        }
+        if ($this->isUnique($help)) $this->global_commands['help'] = $help;
     }
     
     public function getHelpMessageBuilder(?string $guild_id = null, ?string $command = null, ?MessageBuilder $messagebuilder = new MessageBuilder()): MessageBuilder
