@@ -39,7 +39,6 @@ class Verifier
     {
         $this->civ13->discord->once('ready', function () {
             $this->verified = $this->getVerified();
-
             $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) {
                 $this->getVerified();
                 if (! $this->civ13->shard) {
@@ -99,7 +98,7 @@ class Verifier
                     return;
                 }
                 if ($member->roles->has($this->civ13->role_ids['veteran']) !== $member_old->roles->has($this->civ13->role_ids['veteran'])) $this->civ13->whitelistUpdate();
-                elseif ($member->roles->has($this->civ13->role_ids['infantry']) !== $member_old->roles->has($this->civ13->role_ids['infantry'])) $this->civ13->verifier->getVerified();
+                elseif ($member->roles->has($this->civ13->role_ids['infantry']) !== $member_old->roles->has($this->civ13->role_ids['infantry'])) $this->getVerified();
                 foreach ($faction_roles = ['red', 'blue'] as $role) 
                     if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
                         { $this->civ13->factionlistUpdate(); break;}
