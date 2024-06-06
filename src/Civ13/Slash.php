@@ -326,9 +326,6 @@ class Slash
             $names = [];
             foreach ($commands as $command) if ($command->name) $names[] = $command->name;
             if ($names) $this->logger->debug('[GUILD APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
-
-            if ($command = $commands->get('name', 'unverify')) $commands->delete($command);
-            // Moved to Global scope
             
             // if ($command = $commands->get('name', 'unban')) $commands->delete($command);
             if (! $commands->get('name', 'unban')) $this->save($commands, new Command($this->discord, [
@@ -370,9 +367,6 @@ class Slash
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
-
-            if ($command = $commands->get('name', 'ckeyinfo')) $commands->delete($command);
-            // Moved to global scope
 
             if ($command = $commands->get('name', 'statistics')) $commands->delete($command);
             /*if (! $commands->get('name', 'statistics')) $this->save($commands, new Command($this->discord, [
