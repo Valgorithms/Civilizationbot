@@ -317,7 +317,7 @@ class Slash
             ]));*/
 
             if (! empty($this->civ13->functions['ready_slash'])) foreach (array_values($this->civ13->functions['ready_slash']) as $func) $func($this, $commands); // Will be deprecated in the future
-            else $this->logger->debug('No ready slash functions found!');
+            //else $this->logger->debug('No ready slash functions found!');
         });
     }
     private function __updateGuildCommands(): void

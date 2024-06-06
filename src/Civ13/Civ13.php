@@ -272,7 +272,7 @@ class Civ13
             });
             
             if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
-            else $this->logger->debug('No ready functions found!');
+            //else $this->logger->debug('No ready functions found!');
             if (! $this->shard) {
                 $this->slash = new Slash($this);
                 $this->declareListeners();
@@ -1080,21 +1080,21 @@ class Civ13
         {
             if ($this->shard) return;
             if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $member);
-            else $this->logger->debug('No GUILD_MEMBER_ADD functions found!');
+            //else $this->logger->debug('No GUILD_MEMBER_ADD functions found!');
         });
 
         $this->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
         {
             if ($this->shard) return;
             if (! empty($this->functions['GUILD_MEMBER_REMOVE'])) foreach ($this->functions['GUILD_MEMBER_REMOVE'] as $func) $func($this, $member);
-            else $this->logger->debug('No GUILD_MEMBER_REMOVE functions found!');
+            //else $this->logger->debug('No GUILD_MEMBER_REMOVE functions found!');
         });
 
         $this->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
         {
             if ($this->shard) return;
             if (! empty($this->functions['GUILD_MEMBER_UPDATE'])) foreach ($this->functions['GUILD_MEMBER_UPDATE'] as $func) $func($this, $member);
-            else $this->logger->debug('No GUILD_MEMBER_UPDATE functions found!');
+            //else $this->logger->debug('No GUILD_MEMBER_UPDATE functions found!');
         });
 
         $this->discord->on('GUILD_CREATE', function (Guild $guild): void
