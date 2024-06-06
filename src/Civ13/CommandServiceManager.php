@@ -160,7 +160,7 @@ class CommandServiceManager
             'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
             'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
             'http_window'                       => null,                                                                            // The time window in seconds.
-            'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+            'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
             {
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }),
@@ -337,7 +337,7 @@ class CommandServiceManager
             'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
             'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
             'http_window'                       => null,                                                                            // The time window in seconds.
-            'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
+            'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
             {
                 return HttpResponse::plaintext($this->getHelpString());
             }),

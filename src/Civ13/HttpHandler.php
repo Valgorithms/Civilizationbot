@@ -24,7 +24,7 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
      */
     public function __construct(callable $callback)
     {
-        $expectedParameterTypes = [ServerRequestInterface::class, 'array', 'bool', 'string'];
+        $expectedParameterTypes = [ServerRequestInterface::class, 'string', 'bool'];
         
         $parameters = (new \ReflectionFunction($callback))->getParameters();
         if (count($parameters) !== $count = count($expectedParameterTypes)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
@@ -42,14 +42,13 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
      * Invokes the HTTP handler.
      *
      * @param ServerRequestInterface $request The server request.
-     * @param array $data The data array.
      * @param bool $whitelisted Indicates if the request is whitelisted.
      * @param string $endpoint The endpoint string.
      * @return HttpResponse The HTTP response.
      */
-    public function __invoke(ServerRequestInterface $request, array $data = [], bool $whitelisted = false, string $endpoint = ''): HttpResponse
+    public function __invoke(ServerRequestInterface $request, string $endpoint = '', bool $whitelisted = false): HttpResponse
     {
-        return call_user_func($this->callback, $request, $data, $whitelisted, $endpoint);
+        return call_user_func($this->callback, $request, $endpoint, $whitelisted);
     }
 
     public function reject(string $part, string $id): HttpResponse
@@ -132,11 +131,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         else $this->civ13->logger->info("[WEBAPI URL] $path");
         try {
             if (! $array = $this->__getCallback($request)) return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
-            $data = [];
-            if ($params = $request->getQueryParams())
-                if (isset($params['data']))
-                    $data = @json_decode(urldecode($params['data']), true);
-            return $this->__processCallback($request, $data, $array['callback'], $array['endpoint']);
+            return $this->__processCallback($request, $array['callback'], $array['endpoint']);
         } catch (\Throwable $e) {
             $this->civ13->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`");
             return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -197,16 +192,15 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     /**
      * Executes the HTTP handler.
      *
-     * @param mixed $request The HTTP request object.
-     * @param mixed $data The data to be passed to the callback function.
+     * @param ServerRequestInterface $request The HTTP request object.
      * @param callable $callback The callback function to be executed.
      * @param string $endpoint The endpoint being accessed.
      * @return HttpResponse The HTTP response object.
      */
-    private function __processCallback($request, $data, $callback, $endpoint): HttpResponse
+    private function __processCallback(ServerRequestInterface $request, callable $callback, string $endpoint): HttpResponse
     {
         // Check if the endpoint and IP address are whitelisted
-        if (! $whitelisted = $this->__isWhitelisted($this->last_ip, $data))
+        if (! $whitelisted = $this->__isWhitelisted($request, $this->last_ip))
             if (($this->whitelisted[$endpoint] ?? false) !== false)
                 return $this->__throwError("You do not have permission to access this endpoint.", HttpResponse::STATUS_FORBIDDEN);
 
@@ -215,7 +209,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             return $this->__throwError("The resource is being rate limited.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
 
         // Execute the callback and validate the response
-        if (!($response = $callback($request, $data, $whitelisted, $endpoint)) instanceof HttpResponse)
+        if (!($response = $callback($request, $whitelisted, $endpoint)) instanceof HttpResponse)
             return $this->__throwError("Callback for the endpoint `{$request->getUri()->getPath()}` is disabled due to an invalid HttpResponse.", HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
         // Update the rate limit requests
@@ -464,12 +458,15 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      * @param string $ip The IP address to check.
      * @return bool Returns true if the IP address is whitelisted, false otherwise.
      */
-    public function __isWhitelisted(string $ip, array $data = []): bool
+    public function __isWhitelisted(ServerRequestInterface $request, string $ip): bool
     {
-        if ($this->key)
+        if ($this->key) {
+            $data = [];
+            if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
             if (isset($data['key']))
                 if ($data['key'] === $this->key)
                     return true;
+        }
         return (in_array($ip, $this->whitelist) || $this->__isLocal($ip));
     }
     
@@ -507,11 +504,24 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
     }
 
+    /**
+     * Checks if the given IP address is valid.
+     *
+     * @param string $ip The IP address to validate.
+     * @return bool Returns true if the IP address is valid, false otherwise.
+     */
     function __isValidIpAddress(string $ip): bool
     {
         return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
+    /**
+     * Throws an error response with the specified error message and status code.
+     *
+     * @param string $error The error message.
+     * @param int $status The status code of the error response. Defaults to 500 (Internal Server Error).
+     * @return HttpResponse The error response.
+     */
     public function __throwError(string $error, int $status = HttpResponse::STATUS_INTERNAL_SERVER_ERROR): HttpResponse
     {
         if ($status === HttpResponse::STATUS_INTERNAL_SERVER_ERROR) $this->civ13->logger->info("HTTP error for IP: `$this->last_ip`: `$error`");

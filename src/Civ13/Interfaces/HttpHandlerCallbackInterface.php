@@ -13,5 +13,5 @@ use React\Http\Message\Response as HttpResponse;
 
 interface HttpHandlerCallbackInterface
 {
-    public function __invoke(ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse;
+    public function __invoke(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse;
 }
