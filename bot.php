@@ -41,7 +41,7 @@ $web_address = 'www.civ13.com';
 $http_port = 55555;
 
 $loop = Loop::get();
-$streamHandler = new StreamHandler('php://stdout', Level::Info);
+$streamHandler = new StreamHandler('php://stdout', Level::Debug);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
 $logger = new Logger('Civ13', [$streamHandler]);
 $discord = new Discord([
