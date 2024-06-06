@@ -145,7 +145,7 @@ class CommandServiceManager
         $array = [];
         $ping = [
             'name'                              => 'ping',                                                                          // Name of the command.
-            'alias'                             => ['/ping'],                                                                       // Aliases for the command.
+            'alias'                             => ['pong'],                                                                        // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
             'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
@@ -217,7 +217,7 @@ class CommandServiceManager
                 return false;
             }
             $names[] = $command['name'];
-            //$names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
+            $names = array_merge($names, (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : []);
             foreach ($names as $name) {
                 $this->messageServiceManager->offsetSet(
                     $name,
@@ -297,7 +297,7 @@ class CommandServiceManager
                 return false;
             }
             $names[] = $command['name'];
-            //$names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
+            $names = array_merge($names, (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : []);
             foreach ($names as $name) {
                 $this->httpServiceManager->offsetSet(
                     "/$name",
@@ -320,7 +320,7 @@ class CommandServiceManager
     {
         $help = [
             'name'                              => 'help',                                                                          // Name of the command.
-            'alias'                             => ['/help'],                                                                       // Aliases for the command.
+            'alias'                             => ['assistance'],                                                                  // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
             'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
