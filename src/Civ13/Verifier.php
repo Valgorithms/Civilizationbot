@@ -38,7 +38,6 @@ class Verifier
     public function afterConstruct()
     {
         $this->civ13->discord->once('ready', function () {
-            $this->getVerified();
             $this->verified = $this->getVerified();
 
             $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) {
