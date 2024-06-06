@@ -300,7 +300,7 @@ class CommandServiceManager
             //$names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
             foreach ($names as $name) {
                 $this->httpServiceManager->offsetSet(
-                    $name,
+                    "/$name",
                     $command['http_handler'],
                     (isset($command['http_whitelisted']) && $command['http_whitelisted']),
                     (isset($command['http_method']) && $command['http_method']) ? $command['http_method'] : 'exact',
