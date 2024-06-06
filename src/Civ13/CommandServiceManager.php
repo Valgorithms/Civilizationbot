@@ -147,24 +147,24 @@ class CommandServiceManager
             'name'                              => 'ping',                                                                          // Name of the command.
             'alias'                             => ['pong'],                                                                        // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
-            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
+            'general_usage'                     => 'Replies with Pong!',                                                            // Used when generating the help message/embed/file/etc. used in this class.
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
-            'http_method'                       => 'exact',                                                                         // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
-            'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
-            'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
-            'http_window'                       => null,                                                                            // The time window in seconds.
-            'help_usage'                        => 'Replies with Pong!',                                                            // Used when generating the help message/embed/file/etc. used in this class.
             'message_usage'                     => 'Replies with Pong!',                                                            // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
-            'interaction_usage'                 => 'Replies with Pong!',                                                            // Instructions for proper usage of the interaction handler. Currently used as the the description.
-            'http_usage'                        => 'Replies with Pong!',                                                            // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
+            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
             'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
             {
                 return $message->reply('Pong!');
             }),
+            'http_usage'                        => 'Replies with Pong!',                                                            // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
+            'http_method'                       => 'exact',                                                                         // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
+            'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
+            'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
+            'http_window'                       => null,                                                                            // The time window in seconds.
             'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }),
+            'interaction_usage'                 => 'Replies with Pong!',                                                            // Instructions for proper usage of the interaction handler. Currently used as the the description.
             'interaction_listener' => [
                 'description'                   => 'Replies with Pong!',
                 'dm_permission'                 => false,                   // Whether the command can be used in DMs.
@@ -320,18 +320,12 @@ class CommandServiceManager
     {
         $help = [
             'name'                              => 'help',                                                                          // Name of the command.
-            'alias'                             => ['assistance'],                                                                  // Aliases for the command.
+            'alias'                             => ['assist'],                                                                  // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
-            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
+            'general_usage'                     => 'Replies with information about a command (or all if none specified).',          // Used when generating the help message/embed/file/etc. used in this class.
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
-            'http_method'                       => 'exact',                                                                         // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
-            'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
-            'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
-            'http_window'                       => null,                                                                            // The time window in seconds.
-            'help_usage'                        => 'Replies with information about a command (or all if none specified).',          // Used when generating the help message/embed/file/etc. used in this class.
             'message_usage'                     => 'Replies with information about a command (or all if none specified).',          // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
-            'interaction_usage'                 => 'Replies with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
-            'http_usage'                        => 'Replies with information about an endpoint (or all if none specified).',        // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
+            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
             'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command_name): PromiseInterface
             {
                 if (! $desired_command_name = trim(substr($message_filtered['message_content_lower'], strlen($command_name)))) return $message->reply($this->getHelpMessageBuilder());
@@ -339,23 +333,24 @@ class CommandServiceManager
                 if (isset($this->global_commands[$desired_command_name])) return $message->reply($this->getHelpString(null, $desired_command_name));
                 return $message->reply("Command `$desired_command_name` not found!");
             }),
+            'http_usage'                        => 'Replies with information about an endpoint (or all if none specified).',        // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
+            'http_method'                       => 'exact',                                                                         // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
+            'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
+            'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
+            'http_window'                       => null,                                                                            // The time window in seconds.
             'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
                 return HttpResponse::plaintext($this->getHelpString());
             }),
+            'interaction_usage'                 => 'Replies with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
             'interaction_listener' => [
-                'description'                   => 'Replied with information about an interaction (or all if none specified).',
-                'dm_permission'                 => false,                   // Whether the command can be used in DMs.
-                'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
+                'description'                   => 'Replies with Pong!',
+                'dm_permission'                 => false,                                                                           // Whether the command can be used in DMs.
+                'default_member_permissions'    => null,                                                                            // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
             ],
             'interaction_handler' => function (Interaction $interaction): PromiseInterface {
                 return $interaction->respondWithMessage($this->getHelpMessageBuilder());
             },
-            'interaction_listener' => [
-                'description'                   => 'Replies with Pong!',
-                'dm_permission'                 => false,                   // Whether the command can be used in DMs.
-                'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
-            ],
         ];
         if ($this->isUnique($help)) $this->global_commands['help'] = $help;
     }
@@ -384,9 +379,9 @@ class CommandServiceManager
     public function getGlobalHelpString(?string $command_name = null, ?string $help = ''): string
     {
         if (! $this->global_commands) return $help;
-        if (isset($this->global_commands[$command_name]) && $command = $this->global_commands[$command_name]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+        if (isset($this->global_commands[$command_name]) && $command = $this->global_commands[$command_name]) return $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
         $help .= '# Global Commands' . PHP_EOL;
-        foreach ($this->global_commands as $command) if (isset($command['help_usage'])) $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+        foreach ($this->global_commands as $command) if (isset($command['general_usage'])) $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
         return $help;
         
     }
@@ -405,15 +400,15 @@ class CommandServiceManager
         if ($guild_id && ! $guild = $this->discord->guilds->get('id', $guild_id)) return $help;
         $help .= '# Guild Commands' . PHP_EOL;
         if ($guild && isset($this->guild_commands[$guild_id]) && $this->guild_commands[$guild_id]) {
-            if ($command_name && $command = $this->guild_commands[$command_name]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
-            foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+            if ($command_name && $command = $this->guild_commands[$command_name]) return $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
+            foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['general_usage'])) $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
             return $help;
         }
         foreach (array_keys($this->guild_commands) as $guild_id) {
             if (! $guild = $this->discord->guilds->get('id', $guild_id)) continue;
             if (! $this->guild_commands[$guild_id]) continue;
             $help .= "__{$guild->name} ({$guild_id})___" . PHP_EOL;
-            foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['help_usage'])) $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+            foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['general_usage'])) $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
         }
         return $help;
     }
