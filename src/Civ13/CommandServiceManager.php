@@ -23,6 +23,7 @@ use Discord\Repository\Guild\GuildCommandRepository;
 use Discord\Repository\Interaction\GlobalCommandRepository;
 use Monolog\Logger;
 use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\StreamSelectLoop;
 use React\Http\Message\Response as HttpResponse;
 use React\Promise\PromiseInterface;
 use ReflectionFunction;
@@ -31,9 +32,11 @@ class CommandServiceManager
 {
     public Discord $discord;
     public Logger $logger;
+    public StreamSelectLoop $loop;
+
+    public Civ13 $civ13;
     public HttpServiceManager $httpServiceManager;
     public MessageServiceManager $messageServiceManager;
-    public Civ13 $civ13;
 
     public array $global_commands = [];
     public array $guild_commands = [];
@@ -44,8 +47,9 @@ class CommandServiceManager
         $this->discord = $discord;
         $this->httpServiceManager = $httpServiceManager;
         $this->messageServiceManager = $messageServiceManager;
-        $this->civ13 = $civ13;
-        $this->logger = $civ13->logger;
+        $this->civ13 =& $civ13;
+        $this->logger =& $civ13->logger;
+        $this->loop =& $civ13->loop;
         $this->afterConstruct();
     }
 
@@ -795,11 +799,11 @@ class CommandServiceManager
         {
             $this->logger->info('[GIT PULL]');
             execInBackground('git pull');
-            $this->civ13->loop->addTimer(5, function () {
+            $this->loop->addTimer(5, function () {
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
                 execInBackground('git reset --hard origin/main');
             });
-            $this->civ13->loop->addTimer(10, function () {
+            $this->loop->addTimer(10, function () {
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
                 execInBackground('git pull');
             });

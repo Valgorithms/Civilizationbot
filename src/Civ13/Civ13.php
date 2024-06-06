@@ -182,7 +182,7 @@ class Civ13
 
         $this->logger =  $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
         $options = $this->resolveOptions($options);
-        $this->options = &$options;
+        $this->options =& $options;
         if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
         elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
         else $this->logger->error('No Discord instance or options passed in options!');
@@ -1298,7 +1298,7 @@ class Civ13
             $this->rounds[$server][$this->current_rounds[$server]]['end'] = $time; // Set end time of previous round
         $this->current_rounds[$server] = $game_id; // Update current round
         $this->VarSave('current_rounds.json', $this->current_rounds); // Update log of currently running game_ids
-        $round = &$this->rounds[$server][$game_id];
+        $round =& $this->rounds[$server][$game_id];
         $round = []; // Initialize round array
         $round['start'] = $time; // Set start time
         $round['end'] = null;

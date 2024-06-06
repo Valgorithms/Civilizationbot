@@ -9,11 +9,17 @@
 
 namespace Civ13;
 
+use Discord\Discord;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Member;
+use Monolog\Logger;
+use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
 
 class GameServer {
+    public Discord $discord;
+    public Logger $logger;
+    public StreamSelectLoop $loop;
     public Civ13 $civ13;
 
     // Resolved paths
@@ -61,7 +67,9 @@ class GameServer {
 
     public function __construct(Civ13 $civ13, array $options)
     {
-        $this->civ13 = $civ13;
+        $this->civ13 =& $civ13;
+        $this->logger =& $civ13->logger;
+        $this->loop =& $civ13->loop;
         $this->resolveOptions($options);
         $this->basedir = $options['basedir'];
         $this->key = $options['key'];
