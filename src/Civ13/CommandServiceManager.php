@@ -164,7 +164,6 @@ class CommandServiceManager
             {
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }),
-            'interaction_usage'                 => 'Replies with Pong!',                                                            // Instructions for proper usage of the interaction handler. Currently used as the the description.
             'interaction_listener' => [
                 'description'                   => 'Replies with Pong!',
                 'dm_permission'                 => false,                   // Whether the command can be used in DMs.
@@ -342,9 +341,8 @@ class CommandServiceManager
             {
                 return HttpResponse::plaintext($this->getHelpString());
             }),
-            'interaction_usage'                 => 'Replies with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
             'interaction_listener' => [
-                'description'                   => 'Replies with Pong!',
+                'description'                   => 'Replies with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
                 'dm_permission'                 => false,                                                                           // Whether the command can be used in DMs.
                 'default_member_permissions'    => null,                                                                            // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
             ],
