@@ -108,29 +108,29 @@ class Slash
                 'dm_permission' => false,
             ]));
 
-            // if ($command = $commands->get('name', 'pull')) $commands->delete($command);
-            if (! $commands->get('name', 'pull')) $this->save($commands, new Command($this->discord, [
+            if ($command = $commands->get('name', 'pull')) $commands->delete($command);
+            /*if (! $commands->get('name', 'pull')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'pull',
                     'description'                => "Update the bot's code",
                     'dm_permission'              => false,
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
-            ]));
+            ]));*/
 
-            // if ($command = $commands->get('name', 'update')) $commands->delete($command);
-            if (! $commands->get('name', 'update')) $this->save($commands, new Command($this->discord, [
+            if ($command = $commands->get('name', 'update')) $commands->delete($command);
+            /*if (! $commands->get('name', 'update')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'update',
                     'description'                => "Update the bot's dependencies",
                     'dm_permission'              => false,
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
-            ]));
+            ]));*/
 
-            // if ($command = $commands->get('name', 'stats')) $commands->delete($command);
-            if (! $commands->get('name', 'stats')) $this->save($commands, new Command($this->discord, [
+            if ($command = $commands->get('name', 'stats')) $commands->delete($command);
+            /*if (! $commands->get('name', 'stats')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'stats',
                 'description'                => 'Get runtime information about the bot',
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
-            ]));
+            ]));*/
 
             if ($command = $commands->get('name', 'invite')) $commands->delete($command);
             /*if (! $commands->get('name', 'invite')) $this->save($commands, new Command($this->discord, [
@@ -221,13 +221,13 @@ class Slash
                 ]
             ]));
 
-            // if ($command = $commands->get('name', 'panic_bunker')) $commands->delete($command);
-            if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->discord, [
+            if ($command = $commands->get('name', 'panic_bunker')) $commands->delete($command);
+            /*if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'panic_bunker',
                 'description'                => 'Toggles the panic bunker',
                 'dm_permission'              => false,
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['manage_guild' => true]),
-            ]));
+            ]));*/
 
             // if ($command = $commands->get('name', 'join_campaign')) $commands->delete($command);
             if (! $commands->get('name', 'join_campaign')) $this->save($commands, new Command($this->discord, [
