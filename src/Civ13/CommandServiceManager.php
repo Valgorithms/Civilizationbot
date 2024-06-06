@@ -68,15 +68,20 @@ class CommandServiceManager
      */
     private function setup(): void
     {
-        if (isset($this->setup)) return;
+        if (isset($this->setup)) {
+            $this->logger->warning('Setup already called');
+            return;
+        }
         $this->loadCommands();
+        $this->loadDefaultHelpCommands();
         $this->setupMessageCommands();
         $this->setupInteractionCommands();
         $this->setupHTTPCommands();
-        $this->setupDefaultHelpCommands();
         $this->logger->info(json_encode($this->global_commands));
         $this->logger->info(json_encode($this->guild_commands));
         $this->setup = true;
+        $this->logger->info('CommandServiceManager setup complete');
+        $this->logger->info($this->httpServiceManager->httpHandler->generateHelp());
     }
 
     /**
@@ -186,7 +191,10 @@ class CommandServiceManager
                 $this->global_commands[$command['name']] = $command;
                 $names = [$command['name']];
                 $names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
-                foreach ($names as $name) $this->global_commands[$name] = $command;
+                foreach ($names as $name) {
+                    $command['name'] = $name;
+                    $this->global_commands[$name] = $command;
+                }
                 continue;
             }
             foreach ($command['guilds'] as $guild_id) {
@@ -275,8 +283,16 @@ class CommandServiceManager
                 $this->logger->warning('Invalid command name');
                 return false;
             }
-            if (! isset($command['http_handler']) || ! is_callable($command['http_handler']) || ! $command['message_handler'] instanceof HttpHandlerCallback) {
-                $this->logger->warning("Invalid HTTP handler for `{$command['name']}` command");
+            if (! isset($command['http_handler'])) {
+                $this->logger->warning('Invalid HTTP handler');
+                return false;
+            }
+            if (! is_callable($command['http_handler'])){
+                $this->logger->warning("Invalid HTTP handler for `{$command['name']}` command. Not callable.");
+                return false;
+            }
+            if (! $command['http_handler'] instanceof HttpHandlerCallback) {
+                $this->logger->warning("Invalid HTTP handler for `{$command['name']}` command. Not an instance of HttpHandlerCallback.");
                 return false;
             }
             $names = (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : [];
@@ -297,8 +313,9 @@ class CommandServiceManager
         };
         foreach ($this->global_commands as $global_command) $createCommand($global_command);
         foreach ($this->guild_commands as $guild_command) $createCommand($guild_command);
+
     }
-    private function setupDefaultHelpCommands():void
+    private function loadDefaultHelpCommands():void
     {
         $help = [
             'name'                              => 'help',                                                                          // Name of the command.
@@ -310,16 +327,16 @@ class CommandServiceManager
             'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
             'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
             'http_window'                       => null,                                                                            // The time window in seconds.
-            'help_usage'                        => 'Replied with information about a command (or all if none specified).',          // Used when generating the help message/embed/file/etc. used in this class.
-            'message_usage'                     => 'Replied with information about a command (or all if none specified).',          // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
-            'interaction_usage'                 => 'Replied with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
-            'http_usage'                        => 'Replied with information about an endpoint (or all if none specified).',        // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
+            'help_usage'                        => 'Replies with information about a command (or all if none specified).',          // Used when generating the help message/embed/file/etc. used in this class.
+            'message_usage'                     => 'Replies with information about a command (or all if none specified).',          // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
+            'interaction_usage'                 => 'Replies with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
+            'http_usage'                        => 'Replies with information about an endpoint (or all if none specified).',        // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
             'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command_name): PromiseInterface
             {
                 if (! $desired_command_name = trim(substr($message_filtered['message_content_lower'], strlen($command_name)))) return $message->reply($this->getHelpMessageBuilder());
                 if (isset($this->guild_commands[$message->guild_id]) && $this->guild_commands[$message->guild_id] && isset($this->guild_commands[$message->guild_id][$desired_command_name]) && $this->guild_commands[$message->guild_id][$desired_command_name]) return $message->reply($this->getHelpString($message->guild_id, $desired_command_name));
-                if (isset($global_commands[$desired_command_name])) return $message->reply($this->getHelpString(null, $desired_command_name));
-                return $message->reply('Command not found!');
+                if (isset($this->global_commands[$desired_command_name])) return $message->reply($this->getHelpString(null, $desired_command_name));
+                return $message->reply("Command `$desired_command_name` not found!");
             }),
             'http_handler' => new HttpHandlerCallback(function (ServerRequestInterface $request, array $data, bool $whitelisted, string $endpoint): HttpResponse
             {
@@ -341,6 +358,7 @@ class CommandServiceManager
         ];
         if ($this->isUnique($help)) {
             $this->global_commands['help'] = $help;
+            $help['name'] = '/help';
             $this->global_commands['/help'] = $help;
         }
     }
@@ -355,7 +373,7 @@ class CommandServiceManager
         if (! $description = $this->getGlobalHelpString($command_name) . $this->getGuildHelpString($guild_id, $command_name)) return false;
         if (strlen($description) > 4096) return false;
         $embed = new Embed($this->discord);
-        $embed->setTitle('Slash Commands');
+        $embed->setTitle('Commands List');
         $embed->setDescription($description);
         $embed->setColor(0xe1452d);
         $embed->setFooter($this->civ13->embed_footer);
@@ -371,7 +389,7 @@ class CommandServiceManager
         if (! $this->global_commands) return $help;
         if (isset($this->global_commands[$command_name]) && $command = $this->global_commands[$command_name]) return $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
         $help .= '# Global Commands' . PHP_EOL;
-        foreach ($this->global_commands as $command) if (isset($command['help_usage'])) $help .= "{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
+        foreach ($this->global_commands as $command) if (isset($command['help_usage'])) $help .= "`{$command['name']}` - {$command['help_usage']}" . PHP_EOL;
         return $help;
         
     }
