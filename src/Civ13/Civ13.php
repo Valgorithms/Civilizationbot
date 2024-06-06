@@ -8,8 +8,7 @@
 
 namespace Civ13;
 
-use Byond;
-use ReflectionFunction;
+use Byond\Byond;
 use Civ13\Slash;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
@@ -32,6 +31,7 @@ use React\Promise\PromiseInterface;
 use React\Http\Browser;
 use React\EventLoop\TimerInterface;
 use React\Filesystem\Factory as FilesystemFactory;
+use ReflectionFunction;
 
 class Civ13
 {
@@ -257,14 +257,14 @@ class Civ13
     {
         $this->verifier = new Verifier($this, $options);
         $this->httpServiceManager = new HttpServiceManager($this);
+        $this->byond = new Byond();
         if (isset($this->discord)) $this->discord->once('ready', function () use ($options) {
-            $this->byond = new Byond();
-            $this->messageServiceManager = new MessageServiceManager($this);
-            //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->ready = true;
             $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
             $this->logger->info('------');
             
+            $this->messageServiceManager = new MessageServiceManager($this);
+            //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__loadOrInitializeVariables();
             $this->verifier->getVerified(); // Populate verified property with data from DB
             $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel

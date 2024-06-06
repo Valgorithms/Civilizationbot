@@ -1,4 +1,5 @@
 <?php
+namespace Byond;
 
 /*
  * This file is a part of the Civ13 project.
@@ -10,7 +11,7 @@
  * This class provides functionality related to BYOND (Build Your Own Net Dream) game development.
  * It can be used to interact with BYOND servers and retrieve information about players and their accounts.
  */
-class BYOND
+class Byond
 {
     /**
      * The base URL for the BYOND website.

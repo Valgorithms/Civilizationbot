@@ -55,8 +55,6 @@ class CommandServiceManager
     */
     private function afterConstruct()
     {
-        $this->httpServiceManager = $this->httpServiceManager;
-        $this->messageServiceManager = $this->httpServiceManager;
         $this->setup();
         if ($application_commands = $this->discord->__get('application_commands')) {
             $names = [];
@@ -66,7 +64,7 @@ class CommandServiceManager
     }
     /**
      * Sets up the bot by updating commands, guild commands, and declaring listeners.
-     * This method should be called in the scope of $this->discord->once('ready', fn() => $this->setup());
+     * This method should be called in the scope of $this->discord->on('ready', fn() => $this->setup());
      */
     private function setup(): void
     {
@@ -76,6 +74,8 @@ class CommandServiceManager
         $this->setupInteractionCommands();
         $this->setupHTTPCommands();
         $this->setupDefaultHelpCommands();
+        $this->logger->info(json_encode($this->global_commands));
+        $this->logger->info(json_encode($this->guild_commands));
         $this->setup = true;
     }
 
@@ -103,8 +103,8 @@ class CommandServiceManager
             $this->logger->warning('Invalid return type for ' . $command['name'] . ' command');
             return false;
         }
-        if ($returnType->getName() !== 'PromiseInterface') {
-            $this->logger->warning('Invalid return type for ' . $command['name'] . ' command');
+        if ($returnType->getName() !== 'React\Promise\PromiseInterface') {
+            $this->logger->warning("Invalid return type for {$command['name']}. command. Found {$returnType->getName()} instead of PromiseInterface");
             return false;
         }
 
@@ -184,7 +184,7 @@ class CommandServiceManager
             if (! $this->isUnique($command)) continue;
             if (! isset($command['guilds']) || ! $command['guilds']) {
                 $this->global_commands[$command['name']] = $command;
-                $names = $command['name'];
+                $names = [$command['name']];
                 $names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
                 foreach ($names as $name) $this->global_commands[$name] = $command;
                 continue;
