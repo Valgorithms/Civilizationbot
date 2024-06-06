@@ -399,7 +399,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
 $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, &$testing) {
     if (
         str_starts_with($e->getMessage(), 'Received request with invalid protocol version') ||
-        str_ends_with($e->getMessage(), 'Connection to tls://discord.com:443 timed out after 60 seconds (ETIMEDOUT)') // Promise attempted to resolve while Discord was disconnected
+        str_starts_with($e->getMessage(), 'Promise rejected with reason: `RuntimeException: Connection to tls://discord.com:443 timed out after 60 seconds (ETIMEDOUT)') // Promise attempted to resolve while Discord was disconnected
     ) return; // Ignore this error, it's not important
     $error = "[WEBAPI] {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $civ13->logger->error("[WEBAPI] $error");
