@@ -209,7 +209,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             return $this->__throwError("The resource is being rate limited.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
 
         // Execute the callback and validate the response
-        if (!($response = $callback($request, $whitelisted, $endpoint)) instanceof HttpResponse)
+        if (!($response = $callback($request, $endpoint, $whitelisted)) instanceof HttpResponse)
             return $this->__throwError("Callback for the endpoint `{$request->getUri()->getPath()}` is disabled due to an invalid HttpResponse.", HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
         // Update the rate limit requests

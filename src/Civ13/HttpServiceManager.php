@@ -255,10 +255,10 @@ class HttpServiceManager
             {
                 if ($whitelisted) {
                     $method = $this->httpHandler->offsetGet('/botlog') ?? [];
-                    if ($method = array_shift($method)) return $method($request, $whitelisted, $endpoint);
+                    if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
                 }
                 $method = $this->httpHandler->offsetGet('/home.html') ?? [];
-                if ($method = array_shift($method)) return $method($request, $whitelisted, $endpoint);
+                if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
                 return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
             });
             $this->httpHandler->offsetSet('/', $index);
@@ -779,7 +779,7 @@ class HttpServiceManager
                 $params = $request->getQueryParams();
                 //if ($params['method']) $this->civ13->logger->info("[METHOD] `{$params['method']}`");
                 $method = $this->httpHandler->offsetGet($endpoint.'/'.($params['method'] ?? '')) ?? [];
-                if ($method = array_shift($method)) return $method($request, $whitelisted, $endpoint);
+                if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
                 else {
                     if ($params['method'] ?? '') $this->civ13->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
                     return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
