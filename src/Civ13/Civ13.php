@@ -1003,10 +1003,7 @@ class Civ13
     {
         if ($this->sanitizeInput($ckey) === $this->sanitizeInput($this->discord->user->displayname)) return false; // Don't ban the bot
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
-        if (! $this->__relayWarningCounter($ckey, $badwords_array, $badword_warnings)) {
-            $arr = ['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->discord_formatted}"];
-            return $this->ban($arr);
-        }
+        if (! $this->__relayWarningCounter($ckey, $badwords_array, $badword_warnings)) return $this->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->discord_formatted}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
         foreach ($this->server_settings as $settings) if (strtolower($server) === $settings['key']) return $this->DirectMessage($warning, $this->discord->user->displayname, $ckey, $settings);
