@@ -10,11 +10,16 @@
 namespace Civ13;
 
 use Discord\Discord;
+use Discord\Builders\MessageBuilder;
+use Discord\Parts\Channel\Channel;
+use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
+use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
+use React\Promise\PromiseInterface;
 
 class GameServer {
     public Discord $discord;
@@ -260,6 +265,129 @@ class GameServer {
         return true;
     }
 
+    /**
+     * Sends an out-of-character (OOC) message.
+     *
+     * @param string $message The message to send.
+     * @param string $sender The sender of the message.
+     * @return bool Returns true if the message was sent successfully, false otherwise.
+     */
+    public function OOCMessage(string $message, string $sender): bool
+    {
+        if (! $this->enabled) return false;
+        if (! touch ($this->basedir . Civ13::discord2ooc) || ! $file = @fopen($this->basedir . Civ13::discord2ooc, 'a')) {
+            $this->logger->error('unable to open `' . $this->basedir . Civ13::discord2ooc . '` for writing');
+            return false;
+        }
+        fwrite($file, "$sender:::$message" . PHP_EOL);
+        fclose($file);
+        if ($this->ooc && $channel = $this->discord->getChannel($this->ooc)) $this->relayPlayerMessage($channel, $message, $sender);
+        return true;
+        
+    }
+    /**
+     * Sends an admin message to the server.
+     *
+     * @param string $message The message to send.
+     * @param string $sender The sender of the message.
+     * @return bool Returns true if the message was sent successfully, false otherwise.
+     */
+    public function AdminMessage(string $message, string $sender): bool
+    {
+        if (! $this->enabled) return false;
+        if (! touch($this->basedir . Civ13::discord2admin) || ! $file = @fopen($this->basedir . Civ13::discord2admin, 'a')) {
+            $this->logger->error('unable to open `' . $this->basedir . Civ13::discord2admin . '` for writing');
+            return false;
+        }
+        fwrite($file, "$sender:::$message" . PHP_EOL);
+        fclose($file);
+        $urgent = true; // Check if there are any admins on the server, if not then send the message as urgent
+        if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            $admin = false;
+            if ($this->civ13->verifier) {
+                if ($item = $this->civ13->verifier->verified->get('ss13', $sender))
+                    if ($member = $guild->members->get('id', $item['discord']))
+                        if ($member->roles->has($this->civ13->role_ids['Admin']))
+                            { $admin = true; $urgent = false;}
+                if (! $admin)
+                    if ($playerlist = $this->localServerPlayerCount()['playerlist'])
+                        if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
+                            foreach ($admins as $member)
+                                if ($item = $this->civ13->verifier->verified->get('discord', $member->id))
+                                    if (in_array($item['ss13'], $playerlist))
+                                        { $urgent = false; break; }
+            }
+        }
+        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->relayPlayerMessage($channel, $message, $sender, null, $urgent);
+        return true;
+        
+    }
+    /**
+     * Sends a direct message to a recipient using the specified sender and message.
+     *
+     * @param string $recipient The recipient of the direct message.
+     * @param string $message The content of the direct message.
+     * @param string $sender The sender of the direct message.
+     * @return bool Returns true if the direct message was sent successfully, false otherwise.
+     */
+    public function DirectMessage(string $recipient, string $message, string $sender): bool
+    {
+        if (! $this->enabled) return false;
+        if (! touch($this->basedir . Civ13::discord2dm) || ! ! $file = @fopen($this->basedir . Civ13::discord2dm, 'a')) {
+            $this->logger->debug('unable to open `' . $this->basedir . Civ13::discord2dm . '` for writing');
+            return false;
+        }
+        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
+        fclose($file);
+        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->relayPlayerMessage($channel, $message, $sender, $recipient);
+        return true;
+    }
+    /**
+     * Sends a player message to a channel.
+     *
+     * @param Channel|Thread|string $channel The channel to send the message to.
+     * @param bool $urgent Whether the message is urgent or not.
+     * @param string $content The content of the message.
+     * @param string $sender The sender of the message (ckey or Discord displayname).
+     * @param string $recipient The recipient of the message (optional).
+     * @param string $file_name The name of the file to attach to the message (default: 'message.txt').
+     * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
+     * @param bool $announce_shard Whether to announce the shard in the message (default: true).
+     * @return PromiseInterface|null A promise that resolves to the sent message, or null if the message couldn't be sent.
+     */
+    public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
+    {
+        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
+            $this->logger->error("Channel not found for relayPlayerMessage");
+            return null;
+        }
+        $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
+
+        // Sender is the ckey or Discord displayname
+        $ckey = null;
+        $member = null;
+        $verified = false;
+        if ($this->civ13->verifier) if ($item = $this->civ13->verifier->getVerifiedItem($sender)) {
+            $ckey = $item['ss13'];
+            $verified = true;
+            $member = $this->civ13->verifier->getVerifiedMember($ckey);
+        }
+        $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
+
+        $builder = MessageBuilder::new();
+        if ($urgent) $builder->setContent("<@&{$this->civ13->role_ids['Admin']}>, an urgent message has been sent!");
+        if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
+        if (strlen($content)<4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
+        $embed = new Embed($this->discord);
+        if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
+        if ($member) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+        $embed->setDescription($content);
+        $builder->addEmbed($embed);
+        return $channel->sendMessage($builder)->then($then, null);
+        
+    }
+
     /*
      * These functions determine which of the above methods should be used to process a ban or unban
      * Ban functions will return a string containing the results of the ban
@@ -302,6 +430,13 @@ class GameServer {
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
 
+    /**
+     * Unbans a player with the specified ckey.
+     *
+     * @param string $ckey The ckey of the player to unban.
+     * @param string|null $admin The name of the admin who is performing the unban. If not provided, the display name of the Discord user will be used.
+     * @return void
+     */
     public function unban(string $ckey, ?string $admin = null,): void
     {
         $admin ??= $this->civ13->discord->user->displayname;
