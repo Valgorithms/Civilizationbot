@@ -12,6 +12,7 @@ use \Exception;
 use Civ13\Civ13;
 use Discord\Discord;
 use Discord\Stats;
+use Discord\Builders\MessageBuilder;
 //use \Discord\Helpers\CacheConfig;
 use React\EventLoop\Loop;
 //use \WyriHaximus\React\Cache\Redis as RedisCache;
@@ -404,7 +405,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
     if (str_starts_with($e->getMessage(), 'The response callback')) {
         $civ13->logger->info('[WEBAPI] ERROR - RESTART');
         if (! $testing && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
-            $builder = \Discord\Builders\MessageBuilder::new()
+            $builder = MessageBuilder::new()
                 ->setContent('Restarting due to error in HttpServer API...')
                 ->addFileFromContent('httpserver_error.txt', preg_replace('/(?<=key=)[^&]+/', '********', $error));
             $channel->sendMessage($builder);
