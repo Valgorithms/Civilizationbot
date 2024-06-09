@@ -281,7 +281,7 @@ class GameServer {
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        if ($this->ooc && $channel = $this->discord->getChannel($this->ooc)) $this->relayPlayerMessage($channel, $message, $sender);
+        if ($this->ooc && $channel = $this->discord->getChannel($this->ooc)) $this->civ13->relayPlayerMessage($channel, $message, $sender);
         return true;
         
     }
@@ -318,7 +318,7 @@ class GameServer {
                                         { $urgent = false; break; }
             }
         }
-        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->relayPlayerMessage($channel, $message, $sender, null, $urgent);
+        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent);
         return true;
         
     }
@@ -339,52 +339,8 @@ class GameServer {
         }
         fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
         fclose($file);
-        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->relayPlayerMessage($channel, $message, $sender, $recipient);
+        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient);
         return true;
-    }
-    /**
-     * Sends a player message to a channel.
-     *
-     * @param Channel|Thread|string $channel The channel to send the message to.
-     * @param bool $urgent Whether the message is urgent or not.
-     * @param string $content The content of the message.
-     * @param string $sender The sender of the message (ckey or Discord displayname).
-     * @param string $recipient The recipient of the message (optional).
-     * @param string $file_name The name of the file to attach to the message (default: 'message.txt').
-     * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
-     * @param bool $announce_shard Whether to announce the shard in the message (default: true).
-     * @return PromiseInterface|null A promise that resolves to the sent message, or null if the message couldn't be sent.
-     */
-    public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
-    {
-        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
-            $this->logger->error("Channel not found for relayPlayerMessage");
-            return null;
-        }
-        $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
-
-        // Sender is the ckey or Discord displayname
-        $ckey = null;
-        $member = null;
-        $verified = false;
-        if ($this->civ13->verifier) if ($item = $this->civ13->verifier->getVerifiedItem($sender)) {
-            $ckey = $item['ss13'];
-            $verified = true;
-            $member = $this->civ13->verifier->getVerifiedMember($ckey);
-        }
-        $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
-
-        $builder = MessageBuilder::new();
-        if ($urgent) $builder->setContent("<@&{$this->civ13->role_ids['Admin']}>, an urgent message has been sent!");
-        if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
-        if (strlen($content)<4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
-        $embed = new Embed($this->discord);
-        if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
-        if ($member) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
-        $embed->setDescription($content);
-        $builder->addEmbed($embed);
-        return $channel->sendMessage($builder)->then($then, null);
     }
 
     /*
