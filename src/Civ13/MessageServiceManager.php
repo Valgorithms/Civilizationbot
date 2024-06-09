@@ -533,7 +533,7 @@ class MessageServiceManager
                     case "asay-{$settings['key']}":
                     case "ic-{$settings['key']}":
                     case "ooc-{$settings['key']}":
-                        if ($this->civ13->DirectMessage($recipient, $msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
+                        if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $recipient, $settings)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }

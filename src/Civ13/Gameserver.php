@@ -330,7 +330,7 @@ class GameServer {
      * @param string $sender The sender of the direct message.
      * @return bool Returns true if the direct message was sent successfully, false otherwise.
      */
-    public function DirectMessage(string $recipient, string $message, string $sender): bool
+    public function DirectMessage(string $message, string $sender, string $recipient): bool
     {
         if (! $this->enabled) return false;
         if (! touch($this->basedir . Civ13::discord2dm) || ! ! $file = @fopen($this->basedir . Civ13::discord2dm, 'a')) {
@@ -385,7 +385,6 @@ class GameServer {
         $embed->setDescription($content);
         $builder->addEmbed($embed);
         return $channel->sendMessage($builder)->then($then, null);
-        
     }
 
     /*

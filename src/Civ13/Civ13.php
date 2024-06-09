@@ -812,7 +812,7 @@ class Civ13
      * @param array|null $settings Additional settings for sending the direct message (optional).
      * @return bool Returns true if the direct message was sent successfully, false otherwise.
      */
-    public function DirectMessage(string $recipient, string $message, string $sender, ?array $settings = []): bool
+    public function DirectMessage(string $message, string $sender, string $recipient, ?array $settings = []): bool
     {
         $directmessage = function (string $recipient, string $message, string $sender, array $settings): bool
         {
@@ -830,8 +830,8 @@ class Civ13
             if (! isset($s['enabled']) || ! $s['enabled']) continue;
             if ($settings['key']) {
                 if ($settings['key'] !== $s['key']) continue;
-                return $directmessage($recipient, $message, $sender, $settings);
-            } elseif ($directmessage($recipient, $message, $sender, $settings)) $sent = true;
+                return $directmessage($message, $sender, $recipient, $settings);
+            } elseif ($directmessage($message, $sender, $recipient, $settings)) $sent = true;
         }
         return $sent;
     }
@@ -1009,7 +1009,7 @@ class Civ13
         }
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
-        foreach ($this->server_settings as $settings) if (strtolower($server) === $settings['key']) return $this->DirectMessage($ckey, $warning, $this->discord->user->displayname, $settings);
+        foreach ($this->server_settings as $settings) if (strtolower($server) === $settings['key']) return $this->DirectMessage($warning, $this->discord->user->displayname, $ckey, $settings);
         return false;
     }
     /*
