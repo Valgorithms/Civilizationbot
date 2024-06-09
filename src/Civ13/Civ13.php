@@ -683,7 +683,7 @@ class Civ13
      * @param bool $announce_shard Whether to announce the shard in the message (default: true).
      * @return PromiseInterface|null A promise that resolves to the sent message, or null if the message couldn't be sent.
      */
-    public function relayPlayerMessage(Channel|Thread|string $channel, bool $urgent, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
+    public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
     {
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error("Channel not found for relayPlayerMessage");
@@ -736,7 +736,7 @@ class Civ13
             if (isset($settings['basedir']) && file_exists($settings['basedir'] . self::discord2ooc) && $file = @fopen($settings['basedir'] . self::discord2ooc, 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
-                if (isset($settings['ooc']) && $channel = $this->discord->getChannel($settings['ooc'])) $this->relayPlayerMessage($channel, false, $message, $sender);
+                if (isset($settings['ooc']) && $channel = $this->discord->getChannel($settings['ooc'])) $this->relayPlayerMessage($channel, $message, $sender);
                 return true;
             }
             $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2ooc . '` for writing');
@@ -784,7 +784,7 @@ class Civ13
                                         if (in_array($item['ss13'], $playerlist))
                                             { $urgent = false; break; }
                 }
-                if (isset($settings['asay']) && $channel = $this->discord->getChannel($settings['asay'])) $this->relayPlayerMessage($channel, $urgent, $message, $sender);
+                if (isset($settings['asay']) && $channel = $this->discord->getChannel($settings['asay'])) $this->relayPlayerMessage($channel, $message, $sender, null, $urgent);
                 return true;
             }
             $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2admin . '` for writing');
@@ -819,21 +819,21 @@ class Civ13
             if (file_exists($settings['basedir'] . self::discord2dm) && $file = @fopen($settings['basedir'] . self::discord2dm, 'a')) {
                 fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
                 fclose($file);
-                if (isset($settings['asay']) && $channel = $this->discord->getChannel($settings['asay'])) $this->relayPlayerMessage($channel, false, $message, $sender, $recipient);
+                if (isset($settings['asay']) && $channel = $this->discord->getChannel($settings['asay'])) $this->relayPlayerMessage($channel, $message, $sender, $recipient);
                 return true;
             }
             $this->logger->debug('unable to open `' . $settings['basedir'] . self::discord2dm . '` for writing');
             return false;
         };
         $sent = false;
-        foreach ($this->server_settings as  $s) {
+        foreach ($this->server_settings as $s) {
             if ($settings['key']) {
                 if ($settings['key'] !== $s['key']) continue;
                 if (! $s['enabled'] ?? false) return false;
                 return $directmessage($recipient, $message, $sender, $settings);
             } else {
                 if (! isset($s['enabled']) || ! $s['enabled']) continue;
-                $sent = $directmessage($recipient, $message, $sender, $settings);
+                if ($directmessage($recipient, $message, $sender, $settings)) $sent = true;
             }
         }
         return $sent;
