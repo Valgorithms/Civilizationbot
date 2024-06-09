@@ -199,7 +199,7 @@ class Civ13
             if (! str_ends_with($options['filecache_path'], '/')) $options['filecache_path'] .= '/';
             $this->filecache_path = $options['filecache_path'];
         }
-        if (!file_exists($this->filecache_path)) mkdir($this->filecache_path, 0664, true);
+        if (!touch($this->filecache_path)) mkdir($this->filecache_path, 0664, true);
         
         if (isset($options['command_symbol']) && $options['command_symbol']) $this->command_symbol = $options['command_symbol'];
         if (isset($options['owner_id'])) $this->owner_id = $options['owner_id'];
@@ -343,11 +343,11 @@ class Civ13
             $this->logger->error("Promise rejected with reason: `$reason'`");
         };
 
-        if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! file_exists($value) || ! is_dir($value)) {
+        if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! touch($value) || ! is_dir($value)) {
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
         }
-        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || (! file_exists($value) && ! @touch($value))) {
+        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || ! @touch($value)) {
             $this->logger->warning("`$value` is not a valid file path!");
             unset($options['files'][$key]);
         }
@@ -733,7 +733,7 @@ class Civ13
     {
         $oocmessage = function (string $message, string $sender, array $settings): bool
         {
-            if (isset($settings['basedir']) && file_exists($settings['basedir'] . self::discord2ooc) && $file = @fopen($settings['basedir'] . self::discord2ooc, 'a')) {
+            if (isset($settings['basedir']) && touch($settings['basedir'] . self::discord2ooc) && $file = @fopen($settings['basedir'] . self::discord2ooc, 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
                 if (isset($settings['ooc']) && $channel = $this->discord->getChannel($settings['ooc'])) $this->relayPlayerMessage($channel, $message, $sender);
@@ -766,7 +766,7 @@ class Civ13
     {
         $adminmessage = function (string $message, string $sender, array $settings): bool
         {
-            if (file_exists($settings['basedir'] . self::discord2admin) && $file = @fopen($settings['basedir'] . self::discord2admin, 'a')) {
+            if (touch($settings['basedir'] . self::discord2admin) && $file = @fopen($settings['basedir'] . self::discord2admin, 'a')) {
                 fwrite($file, "$sender:::$message" . PHP_EOL);
                 fclose($file);
                 $urgent = true; // Check if there are any admins on the server, if not then send the message as urgent
@@ -816,7 +816,7 @@ class Civ13
     {
         $directmessage = function (string $recipient, string $message, string $sender, array $settings): bool
         {
-            if (file_exists($settings['basedir'] . self::discord2dm) && $file = @fopen($settings['basedir'] . self::discord2dm, 'a')) {
+            if (touch($settings['basedir'] . self::discord2dm) && $file = @fopen($settings['basedir'] . self::discord2dm, 'a')) {
                 fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
                 fclose($file);
                 if (isset($settings['asay']) && $channel = $this->discord->getChannel($settings['asay'])) $this->relayPlayerMessage($channel, $message, $sender, $recipient);
@@ -851,7 +851,7 @@ class Civ13
     public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false, ?bool $ooc = true): bool
     {
         if ($this->relay_method !== 'file') return false;
-        if (! file_exists($file_path) || ! $file = @fopen($file_path, 'r+')) {
+        if (! touch($file_path) || ! $file = @fopen($file_path, 'r+')) {
             $this->relay_method = 'webhook'; // Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
             $this->logger->warning("gameChatFileRelay() was called with an invalid file path: `$file_path`, falling back to using webhooks for relaying instead.");
             return false;
@@ -1410,7 +1410,7 @@ class Civ13
         if (empty($server_settings)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->server_settings)) . '`');
 
         $server_settings = reset($server_settings);
-        if (! isset($server_settings['basedir']) || ! file_exists($filename = $server_settings['basedir'] . self::bans)) {
+        if (! isset($server_settings['basedir']) || ! touch($filename = $server_settings['basedir'] . self::bans)) {
             $this->logger->warning("Either basedir or `" . self::bans . "` is not defined or does not exist");
             return $message->react("🔥");
         }
@@ -1432,7 +1432,7 @@ class Civ13
         // We don't want the persistence server to do this function
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::bans) || ! $file = @fopen($settings['basedir'] . self::bans , 'r')) return false;
+            if (! isset($settings['basedir']) || ! touch($settings['basedir'] . self::bans) || ! $file = @fopen($settings['basedir'] . self::bans , 'r')) return false;
             fclose($file);
         }
 
@@ -1496,7 +1496,7 @@ class Civ13
     {
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled'] || ! isset($settings['basedir'])) continue;
-            if (file_exists($settings['basedir'] . self::bans) && $file = @fopen($settings['basedir'] . self::bans, 'r')) {
+            if (touch($settings['basedir'] . self::bans) && $file = @fopen($settings['basedir'] . self::bans, 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -1520,7 +1520,7 @@ class Civ13
     {
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled'] || ! isset($settings['basedir'])) continue;
-            if (file_exists($settings['basedir'] . self::bans) && $file = @fopen($settings['basedir'] . self::bans, 'r')) {
+            if (touch($settings['basedir'] . self::bans) && $file = @fopen($settings['basedir'] . self::bans, 'r')) {
                 while (($fp = fgets($file, 4096)) !== false) {
                     // str_replace(PHP_EOL, '', $fp); // Is this necessary?
                     $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -1608,7 +1608,7 @@ class Civ13
         $admin = $admin ?? $this->discord->user->username;
         $legacyUnban = function (string $ckey, string $admin, array $settings)
         {
-            if (file_exists($settings['basedir'] . self::discord2unban) && $file = @fopen($settings['basedir'] . self::discord2unban, 'a')) {
+            if (touch($settings['basedir'] . self::discord2unban) && $file = @fopen($settings['basedir'] . self::discord2unban, 'a')) {
                 fwrite($file, $admin . ":::$ckey");
                 fclose($file);
             } else $this->logger->warning('unable to open `' . $settings['basedir'] . self::discord2unban . '`');
@@ -1629,7 +1629,7 @@ class Civ13
         $legacyBan = function (array $array, string $admin, array $settings): string
         {
             if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
-            if (file_exists($settings['basedir'] . self::discord2ban) && $file = @fopen($settings['basedir'] . self::discord2ban, 'a')) {
+            if (touch($settings['basedir'] . self::discord2ban) && $file = @fopen($settings['basedir'] . self::discord2ban, 'a')) {
                 fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
                 fclose($file);
                 return "**$admin** banned **{$array['ckey']}** from **{$settings['name']}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
@@ -1869,7 +1869,7 @@ class Civ13
         $file_contents = '';
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if (file_exists($settings['basedir'] . self::bans) && $fc = @file_get_contents($settings['basedir'] . self::bans)) $file_contents .= $fc;
+            if (touch($settings['basedir'] . self::bans) && $fc = @file_get_contents($settings['basedir'] . self::bans)) $file_contents .= $fc;
             else $this->logger->warning('unable to open `' . $settings['basedir'] . self::bans . '`');
         }
         
@@ -1927,7 +1927,7 @@ class Civ13
         $file_contents = '';
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if (file_exists($settings['basedir'] . self::playerlogs) && $fc = @file_get_contents($settings['basedir'] . self::playerlogs)) $file_contents .= $fc;
+            if (touch($settings['basedir'] . self::playerlogs) && $fc = @file_get_contents($settings['basedir'] . self::playerlogs)) $file_contents .= $fc;
             else $this->logger->warning('unable to open `' . $settings['basedir'] . self::playerlogs . '`');
         }
         $file_contents = str_replace(PHP_EOL, '', $file_contents);
@@ -2217,7 +2217,7 @@ class Civ13
             $socket = @fsockopen('localhost', intval($settings['port']), $errno, $errstr, 1);
             if (! is_resource($socket)) continue;
             fclose($socket);
-            if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
+            if (touch($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
                 $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
                 /*
                 0 => <b>Server Status</b> {Online/Offline}
@@ -2267,7 +2267,7 @@ class Civ13
                 continue;
             }
             fclose($socket);
-            if (file_exists($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
+            if (touch($settings['basedir'] . self::serverdata) && $data = @file_get_contents($settings['basedir'] . self::serverdata)) {
                 $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
                 /*
                 0 => <b>Server Status</b> {Online/Offline}
@@ -2345,10 +2345,8 @@ class Civ13
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['basedir'])) continue;
-            $awards_path = $settings['basedir'] . self::awards_path;
-            if ( ! file_exists($awards_path) || ! touch($awards_path)) return false;
-            $ranking_path = $settings['basedir'] . self::ranking_path;
-            if ( ! file_exists($ranking_path) || ! touch($ranking_path)) return false;
+            if ( ! touch($awards_path = $settings['basedir'] . self::awards_path)) return false;
+            if ( ! touch($ranking_path = $settings['basedir'] . self::ranking_path)) return false;
             if (! $lines = file($awards_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
             $result = array();
             foreach ($lines as $line) {
@@ -2387,7 +2385,7 @@ class Civ13
     public function getRanking(string $path): false|string
     {
         $line_array = array();
-        if (! file_exists($path) || ! $search = @fopen($path, 'r')) return false;
+        if (! touch($path) || ! $search = @fopen($path, 'r')) return false;
         while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
         fclose($search);
     
@@ -2410,7 +2408,7 @@ class Civ13
     public function getRank(string $path, string $ckey): false|string
     {
         $line_array = array();
-        if (! file_exists($path) || ! touch($path) || ! $search = @fopen($path, 'r')) return false;
+        if (! touch($path) || ! $search = @fopen($path, 'r')) return false;
         while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
         fclose($search);
         
@@ -2442,7 +2440,7 @@ class Civ13
         foreach ($this->verifier->verified as $item)
             if ($member = $this->verifier->getVerifiedMember($item))
                 $file_contents .= $callback($member, $item, $required_roles);
-        if ($file_contents) foreach ($file_paths as $fp) if (file_exists($fp))
+        if ($file_contents) foreach ($file_paths as $fp) if (touch($fp))
             if (file_put_contents($fp, $file_contents) === false) // Attempt to write to the file
                 $this->logger->error("Failed to write to file `$fp`"); // Log an error if the write failed
     }
@@ -2458,7 +2456,7 @@ class Civ13
         $file_paths = [];
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::whitelist)) continue;
+            if (! isset($settings['basedir']) || ! touch($settings['basedir'] . self::whitelist)) continue;
             $file_paths[] = $settings['basedir'] . self::whitelist;
         }
 
@@ -2485,7 +2483,7 @@ class Civ13
         $file_paths = [];
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::factionlist)) continue;
+            if (! isset($settings['basedir']) || ! touch($settings['basedir'] . self::factionlist)) continue;
             $file_paths[] = $settings['basedir'] . self::factionlist;
         }
 
@@ -2526,7 +2524,7 @@ class Civ13
         $file_paths = [];
         foreach ($this->server_settings as $settings) {
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if (! isset($settings['basedir']) || ! file_exists($settings['basedir'] . self::admins)) continue;
+            if (! isset($settings['basedir']) || ! touch($settings['basedir'] . self::admins)) continue;
             $file_paths[] = $settings['basedir'] . self::admins;
         }
 

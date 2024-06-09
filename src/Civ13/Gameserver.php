@@ -162,7 +162,7 @@ class GameServer {
         if (! is_resource($socket)) return [];
         fclose($socket);
         $playercount = 0;
-        if (file_exists($this->serverdata) && $data = @file_get_contents($this->serverdata)) {
+        if (touch($this->serverdata) && $data = @file_get_contents($this->serverdata)) {
             $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
             /*
             0 => <b>Server Status</b> {Online/Offline}
@@ -372,7 +372,7 @@ class GameServer {
     {
         $admin = $admin ?? $this->civ13->discord->user->username;
         if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
-        if (! file_exists($this->discord2ban) || ! $file = @fopen($this->discord2ban, 'a')) {
+        if (! touch($this->discord2ban) || ! $file = @fopen($this->discord2ban, 'a')) {
             $this->civ13->logger->warning("unable to open `{$this->discord2ban}`");
             return "unable to open `{$this->discord2ban}`" . PHP_EOL;
         }
@@ -407,7 +407,7 @@ class GameServer {
     private function legacyUnban(string $ckey, ?string $admin = null): void
     {
         $admin = $admin ?? $this->civ13->discord->user->username;
-        if (! file_exists($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
+        if (! touch($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
             $this->civ13->logger->warning("unable to open `$this->discord2unban`");
             return;
         }
@@ -429,7 +429,7 @@ class GameServer {
     {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
-        if (! isset($this->basedir) || ! file_exists($this->whitelist)) return false;
+        if (! $this->basedir || ! touch($this->whitelist)) return false;
         $file_paths = [];
         $file_paths[] = $this->whitelist;
 
@@ -454,7 +454,7 @@ class GameServer {
     {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
-        if (! isset($this->basedir) || ! file_exists($this->factionlist)) return false;
+        if (! isset($this->basedir) || ! touch($this->factionlist)) return false;
         $file_paths = [];
         $file_paths[] = $this->factionlist;
 
@@ -493,7 +493,7 @@ class GameServer {
     {
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! isset($this->enabled) || ! $this->enabled) return false;
-        if (! isset($this->basedir) || ! file_exists($this->admins)) return false;
+        if (! isset($this->basedir) || ! touch($this->admins)) return false;
         $file_paths[] = $this->admins;
 
         $callback = function (Member $member, array $item, array $required_roles): string
