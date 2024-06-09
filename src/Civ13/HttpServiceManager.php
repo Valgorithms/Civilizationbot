@@ -732,10 +732,12 @@ class HttpServiceManager
                 $this->civ13->discord->users->fetch($item['discord']);
                 return $this->civ13->sendMessage($channel, $message);
             } 
+            $builder = MessageBuilder::new();
             $embed = new Embed($this->civ13->discord);
             $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
             $embed->setDescription($message);
-            return $channel->sendEmbed($embed);
+            $builder->addEmbed($embed);
+            return $channel->sendMessage($builder);
         };
         
         foreach ($this->civ13->server_settings as $settings) {

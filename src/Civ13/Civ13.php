@@ -14,10 +14,12 @@ use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
+use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Guild\Role;
+use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Activity;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
@@ -579,36 +581,32 @@ class Civ13
     /**
      * Sends a message to the specified channel.
      *
-     * @param mixed $channel The channel to send the message to. Can be a channel ID or a Channel object.
+     * @param Channel|Thread|string $channel The channel to send the message to. Can be a channel ID or a Channel object.
      * @param string $content The content of the message.
      * @param string $file_name The name of the file to attach to the message. Default is 'message.txt'.
      * @param bool $prevent_mentions Whether to prevent mentions in the message. Default is false.
      * @param bool $announce_shard Whether to announce the shard in the message. Default is true.
      * @return PromiseInterface|null A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
      */
-    public function sendMessage($channel, string $content, string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
+    public function sendMessage(Channel|Thread|string $channel, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
-        if (is_string($channel)) $channel = $this->discord->getChannel($channel);
-        if (! $channel) {
-            $this->logger->error("Channel not found: {$channel}");
+        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
+            $this->logger->error("Channel not found for sendMessage");
             return null;
         }
         if ($announce_shard && $this->sharding && $this->enabled_servers) {
             if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
-            if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
+            if ($this->shard) $content = '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
             else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
         }
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
-        if (strlen($content)<=4096) {
-            $embed = new Embed($this->discord);
-            $embed->setDescription($content);
-            $builder->addEmbed($embed);
-            return $channel->sendMessage($builder);
-        }
-        return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
+        if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
+        $embed = new Embed($this->discord);
+        $embed->setDescription($content);
+        return $channel->sendMessage($builder->addEmbed($embed));
     }
     /**
      * Sends a message as a reply to another message.
@@ -642,17 +640,21 @@ class Civ13
     /**
      * Sends an embed message to a channel.
      *
-     * @param mixed $channel The channel to send the message to.
+     * @param Channel|Thread|string $channel The channel to send the message to.
      * @param string $content The content of the message.
      * @param Embed $embed The embed object to send.
      * @param bool $prevent_mentions (Optional) Whether to prevent mentions in the message. Default is false.
      * @param bool $announce_shard (Optional) Whether to announce the shard. Default is true.
      * @return PromiseInterface|null A promise that resolves to the sent message, or null if the channel is not found.
      */
-    public function sendEmbed($channel, string $content, Embed $embed, $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
+    public function sendEmbed(Channel|Thread|string $channel, Embed $embed, string $content, bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
     {
-        return null;
+        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
+            $this->logger->error("Channel not found for sendEmbed");
+            return null;
+        }
         $builder = MessageBuilder::new();
+        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if (is_string($channel)) $channel = $this->discord->getChannel($channel);
         if (! $channel) {
@@ -665,12 +667,13 @@ class Civ13
             else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
         }
         $builder->setContent($content);
-        return $channel->sendEmbed($embed);
+        $builder->addEmbed($embed);
+        return $channel->sendMessage($builder);
     }
     /**
      * Sends a player message to a channel.
      *
-     * @param ChannelInterface $channel The channel to send the message to.
+     * @param Channel|Thread|string $channel The channel to send the message to.
      * @param bool $urgent Whether the message is urgent or not.
      * @param string $content The content of the message.
      * @param string $sender The sender of the message (ckey or Discord displayname).
@@ -680,8 +683,12 @@ class Civ13
      * @param bool $announce_shard Whether to announce the shard in the message (default: true).
      * @return PromiseInterface|null A promise that resolves to the sent message, or null if the message couldn't be sent.
      */
-    public function relayPlayerMessage($channel, bool $urgent, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', $prevent_mentions = false, $announce_shard = true): ?PromiseInterface
+    public function relayPlayerMessage(Channel|Thread|string $channel, bool $urgent, string $content, string $sender, string $recipient = '', string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
     {
+        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
+            $this->logger->error("Channel not found for relayPlayerMessage");
+            return null;
+        }
         $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
 
         // Sender is the ckey or Discord displayname
@@ -705,15 +712,14 @@ class Civ13
         if ($urgent) $builder->setContent("<@&{$this->role_ids['Admin']}>, an urgent message has been sent!");
         if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
-        if (strlen($content)<=4096) {
-            $embed = new Embed($this->discord);
-            if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
-            if ($member) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
-            $embed->setDescription($content);
-            $builder->addEmbed($embed);
-            return $channel->sendMessage($builder)->then($then, null);
-        }
-        return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
+        if (strlen($content)<4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
+        $embed = new Embed($this->discord);
+        if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
+        if ($member) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+        $embed->setDescription($content);
+        $builder->addEmbed($embed);
+        return $channel->sendMessage($builder)->then($then, null);
+        
     }
     /**
      * Sends an out-of-character (OOC) message.
@@ -845,7 +851,7 @@ class Civ13
      * @param bool $ooc (Optional) Whether to include out-of-character (OOC) messages. Defaults to true.
      * @return bool Returns true if the chat messages were successfully relayed, false otherwise.
      */
-    public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false, bool $ooc = true): bool
+    public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false, ?bool $ooc = true): bool
     {
         if ($this->relay_method !== 'file') return false;
         if (! file_exists($file_path) || ! $file = @fopen($file_path, 'r+')) {
@@ -867,7 +873,7 @@ class Civ13
         }
         ftruncate($file, 0);
         fclose($file);
-        return $this->__gameChatRelay($relay_array, $channel, $moderate, $ooc); // Disabled moderation as it is now done quicker using the Webhook system
+        return $this->__gameChatRelay($channel, $relay_array, $moderate, $ooc); // Disabled moderation as it is now done quicker using the Webhook system
     }
     /**
      * Relays game chat messages to a Discord channel using a webhook.
@@ -900,19 +906,23 @@ class Civ13
             return true; // Assume that the function will succeed when the bot is ready
         }
         
-        return $this->__gameChatRelay(['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $channel, $moderate, $ooc);
+        return $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $moderate, $ooc);
     }
     /**
      * Relays game chat messages to a Discord channel.
      *
-     * @param array $array The array containing the chat message information.
-     * @param mixed $channel The Discord channel to send the message to.
+     * @param Channel|Thread|string $channel The Discord channel to send the message to.
+     * * @param array $array The array containing the chat message information.
      * @param bool $moderate (optional) Whether to apply moderation to the message. Default is true.
      * @param bool $ooc (optional) Whether the message is out-of-character (OOC) or in-character (IC). Default is true.
      * @return bool Returns true if the message was successfully relayed, false otherwise.
      */
-    private function __gameChatRelay(array $array, $channel, bool $moderate = true, bool $ooc = true): bool
+    private function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $moderate = true, ?bool $ooc = true): bool
     {
+        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
+            $this->logger->error("Channel not found for __gameChatRelay");
+            return null;
+        }
         if (! $array || ! isset($array['ckey']) || ! isset($array['message']) || ! isset($array['server']) || ! $array['ckey'] || ! $array['message'] || ! $array['server']) {
             $this->logger->warning('__gameChatRelay() was called with an empty array or invalid content.');
             return false;
@@ -921,14 +931,17 @@ class Civ13
             if ($ooc) $this->__gameChatModerate($array['ckey'], $array['message'], $this->ooc_badwords, $this->ooc_badwords_warnings, $array['server']);
             else $this->__gameChatModerate($array['ckey'], $array['message'], $this->ic_badwords, $this->ic_badwords_warnings, $array['server']);
         }
-        if (! $item = $this->verifier->verified->get('ss13', $this->sanitizeInput($array['ckey']))) $this->sendMessage($channel, $array['message'], 'relay.txt', false, false);
-        else {
-            $embed = new Embed($this->discord);
-            if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-            // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
-            $embed->setDescription($array['message']);
-            $channel->sendEmbed($embed);
+        if (! $item = $this->verifier->verified->get('ss13', $this->sanitizeInput($array['ckey']))) {
+            $this->sendMessage($channel, $array['message'], 'relay.txt', false, false);
+            return true;
         }
+        $builder = MessageBuilder::new();
+        $embed = new Embed($this->discord);
+        if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+        // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
+        $embed->setDescription($array['message']);
+        $builder->addEmbed($embed);
+        $channel->sendMessage($builder);
         return true;
     }
     /**

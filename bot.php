@@ -40,13 +40,11 @@ include 'vendor/autoload.php';
 $web_address = 'www.civ13.com';
 $http_port = 55555;
 
-$loop = Loop::get();
 $streamHandler = new StreamHandler('php://stdout', Level::Info);
-$streamHandler->setFormatter(new LineFormatter(null, null, true, true));
-$logger = new Logger('Civ13', [$streamHandler]);
+$streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
 $discord = new Discord([
-    'loop' => $loop,
-    'logger' => $logger,
+    'loop' => $loop = Loop::get(),
+    'logger' => $logger = new Logger('Civ13', [$streamHandler]),
     /* // Disabled for debugging
     'cache' => new CacheConfig(
         $interface = new RedisCache(
