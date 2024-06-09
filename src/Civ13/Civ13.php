@@ -827,14 +827,11 @@ class Civ13
         };
         $sent = false;
         foreach ($this->server_settings as $s) {
+            if (! isset($s['enabled']) || ! $s['enabled']) continue;
             if ($settings['key']) {
                 if ($settings['key'] !== $s['key']) continue;
-                if (! $s['enabled'] ?? false) return false;
                 return $directmessage($recipient, $message, $sender, $settings);
-            } else {
-                if (! isset($s['enabled']) || ! $s['enabled']) continue;
-                if ($directmessage($recipient, $message, $sender, $settings)) $sent = true;
-            }
+            } elseif ($directmessage($recipient, $message, $sender, $settings)) $sent = true;
         }
         return $sent;
     }
