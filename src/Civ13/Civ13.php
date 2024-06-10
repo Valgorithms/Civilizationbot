@@ -1340,7 +1340,7 @@ class Civ13
     public function bancheckTimer(): bool
     {
         // We don't want the persistence server to do this function
-        foreach ($this->gameservers as $server) {
+        foreach ($this->enabled_servers as $server) {
             if (! @touch($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans , 'r')) return false;
             fclose($file);
         }
