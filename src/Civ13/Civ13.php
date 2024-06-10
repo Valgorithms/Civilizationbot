@@ -235,7 +235,7 @@ class Civ13
         else $this->logger->warning('No role_ids passed in options!');
 
         if (! $server_settings) $this->logger->warning('No server settings passed in options!');
-        foreach ($server_settings as $key => $gameserver_array) $this->addGameServer(new Gameserver($this, $gameserver_array));
+        foreach ($server_settings as $key => $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
         foreach ($this->gameservers as $gameserver) if ($gameserver->enabled) $this->enabled_servers[] =& $gameserver; // Create a reference to the enabled servers so we can easily iterate over them
         
         $this->afterConstruct($options, $server_settings);

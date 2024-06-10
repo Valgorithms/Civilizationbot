@@ -85,7 +85,7 @@ class GameServer {
         $this->port = $options['port'];
         $this->host = $options['host'];
         $this->supported = $options['supported'];
-        $this->enabled = $options['enabled'];
+        $this->enabled = $options['enabled'] ?? false;
         $this->legacy = $options['legacy'];
         $this->moderate = $options['moderate'];
         $this->panic_bunker = $options['panic_bunker'];
