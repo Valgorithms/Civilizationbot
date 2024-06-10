@@ -236,7 +236,7 @@ class Civ13
 
         if (! $server_settings) $this->logger->warning('No server settings passed in options!');
         foreach ($server_settings as $key => $gameserver_array) $this->addGameServer(new Gameserver($this, $gameserver_array));
-        foreach ($this->gameservers as $gameserver) if ($gameserver->enabled) $this->enabled_servers =& $gameserver; // This currently serves no purpose other, but will be implemented later to replace the ->enabled checks
+        foreach ($this->gameservers as $gameserver) if ($gameserver->enabled) $this->enabled_servers[] =& $gameserver; // This currently serves no purpose other, but will be implemented later to replace the ->enabled checks
         
         $this->afterConstruct($options, $server_settings);
     }
