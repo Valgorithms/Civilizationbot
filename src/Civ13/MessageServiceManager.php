@@ -490,15 +490,13 @@ class MessageServiceManager
         $this->offsetSet('asay', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            foreach ($this->civ13->server_settings as $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            foreach ($this->civ13->gameservers as $server) {
                 switch (strtolower($message->channel->name)) {
-                    case "asay-{$settings['key']}":
-                        if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
+                    case "asay-{$server->key}":
+                        if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $server->key)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
-            if ($this->civ13->sharding) return null;
             return $this->civ13->reply($message, 'You need to be in any of the #asay channels to use this command.');
         }));
 

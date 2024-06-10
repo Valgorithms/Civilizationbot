@@ -740,46 +740,15 @@ class Civ13
      * @param array|null $settings Additional settings for the message (optional).
      * @return bool Returns true if the message was sent successfully, false otherwise.
      */
-    public function AdminMessage(string $message, string $sender, ?array $settings = []): bool
+    public function AdminMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
-        $adminmessage = function (string $message, string $sender, array $settings): bool
-        {
-            if (@touch($settings['basedir'] . self::discord2admin) && $file = @fopen($settings['basedir'] . self::discord2admin, 'a')) {
-                fwrite($file, "$sender:::$message" . PHP_EOL);
-                fclose($file);
-                $urgent = true; // Check if there are any admins on the server, if not then send the message as urgent
-                if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) {
-                    $admin = false;
-                    if ($item = $this->verifier->verified->get('ss13', $sender))
-                        if ($member = $guild->members->get('id', $item['discord']))
-                            if ($member->roles->has($this->role_ids['Admin']))
-                                {$admin = true; $urgent = false;}
-                    if (! $admin)
-                        if ($playerlist = $this->localServerPlayerCount()['playerlist'])
-                            if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->role_ids['Admin']); }))
-                                foreach ($admins as $member)
-                                    if ($item = $this->verifier->verified->get('discord', $member->id))
-                                        if (in_array($item['ss13'], $playerlist))
-                                            { $urgent = false; break; }
-                }
-                if (isset($settings['asay']) && $channel = $this->discord->getChannel($settings['asay'])) $this->relayPlayerMessage($channel, $message, $sender, null, $urgent);
-                return true;
-            }
-            $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2admin . '` for writing');
-            return false;
-        };
-        $sent = false;
-        foreach ($this->server_settings as $s) {
-            if ($settings['key']) {
-                if ($settings['key'] !== $s['key']) continue;
-                if (! $s['enabled'] ?? false) return false;
-                return $adminmessage($message, $sender, $settings);
-            } else {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                $sent = $adminmessage($message, $sender, $settings);
-            }
+        if (is_null($server_key)) {
+            $sent = false;
+            foreach ($this->gameservers as $key => $server) if ($server->AdminMessage($message, $sender)) $sent = true;
+            return $sent;
         }
-        return $sent;
+        if (! isset($this->gameservers[$server_key])) return false;
+        return $this->gameservers[$server_key]->AdminMessage($message, $sender);
     }
     /**
      * Sends a direct message to a recipient using the specified sender and message.
