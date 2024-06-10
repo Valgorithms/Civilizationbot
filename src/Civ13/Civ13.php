@@ -1332,7 +1332,7 @@ class Civ13
     {
         // We don't want the persistence server to do this function
         foreach ($this->enabled_servers as $server) {
-            if (! @touch($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans , 'r')) {
+            if (! @file_exists($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans , 'r')) {
                 $this->logger->debug('unable to open `' . $server->basedir . self::bans . '`');
                 return false;
             }
@@ -1397,7 +1397,7 @@ class Civ13
     public function legacyBancheck(string $ckey): bool
     {
         foreach ($this->enabled_servers as $server) {
-            if (! @touch($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans, 'r')) {
+            if (! @file_exists($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans, 'r')) {
                 $this->logger->debug('unable to open `' . $server->basedir . self::bans . '`');
                 return false;
             }
@@ -1422,7 +1422,7 @@ class Civ13
     public function legacyPermabancheck(string $ckey): bool
     {
         foreach ($this->enabled_servers as $gameserver) {
-            if (! @touch($gameserver->basedir . self::bans) || ! $file = @fopen($gameserver->basedir . self::bans, 'r')) {
+            if (! @file_exists($gameserver->basedir . self::bans) || ! $file = @fopen($gameserver->basedir . self::bans, 'r')) {
                 $this->logger->debug('unable to open `' . $gameserver->basedir . self::bans . '`');
                 return false;
             }
@@ -1719,7 +1719,7 @@ class Civ13
         // Get the contents of the file
         $file_contents = '';
         foreach ($this->enabled_servers as $gameserver) {
-            if (! @touch($gameserver->basedir . self::bans) || ! $fc = @file_get_contents($gameserver->basedir . self::bans)) {
+            if (! @file_exists($gameserver->basedir . self::bans) || ! $fc = @file_get_contents($gameserver->basedir . self::bans)) {
                 $this->logger->warning('unable to open `' . $gameserver->basedir . self::bans . '`');
                 continue;
             }
@@ -1779,7 +1779,7 @@ class Civ13
         // Get the contents of the file
         $file_contents = '';
         foreach ($this->enabled_servers as $gameserver) {
-            if (! @touch($gameserver->basedir . self::playerlogs) || ! $fc = @file_get_contents($gameserver->basedir . self::playerlogs)) {
+            if (! @file_exists($gameserver->basedir . self::playerlogs) || ! $fc = @file_get_contents($gameserver->basedir . self::playerlogs)) {
                 $this->logger->warning('unable to open `' . $gameserver->basedir . self::playerlogs . '`');
                 continue;
             }
