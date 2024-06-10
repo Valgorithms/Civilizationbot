@@ -982,16 +982,19 @@ class HttpServiceManager
             }), true);
             $this->httpHandler->offsetSet($server_endpoint.'/login', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver, $relay): HttpResponse
             {
+                $data = [];
+                if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
+                isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                    if ($gameserver = $this->civ13->enabled_servers[$gameserver->key])
+                    if (! $ckey !== '(NULL)' && ! in_array($ckey, $gameserver->players))
+                        $gameserver->players[] = $ckey;
+
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! isset($this->civ13->channel_ids['parole_notif'])) return HttpResponse::plaintext('Parole Notification Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 if (! $channel = $this->civ13->discord->getChannel($gameserver->transit)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 if (! $parole_notif_channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_notif'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
-                $data = [];
-                if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
-                
                 $time = '['.date('H:i:s', time()).']';
-                isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 $message = "$ckey connected to the server";
                 if (isset($data, $data['ip'])) $message .= " with IP of {$data['ip']}";
                 if (isset($data, $data['cid'])) $message .= " and CID of {$data['cid']}";
@@ -1021,16 +1024,19 @@ class HttpServiceManager
 
             $this->httpHandler->offsetSet($server_endpoint.'/logout', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver, $relay): HttpResponse
             {
+                $data = [];
+                if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
+                isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                if ($gameserver = $this->civ13->enabled_servers[$gameserver->key])
+                    if (! $ckey !== '(NULL)' && in_array($ckey, $gameserver->players))
+                        unset($gameserver->players[array_search($ckey, $gameserver->players)]);
+
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! isset($this->civ13->channel_ids['parole_notif'])) return HttpResponse::plaintext('Parole Notification Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 if (! $channel = $this->civ13->discord->getChannel($gameserver->transit)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 if (! $parole_notif_channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_notif'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-
-                $data = [];
-                if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                 
                 $time = '['.date('H:i:s', time()).']';
-                isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 $message = "$ckey disconnected from the server.";
                 if (isset($this->civ13->current_rounds[$gameserver->key]) && $this->civ13->current_rounds[$gameserver->key]) $this->civ13->logPlayerLogout($gameserver->key, $ckey, $time);
 
