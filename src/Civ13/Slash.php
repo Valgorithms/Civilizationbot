@@ -517,23 +517,34 @@ class Slash
         $this->listenCommand('players', function (Interaction $interaction): PromiseInterface
         {
             $content = '';
+            $builder = MessageBuilder::new();
             if (! $this->civ13->webserver_online) {
                 foreach ($this->civ13->enabled_servers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
-                return $interaction->respondWithMessage(MessageBuilder::new()->setContent($content)->addEmbed($this->civ13->generateServerstatusEmbed()));
+                return $interaction->respondWithMessage($builder->setContent($content)->addEmbed($this->civ13->generateServerstatusEmbed()));
             }
-            
-            if (empty($data = $this->civ13->serverinfoParse())) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
-            foreach ($this->civ13->enabled_servers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}";
-            $embed = new Embed($this->discord);
-            foreach ($data as $server)
-                foreach ($server as $key => $array)
-                    foreach ($array as $inline => $value)
-                        $embed->addFieldValues($key, $value, $inline);
-            $embed->setFooter($this->civ13->embed_footer);
-            $embed->setColor(0xe1452d);
-            $embed->setTimestamp();
-            $embed->setURL('');
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($content)->addEmbed($embed));
+            if (! empty($data = $this->civ13->serverinfoParse())) {
+                foreach ($this->civ13->enabled_servers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}";
+                $embed = new Embed($this->discord);
+                foreach ($data as $server)
+                    foreach ($server as $key => $array)
+                        foreach ($array as $inline => $value)
+                            $embed->addFieldValues($key, $value, $inline);
+                $embed->setFooter($this->civ13->embed_footer);
+                $embed->setColor(0xe1452d);
+                $embed->setTimestamp();
+                $embed->setURL('');
+                return $interaction->respondWithMessage($builder->setContent($content)->addEmbed($embed));
+            } //return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
+            foreach ($this->civ13->enabled_servers as $gameserver) { // Only include the general information
+                $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}";
+                $embed = $gameserver->toEmbed();
+                $embed->setFooter($this->civ13->embed_footer);
+                $embed->setColor(0xe1452d);
+                $embed->setTimestamp();
+                $embed->setURL('');
+                $builder->addEmbed($embed);
+            }
+            return $interaction->respondWithMessage($builder->setContent($content));
         });
 
         $this->listenCommand('ckey', function (Interaction $interaction): PromiseInterface

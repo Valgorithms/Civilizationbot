@@ -234,9 +234,6 @@ class Civ13
         if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
         else $this->logger->warning('No role_ids passed in options!');
 
-        if (! $server_settings) $this->logger->warning('No server settings passed in options!');
-        foreach ($server_settings as $key => $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
-        
         $this->afterConstruct($options, $server_settings);
     }
     /**
@@ -252,6 +249,7 @@ class Civ13
         $this->verifier = new Verifier($this, $options);
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->byond = new Byond();
+        foreach ($server_settings as $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
         if (isset($this->discord)) $this->discord->once('ready', function () use ($options) {
             $this->ready = true;
             $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");

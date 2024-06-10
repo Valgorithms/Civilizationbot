@@ -105,7 +105,17 @@ class GameServer {
         $this->attack = $options['attack'];
         $this->afterConstruct();
     }
+    private function afterConstruct()
+    {
+        $this->serverdata = $this->basedir . Civ13::serverdata;
+        $this->discord2unban = $this->basedir . Civ13::discord2unban;
+        $this->discord2ban = $this->basedir . Civ13::discord2ban;
+        $this->admins = $this->basedir . Civ13::admins;
+        $this->whitelist = $this->basedir . Civ13::whitelist;
+        $this->factionlist = $this->basedir . Civ13::factionlist;
 
+        $this->localServerPlayerCount();
+    }
     private function resolveOptions(array $options)
     {
         $requiredProperties = [
@@ -137,15 +147,6 @@ class GameServer {
             if (! isset($options[$property]))
                 trigger_error("Gameserver missing optional property: $property", E_USER_WARNING);
     }
-    private function afterConstruct()
-    {
-        $this->serverdata = $this->basedir . Civ13::serverdata;
-        $this->discord2unban = $this->basedir . Civ13::discord2unban;
-        $this->discord2ban = $this->basedir . Civ13::discord2ban;
-        $this->admins = $this->basedir . Civ13::admins;
-        $this->whitelist = $this->basedir . Civ13::whitelist;
-        $this->factionlist = $this->basedir . Civ13::factionlist;
-    }
     
     
     /**
@@ -153,7 +154,7 @@ class GameServer {
      *
      * @return int The total player count for this locally hosted server, or 0 if the server is not local.
      */
-    public function localServerPlayerCount(array $servers = [], array $players = []): int
+    public function localServerPlayerCount(array $players = []): int
     {    
         if (! $this->enabled) return 0;
         if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return 0; // Don't try and access files if the server is not local
@@ -539,7 +540,9 @@ class GameServer {
     {
         $embed = new Embed($this->discord);
         $embed->title = $this->name;
-        $embed->description = "IP: {$this->ip}\nPort: {$this->port}\nHost: {$this->host}";
+        $embed->addFieldValues($this->name, "byond://{$this->ip}:{$this->port}", false);
+        $embed->addFieldValues('Host', $this->host, true);
+        $embed->addFieldValues('Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
         $embed->color = hexdec('FF0000');
         return $embed;
     }
