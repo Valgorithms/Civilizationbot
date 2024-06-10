@@ -70,11 +70,12 @@ class GameServer {
     public array $seen_players = [];
     private int $playercount_ticker = 0;
 
-    public function __construct(Civ13 $civ13, array $options)
+    public function __construct(Civ13 &$civ13, array &$options)
     {
         $this->civ13 =& $civ13;
+        $this->discord =& $civ13->discord;
         $this->logger =& $civ13->logger;
-        $this->loop =& $civ13->loop;
+        $this->loop = $civ13->loop;
         $this->resolveOptions($options);
         $this->basedir = $options['basedir'];
         $this->key = $options['key'];
@@ -189,7 +190,7 @@ class GameServer {
     
     public function serverinfoTimer(): TimerInterface
     {
-        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->civ13->discord->getLoop()->addPeriodicTimer(180, function () {
+        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(180, function () {
             if (! $arr = $this->localServerPlayerCount()) return; // No data available
             $this->playercountChannelUpdate($arr['playercount']); // This needs to be updated to pass $this instead of "{$server}-""
             foreach ($arr['playerlist'] as $ckey) {
@@ -200,17 +201,17 @@ class GameServer {
                     if (isset($ckeyinfo['altbanned']) && $ckeyinfo['altbanned']) { // Banned with a different ckey
                         $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"];
                         $msg = $this->ban($ban, null, true). ' (Alt Banned)';;
-                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
+                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
                     } else if (isset($ckeyinfo['ips'])) foreach ($ckeyinfo['ips'] as $ip) {
                         if (in_array($this->civ13->IP2Country($ip), $this->civ13->blacklisted_countries)) { // Country code
                             $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"];
                             $msg = $this->ban($ban, null, true) . ' (Blacklisted Country)';
-                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
+                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
                             break;
                         } else foreach ($this->civ13->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
                             $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"];
                             $msg = $this->ban($ban, null, true) . ' (Blacklisted Region)';
-                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
+                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
                             break 2;
                         }
                     }
@@ -220,7 +221,7 @@ class GameServer {
                 if (! isset($this->civ13->permitted[$ckey]) && ! isset($this->civ13->ages[$ckey]) && ! $this->civ13->checkByondAge($age = $this->civ13->getByondAge($ckey))) { //Ban new accounts
                     $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
                     $msg = $this->ban($ban, null, true);
-                    if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
+                    if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
                 }
             }
         });
@@ -248,7 +249,7 @@ class GameServer {
      */
     private function playercountChannelUpdate(int $count = 0): bool
     {
-        if (! $channel = $this->civ13->discord->getChannel($this->playercount)) {
+        if (! $channel = $this->discord->getChannel($this->playercount)) {
             $this->civ13->logger->warning("Channel {$this->playercount} doesn't exist!");
             return false;
         }
@@ -370,7 +371,7 @@ class GameServer {
     }
     private function legacyBan(array $array, ?string $admin = null): string
     {
-        $admin = $admin ?? $this->civ13->discord->user->username;
+        $admin = $admin ?? $this->discord->user->username;
         if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
         if (! @touch($this->discord2ban) || ! $file = @fopen($this->discord2ban, 'a')) {
             $this->civ13->logger->warning("unable to open `{$this->discord2ban}`");
@@ -394,7 +395,7 @@ class GameServer {
      */
     public function unban(string $ckey, ?string $admin = null,): void
     {
-        $admin ??= $this->civ13->discord->user->displayname;
+        $admin ??= $this->discord->user->displayname;
         $this->legacy ? $this->legacyUnban($ckey, $admin) : $this->sqlUnban($ckey, $admin);
         if (! $this->civ13->shard && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->civ13->role_ids['banished'])) $member->removeRole($this->civ13->role_ids['banished'], "Unbanned by $admin");
@@ -406,7 +407,7 @@ class GameServer {
     }
     private function legacyUnban(string $ckey, ?string $admin = null): void
     {
-        $admin = $admin ?? $this->civ13->discord->user->username;
+        $admin = $admin ?? $this->discord->user->username;
         if (! @touch($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
             $this->civ13->logger->warning("unable to open `$this->discord2unban`");
             return;
@@ -512,7 +513,7 @@ class GameServer {
 
     public function toEmbed(): Embed
     {
-        $embed = new Embed($this->civ13->discord);
+        $embed = new Embed($this->discord);
         $embed->title = $this->name;
         $embed->description = "IP: {$this->ip}\nPort: {$this->port}\nHost: {$this->host}";
         $embed->color = hexdec('FF0000');
@@ -538,6 +539,6 @@ class GameServer {
     }
     public function __destruct()
     {
-        foreach ($this->timers as $timer) $this->civ13->discord->getLoop()->cancelTimer($timer);
+        foreach ($this->timers as $timer) $this->discord->getLoop()->cancelTimer($timer);
     }
 }

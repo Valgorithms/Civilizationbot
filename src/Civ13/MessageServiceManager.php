@@ -479,15 +479,11 @@ class MessageServiceManager
         $this->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            foreach ($this->civ13->server_settings as $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                switch (strtolower($message->channel->name)) {
-                    case "ooc-{$settings['key']}":                    
-                        if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $settings)) return $message->react("📧");
-                        return $message->react("🔥");
-                }
+            foreach ($this->civ13->gameservers as $server) switch (strtolower($message->channel->name)) {
+                case "ooc-{$server->key}":                    
+                    if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $server->key)) return $message->react("📧");
+                    return $message->react("🔥");
             }
-            if ($this->civ13->sharding) return null;
             return $this->civ13->reply($message, 'You need to be in any of the #ooc channels to use this command.');
         }));
 
@@ -1180,7 +1176,7 @@ class MessageServiceManager
                     });
                     if ($message) $message->react("⏱️");
                     $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->user->id ?? $this->civ13->discord->user->displayname);
-                    $this->civ13->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender, $settings);
+                    $this->civ13->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender, $settings['key']);
                 };
                 $this->offsetSet("{$settings['key']}kill", $serverkill, ['Owner', 'High Staff']);
             }
@@ -1203,8 +1199,8 @@ class MessageServiceManager
                             });
                         }
                     });
-                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $settings);
-                    else $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->discord->user->displayname, $settings);
+                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $settings['key']);
+                    else $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->discord->user->displayname, $settings['key']);
                     if ($message) $message->react("⏱️");
                     return null;
                 };
@@ -1235,7 +1231,7 @@ class MessageServiceManager
                     };
                     $split_message = explode("{$settings['key']}mapswap ", $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->civ13->reply($message, 'You need to include the name of the map.');
-                    $this->civ13->OOCMessage("Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $settings);
+                    $this->civ13->OOCMessage("Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $settings['key']);
                     if (isset($settings['discussion']) && $channel = $this->civ13->discord->getChannel($settings['discussion'])) {
                         $msg = "Server is now changing map to `$mapto`.";
                         if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";

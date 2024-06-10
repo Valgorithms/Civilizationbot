@@ -701,17 +701,11 @@ class Civ13
         }
         $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
 
-        // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
-        if ($announce_shard && $this->sharding && $this->enabled_servers) {
-            if (! $enabled_servers_string = implode(', ', $this->enabled_servers)) $enabled_servers_string = 'None';
-            if ($this->shard) $content .= '**SHARD FOR [' . $enabled_servers_string . ']**' . PHP_EOL;
-            else $content = '**MAIN PROCESS FOR [' . $enabled_servers_string . ']**' . PHP_EOL . $content;
-        }
         $builder = MessageBuilder::new();
         if ($urgent) $builder->setContent("<@&{$this->role_ids['Admin']}>, an urgent message has been sent!");
         if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
-        if (strlen($content)<4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
+        if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
         $embed = new Embed($this->discord);
         if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
         if ($member) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
@@ -728,30 +722,15 @@ class Civ13
      * @param array|null $settings Optional settings for the message.
      * @return bool Returns true if the message was sent successfully, false otherwise.
      */
-    public function OOCMessage(string $message, string $sender, ?array $settings = []): bool
+    public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
-        $oocmessage = function (string $message, string $sender, array $settings): bool
-        {
-            if (isset($settings['basedir']) && @touch($settings['basedir'] . self::discord2ooc) && $file = @fopen($settings['basedir'] . self::discord2ooc, 'a')) {
-                fwrite($file, "$sender:::$message" . PHP_EOL);
-                fclose($file);
-                if (isset($settings['ooc']) && $channel = $this->discord->getChannel($settings['ooc'])) $this->relayPlayerMessage($channel, $message, $sender);
-                return true;
-            }
-            $this->logger->error('unable to open `' . $settings['basedir'] . self::discord2ooc . '` for writing');
-            return false;
-        };
-        if ($settings) {
-            if (! isset($this->server_settings[$settings['key']])) return false;
-            if (! $settings['enabled'] ?? false) return false;
-            return $oocmessage($message, $sender, $settings);
+        if (is_null($server_key)) {
+            $sent = false;
+            foreach ($this->gameservers as $key => $server) if ($server->OOCMessage($message, $sender)) $sent = true;
+            return $sent;
         }
-        $sent = false;
-        foreach ($this->server_settings as $settings) {
-            if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-            if ($result = $oocmessage($message, $sender, $settings)) $sent = $result;
-        }
-        return $sent;
+        if (! isset($this->gameservers[$server_key])) return false;
+        return $this->gameservers[$server_key]->OOCMessage($message, $sender);
     }
     /**
      * Sends an admin message to the server.
