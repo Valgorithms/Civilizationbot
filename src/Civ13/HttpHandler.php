@@ -216,9 +216,9 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         if (isset($this->ratelimits[$endpoint]['requests']) && $requests = $this->ratelimits[$endpoint]['requests']) {
             $lastRequest = end($requests);
             if ($lastRequest['status'] !== $status = $response->getStatusCode()) // Status code could be null or otherwise different if the callback changed it
-            $lastRequest['status'] = $status;
+                $lastRequest['status'] = $status;
             if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR]))
-            $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
+                $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
         }
 
         return $response;
