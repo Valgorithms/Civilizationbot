@@ -474,7 +474,7 @@ class Civ13
     private function addGameServer(Gameserver $gameserver): void
     {
         if (count($this->gameservers) > 5) trigger_error('Configuring more than 5 gameservers are not supported and you will likely experience issues.', E_USER_WARNING);
-        $this->gameservers[] = $gameserver;
+        $this->gameservers[$gameserver->key] = $gameserver;
     }
 
     /**
