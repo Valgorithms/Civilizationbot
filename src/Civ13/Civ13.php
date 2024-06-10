@@ -261,7 +261,7 @@ class Civ13
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__loadOrInitializeVariables();
             $this->loop->addTimer(10, function () { // Delay certain functions until the bot is ready
-                $this->serverinfoTimer(); // Start the serverinfo timer and update the serverinfo channel
+                $this->serverinfoTimers(); // Start the serverinfo timer and update the serverinfo channel
                 $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
             });
             
@@ -1024,24 +1024,14 @@ class Civ13
     }
     private function relayTimer(): void
     {
-        if ($this->discord->guilds->get('id', $this->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
-            $this->logger->info('chat relay timer started');
-            if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function ()
-            {
-                if ($this->relay_method !== 'file') return null;
-                if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
-                foreach ($this->enabled_servers as $server) {
-                    if ($channel = $guild->channels->get('id', $server->ooc)) $this->gameChatFileRelay($server->basedir . self::ooc_path, $channel);  // #ooc-server
-                    if ($channel = $guild->channels->get('id', $server->asay)) $this->gameChatFileRelay($server->basedir . self::admin_path, $channel);  // #asay-server
-                }
-            });
-            if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
-                if (! $status = $this->verifier_online) {
-                    $this->verifier->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
-                    if ($status !== $this->verifier_online) foreach ($this->verifier->provisional as $ckey => $discord_id) $this->verifier->provisionalRegistration($ckey, $discord_id); // If the verifier was offline, but is now online, reattempt registration of all provisional users
-                }
-            });
-        }
+        $this->logger->debug('Starting file chat relay and verifier status timers');
+        foreach ($this->enabled_servers as $server) $server->relayTimer();
+        if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
+            if (! $status = $this->verifier_online) {
+                $this->verifier->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
+                if ($status !== $this->verifier_online) foreach ($this->verifier->provisional as $ckey => $discord_id) $this->verifier->provisionalRegistration($ckey, $discord_id); // If the verifier was offline, but is now online, reattempt registration of all provisional users
+            }
+        });
     }
     
     /**
@@ -1908,59 +1898,9 @@ class Civ13
         return $this->serverinfo = $data_json;
     }
     
-    public function serverinfoTimer(): TimerInterface
+    public function serverinfoTimers(): void
     {
-        $serverinfoTimerOnline = function () {
-            $this->serverinfoFetch(); 
-            $this->serverinfoParsePlayers();
-            foreach ($this->serverinfoPlayers() as $server_array) foreach ($server_array as $ckey) $this->scrutinizeCkey($ckey);
-        };
-        //$serverinfoTimerOnline();
-
-        $serverinfoTimerOffline = function () {
-            $arr = $this->localServerPlayerCount();
-            $servers = $arr['playercount'];
-            $server_array = $arr['playerlist'];
-            foreach ($servers as $server => $count) $this->playercountChannelUpdate($server, $count);
-            foreach ($server_array as $ckey) {
-                if (is_null($ckey)) continue;
-                if (! isset($this->permitted[$ckey]) && ! in_array($ckey, $this->seen_players)) { // Suspicious user ban rules
-                    $this->seen_players[] = $ckey;
-                    $ckeyinfo = $this->ckeyinfo($ckey);
-                    if (isset($ckeyinfo['altbanned']) && $ckeyinfo['altbanned']) { // Banned with a different ckey
-                        $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                        $msg = $this->ban($arr, null, null, true). ' (Alt Banned)';;
-                        if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                    } else if (isset($ckeyinfo['ips'])) foreach ($ckeyinfo['ips'] as $ip) {
-                        if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
-                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                            $msg = $this->ban($arr, null, null, true) . ' (Blacklisted Country)';
-                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                            break;
-                        } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
-                            $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-                            $msg = $this->ban($arr, null, null, true) . ' (Blacklisted Region)';
-                            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                            break 2;
-                        }
-                    }
-                }
-                if ($this->verifier->verified->get('ss13', $ckey)) continue;
-                //if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
-                if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey))) { //Ban new accounts
-                    $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                    $msg = $this->ban($arr, null, null, true);
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $msg);
-                }
-            }
-        };
-        //$serverinfoTimerOffline();
-
-        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(180, function () use ($serverinfoTimerOnline, $serverinfoTimerOffline) {
-            $timerFunction = $this->webserver_online ? $serverinfoTimerOnline : $serverinfoTimerOffline;
-            $timerFunction();
-        });
-        return $this->timers['serverinfo_timer']; // Check players every minute
+        foreach ($this->enabled_servers as $gameserver) $gameserver->serverinfoTimer();
     }
     /*
      * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts
@@ -2059,46 +1999,6 @@ class Civ13
         }
         $this->playercount_ticker++;
         return $return;
-    }
-    /**
-     * Returns an array of the player count for each locally hosted server in the configuration file.
-     *
-     * @return array
-     */
-    public function localServerPlayerCount(array $servers = [], array $players = []): array
-    {
-        foreach ($this->enabled_servers as $gameserver) {
-            if ($gameserver->ip !== $this->httpServiceManager->httpHandler->external_ip) continue;
-            $servers[$gameserver->key] = 0;
-            $socket = @fsockopen('localhost', intval($gameserver->port), $errno, $errstr, 1);
-            if (! is_resource($socket)) continue;
-            fclose($socket);
-            if (! @touch($gameserver->basedir . self::serverdata) || ! $data = @file_get_contents($gameserver->basedir . self::serverdata)) {
-                $this->logger->warning("Unable to open `{$gameserver->basedir}" . self::serverdata . "`");
-                continue;
-            }
-            $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
-            /*
-            0 => <b>Server Status</b> {Online/Offline}
-            1 => <b>Address</b> byond://{ip_address}
-            2 => <b>Map</b>: {map}
-            3 => <b>Gamemode</b>: {gamemode}
-            4 => <b>Players</b>: {playercount}
-            5 => realtime={realtime}
-            6 => world.address={ip}
-            7 => round_timer={00:00}
-            8 => map={map}
-            9 => epoch={epoch}
-            10 => season={season}
-            11 => ckey_list={ckey&ckey}
-            */
-            if (isset($data[11])) { // Player list
-                $players = explode('&', $data[11]);
-                $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
-            }
-            if (isset($data[4])) $servers[$gameserver->key] = $data[4]; // Player count
-        }
-        return ['playercount' => $servers, 'playerlist' => $players];
     }
 
     /**

@@ -92,7 +92,6 @@ class GameServer {
         $this->log_attacks = $options['log_attacks'] ?? true;
         $this->relay_method = $options['relay_method'] ?? 'webhook';
         $this->discussion = $options['discussion'];
-        $this->playercount = $options['playercount'];
         $this->ooc = $options['ooc'];
         $this->lobby = $options['lobby'];
         $this->asay = $options['asay'];
@@ -151,51 +150,63 @@ class GameServer {
     /**
      * Returns an array of the player count for each locally hosted server in the configuration file.
      *
-     * @return array
+     * @return int The total player count for this locally hosted server, or 0 if the server is not local.
      */
-    public function localServerPlayerCount(array $servers = [], array $players = []): array
+    public function localServerPlayerCount(array $servers = [], array $players = []): int
     {    
-        if (! $this->enabled) return [];    
-        if (! isset($this->ip, $this->port)) {
-            $this->civ13->logger->warning("Server {$this->key} is missing required settings in config!");
-            return [];
-        }
-        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return [];
+        if (! $this->enabled) return 0;
+        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return 0; // Don't try and access files if the server is not local
         $socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1);
-        if (! is_resource($socket)) return [];
+        if (! is_resource($socket)) return 0;
         fclose($socket);
         $playercount = 0;
-        if (@touch($this->serverdata) && $data = @file_get_contents($this->serverdata)) {
-            $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
-            /*
-            0 => <b>Server Status</b> {Online/Offline}
-            1 => <b>Address</b> byond://{ip_address}
-            2 => <b>Map</b>: {map}
-            3 => <b>Gamemode</b>: {gamemode}
-            4 => <b>Players</b>: {playercount}
-            5 => realtime={realtime}
-            6 => world.address={ip}
-            7 => round_timer={00:00}
-            8 => map={map}
-            9 => epoch={epoch}
-            10 => season={season}
-            11 => ckey_list={ckey&ckey}
-            */
-            if (isset($data[11])) { // Player list
-                $players = explode('&', $data[11]);
-                $players = array_map(fn($player) => $this->civ13->sanitizeInput($player), $players);
-            }
-            if (isset($data[4])) $playercount = $data[4]; // Player count
+        if (! @file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
+            $this->logger->warning("unable to open `{$this->serverdata}`");
+            return 0;
         }
-        return ['playercount' => $playercount, 'playerlist' => $players];
+        $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
+        /*
+        0 => <b>Server Status</b> {Online/Offline}
+        1 => <b>Address</b> byond://{ip_address}
+        2 => <b>Map</b>: {map}
+        3 => <b>Gamemode</b>: {gamemode}
+        4 => <b>Players</b>: {playercount}
+        5 => realtime={realtime}
+        6 => world.address={ip}
+        7 => round_timer={00:00}
+        8 => map={map}
+        9 => epoch={epoch}
+        10 => season={season}
+        11 => ckey_list={ckey&ckey}
+        */
+        if (isset($data[11])) { // Player list
+            $players = explode('&', $data[11]);
+            $players = array_map(fn($player) => $this->civ13->sanitizeInput($player), $players);
+        }
+        if (isset($data[4])) $playercount = $data[4]; // Player count
+        $this->players = $players;
+        return $playercount;
     }
     
+    public function relayTimer(): void
+    {
+        if ($this->discord->guilds->get('id', $this->civ13->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
+            $this->logger->debug("Starting file chat relay timer for {$this->key}");
+            if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function ()
+            {
+                if ($this->relay_method !== 'file') return null;
+                if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
+                if ($channel = $guild->channels->get('id', $this->ooc)) $this->civ13->gameChatFileRelay($this->basedir . Civ13::ooc_path, $channel);  // #ooc-server
+                if ($channel = $guild->channels->get('id', $this->asay)) $this->civ13->gameChatFileRelay($this->basedir . Civ13::admin_path, $channel);  // #asay-server
+            });
+        }
+    }
     public function serverinfoTimer(): TimerInterface
     {
         if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(180, function () {
-            if (! $arr = $this->localServerPlayerCount()) return; // No data available
-            $this->playercountChannelUpdate($arr['playercount']); // This needs to be updated to pass $this instead of "{$server}-""
-            foreach ($arr['playerlist'] as $ckey) {
+            if (! $playercount = $this->localServerPlayerCount()) return; // No data available
+            $this->playercountChannelUpdate($playercount); // This needs to be updated to pass $this instead of "{$server}-""
+            foreach ($this->players as $ckey) {
                 if (is_null($ckey)) continue;
                 if (! isset($this->civ13->permitted[$ckey]) && ! in_array($ckey, $this->seen_players)) { // Suspicious user ban rules
                     $this->seen_players[] = $ckey;
@@ -312,13 +323,14 @@ class GameServer {
                     if ($member = $guild->members->get('id', $item['discord']))
                         if ($member->roles->has($this->civ13->role_ids['Admin']))
                             { $admin = true; $urgent = false;}
-                if (! $admin)
-                    if ($playerlist = $this->localServerPlayerCount()['playerlist'])
+                if (! $admin) {
+                    if ($playerlist = $this->players)
                         if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
                             foreach ($admins as $member)
                                 if ($item = $this->civ13->verifier->verified->get('discord', $member->id))
                                     if (in_array($item['ss13'], $playerlist))
                                         { $urgent = false; break; }
+                }
             }
         }
         if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent);

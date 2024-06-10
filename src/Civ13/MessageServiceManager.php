@@ -347,7 +347,9 @@ class MessageServiceManager
             { // This function is only authorized to be used by the database administrator
                 if ($this->civ13->shard) return null;
                 if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-                if ($playerlist = $this->civ13->localServerPlayerCount()['playerlist']) return $this->civ13->reply($message, implode(', ', $playerlist));
+                $playerlist = [];
+                foreach ($this->civ13->enabled_servers as $gameserver) $playerlist = array_unique(array_merge($playerlist, $gameserver->players));
+                if ($playerlist) return $this->civ13->reply($message, implode(', ', $playerlist));
                 return $this->civ13->reply($message, 'No players found.');
             }), ['Chief Technical Officer']);
 
