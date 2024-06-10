@@ -348,7 +348,7 @@ class GameServer {
     public function DirectMessage(string $message, string $sender, string $recipient): bool
     {
         if (! $this->enabled) return false;
-        if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! ! $file = @fopen($path, 'a')) {
+        if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! $file = @fopen($path, 'a')) {
             $this->logger->debug("unable to open `$path` for writing");
             return false;
         }
