@@ -469,6 +469,7 @@ class Civ13
     {
         if (count($this->gameservers) > 5) trigger_error('Configuring more than 5 gameservers are not supported and you will likely experience issues.', E_USER_WARNING);
         $this->gameservers[$gameserver->key] = $gameserver;
+        $this->logger->info("Added game server: {$gameserver->name} ({$gameserver->key})");
     }
 
     /**
