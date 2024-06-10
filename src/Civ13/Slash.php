@@ -377,12 +377,11 @@ class Slash
             ]));*/
             
             $server_choices = [];
-            foreach ($this->civ13->server_settings as $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                if (! isset($settings['name'], $settings['key'])) continue;
+            foreach ($this->civ13->gameservers as $gameserver) {
+                if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
                 $server_choices[] = [
-                    'name' => $settings['name'],
-                    'value' => $settings['key']
+                    'name' => $gameserver->name,
+                    'value' => $gameserver->key
                 ];
             };
             if ($server_choices) { // Only add the ranking commands if there are servers to choose from
@@ -488,12 +487,12 @@ class Slash
         });
         $this->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface
         {
-            $settings = $this->civ13->server_settings[$interaction->data->options['server']->value];
-            if ($serverrestart = array_shift($this->civ13->messageServiceManager->messageHandler->offsetGet("{$settings['key']}restart"))) {
+            $gameserver = $this->civ13->gameservers[$interaction->data->options['server']->value];
+            if ($serverrestart = array_shift($this->civ13->messageServiceManager->messageHandler->offsetGet("{$gameserver->key}restart"))) {
                 $serverrestart();
-                return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `{$settings['name']}` <byond://{$settings['ip']}:{$settings['port']}>"));
+                return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `{$gameserver->name}` <byond://{$gameserver->ip}:{$gameserver->port}>"));
             }
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No restart function found for `{$settings['name']}`"));
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No restart function found for `{$gameserver->name}`"));
         });
         
         $this->listenCommand('ping', function (Interaction $interaction): PromiseInterface
@@ -520,12 +519,12 @@ class Slash
         {
             $content = '';
             if (! $this->civ13->webserver_online) {
-                foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}" . PHP_EOL;
+                foreach ($this->civ13->gameservers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent($content)->addEmbed($this->civ13->generateServerstatusEmbed()));
             }
             
             if (empty($data = $this->civ13->serverinfoParse())) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
-            foreach ($this->civ13->server_settings as $settings) $content .= "{$settings['name']}: {$settings['ip']}:{$settings['port']}";
+            foreach ($this->civ13->gameservers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}";
             $embed = new Embed($this->discord);
             foreach ($data as $server)
                 foreach ($server as $key => $array)
@@ -551,9 +550,9 @@ class Slash
                 $response = '';
                 $reason = 'unknown';
                 $found = false;
-                foreach ($this->civ13->server_settings as $settings) {
-                    if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
-                    if (file_exists($settings['basedir'] . $this->civ13::bans) && ($file = @fopen($settings['basedir'] . $this->civ13::bans, 'r'))) {
+                foreach ($this->civ13->gameservers as $gameserver) {
+                    if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
+                    if (file_exists($gameserver->basedir . $this->civ13::bans) && ($file = @fopen($gameserver->basedir . $this->civ13::bans, 'r'))) {
                         while (($fp = fgets($file, 4096)) !== false) {
                             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
                             if ((count($linesplit)>=8) && ($linesplit[8] == strtolower($item['ss13']))) {
@@ -562,7 +561,7 @@ class Slash
                                 $reason = $linesplit[3];
                                 $admin = $linesplit[4];
                                 $date = $linesplit[5];
-                                $response .= "**{$item['ss13']}** has been **$type** banned from **{$settings['name']}** on **$date** for **$reason** by $admin." . PHP_EOL;
+                                $response .= "**{$item['ss13']}** has been **$type** banned from **{$gameserver->name}** on **$date** for **$reason** by $admin." . PHP_EOL;
                             }
                         }
                         fclose($file);
@@ -830,7 +829,7 @@ class Slash
                 $server = $interaction->data->options['server']->value;
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating rank for `$ckey`..."))->then(function ($message) use ($interaction, $ckey, $server) {
                     $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated rank for `$ckey`."));
-                    if ($ranking = $this->civ13->getRank($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path, $ckey)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
+                    if ($ranking = $this->civ13->getRank($this->civ13->gameservers[$server]->basedir . Civ13::ranking_path, $ckey)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("`$ckey` is not currently ranked on the `$server` server."), true);
                 });
             });
@@ -840,7 +839,7 @@ class Slash
         { //TODO
             return $interaction->acknowledge()->then(function () use ($interaction) { // wait until the bot says "Is thinking..."
                 $server = $interaction->data->options['server']->value;
-                if ($ranking = $this->civ13->getRanking($this->civ13->server_settings[$server]['basedir'] . Civ13::ranking_path)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
+                if ($ranking = $this->civ13->getRanking($this->civ13->gameservers[$server]->basedir . Civ13::ranking_path)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Ranking for the `$server` server are not currently available."), true);
             });
         });

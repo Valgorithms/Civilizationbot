@@ -47,6 +47,7 @@ class GameServer {
     public bool $legacy = true; // Whether the server uses Civ13 legacy file cache or newer SQL methods.
     public bool $moderate = true; // Whether the server should moderate chat using the bot.
     public bool $panic_bunker = false; // Whether the server should only allow verified users to join.
+    public bool $log_attacks = true; // Whether the server should log attacks to the attack channel.
     public string $relay_method = 'webhook'; // The method used to relay chat messages to the server (either 'file' or 'webhook').
 
     // Discord Channel IDs
@@ -88,6 +89,7 @@ class GameServer {
         $this->legacy = $options['legacy'];
         $this->moderate = $options['moderate'];
         $this->panic_bunker = $options['panic_bunker'];
+        $this->log_attacks = $options['log_attacks'];
         $this->relay_method = $options['relay_method'];
         $this->discussion = $options['discussion'];
         $this->playercount = $options['playercount'];
