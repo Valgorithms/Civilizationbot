@@ -518,6 +518,7 @@ class MessageServiceManager
 
         $directmessage = new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
+            if (! str_contains($message_filtered['message_content'], ';')) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.');
             $explode = explode(';', $message_filtered['message_content']);
             $recipient = $this->civ13->sanitizeInput(substr(array_shift($explode), strlen($command)));
             $msg = implode(' ', $explode);
