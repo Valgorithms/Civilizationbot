@@ -1332,7 +1332,10 @@ class Civ13
     {
         // We don't want the persistence server to do this function
         foreach ($this->enabled_servers as $server) {
-            if (! @touch($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans , 'r')) return false;
+            if (! @touch($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans , 'r')) {
+                $this->logger->debug('unable to open `' . $server->basedir . self::bans . '`');
+                return false;
+            }
             fclose($file);
         }
 
