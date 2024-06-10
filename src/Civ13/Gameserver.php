@@ -92,6 +92,7 @@ class GameServer {
         $this->log_attacks = $options['log_attacks'] ?? true;
         $this->relay_method = $options['relay_method'] ?? 'webhook';
         $this->discussion = $options['discussion'];
+        $this->playercount = $options['playercount'];
         $this->ooc = $options['ooc'];
         $this->lobby = $options['lobby'];
         $this->asay = $options['asay'];
