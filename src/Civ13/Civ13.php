@@ -236,7 +236,7 @@ class Civ13
 
         if (! $server_settings) $this->logger->warning('No server settings passed in options!');
         foreach ($server_settings as $key => $gameserver_array) $this->addGameServer(new Gameserver($this, $gameserver_array));
-        foreach ($this->gameservers as $gameserver) if ($gameserver->enabled) $this->enabled_servers[] =& $gameserver; // This currently serves no purpose other, but will be implemented later to replace the ->enabled checks
+        foreach ($this->gameservers as $gameserver) if ($gameserver->enabled) $this->enabled_servers[] =& $gameserver; // Create a reference to the enabled servers so we can easily iterate over them
         
         $this->afterConstruct($options, $server_settings);
     }
@@ -1428,8 +1428,7 @@ class Civ13
      */
     public function legacyPermabancheck(string $ckey): bool
     {
-        foreach ($this->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if (! @touch($gameserver->basedir . self::bans) || ! $file = @fopen($gameserver->basedir . self::bans, 'r')) {
                 $this->logger->debug('unable to open `' . $gameserver->basedir . self::bans . '`');
                 return false;
@@ -1486,8 +1485,7 @@ class Civ13
     public function __panicBan(string $ckey): void
     {
         if (! $this->bancheck($ckey, true)) {
-            foreach ($this->gameservers as $gameserver) {
-                if (! $gameserver->enabled) continue;
+            foreach ($this->enabled_servers as $gameserver) {
                 if (! $gameserver->panic_bunker) continue;
                 $gameserver->ban(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"]);
                 $this->panic_bans[$ckey] = true;                
@@ -1497,8 +1495,7 @@ class Civ13
     }
     public function __panicUnban(string $ckey): void
     {
-        foreach ($this->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if (! $gameserver->panic_bunker) continue;
             $gameserver->unban($ckey);
             unset($this->panic_bans[$ckey]);
@@ -1728,8 +1725,7 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach ($this->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if (! @touch($gameserver->basedir . self::bans) || ! $fc = @file_get_contents($gameserver->basedir . self::bans)) {
                 $this->logger->warning('unable to open `' . $gameserver->basedir . self::bans . '`');
                 continue;
@@ -1789,8 +1785,7 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach ($this->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if (! @touch($gameserver->basedir . self::playerlogs) || ! $fc = @file_get_contents($gameserver->basedir . self::playerlogs)) {
                 $this->logger->warning('unable to open `' . $gameserver->basedir . self::playerlogs . '`');
                 continue;
@@ -2074,8 +2069,7 @@ class Civ13
      */
     public function localServerPlayerCount(array $servers = [], array $players = []): array
     {
-        foreach ($this->gameservers as $gameserver) {        
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if ($gameserver->ip !== $this->httpServiceManager->httpHandler->external_ip) continue;
             $servers[$gameserver->key] = 0;
             $socket = @fsockopen('localhost', intval($gameserver->port), $errno, $errstr, 1);
@@ -2185,9 +2179,8 @@ class Civ13
             $this->logger->warning('No serverinfo players data to parse!');
             return; // No data to parse
         }
-        foreach ($this->gameservers as $gameserver) {
+        foreach ($this->enabled_servers as $gameserver) {
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
-            if (! $gameserver->enabled) continue;
             if (! $gameserver->supported) continue; // Server is not supported by the remote webserver and won't appear in data
             if (array_key_exists('ERROR', $server)) continue; // Remote webserver reports server is not responding
             $p1 = (isset($server['players'])
@@ -2205,8 +2198,7 @@ class Civ13
      */
     public function recalculateRanking(): bool
     {
-        foreach ($this->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if ( ! @touch($awards_path = $gameserver->basedir . self::awards_path)) return false;
             if ( ! @touch($ranking_path = $gameserver->basedir . self::ranking_path)) return false;
             if (! $lines = file($awards_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
@@ -2316,8 +2308,7 @@ class Civ13
     {
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         $file_paths = [];
-        foreach ($this->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if (! ! @touch($gameserver->basedir . self::whitelist)) continue;
             $file_paths[] = $gameserver->basedir . self::whitelist;
         }
@@ -2343,8 +2334,7 @@ class Civ13
     {
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         $file_paths = [];
-        foreach ($this->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if (! @touch($gameserver->basedir . self::factionlist)) continue;
             $file_paths[] = $gameserver->basedir . self::factionlist;
         }
@@ -2384,8 +2374,7 @@ class Civ13
     {
         if (! $this->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         $file_paths = [];
-        foreach ($this->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {
             if (! isset($gameserver->basedir) || ! @touch($gameserver->basedir . self::admins)) continue;
             $file_paths[] = $gameserver->basedir . self::admins;
         }

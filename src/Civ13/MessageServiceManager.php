@@ -557,8 +557,7 @@ class MessageServiceManager
             $reason = 'unknown';
             $found = false;
             $content = '';
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (! touch ($gameserver->basedir . Civ13::bans) || ! $file = @fopen($gameserver->basedir . Civ13::bans, 'r')) {
                     $this->civ13->logger->warning('Could not open `' . $gameserver->basedir . Civ13::bans . "` for reading.");
                     return $message->react("🔥");
@@ -722,8 +721,7 @@ class MessageServiceManager
             if (! isset($split_message[2]) || ! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
             $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
     
-            foreach ($this->civ13->gameservers as $gameserver) { // TODO: Review this for performance and redundancy
-                if (! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) { // TODO: Review this for performance and redundancy
                 if (! isset($this->civ13->timers["banlog_update_{$gameserver->key}"])) $this->civ13->timers["banlog_update_{$gameserver->key}"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($banlog_update, $arr) {
                     $playerlogs = [];
                     foreach ($this->civ13->gameservers as $g) {
@@ -761,8 +759,7 @@ class MessageServiceManager
         {            
             $builder = MessageBuilder::new();
             $found = false;
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (! file_exists($path = $gameserver->basedir . Civ13::admins) || ! $file_contents = @file_get_contents($path)) {
                     $this->civ13->logger->debug("`$path` is not a valid file path!");
                     continue;
@@ -777,8 +774,7 @@ class MessageServiceManager
         $this->offsetSet('factionlist', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {            
             $builder = MessageBuilder::new()->setContent('Faction Lists');
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (file_exists($path = $gameserver->basedir . Civ13::factionlist)) $builder->addfile($path, $gameserver->key . '_factionlist.txt');
                 else $this->civ13->logger->warning("`$path is not a valid file path!");
             }
@@ -789,8 +785,7 @@ class MessageServiceManager
         $this->offsetSet('sportsteams', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {   
             $builder = MessageBuilder::new()->setContent('Sports Teams');      
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! isset($gameserver->enabled, $gameserver->basedir) || ! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (file_exists($path = $gameserver->basedir . Civ13::sportsteams)) $builder->addfile($path, $gameserver->key . '_sports_teams.txt');
                 else $this->civ13->logger->warning("`$path is not a valid file path!");
             }
@@ -801,8 +796,7 @@ class MessageServiceManager
         {
             $tokens = explode(';', $message_content);
             $keys = [];
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 $keys[] = $gameserver->key;
                 if (trim($tokens[0]) !== $gameserver->key) continue; // Check if server is valid
                 if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::log_basedir)) {
@@ -829,8 +823,7 @@ class MessageServiceManager
         {
             $tokens = explode(';', trim(substr($message_filtered['message_content'], strlen($command))));
             $keys = [];
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 $keys[] = $gameserver->key;
                 if (trim($tokens[0]) !== $gameserver->key) continue;
                 if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::playerlogs) || ! $file_contents = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) return $message->react("🔥");
@@ -864,8 +857,7 @@ class MessageServiceManager
         }), ['Owner']);
 
         
-        foreach ($this->civ13->gameservers as $gameserver) {
-            if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
+        foreach ($this->civ13->enabled_servers as $gameserver) {
             $path = $gameserver->basedir.Civ13::ranking_path;
             if (file_exists($path) || @touch($path)) {
                 $this->offsetSet($gameserver->key.'ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
@@ -958,13 +950,12 @@ class MessageServiceManager
 
         $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface {
             $server_playerlogs = array_filter(array_map(function ($gameserver) {
-                if (! $gameserver->enabled) return null;
                 if (! $playerlogs = @file_get_contents($fp = $gameserver->basedir . Civ13::playerlogs)) {
                     $this->civ13->logger->warning("`$fp` is not a valid file path!");
                     return null;
                 }
                 return $playerlogs;
-            }, $this->civ13->gameservers));
+            }, $this->civ13->enabled_servers));
 
             if (! $server_playerlogs) return $message->react("🔥");
 
@@ -1068,8 +1059,7 @@ class MessageServiceManager
      */
     private function __generateServerMessageCommands(): void
     {
-        foreach ($this->civ13->gameservers as $gameserver) {
-            if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
+        foreach ($this->civ13->enabled_servers as $gameserver) {
             if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->civ13->logger->debug("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
             else {
                 $servernotes = function (Message $message, array $message_filtered) use ($gameserver): PromiseInterface

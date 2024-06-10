@@ -740,8 +740,7 @@ class HttpServiceManager
             return $channel->sendMessage($builder);
         };
         
-        foreach ($this->civ13->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->civ13->enabled_servers as $gameserver) {
             $server_endpoint = '/' . $gameserver->key;
 
             $this->httpHandler->offsetSet('/bancheck_centcom', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
@@ -771,8 +770,7 @@ class HttpServiceManager
         }
 
         $endpoint = '/webhook';
-        foreach ($this->civ13->gameservers as $gameserver) {
-            if (! $gameserver->enabled) continue;
+        foreach ($this->civ13->enabled_servers as $gameserver) {
             $server_endpoint = $endpoint . '/' . $gameserver->key;
 
             // If no parameters are passed to a server_endpoint, try to find it using the query parameters

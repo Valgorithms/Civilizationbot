@@ -377,8 +377,7 @@ class Slash
             ]));*/
             
             $server_choices = [];
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 $server_choices[] = [
                     'name' => $gameserver->name,
                     'value' => $gameserver->key
@@ -550,8 +549,7 @@ class Slash
                 $response = '';
                 $reason = 'unknown';
                 $found = false;
-                foreach ($this->civ13->gameservers as $gameserver) {
-                    if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
+                foreach ($this->civ13->enabled_servers as $gameserver) {
                     if (file_exists($gameserver->basedir . $this->civ13::bans) && ($file = @fopen($gameserver->basedir . $this->civ13::bans, 'r'))) {
                         while (($fp = fgets($file, 4096)) !== false) {
                             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey

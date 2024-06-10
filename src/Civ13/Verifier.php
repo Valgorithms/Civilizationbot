@@ -241,14 +241,13 @@ class Verifier
             if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                $msg = $this->civ13->ban($arr, null, [], true);
+                $msg = $this->civ13->ban($arr, null, null, true);
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
                 return $reason;
             }
             $found = false;
             $file_contents = '';
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! isset($gameserver->enabled) || ! $gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (file_exists($gameserver->basedir . Civ13::playerlogs) && $fc = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) $file_contents .= $fc;
                 else $this->civ13->logger->warning('unable to open `' . $gameserver->basedir . Civ13::playerlogs . '`');
             }
