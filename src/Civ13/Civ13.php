@@ -242,8 +242,7 @@ class Civ13
             return isset($settings['enabled']) && $settings['enabled'];
         }));
 
-        if (isset($settings['gameservers'])) foreach ($settings['gameservers'] as $gameserver)
-            if (is_array($gameserver)) $this->addGameServer(new Gameserver($this, $gameserver));
+        foreach ($server_options as $key => $gameserver_array) $this->addGameServer(new Gameserver($this, $gameserver_array));
         
         $this->afterConstruct($options, $server_options);
     }

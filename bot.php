@@ -336,7 +336,7 @@ $options = array_merge($options, $hidden_options);
 
 
 
-$civ13 = new Civ13($options);
+$civ13 = new Civ13($options, $server_settings);
 $global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13, $testing) {
     if (
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
