@@ -42,13 +42,13 @@ class GameServer {
     public string $ip; // The IP of the server.
     public string $port; // The port of the server.
     public string $host; // The host of the server (e.g. Taislin).
-    public bool $supported = false; // Whether the server is supported by the remote webserver and will appear in data retrieved from it.
-    public bool $enabled = true; // Whether the server is enabled and accessible by this bot.
-    public bool $legacy = true; // Whether the server uses Civ13 legacy file cache or newer SQL methods.
-    public bool $moderate = true; // Whether the server should moderate chat using the bot.
-    public bool $panic_bunker = false; // Whether the server should only allow verified users to join.
-    public bool $log_attacks = true; // Whether the server should log attacks to the attack channel.
-    public string $relay_method = 'webhook'; // The method used to relay chat messages to the server (either 'file' or 'webhook').
+    public bool $supported; // Whether the server is supported by the remote webserver and will appear in data retrieved from it.
+    public bool $enabled; // Whether the server is enabled and accessible by this bot.
+    public bool $legacy; // Whether the server uses Civ13 legacy file cache or newer SQL methods.
+    public bool $moderate; // Whether the server should moderate chat using the bot.
+    public bool $panic_bunker; // Whether the server should only allow verified users to join.
+    public bool $log_attacks; // Whether the server should log attacks to the attack channel.
+    public string $relay_method ; // The method used to relay chat messages to the server (either 'file' or 'webhook').
 
     // Discord Channel IDs
     public string $discussion;
@@ -84,13 +84,13 @@ class GameServer {
         $this->ip = $options['ip'];
         $this->port = $options['port'];
         $this->host = $options['host'];
-        $this->supported = $options['supported'];
+        $this->supported = $options['supported'] ?? false;
         $this->enabled = $options['enabled'] ?? false;
-        $this->legacy = $options['legacy'];
-        $this->moderate = $options['moderate'];
-        $this->panic_bunker = $options['panic_bunker'];
-        $this->log_attacks = $options['log_attacks'];
-        $this->relay_method = $options['relay_method'];
+        $this->legacy = $options['legacy'] ?? true;
+        $this->moderate = $options['moderate'] ?? true;
+        $this->panic_bunker = $options['panic_bunker']  ?? false;
+        $this->log_attacks = $options['log_attacks'] ?? true;
+        $this->relay_method = $options['relay_method'] ?? 'webhook';
         $this->discussion = $options['discussion'];
         $this->playercount = $options['playercount'];
         $this->ooc = $options['ooc'];
@@ -251,6 +251,7 @@ class GameServer {
      */
     private function playercountChannelUpdate(int $count = 0): bool
     {
+        if ($this->playercount_ticker % 10 !== 0) return false;
         if (! $channel = $this->discord->getChannel($this->playercount)) {
             $this->civ13->logger->warning("Channel {$this->playercount} doesn't exist!");
             return false;
@@ -260,7 +261,6 @@ class GameServer {
             return false;
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
-        if ($this->playercount_ticker % 10 !== 0) return false;
         if ((int)$existingCount !== $count) {
             $channel->name = "{$channelPrefix}-{$count}";
             $channel->guild->channels->save($channel);
