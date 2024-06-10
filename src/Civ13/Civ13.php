@@ -726,7 +726,7 @@ class Civ13
     {
         if (is_null($server_key)) {
             $sent = false;
-            foreach ($this->gameservers as $key => $server) if ($server->OOCMessage($message, $sender)) $sent = true;
+            foreach ($this->gameservers as $server) if ($server->OOCMessage($message, $sender)) $sent = true;
             return $sent;
         }
         if (! isset($this->gameservers[$server_key])) return false;
@@ -744,7 +744,7 @@ class Civ13
     {
         if (is_null($server_key)) {
             $sent = false;
-            foreach ($this->gameservers as $key => $server) if ($server->AdminMessage($message, $sender)) $sent = true;
+            foreach ($this->gameservers as $server) if ($server->AdminMessage($message, $sender)) $sent = true;
             return $sent;
         }
         if (! isset($this->gameservers[$server_key])) return false;
@@ -759,28 +759,15 @@ class Civ13
      * @param array|null $settings Additional settings for sending the direct message (optional).
      * @return bool Returns true if the direct message was sent successfully, false otherwise.
      */
-    public function DirectMessage(string $message, string $sender, string $recipient, ?array $settings = []): bool
+    public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): bool
     {
-        $directmessage = function (string $recipient, string $message, string $sender, array $settings): bool
-        {
-            if (@touch($settings['basedir'] . self::discord2dm) && $file = @fopen($settings['basedir'] . self::discord2dm, 'a')) {
-                fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
-                fclose($file);
-                if (isset($settings['asay']) && $channel = $this->discord->getChannel($settings['asay'])) $this->relayPlayerMessage($channel, $message, $sender, $recipient);
-                return true;
-            }
-            $this->logger->debug('unable to open `' . $settings['basedir'] . self::discord2dm . '` for writing');
-            return false;
-        };
-        $sent = false;
-        foreach ($this->server_settings as $s) {
-            if (! isset($s['enabled']) || ! $s['enabled']) continue;
-            if ($settings['key']) {
-                if ($settings['key'] !== $s['key']) continue;
-                return $directmessage($message, $sender, $recipient, $settings);
-            } elseif ($directmessage($message, $sender, $recipient, $settings)) $sent = true;
+        if (is_null($server_key)) {
+            $sent = false;
+            foreach ($this->gameservers as $server) if ($server->DirectMessage($message, $sender, $recipient)) $sent = true;
+            return $sent;
         }
-        return $sent;
+        if (! isset($this->gameservers[$server_key])) return false;
+        return $this->gameservers[$server_key]->DirectMessage($message, $sender, $recipient);
     }
 
     /**

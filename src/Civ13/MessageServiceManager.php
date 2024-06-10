@@ -521,13 +521,12 @@ class MessageServiceManager
             $explode = explode(';', $message_filtered['message_content']);
             $recipient = $this->civ13->sanitizeInput(substr(array_shift($explode), strlen($command)));
             $msg = implode(' ', $explode);
-            foreach ($this->civ13->server_settings as $settings) {
-                if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
+            foreach ($this->civ13->gameservers as $server) {
                 switch (strtolower($message->channel->name)) {
-                    case "asay-{$settings['key']}":
-                    case "ic-{$settings['key']}":
-                    case "ooc-{$settings['key']}":
-                        if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $recipient, $settings)) return $message->react("📧");
+                    case "asay-{$server->key}":
+                    case "ic-{$server->key}":
+                    case "ooc-{$server->key}":
+                        if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $recipient, $server->key)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
