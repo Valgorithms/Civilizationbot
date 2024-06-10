@@ -878,7 +878,7 @@ class MessageServiceManager
             if (! isset($settings['enabled']) || ! $settings['enabled']) continue;
             if (! isset($settings['name'], $settings['key'])) continue;
             $path = $settings['basedir'].Civ13::ranking_path;
-            if ((file_exists($path) || touch($path))) {
+            if ((file_exists($path) || @touch($path))) {
                 $this->offsetSet($settings['key'].'ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
                 {
                     if (! $this->civ13->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
