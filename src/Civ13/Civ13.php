@@ -236,7 +236,6 @@ class Civ13
 
         if (! $server_settings) $this->logger->warning('No server settings passed in options!');
         foreach ($server_settings as $key => $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
-        foreach ($this->gameservers as $gameserver) if ($gameserver->enabled) $this->enabled_servers[$gameserver->key] =& $gameserver; // Create a reference to the enabled servers so we can easily iterate over them
         
         $this->afterConstruct($options, $server_settings);
     }
@@ -468,7 +467,8 @@ class Civ13
     private function addGameServer(Gameserver $gameserver): void
     {
         if (count($this->gameservers) > 5) trigger_error('Configuring more than 5 gameservers are not supported and you will likely experience issues.', E_USER_WARNING);
-        $this->gameservers[$gameserver->key] = $gameserver;
+        $this->gameservers[$gameserver->key] =& $gameserver;
+        if ($gameserver->enabled) $this->enabled_servers[$gameserver->key] =& $gameserver; // Create a reference to the enabled servers so we can easily iterate over them
         $this->logger->info("Added game server: {$gameserver->name} ({$gameserver->key})");
     }
 
