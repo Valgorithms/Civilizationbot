@@ -236,7 +236,7 @@ class Civ13
 
         if (! $server_settings) $this->logger->warning('No server settings passed in options!');
         foreach ($server_settings as $key => $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
-        foreach ($this->gameservers as $gameserver) if ($gameserver->enabled) $this->enabled_servers[] =& $gameserver; // Create a reference to the enabled servers so we can easily iterate over them
+        foreach ($this->gameservers as $gameserver) if ($gameserver->enabled) $this->enabled_servers[$gameserver->key] =& $gameserver; // Create a reference to the enabled servers so we can easily iterate over them
         
         $this->afterConstruct($options, $server_settings);
     }
@@ -704,11 +704,11 @@ class Civ13
     {
         if (is_null($server_key)) {
             $sent = false;
-            foreach ($this->gameservers as $server) if ($server->OOCMessage($message, $sender)) $sent = true;
+            foreach ($this->enabled_servers as $server) if ($server->OOCMessage($message, $sender)) $sent = true;
             return $sent;
         }
-        if (! isset($this->gameservers[$server_key])) return false;
-        return $this->gameservers[$server_key]->OOCMessage($message, $sender);
+        if (! isset($this->enabled_servers[$server_key])) return false;
+        return $this->enabled_servers[$server_key]->OOCMessage($message, $sender);
     }
     /**
      * Sends an admin message to the server.
@@ -722,11 +722,11 @@ class Civ13
     {
         if (is_null($server_key)) {
             $sent = false;
-            foreach ($this->gameservers as $server) if ($server->AdminMessage($message, $sender)) $sent = true;
+            foreach ($this->enabled_servers as $server) if ($server->AdminMessage($message, $sender)) $sent = true;
             return $sent;
         }
-        if (! isset($this->gameservers[$server_key])) return false;
-        return $this->gameservers[$server_key]->AdminMessage($message, $sender);
+        if (! isset($this->enabled_servers[$server_key])) return false;
+        return $this->enabled_servers[$server_key]->AdminMessage($message, $sender);
     }
     /**
      * Sends a direct message to a recipient using the specified sender and message.
@@ -741,11 +741,11 @@ class Civ13
     {
         if (is_null($server_key)) {
             $sent = false;
-            foreach ($this->gameservers as $server) if ($server->DirectMessage($message, $sender, $recipient)) $sent = true;
+            foreach ($this->enabled_servers as $server) if ($server->DirectMessage($message, $sender, $recipient)) $sent = true;
             return $sent;
         }
-        if (! isset($this->gameservers[$server_key])) return false;
-        return $this->gameservers[$server_key]->DirectMessage($message, $sender, $recipient);
+        if (! isset($this->enabled_servers[$server_key])) return false;
+        return $this->enabled_servers[$server_key]->DirectMessage($message, $sender, $recipient);
     }
 
     /**
@@ -918,7 +918,7 @@ class Civ13
         if (! $this->__relayWarningCounter($ckey, $badwords_array, $badword_warnings)) return $this->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->rules}. Appeal at {$this->discord_formatted}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
-        foreach ($this->gameservers as $server) if (strtolower($server) === $server->key) return $this->DirectMessage($warning, $this->discord->user->displayname, $ckey, $server->key);
+        if (isset($this->enabled_servers[$server])) return $this->enabled_servers[$server]->DirectMessage($warning, $this->discord->user->displayname, $ckey);
         return false;
     }
     /*
@@ -1029,7 +1029,7 @@ class Civ13
             {
                 if ($this->relay_method !== 'file') return null;
                 if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13_guild_id}`");
-                foreach ($this->gameservers as $server) {
+                foreach ($this->enabled_servers as $server) {
                     if ($channel = $guild->channels->get('id', $server->ooc)) $this->gameChatFileRelay($server->basedir . self::ooc_path, $channel);  // #ooc-server
                     if ($channel = $guild->channels->get('id', $server->asay)) $this->gameChatFileRelay($server->basedir . self::admin_path, $channel);  // #asay-server
                 }
@@ -1315,10 +1315,10 @@ class Civ13
      */
     public function banlogHandler(Message $message, string $message_content_lower): PromiseInterface 
     {
-        $gameservers = array_filter($this->gameservers, function($gameserver) use ($message_content_lower) {
+        $gameservers = array_filter($this->enabled_servers, function($gameserver) use ($message_content_lower) {
             return $gameserver->key === strtolower($message_content_lower);
         });
-        if (empty($gameservers)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->gameservers)) . '`');
+        if (empty($gameservers)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->enabled_servers)) . '`');
 
         foreach ($gameservers as $gameserver) if (! @touch($filename = $gameserver->basedir . self::bans)) {
             $this->logger->warning("Failed to create file $filename");
@@ -1402,8 +1402,7 @@ class Civ13
      */
     public function legacyBancheck(string $ckey): bool
     {
-        foreach ($this->gameservers as $server) {
-            if (! $server->enabled) continue;
+        foreach ($this->enabled_servers as $server) {
             if (! @touch($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans, 'r')) {
                 $this->logger->debug('unable to open `' . $server->basedir . self::bans . '`');
                 return false;
@@ -1524,16 +1523,16 @@ class Civ13
             else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
         }
         $return = '';
-        if (is_null($server)) foreach ($this->gameservers as $gameserver) $return .= $gameserver->ban($array, $admin, $permanent);
-        elseif (isset($this->gameservers[$server])) $return .= $this->gameservers[$server]->ban($array, $admin, $permanent);
+        if (is_null($server)) foreach ($this->enabled_servers as $gameserver) $return .= $gameserver->ban($array, $admin, $permanent);
+        elseif (isset($this->enabled_servers[$server])) $return .= $this->enabled_servers[$server]->ban($array, $admin, $permanent);
         else $return .= "Invalid server specified for ban.";
         return $return;
     }
     public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): void
     {
         $admin ??= $this->discord->user->displayname;
-        if (is_null($gameserver)) foreach ($this->gameservers as $gameserver) $this->unban($ckey, $admin, $gameserver->key);
-        elseif(isset($this->gameservers[$gameserver])) $this->gameservers[$gameserver]->unban($ckey, $admin);
+        if (is_null($gameserver)) foreach ($this->enabled_servers as $gameserver) $this->unban($ckey, $admin, $gameserver->key);
+        elseif(isset($this->enabled_servers[$gameserver])) $this->enabled_servers[$gameserver]->unban($ckey, $admin);
         else {
             $this->logger->warning("Invalid server specified for unban.");
             return;
@@ -1971,12 +1970,12 @@ class Civ13
     {
         $gameservers = [];
         if (! is_null($gameserver)) {
-            if (! isset($this->gameservers[$gameserver])) {
+            if (! isset($this->enabled_servers[$gameserver])) {
                 $this->logger->warning("Server {$gameserver} doesn't exist!");
                 return false;
             }
-            $gameservers[] = $this->gameservers[$gameserver];
-        } else $gameservers = $this->gameservers;
+            $gameservers[] = $this->enabled_servers[$gameserver];
+        } else $gameservers = $this->enabled_servers;
 
         $return = false;
         foreach ($gameservers as $server) {
@@ -2011,7 +2010,7 @@ class Civ13
             $this->logger->warning('No serverinfo data to parse!');
         }
         $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
-        foreach ($this->gameservers as $gameserver) {
+        foreach ($this->enabled_servers as $gameserver) {
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
             if (! $gameserver->supported) { 
                 $this->logger->debug("Server {$gameserver->name} is not supported by the remote webserver!");
@@ -2051,12 +2050,10 @@ class Civ13
     
             if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
     
-            if ($gameserver->enabled) {
-                $p1 = (isset($server['players'])
-                    ? $server['players']
-                    : count($players) ?? 0);
-                $this->playercountChannelUpdate($gameserver->key, $p1);
-            }
+            $p1 = (isset($server['players'])
+                ? $server['players']
+                : count($players) ?? 0);
+            $this->playercountChannelUpdate($gameserver->key, $p1);
             $index++;
         }
         $this->playercount_ticker++;
@@ -2115,8 +2112,7 @@ class Civ13
         $embed->setColor(0xe1452d);
         $embed->setTimestamp();
         $embed->setURL('');
-        foreach ($this->gameservers as $gameserver) {            
-            if (!$gameserver->enabled) continue;
+        foreach ($this->enabled_servers as $gameserver) {            
             if (! isset($gameserver->ip, $gameserver->port)) {
                 $this->logger->warning("Server {$gameserver->key} is missing required settings in config!");
                 continue;

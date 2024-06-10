@@ -479,7 +479,7 @@ class MessageServiceManager
         $this->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            foreach ($this->civ13->gameservers as $server) switch (strtolower($message->channel->name)) {
+            foreach ($this->civ13->enabled_servers as $server) switch (strtolower($message->channel->name)) {
                 case "ooc-{$server->key}":                    
                     if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $server->key)) return $message->react("📧");
                     return $message->react("🔥");
@@ -490,7 +490,7 @@ class MessageServiceManager
         $this->offsetSet('asay', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            foreach ($this->civ13->gameservers as $server) {
+            foreach ($this->civ13->enabled_servers as $server) {
                 switch (strtolower($message->channel->name)) {
                     case "asay-{$server->key}":
                         if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $server->key)) return $message->react("📧");
@@ -522,7 +522,7 @@ class MessageServiceManager
             $explode = explode(';', $message_filtered['message_content']);
             $recipient = $this->civ13->sanitizeInput(substr(array_shift($explode), strlen($command)));
             $msg = implode(' ', $explode);
-            foreach ($this->civ13->gameservers as $server) {
+            foreach ($this->civ13->enabled_servers as $server) {
                 switch (strtolower($message->channel->name)) {
                     case "asay-{$server->key}":
                     case "ic-{$server->key}":
@@ -724,13 +724,11 @@ class MessageServiceManager
             foreach ($this->civ13->enabled_servers as $gameserver) { // TODO: Review this for performance and redundancy
                 if (! isset($this->civ13->timers["banlog_update_{$gameserver->key}"])) $this->civ13->timers["banlog_update_{$gameserver->key}"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($banlog_update, $arr) {
                     $playerlogs = [];
-                    foreach ($this->civ13->gameservers as $g) {
-                        if (! $g->enabled) continue;
+                    foreach ($this->civ13->enabled_servers as $g) {
                         if (! file_exists($fp = $g->basedir . Civ13::playerlogs)) continue;
                         if ($playerlog = @file_get_contents($fp)) $playerlogs[] = $playerlog;
                     }
-                    if ($playerlogs) foreach ($this->civ13->gameservers as $g) {
-                        if (! $g->enabled) continue;
+                    if ($playerlogs) foreach ($this->civ13->enabled_servers as $g) {
                         if (! file_exists($fp = $g->basedir . Civ13::bans)) continue;
                         file_put_contents($fp, $banlog_update(file_get_contents($fp), $playerlogs, $arr['ckey']), FILE_APPEND);
                     }
@@ -858,27 +856,25 @@ class MessageServiceManager
 
         
         foreach ($this->civ13->enabled_servers as $gameserver) {
-            $path = $gameserver->basedir.Civ13::ranking_path;
-            if (file_exists($path) || @touch($path)) {
-                $this->offsetSet($gameserver->key.'ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
-                {
-                    if (! $this->civ13->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                    if (! $msg = $this->civ13->getRanking($path)) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking!');
-                    return $this->civ13->reply($message, $msg, 'ranking.txt');
-                }));
-    
-                $this->offsetSet($gameserver->key.'rank', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
-                {
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
-                        $ckey = $item['ss13'];
-                    }
-                    if (! $this->civ13->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                    if (! $msg = $this->civ13->getRank($path, $ckey)) return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
-                    return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
-                    // return $this->civ13->reply($message, "Your ranking is too long to display.");
-                }));
-            }
+            if (! file_exists($path = $gameserver->basedir . Civ13::ranking_path) || ! @touch($path)) continue;
+            $this->offsetSet($gameserver->key.'ranking', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
+            {
+                if (! $this->civ13->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
+                if (! $msg = $this->civ13->getRanking($path)) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking!');
+                return $this->civ13->reply($message, $msg, 'ranking.txt');
+            }));
+
+            $this->offsetSet($gameserver->key.'rank', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($path): PromiseInterface
+            {
+                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
+                    if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
+                    $ckey = $item['ss13'];
+                }
+                if (! $this->civ13->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
+                if (! $msg = $this->civ13->getRank($path, $ckey)) return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
+                return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
+                // return $this->civ13->reply($message, "Your ranking is too long to display.");
+            }));
         };
         
         if (isset($this->civ13->files['tdm_awards_path']) && file_exists($this->civ13->files['tdm_awards_path'])) {
@@ -960,8 +956,7 @@ class MessageServiceManager
             if (! $server_playerlogs) return $message->react("🔥");
 
             $updated = false;
-            foreach ($this->civ13->gameservers as $gameserver) {
-                if (! isset($gameserver->enabled) || !$gameserver->enabled) continue;
+            foreach ($this->civ13->enabled_servers as $gameserver) {
                 $fp = $gameserver->basedir . Civ13::bans;
                 $existingContent = @file_get_contents($fp);
                 $newContent = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($existingContent, $server_playerlogs));

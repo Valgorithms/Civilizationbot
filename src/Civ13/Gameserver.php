@@ -278,8 +278,8 @@ class GameServer {
     public function OOCMessage(string $message, string $sender): bool
     {
         if (! $this->enabled) return false;
-        if (! touch ($this->basedir . Civ13::discord2ooc) || ! $file = @fopen($this->basedir . Civ13::discord2ooc, 'a')) {
-            $this->logger->error('unable to open `' . $this->basedir . Civ13::discord2ooc . '` for writing');
+        if (! touch ($path = $this->basedir . Civ13::discord2ooc) || ! $file = @fopen($path, 'a')) {
+            $this->logger->error("unable to open `$path` for writing");
             return false;
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
@@ -298,8 +298,8 @@ class GameServer {
     public function AdminMessage(string $message, string $sender): bool
     {
         if (! $this->enabled) return false;
-        if (! @touch($this->basedir . Civ13::discord2admin) || ! $file = @fopen($this->basedir . Civ13::discord2admin, 'a')) {
-            $this->logger->error('unable to open `' . $this->basedir . Civ13::discord2admin . '` for writing');
+        if (! @touch($path = $this->basedir . Civ13::discord2admin) || ! $file = @fopen($path, 'a')) {
+            $this->logger->error("unable to open `$path` for writing");
             return false;
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
@@ -336,8 +336,8 @@ class GameServer {
     public function DirectMessage(string $message, string $sender, string $recipient): bool
     {
         if (! $this->enabled) return false;
-        if (! @touch($this->basedir . Civ13::discord2dm) || ! ! $file = @fopen($this->basedir . Civ13::discord2dm, 'a')) {
-            $this->logger->debug('unable to open `' . $this->basedir . Civ13::discord2dm . '` for writing');
+        if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! ! $file = @fopen($path, 'a')) {
+            $this->logger->debug("unable to open `$path` for writing");
             return false;
         }
         fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
@@ -432,7 +432,10 @@ class GameServer {
     {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
-        if (! $this->basedir || ! @touch($this->whitelist)) return false;
+        if (! @touch($this->whitelist)) {
+            $this->civ13->logger->warning("unable to open `{$this->whitelist}`");
+            return false;
+        }
         $file_paths = [];
         $file_paths[] = $this->whitelist;
 
@@ -457,7 +460,10 @@ class GameServer {
     {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
-        if (! isset($this->basedir) || ! @touch($this->factionlist)) return false;
+        if (! @touch($this->factionlist)) {
+            $this->civ13->logger->warning("unable to open `{$this->factionlist}`");
+            return false;
+        }
         $file_paths = [];
         $file_paths[] = $this->factionlist;
 
@@ -494,9 +500,12 @@ class GameServer {
         ]
     ): bool
     {
+        if (! $this->enabled) return false;
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
-        if (! isset($this->enabled) || ! $this->enabled) return false;
-        if (! isset($this->basedir) || ! @touch($this->admins)) return false;
+        if (! @touch($this->admins)) {
+            $this->civ13->logger->warning("unable to open `{$this->admins}`");
+            return false;
+        }
         $file_paths[] = $this->admins;
 
         $callback = function (Member $member, array $item, array $required_roles): string
