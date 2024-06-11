@@ -10,6 +10,7 @@ namespace Civ13;
 
 use Byond\Byond;
 use Civ13\Slash;
+use Civ13\Moderator;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
@@ -32,7 +33,6 @@ use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\Promise\PromiseInterface;
 use React\Http\Browser;
-use React\EventLoop\TimerInterface;
 use React\Filesystem\AdapterInterface;
 use React\Filesystem\Factory as FilesystemFactory;
 use ReflectionFunction;
@@ -74,6 +74,7 @@ class Civ13
     public array $options = [];
     
     public Byond $byond;
+    public Moderator $moderator;
     public Verifier $verifier;
 
     public string $welcome_message = '';
@@ -248,6 +249,7 @@ class Civ13
      */
     private function afterConstruct(array $options = [], array $server_settings = []): void
     {
+        $this->moderator = new Moderator($this);
         $this->verifier = new Verifier($this, $options);
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
@@ -1497,40 +1499,6 @@ class Civ13
         }
     }
 
-    /**
-     * Scrutinizes the given ckey and applies ban rules if necessary.
-     *
-     * @param string $ckey The ckey to be scrutinized.
-     * @return void
-     */
-    public function scrutinizeCkey(string $ckey): void
-    { // Suspicious user ban rules
-        if (! isset($this->permitted[$ckey]) && ! in_array($ckey, $this->seen_players)) {
-            $this->seen_players[] = $ckey;
-            $ckeyinfo = $this->ckeyinfo($ckey);
-            $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->discord_formatted}"];
-            if ($ckeyinfo['altbanned']) { // Banned with a different ckey
-                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $this->ban($ban, null, null, true) . ' (Alt Banned)');
-            } else foreach ($ckeyinfo['ips'] as $ip) {
-                if (in_array($this->IP2Country($ip), $this->blacklisted_countries)) { // Country code
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $this->ban($ban, null, null, true) . ' (Blacklisted Country)');
-                    break;
-                } else foreach ($this->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { // IP Segments
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $this->ban($ban, null, null, true) . ' (Blacklisted Region)');
-                    break 2;
-                }
-            }
-        }
-        if ($this->verifier->verified->get('ss13', $ckey)) return;
-        if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) {
-            $this->__panicBan($ckey); // Require verification for Persistence rounds
-            return;
-        }
-        if (! isset($this->permitted[$ckey]) && ! isset($this->ages[$ckey]) && ! $this->checkByondAge($age = $this->getByondAge($ckey))) { // Force new accounts to register in Discord
-            $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` must register on Discord and be manually approved to play. ($age)"];
-            if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, $this->ban($ban, null, null, true));
-        }
-    }
     /**
      * Retrieves information about a given ckey.
      *

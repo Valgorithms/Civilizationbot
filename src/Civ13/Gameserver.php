@@ -211,34 +211,7 @@ class GameServer {
             $this->playercountChannelUpdate($playercount); // This needs to be updated to pass $this instead of "{$server}-""
             foreach ($this->players as $ckey) {
                 if (is_null($ckey)) continue;
-                if (! isset($this->civ13->permitted[$ckey]) && ! in_array($ckey, $this->seen_players)) { // Suspicious user ban rules
-                    $this->seen_players[] = $ckey;
-                    $ckeyinfo = $this->civ13->ckeyinfo($ckey);
-                    if (isset($ckeyinfo['altbanned']) && $ckeyinfo['altbanned']) { // Banned with a different ckey
-                        $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"];
-                        $msg = $this->ban($ban, null, true). ' (Alt Banned)';;
-                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
-                    } else if (isset($ckeyinfo['ips'])) foreach ($ckeyinfo['ips'] as $ip) {
-                        if (in_array($this->civ13->IP2Country($ip), $this->civ13->blacklisted_countries)) { // Country code
-                            $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"];
-                            $msg = $this->ban($ban, null, true) . ' (Blacklisted Country)';
-                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
-                            break;
-                        } else foreach ($this->civ13->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { //IP Segments
-                            $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"];
-                            $msg = $this->ban($ban, null, true) . ' (Blacklisted Region)';
-                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
-                            break 2;
-                        }
-                    }
-                }
-                if ($this->civ13->verifier->verified->get('ss13', $ckey)) continue;
-                //if ($this->panic_bunker || (isset($this->serverinfo[1]['admins']) && $this->serverinfo[1]['admins'] == 0 && isset($this->serverinfo[1]['vote']) && $this->serverinfo[1]['vote'] == 0)) return $this->__panicBan($ckey); // Require verification for Persistence rounds
-                if (! isset($this->civ13->permitted[$ckey]) && ! isset($this->civ13->ages[$ckey]) && ! $this->civ13->checkByondAge($age = $this->civ13->getByondAge($ckey))) { //Ban new accounts
-                    $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                    $msg = $this->ban($ban, null, true);
-                    if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
-                }
+                $this->civ13->moderator->scrutinizeCkey($ckey);
             }
         });
         return $this->timers['serverinfo_timer']; // Check players every minute
