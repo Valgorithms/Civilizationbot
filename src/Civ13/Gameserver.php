@@ -183,6 +183,7 @@ class GameServer {
         */
         if (isset($data[11])) { // Player list
             $players = explode('&', $data[11]);
+            $players = array_filter($players, fn($player) => ! empty($player));
             $players = array_map(fn($player) => $this->civ13->sanitizeInput($player), $players);
         }
         if (isset($data[4])) $playercount = $data[4]; // Player count
