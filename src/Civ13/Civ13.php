@@ -249,13 +249,13 @@ class Civ13
      */
     private function afterConstruct(array $options = [], array $server_settings = []): void
     {
+        $this->__loadOrInitializeVariables();
+        foreach ($server_settings as $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
+        $this->byond = new Byond();
         $this->moderator = new Moderator($this);
         $this->verifier = new Verifier($this, $options);
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
-        $this->byond = new Byond();
-        foreach ($server_settings as $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
-        $this->__loadOrInitializeVariables();
         if (isset($this->discord)) $this->discord->once('ready', function () {
             $this->ready = true;
             $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
