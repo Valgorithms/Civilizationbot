@@ -578,7 +578,7 @@ class Verifier
      */
     public function getVerified(bool $initialize = true): Collection
     {
-        $this->logger->info('Refreshing verified list...');
+        $this->logger->debug('Refreshing verified list...');
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->verify_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -591,16 +591,16 @@ class Verifier
         $json = (! is_bool($response) && $response !== false) ? substr($response, $header_size) : ''; // Extract the JSON response
         curl_close($ch);
         $this->civ13->verifier_online = ($json !== false && $http_status === 200);
-        $this->logger->info('Verifier status: ' . ($this->civ13->verifier_online ? 'Online' : 'Offline'));
+        $this->logger->debug('Verifier status: ' . ($this->civ13->verifier_online ? 'Online' : 'Offline'));
         $this->verifierStatusChannelUpdate($this->civ13->verifier_online);
         //if ($json) $this->logger->debug('Verifier JSON response: ' . $json);
         if ($verified_array = $json ? json_decode($json, true) ?? [] : []) { // If the API endpoint is reachable, use the data from the API endpoint
-            $this->logger->info('Overwriting cached verified list from Webserver API...');
+            $this->logger->debug('Overwriting cached verified list from Webserver API...');
             $this->civ13->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
         if ($initialize) { // If the API endpoint is unreachable, use the data from the file cache
-            $this->logger->info('Loading cached verified list...');
+            $this->logger->debug('Loading cached verified list...');
             if (! $verified_array = $this->civ13->VarLoad('verified.json') ?? []) $this->civ13->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
