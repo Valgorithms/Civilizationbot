@@ -544,7 +544,7 @@ class GameServer {
      */
     public function generateServerstatusEmbed(): ?Embed
     {
-        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return null;
+        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return $this->toEmbed(); // Don't try and access files if the server is not local
         if (! @touch($this->basedir . Civ13::serverdata) || ! $data = @file_get_contents($this->basedir . Civ13::serverdata)) {
             $this->logger->warning("Unable to open `{$this->basedir}" . Civ13::serverdata . "`");
             return null;

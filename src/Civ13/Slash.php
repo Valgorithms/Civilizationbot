@@ -516,6 +516,15 @@ class Slash
 
         $this->listenCommand('players', function (Interaction $interaction): PromiseInterface
         {
+            $builder = MessageBuilder::new();
+            $content = '';
+            foreach ($this->civ13->enabled_servers as $gameserver) {
+                $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
+                if ($embed = $gameserver->generateServerstatusEmbed()) $builder->addEmbed($embed);
+            }
+            return $interaction->respondWithMessage($builder->setContent($content));
+            
+            /*
             $content = '';
             $builder = MessageBuilder::new();
             if (! $this->civ13->webserver_online) {
@@ -545,6 +554,7 @@ class Slash
                 $builder->addEmbed($embed);
             }
             return $interaction->respondWithMessage($builder->setContent($content));
+            */
         });
 
         $this->listenCommand('ckey', function (Interaction $interaction): PromiseInterface
