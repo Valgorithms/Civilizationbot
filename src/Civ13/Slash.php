@@ -536,7 +536,7 @@ class Slash
                 return $interaction->respondWithMessage($builder->setContent($content)->addEmbed($embed));
             } //return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
             foreach ($this->civ13->enabled_servers as $gameserver) { // Only include the general information
-                $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}";
+                $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 $embed = $gameserver->toEmbed();
                 $embed->setFooter($this->civ13->embed_footer);
                 $embed->setColor(0xe1452d);
