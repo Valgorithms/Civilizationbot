@@ -422,11 +422,6 @@ class Civ13
         }
         $this->ic_badwords_warnings = $ic_badwords_warnings;
 
-        if (! $provisional = $this->VarLoad('provisional.json')) {
-            $provisional = [];
-            $this->VarSave('provisional.json', $provisional);
-        }
-        $this->verifier->provisional = $provisional;
         if (! $ages = $this->VarLoad('ages.json')) {
             $ages = [];
             $this->VarSave('ages.json', $ages);
@@ -443,6 +438,11 @@ class Civ13
      */
     private function __UpdateDiscordVariables(): void
     {
+        if (! $provisional = $this->VarLoad('provisional.json')) {
+            $provisional = [];
+            $this->VarSave('provisional.json', $provisional);
+        }
+        $this->verifier->provisional = $provisional;
         $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
     }
     /**
