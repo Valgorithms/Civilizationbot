@@ -114,7 +114,9 @@ class GameServer {
         $this->whitelist = $this->basedir . Civ13::whitelist;
         $this->factionlist = $this->basedir . Civ13::factionlist;
 
-        $this->localServerPlayerCount();
+        $this->discord->once('ready', function () {
+            $this->localServerPlayerCount();
+        });
     }
     private function resolveOptions(array $options)
     {

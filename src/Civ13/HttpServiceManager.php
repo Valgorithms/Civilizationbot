@@ -57,9 +57,11 @@ class HttpServiceManager
     */
     protected function __afterConstruct()
     {
-        $this->__populateWhitelist();
-        $this->__generateEndpoints();
-        $this->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
+        $this->discord->once('ready', function () {
+            $this->__populateWhitelist();
+            $this->__generateEndpoints();
+            $this->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
+        });
     }
 
     public function handle(ServerRequestInterface $request): HttpResponse
@@ -95,633 +97,631 @@ class HttpServiceManager
 
     private function __generateEndpoints()
     {
-        $this->discord->once('ready', function () {
-            if (! isset($this->civ13->options['webapi'], $this->civ13->options['socket'], $this->civ13->options['web_address'], $this->civ13->options['http_port'])) {
-                $this->logger->warning('HttpServer API not set up! Missing variables in options.');
-                $this->logger->warning('Missing webapi variable: ' . (isset($this->civ13->options['webapi']) ? 'false' : 'true'));
-                $this->logger->warning('Missing socket variable: ' . (isset($this->civ13->options['socket']) ? 'false' : 'true'));
-                $this->logger->warning('Missing web_address variable: ' . (isset($this->civ13->options['web_address']) ? 'false' : 'true'));
-                $this->logger->warning('Missing http_port variable: ' . (isset($this->civ13->options['http_port']) ? 'false' : 'true'));
-                return;
-            }
-            $this->webapi = $this->civ13->options['webapi'];
-            $this->socket = $this->civ13->options['socket'];
-            $this->web_address = $this->civ13->options['web_address'];
-            $this->http_port = $this->civ13->options['http_port'];
-            $this->logger->info("HttpServer API is now listening on port {$this->http_port}");
-            $this->webapi->listen($this->socket);
+        if (! isset($this->civ13->options['webapi'], $this->civ13->options['socket'], $this->civ13->options['web_address'], $this->civ13->options['http_port'])) {
+            $this->logger->warning('HttpServer API not set up! Missing variables in options.');
+            $this->logger->warning('Missing webapi variable: ' . (isset($this->civ13->options['webapi']) ? 'false' : 'true'));
+            $this->logger->warning('Missing socket variable: ' . (isset($this->civ13->options['socket']) ? 'false' : 'true'));
+            $this->logger->warning('Missing web_address variable: ' . (isset($this->civ13->options['web_address']) ? 'false' : 'true'));
+            $this->logger->warning('Missing http_port variable: ' . (isset($this->civ13->options['http_port']) ? 'false' : 'true'));
+            return;
+        }
+        $this->webapi = $this->civ13->options['webapi'];
+        $this->socket = $this->civ13->options['socket'];
+        $this->web_address = $this->civ13->options['web_address'];
+        $this->http_port = $this->civ13->options['http_port'];
+        $this->logger->info("HttpServer API is now listening on port {$this->http_port}");
+        $this->webapi->listen($this->socket);
 
-            $this->httpHandler->offsetSet('/get-channels', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                $doc = new \DOMDocument();
-                $html = $doc->createElement('html');
-                $body = $doc->createElement('body');
+        $this->httpHandler->offsetSet('/get-channels', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            $doc = new \DOMDocument();
+            $html = $doc->createElement('html');
+            $body = $doc->createElement('body');
 
-                // Create input box
-                $input = $doc->createElement('input');
-                $input->setAttribute('type', 'text');
-                $input->setAttribute('placeholder', 'Enter message');
-                $input->setAttribute('style', 'margin-left: 10px;');
-                $input->setAttribute('id', 'message-input');
-                $body->appendChild($input);
-                
-                $h2 = $doc->createElement('h2', 'Guilds');
-                $body->appendChild($h2);
-                // CSS for .guild class
-                $guildStyle = $doc->createElement('style', '.guild { margin-bottom: 20px; }');
-                $html->appendChild($guildStyle);
-
-                foreach ($this->discord->guilds as $guild) {
-                    $guildDiv = $doc->createElement('div');
-                    $guildDiv->setAttribute('class', 'guild');
-                    $guildName = $doc->createElement('h3');
-                    $a = $doc->createElement('a', $guild->name);
-                    $a->setAttribute('href', 'https://discord.com/channels/' . $guild->id);
-                    $a->setAttribute('target', '_blank');
-                    $guildName->appendChild($a);
-                    $guildDiv->appendChild($guildName);
-
-                    // CSS for .channel class
-                    $channelStyle = $doc->createElement('style', '.channel { margin-left: 20px; }');
-                    $guildDiv->appendChild($channelStyle);
-                    
-                    $channels = [];
-                    foreach ($guild->channels as $channel) if ($channel->isTextBased()) $channels[] = $channel;
-
-                    usort($channels, function ($a, $b) {
-                        return $a->position - $b->position;
-                    });                
-
-                    foreach ($channels as $channel) {
-                        $channelDiv = $doc->createElement('div');
-                        $channelDiv->setAttribute('class', 'channel');
-
-                        $channelName = $doc->createElement('div');
-                        $channelSpan = $doc->createElement('span');
-                        $a = $doc->createElement('a', $channel->name);
-                        $a->setAttribute('href', 'https://discord.com/channels/' . $guild->id . '/' . $channel->id);
-                        $a->setAttribute('target', '_blank');
-                        $channelSpan->appendChild($a);
-                        $channelName->appendChild($channelSpan);
-
-                        // Create button and input box
-                        $button = $doc->createElement('button', 'Send Message');
-                        $button->setAttribute('onclick', "sendMessage('{$channel->id}')");
-                        $button2 = $doc->createElement('button', 'Send Embed');
-                        $button2->setAttribute('onclick', "sendEmbed('{$channel->id}')");
-                        $channelName->appendChild($doc->createTextNode(' ')); // Add space here
-                        $channelName->appendChild($button);
-                        $channelName->appendChild($button2);
-
-                        $channelDiv->appendChild($channelName);
-                        $guildDiv->appendChild($channelDiv);
-                    }
-
-                    $body->appendChild($guildDiv);
-                }
-
-                // Create javascript function for /send-message
-                $script = $doc->createElement('script', '
-                    function sendMessage(channelId) {
-                        var input = document.querySelector(`#message-input`);
-                        var message = input.value;
-                        input.value = \'\';
-                        fetch("/send-message?channel=" + encodeURIComponent(channelId) + "&message=" + encodeURIComponent(message))
-                            .then(response => response.json())
-                            .then(data => console.log(data))
-                            .catch(error => console.error(error));
-                    }
-                ');
-                $body->appendChild($script);
-                // Create javascript function for /send-embed
-                $script = $doc->createElement('script', '
-                    function sendEmbed(channelId) {
-                        var input = document.querySelector(`#message-input`);
-                        var message = input.value;
-                        input.value = \'\';
-                        fetch("/send-embed?channel=" + encodeURIComponent(channelId) + "&message=" + encodeURIComponent(message))
-                            .then(response => response.json())
-                            .then(data => console.log(data))
-                            .catch(error => console.error(error));
-                    }
-                ');
-                $body->appendChild($script);
-                
-                $html->appendChild($body);
-                $doc->appendChild($html);
-                return HttpResponse::html($doc->saveHTML());
-            }), true);
-
-            $this->httpHandler->offsetSet('/send-message', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                $params = $request->getQueryParams();
-
-                isset($params['channel']) ? $channelId = $params['channel'] : $channelId = null;
-                if (! $channelId || ! $channel = $this->discord->getChannel($channelId)) return HttpResponse::json(['error' => "Channel `$channelId` not found"]);
-                if (! $channel->isTextBased()) return HttpResponse::json(['error' => "Cannot send messages to channel `$channelId`"]);
-
-                isset($params['message']) ? $message = $params['message'] : $message = null;
-                if (! $message) return HttpResponse::json(['error' => "Message not found"]);
-
-                $channel->sendMessage($message);
-                return HttpResponse::json(['success' => true]);
-            }), true);
-
-            $this->httpHandler->offsetSet('/send-embed', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                $params = $request->getQueryParams();
-
-                isset($params['channel']) ? $channelId = $params['channel'] : $channelId = null;
-                if (! $channel = $this->discord->getChannel($channelId)) return HttpResponse::json(['error' => "Channel `$channelId` not found"]);
-                if (! $channel->isTextBased()) return HttpResponse::json(['error' => "Cannot send messages to channel `$channelId`"]);
-
-                isset($params['message']) ? $content = $params['message'] : $content = '';
-                if (! $content) return HttpResponse::json(['error' => "Message not found"]);
-
-                $builder = MessageBuilder::new();
-                if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]) && $user = $this->discord->users->get('id', $this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) { // This will not work if the user didn't login with oauth2 during this runtime session (i.e. the bot was restarted)
-                    $embed = new Embed($this->discord);
-                    $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
-                    $embed->addField('Message', $content);
-                    $builder->addEmbed($embed);
-                } else {
-                    $builder->setContent($content);
-                    $this->logger->info("Either the IP was not associated with a user or no user could be found.");
-                    $this->logger->info("IP: {$request->getServerParams()['REMOTE_ADDR']}");
-                    if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) $this->logger->info("Discord ID: {$this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]}");
-                }
-                
-                $channel->sendMessage($builder); // TODO: Add a built-in function for using MessageBuilder with included embeds
-                return HttpResponse::json(['success' => true]);
-            }), true);
+            // Create input box
+            $input = $doc->createElement('input');
+            $input->setAttribute('type', 'text');
+            $input->setAttribute('placeholder', 'Enter message');
+            $input->setAttribute('style', 'margin-left: 10px;');
+            $input->setAttribute('id', 'message-input');
+            $body->appendChild($input);
             
-            // HttpHandler website endpoints
-            $index = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                if ($whitelisted) {
-                    $method = $this->httpHandler->offsetGet('/botlog') ?? [];
-                    if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
+            $h2 = $doc->createElement('h2', 'Guilds');
+            $body->appendChild($h2);
+            // CSS for .guild class
+            $guildStyle = $doc->createElement('style', '.guild { margin-bottom: 20px; }');
+            $html->appendChild($guildStyle);
+
+            foreach ($this->discord->guilds as $guild) {
+                $guildDiv = $doc->createElement('div');
+                $guildDiv->setAttribute('class', 'guild');
+                $guildName = $doc->createElement('h3');
+                $a = $doc->createElement('a', $guild->name);
+                $a->setAttribute('href', 'https://discord.com/channels/' . $guild->id);
+                $a->setAttribute('target', '_blank');
+                $guildName->appendChild($a);
+                $guildDiv->appendChild($guildName);
+
+                // CSS for .channel class
+                $channelStyle = $doc->createElement('style', '.channel { margin-left: 20px; }');
+                $guildDiv->appendChild($channelStyle);
+                
+                $channels = [];
+                foreach ($guild->channels as $channel) if ($channel->isTextBased()) $channels[] = $channel;
+
+                usort($channels, function ($a, $b) {
+                    return $a->position - $b->position;
+                });                
+
+                foreach ($channels as $channel) {
+                    $channelDiv = $doc->createElement('div');
+                    $channelDiv->setAttribute('class', 'channel');
+
+                    $channelName = $doc->createElement('div');
+                    $channelSpan = $doc->createElement('span');
+                    $a = $doc->createElement('a', $channel->name);
+                    $a->setAttribute('href', 'https://discord.com/channels/' . $guild->id . '/' . $channel->id);
+                    $a->setAttribute('target', '_blank');
+                    $channelSpan->appendChild($a);
+                    $channelName->appendChild($channelSpan);
+
+                    // Create button and input box
+                    $button = $doc->createElement('button', 'Send Message');
+                    $button->setAttribute('onclick', "sendMessage('{$channel->id}')");
+                    $button2 = $doc->createElement('button', 'Send Embed');
+                    $button2->setAttribute('onclick', "sendEmbed('{$channel->id}')");
+                    $channelName->appendChild($doc->createTextNode(' ')); // Add space here
+                    $channelName->appendChild($button);
+                    $channelName->appendChild($button2);
+
+                    $channelDiv->appendChild($channelName);
+                    $guildDiv->appendChild($channelDiv);
                 }
-                $method = $this->httpHandler->offsetGet('/home.html') ?? [];
+
+                $body->appendChild($guildDiv);
+            }
+
+            // Create javascript function for /send-message
+            $script = $doc->createElement('script', '
+                function sendMessage(channelId) {
+                    var input = document.querySelector(`#message-input`);
+                    var message = input.value;
+                    input.value = \'\';
+                    fetch("/send-message?channel=" + encodeURIComponent(channelId) + "&message=" + encodeURIComponent(message))
+                        .then(response => response.json())
+                        .then(data => console.log(data))
+                        .catch(error => console.error(error));
+                }
+            ');
+            $body->appendChild($script);
+            // Create javascript function for /send-embed
+            $script = $doc->createElement('script', '
+                function sendEmbed(channelId) {
+                    var input = document.querySelector(`#message-input`);
+                    var message = input.value;
+                    input.value = \'\';
+                    fetch("/send-embed?channel=" + encodeURIComponent(channelId) + "&message=" + encodeURIComponent(message))
+                        .then(response => response.json())
+                        .then(data => console.log(data))
+                        .catch(error => console.error(error));
+                }
+            ');
+            $body->appendChild($script);
+            
+            $html->appendChild($body);
+            $doc->appendChild($html);
+            return HttpResponse::html($doc->saveHTML());
+        }), true);
+
+        $this->httpHandler->offsetSet('/send-message', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            $params = $request->getQueryParams();
+
+            isset($params['channel']) ? $channelId = $params['channel'] : $channelId = null;
+            if (! $channelId || ! $channel = $this->discord->getChannel($channelId)) return HttpResponse::json(['error' => "Channel `$channelId` not found"]);
+            if (! $channel->isTextBased()) return HttpResponse::json(['error' => "Cannot send messages to channel `$channelId`"]);
+
+            isset($params['message']) ? $message = $params['message'] : $message = null;
+            if (! $message) return HttpResponse::json(['error' => "Message not found"]);
+
+            $channel->sendMessage($message);
+            return HttpResponse::json(['success' => true]);
+        }), true);
+
+        $this->httpHandler->offsetSet('/send-embed', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            $params = $request->getQueryParams();
+
+            isset($params['channel']) ? $channelId = $params['channel'] : $channelId = null;
+            if (! $channel = $this->discord->getChannel($channelId)) return HttpResponse::json(['error' => "Channel `$channelId` not found"]);
+            if (! $channel->isTextBased()) return HttpResponse::json(['error' => "Cannot send messages to channel `$channelId`"]);
+
+            isset($params['message']) ? $content = $params['message'] : $content = '';
+            if (! $content) return HttpResponse::json(['error' => "Message not found"]);
+
+            $builder = MessageBuilder::new();
+            if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]) && $user = $this->discord->users->get('id', $this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) { // This will not work if the user didn't login with oauth2 during this runtime session (i.e. the bot was restarted)
+                $embed = new Embed($this->discord);
+                $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                $embed->addField('Message', $content);
+                $builder->addEmbed($embed);
+            } else {
+                $builder->setContent($content);
+                $this->logger->info("Either the IP was not associated with a user or no user could be found.");
+                $this->logger->info("IP: {$request->getServerParams()['REMOTE_ADDR']}");
+                if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) $this->logger->info("Discord ID: {$this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]}");
+            }
+            
+            $channel->sendMessage($builder); // TODO: Add a built-in function for using MessageBuilder with included embeds
+            return HttpResponse::json(['success' => true]);
+        }), true);
+        
+        // HttpHandler website endpoints
+        $index = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            if ($whitelisted) {
+                $method = $this->httpHandler->offsetGet('/botlog') ?? [];
                 if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
-                return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
-            });
-            $this->httpHandler->offsetSet('/', $index);
-            $this->httpHandler->offsetSet('/index.html', $index);
-            $this->httpHandler->offsetSet('/index.php', $index);
-            $robots = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                return HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /');
-            });
-            $this->httpHandler->offsetSet('/robots.txt', $robots);
-            $security = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                return HttpResponse::plaintext('Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
-                "Contact: {$this->civ13->github}}" . PHP_EOL .
-                'Preferred-Languages: en' . PHP_EOL . 
-                "Canonical: http://{$this->httpHandler->external_ip}:{$this->http_port}/.well-known/security.txt" . PHP_EOL . 
-                'Policy: http://valzargaming.com/legal' . PHP_EOL . 
-                'Acknowledgments: http://valzargaming.com/partners');
-            });
-            $this->httpHandler->offsetSet('/.well-known/security.txt', $security);
-            $this->httpHandler->setRateLimit('/.well-known/security.txt', 1, 10); // 1 request per 10 seconds
-            $this->httpHandler->offsetSet('/ping', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                return HttpResponse::plaintext("Hello wörld!");
-            }));
-            $this->httpHandler->offsetSet('/favicon.ico', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                if ($favicon = @file_get_contents('favicon.ico')) return new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon', 'Cache-Control' => 'public, max-age=2592000'], $favicon);
-                return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`");
-            }));
+            }
+            $method = $this->httpHandler->offsetGet('/home.html') ?? [];
+            if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
+            return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
+        });
+        $this->httpHandler->offsetSet('/', $index);
+        $this->httpHandler->offsetSet('/index.html', $index);
+        $this->httpHandler->offsetSet('/index.php', $index);
+        $robots = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            return HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /');
+        });
+        $this->httpHandler->offsetSet('/robots.txt', $robots);
+        $security = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            return HttpResponse::plaintext('Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
+            "Contact: {$this->civ13->github}}" . PHP_EOL .
+            'Preferred-Languages: en' . PHP_EOL . 
+            "Canonical: http://{$this->httpHandler->external_ip}:{$this->http_port}/.well-known/security.txt" . PHP_EOL . 
+            'Policy: http://valzargaming.com/legal' . PHP_EOL . 
+            'Acknowledgments: http://valzargaming.com/partners');
+        });
+        $this->httpHandler->offsetSet('/.well-known/security.txt', $security);
+        $this->httpHandler->setRateLimit('/.well-known/security.txt', 1, 10); // 1 request per 10 seconds
+        $this->httpHandler->offsetSet('/ping', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            return HttpResponse::plaintext("Hello wörld!");
+        }));
+        $this->httpHandler->offsetSet('/favicon.ico', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            if ($favicon = @file_get_contents('favicon.ico')) return new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon', 'Cache-Control' => 'public, max-age=2592000'], $favicon);
+            return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`");
+        }));
 
-            // HttpHandler whitelisting with DiscordWebAuth
-            if (include('dwa_secrets.php'))
-            if ($dwa_client_id = getenv('dwa_client_id'))
-            if ($dwa_client_secret = getenv('dwa_client_secret'))
-            $this->httpHandler->offsetSet('/dwa', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($dwa_client_id, $dwa_client_secret): HttpResponse
-            {
-                $ip = $request->getServerParams()['REMOTE_ADDR'];
-                if (! isset($this->dwa_sessions[$ip])) {
-                    $this->dwa_sessions[$ip] = [];
-                    $this->dwa_timers[$ip] = $this->discord->getLoop()->addTimer(30 * 60, function () use ($ip) { // Set a timer to unset the session after 30 minutes
-                        unset($this->dwa_sessions[$ip]);
-                    });
-                }
-
-                $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
-                if (isset($params['code']) && isset($params['state']))
-                    return $DiscordWebAuth->getToken($params['state']);
-                elseif (isset($params['login']))
-                    return $DiscordWebAuth->login();
-                elseif (isset($params['logout']))
-                    return $DiscordWebAuth->logout();
-                elseif ($DiscordWebAuth->isAuthed() && isset($params['remove']))
-                    return $DiscordWebAuth->removeToken();
-                
-                $tech_ping = '';
-                if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
-                if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
-                    $this->dwa_discord_ids[$ip] = $DiscordWebAuth->user->id;
-                    if (! $this->civ13->verifier->verified->get('discord', $DiscordWebAuth->user->id)) {
-                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
-                        return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
-                    }
-                    if ($this->httpHandler->whitelist($ip))
-                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot']))
-                            $this->civ13->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
-                    $method = $this->httpHandler->offsetGet('/botlog') ?? [];
-                    if ($method = array_shift($method))
-                        return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
-                }
-
-                return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
-            }));
-
-            // HttpHandler management endpoints
-            $this->httpHandler->offsetSet('/reset', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                execInBackground('git reset --hard origin/main');
-                $message = 'Forcefully moving the HEAD back to origin/main...';
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-                return HttpResponse::plaintext($message);
-            }), true);
-            $this->httpHandler->offsetSet('/githubupdated', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                if ($signature = $request->getHeaderLine('X-Hub-Signature')) {
-                    // Secret isn't working right now, so we're not using it
-                    //$hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
-                    //if (strcmp($signature, $hash) == 0) {
-                        //if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'GitHub push event webhook received');
-                        if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/3)');
-                        execInBackground('git pull');
-                        $this->civ13->loop->addTimer(5, function () {
-                            if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
-                            execInBackground('git reset --hard origin/main');
-                        });
-                        $this->civ13->loop->addTimer(10, function () {
-                            if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
-                            execInBackground('git pull');
-                        });
-                        if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
-                        $this->civ13->timers['update_pending'] = $this->civ13->loop->addTimer(300, function () {
-                            $this->socket->close();
-                            if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
-                                \restart();
-                                $this->discord->close();
-                                die();
-                            });
-                        });
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    //}
-                }
-                $headers = $request->getHeaders();
-                //$this->logger->warning("Unauthorized Request Headers on `$endpoint` endpoint: ", $headers);
-                //$this->logger->warning("Signature: $signature, Hash: $hash");
-                $tech_ping = '';
-                if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
-                return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
-            }));
-
-            $this->httpHandler->offsetSet('/cancelupdaterestart', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) {
-                    $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
-                    unset($this->civ13->timers['update_pending']);
-                    return HttpResponse::plaintext('Restart cancelled.');
-                }
-                return HttpResponse::plaintext('No restart pending.');
-            }));
-            $this->httpHandler->offsetSet('/pull', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                execInBackground('git pull');
-                $message = 'Updating code from GitHub...';
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-                return HttpResponse::plaintext($message);
-            }), true);
-            $this->httpHandler->offsetSet('/update', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                execInBackground('composer update');
-                $message = 'Updating dependencies...';
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-                return HttpResponse::plaintext($message);
-            }), true);
-            $this->httpHandler->offsetSet('/restart', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                $message = 'Restarting...';
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-                $this->socket->close();
-                if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
-                    \restart();
-                    $this->discord->close();
-                    die();
+        // HttpHandler whitelisting with DiscordWebAuth
+        if (include('dwa_secrets.php'))
+        if ($dwa_client_id = getenv('dwa_client_id'))
+        if ($dwa_client_secret = getenv('dwa_client_secret'))
+        $this->httpHandler->offsetSet('/dwa', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($dwa_client_id, $dwa_client_secret): HttpResponse
+        {
+            $ip = $request->getServerParams()['REMOTE_ADDR'];
+            if (! isset($this->dwa_sessions[$ip])) {
+                $this->dwa_sessions[$ip] = [];
+                $this->dwa_timers[$ip] = $this->discord->getLoop()->addTimer(30 * 60, function () use ($ip) { // Set a timer to unset the session after 30 minutes
+                    unset($this->dwa_sessions[$ip]);
                 });
-                return HttpResponse::plaintext($message);
-            }), true);
+            }
 
-            // HttpHandler redirect endpoints
-            if ($this->civ13->github)
-            $this->httpHandler->offsetSet('/github', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                return new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->civ13->github]);
-            }));
+            $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
+            if (isset($params['code']) && isset($params['state']))
+                return $DiscordWebAuth->getToken($params['state']);
+            elseif (isset($params['login']))
+                return $DiscordWebAuth->login();
+            elseif (isset($params['logout']))
+                return $DiscordWebAuth->logout();
+            elseif ($DiscordWebAuth->isAuthed() && isset($params['remove']))
+                return $DiscordWebAuth->removeToken();
+            
+            $tech_ping = '';
+            if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
+            if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
+                $this->dwa_discord_ids[$ip] = $DiscordWebAuth->user->id;
+                if (! $this->civ13->verifier->verified->get('discord', $DiscordWebAuth->user->id)) {
+                    if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
+                    return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
+                }
+                if ($this->httpHandler->whitelist($ip))
+                    if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot']))
+                        $this->civ13->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
+                $method = $this->httpHandler->offsetGet('/botlog') ?? [];
+                if ($method = array_shift($method))
+                    return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
+            }
 
-            if ($this->civ13->discord_invite)
-            $this->httpHandler->offsetSet('/discord', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted ): HttpResponse
-            {
-                return new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->civ13->discord_invite]);
-            }));
+            return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
+        }));
 
-            // HttpHandler data endpoints
-            $this->httpHandler->offsetSet('/verified', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                return HttpResponse::json($this->civ13->verifier->verified->toArray());
-            }), true);
+        // HttpHandler management endpoints
+        $this->httpHandler->offsetSet('/reset', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            execInBackground('git reset --hard origin/main');
+            $message = 'Forcefully moving the HEAD back to origin/main...';
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
+            return HttpResponse::plaintext($message);
+        }), true);
+        $this->httpHandler->offsetSet('/githubupdated', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            if ($signature = $request->getHeaderLine('X-Hub-Signature')) {
+                // Secret isn't working right now, so we're not using it
+                //$hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
+                //if (strcmp($signature, $hash) == 0) {
+                    //if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'GitHub push event webhook received');
+                    if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/3)');
+                    execInBackground('git pull');
+                    $this->civ13->loop->addTimer(5, function () {
+                        if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
+                        execInBackground('git reset --hard origin/main');
+                    });
+                    $this->civ13->loop->addTimer(10, function () {
+                        if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
+                        execInBackground('git pull');
+                    });
+                    if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
+                    $this->civ13->timers['update_pending'] = $this->civ13->loop->addTimer(300, function () {
+                        $this->socket->close();
+                        if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
+                            \restart();
+                            $this->discord->close();
+                            die();
+                        });
+                    });
+                    return new HttpResponse(HttpResponse::STATUS_OK);
+                //}
+            }
+            $headers = $request->getHeaders();
+            //$this->logger->warning("Unauthorized Request Headers on `$endpoint` endpoint: ", $headers);
+            //$this->logger->warning("Signature: $signature, Hash: $hash");
+            $tech_ping = '';
+            if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
+            return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
+        }));
+
+        $this->httpHandler->offsetSet('/cancelupdaterestart', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) {
+                $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
+                unset($this->civ13->timers['update_pending']);
+                return HttpResponse::plaintext('Restart cancelled.');
+            }
+            return HttpResponse::plaintext('No restart pending.');
+        }));
+        $this->httpHandler->offsetSet('/pull', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            execInBackground('git pull');
+            $message = 'Updating code from GitHub...';
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
+            return HttpResponse::plaintext($message);
+        }), true);
+        $this->httpHandler->offsetSet('/update', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            execInBackground('composer update');
+            $message = 'Updating dependencies...';
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
+            return HttpResponse::plaintext($message);
+        }), true);
+        $this->httpHandler->offsetSet('/restart', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            $message = 'Restarting...';
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
+            $this->socket->close();
+            if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
+                \restart();
+                $this->discord->close();
+                die();
+            });
+            return HttpResponse::plaintext($message);
+        }), true);
+
+        // HttpHandler redirect endpoints
+        if ($this->civ13->github)
+        $this->httpHandler->offsetSet('/github', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            return new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->civ13->github]);
+        }));
+
+        if ($this->civ13->discord_invite)
+        $this->httpHandler->offsetSet('/discord', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted ): HttpResponse
+        {
+            return new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->civ13->discord_invite]);
+        }));
+
+        // HttpHandler data endpoints
+        $this->httpHandler->offsetSet('/verified', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            return HttpResponse::json($this->civ13->verifier->verified->toArray());
+        }), true);
 
 
-            /*
-            $this->httpHandler->offsetSet('/endpoint', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                
-                return HttpResponse::plaintext("Hello wörld!\n");
-                return HttpResponse::html("<!doctype html><html><body>Hello wörld!</body></html>");
-                return new HttpResponse(
-                    HttpResponse::STATUS_OK,
-                    ['Content-Type' => 'text/json'],
-                    json_encode($json ?? '')
-                );
-            }));
-            */            
+        /*
+        $this->httpHandler->offsetSet('/endpoint', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            
+            return HttpResponse::plaintext("Hello wörld!\n");
+            return HttpResponse::html("<!doctype html><html><body>Hello wörld!</body></html>");
+            return new HttpResponse(
+                HttpResponse::STATUS_OK,
+                ['Content-Type' => 'text/json'],
+                json_encode($json ?? '')
+            );
+        }));
+        */            
 
-            // HttpHandler log endpoints
-            $botlog_func = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-            {
-                $webpage_content = function (string $return) use ($endpoint) {
-                    return '<meta name="color-scheme" content="light dark"> 
-                            <div class="button-container">
-                                <button style="width:8%" onclick="sendGetRequest(\'pull\')">Pull</button>
-                                <button style="width:8%" onclick="sendGetRequest(\'reset\')">Reset</button>
-                                <button style="width:8%" onclick="sendGetRequest(\'update\')">Update</button>
-                                <button style="width:8%" onclick="sendGetRequest(\'restart\')">Restart</button>
-                                <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open(\''. $this->civ13->github . '\')">' . $this->discord->user->displayname . '</button>
-                            </div>
-                            <div class="alert-container"></div>
-                            <div class="checkpoint">' . 
-                                str_replace('[' . date("Y"), '</div><div> [' . date("Y"), 
-                                    str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)
-                                ) . 
-                            "</div>
-                            <div class='reload-container'>
-                                <button onclick='location.reload()'>Reload</button>
-                            </div>
-                            <div class='loading-container'>
-                                <div class='loading-bar'></div>
-                            </div>
-                            <script>
-                                var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
-                                var scrollTimeout;
-                                window.onload=function(){
-                                    if (window.location.href==localStorage.getItem('lastUrl')){
-                                        mainScrollArea.scrollTop=localStorage.getItem('scrollTop');
-                                    } else {
-                                        localStorage.setItem('lastUrl',window.location.href);
-                                        localStorage.setItem('scrollTop',0);
+        // HttpHandler log endpoints
+        $botlog_func = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        {
+            $webpage_content = function (string $return) use ($endpoint) {
+                return '<meta name="color-scheme" content="light dark"> 
+                        <div class="button-container">
+                            <button style="width:8%" onclick="sendGetRequest(\'pull\')">Pull</button>
+                            <button style="width:8%" onclick="sendGetRequest(\'reset\')">Reset</button>
+                            <button style="width:8%" onclick="sendGetRequest(\'update\')">Update</button>
+                            <button style="width:8%" onclick="sendGetRequest(\'restart\')">Restart</button>
+                            <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open(\''. $this->civ13->github . '\')">' . $this->discord->user->displayname . '</button>
+                        </div>
+                        <div class="alert-container"></div>
+                        <div class="checkpoint">' . 
+                            str_replace('[' . date("Y"), '</div><div> [' . date("Y"), 
+                                str_replace([PHP_EOL, '[] []', ' [] '], '</div><div>', $return)
+                            ) . 
+                        "</div>
+                        <div class='reload-container'>
+                            <button onclick='location.reload()'>Reload</button>
+                        </div>
+                        <div class='loading-container'>
+                            <div class='loading-bar'></div>
+                        </div>
+                        <script>
+                            var mainScrollArea=document.getElementsByClassName('checkpoint')[0];
+                            var scrollTimeout;
+                            window.onload=function(){
+                                if (window.location.href==localStorage.getItem('lastUrl')){
+                                    mainScrollArea.scrollTop=localStorage.getItem('scrollTop');
+                                } else {
+                                    localStorage.setItem('lastUrl',window.location.href);
+                                    localStorage.setItem('scrollTop',0);
+                                }
+                            };
+                            mainScrollArea.addEventListener('scroll',function(){
+                                clearTimeout(scrollTimeout);
+                                scrollTimeout=setTimeout(function(){
+                                    localStorage.setItem('scrollTop',mainScrollArea.scrollTop);
+                                },100);
+                            });
+                            function sendGetRequest(endpoint) {
+                                var xhr = new XMLHttpRequest();
+                                xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':{$this->http_port}/' + endpoint, true);
+                                xhr.onload = function () {
+                                    var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
+                                    var alertContainer = document.querySelector('.alert-container');
+                                    var alert = document.createElement('div');
+                                    alert.innerHTML = response;
+                                    alertContainer.appendChild(alert);
+                                    setTimeout(function() {
+                                        alert.remove();
+                                    }, 15000);
+                                    if (endpoint === 'restart') {
+                                        var loadingBar = document.querySelector('.loading-bar');
+                                        var loadingContainer = document.querySelector('.loading-container');
+                                        loadingContainer.style.display = 'block';
+                                        var width = 0;
+                                        var interval = setInterval(function() {
+                                            if (width >= 100) {
+                                                clearInterval(interval);
+                                                location.reload();
+                                            } else {
+                                                width += 2;
+                                                loadingBar.style.width = width + '%';
+                                            }
+                                        }, 300);
+                                        loadingBar.style.backgroundColor = 'white';
+                                        loadingBar.style.height = '20px';
+                                        loadingBar.style.position = 'fixed';
+                                        loadingBar.style.top = '50%';
+                                        loadingBar.style.left = '50%';
+                                        loadingBar.style.transform = 'translate(-50%, -50%)';
+                                        loadingBar.style.zIndex = '9999';
+                                        loadingBar.style.borderRadius = '5px';
+                                        loadingBar.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+                                        var backdrop = document.createElement('div');
+                                        backdrop.style.position = 'fixed';
+                                        backdrop.style.top = '0';
+                                        backdrop.style.left = '0';
+                                        backdrop.style.width = '100%';
+                                        backdrop.style.height = '100%';
+                                        backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                                        backdrop.style.zIndex = '9998';
+                                        document.body.appendChild(backdrop);
+                                        setTimeout(function() {
+                                            clearInterval(interval);
+                                            if (!document.readyState || document.readyState === 'complete') {
+                                                location.reload();
+                                            } else {
+                                                setTimeout(function() {
+                                                    location.reload();
+                                                }, 90000);
+                                            }
+                                        }, 90000);
                                     }
                                 };
-                                mainScrollArea.addEventListener('scroll',function(){
-                                    clearTimeout(scrollTimeout);
-                                    scrollTimeout=setTimeout(function(){
-                                        localStorage.setItem('scrollTop',mainScrollArea.scrollTop);
-                                    },100);
-                                });
-                                function sendGetRequest(endpoint) {
-                                    var xhr = new XMLHttpRequest();
-                                    xhr.open('GET', window.location.protocol + '//' + window.location.hostname + ':{$this->http_port}/' + endpoint, true);
-                                    xhr.onload = function () {
-                                        var response = xhr.responseText.replace(/(<([^>]+)>)/gi, '');
-                                        var alertContainer = document.querySelector('.alert-container');
-                                        var alert = document.createElement('div');
-                                        alert.innerHTML = response;
-                                        alertContainer.appendChild(alert);
-                                        setTimeout(function() {
-                                            alert.remove();
-                                        }, 15000);
-                                        if (endpoint === 'restart') {
-                                            var loadingBar = document.querySelector('.loading-bar');
-                                            var loadingContainer = document.querySelector('.loading-container');
-                                            loadingContainer.style.display = 'block';
-                                            var width = 0;
-                                            var interval = setInterval(function() {
-                                                if (width >= 100) {
-                                                    clearInterval(interval);
-                                                    location.reload();
-                                                } else {
-                                                    width += 2;
-                                                    loadingBar.style.width = width + '%';
-                                                }
-                                            }, 300);
-                                            loadingBar.style.backgroundColor = 'white';
-                                            loadingBar.style.height = '20px';
-                                            loadingBar.style.position = 'fixed';
-                                            loadingBar.style.top = '50%';
-                                            loadingBar.style.left = '50%';
-                                            loadingBar.style.transform = 'translate(-50%, -50%)';
-                                            loadingBar.style.zIndex = '9999';
-                                            loadingBar.style.borderRadius = '5px';
-                                            loadingBar.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
-                                            var backdrop = document.createElement('div');
-                                            backdrop.style.position = 'fixed';
-                                            backdrop.style.top = '0';
-                                            backdrop.style.left = '0';
-                                            backdrop.style.width = '100%';
-                                            backdrop.style.height = '100%';
-                                            backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                                            backdrop.style.zIndex = '9998';
-                                            document.body.appendChild(backdrop);
-                                            setTimeout(function() {
-                                                clearInterval(interval);
-                                                if (!document.readyState || document.readyState === 'complete') {
-                                                    location.reload();
-                                                } else {
-                                                    setTimeout(function() {
-                                                        location.reload();
-                                                    }, 90000);
-                                                }
-                                            }, 90000);
-                                        }
-                                    };
-                                    xhr.send();
+                                xhr.send();
+                            }
+                            </script>
+                            <style>
+                                .button-container {
+                                    position: fixed;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    background-color: #f1f1f1;
+                                    overflow: hidden;
                                 }
-                                </script>
-                                <style>
-                                    .button-container {
-                                        position: fixed;
-                                        top: 0;
-                                        left: 0;
-                                        right: 0;
-                                        background-color: #f1f1f1;
-                                        overflow: hidden;
-                                    }
-                                    .button-container button {
-                                        float: left;
-                                        display: block;
-                                        color: black;
-                                        text-align: center;
-                                        padding: 14px 16px;
-                                        text-decoration: none;
-                                        font-size: 17px;
-                                        border: none;
-                                        cursor: pointer;
-                                        color: white;
-                                        background-color: black;
-                                    }
-                                    .button-container button:hover {
-                                        background-color: #ddd;
-                                    }
-                                    .checkpoint {
-                                        margin-top: 100px;
-                                    }
-                                    .alert-container {
-                                        position: fixed;
-                                        top: 0;
-                                        right: 0;
-                                        width: 300px;
-                                        height: 100%;
-                                        overflow-y: scroll;
-                                        padding: 20px;
-                                        color: black;
-                                        background-color: black;
-                                    }
-                                    .alert-container div {
-                                        margin-bottom: 10px;
-                                        padding: 10px;
-                                        background-color: #fff;
-                                        border: 1px solid #ddd;
-                                    }
-                                    .reload-container {
-                                        position: fixed;
-                                        bottom: 0;
-                                        left: 50%;
-                                        transform: translateX(-50%);
-                                        margin-bottom: 20px;
-                                    }
-                                    .reload-container button {
-                                        display: block;
-                                        color: black;
-                                        text-align: center;
-                                        padding: 14px 16px;
-                                        text-decoration: none;
-                                        font-size: 17px;
-                                        border: none;
-                                        cursor: pointer;
-                                    }
-                                    .reload-container button:hover {
-                                        background-color: #ddd;
-                                    }
-                                    .loading-container {
-                                        position: fixed;
-                                        top: 0;
-                                        left: 0;
-                                        right: 0;
-                                        bottom: 0;
-                                        background-color: rgba(0, 0, 0, 0.5);
-                                        display: none;
-                                    }
-                                    .loading-bar {
-                                        position: absolute;
-                                        top: 50%;
-                                        left: 50%;
-                                        transform: translate(-50%, -50%);
-                                        width: 0%;
-                                        height: 20px;
-                                        background-color: white;
-                                    }
-                                    .nav-container {
-                                        position: fixed;
-                                        bottom: 0;
-                                        right: 0;
-                                        margin-bottom: 20px;
-                                    }
-                                    .nav-container button {
-                                        display: block;
-                                        color: black;
-                                        text-align: center;
-                                        padding: 14px 16px;
-                                        text-decoration: none;
-                                        font-size: 17px;
-                                        border: none;
-                                        cursor: pointer;
-                                        color: white;
-                                        background-color: black;
-                                        margin-right: 10px;
-                                    }
-                                    .nav-container button:hover {
-                                        background-color: #ddd;
-                                    }
-                                    .checkbox-container {
-                                        display: inline-block;
-                                        margin-right: 10px;
-                                    }
-                                    .checkbox-container input[type=checkbox] {
-                                        display: none;
-                                    }
-                                    .checkbox-container label {
-                                        display: inline-block;
-                                        background-color: #ddd;
-                                        padding: 5px 10px;
-                                        cursor: pointer;
-                                    }
-                                    .checkbox-container input[type=checkbox]:checked + label {
-                                        background-color: #bbb;
-                                    }
-                                </style>
-                                <div class='nav-container'>"
-                                    . ($endpoint === '/botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
-                                . "</div>
-                                <div class='reload-container'>
-                                    <div class='checkbox-container'>
-                                        <input type='checkbox' id='auto-reload-checkbox' " . (isset($_COOKIE['auto-reload']) && $_COOKIE['auto-reload'] === 'true' ? 'checked' : '') . ">
-                                        <label for='auto-reload-checkbox'>Auto Reload</label>
-                                    </div>
-                                    <button id='reload-button'>Reload</button>
+                                .button-container button {
+                                    float: left;
+                                    display: block;
+                                    color: black;
+                                    text-align: center;
+                                    padding: 14px 16px;
+                                    text-decoration: none;
+                                    font-size: 17px;
+                                    border: none;
+                                    cursor: pointer;
+                                    color: white;
+                                    background-color: black;
+                                }
+                                .button-container button:hover {
+                                    background-color: #ddd;
+                                }
+                                .checkpoint {
+                                    margin-top: 100px;
+                                }
+                                .alert-container {
+                                    position: fixed;
+                                    top: 0;
+                                    right: 0;
+                                    width: 300px;
+                                    height: 100%;
+                                    overflow-y: scroll;
+                                    padding: 20px;
+                                    color: black;
+                                    background-color: black;
+                                }
+                                .alert-container div {
+                                    margin-bottom: 10px;
+                                    padding: 10px;
+                                    background-color: #fff;
+                                    border: 1px solid #ddd;
+                                }
+                                .reload-container {
+                                    position: fixed;
+                                    bottom: 0;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    margin-bottom: 20px;
+                                }
+                                .reload-container button {
+                                    display: block;
+                                    color: black;
+                                    text-align: center;
+                                    padding: 14px 16px;
+                                    text-decoration: none;
+                                    font-size: 17px;
+                                    border: none;
+                                    cursor: pointer;
+                                }
+                                .reload-container button:hover {
+                                    background-color: #ddd;
+                                }
+                                .loading-container {
+                                    position: fixed;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    bottom: 0;
+                                    background-color: rgba(0, 0, 0, 0.5);
+                                    display: none;
+                                }
+                                .loading-bar {
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    width: 0%;
+                                    height: 20px;
+                                    background-color: white;
+                                }
+                                .nav-container {
+                                    position: fixed;
+                                    bottom: 0;
+                                    right: 0;
+                                    margin-bottom: 20px;
+                                }
+                                .nav-container button {
+                                    display: block;
+                                    color: black;
+                                    text-align: center;
+                                    padding: 14px 16px;
+                                    text-decoration: none;
+                                    font-size: 17px;
+                                    border: none;
+                                    cursor: pointer;
+                                    color: white;
+                                    background-color: black;
+                                    margin-right: 10px;
+                                }
+                                .nav-container button:hover {
+                                    background-color: #ddd;
+                                }
+                                .checkbox-container {
+                                    display: inline-block;
+                                    margin-right: 10px;
+                                }
+                                .checkbox-container input[type=checkbox] {
+                                    display: none;
+                                }
+                                .checkbox-container label {
+                                    display: inline-block;
+                                    background-color: #ddd;
+                                    padding: 5px 10px;
+                                    cursor: pointer;
+                                }
+                                .checkbox-container input[type=checkbox]:checked + label {
+                                    background-color: #bbb;
+                                }
+                            </style>
+                            <div class='nav-container'>"
+                                . ($endpoint === '/botlog' ? "<button onclick=\"location.href='/botlog2'\">Botlog 2</button>" : "<button onclick=\"location.href='/botlog'\">Botlog 1</button>")
+                            . "</div>
+                            <div class='reload-container'>
+                                <div class='checkbox-container'>
+                                    <input type='checkbox' id='auto-reload-checkbox' " . (isset($_COOKIE['auto-reload']) && $_COOKIE['auto-reload'] === 'true' ? 'checked' : '') . ">
+                                    <label for='auto-reload-checkbox'>Auto Reload</label>
                                 </div>
-                                <script>
-                                    var reloadButton = document.getElementById('reload-button');
-                                    var autoReloadCheckbox = document.getElementById('auto-reload-checkbox');
-                                    var interval;
-            
-                                    reloadButton.addEventListener('click', function () {
-                                        clearInterval(interval);
-                                        location.reload();
-                                    });
-            
-                                    autoReloadCheckbox.addEventListener('change', function () {
-                                        if (this.checked) {
-                                            interval = setInterval(function() {
-                                                location.reload();
-                                            }, 15000);
-                                            localStorage.setItem('auto-reload', 'true');
-                                        } else {
-                                            clearInterval(interval);
-                                            localStorage.setItem('auto-reload', 'false');
-                                        }
-                                    });
-            
-                                    if (localStorage.getItem('auto-reload') == 'true') {
-                                        autoReloadCheckbox.checked = true;
+                                <button id='reload-button'>Reload</button>
+                            </div>
+                            <script>
+                                var reloadButton = document.getElementById('reload-button');
+                                var autoReloadCheckbox = document.getElementById('auto-reload-checkbox');
+                                var interval;
+        
+                                reloadButton.addEventListener('click', function () {
+                                    clearInterval(interval);
+                                    location.reload();
+                                });
+        
+                                autoReloadCheckbox.addEventListener('change', function () {
+                                    if (this.checked) {
                                         interval = setInterval(function() {
                                             location.reload();
                                         }, 15000);
+                                        localStorage.setItem('auto-reload', 'true');
+                                    } else {
+                                        clearInterval(interval);
+                                        localStorage.setItem('auto-reload', 'false');
                                     }
-                                </script>";
-                };
-                if ($return = @file_get_contents('botlog.txt')) return HttpResponse::html($webpage_content($return));
-                return $this->httpHandler->__throwError('Unable to access `botlog.txt`', HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-            });
-            $this->httpHandler->offsetSet('/botlog', $botlog_func, true);
-            $this->httpHandler->offsetSet('/botlog2', $botlog_func, true);
+                                });
+        
+                                if (localStorage.getItem('auto-reload') == 'true') {
+                                    autoReloadCheckbox.checked = true;
+                                    interval = setInterval(function() {
+                                        location.reload();
+                                    }, 15000);
+                                }
+                            </script>";
+            };
+            if ($return = @file_get_contents('botlog.txt')) return HttpResponse::html($webpage_content($return));
+            return $this->httpHandler->__throwError('Unable to access `botlog.txt`', HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
         });
+        $this->httpHandler->offsetSet('/botlog', $botlog_func, true);
+        $this->httpHandler->offsetSet('/botlog2', $botlog_func, true);
 
         $this->__generateServerEndpoints();
         $this->__generateWebsiteEndpoints();

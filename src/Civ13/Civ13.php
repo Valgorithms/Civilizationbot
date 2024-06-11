@@ -251,9 +251,9 @@ class Civ13
     {
         $this->__loadOrInitializeVariables();
         foreach ($server_settings as $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
+        $this->verifier = new Verifier($this, $options);
         $this->byond = new Byond();
         $this->moderator = new Moderator($this);
-        $this->verifier = new Verifier($this, $options);
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
         if (isset($this->discord)) $this->discord->once('ready', function () {

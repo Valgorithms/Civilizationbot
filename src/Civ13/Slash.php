@@ -42,6 +42,7 @@ class Slash
     private function afterConstruct()
     {
         $this->discord->once('ready', function() {
+            $this->setup();
             if ($application_commands = $this->discord->__get('application_commands')) {
                 $names = [];
                 foreach ($application_commands as $command) $names[] = $command->getName();
