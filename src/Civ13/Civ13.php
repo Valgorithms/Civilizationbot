@@ -265,10 +265,6 @@ class Civ13
             $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
-            $this->loop->addTimer(10, function () { // Delay certain functions until the bot is ready
-                $this->serverinfoTimers(); // Start the serverinfo timer and update the serverinfo channel
-                $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
-            });
             $this->__UpdateDiscordVariables();
             if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
             //else $this->logger->debug('No ready functions found!');
@@ -923,17 +919,6 @@ class Civ13
             //else $this->logger->debug('No GUILD_CREATE functions found!');
         });
     }
-    private function relayTimer(): void
-    {
-        $this->logger->debug('Starting file chat relay and verifier status timers');
-        foreach ($this->enabled_servers as $server) $server->relayTimer();
-        if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
-            if (! $status = $this->verifier_online) {
-                $this->verifier->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
-                if ($status !== $this->verifier_online) foreach ($this->verifier->provisional as $ckey => $discord_id) $this->verifier->provisionalRegistration($ckey, $discord_id); // If the verifier was offline, but is now online, reattempt registration of all provisional users
-            }
-        });
-    }
     
     /**
      * These functions are used to save and load data to and from files.
@@ -1215,7 +1200,7 @@ class Civ13
         }
 
         $bancheckTimer = function () {
-            $this->logger->info('Running periodic bancheck...');
+            $this->logger->debug('Running periodic bancheck...'); // This should take ~2.5 seconds to run
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
                 if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
                 $banned = $this->bancheck($item['ss13'], true);
@@ -1228,7 +1213,7 @@ class Civ13
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
                 }
             }
-            $this->logger->info('Periodic bancheck complete.');
+            $this->logger->debug('Periodic bancheck complete.');
         };
         $bancheckTimer();
         if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function () use ($bancheckTimer) { $bancheckTimer(); });
@@ -1672,12 +1657,6 @@ class Civ13
         $this->webserverStatusChannelUpdate($this->webserver_online = true);
         $this->logger->debug("Successfully retrieved serverinfo from `{$this->serverinfo_url}`");
         return $this->serverinfo = $data_json;
-    }
-    
-    public function serverinfoTimers(): void
-    {
-        foreach ($this->enabled_servers as $gameserver) $gameserver->serverinfoTimer();
-        foreach ($this->enabled_servers as $gameserver) $gameserver->playercount_timer();
     }
     /*
      * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts

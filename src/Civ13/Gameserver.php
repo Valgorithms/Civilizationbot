@@ -119,7 +119,10 @@ class GameServer {
 
         $this->discord->once('ready', function () {
             $this->logger->info("Getting player count for Gameserver {$this->name}..");
-            $this->localServerPlayerCount();
+            $this->localServerPlayerCount(); // Populates $this->players
+            $this->playercountTimer(); // Update playercount channel every 10 minutes
+            $this->serverinfoTimer(); // Hard check playercount and  ckeys to scrutinizeCkey() every 3 minutes
+            $this->relayTimer(); // File chat relay
         });
     }
     private function resolveOptions(array $options)
@@ -197,7 +200,7 @@ class GameServer {
         return $playercount;
     }
     
-    public function relayTimer(): void
+    public function relayTimer(): TimerInterface
     {
         if ($this->discord->guilds->get('id', $this->civ13->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
             $this->logger->debug("Starting file chat relay timer for {$this->key}");
@@ -209,6 +212,7 @@ class GameServer {
                 if ($channel = $guild->channels->get('id', $this->asay)) $this->civ13->gameChatFileRelay($this->basedir . Civ13::admin_path, $channel);  // #asay-server
             });
         }
+        return $this->timers['relay_timer'];
     }
     public function serverinfoTimer(): TimerInterface
     {
@@ -217,7 +221,7 @@ class GameServer {
             //$this->playercountChannelUpdate($playercount); // This needs to be updated to pass $this instead of "{$server}-""
             foreach ($this->players as $ckey) {
                 if (is_null($ckey)) continue;
-                $this->civ13->moderator->scrutinizeCkey($ckey);
+                if (isset($this->civ13->moderator)) $this->civ13->moderator->scrutinizeCkey($ckey);
             }
         });
         return $this->timers['serverinfo_timer']; // Check players every minute
@@ -237,7 +241,7 @@ class GameServer {
         return $this->players;
     }
 
-    public function playercount_timer(): TimerInterface
+    public function playercountTimer(): TimerInterface
     {
         if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(60, function () { // Update playercount channel every 10 minutes
             if ($this->playercount_ticker % 10 !== 0) return false;
