@@ -1215,6 +1215,7 @@ class Civ13
         }
 
         $bancheckTimer = function () {
+            $this->logger->info('Running periodic bancheck...');
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
                 if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
                 $banned = $this->bancheck($item['ss13'], true);
@@ -1227,6 +1228,7 @@ class Civ13
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
                 }
             }
+            $this->logger->info('Periodic bancheck complete.');
         };
         $bancheckTimer();
         if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function () use ($bancheckTimer) { $bancheckTimer(); });
