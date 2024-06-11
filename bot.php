@@ -338,7 +338,7 @@ $options = array_merge($options, $hidden_options);
 
 
 $civ13 = null;
-$global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13, $logger, $testing) {
+$global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use (&$civ13, &$logger, &$testing) {
     if (
         $civ13 && // If the bot is running
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
@@ -416,7 +416,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
             $channel->sendMessage($builder);
         }
         $socket->close();
-        if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = $civ13->discord->getLoop()->addTimer(5, function () use ($civ13) {
+        if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = $civ13->discord->getLoop()->addTimer(5, function () use (&$civ13) {
             \restart();
             $civ13->discord->close();
             die();
