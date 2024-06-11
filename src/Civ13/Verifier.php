@@ -43,90 +43,89 @@ class Verifier
 
     public function afterConstruct()
     {
+        $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) {
+            $this->getVerified();
+            $this->joinRoles($member);
+            if (isset($this->civ13->timers["add_{$member->id}"])) {
+                $this->civ13->discord->getLoop()->cancelTimer($this->civ13->timers["add_{$member->id}"]);
+                unset($this->civ13->timers["add_{$member->id}"]);
+            }
+            $this->civ13->timers["add_{$member->id}"] = $this->civ13->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
+            { // Kick member if they have not verified
+                $this->getVerified();
+                if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
+                if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
+                if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
+                if (
+                    $member_future->roles->has($this->civ13->role_ids['infantry']) ||
+                    $member_future->roles->has($this->civ13->role_ids['veteran']) ||
+                    $member_future->roles->has($this->civ13->role_ids['banished']) ||
+                    $member_future->roles->has($this->civ13->role_ids['permabanished'])
+                ) return null; // Don't kick if they have an verified or banned role
+                return $guild->members->kick($member_future, 'Not verified');
+            });
+        });
+        $this->civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
+        {
+            $this->getVerified();
+            if ($member->roles->has($this->civ13->role_ids['veteran'])) $this->civ13->whitelistUpdate();
+            foreach ($faction_roles = ['red', 'blue'] as $role_id) if ($member->roles->has($this->civ13->role_ids[$role_id])) { $this->civ13->factionlistUpdate(); break;}
+            $admin_roles = [
+                'Owner',
+                'Chief Technical Officer',
+                'Head Admin',
+                'Manager',
+                'High Staff',
+                'Supervisor',
+                'Event Admin',
+                'Admin',
+                'Moderator',
+                'Mentor',
+                'veteran',
+                'infantry',
+                'banished',
+                'paroled',
+            ];
+            foreach ($admin_roles as $role) if ($member->roles->has($this->civ13->role_ids[$role])) { $this->civ13->adminlistUpdate(); break; }
+        });
+        $this->civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
+        {
+            if (! $member_old) { // Not enough information is known about the change, so we will update everything
+                $this->getVerified();
+                $this->civ13->whitelistUpdate();
+                $this->civ13->factionlistUpdate();
+                $this->civ13->adminlistUpdate();
+                return;
+            }
+            if ($member->roles->has($this->civ13->role_ids['veteran']) !== $member_old->roles->has($this->civ13->role_ids['veteran'])) $this->civ13->whitelistUpdate();
+            elseif ($member->roles->has($this->civ13->role_ids['infantry']) !== $member_old->roles->has($this->civ13->role_ids['infantry'])) $this->getVerified();
+            foreach ($faction_roles = ['red', 'blue'] as $role) 
+                if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
+                    { $this->civ13->factionlistUpdate(); break;}
+            $admin_roles = [
+                'Owner',
+                'Chief Technical Officer',
+                'Head Admin',
+                'Manager',
+                'High Staff',
+                'Supervisor',
+                'Event Admin',
+                'Admin',
+                'Moderator',
+                'Mentor',
+                'veteran',
+                'infantry',
+                'banished',
+                'paroled',
+            ];
+            foreach ($admin_roles as $role) 
+                if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
+                    { $this->civ13->adminlistUpdate(); break;}
+        });
         $this->civ13->discord->once('ready', function () {
+            $this->logger->info('Setting up Verifier...');
             $this->verified = $this->getVerified();
-            foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional user
-            $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) {
-                $this->getVerified();
-                $this->joinRoles($member);
-                if (isset($this->civ13->timers["add_{$member->id}"])) {
-                    $this->civ13->discord->getLoop()->cancelTimer($this->civ13->timers["add_{$member->id}"]);
-                    unset($this->civ13->timers["add_{$member->id}"]);
-                }
-                $this->civ13->timers["add_{$member->id}"] = $this->civ13->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
-                { // Kick member if they have not verified
-                    $this->getVerified();
-                    if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
-                    if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
-                    if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
-                    if (
-                        $member_future->roles->has($this->civ13->role_ids['infantry']) ||
-                        $member_future->roles->has($this->civ13->role_ids['veteran']) ||
-                        $member_future->roles->has($this->civ13->role_ids['banished']) ||
-                        $member_future->roles->has($this->civ13->role_ids['permabanished'])
-                    ) return null; // Don't kick if they have an verified or banned role
-                    return $guild->members->kick($member_future, 'Not verified');
-                });
-            });
-
-            $this->civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
-            {
-                $this->getVerified();
-                if ($member->roles->has($this->civ13->role_ids['veteran'])) $this->civ13->whitelistUpdate();
-                foreach ($faction_roles = ['red', 'blue'] as $role_id) if ($member->roles->has($this->civ13->role_ids[$role_id])) { $this->civ13->factionlistUpdate(); break;}
-                $admin_roles = [
-                    'Owner',
-                    'Chief Technical Officer',
-                    'Head Admin',
-                    'Manager',
-                    'High Staff',
-                    'Supervisor',
-                    'Event Admin',
-                    'Admin',
-                    'Moderator',
-                    'Mentor',
-                    'veteran',
-                    'infantry',
-                    'banished',
-                    'paroled',
-                ];
-                foreach ($admin_roles as $role) if ($member->roles->has($this->civ13->role_ids[$role])) { $this->civ13->adminlistUpdate(); break; }
-            });
-
-            $this->civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
-            {
-                if (! $member_old) { // Not enough information is known about the change, so we will update everything
-                    $this->getVerified();
-                    $this->civ13->whitelistUpdate();
-                    $this->civ13->factionlistUpdate();
-                    $this->civ13->adminlistUpdate();
-                    return;
-                }
-                if ($member->roles->has($this->civ13->role_ids['veteran']) !== $member_old->roles->has($this->civ13->role_ids['veteran'])) $this->civ13->whitelistUpdate();
-                elseif ($member->roles->has($this->civ13->role_ids['infantry']) !== $member_old->roles->has($this->civ13->role_ids['infantry'])) $this->getVerified();
-                foreach ($faction_roles = ['red', 'blue'] as $role) 
-                    if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
-                        { $this->civ13->factionlistUpdate(); break;}
-                $admin_roles = [
-                    'Owner',
-                    'Chief Technical Officer',
-                    'Head Admin',
-                    'Manager',
-                    'High Staff',
-                    'Supervisor',
-                    'Event Admin',
-                    'Admin',
-                    'Moderator',
-                    'Mentor',
-                    'veteran',
-                    'infantry',
-                    'banished',
-                    'paroled',
-                ];
-                foreach ($admin_roles as $role) 
-                    if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
-                        { $this->civ13->adminlistUpdate(); break;}
-            });
+            foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional user 
         });
     }
 

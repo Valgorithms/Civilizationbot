@@ -60,6 +60,7 @@ class CommandServiceManager
     private function afterConstruct()
     {
         $this->discord->once('ready', function() {
+            $this->logger->info('Setting up CommandServiceManager...');
             $this->setup();
             if ($application_commands = $this->discord->__get('application_commands')) {
                 $names = [];

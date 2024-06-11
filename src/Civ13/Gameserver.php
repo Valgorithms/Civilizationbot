@@ -118,6 +118,7 @@ class GameServer {
         $this->factionlist = $this->basedir . Civ13::factionlist;
 
         $this->discord->once('ready', function () {
+            $this->logger->info("Getting player count for Gameserver {$this->name}..");
             $this->localServerPlayerCount();
         });
     }

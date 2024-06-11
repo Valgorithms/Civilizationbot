@@ -43,6 +43,7 @@ class Slash
     {
         $this->__declareListeners();
         $this->discord->once('ready', function() {
+            $this->logger->info('Setting up Interaction commands...');
             $this->setup();
             if ($application_commands = $this->discord->__get('application_commands')) {
                 $names = [];
