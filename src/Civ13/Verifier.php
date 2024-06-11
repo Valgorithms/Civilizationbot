@@ -27,6 +27,7 @@ class Verifier
         $this->civ13 = $civ13;
         $this->resolveOptions($options);
         $this->verify_url = $options['verify_url'];
+        $this->pending = new Collection([], 'discord');
         $this->afterConstruct();
     }
 
@@ -39,6 +40,7 @@ class Verifier
     {
         $this->civ13->discord->once('ready', function () {
             $this->verified = $this->getVerified();
+            foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional user
             $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) {
                 $this->getVerified();
                 if (! $this->civ13->shard) {

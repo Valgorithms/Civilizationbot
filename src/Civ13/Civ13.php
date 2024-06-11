@@ -256,24 +256,22 @@ class Civ13
         $this->messageServiceManager = new MessageServiceManager($this);
         $this->byond = new Byond();
         foreach ($server_settings as $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
+        $this->__loadOrInitializeVariables();
         if (isset($this->discord)) $this->discord->once('ready', function () use ($options) {
             $this->ready = true;
             $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
-            $this->__loadOrInitializeVariables();
             $this->loop->addTimer(10, function () { // Delay certain functions until the bot is ready
                 $this->serverinfoTimers(); // Start the serverinfo timer and update the serverinfo channel
                 $this->relayTimer(); // Start the periodic chat relay timer. Does nothing unless $this->relay_method === 'file'
             });
-            
+            $this->__UpdateDiscordVariables();
             if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
             //else $this->logger->debug('No ready functions found!');
-            if (! $this->shard) {
-                $this->slash = new Slash($this);
-                $this->declareListeners();
-                $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
-            }
+            $this->slash = new Slash($this);
+            $this->declareListeners();
+            $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
         });
     }
     /**
@@ -375,7 +373,7 @@ class Civ13
      * Loads or initializes the variables used by the Civ13 class.
      * This method loads the values from JSON files or initializes them if the files do not exist.
      * It also handles the interruption of rounds if the bot was restarted during a round.
-     * It must be called after the Discord client is ready.
+     * This process can take a while, so it should be called before the Discord client is ready.
      */
     private function __loadOrInitializeVariables(): void
     {
@@ -434,10 +432,6 @@ class Civ13
             $this->VarSave('ic_badwords_warnings.json', $ic_badwords_warnings);
         }
         $this->ic_badwords_warnings = $ic_badwords_warnings;
-        $this->embed_footer = $this->github 
-            ? $this->github . PHP_EOL
-            : '';
-        $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
 
         if (! $provisional = $this->VarLoad('provisional.json')) {
             $provisional = [];
@@ -449,14 +443,21 @@ class Civ13
             $this->VarSave('ages.json', $ages);
         }
         $this->ages = $ages;
-        foreach ($this->verifier->provisional as $ckey => $discord_id) $this->verifier->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
-        
-        $this->verifier->pending = new Collection([], 'discord');
-        if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
-        foreach ($this->discord->guilds as $guild) if (! isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $discord_config);
-        $this->discord_config = $discord_config; // Declared, but not currently used for anything
-
         if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
+        $this->embed_footer = $this->github 
+        ? $this->github . PHP_EOL
+        : '';
+        if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
+        $this->discord_config = $discord_config; // Declared, but not currently used for anything
+    }
+    /**
+     * Loads or initializes the variables used by the Civ13 class.
+     * These variables rely on the Discord client being ready.
+     */
+    private function __UpdateDiscordVariables(): void
+    {
+        $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
+        foreach ($this->discord->guilds as $guild) if (! isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
     }
     /**
      * Adds a game server to the list of game servers.
