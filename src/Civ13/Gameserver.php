@@ -238,7 +238,7 @@ class GameServer {
      * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
      * It is called on ready and every 5 minutes
      */
-    private function playercountChannelUpdate(int $count = 0): bool
+    public function playercountChannelUpdate(int $count = 0): bool
     {
         if ($this->playercount_ticker % 10 !== 0) return false;
         if (! $channel = $this->discord->getChannel($this->playercount)) {

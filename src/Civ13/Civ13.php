@@ -1677,37 +1677,21 @@ class Civ13
      * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
      * It is called on ready and every 5 minutes
      */
-    private function playercountChannelUpdate(string|int|null $gameserver, int $count = 0): bool
+    // TODO: This function is not used anymore and should be removed
+    /* private function playercountChannelUpdate(string|int|null $gameserver_key, int $count = 0): bool
     {
-        $gameservers = [];
-        if (! is_null($gameserver)) {
-            if (! isset($this->enabled_servers[$gameserver])) {
-                $this->logger->warning("Server {$gameserver} doesn't exist!");
+        if (! is_null($gameserver_key)) {
+            if (! isset($this->enabled_servers[$gameserver_key])) {
+                $this->logger->warning("Server {$gameserver_key} doesn't exist!");
                 return false;
             }
-            $gameservers[] = $this->enabled_servers[$gameserver];
-        } else $gameservers = $this->enabled_servers;
+            if ($this->enabled_servers[$gameserver_key]->playercountChannelUpdate($count)) return true;
+        }
 
         $return = false;
-        foreach ($gameservers as $server) {
-            if ($this->playercount_ticker % 10 !== 0) continue; // Only update every 10th tick
-            if (! $channel = $this->discord->getChannel($server->playercount)) {
-                $this->logger->warning("Channel {$server->playercount} doesn't exist!");
-                continue;
-            }
-            if (! $channel->created) {
-                $this->logger->warning("Channel {$channel->name} hasn't been created!");
-                continue;
-            }
-            [$channelPrefix, $existingCount] = explode('-', $channel->name);
-            if ((int)$existingCount !== $count) {
-                $channel->name = "{$channelPrefix}-{$count}";
-                $channel->guild->channels->save($channel);
-            }
-            $return = true;
-        }
+        foreach ($this->enabled_servers as $gameserver) if ($gameserver->playercountChannelUpdate($count)) $return = true;
         return $return;
-    }
+    } */
     /**
      * Parses the server information and returns an array of parsed data.
      *
@@ -1764,7 +1748,7 @@ class Civ13
             $p1 = (isset($server['players'])
                 ? $server['players']
                 : count($players) ?? 0);
-            $this->playercountChannelUpdate($gameserver->key, $p1);
+            $gameserver->playercountChannelUpdate($p1);
             $index++;
         }
         $this->playercount_ticker++;
@@ -1854,7 +1838,7 @@ class Civ13
                 ? $server['players']
                 : count(array_map(fn($player) => $this->sanitizeInput(urldecode($player)), array_filter($server, function (string $key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY)))
             );
-            $this->playercountChannelUpdate($gameserver->key, $p1);
+            $gameserver->playercountChannelUpdate($p1);
         }
         $this->playercount_ticker++;
     }
