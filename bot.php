@@ -38,14 +38,14 @@ require getcwd() . '/token.php'; // $token
 include getcwd() . '/vendor/autoload.php';
 include 'vendor/autoload.php';
 
-$web_address = 'www.civ13.com';
-$http_port = 55555;
-
 $streamHandler = new StreamHandler('php://stdout', Level::Info);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
+$logger = new Logger('Civ13', [$streamHandler]);
+$logger->info('Loading configurations for the bot...');
+
 $discord = new Discord([
     'loop' => $loop = Loop::get(),
-    'logger' => $logger = new Logger('Civ13', [$streamHandler]),
+    'logger' => $logger,
     /* // Disabled for debugging
     'cache' => new CacheConfig(
         $interface = new RedisCache(
@@ -313,8 +313,8 @@ $hidden_options = [
 
     'webapi' => &$webapi,
     'socket' => &$socket,
-    'web_address' => $web_address,
-    'http_port' => $http_port,
+    'web_address' => $web_address = 'www.civ13.com',
+    'http_port' => $http_port = 55555,
     'http_key' => $http_key,
     'http_whitelist' => $http_whitelist,
     'civ_token' => getenv('CIV_TOKEN') ?? $civ_token ?? 'CHANGEME',
