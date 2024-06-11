@@ -519,10 +519,10 @@ class HttpServiceManager
                                                 clearInterval(interval);
                                                 location.reload();
                                             } else {
-                                                width += 2;
+                                                width += 1.25;
                                                 loadingBar.style.width = width + '%';
                                             }
-                                        }, 300);
+                                        }, 800);
                                         loadingBar.style.backgroundColor = 'white';
                                         loadingBar.style.height = '20px';
                                         loadingBar.style.position = 'fixed';
