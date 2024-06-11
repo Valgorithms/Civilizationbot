@@ -338,7 +338,7 @@ class Civ13
             $this->logger->error("Promise rejected with reason: `$reason'`");
         };
 
-        if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! @touch($value) || ! is_dir($value)) {
+        if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! is_dir($value) || ! @mkdir($value, 0664, true)) {
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
         }
