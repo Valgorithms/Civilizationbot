@@ -72,8 +72,8 @@ class HttpServiceManager
 
         $this->__generateEndpoints();
         $this->discord->once('ready', function () {
-            $this->logger->info('Populating HttpServer API whitelist...');
-            $this->__populateWhitelist();
+            //$this->logger->info('Populating HttpServer API whitelist...');
+            //$this->__populateWhitelist(); // This is disabled for now because it takes >20 seconds.
             $this->webapi->listen($this->socket);
             $this->logger->info("HttpServer API is now listening on port {$this->http_port}");
             $this->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
