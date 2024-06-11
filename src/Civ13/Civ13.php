@@ -22,6 +22,7 @@ use Discord\Parts\Guild\Role;
 use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Activity;
 use Discord\Parts\User\Member;
+use Discord\Stats;
 use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Formatter\LineFormatter;
@@ -32,6 +33,7 @@ use React\EventLoop\StreamSelectLoop;
 use React\Promise\PromiseInterface;
 use React\Http\Browser;
 use React\EventLoop\TimerInterface;
+use React\Filesystem\AdapterInterface;
 use React\Filesystem\Factory as FilesystemFactory;
 use ReflectionFunction;
 
@@ -68,6 +70,7 @@ class Civ13
     const insults_path = 'insults.txt';
     const status = 'status.txt';
 
+    public bool $ready = false;
     public array $options = [];
     
     public Byond $byond;
@@ -89,11 +92,10 @@ class Civ13
 
     public StreamSelectLoop $loop;
     public Discord $discord;
-    public bool $ready = false;
     public Browser $browser;
-    public $filesystem;
+    public AdapterInterface $filesystem;
     public Logger $logger;
-    public $stats;
+    public Stats $stats;
 
     public string $filecache_path = '';
     
