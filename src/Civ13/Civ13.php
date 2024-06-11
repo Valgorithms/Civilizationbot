@@ -31,6 +31,7 @@ use Monolog\Handler\StreamHandler;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
+use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
 use React\Http\Browser;
 use React\Filesystem\AdapterInterface;
@@ -109,6 +110,9 @@ class Civ13
     ];
     public array $blacklisted_countries = ['IL', 'ISR'];
 
+    /**
+     * @var Timerinterface[]
+     */
     public array $timers = [];
     public array $serverinfo = []; // Collected automatically by serverinfo_timer
     public array $players = []; // Collected automatically by serverinfo_timer
@@ -1671,13 +1675,14 @@ class Civ13
     public function serverinfoTimers(): void
     {
         foreach ($this->enabled_servers as $gameserver) $gameserver->serverinfoTimer();
+        foreach ($this->enabled_servers as $gameserver) $gameserver->playercount_timer();
     }
     /*
      * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts
      * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
      * It is called on ready and every 5 minutes
      */
-    // TODO: This function is not used anymore and should be removed
+    // TODO: This function has been moved to Gameserver.php and should not be used anymore.
     /* private function playercountChannelUpdate(string|int|null $gameserver_key, int $count = 0): bool
     {
         if (! is_null($gameserver_key)) {
@@ -1698,7 +1703,8 @@ class Civ13
      * @param array $return The array to store the parsed data (optional).
      * @return array The array containing the parsed server information.
      */
-    public function serverinfoParse(array $return = []): array
+    // TODO: This function has been deprecated and should not be used anymore.
+    /*public function serverinfoParse(array $return = []): array
     {
         if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) {
             return $return; // No data to parse
@@ -1753,7 +1759,7 @@ class Civ13
         }
         $this->playercount_ticker++;
         return $return;
-    }
+    }*/
 
     /**
      * Generates a server status embed.
@@ -1824,6 +1830,7 @@ class Civ13
         return $embed;
     }
     // This is a simplified version of serverinfoParse() that only updates the player counter
+    /* TODO: This function has been deprecated and should not be used anymore.
     public function serverinfoParsePlayers(): void
     {
         if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) {
@@ -1842,6 +1849,7 @@ class Civ13
         }
         $this->playercount_ticker++;
     }
+    */
 
     /*
      * This function calculates the player's ranking based on their medals
@@ -2049,7 +2057,7 @@ class Civ13
     // Magic Methods
     public function __destruct()
     {
-        if (isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer']->cancel();
+        foreach ($this->timers as $timer) $this->loop->cancelTimer($timer);
     }
     public function __toString(): string
     {
