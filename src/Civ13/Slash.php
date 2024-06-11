@@ -523,7 +523,7 @@ class Slash
                 return $interaction->respondWithMessage($builder->setContent($content)->addEmbed($this->civ13->generateServerstatusEmbed()));
             }
             if (! empty($data = $this->civ13->serverinfoParse())) {
-                foreach ($this->civ13->enabled_servers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}";
+                foreach ($this->civ13->enabled_servers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 $embed = new Embed($this->discord);
                 foreach ($data as $server)
                     foreach ($server as $key => $array)

@@ -541,7 +541,7 @@ class GameServer {
     {
         $embed = new Embed($this->discord);
         $embed->title = $this->name;
-        $embed->addFieldValues($this->name, "byond://{$this->ip}:{$this->port}", false);
+        $embed->addFieldValues("Server URL", "byond://{$this->ip}:{$this->port}", false);
         $embed->addFieldValues('Host', $this->host, true);
         $embed->addFieldValues('Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
         $embed->color = hexdec('FF0000');
