@@ -508,7 +508,7 @@ class HttpServiceManager
                                     alertContainer.appendChild(alert);
                                     setTimeout(function() {
                                         alert.remove();
-                                    }, 15000);
+                                    }, 80000);
                                     if (endpoint === 'restart') {
                                         var loadingBar = document.querySelector('.loading-bar');
                                         var loadingContainer = document.querySelector('.loading-container');
@@ -548,9 +548,9 @@ class HttpServiceManager
                                             } else {
                                                 setTimeout(function() {
                                                     location.reload();
-                                                }, 90000);
+                                                }, 80000);
                                             }
-                                        }, 90000);
+                                        }, 80000);
                                     }
                                 };
                                 xhr.send();
