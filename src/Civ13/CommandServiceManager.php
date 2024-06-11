@@ -102,16 +102,16 @@ class CommandServiceManager
             $this->logger->warning('Invalid command name');
             return false;
         }
-        if (! isset($command['interaction_handler'], $command['interaction_listener']) || ! is_callable($command['interaction_handler'])) {
-            $this->logger->warning("Invalid Interaction handler");
+        if (! isset($command['interaction_handler'], $command['interaction_definer']) || ! is_callable($command['interaction_handler'])) {
+            $this->logger->warning("Invalid interaction definitions for {$command['name']} command");
             return false;
         }
         if (! $reflection = new ReflectionFunction($command['interaction_handler'])) {
-            $this->logger->warning('Invalid reflection for ' . $command['name'] . ' command');
+            $this->logger->warning("Invalid reflection for {$command['name']} command");
             return false;
         }
         if (! $returnType = $reflection->getReturnType()) {
-            $this->logger->warning('Invalid return type for ' . $command['name'] . ' command');
+            $this->logger->warning("Invalid return type for {$command['name']} command");
             return false;
         }
         if ($returnType->getName() !== 'React\Promise\PromiseInterface') {
@@ -119,7 +119,7 @@ class CommandServiceManager
             return false;
         }
 
-        $command['interaction_listener']['name'] = $command['name'];
+        $command['interaction_definer']['name'] = $command['name'];
         return true;
     }
     /**
@@ -161,7 +161,7 @@ class CommandServiceManager
             {
                 return $message->reply('Pong!');
             }),
-            'http_usage'                        => 'Replies with Pong!',                                                            // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
+            'http_usage'                        => 'Replies with HTTP status code 200.',                                            // Instructions for proper usage of the http handler. (NYI. Currently placed the description property, but never called on. May be added as an endpoint to an existing 'help' endpoint or to improve error messages due to bad user input in a future update.)
             'http_method'                       => 'exact',                                                                         // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
             'http_whitelisted'                  => false,                                                                           // Whether the endpoint should be restricted to localhost and whitelisted IPs.
             'http_limit'                        => null,                                                                            // The maximum number of requests allowed within the time window.
@@ -170,7 +170,7 @@ class CommandServiceManager
             {
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }),
-            'interaction_listener' => [
+            'interaction_definer' => [
                 'description'                   => 'Replies with Pong!',
                 'dm_permission'                 => false,                   // Whether the command can be used in DMs.
                 'default_member_permissions'    => null,                    // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
@@ -209,7 +209,7 @@ class CommandServiceManager
             {
                 return HttpResponse::plaintext($this->getHelpString());
             }),
-            'interaction_listener' => [
+            'interaction_definer' => [
                 'description'                   => 'Replies with information about an interaction (or all if none specified).',     // Instructions for proper usage of the interaction handler. Currently used as the the description.
                 'dm_permission'                 => false,                                                                           // Whether the command can be used in DMs.
                 'default_member_permissions'    => null,                                                                            // Default member permissions. (e.g. (string) new RolePermission($this->discord, ['view_audit_log' => true]))
@@ -302,7 +302,7 @@ class CommandServiceManager
             {
                 foreach ($this->global_commands as $command) if ($this->validateInteractionCallback($command)) {
                     if (str_starts_with($command['name'], '/')) continue; // Skip slash commands for now
-                    if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_listener']);
+                    if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_definer']);
                     $this->listenCommand($command['name'], $command('interaction_handler'));
                 }
                 $this->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->global_commands)) . '`');
@@ -311,7 +311,7 @@ class CommandServiceManager
         if ($this->guild_commands) {
             foreach (array_keys($this->guild_commands) as $key) if ($guild = $this->discord->guilds->get('id', $key)) $guild->commands->freshen()->then(function (GuildCommandRepository $commands) use ($key) {
                 foreach ($this->guild_commands[$key] as $command) if ($this->validateInteractionCallback($command)) {
-                    if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_listener']);
+                    if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_definer']);
                     $this->listenCommand($command['name'], $command['interaction_handler']);
                 }
                 foreach (array_keys($this->guild_commands) as $guild_id) $this->logger->debug("[GUILD APPLICATION COMMAND LIST FOR GUILD `$guild_id`]" . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->guild_commands[$guild_id])) . '`');
