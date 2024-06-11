@@ -253,14 +253,13 @@ class Civ13
     {
         $this->verifier = new Verifier($this, $options);
         $this->httpServiceManager = new HttpServiceManager($this);
+        $this->messageServiceManager = new MessageServiceManager($this);
         $this->byond = new Byond();
         foreach ($server_settings as $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
         if (isset($this->discord)) $this->discord->once('ready', function () use ($options) {
             $this->ready = true;
             $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
             $this->logger->info('------');
-            
-            $this->messageServiceManager = new MessageServiceManager($this);
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__loadOrInitializeVariables();
             $this->loop->addTimer(10, function () { // Delay certain functions until the bot is ready

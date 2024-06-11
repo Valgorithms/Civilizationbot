@@ -7,6 +7,7 @@
 
 namespace Civ13;
 
+use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
 use Discord\Parts\Channel\Message;
@@ -17,10 +18,12 @@ use React\Promise\PromiseInterface;
 class MessageServiceManager
 {
     public Civ13 $civ13;
+    public Discord $discord;
     public MessageHandler $messageHandler;
 
     public function __construct(Civ13 &$civ13) {
-        $this->civ13 = $civ13;
+        $this->civ13 =& $civ13;
+        $this->discord =& $civ13->discord;
         $this->messageHandler = new MessageHandler($this->civ13);
         $this->__afterConstruct();
     }
@@ -49,7 +52,7 @@ class MessageServiceManager
                 '404 Error: Humor not found.',
                 'Hmm, looks like someone called me to just enjoy my company.',
                 'Seems like I\'ve been summoned!',
-                'I see you\'ve summoned the almighty ' . ($this->civ13->discord->username ?? $this->civ13->discord->displayname) . ', ready to dazzle you with... absolutely nothing!',
+                'I see you\'ve summoned the almighty ' . ($this->discord->username ?? $this->discord->displayname) . ', ready to dazzle you with... absolutely nothing!',
                 'Ah, the sweet sound of my name being called!',
                 'I\'m here, reporting for duty!',
                 'Greetings, human! It appears you\'ve summoned me to bask in my digital presence.',
@@ -157,7 +160,7 @@ class MessageServiceManager
             } else $ckey = $id;
             if (! $collectionsArray = $this->civ13->getCkeyLogCollections($ckey)) return $this->civ13->reply($message, 'No data found for that ckey.');
 
-            $embed = new Embed($this->civ13->discord);
+            $embed = new Embed($this->discord);
             $embed->setTitle($ckey);
             if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) {
                 $ckey = $item['ss13'];
@@ -405,7 +408,7 @@ class MessageServiceManager
                     if ($member = $this->civ13->verifier->getVerifiedMember($item))
                         if ($member->roles->has($this->civ13->role_ids['paroled']))
                             $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
-                    if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->user_id}>).");
+                    if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->user_id}>).");
                     return $message->react("👍");
                 };
                 $this->offsetSet('release', new MessageHandlerCallback($release), ['Owner', 'High Staff', 'Admin']);
@@ -650,7 +653,7 @@ class MessageServiceManager
                 if ($member = $this->civ13->verifier->getVerifiedMember($item))
                     if (! $member->roles->has($this->civ13->role_ids['paroled']))
                         $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
-                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
+                if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
             }), ['Owner', 'High Staff', 'Admin']);
         }

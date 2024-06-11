@@ -97,13 +97,11 @@ class HttpServiceManager
                 $this->civ13->logger->warning('Missing http_port variable: ' . (isset($this->civ13->options['http_port']) ? 'false' : 'true'));
                 return;
             }
-            $this->civ13->logger->info('------');
-            $this->civ13->logger->info('setting up HttpServer API');
-            $this->civ13->logger->info('------');
             $this->webapi = $this->civ13->options['webapi'];
             $this->socket = $this->civ13->options['socket'];
             $this->web_address = $this->civ13->options['web_address'];
             $this->http_port = $this->civ13->options['http_port'];
+            $this->civ13->logger->info("HttpServer API is now listening on port {$this->http_port}");
             $this->webapi->listen($this->socket);
 
             $this->httpHandler->offsetSet('/get-channels', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
