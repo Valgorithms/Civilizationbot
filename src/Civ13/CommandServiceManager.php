@@ -44,11 +44,11 @@ class CommandServiceManager
     private readonly bool $setup;
 
     public function __construct(Discord &$discord, HttpServiceManager &$httpServiceManager, MessageServiceManager &$messageServiceManager, Civ13 &$civ13) {
-        $this->discord = $discord;
-        $this->httpServiceManager = $httpServiceManager;
-        $this->messageServiceManager = $messageServiceManager;
         $this->civ13 =& $civ13;
+        $this->discord =& $discord;
         $this->logger =& $civ13->logger;
+        $this->httpServiceManager =& $httpServiceManager;
+        $this->messageServiceManager =& $messageServiceManager;
         $this->loop =& $civ13->loop;
         $this->afterConstruct();
     }

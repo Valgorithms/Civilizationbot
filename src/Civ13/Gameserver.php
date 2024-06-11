@@ -267,11 +267,11 @@ class GameServer {
     {
         if ($this->playercount_ticker % 10 !== 0) return false;
         if (! $channel = $this->discord->getChannel($this->playercount)) {
-            $this->civ13->logger->warning("Channel {$this->playercount} doesn't exist!");
+            $this->logger->warning("Channel {$this->playercount} doesn't exist!");
             return false;
         }
         if (! $channel->created) {
-            $this->civ13->logger->warning("Channel {$channel->name} hasn't been created!");
+            $this->logger->warning("Channel {$channel->name} hasn't been created!");
             return false;
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
@@ -391,7 +391,7 @@ class GameServer {
         $admin = $admin ?? $this->discord->user->username;
         if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
         if (! @touch($this->discord2ban) || ! $file = @fopen($this->discord2ban, 'a')) {
-            $this->civ13->logger->warning("unable to open `{$this->discord2ban}`");
+            $this->logger->warning("unable to open `{$this->discord2ban}`");
             return "unable to open `{$this->discord2ban}`" . PHP_EOL;
         }
         fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
@@ -426,7 +426,7 @@ class GameServer {
     {
         $admin = $admin ?? $this->discord->user->username;
         if (! @touch($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
-            $this->civ13->logger->warning("unable to open `$this->discord2unban`");
+            $this->logger->warning("unable to open `$this->discord2unban`");
             return;
         }
         fwrite($file, $admin . ":::$ckey");
@@ -448,7 +448,7 @@ class GameServer {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
         if (! @touch($this->whitelist)) {
-            $this->civ13->logger->warning("unable to open `{$this->whitelist}`");
+            $this->logger->warning("unable to open `{$this->whitelist}`");
             return false;
         }
         $file_paths = [];
@@ -476,7 +476,7 @@ class GameServer {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
         if (! @touch($this->factionlist)) {
-            $this->civ13->logger->warning("unable to open `{$this->factionlist}`");
+            $this->logger->warning("unable to open `{$this->factionlist}`");
             return false;
         }
         $file_paths = [];
@@ -518,7 +518,7 @@ class GameServer {
         if (! $this->enabled) return false;
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! @touch($this->admins)) {
-            $this->civ13->logger->warning("unable to open `{$this->admins}`");
+            $this->logger->warning("unable to open `{$this->admins}`");
             return false;
         }
         $file_paths[] = $this->admins;

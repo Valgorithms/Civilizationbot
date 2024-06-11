@@ -12,11 +12,14 @@ use Discord\Discord;
 use Discord\Helpers\Collection;
 use Discord\Parts\User\Member;
 use Discord\Parts\User\User;
+use Monolog\Logger;
 use React\Promise\PromiseInterface;
 
 class Verifier
 {
     public Civ13 $civ13;
+    public Discord $discord;
+    public Logger $logger;
     public readonly string $verify_url;
     public Collection $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public Collection $pending;
@@ -24,7 +27,9 @@ class Verifier
 
     public function __construct(Civ13 &$civ13, array $options = [])
     {
-        $this->civ13 = $civ13;
+        $this->civ13 =& $civ13;
+        $this->discord =& $civ13->discord;
+        $this->logger =& $civ13->logger;
         $this->resolveOptions($options);
         $this->verify_url = $options['verify_url'];
         $this->pending = new Collection([], 'discord');
@@ -159,7 +164,7 @@ class Verifier
     public function joinRoles(Member $member): ?PromiseInterface
     {
         if ($member->guild_id === $this->civ13->civ13_guild_id && $item = $this->verified->get('discord', $member->id)) {
-            if (! isset($item['ss13'])) $this->civ13->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
+            if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
             else {
                 if (($item['ss13'] && isset($this->civ13->softbanned[$item['ss13']])) || isset($this->civ13->softbanned[$member->id])) return null;
                 $banned = $this->civ13->bancheck($item['ss13'], true);
@@ -249,7 +254,7 @@ class Verifier
             $file_contents = '';
             foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (file_exists($gameserver->basedir . Civ13::playerlogs) && $fc = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) $file_contents .= $fc;
-                else $this->civ13->logger->warning('unable to open `' . $gameserver->basedir . Civ13::playerlogs . '`');
+                else $this->logger->warning('unable to open `' . $gameserver->basedir . Civ13::playerlogs . '`');
             }
             foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] === $ckey) { $found = true; break; }
             if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
@@ -412,7 +417,7 @@ class Verifier
     public function unverify(string $id): array // ['success' => bool, 'message' => string]
     {
         if ( ! $verified_array = $this->civ13->VarLoad('verified.json')) {
-            $this->civ13->logger->warning('Unable to load the verified list.');
+            $this->logger->warning('Unable to load the verified list.');
             return ['success' => false, 'message' => 'Unable to load the verified list.'];
         }
 
@@ -421,7 +426,7 @@ class Verifier
         });
 
         if (! $removed) {
-            $this->civ13->logger->info("Unable to find `$id` in the verified list.");
+            $this->logger->info("Unable to find `$id` in the verified list.");
             return ['success' => false, 'message' => "Unable to find `$id` in the verified list."];
         }
 
@@ -486,7 +491,7 @@ class Verifier
         
         $removed_items = implode(PHP_EOL, array_map(fn($item) => json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), $removed));
         if ($removed_items) $message .= PHP_EOL . 'Removed from the verified list: ```json' . PHP_EOL . $removed_items . PHP_EOL . '```' . PHP_EOL . $message;
-        if ($message) $this->civ13->logger->info($message);
+        if ($message) $this->logger->info($message);
         return ['success' => true, 'message' => $message];
     }
 

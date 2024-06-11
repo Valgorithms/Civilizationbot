@@ -13,17 +13,20 @@ use Discord\Helpers\Collection;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Member;
+use Monolog\Logger;
 use React\Promise\PromiseInterface;
 
 class MessageServiceManager
 {
     public Civ13 $civ13;
     public Discord $discord;
+    public Logger $logger;
     public MessageHandler $messageHandler;
 
     public function __construct(Civ13 &$civ13) {
         $this->civ13 =& $civ13;
         $this->discord =& $civ13->discord;
+        $this->logger =& $civ13->logger;
         $this->messageHandler = new MessageHandler($this->civ13);
         $this->__afterConstruct();
     }
@@ -31,7 +34,7 @@ class MessageServiceManager
     public function __afterConstruct()
     {
         $this->__generateGlobalMessageCommands();
-        $this->civ13->logger->debug('[CHAT COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
+        $this->logger->debug('[CHAT COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
     }
 
     public function generateHelp(?Collection $roles): string
@@ -556,7 +559,7 @@ class MessageServiceManager
             $content = '';
             foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (! touch ($gameserver->basedir . Civ13::bans) || ! $file = @fopen($gameserver->basedir . Civ13::bans, 'r')) {
-                    $this->civ13->logger->warning('Could not open `' . $gameserver->basedir . Civ13::bans . "` for reading.");
+                    $this->logger->warning('Could not open `' . $gameserver->basedir . Civ13::bans . "` for reading.");
                     return $message->react("🔥");
                 }
                 while (($fp = fgets($file, 4096)) !== false) {
@@ -756,7 +759,7 @@ class MessageServiceManager
             $found = false;
             foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (! file_exists($path = $gameserver->basedir . Civ13::admins) || ! $file_contents = @file_get_contents($path)) {
-                    $this->civ13->logger->debug("`$path` is not a valid file path!");
+                    $this->logger->debug("`$path` is not a valid file path!");
                     continue;
                 }
                 $builder->addFileFromContent($path, $file_contents);
@@ -771,7 +774,7 @@ class MessageServiceManager
             $builder = MessageBuilder::new()->setContent('Faction Lists');
             foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (file_exists($path = $gameserver->basedir . Civ13::factionlist)) $builder->addfile($path, $gameserver->key . '_factionlist.txt');
-                else $this->civ13->logger->warning("`$path is not a valid file path!");
+                else $this->logger->warning("`$path is not a valid file path!");
             }
             return $message->reply($builder);
         }), ['Owner', 'High Staff', 'Admin']);
@@ -782,7 +785,7 @@ class MessageServiceManager
             $builder = MessageBuilder::new()->setContent('Sports Teams');      
             foreach ($this->civ13->enabled_servers as $gameserver) {
                 if (file_exists($path = $gameserver->basedir . Civ13::sportsteams)) $builder->addfile($path, $gameserver->key . '_sports_teams.txt');
-                else $this->civ13->logger->warning("`$path is not a valid file path!");
+                else $this->logger->warning("`$path is not a valid file path!");
             }
             return $message->reply($builder);
         }), ['Owner', 'High Staff', 'Admin']);
@@ -795,7 +798,7 @@ class MessageServiceManager
                 $keys[] = $gameserver->key;
                 if (trim($tokens[0]) !== $gameserver->key) continue; // Check if server is valid
                 if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::log_basedir)) {
-                    $this->civ13->logger->warning("Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
+                    $this->logger->warning("Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
                     return $message->react("🔥");
                 }
 
@@ -944,7 +947,7 @@ class MessageServiceManager
         $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command) use ($banlog_update): PromiseInterface {
             $server_playerlogs = array_filter(array_map(function ($gameserver) {
                 if (! $playerlogs = @file_get_contents($fp = $gameserver->basedir . Civ13::playerlogs)) {
-                    $this->civ13->logger->warning("`$fp` is not a valid file path!");
+                    $this->logger->warning("`$fp` is not a valid file path!");
                     return null;
                 }
                 return $playerlogs;
@@ -958,7 +961,7 @@ class MessageServiceManager
                 $existingContent = @file_get_contents($fp);
                 $newContent = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($existingContent, $server_playerlogs));
                 if ($newContent !== $existingContent) if (! file_put_contents($fp, $newContent, FILE_APPEND)) {
-                    $this->civ13->logger->warning("Error updating bans for {$fp}!");
+                    $this->logger->warning("Error updating bans for {$fp}!");
                     continue;
                 }
                 $updated = true;
@@ -1052,7 +1055,7 @@ class MessageServiceManager
     private function __generateServerMessageCommands(): void
     {
         foreach ($this->civ13->enabled_servers as $gameserver) {
-            if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->civ13->logger->debug("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
+            if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->debug("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
             else {
                 $servernotes = function (Message $message, array $message_filtered) use ($gameserver): PromiseInterface
                 {
@@ -1096,7 +1099,7 @@ class MessageServiceManager
                 if ($message) return $message->react("👎");
                 return false;
             };
-            $this->civ13->logger->info("Generating {$gameserver->key}configexists command.");
+            $this->logger->info("Generating {$gameserver->key}configexists command.");
             $this->offsetSet("{$gameserver->key}configexists", $serverconfigexists, ['Owner', 'High Staff']);
 
             $serverstatus = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]): ?PromiseInterface
@@ -1119,7 +1122,7 @@ class MessageServiceManager
                 $gameserver->basedir . Civ13::updateserverabspaths
             ] as $fp) {
                 if (! file_exists($fp)) {
-                    $this->civ13->logger->debug("Skipping server function `{$gameserver->key}host` because the required config file `$fp` was not found.");
+                    $this->logger->debug("Skipping server function `{$gameserver->key}host` because the required config file `$fp` was not found.");
                     $allRequiredFilesExist = false;
                     break;
                 }
@@ -1137,14 +1140,14 @@ class MessageServiceManager
                             if ($message) $message->react("👍");
                             unset($this->civ13->timers["{$gameserver->key}host"]);
                         });
-                    } else $this->civ13->logger->info("Server host timer already exists for {$gameserver->key}.");
+                    } else $this->logger->info("Server host timer already exists for {$gameserver->key}.");
                     if ($message) $message->react("⏱️");
                 };
                 $this->offsetSet("{$gameserver->key}host", $serverhost, ['Owner', 'High Staff']);
             }
             
             
-            if (! file_exists($gameserver->basedir . Civ13::killciv13)) $this->civ13->logger->debug("Skipping server function `{$gameserver->key}kill` because the required config files were not found.");
+            if (! file_exists($gameserver->basedir . Civ13::killciv13)) $this->logger->debug("Skipping server function `{$gameserver->key}kill` because the required config files were not found.");
             else {
                 $serverkill = function (?Message $message = null) use ($gameserver): void
                 {
@@ -1186,14 +1189,14 @@ class MessageServiceManager
                 $this->offsetSet("{$gameserver->key}restart", $serverrestart, ['Owner', 'High Staff']);
             }
 
-            if (! file_exists($gameserver->basedir . Civ13::mapswap)) $this->civ13->logger->debug("Skipping server function `{$gameserver->key}mapswap` because the required config files were not found.");
+            if (! file_exists($gameserver->basedir . Civ13::mapswap)) $this->logger->debug("Skipping server function `{$gameserver->key}mapswap` because the required config files were not found.");
             else {
                 $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($gameserver): ?PromiseInterface
                 {
                     $mapswap = function (string $mapto, ?Message $message = null) use ($gameserver): ?PromiseInterface
                     {
                         if (! file_exists($this->civ13->files['map_defines_path']) || ! $file = @fopen($this->civ13->files['map_defines_path'], 'r')) {
-                            $this->civ13->logger->error("unable to open `{$this->civ13->files['map_defines_path']}` for reading.");
+                            $this->logger->error("unable to open `{$this->civ13->files['map_defines_path']}` for reading.");
                             if ($message) return $this->civ13->reply($message, "unable to open `{$this->civ13->files['map_defines_path']}` for reading.");
                         }
                     
@@ -1229,7 +1232,7 @@ class MessageServiceManager
 
             $serverban = function (Message $message, array $message_filtered) use ($gameserver): PromiseInterface
             {
-                if (! $this->civ13->hasRequiredConfigRoles(['banished'])) $this->civ13->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
+                if (! $this->civ13->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
                 if (! $message_content = substr($message_filtered['message_content'], strlen("{$gameserver->key}ban"))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
                 $split_message = explode('; ', $message_content); // $split_target[1] is the target
                 if (! $split_message[0]) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
@@ -1278,7 +1281,7 @@ class MessageServiceManager
     private function __declareListener()
     {
         if (! $this->messageHandler->handlers) {
-            $this->civ13->logger->debug('No message handlers found!');
+            $this->logger->debug('No message handlers found!');
             return;
         }
 
@@ -1287,7 +1290,7 @@ class MessageServiceManager
             if ($message->author->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
             if (! $this->handle($message, $message_filtered = $this->civ13->filterMessage($message))) { // This section will be deprecated in the future
                 if (! empty($this->civ13->functions['message'])) foreach ($this->civ13->functions['message'] as $func) $func($this->civ13, $message, $message_filtered); // Variable functions
-                //else $this->civ13->logger->debug('No message variable functions found!');
+                //else $this->logger->debug('No message variable functions found!');
             }
         });
     }

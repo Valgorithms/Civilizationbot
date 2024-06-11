@@ -42,18 +42,24 @@ interface HandlerInterface
 namespace Civ13;
 
 use Civ13\Interfaces\HandlerInterface;
+use Discord\Discord;
 use Discord\Helpers\Collection;
+use Monolog\Logger;
 use \ArrayIterator;
 use \Traversable;
 
 class Handler implements HandlerInterface
 {
     public Civ13 $civ13;
+    public Discord $discord;
+    public Logger $logger;
     public array $handlers = [];
     
     public function __construct(Civ13 &$civ13, array $handlers = [])
     {
-        $this->civ13 = $civ13;
+        $this->civ13 =& $civ13;
+        $this->discord =& $civ13->discord;
+        $this->logger =& $civ13->logger;
         $this->handlers = $handlers;
     }
     

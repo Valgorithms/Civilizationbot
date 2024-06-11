@@ -291,20 +291,20 @@ class MessageHandler extends Handler implements MessageHandlerInterface
                 $required_permissions = $this->required_permissions[$command] ?? [];
                 if ($lowest_rank = array_pop($required_permissions)) {
                     if (! isset($this->civ13->role_ids[$lowest_rank])) {
-                        $this->civ13->logger->warning("Unable to find role ID for rank `$lowest_rank`");
+                        $this->logger->warning("Unable to find role ID for rank `$lowest_rank`");
                         throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
                     } elseif (! $this->checkRank($message->member->roles, $this->required_permissions[$command] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
                 }
-                $this->civ13->logger->debug("Command '$command' triggered");
+                $this->logger->debug("Command '$command' triggered");
                 try {
                     return $callback($message, $message_filtered, $command);
                 } catch (\Exception $e) {
-                    $this->civ13->logger->error('Message Handler error: `A callback for `' . $command . '` failed with error `' . $e->getMessage() . '`');
+                    $this->logger->error('Message Handler error: `A callback for `' . $command . '` failed with error `' . $e->getMessage() . '`');
                     return $this->civ13->reply($message, 'An error occurred while processing your command.');
                 }
             }
         }
-        if (empty($this->handlers)) $this->civ13->logger->info('No message handlers found!');
+        if (empty($this->handlers)) $this->logger->info('No message handlers found!');
         return null;
     }
 

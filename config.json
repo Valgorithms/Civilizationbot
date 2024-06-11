@@ -8,8 +8,6 @@
     "discord_formatted": "civ13.com slash discord",
     "rules": "civ13.com slash rules",
     "relay_method": "webhook",
-    "sharding": false,
-    "shard": false,
     "legacy": true,
     "moderate": true,
     "webserver_url": "www.valzargaming.com",

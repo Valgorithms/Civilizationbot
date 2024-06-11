@@ -27,7 +27,7 @@ class Stats
     {
         $this->startTime = $this->lastReconnect = Carbon::now();
         
-        $this->discord = $discord;
+        $this->discord =& $discord;
         $this->discord->on('reconnect', function () {
             $this->lastReconnect = Carbon::now();
         });
