@@ -59,12 +59,14 @@ class CommandServiceManager
     */
     private function afterConstruct()
     {
-        $this->setup();
-        if ($application_commands = $this->discord->__get('application_commands')) {
-            $names = [];
-            foreach ($application_commands as $command) $names[] = $command->getName();
-            $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
-        }
+        $this->discord->once('ready', function() {
+            $this->setup();
+            if ($application_commands = $this->discord->__get('application_commands')) {
+                $names = [];
+                foreach ($application_commands as $command) $names[] = $command->getName();
+                $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
+            }
+        });
     }
     /**
      * Sets up the bot by updating commands, guild commands, and declaring listeners.

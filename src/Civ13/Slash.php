@@ -35,19 +35,19 @@ class Slash
         $this->logger =& $civ13->logger;
         $this->afterConstruct();
     }
-
     /*
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
     private function afterConstruct()
     {
-        $this->setup();
-        if ($application_commands = $this->discord->__get('application_commands')) {
-            $names = [];
-            foreach ($application_commands as $command) $names[] = $command->getName();
-            $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
-        }
+        $this->discord->once('ready', function() {
+            if ($application_commands = $this->discord->__get('application_commands')) {
+                $names = [];
+                foreach ($application_commands as $command) $names[] = $command->getName();
+                $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
+            }
+        });
     }
     /**
      * Sets up the bot by updating commands, guild commands, and declaring listeners.
