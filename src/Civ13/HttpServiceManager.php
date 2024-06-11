@@ -749,7 +749,7 @@ class HttpServiceManager
         foreach ($this->civ13->enabled_servers as $gameserver) {
             $server_endpoint = '/' . $gameserver->key;
 
-            $this->httpHandler->offsetSet('/bancheck_centcom', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet('/bancheck_centcom', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 $params = $request->getQueryParams();
                 if (! isset($params['ckey'])) return HttpResponse::plaintext("`ckey` must be included as a query parameter")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
@@ -760,14 +760,14 @@ class HttpServiceManager
                 if (! $json = $this->civ13->bansearch_centcom($ckey, false)) return HttpResponse::plaintext("Unable to locate bans for `$ckey` on CentCom")->withStatus(HttpResponse::STATUS_OK);                
                 return new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'application/json'], $json);
             }));
-            $this->httpHandler->offsetSet($server_endpoint.'/bans', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/bans', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if (! file_exists($bans = $gameserver->basedir . Civ13::bans)) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
                 if (! $return = @file_get_contents($bans)) return HttpResponse::plaintext("Unable to read `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                 return HttpResponse::plaintext($return);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if (! file_exists($playerlogs = $gameserver->basedir . Civ13::playerlogs)) return HttpResponse::plaintext("Unable to access `$playerlogs`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
                 if (! $return = @file_get_contents($playerlogs)) return HttpResponse::plaintext("Unable to read `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -794,7 +794,7 @@ class HttpServiceManager
                 return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/ahelpmessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! isset($gameserver->asay)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -853,7 +853,7 @@ class HttpServiceManager
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/lobbymessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/lobbymessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! $this->discord->getChannel($channel_id = $gameserver->lobby)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -871,7 +871,7 @@ class HttpServiceManager
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/oocmessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/oocmessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! $this->discord->getChannel($channel_id = $gameserver->ooc)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -889,7 +889,7 @@ class HttpServiceManager
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/icmessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/icmessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! $this->discord->getChannel($channel_id = $gameserver->ic)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -903,11 +903,11 @@ class HttpServiceManager
                 //$message = "**__{$time} OOC__ $ckey**: $message";
 
                 //$relay($message, $channel, $ckey);
-                $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, true, false);
+                $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key, false);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/memessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/memessage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! $this->discord->getChannel($channel_id = $gameserver->ic)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -925,7 +925,7 @@ class HttpServiceManager
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/garbage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/garbage', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! $this->discord->getChannel($channel_id = $gameserver->adminlog)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -943,7 +943,7 @@ class HttpServiceManager
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
-            $this->httpHandler->offsetSet($server_endpoint.'/round_start', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($gameserver): HttpResponse
+            $this->httpHandler->offsetSet($server_endpoint.'/round_start', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if ($this->civ13->relay_method !== 'webhook') return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                 if (! $channel = $this->discord->getChannel($gameserver->discussion)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
