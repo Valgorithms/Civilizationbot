@@ -121,6 +121,9 @@ class Civ13
      * @var Gameserver[]
      */
     public array $gameservers = [];
+    /**
+     * @var Gameserver[]
+     */
     public array $enabled_servers = [];
     public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list

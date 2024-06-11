@@ -1107,7 +1107,7 @@ class MessageServiceManager
             $serverstatus = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]): ?PromiseInterface
             {
                 $builder = MessageBuilder::new();
-                $builder->addEmbed($this->civ13->generateServerstatusEmbed());
+                foreach ($this->civ13->enabled_servers as $gameserver) if ($embed = $gameserver->generateServerstatusEmbed()) $builder->addEmbed($embed);
                 return $message->reply($builder);
             };
             $this->offsetSet('serverstatus', $serverstatus, ['Owner', 'High Staff']);

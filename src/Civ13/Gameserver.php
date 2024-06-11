@@ -537,6 +537,68 @@ class GameServer {
         return true;
     }
 
+    /**
+     * Generates a server status embed.
+     *
+     * @return Embed The generated server status embed.
+     */
+    public function generateServerstatusEmbed(): ?Embed
+    {
+        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return null;
+        if (! @touch($this->basedir . Civ13::serverdata) || ! $data = @file_get_contents($this->basedir . Civ13::serverdata)) {
+            $this->logger->warning("Unable to open `{$this->basedir}" . Civ13::serverdata . "`");
+            return null;
+        }
+        $embed = new Embed($this->discord);
+        $embed->setFooter($this->civ13->embed_footer);
+        $embed->setColor(0xe1452d);
+        $embed->setTimestamp();
+        $embed->setURL('');
+        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) {
+            $embed->addFieldValues($this->name, 'Offline');
+            return $embed;
+        }
+        fclose($socket);
+        $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
+        /*
+        0 => <b>Server Status</b> {Online/Offline}
+        1 => <b>Address</b> byond://{ip_address}
+        2 => <b>Map</b>: {map}
+        3 => <b>Gamemode</b>: {gamemode}
+        4 => <b>Players</b>: {playercount}
+        5 => realtime={realtime}
+        6 => world.address={ip}
+        7 => round_timer={00:00}
+        8 => map={map}
+        9 => epoch={epoch}
+        10 => season={season}
+        11 => ckey_list={ckey&ckey}
+        */
+        if (isset($data[1])) $embed->addFieldValues($this->name, '<'.$data[1].'>');
+        $embed->addFieldValues('Host', $this->host, true);
+        if (isset($data[7])) {
+            list($hours, $minutes) = explode(':', $data[7]);
+            $hours = intval($hours);
+            $minutes = intval($minutes);
+            $days = floor($hours / 24);
+            $hours = $hours % 24;
+            $time = ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
+            $embed->addFieldValues('Round Time', $time, true);
+        }
+        if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data
+        //if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3], true);
+        if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
+        if (isset($data[11])) { // Player list
+            $players = explode('&', $data[11]);
+            $players = array_map(fn($player) => $this->civ13->sanitizeInput($player), $players);
+            if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
+            $embed->addFieldValues('Players', $players_list, true);
+        }
+        if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
+        //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
+        //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
+        return $embed;
+    }
     public function toEmbed(): Embed
     {
         $embed = new Embed($this->discord);
