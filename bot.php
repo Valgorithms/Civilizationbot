@@ -92,8 +92,6 @@ $options = array(
     'discord_formatted' => 'civ13.com slash discord',
     'rules' => 'civ13.com slash rules',
     'relay_method' => 'webhook',
-    'sharding' => false, // Enable sharding of the bot, allowing it to be run on multiple servers without conflicts, and suppressing certain responses where a shard may be handling the request
-    'shard' => false, // Whether this instance is a shard
     'legacy' => true, // Whether to use the filesystem or SQL database system
     'moderate' => true, // Whether to moderate in-game chat
     // The Verify URL is where verification requests are sent to and where the verification list is retrieved from

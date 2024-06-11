@@ -43,27 +43,25 @@ class Verifier
             foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional user
             $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) {
                 $this->getVerified();
-                if (! $this->civ13->shard) {
-                    $this->joinRoles($member);
-                    if (isset($this->civ13->timers["add_{$member->id}"])) {
-                        $this->civ13->discord->getLoop()->cancelTimer($this->civ13->timers["add_{$member->id}"]);
-                        unset($this->civ13->timers["add_{$member->id}"]);
-                    }
-                    $this->civ13->timers["add_{$member->id}"] = $this->civ13->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
-                    { // Kick member if they have not verified
-                        $this->getVerified();
-                        if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
-                        if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
-                        if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
-                        if (
-                            $member_future->roles->has($this->civ13->role_ids['infantry']) ||
-                            $member_future->roles->has($this->civ13->role_ids['veteran']) ||
-                            $member_future->roles->has($this->civ13->role_ids['banished']) ||
-                            $member_future->roles->has($this->civ13->role_ids['permabanished'])
-                        ) return null; // Don't kick if they have an verified or banned role
-                        return $guild->members->kick($member_future, 'Not verified');
-                    });
+                $this->joinRoles($member);
+                if (isset($this->civ13->timers["add_{$member->id}"])) {
+                    $this->civ13->discord->getLoop()->cancelTimer($this->civ13->timers["add_{$member->id}"]);
+                    unset($this->civ13->timers["add_{$member->id}"]);
                 }
+                $this->civ13->timers["add_{$member->id}"] = $this->civ13->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
+                { // Kick member if they have not verified
+                    $this->getVerified();
+                    if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
+                    if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
+                    if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
+                    if (
+                        $member_future->roles->has($this->civ13->role_ids['infantry']) ||
+                        $member_future->roles->has($this->civ13->role_ids['veteran']) ||
+                        $member_future->roles->has($this->civ13->role_ids['banished']) ||
+                        $member_future->roles->has($this->civ13->role_ids['permabanished'])
+                    ) return null; // Don't kick if they have an verified or banned role
+                    return $guild->members->kick($member_future, 'Not verified');
+                });
             });
 
             $this->civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void

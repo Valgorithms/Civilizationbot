@@ -76,8 +76,6 @@ class Civ13
     public Byond $byond;
     public Verifier $verifier;
 
-    public bool $sharding = false;
-    public bool $shard = false;
     public string $welcome_message = '';
     
     public \Closure $onFulfilledDefault;
@@ -282,16 +280,6 @@ class Civ13
      */
     private function resolveOptions(array &$options = []): array
     {
-        if (! isset($options['sharding']) || ! is_bool($options['sharding'])) {
-            $options['sharding'] = false;
-        }
-        $this->sharding = $options['sharding'];
-        
-        if (! isset($options['shard']) || ! is_bool($options['shard'])) {
-            $options['shard'] = false;
-        }
-        $this->shard = $options['shard'];
-
         if (! isset($options['welcome_message']) || ! is_string($options['welcome_message'])) {
             $options['welcome_message'] = '';
         }
@@ -573,7 +561,7 @@ class Civ13
      */
     public function statusChanger(Activity $activity, string $state = 'online'): void
     {
-        if (! $this->shard) $this->discord->updatePresence($activity, false, $state);
+        $this->discord->updatePresence($activity, false, $state);
     }
     /**
      * Sends a message to the specified channel.
@@ -582,10 +570,9 @@ class Civ13
      * @param string $content The content of the message.
      * @param string $file_name The name of the file to attach to the message. Default is 'message.txt'.
      * @param bool $prevent_mentions Whether to prevent mentions in the message. Default is false.
-     * @param bool $announce_shard Whether to announce the shard in the message. Default is true.
      * @return PromiseInterface|null A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
      */
-    public function sendMessage(Channel|Thread|string $channel, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
+    public function sendMessage(Channel|Thread|string $channel, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): ?PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
@@ -607,10 +594,9 @@ class Civ13
      * @param string $content The content of the reply message.
      * @param string $file_name The name of the file to attach to the reply message (default: 'message.txt').
      * @param bool $prevent_mentions Whether to prevent mentions in the reply message (default: false).
-     * @param bool $announce_shard Whether to announce the shard in the reply message (default: true).
      * @return PromiseInterface|null A promise that resolves to the sent reply message, or null if the reply message could not be sent.
      */
-    public function reply(Message $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
+    public function reply(Message $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): ?PromiseInterface
     {
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
@@ -630,10 +616,9 @@ class Civ13
      * @param string $content The content of the message.
      * @param Embed $embed The embed object to send.
      * @param bool $prevent_mentions (Optional) Whether to prevent mentions in the message. Default is false.
-     * @param bool $announce_shard (Optional) Whether to announce the shard. Default is true.
      * @return PromiseInterface|null A promise that resolves to the sent message, or null if the channel is not found.
      */
-    public function sendEmbed(Channel|Thread|string $channel, Embed $embed, string $content, bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
+    public function sendEmbed(Channel|Thread|string $channel, Embed $embed, string $content, bool $prevent_mentions = false): ?PromiseInterface
     {
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error("Channel not found for sendEmbed");
@@ -661,10 +646,9 @@ class Civ13
      * @param string $recipient The recipient of the message (optional).
      * @param string $file_name The name of the file to attach to the message (default: 'message.txt').
      * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
-     * @param bool $announce_shard Whether to announce the shard in the message (default: true).
      * @return PromiseInterface|null A promise that resolves to the sent message, or null if the message couldn't be sent.
      */
-    public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false, bool $announce_shard = true): ?PromiseInterface
+    public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false): ?PromiseInterface
     {
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error("Channel not found for relayPlayerMessage");
@@ -1001,21 +985,18 @@ class Civ13
     {
         $this->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
         {
-            if ($this->shard) return;
             if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $member);
             //else $this->logger->debug('No GUILD_MEMBER_ADD functions found!');
         });
 
         $this->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
         {
-            if ($this->shard) return;
             if (! empty($this->functions['GUILD_MEMBER_REMOVE'])) foreach ($this->functions['GUILD_MEMBER_REMOVE'] as $func) $func($this, $member);
             //else $this->logger->debug('No GUILD_MEMBER_REMOVE functions found!');
         });
 
         $this->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
         {
-            if ($this->shard) return;
             if (! empty($this->functions['GUILD_MEMBER_UPDATE'])) foreach ($this->functions['GUILD_MEMBER_UPDATE'] as $func) $func($this, $member);
             //else $this->logger->debug('No GUILD_MEMBER_UPDATE functions found!');
         });
@@ -1042,7 +1023,7 @@ class Civ13
      * Please maintain a consistent schema for directories and files
      *
      * The bot's $filecache_path should be a folder named json inside of either cwd() or __DIR__
-     * getcwd() should be used if there are multiple instances of this bot operating from different source directories or on different shards but share the same bot files (NYI)
+     * getcwd() should be used if there are multiple instances of this bot operating from different source directories but share the same bot files (NYI)
      * __DIR__ should be used if the json folder should be expected to always be in the same folder as this file, but only if this bot is not installed inside of /vendor/
      *
      * The recommended schema is to follow DiscordPHP's Redis schema, but replace : with ;
@@ -1384,11 +1365,10 @@ class Civ13
     {
         if (! $id = $this->sanitizeInput($id)) return false;
         $permabanned = ($this->legacy ? $this->legacyPermabancheck($id) : $this->sqlPermabancheck($id));
-        if (! $this->shard)
-            if (! $bypass && $member = $this->verifier->getVerifiedMember($id))
-                if ($permabanned && ! $member->roles->has($this->role_ids['permabanished'])) {
-                    if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($id)");
-                } elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($id)");
+        if (! $bypass && $member = $this->verifier->getVerifiedMember($id))
+            if ($permabanned && ! $member->roles->has($this->role_ids['permabanished'])) {
+                if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($id)");
+            } elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($id)");
         return $permabanned;
     }
     /**

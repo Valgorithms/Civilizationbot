@@ -414,7 +414,7 @@ class GameServer {
     {
         $admin ??= $this->discord->user->displayname;
         $this->legacy ? $this->legacyUnban($ckey, $admin) : $this->sqlUnban($ckey, $admin);
-        if (! $this->civ13->shard && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
+        if ($member = $this->civ13->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->civ13->role_ids['banished'])) $member->removeRole($this->civ13->role_ids['banished'], "Unbanned by $admin");
             if ($member->roles->has($this->civ13->role_ids['permabanished'])) {
                 $member->removeRole($this->civ13->role_ids['permabanished'], "Unbanned by $admin");

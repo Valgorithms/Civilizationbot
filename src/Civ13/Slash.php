@@ -88,7 +88,6 @@ class Slash
 
     private function __updateCommands(): void
     {
-        if ($this->civ13->shard) return; // Only run on the first shard
         $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
         {
             $names = [];

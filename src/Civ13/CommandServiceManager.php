@@ -417,7 +417,6 @@ class CommandServiceManager
 
     private function __updateCommands(): void
     {
-        if ($this->civ13->shard) return; // Only run on the first shard
         /*$this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
         {
             if (! empty($this->civ13->functions['ready_slash'])) foreach (array_values($this->civ13->functions['ready_slash']) as $func) $func($this, $commands); // Will be deprecated in the future
@@ -430,7 +429,6 @@ class CommandServiceManager
     }
     private function __updateGuildCommands(): void
     {
-        if ($this->civ13->shard) return; // Only run on the first shard
         /*$this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands) {
             $names = [];
             foreach ($commands as $command) if ($command->name) $names[] = $command->name;
