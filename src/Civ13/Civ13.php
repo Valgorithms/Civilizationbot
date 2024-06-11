@@ -164,7 +164,6 @@ class Civ13
     public array $channel_ids = [];
     public array $role_ids = [];
     
-    public array $discord_config = []; // This variable and its related function currently serve no purpose, but I'm keeping it in case I need it later
     public array $tests = []; // Staff application test templates
     public bool $panic_bunker = false; // If true, the bot will server ban anyone who is not verified when they join the server
     public array $panic_bans = []; // List of ckeys that have been banned by the panic bunker in the current runtime
@@ -435,8 +434,6 @@ class Civ13
         $this->embed_footer = $this->github 
         ? $this->github . PHP_EOL
         : '';
-        if (! $discord_config = $this->VarLoad('discord_config.json')) $discord_config = [];
-        $this->discord_config = $discord_config; // Declared, but not currently used for anything
     }
     /**
      * Loads or initializes the variables used by the Civ13 class.
@@ -445,7 +442,6 @@ class Civ13
     private function __UpdateDiscordVariables(): void
     {
         $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
-        foreach ($this->discord->guilds as $guild) if (! isset($discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
     }
     /**
      * Adds a game server to the list of game servers.
@@ -1003,7 +999,8 @@ class Civ13
 
         $this->discord->on('GUILD_CREATE', function (Guild $guild): void
         {
-            if (! isset($this->discord_config[$guild->id])) $this->SetConfigTemplate($guild, $this->discord_config);
+            if (! empty($this->functions['GUILD_CREATE'])) foreach ($this->functions['GUILD_CREATE'] as $func) $func($this, $guild);
+            //else $this->logger->debug('No GUILD_CREATE functions found!');
         });
     }
     private function relayTimer(): void
@@ -1115,29 +1112,6 @@ class Civ13
         if (! in_array($subdir = trim($subdir), $scandir)) return [false, $scandir, $subdir];
         if (is_file("$basedir/$subdir")) return [true, "$basedir/$subdir"];
         return $this->FileNav("$basedir/$subdir", $subdirs);
-    }
-
-    /**
-     * This function is used to set the default configuration for a guild if it does not already exist.
-     *
-     * @param Guild $guild The guild for which the configuration is being set.
-     * @param array &$discord_config The Discord configuration array.
-     *
-     * @return void
-     */
-    public function SetConfigTemplate(Guild $guild, array &$discord_config): void
-    {
-        $discord_config[$guild->id] = [
-            'toggles' => [
-                'verifier' => false, // Verifier is disabled by default in new servers
-            ],
-            'roles' => [
-                'verified' => '', 
-                'promoted' => '', // Different servers may have different standards for getting promoted
-            ],
-        ];
-        if ($this->VarSave('discord_config.json', $discord_config)) $this->logger->info("Created new config for guild {$guild->name}");
-        else $this->logger->warning("Failed top create new config for guild {$guild->name}");
     }
 
     /**
