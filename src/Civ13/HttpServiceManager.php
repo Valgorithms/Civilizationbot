@@ -57,9 +57,25 @@ class HttpServiceManager
     */
     protected function __afterConstruct()
     {
+        if (! isset($this->civ13->options['webapi'], $this->civ13->options['socket'], $this->civ13->options['web_address'], $this->civ13->options['http_port'])) {
+            $this->logger->warning('HttpServer API not set up! Missing variables in options.');
+            $this->logger->warning('Missing webapi variable: ' . (isset($this->civ13->options['webapi']) ? 'false' : 'true'));
+            $this->logger->warning('Missing socket variable: ' . (isset($this->civ13->options['socket']) ? 'false' : 'true'));
+            $this->logger->warning('Missing web_address variable: ' . (isset($this->civ13->options['web_address']) ? 'false' : 'true'));
+            $this->logger->warning('Missing http_port variable: ' . (isset($this->civ13->options['http_port']) ? 'false' : 'true'));
+            return;
+        }
+        $this->webapi = $this->civ13->options['webapi'];
+        $this->socket = $this->civ13->options['socket'];
+        $this->web_address = $this->civ13->options['web_address'];
+        $this->http_port = $this->civ13->options['http_port'];
+
+        $this->__generateEndpoints();
         $this->discord->once('ready', function () {
+            $this->logger->info('Populating HttpServer API whitelist...');
             $this->__populateWhitelist();
-            $this->__generateEndpoints();
+            $this->webapi->listen($this->socket);
+            $this->logger->info("HttpServer API is now listening on port {$this->http_port}");
             $this->logger->debug('[HTTP COMMAND LIST] ' . PHP_EOL . $this->httpHandler->generateHelp());
         });
     }
@@ -97,21 +113,6 @@ class HttpServiceManager
 
     private function __generateEndpoints()
     {
-        if (! isset($this->civ13->options['webapi'], $this->civ13->options['socket'], $this->civ13->options['web_address'], $this->civ13->options['http_port'])) {
-            $this->logger->warning('HttpServer API not set up! Missing variables in options.');
-            $this->logger->warning('Missing webapi variable: ' . (isset($this->civ13->options['webapi']) ? 'false' : 'true'));
-            $this->logger->warning('Missing socket variable: ' . (isset($this->civ13->options['socket']) ? 'false' : 'true'));
-            $this->logger->warning('Missing web_address variable: ' . (isset($this->civ13->options['web_address']) ? 'false' : 'true'));
-            $this->logger->warning('Missing http_port variable: ' . (isset($this->civ13->options['http_port']) ? 'false' : 'true'));
-            return;
-        }
-        $this->webapi = $this->civ13->options['webapi'];
-        $this->socket = $this->civ13->options['socket'];
-        $this->web_address = $this->civ13->options['web_address'];
-        $this->http_port = $this->civ13->options['http_port'];
-        $this->logger->info("HttpServer API is now listening on port {$this->http_port}");
-        $this->webapi->listen($this->socket);
-
         $this->httpHandler->offsetSet('/get-channels', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
             $doc = new \DOMDocument();

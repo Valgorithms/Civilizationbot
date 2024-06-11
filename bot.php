@@ -337,9 +337,10 @@ $options = array_merge($options, $hidden_options);
 
 
 
-$civ13 = new Civ13($options, $server_settings);
-$global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13, $testing) {
+$civ13 = null;
+$global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use ($civ13, $logger, $testing) {
     if (
+        $civ13 && // If the bot is running
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         // fsockopen
         && ! str_ends_with($errstr, 'Connection timed out') 
@@ -360,6 +361,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
     )
     {
         $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
+        $logger->error($msg);
         if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
         if (! $testing) $channel->sendMessage($msg);
     }
@@ -370,15 +372,16 @@ use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use Psr\Http\Message\ServerRequestInterface;
-$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $http_port), [], $civ13->loop);
+$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $http_port), [], $loop);
 /**
  * Handles the HTTP request using the HttpServiceManager.
  *
  * @param ServerRequestInterface $request The HTTP request object.
  * @return Response The HTTP response object.
  */
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use ($civ13): Response
+$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (&$civ13): Response
 {
+    if (! $civ13 || ! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     return $civ13->httpServiceManager->handle($request);
 });
 /**
@@ -396,15 +399,16 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
  * @param bool $testing Flag indicating if the script is running in testing mode.
  * @return void
  */
-$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use ($civ13, $socket, &$testing) {
+$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use (&$civ13, &$logger, &$socket, &$testing) {
     if (
         str_starts_with($e->getMessage(), 'Received request with invalid protocol version')
     ) return; // Ignore this error, it's not important
     $error = "[WEBAPI] {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('\n', PHP_EOL, $e->getTraceAsString());
-    $civ13->logger->error("[WEBAPI] $error");
-    if ($request) $civ13->logger->error('[WEBAPI] Request: ' .  preg_replace('/(?<=key=)[^&]+/', '********', $request->getRequestTarget()));
+    $logger->error("[WEBAPI] $error");
+    if ($request) $logger->error('[WEBAPI] Request: ' .  preg_replace('/(?<=key=)[^&]+/', '********', $request->getRequestTarget()));
     if (str_starts_with($e->getMessage(), 'The response callback')) {
-        $civ13->logger->info('[WEBAPI] ERROR - RESTART');
+        $logger->info('[WEBAPI] ERROR - RESTART');
+        if (! $civ13) return;
         if (! $testing && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
             $builder = MessageBuilder::new()
                 ->setContent('Restarting due to error in HttpServer API...')
@@ -420,4 +424,5 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
     }
 });
 
+$civ13 = new Civ13($options, $server_settings);
 $civ13->run();

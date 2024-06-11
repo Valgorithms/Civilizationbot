@@ -41,6 +41,7 @@ class Slash
     */
     private function afterConstruct()
     {
+        $this->__declareListeners();
         $this->discord->once('ready', function() {
             $this->setup();
             if ($application_commands = $this->discord->__get('application_commands')) {
@@ -59,7 +60,6 @@ class Slash
         if ($this->setup) return;
         $this->__updateCommands();
         $this->__updateGuildCommands();
-        $this->__declareListeners();
         $this->setup = true;
     }
 
