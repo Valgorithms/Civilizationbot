@@ -265,7 +265,7 @@ class GameServer {
     public function OOCMessage(string $message, string $sender): bool
     {
         if (! $this->enabled) return false;
-        if (! touch ($path = $this->basedir . Civ13::discord2ooc) || ! $file = @fopen($path, 'a')) {
+        if (! touch($path = $this->basedir . Civ13::discord2ooc) || ! $file = @fopen($path, 'a')) {
             $this->logger->error("unable to open `$path` for writing");
             return false;
         }

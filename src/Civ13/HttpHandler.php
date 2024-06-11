@@ -53,7 +53,7 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
 
     public function reject(string $part, string $id): HttpResponse
     {
-        // $this->civ13->logger->info("[WEBAPI] Failed: $part, $id"); // This should be logged by the handler, not the callback
+        // $this->logger->info("[WEBAPI] Failed: $part, $id"); // This should be logged by the handler, not the callback
         return new HttpResponse(($id ? 404 : 400), ['Content-Type' => 'text/plain'], ($id ? 'Invalid' : 'Missing').' '.$part);
     }
 }
@@ -127,13 +127,13 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         //$ext = pathinfo($query, PATHINFO_EXTENSION);
         //$fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
         //$url = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
-        if (str_starts_with($path, '/webhook/')) $this->civ13->logger->debug("[WEBAPI URL] $path");
-        else $this->civ13->logger->info("[WEBAPI URL] $path");
+        if (str_starts_with($path, '/webhook/')) $this->logger->debug("[WEBAPI URL] $path");
+        else $this->logger->info("[WEBAPI URL] $path");
         try {
             if (! $array = $this->__getCallback($request)) return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
             return $this->__processCallback($request, $array['callback'], $array['endpoint']);
         } catch (\Throwable $e) {
-            $this->civ13->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`");
+            $this->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`");
             return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
         }
     }
@@ -264,14 +264,14 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public function whitelist(string $ip): bool
     {
         if (! $this->__isValidIpAddress($ip)) {
-            $this->civ13->logger->debug("HTTP Server error: `$ip` is not a valid IP address.");
+            $this->logger->debug("HTTP Server error: `$ip` is not a valid IP address.");
             return false;
         }
         if (in_array($ip, $this->whitelist)) {
-            $this->civ13->logger->debug("HTTP Server error: `$ip` is already whitelisted.");
+            $this->logger->debug("HTTP Server error: `$ip` is already whitelisted.");
             return false;
         }
-        $this->civ13->logger->info("HTTP Server: `$ip` has been whitelisted.");
+        $this->logger->info("HTTP Server: `$ip` has been whitelisted.");
         $this->whitelist[] = $ip;
         return true;
     }
@@ -284,15 +284,15 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public function unwhitelist(string $ip): bool
     {
         if (! $this->__isValidIpAddress($ip)) {
-            $this->civ13->logger->debug("HTTP Server error: `$ip` is not a valid IP address.");
+            $this->logger->debug("HTTP Server error: `$ip` is not a valid IP address.");
             return false;
         }
         if (! (($key = array_search($ip, $this->whitelist)) !== false)) {
-            $this->civ13->logger->debug("HTTP Server error: `$ip` is not already whitelisted.");
+            $this->logger->debug("HTTP Server error: `$ip` is not already whitelisted.");
             return false;
         }
         unset($this->whitelist[$key]);
-        $this->civ13->logger->info("HTTP Server: `$ip` has been unwhitelisted.");
+        $this->logger->info("HTTP Server: `$ip` has been unwhitelisted.");
         return true;
     }
     
@@ -361,7 +361,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     public function __getRateLimitExpiration(string $endpoint, string $ip): ?int
     {
         if (! isset($this->ratelimits[$endpoint])) {
-            //$this->civ13->logger->info("`$endpoint` has no rate limit defined.");
+            //$this->logger->info("`$endpoint` has no rate limit defined.");
             return null;
         }
 
@@ -381,7 +381,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
             $earliestRequest = min(array_column($requestsFromIp, 'time'));
             $expirationTime = $earliestRequest + $rateLimit['window'];
             $retry_after = $expirationTime - $currentTime; // Return the number of seconds until the rate limit expires
-            $this->civ13->logger->info("HTTP Server: `$ip` is being rate limited for `$endpoint` for `$retry_after` seconds.");
+            $this->logger->info("HTTP Server: `$ip` is being rate limited for `$endpoint` for `$retry_after` seconds.");
             return $retry_after;
         }
 
@@ -524,7 +524,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      */
     public function __throwError(string $error, int $status = HttpResponse::STATUS_INTERNAL_SERVER_ERROR): HttpResponse
     {
-        if ($status === HttpResponse::STATUS_INTERNAL_SERVER_ERROR) $this->civ13->logger->info("HTTP error for IP: `$this->last_ip`: `$error`");
+        if ($status === HttpResponse::STATUS_INTERNAL_SERVER_ERROR) $this->logger->info("HTTP error for IP: `$this->last_ip`: `$error`");
         //if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR])) {
         if (strval($status)[0] === '4' || strval($status)[0] === '5') { // 4xx or 5xx (client or server error)
             $time = time();
