@@ -254,7 +254,7 @@ class Civ13
         $this->byond = new Byond();
         foreach ($server_settings as $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
         $this->__loadOrInitializeVariables();
-        if (isset($this->discord)) $this->discord->once('ready', function () use ($options) {
+        if (isset($this->discord)) $this->discord->once('ready', function () {
             $this->ready = true;
             $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
             $this->logger->info('------');
