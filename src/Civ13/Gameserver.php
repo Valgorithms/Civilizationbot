@@ -334,6 +334,95 @@ class GameServer {
         return true;
     }
 
+    /**
+     * Determines whether a ckey is currently banned from the server.
+     *
+     * This function is called when a user is verified to determine whether they should be given the banished role or have it taken away.
+     * It checks the nomads_bans.txt and tdm_bans.txt files for the ckey.
+     *
+     * @param string $ckey The ckey to check for banishment.
+     * @param bool $bypass (optional) If set to true, the function will not add or remove the banished role from the user.
+     * @return bool Returns true if the ckey is found in either ban file, false otherwise.
+     */
+    public function bancheck(string $ckey, bool $bypass = false): bool
+    {
+        return $this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey);
+    }
+    public function permabancheck(string $id, bool $bypass = false): bool
+    {
+        if (! $id = $this->civ13->sanitizeInput($id)) return false;
+        $permabanned = ($this->legacy ? $this->legacyPermabancheck($id) : $this->sqlPermabancheck($id));
+        return $permabanned;
+    }
+    /**
+     * Checks if a player with the given ckey is permabanned based on legacy settings.
+     *
+     * @param string $ckey The ckey of the player to check.
+     * @return bool Returns true if the player is permabanned, false otherwise.
+     */
+    public function legacyPermabancheck(string $ckey): bool
+    {
+        if (! @file_exists($path = $this->basedir . Civ13::bans) || ! $file = @fopen($path, 'r')) {
+            $this->logger->debug("unable to open `$path`");
+            return false;
+        }
+        while (($fp = fgets($file, 4096)) !== false) {
+            // str_replace(PHP_EOL, '', $fp); // Is this necessary?
+            $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
+            if ((count($linesplit)>=8) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
+                fclose($file);
+                return true;
+            }
+        }
+        fclose($file);
+        return false;
+    }
+    /**
+     * Checks if a player with the given ckey is permabanned.
+     *
+     * @param string $ckey The ckey of the player to check.
+     * @return bool Returns true if the player is permabanned, false otherwise.
+     */
+    public function sqlPermabancheck(string $ckey): bool
+    {
+        // TODO
+        return false;
+    }
+    /**
+     * Checks if a given ckey is banned based on legacy ban data.
+     *
+     * @param string $ckey The ckey to check for ban.
+     * @return bool Returns true if the ckey is banned, false otherwise.
+     */
+    public function legacyBancheck(string $ckey): bool
+    {
+        if (! @file_exists($path = $this->basedir . Civ13::bans) || ! $file = @fopen($path, 'r')) {
+            $this->logger->debug("unable to open `$path`");
+            return false;
+        }
+        while (($fp = fgets($file, 4096)) !== false) {
+            // str_replace(PHP_EOL, '', $fp); // Is this necessary?
+            $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
+            if ((count($linesplit)>=8) && ($linesplit[8] === $ckey)) {
+                fclose($file);
+                return true;
+            }
+        }
+        fclose($file);
+        return false;
+    }
+    /**
+     * Checks if a player with the given ckey is banned.
+     *
+     * @param string $ckey The ckey of the player to check.
+     * @return bool Returns true if the player is banned, false otherwise.
+     */
+    public function sqlBancheck(string $ckey): bool
+    {
+        // TODO
+        return false;
+    }
+
     /*
      * These functions determine which of the above methods should be used to process a ban or unban
      * Ban functions will return a string containing the results of the ban

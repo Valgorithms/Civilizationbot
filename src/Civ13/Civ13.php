@@ -1205,12 +1205,9 @@ class Civ13
     public function bancheckTimer(): bool
     {
         // We don't want the persistence server to do this function
-        foreach ($this->enabled_servers as $server) {
-            if (! @file_exists($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans , 'r')) {
-                $this->logger->debug('unable to open `' . $server->basedir . self::bans . '`');
-                return false;
-            }
-            fclose($file);
+        foreach ($this->enabled_servers as $server) if (! @file_exists($path = $server->basedir . self::bans) || ! @touch($path)) {
+            $this->logger->warning("unable to open `$path`");
+            return false;
         }
 
         $bancheckTimer = function () {
@@ -1243,7 +1240,9 @@ class Civ13
      */
     public function bancheck(string $ckey, bool $bypass = false): bool
     {
-        $banned = $this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey);
+        if (! $ckey = $this->sanitizeInput($ckey)) return false;
+        $banned = false;
+        foreach ($this->enabled_servers as $gameserver) if ($gameserver->bancheck($ckey)) $banned = true;
         if (! $bypass && $member = $this->verifier->getVerifiedMember($ckey)) {
             $hasBanishedRole = $member->roles->has($this->role_ids['banished']);
             if ($banned && ! $hasBanishedRole) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
@@ -1251,87 +1250,16 @@ class Civ13
         }
         return $banned;
     }
-    public function permabancheck(string $id, bool $bypass = false): bool
+    public function permabancheck(string $ckey, bool $bypass = false): bool
     {
-        if (! $id = $this->sanitizeInput($id)) return false;
-        $permabanned = ($this->legacy ? $this->legacyPermabancheck($id) : $this->sqlPermabancheck($id));
-        if (! $bypass && $member = $this->verifier->getVerifiedMember($id))
+        if (! $ckey = $this->sanitizeInput($ckey)) return false;
+        $permabanned = false;
+        foreach ($this->enabled_servers as $gameserver) if ($gameserver->permabancheck($ckey)) $permabanned = true;
+        if (! $bypass && $member = $this->verifier->getVerifiedMember($ckey))
             if ($permabanned && ! $member->roles->has($this->role_ids['permabanished'])) {
-                if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($id)");
-            } elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($id)");
+                if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($ckey)");
+            } elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($ckey)");
         return $permabanned;
-    }
-    /**
-     * Checks if a given ckey is banned based on legacy ban data.
-     *
-     * @param string $ckey The ckey to check for ban.
-     * @return bool Returns true if the ckey is banned, false otherwise.
-     */
-    public function legacyBancheck(string $ckey): bool
-    {
-        foreach ($this->enabled_servers as $server) {
-            if (! @file_exists($server->basedir . self::bans) || ! $file = @fopen($server->basedir . self::bans, 'r')) {
-                $this->logger->debug('unable to open `' . $server->basedir . self::bans . '`');
-                return false;
-            }
-            while (($fp = fgets($file, 4096)) !== false) {
-                // str_replace(PHP_EOL, '', $fp); // Is this necessary?
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                if ((count($linesplit)>=8) && ($linesplit[8] === $ckey)) {
-                    fclose($file);
-                    return true;
-                }
-            }
-            fclose($file);
-        }
-        return false;
-    }
-    /**
-     * Checks if a player with the given ckey is permabanned based on legacy settings.
-     *
-     * @param string $ckey The ckey of the player to check.
-     * @return bool Returns true if the player is permabanned, false otherwise.
-     */
-    public function legacyPermabancheck(string $ckey): bool
-    {
-        foreach ($this->enabled_servers as $gameserver) {
-            if (! @file_exists($gameserver->basedir . self::bans) || ! $file = @fopen($gameserver->basedir . self::bans, 'r')) {
-                $this->logger->debug('unable to open `' . $gameserver->basedir . self::bans . '`');
-                return false;
-            }
-            while (($fp = fgets($file, 4096)) !== false) {
-                // str_replace(PHP_EOL, '', $fp); // Is this necessary?
-                $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                if ((count($linesplit)>=8) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
-                    fclose($file);
-                    return true;
-                }
-            }
-            fclose($file);
-        }
-        return false;
-    }
-    /**
-     * Checks if a player with the given ckey is banned.
-     *
-     * @param string $ckey The ckey of the player to check.
-     * @return bool Returns true if the player is banned, false otherwise.
-     */
-    public function sqlBancheck(string $ckey): bool
-    {
-        // TODO
-        return false;
-    }
-    /**
-     * Checks if a player with the given ckey is permabanned.
-     *
-     * @param string $ckey The ckey of the player to check.
-     * @return bool Returns true if the player is permabanned, false otherwise.
-     */
-    public function sqlPermabancheck(string $ckey): bool
-    {
-        // TODO
-        return false;
     }
     /**
      * Paroles or unparoles a player identified by their ckey.
