@@ -1944,7 +1944,7 @@ class Civ13
      * @param array|null $required_roles The required roles for whitelisting. Default is ['veteran'].
      * @return bool Returns true if the whitelist update is successful, false otherwise.
      */
-    public function whitelistUpdate(?array $required_roles = ['veteran']): bool
+    public function whitelistUpdate(?array $required_roles = ['veteran', 'infantry']): bool
     {
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         $file_paths = [];

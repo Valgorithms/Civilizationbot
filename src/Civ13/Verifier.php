@@ -75,7 +75,7 @@ class Verifier
         $this->civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
         {
             $this->getVerified();
-            if ($member->roles->has($this->civ13->role_ids['veteran'])) $this->civ13->whitelistUpdate();
+            $this->civ13->whitelistUpdate();
             foreach ($faction_roles = ['red', 'blue'] as $role_id) if ($member->roles->has($this->civ13->role_ids[$role_id])) { $this->civ13->factionlistUpdate(); break;}
             $admin_roles = [
                 'Owner',
@@ -105,7 +105,10 @@ class Verifier
                 return;
             }
             if ($member->roles->has($this->civ13->role_ids['veteran']) !== $member_old->roles->has($this->civ13->role_ids['veteran'])) $this->civ13->whitelistUpdate();
-            elseif ($member->roles->has($this->civ13->role_ids['infantry']) !== $member_old->roles->has($this->civ13->role_ids['infantry'])) $this->getVerified();
+            elseif ($member->roles->has($this->civ13->role_ids['infantry']) !== $member_old->roles->has($this->civ13->role_ids['infantry'])) {
+                $this->getVerified();
+                $this->civ13->whitelistUpdate();
+            }
             foreach ($faction_roles = ['red', 'blue'] as $role) 
                 if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
                     { $this->civ13->factionlistUpdate(); break;}
