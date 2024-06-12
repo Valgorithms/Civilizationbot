@@ -152,7 +152,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
                 return ['callback' => $this->handlers[$path], 'endpoint' => $path];
         
         foreach ($this->handlers as $endpoint => $callback) {
-            if (isset($this->match_methods[$path]) && call_user_func($this->match_methods[$path], $endpoint, $path))
+            if (isset($this->match_methods[$path]) && is_callable($this->match_methods[$path]) && call_user_func($this->match_methods[$path], $endpoint, $path))
                 return ['callback' => $callback, 'endpoint' => $endpoint];
         }
         return null;
