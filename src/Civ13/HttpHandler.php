@@ -147,46 +147,15 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     private function __getCallback(ServerRequestInterface $request): ?array
     {
         //$ext = pathinfo($request->getUri()->getQuery(), PATHINFO_EXTENSION); // We need the .ext too!
-
         if (isset($this->handlers[$path = $request->getUri()->getPath()]))
             if ($this->match_methods[$path] === 'exact')
                 return ['callback' => $this->handlers[$path], 'endpoint' => $path];
         
         foreach ($this->handlers as $endpoint => $callback) {
-            switch ($this->match_methods[$endpoint]) {
-                default:
-                case 'str_starts_with':
-                    $method_func = function () use ($callback, $endpoint, $path): ?callable
-                    {
-                        if (str_starts_with($endpoint, $path)) return $callback;
-                        return null;
-                    };
-                    break;
-                case 'str_contains':
-                    $method_func = function () use ($callback, $endpoint, $path): ?callable
-                    {
-                        if (str_contains($endpoint, $path)) return $callback;
-                        return null;
-                    };
-                    break;
-                case 'str_ends_with':
-                    $method_func = function () use ($callback, $endpoint, $path): ?callable
-                    {
-                        if (str_ends_with($endpoint, $path)) return $callback;
-                        return null;
-                    };
-                    break;
-                case 'exact': //We've reached the end of the non-exact matches
-                    return null;
-                    /*$method_func = function () use ($callback, $endpoint, $path): ?callable
-                    {
-                        if ($endpoint == $path) return $callback;
-                        return null;
-                    };
-                    break;*/
-            }
-            if ($callback = $method_func()) return ['callback' => $callback, 'endpoint' => $endpoint];
+            if (isset($this->match_methods[$path]) && call_user_func($this->match_methods[$path], $endpoint, $path))
+                return ['callback' => $callback, 'endpoint' => $endpoint];
         }
+        return null;
     }
     
     /**
