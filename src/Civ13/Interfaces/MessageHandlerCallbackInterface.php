@@ -13,5 +13,5 @@ use React\Promise\PromiseInterface;
 
 interface MessageHandlerCallbackInterface
 {
-    public function __invoke(Message $message, array $message_filtered, string $command): ?PromiseInterface;
+    public function __invoke(Message $message, string $command, array $message_filtered): ?PromiseInterface;
 }

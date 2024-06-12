@@ -158,7 +158,7 @@ class CommandServiceManager
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
             'message_usage'                     => 'Replies with Pong!',                                                            // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
             'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
-            'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command): PromiseInterface
+            'message_handler' => new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
             {
                 return $message->reply('Pong!');
             }),

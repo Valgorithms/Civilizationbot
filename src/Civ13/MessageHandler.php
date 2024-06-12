@@ -18,8 +18,6 @@ class MessageHandlerCallback implements MessageHandlerCallbackInterface
     private \Closure $callback;
 
     /**
-     * Class constructor.
-     *
      * @param callable $callback The callback function to be executed.
      * @throws \InvalidArgumentException If the callback does not have the expected number of parameters or if any parameter does not have a type hint or is of the wrong type.
      */
@@ -27,23 +25,30 @@ class MessageHandlerCallback implements MessageHandlerCallbackInterface
     {
         $reflection = new \ReflectionFunction($callback);
         $parameters = $reflection->getParameters();
-
-        $expectedParameterTypes = [Message::class, 'array', 'string'];
+        $expectedParameterTypes = [Message::class, 'string', 'array'];
         if (count($parameters) !== $count = count($expectedParameterTypes)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
 
         foreach ($parameters as $index => $parameter) {
             if (! $parameter->hasType()) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
-            $type = $parameter->getType(); // This could be done all on one line, but it's easier to read this way and makes the compiler happy
-            if ($type !== null && $type instanceof \ReflectionNamedType) $type = $type->getName();
+            $type = $parameter->getType();
+            if ($type instanceof \ReflectionNamedType) $type = $type->getName();
             if ($type !== $expectedParameterTypes[$index]) throw new \InvalidArgumentException("Parameter $index must be of type {$expectedParameterTypes[$index]}.");
         }
 
         $this->callback = $callback;
     }
 
-    public function __invoke(Message $message, array $message_filtered = [], string $command = ''): ?PromiseInterface
+    /**
+     * Invokes the Message handler.
+     *
+     * @param Message $message The original message object.
+     * @param string $endpoint The endpoint string.
+     * @param array $message_filtered The filtered message array.
+     * @return PromiseInterface|null The result of the callback function.
+     */
+    public function __invoke(Message $message, string $endpoint = '', array $message_filtered = []): ?PromiseInterface
     {
-        return call_user_func($this->callback, $message, $message_filtered, $command);
+        return call_user_func($this->callback, $message, $endpoint, $message_filtered);
     }
 }
 
@@ -52,6 +57,9 @@ use Civ13\Interfaces\MessageHandlerInterface;
 class MessageHandler extends Handler implements MessageHandlerInterface
 {
     protected array $required_permissions;
+    /** 
+     * @var array<string|callable>
+     */
     protected array $match_methods;
     protected array $descriptions;
 
@@ -61,6 +69,89 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         $this->required_permissions = $required_permissions;
         $this->match_methods = $match_methods;
         $this->descriptions = $descriptions;
+        $this->afterConstruct();
+    }
+    private function afterConstruct(): void
+    {
+        $this->__setDefaultRatelimits();
+    }
+    private function __setDefaultRatelimits(): void
+    {
+        //TOOD
+    }
+
+    /**
+     * Handles the incoming message and processes the callback.
+     *
+     * @param Message $message The incoming message object.
+     * @return PromiseInterface|null A PromiseInterface object or null.
+     */
+    public function handle(Message $message): ?PromiseInterface
+    {
+        try {
+            if (! $array = $this->__getCallback($message)) return null;
+            return $this->__processCallback($array['callback'], $array['message'], $array['endpoint'], $array['message_filtered']);
+        } catch (\Throwable $e) {
+            $this->logger->error("Message Handler error: An endpoint for `$message->content` failed with error `{$e->getMessage()}`");
+            return $message->react('🔥');
+        }
+    }
+    /**
+     * Retrieves the callback information for a given message.
+     *
+     * @param Message $message The message object.
+     * @return array|null The callback information array if a match is found, otherwise null.
+     */
+    private function __getCallback(Message $message): ?array
+    {
+        // if (! $message->member) return $message->reply('Unable to get Discord Member class. endpoints are only available in guilds.');
+        if (! $message->member) return null;
+        //if (empty($this->handlers)) $this->logger->debug('No message handlers found!');
+        $message_filtered = $this->civ13->filterMessage($message);
+        if (
+            (isset($message_filtered['message_content_lower']) && $endpoint = $message_filtered['message_content_lower'])
+            && (isset($this->handlers[$endpoint]) && $callback = $this->handlers[$endpoint])
+            && (isset($this->match_methods[$endpoint]) && $matchMethod = $this->match_methods[$endpoint])
+            && ($matchMethod === 'exact')
+        ) return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback, ];
+        
+        reset($this->handlers);
+        foreach ($this->handlers as $endpoint => $callback) if (isset($this->match_methods[$endpoint])) {
+            $matchMethod = $this->match_methods[$endpoint] ?? 'str_starts_with';
+            if ($matchMethod === 'exact') return null; // We've reached the end of the relevant array and there were no exact matches
+            if (is_callable($matchMethod) && call_user_func($matchMethod, $message_filtered['message_content_lower'], $endpoint))
+                return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
+            if (! is_callable($matchMethod) && str_starts_with($message_filtered['message_content_lower'], $endpoint)) // Default to str_starts_with if no valid match method is provided
+                return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
+        }
+        return null;
+    }
+    /**
+     * Executes the Message handler.
+     *
+     * @param Message $message The original message object.
+     * @param array $message_filtered The filtered message content.
+     * @param string $endpoint The endpoint being processed.
+     * @param callable $callback The callback function to be executed.
+     * @return PromiseInterface|null Returns a PromiseInterface if the callback is asynchronous, otherwise returns null.
+     * @throws \Exception Throws an exception if the role ID for the lowest rank is not found.
+     */
+    private function __processCallback(callable $callback, Message $message, string $endpoint, array $message_filtered): ?PromiseInterface
+    {
+        $required_permissions = $this->required_permissions[$endpoint] ?? [];
+        if ($lowest_rank = array_pop($required_permissions)) {
+            if (! isset($this->civ13->role_ids[$lowest_rank])) {
+                $this->logger->warning("Unable to find role ID for rank `$lowest_rank`");
+                throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
+            } elseif (! $this->checkRank($message->member->roles, $this->required_permissions[$endpoint] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
+        }
+        $this->logger->debug("Endpoint '$endpoint' triggered");
+        try {
+            return $callback($message, $endpoint, $message_filtered);
+        } catch (\Exception $e) {
+            $this->logger->error("Message Handler error: `A callback for `$endpoint` failed with error `{$e->getMessage()}`");
+            return $message->react('🔥');
+        }
     }
 
     public function get(): array
@@ -224,7 +315,30 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         $this->required_permissions[$offset] = $required_permissions;
         $this->match_methods[$offset] = $method;
         $this->descriptions[$offset] = $description;
+        if ($method === 'exact') $this->__reorderHandlers();
         return $this;
+    }
+    /**
+     * Reorders the handlers based on the match methods.
+     *
+     * This method separates the handlers into two arrays: $exactHandlers and $otherHandlers.
+     * Handlers with a match method of 'exact' are stored in $exactHandlers, while the rest are stored in $otherHandlers.
+     * The two arrays are then merged and assigned back to the $handlers property, ensuring that exact matches are checked last.
+     *
+     * @return void
+     */
+    private function __reorderHandlers(): void
+    {
+        $exactHandlers = [];
+        $otherHandlers = [];
+        foreach ($this->handlers as $command => $handler) {
+            if ($this->match_methods[$command] === 'exact') {
+                $exactHandlers[$command] = $handler;
+            } else {
+                $otherHandlers[$command] = $handler;
+            }
+        }
+        $this->handlers = $otherHandlers + $exactHandlers;
     }
     
     public function setOffset(int|string $newOffset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
@@ -243,69 +357,6 @@ class MessageHandler extends Handler implements MessageHandlerInterface
     public function __debugInfo(): array
     {
         return ['civ13' => isset($this->civ13) ? $this->civ13 instanceof Civ13 : false, 'handlers' => array_keys($this->handlers)];
-    }
-
-    //Unique to MessageHandler
-    
-    public function handle(Message $message): ?PromiseInterface
-    {
-        // if (! $message->member) return $message->reply('Unable to get Discord Member class. Commands are only available in guilds.');
-        $message_filtered = $this->civ13->filterMessage($message);
-        foreach ($this->handlers as $command => $callback) {
-            switch ($this->match_methods[$command]) {
-                case 'exact':
-                $method_func = function () use ($callback, $message_filtered, $command): ?callable
-                {
-                    if ($message_filtered['message_content_lower'] == $command)
-                        return $callback; // This is where the magic happens
-                    return null;
-                };
-                break;
-                case 'str_contains':
-                    $method_func = function () use ($callback, $message_filtered, $command): ?callable
-                    {
-                        if (str_contains($message_filtered['message_content_lower'], $command)) 
-                            return $callback; // This is where the magic happens
-                        return null;
-                    };
-                    break;
-                case 'str_ends_with':
-                    $method_func = function () use ($callback, $message_filtered, $command): ?callable
-                    {
-                        if (str_ends_with($message_filtered['message_content_lower'], $command)) 
-                            return $callback; // This is where the magic happens
-                        return null;
-                    };
-                    break;
-                case 'str_starts_with':
-                default:
-                    $method_func = function () use ($callback, $message_filtered, $command): ?callable
-                    {
-                        if (str_starts_with($message_filtered['message_content_lower'], $command)) 
-                            return $callback; // This is where the magic happens
-                        return null;
-                    };
-            }
-            if (! $message->member) return null;
-            if ($callback = $method_func()) { // Command triggered
-                $required_permissions = $this->required_permissions[$command] ?? [];
-                if ($lowest_rank = array_pop($required_permissions)) {
-                    if (! isset($this->civ13->role_ids[$lowest_rank])) {
-                        $this->logger->warning("Unable to find role ID for rank `$lowest_rank`");
-                        throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
-                    } elseif (! $this->checkRank($message->member->roles, $this->required_permissions[$command] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
-                }
-                $this->logger->debug("Command '$command' triggered");
-                try {
-                    return $callback($message, $message_filtered, $command);
-                } catch (\Exception $e) {
-                    $this->logger->error('Message Handler error: `A callback for `' . $command . '` failed with error `' . $e->getMessage() . '`');
-                    return $this->civ13->reply($message, 'An error occurred while processing your command.');
-                }
-            }
-        }
-        if (empty($this->handlers)) $this->logger->info('No message handlers found!');
-        return null;
     }
 
     // Don't forget to use ->setAllowedMentions(['parse'=>[]]) on the MessageBuilder object to prevent all roles being pinged

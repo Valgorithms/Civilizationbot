@@ -17,17 +17,16 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
     private \Closure $callback;
 
     /**
-     * Constructs a new instance of the HttpHandler class.
-     *
      * @param callable $callback The callback function to be executed.
-     * @throws \InvalidArgumentException If the callback does not have the expected parameters or type hints.
+     * @throws \InvalidArgumentException If the callback does not have the expected number of parameters or if any parameter does not have a type hint or is of the wrong type.
      */
     public function __construct(callable $callback)
     {
+        $reflection = new \ReflectionFunction($callback);
+        $parameters = $reflection->getParameters();
         $expectedParameterTypes = [ServerRequestInterface::class, 'string', 'bool'];
-        
-        $parameters = (new \ReflectionFunction($callback))->getParameters();
         if (count($parameters) !== $count = count($expectedParameterTypes)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
+
         foreach ($parameters as $index => $parameter) {
             if (! $parameter->hasType()) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
             $type = $parameter->getType();
@@ -42,19 +41,13 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
      * Invokes the HTTP handler.
      *
      * @param ServerRequestInterface $request The server request.
-     * @param bool $whitelisted Indicates if the request is whitelisted.
      * @param string $endpoint The endpoint string.
+     * @param bool $whitelisted Indicates if the request is whitelisted.
      * @return HttpResponse The HTTP response.
      */
     public function __invoke(ServerRequestInterface $request, string $endpoint = '', bool $whitelisted = false): HttpResponse
     {
         return call_user_func($this->callback, $request, $endpoint, $whitelisted);
-    }
-
-    public function reject(string $part, string $id): HttpResponse
-    {
-        // $this->logger->info("[WEBAPI] Failed: $part, $id"); // This should be logged by the handler, not the callback
-        return new HttpResponse(($id ? 404 : 400), ['Content-Type' => 'text/plain'], ($id ? 'Invalid' : 'Missing').' '.$part);
     }
 }
 
@@ -95,12 +88,10 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         $this->key = $key;
         $this->afterConstruct();
     }
-
-    public function afterConstruct(): void
+    private function afterConstruct(): void
     {
         $this->__setDefaultRatelimits();
     }
-
     /**
      * Sets the default rate limits for different types of requests.
      */
@@ -134,13 +125,12 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         else $this->logger->info("[WEBAPI URL] $path");
         try {
             if (! $array = $this->__getCallback($request)) return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
-            return $this->__processCallback($request, $array['endpoint'], $array['callback']);
+            return $this->__processCallback($array['callback'], $request, $array['endpoint']);
         } catch (\Throwable $e) {
             $this->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`");
             return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
         }
     }
-
     /**
      * Retrieves the callback and endpoint based on the request path.
      *
@@ -165,7 +155,6 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         }
         return null;
     }
-    
     /**
      * Executes the HTTP handler.
      *
@@ -174,7 +163,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      * @param string $endpoint The endpoint being accessed.
      * @return HttpResponse The HTTP response object.
      */
-    private function __processCallback(ServerRequestInterface $request, string $endpoint, callable $callback): HttpResponse
+    private function __processCallback(callable $callback, ServerRequestInterface $request, string $endpoint): HttpResponse
     {
         // Check if the endpoint and IP address are whitelisted
         if (! $whitelisted = $this->__isWhitelisted($request, $this->last_ip))
