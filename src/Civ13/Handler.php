@@ -53,6 +53,9 @@ class Handler implements HandlerInterface
     public Civ13 $civ13;
     public Discord $discord;
     public Logger $logger;
+    /**
+      * @var callable[]
+      */
     public array $handlers = [];
     
     public function __construct(Civ13 &$civ13, array $handlers = [])

@@ -147,12 +147,13 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     private function __getCallback(ServerRequestInterface $request): ?array
     {
         //$ext = pathinfo($request->getUri()->getQuery(), PATHINFO_EXTENSION); // We need the .ext too!
-        if (isset($this->handlers[$path = $request->getUri()->getPath()]))
-            if ($this->match_methods[$path] === 'exact')
-                return ['callback' => $this->handlers[$path], 'endpoint' => $path];
-        
+        $matchMethod = $this->match_methods[$path = $request->getUri()->getPath()] ?? 'str_starts_with';
+        if (isset($this->handlers[$path]) && $matchMethod === 'exact')
+            return ['callback' => $this->handlers[$path], 'endpoint' => $path];
         foreach ($this->handlers as $endpoint => $callback) {
-            if (isset($this->match_methods[$path]) && is_callable($this->match_methods[$path]) && call_user_func($this->match_methods[$path], $endpoint, $path))
+            if ( isset($matchMethod) && is_callable($matchMethod) && call_user_func($matchMethod, $endpoint, $path))
+                return ['callback' => $callback, 'endpoint' => $endpoint];
+            if ($matchMethod !== 'exact' && ! is_callable($matchMethod) && str_starts_with($endpoint, $path)) // Default to str_starts_with if no valid match method is provided
                 return ['callback' => $callback, 'endpoint' => $endpoint];
         }
         return null;
