@@ -134,7 +134,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         else $this->logger->info("[WEBAPI URL] $path");
         try {
             if (! $array = $this->__getCallback($request)) return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
-            return $this->__processCallback($request, $array['callback'], $array['endpoint']);
+            return $this->__processCallback($request, $array['endpoint'], $array['callback']);
         } catch (\Throwable $e) {
             $this->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`");
             return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -174,7 +174,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
      * @param string $endpoint The endpoint being accessed.
      * @return HttpResponse The HTTP response object.
      */
-    private function __processCallback(ServerRequestInterface $request, callable $callback, string $endpoint): HttpResponse
+    private function __processCallback(ServerRequestInterface $request, string $endpoint, callable $callback): HttpResponse
     {
         // Check if the endpoint and IP address are whitelisted
         if (! $whitelisted = $this->__isWhitelisted($request, $this->last_ip))
