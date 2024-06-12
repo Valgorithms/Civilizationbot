@@ -71,6 +71,9 @@ class HttpHandler extends Handler implements HttpHandlerInterface
     protected array $endpoints = [];
     
     protected array $whitelisted = [];
+    /** 
+     * @var array<string|callable>
+     */
     protected array $match_methods = [];
     protected array $descriptions = [];
 
