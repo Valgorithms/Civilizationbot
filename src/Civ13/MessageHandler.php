@@ -13,8 +13,10 @@ use Discord\Parts\Channel\Message;
 use Discord\Helpers\Collection;
 use React\Promise\PromiseInterface;
 
-class MessageHandlerCallback implements MessageHandlerCallbackInterface
+final class MessageHandlerCallback implements MessageHandlerCallbackInterface
 {
+    const array PARAMETER_TYPES = [Message::class, 'string', 'array'];
+
     private \Closure $callback;
 
     /**
@@ -25,14 +27,13 @@ class MessageHandlerCallback implements MessageHandlerCallbackInterface
     {
         $reflection = new \ReflectionFunction($callback);
         $parameters = $reflection->getParameters();
-        $expectedParameterTypes = [Message::class, 'string', 'array'];
-        if (count($parameters) !== $count = count($expectedParameterTypes)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
+        if (count($parameters) !== $count = count(self::PARAMETER_TYPES)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', self::PARAMETER_TYPES));
 
         foreach ($parameters as $index => $parameter) {
             if (! $parameter->hasType()) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
             $type = $parameter->getType();
             if ($type instanceof \ReflectionNamedType) $type = $type->getName();
-            if ($type !== $expectedParameterTypes[$index]) throw new \InvalidArgumentException("Parameter $index must be of type {$expectedParameterTypes[$index]}.");
+            if ($type !== self::PARAMETER_TYPES[$index]) throw new \InvalidArgumentException("Parameter $index must be of type " . self::PARAMETER_TYPES[$index] . '.');
         }
 
         $this->callback = $callback;

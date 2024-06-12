@@ -14,6 +14,8 @@ use React\Http\Message\Response as HttpResponse;
 
 final class HttpHandlerCallback implements HttpHandlerCallbackInterface
 {
+    const array PARAMETER_TYPES = [ServerRequestInterface::class, 'string', 'bool'];
+    
     private \Closure $callback;
 
     /**
@@ -24,14 +26,13 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
     {
         $reflection = new \ReflectionFunction($callback);
         $parameters = $reflection->getParameters();
-        $expectedParameterTypes = [ServerRequestInterface::class, 'string', 'bool'];
-        if (count($parameters) !== $count = count($expectedParameterTypes)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', $expectedParameterTypes));
+        if (count($parameters) !== $count = count(self::PARAMETER_TYPES)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', self::PARAMETER_TYPES));
 
         foreach ($parameters as $index => $parameter) {
             if (! $parameter->hasType()) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
             $type = $parameter->getType();
             if ($type instanceof \ReflectionNamedType) $type = $type->getName();
-            if ($type !== $expectedParameterTypes[$index]) throw new \InvalidArgumentException("Parameter $index must be of type {$expectedParameterTypes[$index]}.");
+            if ($type !== self::PARAMETER_TYPES[$index]) throw new \InvalidArgumentException("Parameter $index must be of type " . self::PARAMETER_TYPES[$index] . '.');
         }
 
         $this->callback = $callback;
