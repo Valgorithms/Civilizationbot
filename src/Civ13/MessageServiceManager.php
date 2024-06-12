@@ -1090,7 +1090,7 @@ class MessageServiceManager
                 $this->offsetSet("{$gameserver->key}notes", $servernotes, ['Owner', 'High Staff', 'Admin']);
             }
             
-            $serverconfigexists = function (?Message $message = null) use ($gameserver): PromiseInterface|bool
+            $serverconfigexists = function (?Message $message) use ($gameserver): PromiseInterface|bool
             {
                 if (isset($gameserver->key)) {
                     if ($message) return $message->react("👍");
@@ -1102,7 +1102,7 @@ class MessageServiceManager
             $this->logger->info("Generating {$gameserver->key}configexists command.");
             $this->offsetSet("{$gameserver->key}configexists", $serverconfigexists, ['Owner', 'High Staff']);
 
-            $serverstatus = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]): ?PromiseInterface
+            $serverstatus = function (?Message $message, string $command, array $message_filtered): ?PromiseInterface
             {
                 $builder = MessageBuilder::new();
                 $content = '';
@@ -1128,7 +1128,7 @@ class MessageServiceManager
                 }
             }
             if ($allRequiredFilesExist) {
-                $serverhost = function (?Message $message = null) use ($gameserver): void
+                $serverhost = function (?Message $message) use ($gameserver): void
                 {
                     \execInBackground('python3 ' . $gameserver->basedir . Civ13::updateserverabspaths);
                     if (file_exists($gameserver->basedir . Civ13::serverdata)) \execInBackground('rm -f ' . $gameserver->basedir . Civ13::serverdata);
@@ -1149,7 +1149,7 @@ class MessageServiceManager
             
             if (! file_exists($gameserver->basedir . Civ13::killciv13)) $this->logger->debug("Skipping server function `{$gameserver->key}kill` because the required config files were not found.");
             else {
-                $serverkill = function (?Message $message = null) use ($gameserver): void
+                $serverkill = function (?Message $message) use ($gameserver): void
                 {
                     $this->civ13->loop->addTimer(10, function () use ($gameserver, $message): void
                     {
@@ -1163,7 +1163,7 @@ class MessageServiceManager
                 $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'High Staff']);
             }
             if ($this->offsetExists("{$gameserver->key}host") && $this->offsetExists("{$gameserver->key}kill")) {
-                $serverrestart = function (?Message $message = null) use ($gameserver): ?PromiseInterface
+                $serverrestart = function (?Message $message) use ($gameserver): ?PromiseInterface
                 {
                     $this->civ13->loop->addTimer(10, function () use ($gameserver, $message): void
                     {
@@ -1191,9 +1191,9 @@ class MessageServiceManager
 
             if (! file_exists($gameserver->basedir . Civ13::mapswap)) $this->logger->debug("Skipping server function `{$gameserver->key}mapswap` because the required config files were not found.");
             else {
-                $servermapswap = function (?Message $message = null, array $message_filtered = ['message_content' => '', 'message_content_lower' => '', 'called' => false]) use ($gameserver): ?PromiseInterface
+                $servermapswap = function (?Message $message, string $command, array $message_filtered) use ($gameserver): ?PromiseInterface
                 {
-                    $mapswap = function (string $mapto, ?Message $message = null) use ($gameserver): ?PromiseInterface
+                    $mapswap = function (string $mapto, ?Message $message) use ($gameserver): ?PromiseInterface
                     {
                         if (! file_exists($this->civ13->files['map_defines_path']) || ! $file = @fopen($this->civ13->files['map_defines_path'], 'r')) {
                             $this->logger->error("unable to open `{$this->civ13->files['map_defines_path']}` for reading.");
@@ -1230,7 +1230,7 @@ class MessageServiceManager
                 $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'High Staff', 'Admin']);
             }
 
-            $serverban = function (Message $message, array $message_filtered) use ($gameserver): PromiseInterface
+            $serverban = function (Message $message, string $command, array $message_filtered) use ($gameserver): PromiseInterface
             {
                 if (! $this->civ13->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
                 if (! $message_content = substr($message_filtered['message_content'], strlen("{$gameserver->key}ban"))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');

@@ -8,6 +8,7 @@
 
 namespace Civ13;
 
+use Byond\Byond;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\DiscordWebAuth;
@@ -763,9 +764,59 @@ class HttpServiceManager
             $this->httpHandler->offsetSet($server_endpoint.'/bans', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {
                 if (! file_exists($bans = $gameserver->basedir . Civ13::bans)) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
-                if (! $return = @file_get_contents($bans)) return HttpResponse::plaintext("Unable to read `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                return HttpResponse::plaintext($return);
-            }), true);
+                if (! $content = @file_get_contents($bans)) return HttpResponse::plaintext("Unable to read `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                // Current format: type;job;uid;reason;admin;date;timestamp;expires;ckey;cid;ip|||
+                $rows = explode('|||', trim($content));
+                $json = [];
+                $id = 0;
+                foreach ($rows as $data) {
+                    if (! $ban = explode(';', $data)) continue;
+                    if (! isset($ban[10])) continue; // Must be issing some data
+                    /*$old_json[] = [ 
+                        'type' => $ban[0],
+                        'job' => $ban[1],
+                        'uid' => $ban[2],
+                        'reason' => $ban[3],
+                        'admin' => $ban[4],
+                        'date' => $ban[5],
+                        'timestamp' => $ban[6],
+                        'expires' => $ban[7],
+                        'ckey' => $ban[8],
+                        'cid' => $ban[9],
+                        'ip' => $ban[10]
+                    ];
+                    */
+                    
+                    $ban_type = str_replace(PHP_EOL, '', $ban[0]);
+
+                    $date = str_replace('.', ':', $ban[5]);
+                    $dateTime = new \DateTime($date);
+                    $banned_on_timestamp = $dateTime->getTimestamp();
+                    $banned_on = date('c', $banned_on_timestamp);
+
+                    $d = explode(' ', $ban[7]);
+                    $dur['int'] = intval($d[2]);
+                    $dur['unit'] = $d[3];
+                    $expires_in = strtotime('+'.$dur['int']. ' ' . $dur['unit'], $banned_on_timestamp);
+                    $expires_date = date('c', $expires_in);
+
+                    $json[] = [
+                        "id" => $id,
+                        "banType" => $ban_type,
+                        "cKey" => $ban[8],
+                        "bannedOn" => $banned_on,
+                        "bannedBy" => $ban[4],
+                        "reason" => $ban[3],
+                        "expires" => $expires_date,
+                        "unbannedBy" => null,
+                        "jobBans" => null
+                    ];
+                    $id++;
+                }
+                $response = new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'text/json'], json_encode($json ?? ''));
+                $response = $response->withHeader('Cache-Control', 'public, max-age=3600');
+                return $response;
+            }));
 
             $this->httpHandler->offsetSet($server_endpoint.'/playerlogs', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
             {

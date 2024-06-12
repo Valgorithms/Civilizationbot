@@ -116,10 +116,9 @@ class MessageHandler extends Handler implements MessageHandlerInterface
             && ($matchMethod === 'exact')
         ) return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback, ];
         
-        reset($this->handlers);
         foreach ($this->handlers as $endpoint => $callback) if (isset($this->match_methods[$endpoint])) {
             $matchMethod = $this->match_methods[$endpoint] ?? 'str_starts_with';
-            if ($matchMethod === 'exact') return null; // We've reached the end of the relevant array and there were no exact matches
+            if ($matchMethod === 'exact') continue; // We've reached the end of the relevant array and there were no exact matches
             if (is_callable($matchMethod) && call_user_func($matchMethod, $message_filtered['message_content_lower'], $endpoint))
                 return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
             if (! is_callable($matchMethod) && str_starts_with($message_filtered['message_content_lower'], $endpoint)) // Default to str_starts_with if no valid match method is provided

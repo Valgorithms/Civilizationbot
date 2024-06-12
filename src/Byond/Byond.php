@@ -14,25 +14,77 @@ namespace Byond;
 class Byond
 {
     /**
+     * The Unix timestamp representing the BYOND epoch.
+     * The BYOND epoch is the starting point for measuring time in the BYOND game engine.
+     * It is defined as January 1, 2000, 00:00:00 UTC.
+     * This constant represents the BYOND epoch as a Unix timestamp.
+     */
+    const int BYOND_EPOCH_AS_UNIX_TS = 946684800;
+
+    /**
      * The base URL for the BYOND website.
      *
      * @var string
      */
-    const BASE_URL = 'http://www.byond.com/';
+    const string BASE_URL = 'http://www.byond.com/';
 
     /**
      * The URL for the members section of the BYOND website.
      *
      * @var string
      */
-    const MEMBERS = self::BASE_URL . 'members/';
+    const string MEMBERS = self::BASE_URL . 'members/';
 
     /**
      * The URL for a user's profile page on the BYOND website.
      *
      * @var string
      */
-    const PROFILE = 'https://secure.byond.com/members/-/account';
+    const string PROFILE = 'https://secure.byond.com/members/-/account';
+
+    /**
+     * Converts a BYOND timestamp to a Unix timestamp.
+     *
+     * @param int $byond_timestamp_ds The BYOND timestamp in deciseconds.
+     * @return int The converted Unix timestamp.
+     */
+    public static function convertToUnixFromByond(int $byond_timestamp): int
+    {
+        return ($byond_timestamp * 0.1) + self::BYOND_EPOCH_AS_UNIX_TS;
+    }
+
+    /**
+     * Converts a Byond timestamp to a Unix timestamp and returns it in ISO 8601 format.
+     *
+     * @param int $byond_timestamp The Byond timestamp to convert.
+     * @return string The converted timestamp in ISO 8601 format.
+     */
+    public static function convertToTimestampFromByond(int $byond_timestamp): string
+    {
+        return date('c', self::convertToUnixFromByond($byond_timestamp));
+    }
+
+    /**
+     * Converts a Unix timestamp to a BYOND timestamp in deciseconds.
+     *
+     * @param int $unix_timestamp The Unix timestamp to convert.
+     * @return int The converted BYOND timestamp in deciseconds.
+     */
+    public static function convertToByondFromUnix(int $unix_timestamp): int
+    {
+        return round(($unix_timestamp - self::BYOND_EPOCH_AS_UNIX_TS) * 10);
+    }
+
+    /**
+     * Converts a timestamp in ISO 8601 format to a BYOND timestamp in deciseconds.
+     *
+     * @param string $iso_timestamp The timestamp in ISO 8601 format to convert.
+     * @return int The converted BYOND timestamp in deciseconds.
+     */
+    public static function convertToByondFromTimestamp(string $iso_timestamp): int
+    {
+        return self::convertToByondFromUnix(strtotime($iso_timestamp));
+    }
 
     /**
      * Retrieves the 50 character token from the BYOND website.
