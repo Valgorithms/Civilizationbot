@@ -1949,8 +1949,8 @@ class Civ13
         if (! $this->hasRequiredConfigRoles($required_roles)) return false;
         $file_paths = [];
         foreach ($this->enabled_servers as $gameserver) {
-            if (! @touch($gameserver->basedir . self::whitelist)) continue;
-            $file_paths[] = $gameserver->basedir . self::whitelist;
+            if (! @touch($fp = $gameserver->basedir . self::whitelist)) continue;
+            $file_paths[] = $fp;
         }
 
         $callback = function (Member $member, array $item, array $required_roles): string
