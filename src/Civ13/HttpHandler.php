@@ -151,7 +151,7 @@ class HttpHandler extends Handler implements HttpHandlerInterface
         if (isset($this->handlers[$path]) && $matchMethod === 'exact')
             return ['callback' => $this->handlers[$path], 'endpoint' => $path];
         foreach ($this->handlers as $endpoint => $callback) {
-            if ( isset($matchMethod) && is_callable($matchMethod) && call_user_func($matchMethod, $endpoint, $path))
+            if ( is_callable($matchMethod) && call_user_func($matchMethod, $endpoint, $path))
                 return ['callback' => $callback, 'endpoint' => $endpoint];
             if ($matchMethod !== 'exact' && ! is_callable($matchMethod) && str_starts_with($endpoint, $path)) // Default to str_starts_with if no valid match method is provided
                 return ['callback' => $callback, 'endpoint' => $endpoint];
