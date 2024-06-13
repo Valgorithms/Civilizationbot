@@ -827,7 +827,7 @@ class HttpServiceManager
         }
 
         $endpoint = '/webhook';
-        foreach ($this->civ13->enabled_servers as $gameserver) {
+        foreach ($this->civ13->enabled_servers as &$gameserver) {
             $server_endpoint = $endpoint . '/' . $gameserver->key;
 
             // If no parameters are passed to a server_endpoint, try to find it using the query parameters
