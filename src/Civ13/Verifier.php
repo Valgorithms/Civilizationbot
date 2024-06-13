@@ -136,6 +136,10 @@ class Verifier
             $this->logger->info('Setting up Verifier...');
             $this->verified = $this->getVerified();
             foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional user 
+            if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id))
+                foreach ($guild->members as $member)
+                    if (count($member->roles) === 0) // If the member only has the @everyone role
+                        $this->joinRoles($member);
             $this->verifierStatusTimer();
         });
     }
@@ -187,7 +191,7 @@ class Verifier
         }
         if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['get-approved']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
             if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['get-approved']))
-                return $this->civ13->sendMessage($channel, "<@{$member->id}>, " . $this->civ13->welcome_message);
+                return $this->civ13->sendMessage($channel, "<@{$member->id}>, {$this->civ13->welcome_message}");
         return null;
     }
 
