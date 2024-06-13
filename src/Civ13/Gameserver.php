@@ -366,7 +366,7 @@ class GameServer {
         fclose($file);
         if (! in_array($mapto, $maps)) return "`$mapto` was not found in the map definitions.";
 
-        if ($promise = $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin) ?? $this->civ13->discord->user->displayname)) {
+        if ($promise = $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->user->displayname)) {
             if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
                 if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";
                 $channel->sendMessage($msg);
