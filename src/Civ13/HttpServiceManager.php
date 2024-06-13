@@ -747,7 +747,7 @@ class HttpServiceManager
             return $channel->sendMessage($builder);
         };
         
-        foreach ($this->civ13->enabled_servers as $gameserver) {
+        foreach ($this->civ13->enabled_servers as &$gameserver) {
             $server_endpoint = '/' . $gameserver->key;
 
             $this->httpHandler->offsetSet('/bancheck_centcom', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse

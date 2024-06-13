@@ -378,7 +378,7 @@ class Slash
             ]));*/
             
             $server_choices = [];
-            foreach ($this->civ13->enabled_servers as $gameserver) {
+            foreach ($this->civ13->enabled_servers as &$gameserver) {
                 $server_choices[] = [
                     'name' => $gameserver->name,
                     'value' => $gameserver->key
@@ -519,7 +519,7 @@ class Slash
         {
             $builder = MessageBuilder::new();
             $content = '';
-            foreach ($this->civ13->enabled_servers as $gameserver) {
+            foreach ($this->civ13->enabled_servers as &$gameserver) {
                 $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 if ($embed = $gameserver->generateServerstatusEmbed()) $builder->addEmbed($embed);
             }
@@ -529,11 +529,11 @@ class Slash
             $content = '';
             $builder = MessageBuilder::new();
             if (! $this->civ13->webserver_online) {
-                foreach ($this->civ13->enabled_servers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
+                foreach ($this->civ13->enabled_servers as &$gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 return $interaction->respondWithMessage($builder->setContent($content)->addEmbed($this->civ13->generateServerstatusEmbed()));
             }
             if (! empty($data = $this->civ13->serverinfoParse())) {
-                foreach ($this->civ13->enabled_servers as $gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
+                foreach ($this->civ13->enabled_servers as &$gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 $embed = new Embed($this->discord);
                 foreach ($data as $server)
                     foreach ($server as $key => $array)
@@ -545,7 +545,7 @@ class Slash
                 $embed->setURL('');
                 return $interaction->respondWithMessage($builder->setContent($content)->addEmbed($embed));
             } //return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
-            foreach ($this->civ13->enabled_servers as $gameserver) { // Only include the general information
+            foreach ($this->civ13->enabled_servers as &$gameserver) { // Only include the general information
                 $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 $embed = $gameserver->toEmbed();
                 $embed->setFooter($this->civ13->embed_footer);
@@ -571,7 +571,7 @@ class Slash
                 $response = '';
                 $reason = 'unknown';
                 $found = false;
-                foreach ($this->civ13->enabled_servers as $gameserver) {
+                foreach ($this->civ13->enabled_servers as &$gameserver) {
                     if (file_exists($gameserver->basedir . $this->civ13::bans) && ($file = @fopen($gameserver->basedir . $this->civ13::bans, 'r'))) {
                         while (($fp = fgets($file, 4096)) !== false) {
                             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey

@@ -266,7 +266,7 @@ class Verifier
             }
             $found = false;
             $file_contents = '';
-            foreach ($this->civ13->enabled_servers as $gameserver) {
+            foreach ($this->civ13->enabled_servers as &$gameserver) {
                 if (file_exists($gameserver->basedir . Civ13::playerlogs) && $fc = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) $file_contents .= $fc;
                 else $this->logger->warning('unable to open `' . $gameserver->basedir . Civ13::playerlogs . '`');
             }
