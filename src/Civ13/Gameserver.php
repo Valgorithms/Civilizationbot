@@ -375,6 +375,7 @@ class GameServer {
                 $func = function () use ($mapto) { \execInBackground('python3 ' . $this->basedir . Civ13::mapswap . " $mapto" ); };
                 $this->civ13->then($promise->then($func, $this->civ13->onRejectedDefault));
             } else \execInBackground('python3 ' . $this->basedir . Civ13::mapswap . " $mapto");
+            return $msg;
         }
         return 'There was an error sending the mapswap command.';
     }
