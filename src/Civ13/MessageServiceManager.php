@@ -1066,7 +1066,7 @@ class MessageServiceManager
                     $letter_dir = '';
                     
                     if (is_dir($basedir = $gameserver->basedir . Civ13::playernotes_basedir. "/$first_letter_lower")) $letter_dir = $basedir . "/$first_letter_lower";
-                    if (is_dir($basedir = $gameserver->basedir . Civ13::playernotes_basedir . "/$first_letter_upper")) $letter_dir = $basedir . "/$first_letter_upper";
+                    elseif (is_dir($basedir = $gameserver->basedir . Civ13::playernotes_basedir . "/$first_letter_upper")) $letter_dir = $basedir . "/$first_letter_upper";
                     else return $this->civ13->reply($message, "No notes found for any ckey starting with `$first_letter_upper`.");
 
                     $player_dir = '';
