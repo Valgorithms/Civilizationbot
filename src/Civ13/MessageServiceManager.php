@@ -1057,7 +1057,7 @@ class MessageServiceManager
         foreach ($this->civ13->enabled_servers as &$gameserver) {
             if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->debug("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
             else {
-                $servernotes = function (Message $message, array $message_filtered) use ($gameserver): PromiseInterface
+                $servernotes = function (Message $message, array $message_filtered) use (&$gameserver): PromiseInterface
                 {
                     if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content'], strlen("{$gameserver->key}notes")))) return $this->civ13->reply($message, 'Missing ckey! Please use the format `notes ckey`');
                     $first_letter_lower = strtolower(substr($ckey, 0, 1));
@@ -1090,7 +1090,7 @@ class MessageServiceManager
                 $this->offsetSet("{$gameserver->key}notes", $servernotes, ['Owner', 'High Staff', 'Admin']);
             }
             
-            $serverconfigexists = function (?Message $message) use ($gameserver): PromiseInterface|bool
+            $serverconfigexists = function (?Message $message) use (&$gameserver): PromiseInterface|bool
             {
                 if (isset($gameserver->key)) {
                     if ($message) return $message->react("👍");
@@ -1128,7 +1128,7 @@ class MessageServiceManager
                 }
             }
             if ($allRequiredFilesExist) {
-                $serverhost = function (?Message $message) use ($gameserver): void
+                $serverhost = function (?Message $message) use (&$gameserver): void
                 {
                     \execInBackground('python3 ' . $gameserver->basedir . Civ13::updateserverabspaths);
                     if (file_exists($gameserver->basedir . Civ13::serverdata)) \execInBackground('rm -f ' . $gameserver->basedir . Civ13::serverdata);
@@ -1149,7 +1149,7 @@ class MessageServiceManager
             
             if (! file_exists($gameserver->basedir . Civ13::killciv13)) $this->logger->debug("Skipping server function `{$gameserver->key}kill` because the required config files were not found.");
             else {
-                $serverkill = function (?Message $message) use ($gameserver): void
+                $serverkill = function (?Message $message) use (&$gameserver): void
                 {
                     $this->civ13->loop->addTimer(10, function () use ($gameserver, $message): void
                     {
@@ -1163,7 +1163,7 @@ class MessageServiceManager
                 $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'High Staff']);
             }
             if ($this->offsetExists("{$gameserver->key}host") && $this->offsetExists("{$gameserver->key}kill")) {
-                $serverrestart = function (?Message $message) use ($gameserver): ?PromiseInterface
+                $serverrestart = function (?Message $message) use (&$gameserver): ?PromiseInterface
                 {
                     $this->civ13->loop->addTimer(10, function () use ($gameserver, $message): void
                     {
@@ -1191,46 +1191,17 @@ class MessageServiceManager
 
             if (! file_exists($gameserver->basedir . Civ13::mapswap)) $this->logger->debug("Skipping server function `{$gameserver->key}mapswap` because the required config files were not found.");
             else {
-                $servermapswap = function (?Message $message, string $command, array $message_filtered) use ($gameserver): ?PromiseInterface
+                $servermapswap = function (?Message $message, string $command, array $message_filtered) use (&$gameserver): ?PromiseInterface
                 {
-                    $mapswap = function (string $mapto, ?Message $message) use ($gameserver): ?PromiseInterface
-                    {
-                        if (! file_exists($this->civ13->files['map_defines_path']) || ! $file = @fopen($this->civ13->files['map_defines_path'], 'r')) {
-                            $this->logger->error("unable to open `{$this->civ13->files['map_defines_path']}` for reading.");
-                            if ($message) return $this->civ13->reply($message, "unable to open `{$this->civ13->files['map_defines_path']}` for reading.");
-                        }
-                    
-                        $maps = array();
-                        while (($fp = fgets($file, 4096)) !== false) {
-                            $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
-                            if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
-                        }
-                        fclose($file);
-                        if (! in_array($mapto, $maps)) return $this->civ13->reply($message, "`$mapto` was not found in the map definitions.");
-                        
-                        \execInBackground('python3 ' . $gameserver->basedir . Civ13::mapswap . " $mapto");
-                        if ($message) return $this->civ13->reply($message, "Attempting to change `{$gameserver->key}` map to `$mapto`");
-                    };
                     $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->civ13->reply($message, 'You need to include the name of the map.');
-                    $this->civ13->OOCMessage("Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $gameserver->key);
-                    if ($channel = $this->civ13->discord->getChannel($gameserver->discussion)) {
-                        $msg = "Server is now changing map to `$mapto`.";
-                        if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";
-                        $channel->sendMessage($msg);
-                    }
-                    $this->civ13->loop->addtimer(10, function () use ($mapto, $mapswap, $message): ?PromiseInterface
-                    {
-                        if ($message) $message->react("👍");
-                        return $mapswap($mapto, $message);
-                        
-                    });
-                    if ($message) return $message->react("⏱️");
+                    $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname;
+                    return $this->civ13->reply($message, $gameserver->mapswap($mapto, $admin));
                 };
                 $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'High Staff', 'Admin']);
             }
 
-            $serverban = function (Message $message, string $command, array $message_filtered) use ($gameserver): PromiseInterface
+            $serverban = function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 if (! $this->civ13->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
                 if (! $message_content = substr($message_filtered['message_content'], strlen("{$gameserver->key}ban"))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
@@ -1250,7 +1221,7 @@ class MessageServiceManager
             };
             $this->offsetSet("{$gameserver->key}ban", $serverban, ['Owner', 'High Staff', 'Admin']);
 
-            $serverunban = function (Message $message, array $message_filtered) use ($gameserver): PromiseInterface
+            $serverunban = function (Message $message, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen("{$gameserver->key}unban")))) return $this->civ13->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
                 if (is_numeric($ckey)) {

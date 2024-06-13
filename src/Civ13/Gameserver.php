@@ -276,11 +276,11 @@ class GameServer {
     /**
      * Sends an out-of-character (OOC) message.
      *
-     * @param string $message The message to send.
+     * @param string $message The message to be sent.
      * @param string $sender The sender of the message.
-     * @return bool Returns true if the message was sent successfully, false otherwise.
+     * @return PromiseInterface|bool Returns a PromiseInterface if the message is successfully sent, or false if sending the message fails.
      */
-    public function OOCMessage(string $message, string $sender): bool
+    public function OOCMessage(string $message, string $sender): PromiseInterface|bool
     {
         if (! $this->enabled) return false;
         if (! touch($path = $this->basedir . Civ13::discord2ooc) || ! $file = @fopen($path, 'a')) {
@@ -289,9 +289,8 @@ class GameServer {
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        if ($this->ooc && $channel = $this->discord->getChannel($this->ooc)) $this->civ13->relayPlayerMessage($channel, $message, $sender);
+        if ($this->ooc && $channel = $this->discord->getChannel($this->ooc)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender)) return $promise;
         return true;
-        
     }
     /**
      * Sends an admin message to the server.
@@ -350,6 +349,34 @@ class GameServer {
         fclose($file);
         if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient);
         return true;
+    }
+
+    public function mapswap(string $mapto, string $admin): string
+    {
+        if (! file_exists($fp = $this->civ13->files['map_defines_path']) || ! $file = @fopen($fp, 'r')) {
+            $this->logger->error("Unable to open `$fp` for reading.");
+            return "Unable to open `$fp` for reading.";
+        }
+    
+        $maps = array();
+        while (($fp = fgets($file, 4096)) !== false) {
+            $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
+            if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
+        }
+        fclose($file);
+        if (! in_array($mapto, $maps)) return "`$mapto` was not found in the map definitions.";
+
+        if ($promise = $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin) ?? $this->civ13->discord->user->displayname)) {
+            if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
+                if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";
+                $channel->sendMessage($msg);
+            }
+            if ($promise instanceof PromiseInterface) {
+                $func = function () use ($mapto) { \execInBackground('python3 ' . $this->basedir . Civ13::mapswap . " $mapto" ); };
+                $this->civ13->then($promise->then($func, $this->civ13->onRejectedDefault));
+            } else \execInBackground('python3 ' . $this->basedir . Civ13::mapswap . " $mapto");
+        }
+        return 'There was an error sending the mapswap command.';
     }
 
     /**
