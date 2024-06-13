@@ -371,10 +371,11 @@ class GameServer {
                 if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";
                 $channel->sendMessage($msg);
             }
-            if ($promise instanceof PromiseInterface) {
-                $func = function () use ($mapto) { \execInBackground('python3 ' . $this->basedir . Civ13::mapswap . " $mapto" ); };
-                $this->civ13->then($promise->then($func, $this->civ13->onRejectedDefault));
-            } else \execInBackground('python3 ' . $this->basedir . Civ13::mapswap . " $mapto");
+            $func = function () use ($mapto) { \execInBackground('python3 ' . $this->basedir . Civ13::mapswap . " $mapto" ); };
+            $this->loop->addTimer(10, function () use ($promise, $func) {
+                if ($promise instanceof PromiseInterface) $this->civ13->then($promise->then($func, $this->civ13->onRejectedDefault));
+                else $func();
+            });
             return $msg;
         }
         return 'There was an error sending the mapswap command.';
