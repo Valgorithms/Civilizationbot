@@ -244,7 +244,7 @@ class HttpServiceManager
             $builder = MessageBuilder::new();
             if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]) && $user = $this->discord->users->get('id', $this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) { // This will not work if the user didn't login with oauth2 during this runtime session (i.e. the bot was restarted)
                 $embed = new Embed($this->discord);
-                $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+                $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
                 $embed->addField('Message', $content);
                 $builder->addEmbed($embed);
             } else {
@@ -467,7 +467,7 @@ class HttpServiceManager
                             <button style="width:8%" onclick="sendGetRequest(\'reset\')">Reset</button>
                             <button style="width:8%" onclick="sendGetRequest(\'update\')">Update</button>
                             <button style="width:8%" onclick="sendGetRequest(\'restart\')">Restart</button>
-                            <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open(\''. $this->civ13->github . '\')">' . $this->discord->user->displayname . '</button>
+                            <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open(\''. $this->civ13->github . '\')">' . $this->discord->user->username . '</button>
                         </div>
                         <div class="alert-container"></div>
                         <div class="checkpoint">' . 
@@ -741,7 +741,7 @@ class HttpServiceManager
             } 
             $builder = MessageBuilder::new();
             $embed = new Embed($this->discord);
-            $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+            $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
             $embed->setDescription($message);
             $builder->addEmbed($embed);
             return $channel->sendMessage($builder);
@@ -879,7 +879,7 @@ class HttpServiceManager
                 $message = "**__{$time}__** $message";
 
                 
-                if (str_contains($data['message'], $this->discord->user->displayname)) $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key); // Message was probably meant for the bot
+                if (str_contains($data['message'], $this->discord->user->username)) $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key); // Message was probably meant for the bot
                 else $relay($message, $channel, $ckey); //Bypass moderator
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);

@@ -366,7 +366,7 @@ class GameServer {
         fclose($file);
         if (! in_array($mapto, $maps)) return "`$mapto` was not found in the map definitions.";
 
-        $promise = $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->user->displayname);
+        $promise = $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->user->username);
         if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
             if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";
             $channel->sendMessage($msg);
@@ -519,7 +519,7 @@ class GameServer {
      */
     public function unban(string $ckey, ?string $admin = null,): void
     {
-        $admin ??= $this->discord->user->displayname;
+        $admin ??= $this->discord->user->username;
         $this->legacy ? $this->legacyUnban($ckey, $admin) : $this->sqlUnban($ckey, $admin);
         if ($member = $this->civ13->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->civ13->role_ids['banished'])) $member->removeRole($this->civ13->role_ids['banished'], "Unbanned by $admin");

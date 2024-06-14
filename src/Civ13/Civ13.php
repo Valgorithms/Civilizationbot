@@ -262,7 +262,7 @@ class Civ13
         $this->messageServiceManager = new MessageServiceManager($this);
         if (isset($this->discord)) $this->discord->once('ready', function () {
             $this->ready = true;
-            $this->logger->info("logged in as {$this->discord->user->displayname} ({$this->discord->id})");
+            $this->logger->info("logged in as {$this->discord->user->username} ({$this->discord->id})");
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__UpdateDiscordVariables();
@@ -640,7 +640,7 @@ class Civ13
      * @param Channel|Thread|string $channel The channel to send the message to.
      * @param bool $urgent Whether the message is urgent or not.
      * @param string $content The content of the message.
-     * @param string $sender The sender of the message (ckey or Discord displayname).
+     * @param string $sender The sender of the message (ckey or Discord username).
      * @param string $recipient The recipient of the message (optional).
      * @param string $file_name The name of the file to attach to the message (default: 'message.txt').
      * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
@@ -654,7 +654,7 @@ class Civ13
         }
         $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
 
-        // Sender is the ckey or Discord displayname
+        // Sender is the ckey or Discord username
         $ckey = null;
         $member = null;
         $verified = false;
@@ -672,7 +672,7 @@ class Civ13
         if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
         $embed = new Embed($this->discord);
         if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
-        if ($member) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+        if ($member) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
         $embed->setDescription($content);
         $builder->addEmbed($embed);
         return $channel->sendMessage($builder)->then($then, null);
@@ -832,7 +832,7 @@ class Civ13
         }
         $builder = MessageBuilder::new();
         $embed = new Embed($this->discord);
-        if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->displayname} ({$user->id})", $user->avatar);
+        if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
         $embed->setDescription($array['message']);
         $builder->addEmbed($embed);
@@ -1288,7 +1288,7 @@ class Civ13
     }
     public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): void
     {
-        $admin ??= $this->discord->user->displayname;
+        $admin ??= $this->discord->user->username;
         if (is_null($gameserver)) foreach ($this->enabled_servers as &$gameserver) $this->unban($ckey, $admin, $gameserver->key);
         elseif(isset($this->enabled_servers[$gameserver])) $this->enabled_servers[$gameserver]->unban($ckey, $admin);
         else {

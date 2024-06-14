@@ -638,7 +638,7 @@ class Slash
         $this->listenCommand('unban', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            $this->civ13->unban($item['ss13'], $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'] ?? $interaction->user->displayname);
+            $this->civ13->unban($item['ss13'], $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'] ?? $interaction->user->username);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`$admin`** unbanned **`{$item['ss13']}`**."));
         });
 
@@ -649,7 +649,7 @@ class Slash
             $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'];
             if ($member = $this->civ13->verifier->getVerifiedMember($item))
                 if (! $member->roles->has($this->civ13->role_ids['paroled']))
-                    $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->displayname}) paroled `$ckey`");
+                    $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->username}) paroled `$ckey`");
             if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$interaction->user->id}>).");
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` (<@{$item['discord']}>) has been placed on parole."), true);
         });
@@ -661,7 +661,7 @@ class Slash
             $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'];
             if ($member = $this->civ13->verifier->getVerifiedMember($item))
                 if ($member->roles->has($this->civ13->role_ids['paroled']))
-                    $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->displayname}) released `$ckey`");
+                    $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->username}) released `$ckey`");
             if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$interaction->user->id}>).");
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` (<@{$item['discord']}>) has been released on parole."), true);
         });
@@ -680,14 +680,14 @@ class Slash
         {
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->permitCkey($item['ss13']);
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** has permitted **`{$item['ss13']}`** to bypass Byond account restrictions."));
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->username}`** has permitted **`{$item['ss13']}`** to bypass Byond account restrictions."));
         });
 
         $this->listenCommand('revoke', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             $this->civ13->permitCkey($item['ss13'], false);
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->displayname}`** has removed permission from **`{$item['ss13']}`** to bypass Byond account restrictions."));
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->username}`** has removed permission from **`{$item['ss13']}`** to bypass Byond account restrictions."));
         });
 
         $this->listenCommand('ckeyinfo', function (Interaction $interaction): PromiseInterface
@@ -698,7 +698,7 @@ class Slash
                     $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
                     $embed = new Embed($this->discord);
                     $embed->setTitle($item['ss13']);
-                    if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+                    if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
                     if (! empty($ckeyinfo['ckeys'])) {
                         foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->civ13->ages[$ckey])) $ckey = "$ckey ({$this->civ13->ages[$ckey]})";
                         $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
@@ -735,7 +735,7 @@ class Slash
             $players = [];
             $embed = new Embed($this->discord);
             $embed->setTitle($item['ss13']);
-            if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+            if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
             foreach ($this->civ13->getRoundsCollections() as $server => $arr) foreach ($arr as $collection) {
                 if (! in_array($server, $servers)) $servers[] = $server;
                 foreach ($collection as $round) {

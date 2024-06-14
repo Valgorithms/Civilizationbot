@@ -56,7 +56,7 @@ class MessageServiceManager
                 '404 Error: Humor not found.',
                 'Hmm, looks like someone called me to just enjoy my company.',
                 'Seems like I\'ve been summoned!',
-                'I see you\'ve summoned the almighty ' . ($this->discord->username ?? $this->discord->displayname) . ', ready to dazzle you with... absolutely nothing!',
+                'I see you\'ve summoned the almighty ' . ($this->discord->username ?? $this->discord->username) . ', ready to dazzle you with... absolutely nothing!',
                 'Ah, the sweet sound of my name being called!',
                 'I\'m here, reporting for duty!',
                 'Greetings, human! It appears you\'ve summoned me to bask in my digital presence.',
@@ -169,7 +169,7 @@ class MessageServiceManager
             if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) {
                 $ckey = $item['ss13'];
                 if ($member = $this->civ13->verifier->getVerifiedMember($item))
-                    $embed->setAuthor("{$member->user->displayname} ({$member->id})", $member->avatar);
+                    $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
             }
             $ckeys = [$ckey];
             $ips = [];
@@ -406,7 +406,7 @@ class MessageServiceManager
                 $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                 if ($member = $this->civ13->verifier->getVerifiedMember($item))
                     if ($member->roles->has($this->civ13->role_ids['paroled']))
-                        $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
+                        $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->username}) released `$ckey`");
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
             });
@@ -485,7 +485,7 @@ class MessageServiceManager
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
             foreach ($this->civ13->enabled_servers as &$gameserver) switch (strtolower($message->channel->name)) {
                 case "ooc-{$gameserver->key}":                    
-                    if ($gameserver->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
+                    if ($gameserver->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
                     return $message->react("🔥");
             }
             return $this->civ13->reply($message, 'You need to be in any of the #ooc channels to use this command.');
@@ -497,7 +497,7 @@ class MessageServiceManager
             foreach ($this->civ13->enabled_servers as $server) {
                 switch (strtolower($message->channel->name)) {
                     case "asay-{$server->key}":
-                        if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $server->key)) return $message->react("📧");
+                        if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $server->key)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -507,14 +507,14 @@ class MessageServiceManager
         $this->offsetSet('globalooc', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
+            if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
             return $message->react("🔥");
         }), ['Owner', 'High Staff', 'Admin']);
 
         $this->offsetSet('globalasay', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
+            if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
             return $message->react("🔥");
         }), ['Owner', 'High Staff', 'Admin']);
 
@@ -529,7 +529,7 @@ class MessageServiceManager
                     case "asay-{$server->key}":
                     case "ic-{$server->key}":
                     case "ooc-{$server->key}":
-                        if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $recipient, $server->key)) return $message->react("📧");
+                        if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $recipient, $server->key)) return $message->react("📧");
                         return $message->react("🔥");
                 }
             }
@@ -648,7 +648,7 @@ class MessageServiceManager
                 $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                 if ($member = $this->civ13->verifier->getVerifiedMember($item))
                     if (! $member->roles->has($this->civ13->role_ids['paroled']))
-                        $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
+                        $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->username}) paroled `$ckey`");
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
             }), ['Owner', 'High Staff', 'Admin']);
@@ -1158,7 +1158,7 @@ class MessageServiceManager
                         if ($message) $message->react("👍");
                     });
                     if ($message) $message->react("⏱️");
-                    $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->user->id ?? $this->civ13->discord->user->displayname);
+                    $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->user->id ?? $this->civ13->discord->user->username);
                     $this->civ13->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender, $gameserver->key);
                 };
                 $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'High Staff']);
@@ -1182,8 +1182,8 @@ class MessageServiceManager
                             });
                         }
                     });
-                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname, $gameserver->key);
-                    else $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->discord->user->displayname, $gameserver->key);
+                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->username, $gameserver->key);
+                    else $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->discord->user->username, $gameserver->key);
                     if ($message) $message->react("⏱️");
                     return null;
                 };
@@ -1196,7 +1196,7 @@ class MessageServiceManager
                 {
                     $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->civ13->reply($message, 'You need to include the name of the map.');
-                    $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->displayname;
+                    $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->username;
                     return $this->civ13->reply($message, $gameserver->mapswap($mapto, $admin));
                 };
                 $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'High Staff', 'Admin']);
