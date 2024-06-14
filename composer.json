@@ -15,7 +15,8 @@
         "react/filesystem": "^0.2@dev",
         "react/async": "4.x-dev",
         "react/child-process": "0.6.4",
-        "vzgcoders/twitchphp": "dev-main"
+        "vzgcoders/twitchphp": "dev-main",
+        "valzargaming/byond": "dev-main"
     },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
@@ -36,7 +37,6 @@
     },
     "autoload": {
         "psr-4": {
-            "Byond\\": "src/Byond/",
             "Civ13\\": "src/Civ13/",
             "Discord\\": "src/Discord/"
         }
