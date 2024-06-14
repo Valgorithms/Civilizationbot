@@ -227,7 +227,7 @@ class Verifier
     public function checkToken(string $discord_id): bool
     { // Check if the user set their token
         if (! $item = $this->pending->get('discord', $discord_id)) return false; // User is not in pending collection (This should never happen and is probably a programming error)
-        if (! isset($item['token']) || $item['token'] !== Byond::getByondDesc($item['ss13'])) return false; // Token does not match the description
+        if (! isset($item['token']) || $item['token'] !== Byond::getDesc($item['ss13'])) return false; // Token does not match the description
         return true; // Token matches
     }
 

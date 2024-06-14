@@ -137,10 +137,10 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The key for the player, or false if it cannot be retrieved.
      */
-    public static function getByondKey(string $ckey): string|false
+    public static function getKey(string $ckey): string|false
     {
         if (! $page = $page ?? self::getProfilePage($ckey)) return false;
-        return self::__parseFieldByondKey($page);
+        return self::__parseKey($page);
     }
 
     /**
@@ -149,10 +149,10 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The gender for the player, or false if it cannot be retrieved.
      */
-    public static function getByondGender(string $ckey): string|false
+    public static function getGender(string $ckey): string|false
     {
         if (! $page = $page ?? self::getProfilePage($ckey)) return false;
-        return self::__parseFieldByondGender($page);
+        return self::__parseGender($page);
     }
 
     /**
@@ -161,10 +161,10 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The joined date for the player, or false if it cannot be retrieved.
      */
-    public static function getByondJoined(string $ckey): string|false
+    public static function getJoined(string $ckey): string|false
     {
         if (! $page = $page ?? self::getProfilePage($ckey)) return false;
-        return self::__parseFieldByondJoined($page);
+        return self::__parseJoined($page);
     }
 
     /**
@@ -173,10 +173,10 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The desc for the player, or false if it cannot be retrieved.
      */
-    public static function getByondDesc(string $ckey): string|false
+    public static function getDesc(string $ckey): string|false
     {
         if (! $page = $page ?? self::getProfilePage($ckey)) return false;
-        return self::__parseFieldByondDesc($page);
+        return self::__parseDesc($page);
     }
 
     /**
@@ -185,10 +185,10 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The home_page for the player, or false if it cannot be retrieved.
      */
-    public static function getByondHomePage(string $ckey): string|false
+    public static function getHomePage(string $ckey): string|false
     {
         if (! $page = $page ?? self::getProfilePage($ckey)) return false;
-        return self::__parseFieldByondHomePage($page);
+        return self::__parseHomePage($page);
     }
 
     /**
@@ -197,9 +197,9 @@ class Byond
      * @param string $page The Byond page content.
      * @return string|false The key for the player, or false if it cannot be retrieved.
      */
-    public static function __parseFieldByondKey(string $page): string|false
+    public static function __parseKey(string $page): string|false
     {
-        return self::__parseField($page, '	key = ');
+        return self::__parse($page, '	key = ');
     }
 
     /**
@@ -208,9 +208,10 @@ class Byond
      * @param string $page The Byond page content.
      * @return string|false The gender of the player, or false if it cannot be retrieved.
      */
-    public static function __parseFieldByondGender(string $page): string|false
+    
+    public static function __parseGender(string $page): string|false
     {
-        return self::__parseField($page, '	gender = ');
+        return self::__parse($page, '	gender = ');
     }
 
     /**
@@ -219,9 +220,9 @@ class Byond
      * @param string $page The Byond page content.
      * @return string|false The joined for of the player, or false if it cannot be retrieved.
      */
-    public static function __parseFieldByondJoined(string $page): string|false
+    public static function __parseJoined(string $page): string|false
     {
-        return self::__parseField($page, '	joined = ');
+        return self::__parse($page, '	joined = ');
     }
     
     /**
@@ -231,9 +232,9 @@ class Byond
      * @param string $page The Byond page content.
      * @return string|false The description for the player, or false if it cannot be retrieved.
      */
-    public static function __parseFieldByondDesc(string $page): string|false
+    public static function __parseDesc(string $page): string|false
     {
-        return self::__parseField($page, '	desc = ');
+        return self::__parse($page, '	desc = ');
     }
 
     /**
@@ -243,14 +244,23 @@ class Byond
      * @param string $page The Byond page content.
      * @return string|false The home page URL for the player, or false if not found.
      */
-    public static function __parseFieldByondHomePage(string $page): string|false
+    public static function __parseHomePage(string $page): string|false
     {
-        return self::__parseField($page, '	home_page = ');
+        return self::__parse($page, '	home_page = ');
     }
 
-    private static function __parseField(string $page, string $search_string): string|false
+    /**
+     * Parses a field from a given page using a search string.
+     *
+     * @param string $page The page content to search in.
+     * @param string $search_string The string to search for in the page.
+     * @return string|false The parsed field if found, or false if not found.
+     */
+    private static function __parse(string $page, string $search_string): string|false
     {
-        if (($strpos = strpos($page , $search_string) + strlen($search_string)) === false) return false;
-        return substr($page, $strpos + 1, strpos($page, PHP_EOL, $strpos + strlen($search_string)) - $strpos - 2);
+        if (($strpos = strpos($page , $search_string)) === false) return false;
+        $strpos += strlen($search_string);
+        $length = strpos($page, PHP_EOL, $strpos) - $strpos;
+        return substr($page, $strpos+1, $length-2);
     }
 }
