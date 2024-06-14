@@ -43,13 +43,6 @@ class Byond
     const string PROFILE = 'https://secure.byond.com/members/-/account';
 
     /**
-     * Converts a BYOND timestamp to a Unix timestamp.
-     *
-     * @param int $byond_timestamp_ds The BYOND timestamp in deciseconds.
-     * @return int The converted Unix timestamp.
-     */
-
-    /**
      * Used to search through bans that are stored within CentCom.
      *
      * @var string
@@ -94,6 +87,13 @@ class Byond
         return self::convertToByondFromUnix(strtotime($iso_timestamp));
     }
 
+    /**
+     * Searches for a ban on the CENTCOM server using the provided ckey.
+     *
+     * @param string $ckey The ckey to search for.
+     * @param bool $prettyprint (Optional) Whether to pretty print the JSON response. Default is true.
+     * @return string|false The JSON response as a string if successful, false otherwise.
+     */
     public static function bansearch_centcom(string $ckey, bool $prettyprint = true): string|false
     {
         $json = false;
@@ -112,13 +112,13 @@ class Byond
     }
 
     /**
-     * Retrieves the 50 character token from the BYOND website.
+     * Retrieves the profile page of a user based on their ckey.
      *
      * @param string $ckey The ckey of the user.
-     * @return string|false The retrieved token or false if the retrieval fails.
+     * @return string|false The profile page content as a string, or false if the page couldn't be retrieved.
      */
     public static function getProfilePage(string $ckey): string|false 
-    { // Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and added the generated token to their description first!
+    {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, self::MEMBERS.urlencode($ckey).'?format=text');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // return the page as a string
@@ -132,51 +132,125 @@ class Byond
     }
 
     /**
-     * Retrieves the BYOND age of a player based on their ckey.
+     * Retrieves the "key" field for a player based on their ckey.
      *
      * @param string $ckey The ckey of the player.
-     * @return string|false The BYOND age of the player, or false if it cannot be retrieved.
+     * @return string|false The key for the player, or false if it cannot be retrieved.
      */
-    public static function getByondAge(string $ckey, ?string $page = null): string|false
+    public static function getByondKey(string $ckey): string|false
     {
         if (! $page = $page ?? self::getProfilePage($ckey)) return false;
-        return self::__parseProfileAge($page);
+        return self::__parseFieldByondKey($page);
     }
 
     /**
-     * Retrieves the BYOND description of a player based on their ckey.
+     * Retrieves the "gender" field for a player based on their ckey.
      *
      * @param string $ckey The ckey of the player.
-     * @return string|false The BYOND description of the player, or false if it cannot be retrieved.
+     * @return string|false The gender for the player, or false if it cannot be retrieved.
      */
-    public static function getByondDesc(string $ckey, ?string $page = null): string|false
+    public static function getByondGender(string $ckey): string|false
     {
         if (! $page = $page ?? self::getProfilePage($ckey)) return false;
-        return self::__parseByondDesc($page);
+        return self::__parseFieldByondGender($page);
     }
 
     /**
-     * This function is used to parse a BYOND account's description from their page.
+     * Retrieves the "joined" field for a player based on their ckey.
+     *
+     * @param string $ckey The ckey of the player.
+     * @return string|false The joined date for the player, or false if it cannot be retrieved.
+     */
+    public static function getByondJoined(string $ckey): string|false
+    {
+        if (! $page = $page ?? self::getProfilePage($ckey)) return false;
+        return self::__parseFieldByondJoined($page);
+    }
+
+    /**
+     * Retrieves the "description" field for a player based on their ckey.
+     *
+     * @param string $ckey The ckey of the player.
+     * @return string|false The desc for the player, or false if it cannot be retrieved.
+     */
+    public static function getByondDesc(string $ckey): string|false
+    {
+        if (! $page = $page ?? self::getProfilePage($ckey)) return false;
+        return self::__parseFieldByondDesc($page);
+    }
+
+    /**
+     * Retrieves the "home_page" field for a player based on their ckey.
+     *
+     * @param string $ckey The ckey of the player.
+     * @return string|false The home_page for the player, or false if it cannot be retrieved.
+     */
+    public static function getByondHomePage(string $ckey): string|false
+    {
+        if (! $page = $page ?? self::getProfilePage($ckey)) return false;
+        return self::__parseFieldByondHomePage($page);
+    }
+
+    /**
+     * Parses the "key" field from the Byond page.
      *
      * @param string $page The Byond page content.
-     * @return string|false The parsed description or false if not found.
+     * @return string|false The key for the player, or false if it cannot be retrieved.
      */
-    public static function __parseByondDesc(string $page): string|false
+    public static function __parseFieldByondKey(string $page): string|false
     {
-        $desc_string = 'desc = ';
-        if (($strpos = strpos($page , $desc_string) + strlen($desc_string)) === false) return false;
-        return substr($page, $strpos + 1, strpos($page, PHP_EOL, $strpos + strlen($desc_string)) - $strpos - 2);
+        return self::__parseField($page, '	key = ');
     }
 
     /**
-     * This function is used to parse a BYOND account's age frrom their page.
+     * Parses the "gender" field from a Byond page.
      *
-     * @param string $page The page content to parse.
-     * @return string|false The parsed age as a string, or false if the age cannot be parsed.
+     * @param string $page The Byond page content.
+     * @return string|false The gender of the player, or false if it cannot be retrieved.
      */
-    public static function __parseProfileAge(string $page): string|false
+    public static function __parseFieldByondGender(string $page): string|false
     {
-        if (preg_match("^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])^", $age = substr($page, (strpos($page , 'joined')+10), 10))) return $age;
-        return false;
+        return self::__parseField($page, '	gender = ');
+    }
+
+    /**
+     * Parses the "joined" field from a Byond page.
+     *
+     * @param string $page The Byond page content.
+     * @return string|false The joined for of the player, or false if it cannot be retrieved.
+     */
+    public static function __parseFieldByondJoined(string $page): string|false
+    {
+        return self::__parseField($page, '	joined = ');
+    }
+    
+    /**
+     * Parses the "desc" field from a Byond page.
+     * This field is manually set by the player.
+     *
+     * @param string $page The Byond page content.
+     * @return string|false The description for the player, or false if it cannot be retrieved.
+     */
+    public static function __parseFieldByondDesc(string $page): string|false
+    {
+        return self::__parseField($page, '	desc = ');
+    }
+
+    /**
+     * Parses the "home_page" field from a Byond page.
+     * This field is manually set by the player.
+     *
+     * @param string $page The Byond page content.
+     * @return string|false The home page URL for the player, or false if not found.
+     */
+    public static function __parseFieldByondHomePage(string $page): string|false
+    {
+        return self::__parseField($page, '	home_page = ');
+    }
+
+    private static function __parseField(string $page, string $search_string): string|false
+    {
+        if (($strpos = strpos($page , $search_string) + strlen($search_string)) === false) return false;
+        return substr($page, $strpos + 1, strpos($page, PHP_EOL, $strpos + strlen($search_string)) - $strpos - 2);
     }
 }
