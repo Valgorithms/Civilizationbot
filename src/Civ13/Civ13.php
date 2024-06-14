@@ -826,7 +826,7 @@ class Civ13
             if ($ooc) $this->moderator->moderate($array['ckey'], $array['message'], $this->ooc_badwords, $this->ooc_badwords_warnings, $gameserver->key);
             else $this->moderator->moderate($array['ckey'], $array['message'], $this->ic_badwords, $this->ic_badwords_warnings, $gameserver->key);
         }
-        if (! $item = $this->verifier->verified->get('ss13', $this->sanitizeInput($array['ckey']))) {
+        if (! $item = $this->verifier->get('ss13', $this->sanitizeInput($array['ckey']))) {
             $this->sendMessage($channel, $array['message'], 'relay.txt', false, false);
             return true;
         }
@@ -1115,7 +1115,7 @@ class Civ13
             $this->logger->warning('BYOND object not set!');
             return false;
         }
-        if ($age = $this->byond->getByondAge($ckey)) {
+        if ($age = Byond::getByondAge($ckey)) {
             $this->ages[$ckey] = $age;
             $this->VarSave('ages.json', $this->ages);
             return $this->ages[$ckey];
@@ -1132,34 +1132,6 @@ class Civ13
     {
         return strtotime($age) <= strtotime($this->minimum_age);
     }
-    
-    public function bansearch_centcom(string $ckey, bool $prettyprint = true): string|false
-    {
-        $json = false;
-        $centcom_url = 'https://centcom.melonmesa.com';
-        $ban_search = '/ban/search/';
-        $url = $centcom_url . $ban_search . $ckey;
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPGET, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
-        $response = curl_exec($ch);
-        curl_close($ch);
-        if (! $response) {
-            $this->logger->warning("Failed to retrieve data from $url");
-            return false;
-        }
-        
-        if (! $json = $prettyprint ? json_encode(json_decode($response), JSON_PRETTY_PRINT) : $response) {
-            $this->logger->warning("Failed to decode JSON data from $url");
-            return false;
-        }
-
-        return $json;
-    }
     /**
      * Sends a message containing the list of bans for all servers.
      *
@@ -1174,7 +1146,7 @@ class Civ13
         });
         if (empty($gameservers)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->enabled_servers)) . '`');
 
-        foreach ($gameservers as $gameserver) if (! @touch($filename = $gameserver->basedir . self::bans)) {
+        foreach ($gameservers as &$gameserver) if (! @touch($filename = $gameserver->basedir . self::bans)) {
             $this->logger->warning("Failed to create file $filename");
             return $message->react("🔥");
         }
@@ -1301,7 +1273,7 @@ class Civ13
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
         $array['ckey'] = $this->sanitizeInput($array['ckey']);
         if (is_numeric($array['ckey'])) {
-            if (! $item = $this->verifier->verified->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
+            if (! $item = $this->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
         }
         if ($member = $this->verifier->getVerifiedMember($array['ckey'])) if (! $member->roles->has($this->role_ids['banished'])) {
@@ -1393,7 +1365,7 @@ class Civ13
         $altbanned = false;
         $discords = [];
         foreach ($ckeys as $key) {
-            if ($item = $this->verifier->verified->get('ss13', $key)) {
+            if ($item = $this->verifier->get('ss13', $key)) {
                 $discords[] = $item['discord'];
                 $verified = true;
             }
@@ -2034,7 +2006,7 @@ class Civ13
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
         return true;
     }
-    
+
     // Magic Methods
     public function __destruct()
     {

@@ -312,7 +312,7 @@ class GameServer {
         if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             $admin = false;
             if ($this->civ13->verifier) {
-                if ($item = $this->civ13->verifier->verified->get('ss13', $sender))
+                if ($item = $this->civ13->verifier->get('ss13', $sender))
                     if ($member = $guild->members->get('id', $item['discord']))
                         if ($member->roles->has($this->civ13->role_ids['Admin']))
                             { $admin = true; $urgent = false;}
@@ -320,7 +320,7 @@ class GameServer {
                     if ($playerlist = $this->players)
                         if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
                             foreach ($admins as $member)
-                                if ($item = $this->civ13->verifier->verified->get('discord', $member->id))
+                                if ($item = $this->civ13->verifier->get('discord', $member->id))
                                     if (in_array($item['ss13'], $playerlist))
                                         { $urgent = false; break; }
                 }
@@ -482,7 +482,7 @@ class GameServer {
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
 
         if (is_numeric($array['ckey'] = $this->civ13->sanitizeInput($array['ckey']))) {
-            if (! $item = $this->civ13->verifier->verified->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
+            if (! $item = $this->civ13->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
         }
         if ($member = $this->civ13->verifier->getVerifiedMember($array['ckey'])) {

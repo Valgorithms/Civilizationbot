@@ -57,7 +57,7 @@ class Moderator
                 }
             }
         }
-        if ($this->civ13->verifier->verified->get('ss13', $ckey)) return; // Verified users are exempt from further checks
+        if ($this->civ13->verifier->get('ss13', $ckey)) return; // Verified users are exempt from further checks
         if ($this->civ13->panic_bunker || (isset($this->civ13->serverinfo[1]['admins']) && $this->civ13->serverinfo[1]['admins'] == 0 && isset($this->civ13->serverinfo[1]['vote']) && $this->civ13->serverinfo[1]['vote'] == 0)) {
             $this->civ13->__panicBan($ckey); // Require verification for Persistence rounds
             return;

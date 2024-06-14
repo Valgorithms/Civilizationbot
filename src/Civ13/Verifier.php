@@ -8,6 +8,7 @@
 
 namespace Civ13;
 
+use Byond\Byond;
 use Discord\Discord;
 use Discord\Helpers\Collection;
 use Discord\Parts\User\Member;
@@ -226,8 +227,8 @@ class Verifier
     public function checkToken(string $discord_id): bool
     { // Check if the user set their token
         if (! $item = $this->pending->get('discord', $discord_id)) return false; // User is not in pending collection (This should never happen and is probably a programming error)
-        if (! $page = $this->civ13->byond->getProfilePage($item['ss13'])) return false; // Website could not be retrieved or the description wasn't found
-        if ($item['token'] != $this->civ13->byond->__extractProfileDesc($page)) return false; // Token does not match the description
+        if (! $page = Byond::getProfilePage($item['ss13'])) return false; // Website could not be retrieved or the description wasn't found
+        if ($item['token'] != Byond::__extractToken($page)) return false; // Token does not match the description
         return true; // Token matches
     }
 
@@ -254,8 +255,8 @@ class Verifier
             if ($m && ! $m->roles->has($this->civ13->role_ids['permabanished'])) $m->addRole($this->civ13->role_ids['permabanished'], "permabancheck $ckey");
             return 'This account is currently under investigation.';
         }
-        if ($this->verified->has($discord_id)) { $member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->civ13->role_ids['infantry'])) $member->setRoles([$this->civ13->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
-        if ($this->verified->has($ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
+        if ($this->verified->get('discord', $discord_id)) { $member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->civ13->role_ids['infantry'])) $member->setRoles([$this->civ13->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
+        if ($this->verified->get('ckey', $ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
@@ -321,7 +322,7 @@ class Verifier
      * @return array An array with 'success' (bool) and 'error' (string) keys indicating the success status and error message, if any.
      */
     public function verify(string $ckey, string $discord_id, bool $provisional = false): array // ['success' => bool, 'error' => string]
-    { // Send $_POST information to the website. Only call this function after the getByondDesc() verification process has been completed!
+    { // Send $_POST information to the website. Only call this function after the token verification process has been completed!
         $success = false;
         $error = '';
 
@@ -686,6 +687,18 @@ class Verifier
             }
         });
         return $this->timers['verifier_status_timer'];
+    }
+
+    /**
+     * Retrieves a value from the specified discriminator and key.
+     *
+     * @param string $discrim The discriminator.
+     * @param mixed $key The key.
+     * @return mixed The retrieved value.
+     */
+    public function get(string $discrim, $key)
+    {
+        return $this->verified->get($discrim, $key);
     }
     // Magic Methods
     public function __destruct()

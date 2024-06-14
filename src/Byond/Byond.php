@@ -48,6 +48,14 @@ class Byond
      * @param int $byond_timestamp_ds The BYOND timestamp in deciseconds.
      * @return int The converted Unix timestamp.
      */
+
+    /**
+     * Used to search through bans that are stored within CentCom.
+     *
+     * @var string
+     */
+    const string CENTCOM_URL = 'https://centcom.melonmesa.com';
+
     public static function convertToUnixFromByond(int $byond_timestamp): int
     {
         return ($byond_timestamp * 0.1) + self::BYOND_EPOCH_AS_UNIX_TS;
@@ -86,13 +94,30 @@ class Byond
         return self::convertToByondFromUnix(strtotime($iso_timestamp));
     }
 
+    public static function bansearch_centcom(string $ckey, bool $prettyprint = true): string|false
+    {
+        $json = false;
+        $url = self::CENTCOM_URL . '/ban/search/' . $ckey;
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        if (! $response) return false;
+        if (! $json = $prettyprint ? json_encode(json_decode($response), JSON_PRETTY_PRINT) : $response) return false;
+        return $json;
+    }
+
     /**
      * Retrieves the 50 character token from the BYOND website.
      *
      * @param string $ckey The ckey of the user.
      * @return string|false The retrieved token or false if the retrieval fails.
      */
-    public function getProfilePage(string $ckey): string|false 
+    public static function getProfilePage(string $ckey): string|false 
     { // Get the 50 character token from the desc. User will have needed to log into https://secure.byond.com/members/-/account and added the generated token to their description first!
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, self::MEMBERS.urlencode($ckey).'?format=text');
@@ -112,9 +137,9 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The BYOND age of the player, or false if it cannot be retrieved.
      */
-    public function getByondAge(string $ckey): string|false
+    public static function getByondAge(string $ckey): string|false
     {   
-        return $this->__parseProfileAge($this->getProfilePage($ckey));
+        return self::__parseProfileAge(self::getProfilePage($ckey));
     }
 
     /**
@@ -123,9 +148,9 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The BYOND description of the player, or false if it cannot be retrieved.
      */
-    public function getByondDesc(string $ckey): string|false
+    public static function getByondDesc(string $ckey): string|false
     {
-        return $this->__extractProfileDesc($this->getProfilePage($ckey));
+        return self::__extractToken(self::getProfilePage($ckey));
     }
 
     /**
@@ -134,7 +159,7 @@ class Byond
      * @param string $page The HTML page content from which to extract the token.
      * @return string|false The extracted token if found, or false if not found.
      */
-    public function __extractProfileDesc(string $page): string|false 
+    public static function __extractToken(string $page): string|false 
     {
         if ($desc = substr($page, (strpos($page , 'desc')+8), 50)) return $desc; // PHP versions older than 8.0.0 will return false if the desc isn't found, otherwise an empty string will be returned
         return false;
@@ -146,7 +171,7 @@ class Byond
      * @param string $page The page content to parse.
      * @return string|false The parsed age as a string, or false if the age cannot be parsed.
      */
-    public function __parseProfileAge(string $page): string|false
+    public static function __parseProfileAge(string $page): string|false
     {
         if (preg_match("^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])^", $age = substr($page, (strpos($page , 'joined')+10), 10))) return $age;
         return false;

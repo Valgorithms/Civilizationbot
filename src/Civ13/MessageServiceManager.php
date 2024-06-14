@@ -7,6 +7,7 @@
 
 namespace Civ13;
 
+use Byond\Byond;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
@@ -252,7 +253,7 @@ class MessageServiceManager
             foreach ($ckeys as $key) if ($key != $ckey) if ($this->civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
 
             $verified = 'No';
-            if ($this->civ13->verifier->verified->get('ss13', $ckey)) $verified = 'Yes';
+            if ($this->civ13->verifier->get('ss13', $ckey)) $verified = 'Yes';
             if (! empty($ckeys) && $ckeys) {
                 foreach ($ckeys as $c) if (! isset($ckey_age[$c])) ($age = $this->civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
                 $ckey_age_string = '';
@@ -271,7 +272,7 @@ class MessageServiceManager
             if (! empty($dates) && $dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
             if ($verified) $embed->addfieldValues('Verified', $verified, true);
             $discords = [];
-            if ($ckeys) foreach ($ckeys as $c) if ($item = $this->civ13->verifier->verified->get('ss13', $c)) $discords[] = $item['discord'];
+            if ($ckeys) foreach ($ckeys as $c) if ($item = $this->civ13->verifier->get('ss13', $c)) $discords[] = $item['discord'];
             if ($discords) {
                 foreach ($discords as &$id) $id = "<@{$id}>";
                 $embed->addfieldValues('Discord', implode(', ', $discords));
@@ -313,12 +314,12 @@ class MessageServiceManager
         }));
 
         $this->offsetSet('discord2ckey', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) {
-            if (! $item = $this->civ13->verifier->verified->get('discord', $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$id` is not registered to any byond username");
+            if (! $item = $this->civ13->verifier->get('discord', $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$id` is not registered to any byond username");
             return $this->civ13->reply($message, "`$id` is registered to `{$item['ss13']}`");
         }));
 
         $this->offsetSet('ckey2discord', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) {
-            if (! $item = $this->civ13->verifier->verified->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$ckey` is not registered to any discord id");
+            if (! $item = $this->civ13->verifier->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$ckey` is not registered to any discord id");
             return $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
         }));
 
@@ -541,17 +542,17 @@ class MessageServiceManager
         {
             if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
             if (is_numeric($ckey)) {
-                if (! $item = $this->civ13->verifier->verified->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
+                if (! $item = $this->civ13->verifier->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
                 $ckey = $item['ss13'];
             }
-            if (! $json = $this->civ13->bansearch_centcom($ckey)) return $this->civ13->reply($message, "Unable to locate bans were found for **$ckey** on centcom.melonmesa.com.");
+            if (! $json = Byond::bansearch_centcom($ckey)) return $this->civ13->reply($message, "Unable to locate bans were found for **$ckey** on centcom.melonmesa.com.");
             if ($json === '[]') return $this->civ13->reply($message, "No bans were found for **$ckey** on centcom.melonmesa.com.");
             return $this->civ13->reply($message, $json, $ckey.'_bans.json', true);
         }));
         $this->offsetSet('bancheck', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) {
             if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
             if (is_numeric($ckey)) {
-                if (! $item = $this->civ13->verifier->verified->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
+                if (! $item = $this->civ13->verifier->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
                 $ckey = $item['ss13'];
             }
             $reason = 'unknown';
