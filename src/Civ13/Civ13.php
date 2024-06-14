@@ -1115,7 +1115,7 @@ class Civ13
             $this->logger->warning('BYOND object not set!');
             return false;
         }
-        if ($age = trim(str_replace('\"', '', Byond::getJoined($ckey)))) {
+        if ($age = Byond::getJoined($ckey)) {
             $this->ages[$ckey] = $age;
             $this->VarSave('ages.json', $this->ages);
             return $this->ages[$ckey];
