@@ -137,9 +137,10 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The BYOND age of the player, or false if it cannot be retrieved.
      */
-    public static function getByondAge(string $ckey): string|false
-    {   
-        return self::__parseProfileAge(self::getProfilePage($ckey));
+    public static function getByondAge(string $ckey, ?string $page = null): string|false
+    {
+        if (! $page = $page ?? self::getProfilePage($ckey)) return false;
+        return self::__parseProfileAge($page);
     }
 
     /**
@@ -148,16 +149,27 @@ class Byond
      * @param string $ckey The ckey of the player.
      * @return string|false The BYOND description of the player, or false if it cannot be retrieved.
      */
-    public static function getByondDesc(string $ckey): string|false
+    public static function getByondDesc(string $ckey, ?string $page = null): string|false
     {
-        $page = self::getProfilePage($ckey);
+        if (! $page = $page ?? self::getProfilePage($ckey)) return false;
+        return self::__parseByondDesc($page);
+    }
+
+    /**
+     * This function is used to parse a BYOND account's description from their page.
+     *
+     * @param string $page The Byond page content.
+     * @return string|false The parsed description or false if not found.
+     */
+    public static function __parseByondDesc(string $page): string|false
+    {
         $desc_string = 'desc = ';
         if (($strpos = strpos($page , $desc_string) + strlen($desc_string)) === false) return false;
         return substr($page, $strpos + 1, strpos($page, PHP_EOL, $strpos + strlen($desc_string)) - $strpos - 2);
     }
 
     /**
-     * This function is used to parse a BYOND account's age.
+     * This function is used to parse a BYOND account's age frrom their page.
      *
      * @param string $page The page content to parse.
      * @return string|false The parsed age as a string, or false if the age cannot be parsed.

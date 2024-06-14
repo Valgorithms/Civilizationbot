@@ -227,8 +227,7 @@ class Verifier
     public function checkToken(string $discord_id): bool
     { // Check if the user set their token
         if (! $item = $this->pending->get('discord', $discord_id)) return false; // User is not in pending collection (This should never happen and is probably a programming error)
-        if (! $page = Byond::getProfilePage($item['ss13'])) return false; // Website could not be retrieved or the description wasn't found
-        if ($item['token'] !== Byond::getByondDesc($page)) return false; // Token does not match the description
+        if (! isset($item['token']) || $item['token'] !== Byond::getByondDesc($item['ss13'])) return false; // Token does not match the description
         return true; // Token matches
     }
 
@@ -273,7 +272,7 @@ class Verifier
             }
             foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] === $ckey) { $found = true; break; }
             if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
-            return 'Login to your profile at ' . $this->civ13->byond::PROFILE . ' and enter this token as your description: `' . $this->generateToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
+            return 'Login to your profile at ' . Byond::PROFILE . ' and enter this token as your description: `' . $this->generateToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
         return $this->new($discord_id)['error']; // ['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
     }
