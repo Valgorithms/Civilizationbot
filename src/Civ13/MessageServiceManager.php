@@ -483,9 +483,9 @@ class MessageServiceManager
         $this->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-            foreach ($this->civ13->enabled_servers as $server) switch (strtolower($message->channel->name)) {
-                case "ooc-{$server->key}":                    
-                    if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname, $server->key)) return $message->react("📧");
+            foreach ($this->civ13->enabled_servers as &$gameserver) switch (strtolower($message->channel->name)) {
+                case "ooc-{$gameserver->key}":                    
+                    if ($gameserver->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->displayname)) return $message->react("📧");
                     return $message->react("🔥");
             }
             return $this->civ13->reply($message, 'You need to be in any of the #ooc channels to use this command.');
