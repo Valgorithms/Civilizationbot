@@ -299,7 +299,7 @@ class GameServer {
      * @param string $sender The sender of the message.
      * @return bool Returns true if the message was sent successfully, false otherwise.
      */
-    public function AdminMessage(string $message, string $sender): bool
+    public function AdminMessage(string $message, string $sender): PromiseInterface|bool
     {
         if (! $this->enabled) return false;
         if (! @touch($path = $this->basedir . Civ13::discord2admin) || ! $file = @fopen($path, 'a')) {
@@ -326,7 +326,7 @@ class GameServer {
                 }
             }
         }
-        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent);
+        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
         return true;
         
     }
@@ -338,7 +338,7 @@ class GameServer {
      * @param string $sender The sender of the direct message.
      * @return bool Returns true if the direct message was sent successfully, false otherwise.
      */
-    public function DirectMessage(string $message, string $sender, string $recipient): bool
+    public function DirectMessage(string $message, string $sender, string $recipient): PromiseInterface|bool
     {
         if (! $this->enabled) return false;
         if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! $file = @fopen($path, 'a')) {
@@ -347,7 +347,7 @@ class GameServer {
         }
         fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
         fclose($file);
-        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient);
+        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
         return true;
     }
 

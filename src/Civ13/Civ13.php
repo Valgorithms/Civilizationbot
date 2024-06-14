@@ -646,11 +646,11 @@ class Civ13
      * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
      * @return PromiseInterface|null A promise that resolves to the sent message, or null if the message couldn't be sent.
      */
-    public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false): ?PromiseInterface
+    public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface|false
     {
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error("Channel not found for relayPlayerMessage");
-            return null;
+            return false;
         }
         $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
 
@@ -686,7 +686,7 @@ class Civ13
      * @param string|int|null $server_key Server for the message (optional).
      * @return bool Returns true if the message was sent successfully, false otherwise.
      */
-    public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): bool
+    public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): PromiseInterface|bool
     {
         if (is_null($server_key)) {
             $sent = false;
