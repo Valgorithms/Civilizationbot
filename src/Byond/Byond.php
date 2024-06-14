@@ -150,19 +150,10 @@ class Byond
      */
     public static function getByondDesc(string $ckey): string|false
     {
-        return self::__extractToken(self::getProfilePage($ckey));
-    }
-
-    /**
-     * This function is used to retrieve the 50 character token from the BYOND website.
-     *
-     * @param string $page The HTML page content from which to extract the token.
-     * @return string|false The extracted token if found, or false if not found.
-     */
-    public static function __extractToken(string $page): string|false 
-    {
-        if ($desc = substr($page, (strpos($page , 'desc')+8), 50)) return $desc; // PHP versions older than 8.0.0 will return false if the desc isn't found, otherwise an empty string will be returned
-        return false;
+        $page = self::getProfilePage($ckey);
+        $desc_string = 'desc = ';
+        if (($strpos = strpos($page , $desc_string) + strlen($desc_string)) === false) return false;
+        return substr($page, $strpos + 1, strpos($page, PHP_EOL, $strpos + strlen($desc_string)) - $strpos - 2);
     }
 
     /**

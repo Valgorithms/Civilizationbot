@@ -228,7 +228,7 @@ class Verifier
     { // Check if the user set their token
         if (! $item = $this->pending->get('discord', $discord_id)) return false; // User is not in pending collection (This should never happen and is probably a programming error)
         if (! $page = Byond::getProfilePage($item['ss13'])) return false; // Website could not be retrieved or the description wasn't found
-        if ($item['token'] != Byond::__extractToken($page)) return false; // Token does not match the description
+        if ($item['token'] !== Byond::getByondDesc($page)) return false; // Token does not match the description
         return true; // Token matches
     }
 
