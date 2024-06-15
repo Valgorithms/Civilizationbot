@@ -262,7 +262,7 @@ class Civ13
         $this->messageServiceManager = new MessageServiceManager($this);
         if (isset($this->discord)) $this->discord->once('ready', function () {
             $this->ready = true;
-            $this->logger->info("logged in as {$this->discord->user->username} ({$this->discord->id})");
+            $this->logger->info('logged in as ' . (isset($this->discord->user->username) ? $this->discord->user->username : $this->discord->user->globalname) . "({$this->discord->id})");
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__UpdateDiscordVariables();
