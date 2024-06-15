@@ -406,7 +406,7 @@ class MessageServiceManager
                 $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                 if ($member = $this->civ13->verifier->getVerifiedMember($item))
                     if ($member->roles->has($this->civ13->role_ids['paroled']))
-                        $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->username}) released `$ckey`");
+                        $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
             });
@@ -648,7 +648,7 @@ class MessageServiceManager
                 $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                 if ($member = $this->civ13->verifier->getVerifiedMember($item))
                     if (! $member->roles->has($this->civ13->role_ids['paroled']))
-                        $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->username}) paroled `$ckey`");
+                        $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
             }), ['Owner', 'High Staff', 'Admin']);
@@ -1001,10 +1001,10 @@ class MessageServiceManager
                     usort($members, function ($a, $b) {
                         return $b->joined_at->getTimestamp() - $a->joined_at->getTimestamp();
                     });
-                    return \React\Promise\map($members, function ($member) {
+                    return \React\Promise\map($members, function (Member $member) {
                         return [
                             'username' => $member->user->username,
-                            'id' => $member->user->id,
+                            'id' => $member->id,
                             'join_date' => $member->joined_at->format('Y-m-d H:i:s')
                         ];
                     });
