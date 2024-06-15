@@ -360,10 +360,16 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         //&& ! str_contains($errstr, 'Undefined array key')
     )
     {
-        $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr ";
+        $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr" . PHP_EOL;
+        $msg .= "Backtrace:" . PHP_EOL;
+        $msg .= "```" . PHP_EOL;
+        foreach (debug_backtrace() as $trace) {
+            $msg .= $trace['file'] . ':' . $trace['line'] . ' ' . $trace['function'] . PHP_EOL;
+        }
+        $msg .= "```";
         $logger->error($msg);
         if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
-        if (! $testing) $channel->sendMessage($msg);
+        if (! $testing) $civ13->sendMessage($channel, $msg);
     }
 };
 set_error_handler($global_error_handler);
