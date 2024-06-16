@@ -872,7 +872,7 @@ class Slash
             if (! $item = $this->civ13->verifier->get('discord', $interaction->member->id))
             return $interaction->acknowledge()->then(function () use ($interaction) { // wait until the bot says "Is thinking..."
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Working...'))->then(function ($message) use ($interaction) {
-                    $interaction->updateOriginalResponse(MessageBuilder::new()->setContent('Processed approveme request for <@' . $interaction->member->id . '>.'));
+                    $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Processed approveme request for <@{$interaction->member->id}>."));
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($this->civ13->verifier->process($interaction->data->options['ckey']->value, $interaction->member->id, $interaction->member)), true);
                 });
             });
