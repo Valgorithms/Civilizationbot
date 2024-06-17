@@ -1367,6 +1367,33 @@ class Civ13
             'discords' => $discords
         ];
     }
+    public function ckeyinfoEmbed(string $ckey, ?array $ckeyinfo = null): Embed
+    {
+        if (! is_null($ckeyinfo)) $ckeyinfo = $this->ckeyinfo($ckey);
+        $embed = new Embed($this->discord);
+        $embed->setTitle($ckey);
+        if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
+        if (! empty($ckeyinfo['ckeys'])) {
+            foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->ages[$ckey])) $ckey = "$ckey ({$this->ages[$ckey]})";
+            $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
+        }
+        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']));
+        if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']));
+        if (! empty($ckeyinfo['ips'])) {
+            $regions = [];
+            foreach ($ckeyinfo['ips'] as $ip) if (! in_array($region = $this->IP2Country($ip), $regions)) $regions[] = $region;
+            $embed->addFieldValues('Regions', implode(', ', $regions));
+        }
+        $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
+        if ($ckeyinfo['discords']) {
+            foreach ($ckeyinfo['discords'] as &$id) $id = "<@{$id}>";
+            $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']));
+        }
+        $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
+        $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');
+        $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No');
+        return $embed;
+    }
     /*
      * This function is used to get the country code of an IP address using the ip-api API
      * The site will return a JSON object with the country code, region, and city of the IP address

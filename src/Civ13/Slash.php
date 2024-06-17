@@ -696,30 +696,7 @@ class Slash
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             return $interaction->acknowledge()->then(function () use ($interaction, $item) { // wait until the bot says "Is thinking..."
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating ckeyinfo for `{$item['ss13']}`..."), true)->then(function ($message) use ($interaction, $item) {
-                    $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
-                    $embed = new Embed($this->discord);
-                    $embed->setTitle($item['ss13']);
-                    if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
-                    if (! empty($ckeyinfo['ckeys'])) {
-                        foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->civ13->ages[$ckey])) $ckey = "$ckey ({$this->civ13->ages[$ckey]})";
-                        $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
-                    }
-                    if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']));
-                    if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']));
-                    if (! empty($ckeyinfo['ips'])) {
-                        $regions = [];
-                        foreach ($ckeyinfo['ips'] as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
-                        $embed->addFieldValues('Regions', implode(', ', $regions));
-                    }
-                    $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
-                    if ($ckeyinfo['discords']) {
-                        foreach ($ckeyinfo['discords'] as &$id) $id = "<@{$id}>";
-                        $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']));
-                    }
-                    $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
-                    $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');
-                    $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$item['ss13']]) ? 'Yes' : 'No');
-                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setEmbeds([$embed]), true)->then(function (Message $message) use ($interaction, $item): PromiseInterface {
+                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($this->civ13->ckeyinfoEmbed($item['ss13'])), true)->then(function (Message $message) use ($interaction, $item): PromiseInterface {
                         return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated ckeyinfo for `{$item['ss13']}`."));
                     });
                 });
