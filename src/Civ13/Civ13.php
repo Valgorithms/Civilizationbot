@@ -191,7 +191,7 @@ class Civ13
         $this->logger =  $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
         $options = $this->resolveOptions($options);
         $this->options =& $options;
-        if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord = $options['discord'];
+        if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord =& $options['discord'];
         elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
         else $this->logger->error('No Discord instance or options passed in options!');
         $this->loop = $options['loop'] ?? $this->discord->getLoop();

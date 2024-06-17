@@ -13,6 +13,7 @@ use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Helpers\RegisteredCommand;
 use React\Promise\PromiseInterface;
+use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Interactions\Command\Command;
@@ -871,8 +872,8 @@ class Slash
             if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$this->civ13->sanitizeInput($interaction->data->options['ckey']->value)])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('This account is currently under investigation.'));
             if (! $item = $this->civ13->verifier->get('discord', $interaction->member->id))
             return $interaction->acknowledge()->then(function () use ($interaction) { // wait until the bot says "Is thinking..."
-                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Working...'))->then(function ($message) use ($interaction) {
-                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($this->civ13->verifier->process($interaction->data->options['ckey']->value, $interaction->member->id, $interaction->member)), true)->then(function () use ($interaction) {
+                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Working...'))->then(function (Message $message) use ($interaction) {
+                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($this->civ13->verifier->process($interaction->data->options['ckey']->value, $interaction->member->id, $interaction->member)), true)->then(function (Message $message) use ($interaction) {
                         $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Verified request received. Please check my response for further instructions."));
                     });
                 });
