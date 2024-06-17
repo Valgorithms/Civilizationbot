@@ -119,8 +119,9 @@ class GameServer {
         $this->factionlist = $this->basedir . Civ13::factionlist;
         $this->setup();
 
+        if (! $this->enabled) return; // Don't start timers for disabled servers
         $this->discord->once('ready', function () {
-            $this->logger->info("Getting player count for Gameserver {$this->name}..");
+            $this->logger->info("Getting player count for Gameserver {$this->name}");
             $this->localServerPlayerCount(); // Populates $this->players
             $this->playercountTimer(); // Update playercount channel every 10 minutes
             $this->serverinfoTimer(); // Hard check playercount and  ckeys to scrutinizeCkey() every 3 minutes

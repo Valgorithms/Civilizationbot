@@ -262,7 +262,7 @@ class Civ13
         $this->messageServiceManager = new MessageServiceManager($this);
         if (isset($this->discord)) $this->discord->once('ready', function () {
             $this->ready = true;
-            $this->logger->info("logged in as {$this->discord->username} {$this->discord->user}");
+            $this->logger->info("Logged in as {$this->discord->username} {$this->discord->user}");
             /*$this->discord->users->fetch($this->discord->id)->then(function ($user) {
                 $this->logger->info('User:' . json_encode($user));
             });*/
