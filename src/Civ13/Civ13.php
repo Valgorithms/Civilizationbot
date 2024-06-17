@@ -1369,7 +1369,7 @@ class Civ13
     }
     public function ckeyinfoEmbed(string $ckey, ?array $ckeyinfo = null): Embed
     {
-        if (! is_null($ckeyinfo)) $ckeyinfo = $this->ckeyinfo($ckey);
+        if (! $ckeyinfo) $ckeyinfo = $this->ckeyinfo($ckey);
         $embed = new Embed($this->discord);
         $embed->setTitle($ckey);
         if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
@@ -1385,7 +1385,7 @@ class Civ13
             $embed->addFieldValues('Regions', implode(', ', $regions));
         }
         $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
-        if ($ckeyinfo['discords']) {
+        if (! empty($ckeyinfo['discords'])) {
             foreach ($ckeyinfo['discords'] as &$id) $id = "<@{$id}>";
             $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']));
         }
