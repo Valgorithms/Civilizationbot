@@ -254,7 +254,7 @@ class Verifier
             if ($m && ! $m->roles->has($this->civ13->role_ids['permabanished'])) $m->addRole($this->civ13->role_ids['permabanished'], "permabancheck $ckey");
             return 'This account is currently under investigation.';
         }
-        if ($this->verified->get('discord', $discord_id)) { $member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->civ13->role_ids['infantry'])) $member->setRoles([$this->civ13->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
+        if ($this->verified->get('discord', $discord_id)) { $member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id); if (! $member->roles->has($this->civ13->role_ids['infantry']) && ! $member->roles->has($this->civ13->role_ids['veteran'])) $member->setRoles([$this->civ13->role_ids['infantry']], "approveme join $ckey"); return 'You are already verified!';}
         if ($this->verified->get('ckey', $ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
             if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
