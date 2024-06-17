@@ -53,7 +53,7 @@ class Verifier
     {
         if (! isset($options['verify_url'])) $options['verify_url'] = 'http://valzargaming.com:8080/verified/';
     }
-    public function afterConstruct()
+    public function afterConstruct(): void
     {
         $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) {
             $this->getVerified();

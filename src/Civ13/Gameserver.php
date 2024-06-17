@@ -109,7 +109,7 @@ class GameServer {
         $this->attack = $options['attack'];
         $this->afterConstruct();
     }
-    private function afterConstruct()
+    private function afterConstruct(): void
     {
         $this->serverdata = $this->basedir . Civ13::serverdata;
         $this->discord2unban = $this->basedir . Civ13::discord2unban;

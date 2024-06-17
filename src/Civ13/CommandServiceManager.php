@@ -57,7 +57,7 @@ class CommandServiceManager
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
-    private function afterConstruct()
+    private function afterConstruct(): void
     {
         $this->discord->once('ready', function() {
             $this->logger->info('Setting up CommandServiceManager...');
