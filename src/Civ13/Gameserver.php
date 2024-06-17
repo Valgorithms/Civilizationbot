@@ -26,6 +26,7 @@ class GameServer {
     public Logger $logger;
     public StreamSelectLoop $loop;
     public Civ13 $civ13;
+    public bool $ready = false;
 
     // Resolved paths
     private readonly string $serverdata;
@@ -116,6 +117,7 @@ class GameServer {
         $this->admins = $this->basedir . Civ13::admins;
         $this->whitelist = $this->basedir . Civ13::whitelist;
         $this->factionlist = $this->basedir . Civ13::factionlist;
+        $this->setup();
 
         $this->discord->once('ready', function () {
             $this->logger->info("Getting player count for Gameserver {$this->name}..");
@@ -124,6 +126,25 @@ class GameServer {
             $this->serverinfoTimer(); // Hard check playercount and  ckeys to scrutinizeCkey() every 3 minutes
             $this->relayTimer(); // File chat relay
         });
+    }
+    /**
+     * This method is responsible for setting up the game server by performing the following tasks:
+     * - Checking if the number of game servers exceeds the limit of 5 and logging a warning if it does.
+     * - Adding the game server to the list of game servers in the Civ13 object.
+     * - Adding the game server to the list of enabled game servers in the Civ13 object if it is enabled.
+     * - Logging an informational message about the added game server.
+     * - Setting the "ready" flag to true.
+     *
+     * @return void
+     */
+    private function setup()
+    {
+        if ($this->ready) return;
+        if (count($this->civ13->gameservers) > 5) $this->logger->warning('Configuring more than 5 gameservers are not supported and you will likely experience issues.');
+        $this->civ13->gameservers[$this->key] =& $this;
+        if ($this->enabled) $this->civ13->enabled_gameservers[$this->key] =& $this;
+        $this->logger->info('Added ' . ($this->enabled ? 'enabled' : 'disabled') . " game server: {$this->name} ({$this->key})");
+        $this->ready = true;
     }
     private function resolveOptions(array $options)
     {
@@ -311,7 +332,7 @@ class GameServer {
         $urgent = true; // Check if there are any admins on the server, if not then send the message as urgent
         if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             $admin = false;
-            if ($this->civ13->verifier) {
+            if (isset($this->civ13->verifier)) {
                 if ($item = $this->civ13->verifier->get('ss13', $sender))
                     if ($member = $guild->members->get('id', $item['discord']))
                         if ($member->roles->has($this->civ13->role_ids['Admin']))
@@ -482,10 +503,10 @@ class GameServer {
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
 
         if (is_numeric($array['ckey'] = $this->civ13->sanitizeInput($array['ckey']))) {
-            if (! $item = $this->civ13->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
+            if (! isset($this->civ13->verifier) || ! $item = $this->civ13->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
         }
-        if ($member = $this->civ13->verifier->getVerifiedMember($array['ckey'])) {
+        if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($array['ckey'])) {
             if (! $member->roles->has($this->civ13->role_ids['banished'])) {
                 $string = "Banned for {$array['duration']} with the reason {$array['reason']}";
                 $permanent ? $member->setRoles([$this->civ13->role_ids['banished'], $this->civ13->role_ids['permabanished']], $string) : $member->addRole($this->civ13->role_ids['banished'], $string);
@@ -521,7 +542,7 @@ class GameServer {
     {
         $admin ??= $this->discord->user->username;
         $this->legacy ? $this->legacyUnban($ckey, $admin) : $this->sqlUnban($ckey, $admin);
-        if ($member = $this->civ13->verifier->getVerifiedMember($ckey)) {
+        if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->civ13->role_ids['banished'])) $member->removeRole($this->civ13->role_ids['banished'], "Unbanned by $admin");
             if ($member->roles->has($this->civ13->role_ids['permabanished'])) {
                 $member->removeRole($this->civ13->role_ids['permabanished'], "Unbanned by $admin");
@@ -550,7 +571,7 @@ class GameServer {
      * @param array|null $required_roles The required roles for whitelisting. Default is ['veteran'].
      * @return bool Returns true if the whitelist update is successful, false otherwise.
      */
-    public function whitelistUpdate(?array $required_roles = ['veteran']): bool
+    public function whitelistUpdate(?array $required_roles = ['veteran', 'infantry']): bool
     {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
@@ -580,8 +601,8 @@ class GameServer {
      */
     public function factionlistUpdate(?array $required_roles = ['red', 'blue', 'organizer']): bool
     {
-        if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
+        if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! @touch($this->factionlist)) {
             $this->logger->warning("unable to open `{$this->factionlist}`");
             return false;

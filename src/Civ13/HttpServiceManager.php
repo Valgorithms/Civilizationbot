@@ -747,7 +747,7 @@ class HttpServiceManager
             return $channel->sendMessage($builder);
         };
         
-        foreach ($this->civ13->enabled_servers as &$gameserver) {
+        foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             $server_endpoint = '/' . $gameserver->key;
 
             $this->httpHandler->offsetSet('/bancheck_centcom', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
@@ -827,7 +827,7 @@ class HttpServiceManager
         }
 
         $endpoint = '/webhook';
-        foreach ($this->civ13->enabled_servers as &$gameserver) {
+        foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             $server_endpoint = $endpoint . '/' . $gameserver->key;
 
             // If no parameters are passed to a server_endpoint, try to find it using the query parameters
@@ -1042,7 +1042,7 @@ class HttpServiceManager
                 $data = [];
                 if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                    if ($gameserver = $this->civ13->enabled_servers[$gameserver->key])
+                    if ($gameserver = $this->civ13->enabled_gameservers[$gameserver->key])
                     if (! $ckey !== '(NULL)' && ! in_array($ckey, $gameserver->players))
                         $gameserver->players[] = $ckey;
 
@@ -1075,7 +1075,7 @@ class HttpServiceManager
                 $data = [];
                 if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                if ($gameserver = $this->civ13->enabled_servers[$gameserver->key])
+                if ($gameserver = $this->civ13->enabled_gameservers[$gameserver->key])
                     if (! $ckey !== '(NULL)' && in_array($ckey, $gameserver->players))
                         unset($gameserver->players[array_search($ckey, $gameserver->players)]);
 

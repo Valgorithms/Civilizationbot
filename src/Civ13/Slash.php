@@ -380,7 +380,7 @@ class Slash
             ]));*/
             
             $server_choices = [];
-            foreach ($this->civ13->enabled_servers as &$gameserver) {
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
                 $server_choices[] = [
                     'name' => $gameserver->name,
                     'value' => $gameserver->key
@@ -489,7 +489,7 @@ class Slash
         });
         $this->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface
         {
-            $gameserver = $this->civ13->enabled_servers[$interaction->data->options['server']->value];
+            $gameserver = $this->civ13->enabled_gameservers[$interaction->data->options['server']->value];
             if ($serverrestart = array_shift($this->civ13->messageServiceManager->messageHandler->offsetGet("{$gameserver->key}restart"))) {
                 $serverrestart();
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `{$gameserver->name}` <byond://{$gameserver->ip}:{$gameserver->port}>"));
@@ -521,7 +521,7 @@ class Slash
         {
             $builder = MessageBuilder::new();
             $content = '';
-            foreach ($this->civ13->enabled_servers as &$gameserver) {
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
                 $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 if ($embed = $gameserver->generateServerstatusEmbed()) $builder->addEmbed($embed);
             }
@@ -531,11 +531,11 @@ class Slash
             $content = '';
             $builder = MessageBuilder::new();
             if (! $this->civ13->webserver_online) {
-                foreach ($this->civ13->enabled_servers as &$gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
+                foreach ($this->civ13->enabled_gameservers as &$gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 return $interaction->respondWithMessage($builder->setContent($content)->addEmbed($this->civ13->generateServerstatusEmbed()));
             }
             if (! empty($data = $this->civ13->serverinfoParse())) {
-                foreach ($this->civ13->enabled_servers as &$gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
+                foreach ($this->civ13->enabled_gameservers as &$gameserver) $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 $embed = new Embed($this->discord);
                 foreach ($data as $server)
                     foreach ($server as $key => $array)
@@ -547,7 +547,7 @@ class Slash
                 $embed->setURL('');
                 return $interaction->respondWithMessage($builder->setContent($content)->addEmbed($embed));
             } //return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Unable to fetch serverinfo.json, webserver might be down'), true);
-            foreach ($this->civ13->enabled_servers as &$gameserver) { // Only include the general information
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) { // Only include the general information
                 $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
                 $embed = $gameserver->toEmbed();
                 $embed->setFooter($this->civ13->embed_footer);
@@ -573,7 +573,7 @@ class Slash
                 $response = '';
                 $reason = 'unknown';
                 $found = false;
-                foreach ($this->civ13->enabled_servers as &$gameserver) {
+                foreach ($this->civ13->enabled_gameservers as &$gameserver) {
                     if (file_exists($gameserver->basedir . $this->civ13::bans) && ($file = @fopen($gameserver->basedir . $this->civ13::bans, 'r'))) {
                         while (($fp = fgets($file, 4096)) !== false) {
                             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
@@ -851,7 +851,7 @@ class Slash
                 $server = $interaction->data->options['server']->value;
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating rank for `$ckey`..."))->then(function ($message) use ($interaction, $ckey, $server) {
                     $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated rank for `$ckey`."));
-                    if ($ranking = $this->civ13->getRank($this->civ13->enabled_servers[$server]->basedir . Civ13::ranking_path, $ckey)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
+                    if ($ranking = $this->civ13->getRank($this->civ13->enabled_gameservers[$server]->basedir . Civ13::ranking_path, $ckey)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("`$ckey` is not currently ranked on the `$server` server."), true);
                 });
             });
@@ -861,7 +861,7 @@ class Slash
         { //TODO
             return $interaction->acknowledge()->then(function () use ($interaction) { // wait until the bot says "Is thinking..."
                 $server = $interaction->data->options['server']->value;
-                if ($ranking = $this->civ13->getRanking($this->civ13->enabled_servers[$server]->basedir . Civ13::ranking_path)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
+                if ($ranking = $this->civ13->getRanking($this->civ13->enabled_gameservers[$server]->basedir . Civ13::ranking_path)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Ranking for the `$server` server are not currently available."), true);
             });
         });

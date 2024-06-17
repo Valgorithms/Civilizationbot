@@ -18,6 +18,7 @@ class Moderator
     public Logger $logger;
     public array $timers = [];
     public string $status = 'status.txt';
+    public bool $ready = false;
 
     public function __construct(Civ13 $civ13)
     {
@@ -29,8 +30,15 @@ class Moderator
     private function afterConstruct(): void
     {
         $this->discord->once('ready', function () {
-            //
+            $this->setup();
         });
+    }
+    public function setup(): void
+    {
+        if ($this->ready) return;
+        $this->civ13->moderator =& $this;
+        $this->logger->info("Added Moderator");
+        $this->ready = true;
     }
 
     /**
@@ -133,7 +141,7 @@ class Moderator
         if (! $this->__relayWarningCounter($ckey, $badwords_array, $badword_warnings)) return $this->civ13->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->civ13->rules}. Appeal at {$this->civ13->discord_formatted}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->civ13->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
-        if (isset($this->civ13->enabled_servers[$gameserver_key])) return $this->civ13->enabled_servers[$gameserver_key]->DirectMessage($warning, $this->discord->user->username, $ckey);
+        if (isset($this->civ13->enabled_gameservers[$gameserver_key])) return $this->civ13->enabled_gameservers[$gameserver_key]->DirectMessage($warning, $this->discord->user->username, $ckey);
         return false;
     }
     /*

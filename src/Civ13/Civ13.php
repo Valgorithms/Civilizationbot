@@ -129,7 +129,7 @@ class Civ13
     /**
      * @var Gameserver[]
      */
-    public array $enabled_servers = [];
+    public array $enabled_gameservers = [];
     public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
     public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list
     public array $ooc_badwords = [];
@@ -254,23 +254,28 @@ class Civ13
     private function afterConstruct(array $options = [], array $server_settings = []): void
     {
         $this->__loadOrInitializeVariables();
-        foreach ($server_settings as $gameserver_settings) $this->addGameServer(new Gameserver($this, $gameserver_settings));
-        $this->verifier = new Verifier($this, $options);
+        new Moderator($this);
+        new Verifier($this, $options);
+        foreach ($server_settings as $gameserver_settings) new Gameserver($this, $gameserver_settings);
         $this->byond = new Byond();
-        $this->moderator = new Moderator($this);
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
         if (isset($this->discord)) $this->discord->once('ready', function () {
             $this->ready = true;
-            $this->logger->info('logged in as ' . (isset($this->discord->user->username) ? $this->discord->user->username : $this->discord->user->globalname) . "({$this->discord->id})");
+            $this->logger->info("logged in as {$this->discord->username} {$this->discord->user}");
+            /*$this->discord->users->fetch($this->discord->id)->then(function ($user) {
+                $this->logger->info('User:' . json_encode($user));
+            });*/
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__UpdateDiscordVariables();
-            if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
             //else $this->logger->debug('No ready functions found!');
-            $this->slash = new Slash($this);
+            $this->loop->addTimer(5, function () {
+                $this->slash = new Slash($this);
+            });
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
+            if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
         });
     }
     /**
@@ -438,27 +443,7 @@ class Civ13
      */
     private function __UpdateDiscordVariables(): void
     {
-        if (! $provisional = $this->VarLoad('provisional.json')) {
-            $provisional = [];
-            $this->VarSave('provisional.json', $provisional);
-        }
-        $this->verifier->provisional = $provisional;
         $this->embed_footer .= "{$this->discord->username}#{$this->discord->discriminator} by valithor" . PHP_EOL;
-    }
-    /**
-     * Adds a game server to the list of game servers.
-     *
-     * If the number of game servers exceeds 5, a warning message will be logged.
-     *
-     * @param Gameserver $gameserver The game server to add.
-     * @return void
-     */
-    private function addGameServer(Gameserver $gameserver): void
-    {
-        if (count($this->gameservers) > 5) trigger_error('Configuring more than 5 gameservers are not supported and you will likely experience issues.', E_USER_WARNING);
-        $this->gameservers[$gameserver->key] =& $gameserver;
-        if ($gameserver->enabled) $this->enabled_servers[$gameserver->key] =& $gameserver; // Create a reference to the enabled servers so we can easily iterate over them
-        $this->logger->info("Added game server: {$gameserver->name} ({$gameserver->key})");
     }
 
     /**
@@ -658,7 +643,7 @@ class Civ13
         $ckey = null;
         $member = null;
         $verified = false;
-        if ($item = $this->verifier->getVerifiedItem($sender)) {
+        if (isset($this->verifier) && $item = $this->verifier->getVerifiedItem($sender)) {
             $ckey = $item['ss13'];
             $verified = true;
             $member = $this->verifier->getVerifiedMember($ckey);
@@ -690,11 +675,11 @@ class Civ13
     {
         if (is_null($server_key)) {
             $sent = false;
-            foreach ($this->enabled_servers as $server) if ($server->OOCMessage($message, $sender)) $sent = true;
+            foreach ($this->enabled_gameservers as $server) if ($server->OOCMessage($message, $sender)) $sent = true;
             return $sent;
         }
-        if (! isset($this->enabled_servers[$server_key])) return false;
-        return $this->enabled_servers[$server_key]->OOCMessage($message, $sender);
+        if (! isset($this->enabled_gameservers[$server_key])) return false;
+        return $this->enabled_gameservers[$server_key]->OOCMessage($message, $sender);
     }
     /**
      * Sends an admin message to the server.
@@ -708,11 +693,11 @@ class Civ13
     {
         if (is_null($server_key)) {
             $sent = false;
-            foreach ($this->enabled_servers as $server) if ($server->AdminMessage($message, $sender)) $sent = true;
+            foreach ($this->enabled_gameservers as $server) if ($server->AdminMessage($message, $sender)) $sent = true;
             return $sent;
         }
-        if (! isset($this->enabled_servers[$server_key])) return false;
-        return $this->enabled_servers[$server_key]->AdminMessage($message, $sender);
+        if (! isset($this->enabled_gameservers[$server_key])) return false;
+        return $this->enabled_gameservers[$server_key]->AdminMessage($message, $sender);
     }
     /**
      * Sends a direct message to a recipient using the specified sender and message.
@@ -727,11 +712,11 @@ class Civ13
     {
         if (is_null($server_key)) {
             $sent = false;
-            foreach ($this->enabled_servers as $server) if ($server->DirectMessage($message, $sender, $recipient)) $sent = true;
+            foreach ($this->enabled_gameservers as $server) if ($server->DirectMessage($message, $sender, $recipient)) $sent = true;
             return $sent;
         }
-        if (! isset($this->enabled_servers[$server_key])) return false;
-        return $this->enabled_servers[$server_key]->DirectMessage($message, $sender, $recipient);
+        if (! isset($this->enabled_gameservers[$server_key])) return false;
+        return $this->enabled_gameservers[$server_key]->DirectMessage($message, $sender, $recipient);
     }
 
     /**
@@ -822,7 +807,7 @@ class Civ13
             $this->logger->warning('__gameChatRelay() was called with an empty array or invalid content.');
             return false;
         }
-        if ($this->moderator && ($gameserver = $this->enabled_servers[$gameserver_key]) && $gameserver->moderate) {
+        if (isset($this->moderator) && ($gameserver = $this->enabled_gameservers[$gameserver_key]) && $gameserver->moderate) {
             if ($ooc) $this->moderator->moderate($array['ckey'], $array['message'], $this->ooc_badwords, $this->ooc_badwords_warnings, $gameserver->key);
             else $this->moderator->moderate($array['ckey'], $array['message'], $this->ic_badwords, $this->ic_badwords_warnings, $gameserver->key);
         }
@@ -1141,10 +1126,10 @@ class Civ13
      */
     public function banlogHandler(Message $message, string $message_content_lower): PromiseInterface 
     {
-        $gameservers = array_filter($this->enabled_servers, function($gameserver) use ($message_content_lower) {
+        $gameservers = array_filter($this->enabled_gameservers, function($gameserver) use ($message_content_lower) {
             return $gameserver->key === strtolower($message_content_lower);
         });
-        if (empty($gameservers)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->enabled_servers)) . '`');
+        if (empty($gameservers)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->enabled_gameservers)) . '`');
 
         foreach ($gameservers as &$gameserver) if (! @touch($filename = $gameserver->basedir . self::bans)) {
             $this->logger->warning("Failed to create file $filename");
@@ -1166,7 +1151,7 @@ class Civ13
     public function bancheckTimer(): bool
     {
         // We don't want the persistence server to do this function
-        foreach ($this->enabled_servers as $server) if (! @file_exists($path = $server->basedir . self::bans) || ! @touch($path)) {
+        foreach ($this->enabled_gameservers as $server) if (! @file_exists($path = $server->basedir . self::bans) || ! @touch($path)) {
             $this->logger->warning("unable to open `$path`");
             return false;
         }
@@ -1174,7 +1159,7 @@ class Civ13
         $bancheckTimer = function () {
             $this->logger->debug('Running periodic bancheck...'); // This should take ~2.5 seconds to run
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
-                if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
+                if (isset($this->verifier) && ! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
                 $banned = $this->bancheck($item['ss13'], true);
                 if ($banned && ! ($member->roles->has($this->role_ids['banished']) || $member->roles->has($this->role_ids['permabanished']))) {
                     $member->addRole($this->role_ids['banished'], 'bancheck timer');
@@ -1205,8 +1190,8 @@ class Civ13
     {
         if (! $ckey = $this->sanitizeInput($ckey)) return false;
         $banned = false;
-        foreach ($this->enabled_servers as &$gameserver) if ($gameserver->bancheck($ckey)) $banned = true;
-        if (! $bypass && $member = $this->verifier->getVerifiedMember($ckey)) {
+        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->bancheck($ckey)) $banned = true;
+        if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey))) {
             $hasBanishedRole = $member->roles->has($this->role_ids['banished']);
             if ($banned && ! $hasBanishedRole) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
             elseif (! $banned && $hasBanishedRole) $member->removeRole($this->role_ids['banished'], "bancheck ($ckey)");
@@ -1217,8 +1202,8 @@ class Civ13
     {
         if (! $ckey = $this->sanitizeInput($ckey)) return false;
         $permabanned = false;
-        foreach ($this->enabled_servers as &$gameserver) if ($gameserver->permabancheck($ckey)) $permabanned = true;
-        if (! $bypass && $member = $this->verifier->getVerifiedMember($ckey))
+        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->permabancheck($ckey)) $permabanned = true;
+        if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)))
             if ($permabanned && ! $member->roles->has($this->role_ids['permabanished'])) {
                 if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($ckey)");
             } elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($ckey)");
@@ -1242,7 +1227,7 @@ class Civ13
     public function __panicBan(string $ckey): void
     {
         if (! $this->bancheck($ckey, true)) {
-            foreach ($this->enabled_servers as &$gameserver) {
+            foreach ($this->enabled_gameservers as &$gameserver) {
                 if (! $gameserver->panic_bunker) continue;
                 $gameserver->ban(['ckey' => $ckey, 'duration' => '1 hour', 'reason' => "The server is currently restricted. You must come to Discord and link your byond account before you can play: {$this->discord_formatted}"]);
                 $this->panic_bans[$ckey] = true;                
@@ -1252,7 +1237,7 @@ class Civ13
     }
     public function __panicUnban(string $ckey): void
     {
-        foreach ($this->enabled_servers as &$gameserver) {
+        foreach ($this->enabled_gameservers as &$gameserver) {
             if (! $gameserver->panic_bunker) continue;
             $gameserver->unban($ckey);
             unset($this->panic_bans[$ckey]);
@@ -1273,29 +1258,29 @@ class Civ13
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
         $array['ckey'] = $this->sanitizeInput($array['ckey']);
         if (is_numeric($array['ckey'])) {
-            if (! $item = $this->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
+            if (isset($this->verifier) && ! $item = $this->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
         }
-        if ($member = $this->verifier->getVerifiedMember($array['ckey'])) if (! $member->roles->has($this->role_ids['banished'])) {
+        if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($array['ckey'])) if (! $member->roles->has($this->role_ids['banished'])) {
             if (! $permanent) $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
             else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
         }
         $return = '';
-        if (is_null($server)) foreach ($this->enabled_servers as &$gameserver) $return .= $gameserver->ban($array, $admin, $permanent);
-        elseif (isset($this->enabled_servers[$server])) $return .= $this->enabled_servers[$server]->ban($array, $admin, $permanent);
+        if (is_null($server)) foreach ($this->enabled_gameservers as &$gameserver) $return .= $gameserver->ban($array, $admin, $permanent);
+        elseif (isset($this->enabled_gameservers[$server])) $return .= $this->enabled_gameservers[$server]->ban($array, $admin, $permanent);
         else $return .= "Invalid server specified for ban.";
         return $return;
     }
     public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): void
     {
         $admin ??= $this->discord->user->username;
-        if (is_null($gameserver)) foreach ($this->enabled_servers as &$gameserver) $this->unban($ckey, $admin, $gameserver->key);
-        elseif(isset($this->enabled_servers[$gameserver])) $this->enabled_servers[$gameserver]->unban($ckey, $admin);
+        if (is_null($gameserver)) foreach ($this->enabled_gameservers as &$gameserver) $this->unban($ckey, $admin, $gameserver->key);
+        elseif(isset($this->enabled_gameservers[$gameserver])) $this->enabled_gameservers[$gameserver]->unban($ckey, $admin);
         else {
             $this->logger->warning("Invalid server specified for unban.");
             return;
         }
-        if ($member = $this->verifier->getVerifiedMember($ckey)) {
+        if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
             if ($member->roles->has($this->role_ids['permabanished'])) {
                 $member->removeRole($this->role_ids['permabanished'], "Unbanned by $admin");
@@ -1365,7 +1350,7 @@ class Civ13
         $altbanned = false;
         $discords = [];
         foreach ($ckeys as $key) {
-            if ($item = $this->verifier->get('ss13', $key)) {
+            if (isset($this->verifier) && $item = $this->verifier->get('ss13', $key)) {
                 $discords[] = $item['discord'];
                 $verified = true;
             }
@@ -1448,7 +1433,7 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach ($this->enabled_servers as &$gameserver) {
+        foreach ($this->enabled_gameservers as &$gameserver) {
             if (! @file_exists($gameserver->basedir . self::bans) || ! $fc = @file_get_contents($gameserver->basedir . self::bans)) {
                 $this->logger->warning('unable to open `' . $gameserver->basedir . self::bans . '`');
                 continue;
@@ -1508,7 +1493,7 @@ class Civ13
     {
         // Get the contents of the file
         $file_contents = '';
-        foreach ($this->enabled_servers as &$gameserver) {
+        foreach ($this->enabled_gameservers as &$gameserver) {
             if (! @file_exists($gameserver->basedir . self::playerlogs) || ! $fc = @file_get_contents($gameserver->basedir . self::playerlogs)) {
                 $this->logger->warning('unable to open `' . $gameserver->basedir . self::playerlogs . '`');
                 continue;
@@ -1639,15 +1624,15 @@ class Civ13
     /* private function playercountChannelUpdate(string|int|null $gameserver_key, int $count = 0): bool
     {
         if (! is_null($gameserver_key)) {
-            if (! isset($this->enabled_servers[$gameserver_key])) {
+            if (! isset($this->enabled_gameservers[$gameserver_key])) {
                 $this->logger->warning("Server {$gameserver_key} doesn't exist!");
                 return false;
             }
-            if ($this->enabled_servers[$gameserver_key]->playercountChannelUpdate($count)) return true;
+            if ($this->enabled_gameservers[$gameserver_key]->playercountChannelUpdate($count)) return true;
         }
 
         $return = false;
-        foreach ($this->enabled_servers as &$gameserver) if ($gameserver->playercountChannelUpdate($count)) $return = true;
+        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->playercountChannelUpdate($count)) $return = true;
         return $return;
     } */
     /**
@@ -1664,7 +1649,7 @@ class Civ13
             $this->logger->warning('No serverinfo data to parse!');
         }
         $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
-        foreach ($this->enabled_servers as &$gameserver) {
+        foreach ($this->enabled_gameservers as &$gameserver) {
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
             if (! $gameserver->supported) { 
                 $this->logger->debug("Server {$gameserver->name} is not supported by the remote webserver!");
@@ -1726,7 +1711,7 @@ class Civ13
         $embed->setColor(0xe1452d);
         $embed->setTimestamp();
         $embed->setURL('');
-        foreach ($this->enabled_servers as &$gameserver) {            
+        foreach ($this->enabled_gameservers as &$gameserver) {            
             if (! isset($gameserver->ip, $gameserver->port)) {
                 $this->logger->warning("Server {$gameserver->key} is missing required settings in config!");
                 continue;
@@ -1790,7 +1775,7 @@ class Civ13
             $this->logger->warning('No serverinfo players data to parse!');
             return; // No data to parse
         }
-        foreach ($this->enabled_servers as &$gameserver) {
+        foreach ($this->enabled_gameservers as &$gameserver) {
             if (! $server = array_shift($serverinfo)) continue; // No data for this server
             if (! $gameserver->supported) continue; // Server is not supported by the remote webserver and won't appear in data
             if (array_key_exists('ERROR', $server)) continue; // Remote webserver reports server is not responding
@@ -1810,7 +1795,7 @@ class Civ13
      */
     public function recalculateRanking(): bool
     {
-        foreach ($this->enabled_servers as &$gameserver) {
+        foreach ($this->enabled_gameservers as &$gameserver) {
             if ( ! @touch($awards_path = $gameserver->basedir . self::awards_path)) return false;
             if ( ! @touch($ranking_path = $gameserver->basedir . self::ranking_path)) return false;
             if (! $lines = file($awards_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
@@ -1901,7 +1886,11 @@ class Civ13
      * @return void
      */
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
-    {        
+    {
+        if (! isset($this->verifier)) {
+            $this->logger->error('Unable to update files from member roles: Verifier is not set.');
+            return;
+        } 
         $file_contents = '';
         foreach ($this->verifier->verified as $item)
             if ($member = $this->verifier->getVerifiedMember($item))
@@ -1918,23 +1907,9 @@ class Civ13
      */
     public function whitelistUpdate(?array $required_roles = ['veteran', 'infantry']): bool
     {
-        if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        $file_paths = [];
-        foreach ($this->enabled_servers as &$gameserver) {
-            if (! @touch($fp = $gameserver->basedir . self::whitelist)) continue;
-            $file_paths[] = $fp;
-        }
-
-        $callback = function (Member $member, array $item, array $required_roles): string
-        {
-            $string = '';
-            foreach ($required_roles as $role)
-                if ($member->roles->has($this->role_ids[$role]))
-                    $string .= "{$item['ss13']} = {$item['discord']}" . PHP_EOL;
-            return $string;
-        };
-        $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
-        return true;
+        $return = false;
+        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->whitelistUpdate($required_roles)) $return = true;
+        return $return;
     }
     /**
      * Updates the faction list based on the required roles.
@@ -1944,23 +1919,13 @@ class Civ13
      */
     public function factionlistUpdate(?array $required_roles = ['red', 'blue', 'organizer']): bool
     {
-        if (! $this->hasRequiredConfigRoles($required_roles)) return false;
-        $file_paths = [];
-        foreach ($this->enabled_servers as &$gameserver) {
-            if (! @touch($gameserver->basedir . self::factionlist)) continue;
-            $file_paths[] = $gameserver->basedir . self::factionlist;
+        if (! isset($this->verifier)) {
+            $this->logger->error('Unable to update faction list: Verifier is not set.');
+            return false;
         }
-
-        $callback = function (Member $member, array $item, array $required_roles): string
-        {
-            $string = '';
-            foreach ($required_roles as $role)
-                if ($member->roles->has($this->role_ids[$role]))
-                    $string .= "{$item['ss13']};{$role}" . PHP_EOL;
-            return $string;
-        };
-        $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
-        return true;
+        $return = false;
+        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->factionlistUpdate($required_roles)) $return = true;
+        return $return;
     }
     /**
      * Updates admin lists with required roles and permissions.
@@ -1984,27 +1949,9 @@ class Civ13
         ]
     ): bool
     {
-        if (! $this->hasRequiredConfigRoles(array_keys($required_roles))) return false;
-        $file_paths = [];
-        foreach ($this->enabled_servers as &$gameserver) {
-            if (! isset($gameserver->basedir) || ! @touch($gameserver->basedir . self::admins)) continue;
-            $file_paths[] = $gameserver->basedir . self::admins;
-        }
-
-        $callback = function (Member $member, array $item, array $required_roles): string
-        {
-            $string = '';
-            $checked_ids = [];
-            foreach (array_keys($required_roles) as $role)
-                if ($member->roles->has($this->role_ids[$role]))
-                    if (! in_array($member->id, $checked_ids)) {
-                        $string .= "{$item['ss13']};{$required_roles[$role][0]};{$required_roles[$role][1]}|||" . PHP_EOL;
-                        $checked_ids[] = $member->id;
-                    }
-            return $string;
-        };
-        $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
-        return true;
+        $return = false;
+        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->adminlistUpdate($required_roles)) $return = true;
+        return $return;
     }
 
     // Magic Methods
