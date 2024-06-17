@@ -270,8 +270,8 @@ class Verifier
             $found = false;
             $file_contents = '';
             foreach ($this->civ13->enabled_servers as &$gameserver) {
-                if (file_exists($gameserver->basedir . Civ13::playerlogs) && $fc = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) $file_contents .= $fc;
-                else $this->logger->warning('unable to open `' . $gameserver->basedir . Civ13::playerlogs . '`');
+                if (file_exists($fp = $gameserver->basedir . Civ13::playerlogs) && $fc = @file_get_contents($fp)) $file_contents .= $fc;
+                else $this->logger->warning("Unable to open `$fp`");
             }
             foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] === $ckey) { $found = true; break; }
             if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
