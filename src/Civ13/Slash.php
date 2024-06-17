@@ -719,8 +719,9 @@ class Slash
                     $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
                     $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');
                     $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$item['ss13']]) ? 'Yes' : 'No');
-                    $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated ckeyinfo for `{$item['ss13']}`."));
-                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setEmbeds([$embed]), true);
+                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setEmbeds([$embed]), true)->then(function (Message $message) use ($interaction, $item): PromiseInterface {
+                        return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated ckeyinfo for `{$item['ss13']}`."));
+                    });
                 });
             });
         });
