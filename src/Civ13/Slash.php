@@ -822,16 +822,10 @@ class Slash
         $this->listenCommand('rank', function (Interaction $interaction): PromiseInterface
         {
             if (! $ckey = $interaction->data->options['ckey']->value ?? $this->civ13->verifier->get('discord', $interaction->member->id)['ss13'] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->member->id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            $server = $interaction->data->options['server']->value;
-            return $interaction->acknowledge()->then(function () use ($interaction, $ckey, $server) { // wait until the bot says "Is thinking..."
-                if (is_numeric($ckey = $this->civ13->sanitizeInput($ckey)))
-                    if (! $ckey = $this->civ13->verifier->get('discord', $ckey)['ss13'])
-                        return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("The Discord ID `$ckey` is not currently verified with a Byond username or it does not exist in the cache yet"), true);
-                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating rank for `$ckey`..."))->then(function ($message) use ($interaction, $ckey, $server): PromiseInterface {
-                    if (! $ranking = $this->civ13->enabled_gameservers[$server]->getRank($ckey)) return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("`$ckey` is not currently ranked on the `$server` server."), true);
-                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true)->then (function (Message $message) use ($interaction, $ckey): PromiseInterface {
-                        return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated rank for `$ckey`."));
-                    });
+            if (is_numeric($ckey = $this->civ13->sanitizeInput($ckey)) && ! $ckey = $this->civ13->verifier->get('discord', $ckey)['ss13']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The Discord ID `$ckey` is not currently verified with a Byond username or it does not exist in the cache yet"), true);
+            return $interaction->acknowledge()->then(function () use ($interaction, $ckey): PromiseInterface { // wait until the bot says "Is thinking..."
+                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating rank for `$ckey`..."))->then(function ($message) use ($interaction, $ckey): PromiseInterface {
+                    return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($this->civ13->enabled_gameservers[$interaction->data->options['server']->value]->getRank($ckey)));
                 });
             });
         });

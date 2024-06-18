@@ -574,10 +574,14 @@ class GameServer {
      * @param string $ckey The ckey to search for.
      * @return false|string Returns the rank for the ckey as a string if found, or false if the file does not exist or cannot be accessed.
      */
-    public function getRank(string $ckey): false|string
+    public function getRank(string $ckey): string
     {
         $line_array = array();
-        if (! @touch($this->ranking_path) || ! $search = @fopen($this->ranking_path, 'r')) return false;
+        $return = '';
+        if (! @touch($this->ranking_path) || ! $search = @fopen($this->ranking_path, 'r')) {
+            $this->logger->warning($return = "unable to open `{$this->ranking_path}`");
+            return $return;
+        }
         while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
         fclose($search);
         
