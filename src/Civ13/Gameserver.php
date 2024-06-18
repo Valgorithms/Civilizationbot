@@ -35,6 +35,7 @@ class GameServer {
     private readonly string $admins;
     private readonly string $whitelist;
     private readonly string $factionlist;
+    private readonly string $ranking_path;
 
     // Required settings
     public string $basedir; // The base directory on the local filesystem.
@@ -117,6 +118,7 @@ class GameServer {
         $this->admins = $this->basedir . Civ13::admins;
         $this->whitelist = $this->basedir . Civ13::whitelist;
         $this->factionlist = $this->basedir . Civ13::factionlist;
+        $this->ranking_path = $this->basedir . Civ13::ranking_path;
         $this->setup();
 
         if (! $this->enabled) return; // Don't start timers for disabled servers
@@ -564,6 +566,32 @@ class GameServer {
     private function sqlUnban($array, ?string $admin = null): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
+    }
+
+    /**
+     * Retrieves the rank for a given ckey from a file.
+     *
+     * @param string $ckey The ckey to search for.
+     * @return false|string Returns the rank for the ckey as a string if found, or false if the file does not exist or cannot be accessed.
+     */
+    public function getRank(string $ckey): false|string
+    {
+        $line_array = array();
+        if (! @touch($this->ranking_path) || ! $search = @fopen($this->ranking_path, 'r')) return false;
+        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+        fclose($search);
+        
+        $found = false;
+        $result = '';
+        foreach ($line_array as $line) {
+            $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+            if ($sline[1] == $ckey) {
+                $found = true;
+                $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
+            };
+        }
+        if (! $found) return "No medals found for ckey `$ckey`.";
+        return $result;
     }
 
     /**
