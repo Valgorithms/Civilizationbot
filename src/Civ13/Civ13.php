@@ -1386,7 +1386,7 @@ class Civ13
         }
         $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
         if (! empty($ckeyinfo['discords'])) {
-            foreach ($ckeyinfo['discords'] as &$id) $id = "<@{$id}>";
+            foreach ($ckeyinfo['discords'] as &$id) if ($id) $id = "<@{$id}>";
             $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']));
         }
         $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
