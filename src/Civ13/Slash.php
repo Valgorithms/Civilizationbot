@@ -694,8 +694,8 @@ class Slash
         $this->listenCommand('ckeyinfo', function (Interaction $interaction): PromiseInterface
         {
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            return $interaction->acknowledge()->then(function () use ($interaction, $item) { // wait until the bot says "Is thinking..."
-                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating ckeyinfo for `{$item['ss13']}`..."), true)->then(function ($message) use ($interaction, $item) {
+            return $interaction->acknowledge()->then(function () use ($interaction, $item): PromiseInterface  { // wait until the bot says "Is thinking..."
+                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating ckeyinfo for `{$item['ss13']}`..."), true)->then(function (Message $message) use ($interaction, $item): PromiseInterface {
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($this->civ13->ckeyinfoEmbed($item['ss13'])), true)->then(function (Message $message) use ($interaction, $item): PromiseInterface {
                         return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated ckeyinfo for `{$item['ss13']}`."));
                     });
