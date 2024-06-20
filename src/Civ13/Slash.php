@@ -611,7 +611,7 @@ class Slash
 
         $this->listenCommand('bansearch_centcom', function (Interaction $interaction): PromiseInterface
         {
-            if (! $json = Byond::bansearch_centcom($ckey = $interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to locate bans were found for **$ckey** on centcom.melonmesa.com."), true);
+            if (! $json = Byond::bansearch_centcom($ckey = $interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to locate bans for **$ckey** on centcom.melonmesa.com."), true);
             if ($json === '[]') return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No bans were found for **$ckey** on centcom.melonmesa.com."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($ckey.'_bans.json', $json), true);
         });
