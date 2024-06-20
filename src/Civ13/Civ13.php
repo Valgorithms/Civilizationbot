@@ -139,7 +139,7 @@ class Civ13
     public bool $legacy = true; // If true, the bot will use the file methods instead of the SQL ones
     
     public array $functions = array(
-        'ready' => [],
+        'init' => [],
         'ready_slash' => [],
         'messages' => [],
         'misc' => [],
@@ -260,7 +260,7 @@ class Civ13
         $this->byond = new Byond();
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
-        if (isset($this->discord)) $this->discord->once('ready', function () {
+        if (isset($this->discord)) $this->discord->once('init', function () {
             $this->ready = true;
             $this->logger->info("Logged in as {$this->discord->username} {$this->discord->user}");
             /*$this->discord->users->fetch($this->discord->id)->then(function ($user) {
@@ -275,7 +275,7 @@ class Civ13
             });
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
-            if (! empty($this->functions['ready'])) foreach ($this->functions['ready'] as $func) $func($this);
+            if (! empty($this->functions['init'])) foreach ($this->functions['init'] as $func) $func($this);
         });
     }
     /**
@@ -780,9 +780,9 @@ class Civ13
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
             $listener = function () use ($ckey, $message, $channel_id, $gameserver_key, $ooc, &$listener) {
                 $this->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver_key, $ooc);
-                $this->discord->removeListener('ready', $listener);
+                $this->discord->removeListener('init', $listener);
             };
-            $this->discord->on('ready', $listener);
+            $this->discord->on('init', $listener);
             return true; // Assume that the function will succeed when the bot is ready
         }
         

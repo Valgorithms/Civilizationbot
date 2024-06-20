@@ -131,7 +131,7 @@ class Verifier
                 if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
                     { $this->civ13->adminlistUpdate(); break;}
         });
-        $this->civ13->discord->once('ready', function () {
+        $this->civ13->discord->once('init', function () {
             $this->verified = $this->getVerified();
             foreach ($this->provisional as $ckey => $discord_id) $this->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional user 
             if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id))

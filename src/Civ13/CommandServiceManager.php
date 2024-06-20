@@ -59,7 +59,7 @@ class CommandServiceManager
     */
     private function afterConstruct(): void
     {
-        $this->discord->once('ready', function() {
+        $this->discord->once('init', function() {
             $this->logger->info('Setting up CommandServiceManager...');
             $this->setup();
             if ($application_commands = $this->discord->__get('application_commands')) {
@@ -71,7 +71,7 @@ class CommandServiceManager
     }
     /**
      * Sets up the bot by updating commands, guild commands, and declaring listeners.
-     * This method should be called in the scope of $this->discord->on('ready', fn() => $this->setup());
+     * This method should be called in the scope of $this->discord->on('init', fn() => $this->setup());
      */
     private function setup(): void
     {

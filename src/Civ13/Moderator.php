@@ -29,7 +29,7 @@ class Moderator
     }
     private function afterConstruct(): void
     {
-        $this->discord->once('ready', function () {
+        $this->discord->once('init', function () {
             $this->setup();
         });
     }

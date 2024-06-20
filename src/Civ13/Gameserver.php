@@ -122,7 +122,7 @@ class GameServer {
         $this->setup();
 
         if (! $this->enabled) return; // Don't start timers for disabled servers
-        $this->discord->once('ready', function () {
+        $this->discord->once('init', function () {
             $this->logger->info("Getting player count for Gameserver {$this->name}");
             $this->localServerPlayerCount(); // Populates $this->players
             $this->playercountTimer(); // Update playercount channel every 10 minutes

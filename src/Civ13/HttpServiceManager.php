@@ -72,7 +72,7 @@ class HttpServiceManager
         $this->http_port = $this->civ13->options['http_port'];
 
         $this->__generateEndpoints();
-        $this->discord->once('ready', function () {
+        $this->discord->once('init', function () {
             //$this->logger->info('Populating HttpServer API whitelist...');
             //$this->__populateWhitelist(); // This is disabled for now because it takes >20 seconds.
             $this->webapi->listen($this->socket);
