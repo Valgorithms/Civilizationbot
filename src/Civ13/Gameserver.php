@@ -490,7 +490,7 @@ class GameServer {
         return false;
     }
 
-    public function banlog_update(int|string|null $ckey = null): string|false
+    public function banlog_update(int|string|null $ckey = null, ?string $playerlog = ''): string|false
     {
         if (! touch($fp = $this->basedir . Civ13::playerlogs)) {
             $this->logger->warning("Unable to open `$fp`");
@@ -501,7 +501,7 @@ class GameServer {
             return false;
         }
 
-        $playerlog = file_get_contents($this->basedir . Civ13::playerlogs);
+        if (! $playerlog) $playerlog = file_get_contents($this->basedir . Civ13::playerlogs); // TODO: Implement this on Civ13 with a foreach on all gameservers
         $banlog = file_get_contents($fp = $this->basedir . Civ13::bans);
         $temp = [];
         $oldlist = [];
