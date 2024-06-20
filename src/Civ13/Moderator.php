@@ -134,7 +134,7 @@ class Moderator
      * @return string|bool Returns a string if the player is banned, or false if the player is not banned.
      */
     // This function is called from the game's chat hook if a player says something that contains a blacklisted word
-    private function __relayViolation(string|int $gameserver_key, string $ckey, array $badwords_array, array &$badword_warnings): string|bool // TODO: return type needs to be decided
+    private function __relayViolation(string|int $gameserver_key, string $ckey, array $badwords_array, array &$badword_warnings): string|false
     {
         if ($this->civ13->sanitizeInput($ckey) === $this->civ13->sanitizeInput($this->discord->username)) return false; // Don't ban the bot
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
