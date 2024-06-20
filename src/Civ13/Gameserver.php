@@ -390,7 +390,7 @@ class GameServer {
         fclose($file);
         if (! in_array($mapto, $maps)) return "`$mapto` was not found in the map definitions.";
 
-        $promise = $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->user->username);
+        $promise = $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->username);
         if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
             if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";
             $channel->sendMessage($msg);
@@ -519,7 +519,7 @@ class GameServer {
     }
     private function legacyBan(array $array, ?string $admin = null): string
     {
-        $admin = $admin ?? $this->discord->user->username;
+        $admin = $admin ?? $this->discord->username;
         if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
         if (! @touch($this->discord2ban) || ! $file = @fopen($this->discord2ban, 'a')) {
             $this->logger->warning("unable to open `{$this->discord2ban}`");
@@ -543,7 +543,7 @@ class GameServer {
      */
     public function unban(string $ckey, ?string $admin = null,): void
     {
-        $admin ??= $this->discord->user->username;
+        $admin ??= $this->discord->username;
         $this->legacy ? $this->legacyUnban($ckey, $admin) : $this->sqlUnban($ckey, $admin);
         if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->civ13->role_ids['banished'])) $member->removeRole($this->civ13->role_ids['banished'], "Unbanned by $admin");
@@ -555,7 +555,7 @@ class GameServer {
     }
     private function legacyUnban(string $ckey, ?string $admin = null): void
     {
-        $admin = $admin ?? $this->discord->user->username;
+        $admin = $admin ?? $this->discord->username;
         if (! @touch($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
             $this->logger->warning("unable to open `$this->discord2unban`");
             return;

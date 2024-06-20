@@ -1274,7 +1274,7 @@ class Civ13
     }
     public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): void
     {
-        $admin ??= $this->discord->user->username;
+        $admin ??= $this->discord->username;
         if (is_null($gameserver)) foreach ($this->enabled_gameservers as &$gameserver) $this->unban($ckey, $admin, $gameserver->key);
         elseif(isset($this->enabled_gameservers[$gameserver])) $this->enabled_gameservers[$gameserver]->unban($ckey, $admin);
         else {

@@ -831,7 +831,7 @@ class Slash
         });
         
         $this->listenCommand('ranking', function (Interaction $interaction): PromiseInterface
-        { //TODO
+        {
             return $interaction->acknowledge()->then(function () use ($interaction): PromiseInterface { // wait until the bot says "Is thinking..."
                 if (! $ranking = $this->civ13->getRanking($this->civ13->enabled_gameservers[$server = $interaction->data->options['server']->value]->basedir . Civ13::ranking_path)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Ranking for the `$server` server are not currently available."), true);
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);

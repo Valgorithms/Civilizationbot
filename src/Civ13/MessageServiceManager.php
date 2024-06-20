@@ -1179,7 +1179,7 @@ class MessageServiceManager
                         if ($message) $message->react("👍");
                     });
                     if ($message) $message->react("⏱️");
-                    $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->user->id ?? $this->civ13->discord->user->username);
+                    $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
                     $this->civ13->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender, $gameserver->key);
                 };
                 $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'High Staff']);
@@ -1203,8 +1203,8 @@ class MessageServiceManager
                             });
                         }
                     });
-                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->username, $gameserver->key);
-                    else $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->discord->user->username, $gameserver->key);
+                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username, $gameserver->key);
+                    else $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->discord->username, $gameserver->key);
                     if ($message) $message->react("⏱️");
                     return null;
                 };
@@ -1217,7 +1217,7 @@ class MessageServiceManager
                 {
                     $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
                     if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->civ13->reply($message, 'You need to include the name of the map.');
-                    $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->user->username;
+                    $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username;
                     return $this->civ13->reply($message, $gameserver->mapswap($mapto, $admin));
                 };
                 $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'High Staff', 'Admin']);

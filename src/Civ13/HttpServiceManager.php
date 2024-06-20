@@ -467,7 +467,7 @@ class HttpServiceManager
                             <button style="width:8%" onclick="sendGetRequest(\'reset\')">Reset</button>
                             <button style="width:8%" onclick="sendGetRequest(\'update\')">Update</button>
                             <button style="width:8%" onclick="sendGetRequest(\'restart\')">Restart</button>
-                            <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open(\''. $this->civ13->github . '\')">' . $this->discord->user->username . '</button>
+                            <button style="background-color: black; color:white; display:flex; justify-content:center; align-items:center; height:100%; width:68%; flex-grow: 1;" onclick="window.open(\''. $this->civ13->github . '\')">' . $this->discord->username . '</button>
                         </div>
                         <div class="alert-container"></div>
                         <div class="checkpoint">' . 
@@ -879,7 +879,7 @@ class HttpServiceManager
                 $message = "**__{$time}__** $message";
 
                 
-                if (str_contains($data['message'], $this->discord->user->username)) $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key); // Message was probably meant for the bot
+                if (str_contains($data['message'], $this->discord->username)) $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key); // Message was probably meant for the bot
                 else $relay($message, $channel, $ckey); //Bypass moderator
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
