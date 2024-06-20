@@ -372,11 +372,9 @@ class MessageServiceManager
                 return $member->addRole($this->civ13->role_ids['verified']);
             };
             $promise = array_shift($members)->addRole($this->civ13->role_ids['verified']);
-            foreach ($members as $member) {
-                $promise = $promise->then(function () use ($member, $func) {
-                    return $func($member);
-                });
-            }
+            foreach ($members as $member) $promise = $promise->then(function () use ($member, $func) {
+                return $func($member);
+            });
             $promise->then(function () use ($message) {
                 return $message->react("👍");
             });
