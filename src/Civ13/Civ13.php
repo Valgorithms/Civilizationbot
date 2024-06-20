@@ -1570,6 +1570,7 @@ class Civ13
         if ($playerlog = $this->playerlogsToCollection()->filter(function (array $item) use ($ckey) { return $item['ckey'] === $ckey; }))
             if ($bans = $this->bansToCollection()->filter(function(array $item) use ($playerlog) { return $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid']); }));
                 return ['playerlogs' => $playerlog, 'bans' => $bans];
+        return [];
     }
     
     /*
