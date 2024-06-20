@@ -358,6 +358,26 @@ class MessageServiceManager
             return $this->civ13->reply($message, 'No players found.');
         }), ['Chief Technical Officer']);
 
+        $this->offsetSet('unvet', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
+        { // Adds the infantry role to all veterans
+            if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
+            $members = [];
+            foreach ($message->guild->members as $member) if ($member->roles->has($this->civ13->role_ids['veteran']) && ! $member->roles->has($this->civ13->role_ids['infantry'])) $members[] = $member;
+            if (! $members) $message->react("👎");
+            $message->react("⏱️");
+
+            $func = function ($promise, Member $member): PromiseInterface
+            {
+                $promise = $promise->then(function () use ($member) {
+                    return $member->addRole($this->civ13->role_ids['infantry']);
+                });
+                return $promise;
+            };
+            $promise = array_shift($members)->addRole($this->civ13->role_ids['infantry']);
+            foreach ($members as $member) $promise->then($func($promise, $member));
+            return $message->react("👍");
+        }), ['Chief Technical Officer']);
+
         $this->offsetSet('retryregister', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         { // This function is only authorized to be used by the database administrator
             if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
