@@ -490,6 +490,13 @@ class GameServer {
         return false;
     }
 
+    /**
+     * Updates the ban log in the game server based on the player log.
+     *
+     * @param int|string|null $ckey The ckey of the player to update the ban log for. If null, all bans will be updated.
+     * @param string|null $playerlog The player log content as a string. If not provided, the player log file for this server will be used.
+     * @return string|false The updated ban log as a string, or false if there was an error.
+     */
     public function banlog_update(int|string|null $ckey = null, ?string $playerlog = ''): string|false
     {
         if (! touch($fp = $this->basedir . Civ13::playerlogs)) {
