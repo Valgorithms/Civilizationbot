@@ -801,15 +801,15 @@ class HttpServiceManager
                     $expires_date = date('c', $expires_in);
 
                     $json[] = [
-                        "id" => $id,
-                        "banType" => $ban_type,
-                        "cKey" => $ban[8],
-                        "bannedOn" => $banned_on,
-                        "bannedBy" => $ban[4],
-                        "reason" => $ban[3],
-                        "expires" => $expires_date,
-                        "unbannedBy" => null,
-                        "jobBans" => null
+                        'id' => $id,
+                        'banType' => $ban_type,
+                        'cKey' => $ban[8],
+                        'bannedOn' => $banned_on,
+                        'bannedBy' => $ban[4],
+                        'reason' => $ban[3],
+                        'expires' => $expires_date,
+                        'unbannedBy' => null,
+                        'jobBans' => null
                     ];
                     $id++;
                 }
