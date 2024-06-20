@@ -41,6 +41,7 @@ include 'vendor/autoload.php';
 $streamHandler = new StreamHandler('php://stdout', Level::Info);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$streamHandler]);
+$logger->pushHandler(new StreamHandler('output.log', Level::Info));
 $logger->info('Loading configurations for the bot...');
 
 $discord = new Discord([
