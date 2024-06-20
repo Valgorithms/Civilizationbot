@@ -162,11 +162,11 @@ class Verifier
             if ($channel->name === "{$verifier_name}-{$status}") return null;
             $channel->name = "{$verifier_name}-{$status}";
             $success = function ($result) use ($channel, $status) {
-                $this->civ13->loop->addTimer(2, function () use ($channel, $status): void
-                {
+                //$this->civ13->loop->addTimer(2, function () use ($channel, $status): void
+                //{
                     $channel_new = $this->civ13->discord->getChannel($channel->id);
                     $this->civ13->sendMessage($channel_new, "Verifier is now **{$status}**.");
-                });
+                //});
             };
             return $this->civ13->then($channel->guild->channels->save($channel), $success);
         }
