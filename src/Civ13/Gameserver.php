@@ -549,7 +549,7 @@ class GameServer {
             if ($member->roles->has($this->civ13->role_ids['banished'])) $member->removeRole($this->civ13->role_ids['banished'], "Unbanned by $admin");
             if ($member->roles->has($this->civ13->role_ids['permabanished'])) {
                 $member->removeRole($this->civ13->role_ids['permabanished'], "Unbanned by $admin");
-                $member->addRole($this->civ13->role_ids['infantry'], "Unbanned by $admin");
+                $member->addRole($this->civ13->role_ids['verified'], "Unbanned by $admin");
             }
         }
     }
@@ -601,10 +601,10 @@ class GameServer {
     /**
      * Updates the whitelist based on the member roles.
      *
-     * @param array|null $required_roles The required roles for whitelisting. Default is ['veteran'].
+     * @param array|null $required_roles The required roles for whitelisting. Default is ['verified'].
      * @return bool Returns true if the whitelist update is successful, false otherwise.
      */
-    public function whitelistUpdate(?array $required_roles = ['veteran', 'infantry']): bool
+    public function whitelistUpdate(?array $required_roles = ['verified']): bool
     {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;

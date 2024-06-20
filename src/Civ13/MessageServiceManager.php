@@ -286,12 +286,12 @@ class MessageServiceManager
             return $message->reply($builder);
         }), ['Owner', 'High Staff', 'Admin']);
         
-        if (isset($this->civ13->role_ids['infantry']))
+        if (isset($this->civ13->role_ids['verified']))
         $approveme = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            if ($message->member->roles->has($this->civ13->role_ids['infantry']) || (isset($this->civ13->role_ids['veteran']) && $message->member->roles->has($this->civ13->role_ids['veteran']))) return $this->civ13->reply($message, 'You already have the verification role!');
+            if (isset($this->civ13->role_ids['verified']) && $message->member->roles->has($this->civ13->role_ids['verified'])) return $this->civ13->reply($message, 'You already have the verification role!');
             if ($item = $this->civ13->verifier->getVerifiedItem($message->author)) {
-                $message->member->setRoles([$this->civ13->role_ids['infantry']], "approveme {$item['ss13']}");
+                $message->member->setRoles([$this->civ13->role_ids['verified']], "approveme {$item['ss13']}");
                 return $message->react("👍");
             }
             if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
@@ -360,22 +360,26 @@ class MessageServiceManager
 
         $this->offsetSet('unvet', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         { // Adds the infantry role to all veterans
+            if (! isset($this->civ13->role_ids['veteran']) || ! isset($this->civ13->role_ids['verified'])) return $message->react("❌");
             if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
             $members = [];
-            foreach ($message->guild->members as $member) if ($member->roles->has($this->civ13->role_ids['veteran']) && ! $member->roles->has($this->civ13->role_ids['infantry'])) $members[] = $member;
+            foreach ($message->guild->members as $member) if ($member->roles->has($this->civ13->role_ids['veteran']) && ! $member->roles->has($this->civ13->role_ids['verified'])) $members[] = $member;
             if (! $members) $message->react("👎");
             $message->react("⏱️");
 
-            $func = function ($promise, Member $member): PromiseInterface
+            $func = function (Member $member): PromiseInterface
             {
-                $promise = $promise->then(function () use ($member) {
-                    return $member->addRole($this->civ13->role_ids['infantry']);
-                });
-                return $promise;
+                return $member->addRole($this->civ13->role_ids['verified']);
             };
-            $promise = array_shift($members)->addRole($this->civ13->role_ids['infantry']);
-            foreach ($members as $member) $promise->then($func($promise, $member));
-            return $message->react("👍");
+            $promise = array_shift($members)->addRole($this->civ13->role_ids['verified']);
+            foreach ($members as $member) {
+                $promise = $promise->then(function () use ($member, $func) {
+                    return $func($member);
+                });
+            }
+            $promise->then(function () use ($message) {
+                return $message->react("👍");
+            });
         }), ['Chief Technical Officer']);
 
         $this->offsetSet('retryregister', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
@@ -409,8 +413,8 @@ class MessageServiceManager
             $string = "`$ckey` will no longer attempt to be automatically registered.";
             if (isset($this->civ13->verifier->provisional[$ckey])) {
                 if ($member = $message->guild->members->get($this->civ13->verifier->provisional[$ckey])) {
-                    $member->removeRole($this->civ13->role_ids['infantry']);
-                    $string .= " The <@&{$this->civ13->role_ids['infantry']}> role has been removed from $member.";
+                    $member->removeRole($this->civ13->role_ids['verified']);
+                    $string .= " The <@&{$this->civ13->role_ids['verified']}> role has been removed from $member.";
                 }
                 unset($this->civ13->verifier->provisional[$ckey]);
                 $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional);
@@ -994,13 +998,12 @@ class MessageServiceManager
         $this->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($banlog_update): PromiseInterface {
             if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $message->react("🔥");
             if (! $members = $guild->members->filter(function (Member $member) {
-                return ! $member->roles->has($this->civ13->role_ids['veteran'])
-                    && ! $member->roles->has($this->civ13->role_ids['infantry'])
+                return ! $member->roles->has($this->civ13->role_ids['verified'])
                     && ! $member->roles->has($this->civ13->role_ids['banished'])
                     && ! $member->roles->has($this->civ13->role_ids['permabanished'])
                     && ! $member->roles->has($this->civ13->role_ids['dungeon']);
             })) return $message->react("👎");
-            foreach ($members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['infantry'], 'fixroles');
+            foreach ($members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['verified'], 'fixroles');
             return $message->react("👍");
         }), ['Owner', 'High Staff']);
 

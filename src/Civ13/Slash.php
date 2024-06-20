@@ -840,7 +840,7 @@ class Slash
 
         $this->listenCommand('approveme', function (Interaction $interaction): PromiseInterface
         {
-            if ($interaction->member->roles->has($this->civ13->role_ids['infantry']) || $interaction->member->roles->has($this->civ13->role_ids['veteran'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
+            if ($interaction->member->roles->has($this->civ13->role_ids['verified'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
             if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$this->civ13->sanitizeInput($interaction->data->options['ckey']->value)])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('This account is currently under investigation.'));
             if (! $item = $this->civ13->verifier->get('discord', $interaction->member->id))
                 return $interaction->acknowledge()->then(function () use ($interaction): PromiseInterface { // wait until the bot says "Is thinking..."
@@ -851,7 +851,7 @@ class Slash
                     });
                 });
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Welcome to {$interaction->member->guild->name}}! Your roles have been set and you should now have access to the rest of the server."), true)->then(function () use ($interaction, $item): PromiseInterface {
-                return $interaction->member->setRoles([$this->civ13->role_ids['infantry']], "approveme {$item['ss13']}");
+                return $interaction->member->setRoles([$this->civ13->role_ids['verified']], "approveme {$item['ss13']}");
             });
         });
     }

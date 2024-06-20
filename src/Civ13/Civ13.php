@@ -1151,6 +1151,7 @@ class Civ13
     public function bancheckTimer(): bool
     {
         // We don't want the persistence server to do this function
+        if (! $this->enabled_gameservers) return false; // This function should only run if there are servers to check
         foreach ($this->enabled_gameservers as $server) if (! @file_exists($path = $server->basedir . self::bans) || ! @touch($path)) {
             $this->logger->warning("unable to open `$path`");
             return false;
@@ -1284,7 +1285,7 @@ class Civ13
             if ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
             if ($member->roles->has($this->role_ids['permabanished'])) {
                 $member->removeRole($this->role_ids['permabanished'], "Unbanned by $admin");
-                $member->addRole($this->role_ids['infantry'], "Unbanned by $admin");
+                $member->addRole($this->role_ids['verified'], "Unbanned by $admin");
             }
         }
     }
@@ -1929,10 +1930,10 @@ class Civ13
     /**
      * Updates the whitelist based on the member roles.
      *
-     * @param array|null $required_roles The required roles for whitelisting. Default is ['veteran'].
+     * @param array|null $required_roles The required roles for whitelisting. Default is ['verified'].
      * @return bool Returns true if the whitelist update is successful, false otherwise.
      */
-    public function whitelistUpdate(?array $required_roles = ['veteran', 'infantry']): bool
+    public function whitelistUpdate(?array $required_roles = ['verified']): bool
     {
         $return = false;
         foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->whitelistUpdate($required_roles)) $return = true;

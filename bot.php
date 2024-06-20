@@ -71,7 +71,6 @@ $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; // execInBackground(), portIsAvailable()
 include 'variable_functions.php';
-include 'verifier_functions.php';
 include 'civ_token.php'; // $civ_token
 
 // TODO: Add a timer and a callable function to update these IP addresses every 12 hours
@@ -164,8 +163,7 @@ $options = array(
         'Mentor' => '469297467918254085',
         'Parolemin' => '743971427929030748', // Parole Admin
         // Player Roles
-        'veteran' => '468983261708681216', // Promoted
-        'infantry' => '468982790772228127', // Verified
+        'verified' => '468982790772228127', // Verified
         'banished' => '710328377210306641', // Banned in-game
         'permabanished' => '1126137099209425017', // Permanently banned in-game
         'dungeon' => '547186843746304020', // Dungeon, for those who have had their Discord permissions revoked
@@ -211,7 +209,7 @@ foreach ($loadedData as $key => $value) $options[$key] = $value;
 $server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
     'tdm' => [
         'supported' => true,
-        'enabled' => true,
+        'enabled' => false,
         'name' => 'TDM',
         //'key' => 'tdm', // This must match the top-level key in the server_settings array
         'ip' => $civ13_ip,
@@ -241,7 +239,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
     ],
     'nomads' => [
         'supported' => true, // Whether the server is supported by the remote webserver
-        'enabled' => true, // Whether the server should have commands handled by the bot
+        'enabled' => false, // Whether the server should have commands handled by the bot
         'name' => 'Nomads', // Name of the server and the prefix of the playercount channel (e.g. nomads-999)
         //'key' => 'nomads', // This must match the top-level key in the server_settings array
         'ip' => $civ13_ip, // IP of the server
