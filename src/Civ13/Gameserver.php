@@ -544,7 +544,7 @@ class GameServer {
          */
         if (empty($updated)) $final = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
         else $final = trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
-        file_put_contents($fp, $final, FILE_APPEND);
+        file_put_contents($fp, $final);
         return $final;
     }
 
