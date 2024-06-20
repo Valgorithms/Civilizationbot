@@ -254,7 +254,7 @@ class HttpServiceManager
                 if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) $this->logger->info("Discord ID: {$this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]}");
             }
             
-            $channel->sendMessage($builder); // TODO: Add a built-in function for using MessageBuilder with included embeds
+            $channel->sendMessage($builder);
             return HttpResponse::json(['success' => true]);
         }), true);
         

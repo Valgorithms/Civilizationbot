@@ -1643,89 +1643,6 @@ class Civ13
         $this->logger->debug("Successfully retrieved serverinfo from `{$this->serverinfo_url}`");
         return $this->serverinfo = $data_json;
     }
-    /*
-     * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts
-     * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
-     * It is called on ready and every 5 minutes
-     */
-    // TODO: This function has been moved to Gameserver.php and should not be used anymore.
-    /* private function playercountChannelUpdate(string|int|null $gameserver_key, int $count = 0): bool
-    {
-        if (! is_null($gameserver_key)) {
-            if (! isset($this->enabled_gameservers[$gameserver_key])) {
-                $this->logger->warning("Server {$gameserver_key} doesn't exist!");
-                return false;
-            }
-            if ($this->enabled_gameservers[$gameserver_key]->playercountChannelUpdate($count)) return true;
-        }
-
-        $return = false;
-        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->playercountChannelUpdate($count)) $return = true;
-        return $return;
-    } */
-    /**
-     * Parses the server information and returns an array of parsed data.
-     *
-     * @param array $return The array to store the parsed data (optional).
-     * @return array The array containing the parsed server information.
-     */
-    // TODO: This function has been deprecated and should not be used anymore.
-    /*public function serverinfoParse(array $return = []): array
-    {
-        if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) {
-            return $return; // No data to parse
-            $this->logger->warning('No serverinfo data to parse!');
-        }
-        $index = 0; // We need to keep track of the index we're looking at, as the array may not be sequential
-        foreach ($this->enabled_gameservers as &$gameserver) {
-            if (! $server = array_shift($serverinfo)) continue; // No data for this server
-            if (! $gameserver->supported) { 
-                $this->logger->debug("Server {$gameserver->name} is not supported by the remote webserver!");
-                $index++; continue;
-            } // Server is not supported by the remote webserver and won't appear in data
-            if (array_key_exists('ERROR', $server)) {
-                $this->logger->debug("Server {$gameserver->name} is not responding!");
-                $return[$index] = []; $index++; continue;
-            } // Remote webserver reports server is not responding
-            $return[$index]['Server'] = [false => $gameserver->name . PHP_EOL . "<byond://{$gameserver->ip}:{$gameserver->port}>"];
-            $return[$index]['Host'] = [true => $gameserver->host];
-            if (isset($server['roundduration'])) {
-                $rd = explode(":", urldecode($server['roundduration']));
-                $days = floor($rd[0] / 24);
-                $hours = $rd[0] % 24;
-                $minutes = $rd[1];
-                if ($days > 0) $rt = "{$days}d {$hours}h {$minutes}m";
-                else if ($hours > 0) $rt = "{$hours}h {$minutes}m";
-                else $rt = "{$minutes}m";
-                $return[$index]['Round Timer'] = [true => $rt];
-            }
-            if (isset($server['map'])) $return[$index]['Map'] = [true => urldecode($server['map'])];
-            if (isset($server['age'])) $return[$index]['Epoch'] = [true => urldecode($server['age'])];
-            $players = array_filter(array_keys($server), function (string $key) {
-                return strpos($key, 'player') === 0 && is_numeric(substr($key, 6));
-            });
-            if (! empty($players)) {
-                $players = array_map(function (int|string $key) use ($server) {
-                    return strtolower($this->sanitizeInput(urldecode($server[$key])));
-                }, $players);
-                $playerCount = count($players);
-            }
-            elseif (isset($server['players'])) $playerCount = $server['players'];
-            else $playerCount = '?';
-    
-            $return[$index]['Players (' . $playerCount . ')'] = [true => empty($players) ? 'N/A' : implode(', ', $players)];
-    
-            if (isset($server['season'])) $return[$index]['Season'] = [true => urldecode($server['season'])];
-    
-            $p1 = (isset($server['players'])
-                ? $server['players']
-                : count($players) ?? 0);
-            $gameserver->playercountChannelUpdate($p1);
-            $index++;
-        }
-        $this->playercount_ticker++;
-        return $return;
-    }*/
 
     /**
      * Generates a server status embed.
@@ -1795,27 +1712,6 @@ class Civ13
         }
         return $embed;
     }
-    // This is a simplified version of serverinfoParse() that only updates the player counter
-    /* TODO: This function has been deprecated and should not be used anymore.
-    public function serverinfoParsePlayers(): void
-    {
-        if (empty($this->serverinfo) || ! $serverinfo = $this->serverinfo) {
-            $this->logger->warning('No serverinfo players data to parse!');
-            return; // No data to parse
-        }
-        foreach ($this->enabled_gameservers as &$gameserver) {
-            if (! $server = array_shift($serverinfo)) continue; // No data for this server
-            if (! $gameserver->supported) continue; // Server is not supported by the remote webserver and won't appear in data
-            if (array_key_exists('ERROR', $server)) continue; // Remote webserver reports server is not responding
-            $p1 = (isset($server['players'])
-                ? $server['players']
-                : count(array_map(fn($player) => $this->sanitizeInput(urldecode($player)), array_filter($server, function (string $key) { return str_starts_with($key, 'player') && !str_starts_with($key, 'players'); }, ARRAY_FILTER_USE_KEY)))
-            );
-            $gameserver->playercountChannelUpdate($p1);
-        }
-        $this->playercount_ticker++;
-    }
-    */
 
     /*
      * This function calculates the player's ranking based on their medals

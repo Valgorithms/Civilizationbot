@@ -56,7 +56,7 @@ use Civ13\Interfaces\HttpHandlerInterface;
 //use Discord\Helpers\Collection;
 
 class HttpHandler extends Handler implements HttpHandlerInterface
-{ // TODO
+{
     public string $external_ip = '127.0.0.1';
     private string $key = '';
     protected array $whitelist = [];
