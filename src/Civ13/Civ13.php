@@ -1285,7 +1285,7 @@ class Civ13
             if ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
             if ($member->roles->has($this->role_ids['permabanished'])) {
                 $member->removeRole($this->role_ids['permabanished'], "Unbanned by $admin");
-                $member->addRole($this->role_ids['verified'], "Unbanned by $admin");
+                $member->addRole($this->role_ids['Verified'], "Unbanned by $admin");
             }
         }
     }
@@ -1364,7 +1364,7 @@ class Civ13
             'cids' => $cids,
             'banned' => $this->bancheck($ckey),
             'altbanned' => $altbanned,
-            'verified' => $verified,
+            'Verified' => $verified,
             'discords' => $discords
         ];
     }
@@ -1385,7 +1385,7 @@ class Civ13
             foreach ($ckeyinfo['ips'] as $ip) if (! in_array($region = $this->IP2Country($ip), $regions)) $regions[] = $region;
             $embed->addFieldValues('Regions', implode(', ', $regions));
         }
-        $embed->addfieldValues('Verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
+        $embed->addfieldValues('Verified', $ckeyinfo['Verified'] ? 'Yes' : 'No');
         if (! empty($ckeyinfo['discords'])) {
             foreach ($ckeyinfo['discords'] as &$id) if ($id) $id = "<@{$id}>";
             $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']));
@@ -1930,10 +1930,10 @@ class Civ13
     /**
      * Updates the whitelist based on the member roles.
      *
-     * @param array|null $required_roles The required roles for whitelisting. Default is ['verified'].
+     * @param array|null $required_roles The required roles for whitelisting. Default is ['Verified'].
      * @return bool Returns true if the whitelist update is successful, false otherwise.
      */
-    public function whitelistUpdate(?array $required_roles = ['verified']): bool
+    public function whitelistUpdate(?array $required_roles = ['Verified']): bool
     {
         $return = false;
         foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->whitelistUpdate($required_roles)) $return = true;

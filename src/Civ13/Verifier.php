@@ -69,7 +69,7 @@ class Verifier
                 if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
                 if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
                 if (
-                    $member_future->roles->has($this->civ13->role_ids['verified']) ||
+                    $member_future->roles->has($this->civ13->role_ids['Verified']) ||
                     $member_future->roles->has($this->civ13->role_ids['banished']) ||
                     $member_future->roles->has($this->civ13->role_ids['permabanished'])
                 ) return null; // Don't kick if they have an verified or banned role
@@ -91,7 +91,7 @@ class Verifier
                 'Admin',
                 'Moderator',
                 'Mentor',
-                'verified',
+                'Verified',
                 'banished',
                 'paroled',
             ];
@@ -106,7 +106,7 @@ class Verifier
                 $this->civ13->adminlistUpdate();
                 return;
             }
-            if ($member->roles->has($this->civ13->role_ids['verified']) !== $member_old->roles->has($this->civ13->role_ids['verified'])) {
+            if ($member->roles->has($this->civ13->role_ids['Verified']) !== $member_old->roles->has($this->civ13->role_ids['Verified'])) {
                 $this->getVerified();
                 $this->civ13->whitelistUpdate();
             }
@@ -123,7 +123,7 @@ class Verifier
                 'Admin',
                 'Moderator',
                 'Mentor',
-                'verified',
+                'Verified',
                 'banished',
                 'paroled',
             ];
@@ -189,10 +189,10 @@ class Verifier
                 if (($item['ss13'] && isset($this->civ13->softbanned[$item['ss13']])) || isset($this->civ13->softbanned[$member->id])) return null;
                 $banned = $this->civ13->bancheck($item['ss13'], true);
                 $paroled = isset($this->civ13->paroled[$item['ss13']]);
-                if ($banned && $paroled) return $member->setroles([$this->civ13->role_ids['verified'], $this->civ13->role_ids['banished'], $this->civ13->role_ids['paroled']], "bancheck join {$item['ss13']}");
-                if ($banned) return $member->setroles([$this->civ13->role_ids['verified'], $this->civ13->role_ids['banished']], "bancheck join {$item['ss13']}");
-                if ($paroled) return $member->setroles([$this->civ13->role_ids['verified'], $this->civ13->role_ids['paroled']], "parole join {$item['ss13']}");
-                return $member->setroles([$this->civ13->role_ids['verified']], "verified join {$item['ss13']}");
+                if ($banned && $paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['banished'], $this->civ13->role_ids['paroled']], "bancheck join {$item['ss13']}");
+                if ($banned) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['banished']], "bancheck join {$item['ss13']}");
+                if ($paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['paroled']], "parole join {$item['ss13']}");
+                return $member->setroles([$this->civ13->role_ids['Verified']], "verified join {$item['ss13']}");
             }
         }
         if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['get-approved']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
@@ -260,7 +260,7 @@ class Verifier
             return 'This account is currently under investigation.';
         }
         if ($this->verified->get('discord', $discord_id)) {
-            if (($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id)) && ! $member->roles->has($this->civ13->role_ids['verified'])) $member->setRoles([$this->civ13->role_ids['verified']], "approveme join $ckey");
+            if (($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id)) && ! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setRoles([$this->civ13->role_ids['Verified']], "approveme join $ckey");
             return 'You are already verified!';
         }
         if ($this->verified->get('ckey', $ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
@@ -372,13 +372,13 @@ class Verifier
                 if (isset($this->civ13->panic_bans[$ckey])) {
                     $this->civ13->__panicUnban($ckey);
                     $error .= ' and the panic bunker ban removed.';
-                    if (! $member->roles->has($this->civ13->role_ids['verified'])) $member->addRole($this->civ13->role_ids['verified'], "approveme verified ($ckey)");
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
                     if ($channel) $this->civ13->sendMessage($channel, "Verified and removed the panic bunker ban from $member ($ckey - {$this->civ13->ages[$ckey]}).");
                 } elseif ($this->civ13->bancheck($ckey, true)) {
-                    if (! $member->roles->has($this->civ13->role_ids['verified'])) $member->setroles([$this->civ13->role_ids['verified'], $this->civ13->role_ids['banished']], "approveme verified ($ckey)");
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['banished']], "approveme verified ($ckey)");
                     if ($channel) $this->civ13->sendMessage($channel, "Added the banished role to $member ($ckey - {$this->civ13->ages[$ckey]}).");
                 } else {
-                    if (! $member->roles->has($this->civ13->role_ids['verified'])) $member->addRole($this->civ13->role_ids['verified'], "approveme verified ($ckey)");
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
                     if ($channel) $this->civ13->sendMessage($channel, "Verified $member. ($ckey" . ((isset($this->civ13->ages[$ckey])) ? " - {$this->civ13->ages[$ckey]})" : ')'));
                 }
                 break;
@@ -388,14 +388,14 @@ class Verifier
                 // Check if the user is already verified and add the role if it's missing
                 if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) break;
                 if (! $members = $guild->members->filter(function (Member $member) {
-                    return ! $member->roles->has($this->civ13->role_ids['verified'])
+                    return ! $member->roles->has($this->civ13->role_ids['Verified'])
                         && ! $member->roles->has($this->civ13->role_ids['banished'])
                         && ! $member->roles->has($this->civ13->role_ids['permabanished'])
                         && ! $member->roles->has($this->civ13->role_ids['dungeon']);
                 })) break;
                 if (! $member = $members->get('id', $discord_id)) break;
                 if (! $m = $this->getVerifiedMember($member)) break;
-                $m->addRole($this->civ13->role_ids['verified'], "approveme verified ($ckey)");
+                $m->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
                 break;
             case 404:
                 $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
@@ -476,7 +476,7 @@ class Verifier
             switch ($http_status) {
                 case 200: // Verified
                     if (! $member = $this->getVerifiedMember($id)) $message = "`$id` was unverified but the member couldn't be found in the server.";
-                    if ($member && $member->roles->has($this->civ13->role_ids['verified'])) $member->setRoles([], "unverified ($id)");
+                    if ($member && $member->roles->has($this->civ13->role_ids['Verified'])) $member->setRoles([], "unverified ($id)");
                     if ($channel = isset($this->civ13->channel_ids['staff_bot']) ? $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']) : null) $this->civ13->sendMessage($channel, "Unverified `$id`.");
                     $this->getVerified(false);
                     break;
@@ -547,13 +547,13 @@ class Verifier
                     if ($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id))
                     if ((isset($this->verify_url) && $this->verify_url)) {
                         if (! isset($this->civ13->timers['provisional_registration_'.$discord_id])) $this->civ13->timers['provisional_registration_'.$discord_id] = $this->civ13->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
-                        if (! $member->roles->has($this->civ13->role_ids['verified']) && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}" . PHP_EOL . 'Providing provisional verification role and trying again in 30 minutes... ');
+                        if (! $member->roles->has($this->civ13->role_ids['Verified']) && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}" . PHP_EOL . 'Providing provisional verification role and trying again in 30 minutes... ');
                     }
-                    if (! $member->roles->has($this->civ13->role_ids['verified'])) $member->setRoles([$this->civ13->role_ids['verified']], "Provisional verification `$ckey`");
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setRoles([$this->civ13->role_ids['Verified']], "Provisional verification `$ckey`");
                     return true;
                 }
                 if ($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id))
-                    if ($member->roles->has($this->civ13->role_ids['verified']))
+                    if ($member->roles->has($this->civ13->role_ids['Verified']))
                         $member->setRoles([], 'Provisional verification failed');
                 unset($this->provisional[$ckey]);
                 $this->civ13->VarSave('provisional.json', $this->provisional);
