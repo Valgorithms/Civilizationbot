@@ -567,7 +567,7 @@ class MessageServiceManager
                 if (! $item = $this->civ13->verifier->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
                 $ckey = $item['ss13'];
             }
-            if (! $json = Byond::bansearch_centcom($ckey)) return $this->civ13->reply($message, "Unable to locate bans were found for **$ckey** on centcom.melonmesa.com.");
+            if (! $json = Byond::bansearch_centcom($ckey)) return $this->civ13->reply($message, "Unable to locate bans for **$ckey** on centcom.melonmesa.com.");
             if ($json === '[]') return $this->civ13->reply($message, "No bans were found for **$ckey** on centcom.melonmesa.com.");
             return $this->civ13->reply($message, $json, $ckey.'_bans.json', true);
         }), ['Verified']);
@@ -681,42 +681,6 @@ class MessageServiceManager
             if ($this->civ13->verifier->getVerified(false)) return $message->react("👍");
             return $message->react("👎");
         }), ['Owner', 'High Staff', 'Admin']);
-
-        $banlog_update = function (string $banlog, array $playerlogs, ?string $ckey = null): string
-        {
-            $temp = [];
-            $oldlist = [];
-            foreach (explode('|||', $banlog) as $bsplit) {
-                $ban = explode(';', trim($bsplit));
-                if (isset($ban[8])) {
-                    if ($ckey && $ckey != $ban[8]) continue;
-                    if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') $oldlist[] = $bsplit;
-                } else $temp[$ckey][] = $bsplit;
-            }
-            foreach ($playerlogs as $playerlog) {
-                $logs = explode('|', $playerlog);
-                array_map(function ($lsplit) use (&$temp) {
-                    $log = explode(';', trim($lsplit));
-                    array_walk_recursive($temp, function (&$arr) use ($log) {
-                        $a = explode(';', $arr);
-                        if (isset($a[8]) && $a[8] === $log[0]) {
-                            $a[9] = $log[2];
-                            $a[10] = $log[1];
-                            $arr = implode(';', $a);
-                        }
-                    });
-                }, $logs);
-            }
-
-            $updated = [];
-            foreach ($temp as $ban) {
-                if (is_array($ban)) $updated = array_merge($updated, $ban);
-                else $updated[] = $ban;
-            }
-            
-            if (empty($updated)) return preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
-            return trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
-        };
         
         $this->offsetSet('listbans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -735,7 +699,7 @@ class MessageServiceManager
             return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
         }), ['Owner', 'High Staff', 'Admin']);
         
-        $this->offsetSet('ban', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($banlog_update): PromiseInterface
+        $this->offsetSet('ban', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
             $split_message = explode('; ', $message_filtered['message_content']);
@@ -743,20 +707,6 @@ class MessageServiceManager
             if (! isset($split_message[1]) || ! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
             if (! isset($split_message[2]) || ! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
             $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
-    
-            foreach ($this->civ13->enabled_gameservers as &$gameserver) { // TODO: Review this for performance and redundancy
-                if (! isset($this->civ13->timers["banlog_update_{$gameserver->key}"])) $this->civ13->timers["banlog_update_{$gameserver->key}"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($banlog_update, $arr) {
-                    $playerlogs = [];
-                    foreach ($this->civ13->enabled_gameservers as $g) {
-                        if (! file_exists($fp = $g->basedir . Civ13::playerlogs)) continue;
-                        if ($playerlog = @file_get_contents($fp)) $playerlogs[] = $playerlog;
-                    }
-                    if ($playerlogs) foreach ($this->civ13->enabled_gameservers as $g) {
-                        if (! file_exists($fp = $g->basedir . Civ13::bans)) continue;
-                        file_put_contents($fp, $banlog_update(file_get_contents($fp), $playerlogs, $arr['ckey']), FILE_APPEND);
-                    }
-                });
-            }
             return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13']));
         }), ['Owner', 'High Staff', 'Admin']);
         
@@ -959,7 +909,7 @@ class MessageServiceManager
             }), ['Verified']);
         }
 
-        $this->offsetSet('dumpappcommands', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($banlog_update): PromiseInterface {
+        $this->offsetSet('dumpappcommands', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface {
             $application_commands = $this->civ13->discord->__get('application_commands');
             $names = [];
             foreach ($application_commands as $command) $names[] = $command->getName();
@@ -967,33 +917,14 @@ class MessageServiceManager
             return $message->reply('Application commands: ' . $namesString);
         }), ['Owner', 'High Staff']);
 
-        $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($banlog_update): PromiseInterface {
-            $server_playerlogs = array_filter(array_map(function ($gameserver) {
-                if (! $playerlogs = @file_get_contents($fp = $gameserver->basedir . Civ13::playerlogs)) {
-                    $this->logger->warning("`$fp` is not a valid file path!");
-                    return null;
-                }
-                return $playerlogs;
-            }, $this->civ13->enabled_gameservers));
-
-            if (! $server_playerlogs) return $message->react("🔥");
-
+        $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface {
             $updated = false;
-            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                $fp = $gameserver->basedir . Civ13::bans;
-                $existingContent = @file_get_contents($fp);
-                $newContent = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $banlog_update($existingContent, $server_playerlogs));
-                if ($newContent !== $existingContent) if (! file_put_contents($fp, $newContent, FILE_APPEND)) {
-                    $this->logger->warning("Error updating bans for {$fp}!");
-                    continue;
-                }
-                $updated = true;
-            }
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) if ($gameserver->banlog_update() !== false) $updated = true;
             if ($updated) return $message->react("👍");
             return $message->react("🔥");
         }), ['Owner', 'High Staff']);
 
-        $this->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($banlog_update): PromiseInterface {
+        $this->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface {
             if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $message->react("🔥");
             if (! $members = $guild->members->filter(function (Member $member) {
                 return ! $member->roles->has($this->civ13->role_ids['Verified'])

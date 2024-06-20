@@ -453,8 +453,7 @@ class GameServer {
      * @return bool Returns true if the player is permabanned, false otherwise.
      */
     public function sqlPermabancheck(string $ckey): bool
-    {
-        // TODO
+    { // TODO, pending /tg/ SQL server implementation
         return false;
     }
     /**
@@ -487,9 +486,66 @@ class GameServer {
      * @return bool Returns true if the player is banned, false otherwise.
      */
     public function sqlBancheck(string $ckey): bool
-    {
-        // TODO
+    { // TODO, pending /tg/ SQL server implementation
         return false;
+    }
+
+    public function banlog_update(int|string|null $ckey = null): string|false
+    {
+        if (! touch($fp = $this->basedir . Civ13::playerlogs)) {
+            $this->logger->warning("Unable to open `$fp`");
+            return false;
+        }
+        if (! touch($fp = $this->basedir . Civ13::bans)) {
+            $this->logger->warning("Unable to open `$fp`");
+            return false;
+        }
+
+        $playerlog = file_get_contents($this->basedir . Civ13::playerlogs);
+        $banlog = file_get_contents($fp = $this->basedir . Civ13::bans);
+        $temp = [];
+        $oldlist = [];
+        foreach (explode('|||', $banlog) as $bsplit) {
+            if (! $bsplit) continue; // Skip empty lines
+            $ban = explode(';', trim($bsplit));
+            if (isset($ban[8])) {
+                if ($ckey && $ckey != $ban[8]) continue;
+                if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') $oldlist[] = $bsplit;
+            } else $temp[$ckey][] = $bsplit; // This is a ban that doesn't have a ckey, so we'll just add it to the temp array
+        }
+        /**
+         * This function takes a player log's content as a string and updates the corresponding logs in the game server.
+         * Each individual player log is a string separated by '|', and each log entry is separated by ';'.
+         * The function searches for matching log entries in the game server and updates the corresponding values.
+         */
+        $logs = explode('|', $playerlog);
+        array_map(function ($lsplit) use (&$temp) {
+            $log = explode(';', trim($lsplit));
+            array_walk_recursive($temp, function (&$arr) use ($log) {
+                $a = explode(';', $arr);
+                if (isset($a[8]) && $a[8] === $log[0]) {
+                    $a[9] = $log[2];
+                    $a[10] = $log[1];
+                    $arr = implode(';', $a);
+                }
+            });
+        }, $logs);
+
+        $updated = [];
+        foreach ($temp as $ban) {
+            if (is_array($ban)) $updated = array_merge($updated, $ban);
+            else $updated[] = $ban;
+        }
+        
+        /**
+         * This function updates the bans list by merging the old list with the updated list.
+         * If the updated list is empty, it returns the old list with line breaks replaced by '|||' and appended with a line break.
+         * If the updated list is not empty, it merges the old list with the updated list, replaces line breaks with '|||', trims the result, and appends a line break.
+         */
+        if (empty($updated)) $final = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
+        else $final = trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
+        file_put_contents($fp, $final, FILE_APPEND);
+        return $final;
     }
 
     /*
@@ -515,7 +571,14 @@ class GameServer {
                 $permanent ? $member->setRoles([$this->civ13->role_ids['banished'], $this->civ13->role_ids['permabanished']], $string) : $member->addRole($this->civ13->role_ids['banished'], $string);
             }
         }
-        return $this->legacy ? $this->legacyBan($array, $admin) : $this->sqlBan($array, $admin);
+
+        if ($this->legacy) {
+            if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($array) {
+                $this->banlog_update($array['ckey']);
+            });
+            return $this->legacyBan($array, $admin);
+        }
+        return $this->sqlBan($array, $admin);
     }
     private function legacyBan(array $array, ?string $admin = null): string
     {
