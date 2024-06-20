@@ -501,7 +501,7 @@ class GameServer {
             return false;
         }
 
-        if (! $playerlog) $playerlog = file_get_contents($this->basedir . Civ13::playerlogs); // TODO: Implement this on Civ13 with a foreach on all gameservers
+        if (! $playerlog) $playerlog = file_get_contents($this->basedir . Civ13::playerlogs);
         $banlog = file_get_contents($fp = $this->basedir . Civ13::bans);
         $temp = [];
         $oldlist = [];
@@ -574,7 +574,10 @@ class GameServer {
 
         if ($this->legacy) {
             if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($array) {
-                $this->banlog_update($array['ckey']);
+                foreach ($this->civ13->gameservers as &$gameserver) {
+                    if (! $gameserver->enabled) continue;
+                    $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)); // Attempts to fill in any missing data for the ban
+                }
             });
             return $this->legacyBan($array, $admin);
         }
