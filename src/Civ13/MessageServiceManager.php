@@ -94,11 +94,11 @@ class MessageServiceManager
      * The `ping` function replies with "Pong!" when called.
      * The `help` function generates a list of available commands based on the user's roles.
      * The `cpu` function returns the CPU usage of the system.
-     * The `approveme` function verifies a user's identity and assigns them the `infantry` role.
+     * The `approveme` function verifies a user's identity and assigns them the `Verified` role.
      * And more! (see the code for more details)
      */
     private function __generateGlobalMessageCommands(): void
-    { // TODO: add infantry and veteran roles to all non-staff command parameters except for `approveme`
+    {
         // MessageHandler
         $this->offsetSet('ping', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -129,12 +129,12 @@ class MessageServiceManager
                 return $this->civ13->reply($message, "CPU Usage: $cpu_usage%");
             }
             return $this->civ13->reply($message, 'Unrecognized operating system!');
-        }));
+        }), ['verified']);
         $this->offsetSet('checkip', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
             return $this->civ13->reply($message, @file_get_contents('http://ipecho.net/plain', false, $context));
-        }));
+        }), ['verified']);
         /**
          * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
          * It also iterates through playerlogs ban logs to find all known ckeys, IPs, and CIDs.
@@ -311,17 +311,17 @@ class MessageServiceManager
                 return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $random_insult)->setAllowedMentions(['parse' => []]));
             }
             return $this->civ13->reply($message, 'No insults found!');
-        }));
+        }), ['verified']);
 
         $this->offsetSet('discord2ckey', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) {
             if (! $item = $this->civ13->verifier->get('discord', $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$id` is not registered to any byond username");
             return $this->civ13->reply($message, "`$id` is registered to `{$item['ss13']}`");
-        }));
+        }), ['verified']);
 
         $this->offsetSet('ckey2discord', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) {
             if (! $item = $this->civ13->verifier->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$ckey` is not registered to any discord id");
             return $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
-        }));
+        }), ['verified']);
 
         $this->offsetSet('ckey', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -338,7 +338,7 @@ class MessageServiceManager
             if (! $age = $this->civ13->getByondAge($ckey)) return $this->civ13->reply($message, "`$ckey` does not exist");
             if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
             return $this->civ13->reply($message, "`$ckey` is not registered to any discord id ($age)");
-        }));
+        }), ['verified']);
 
         $this->offsetSet('fullbancheck', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -513,7 +513,7 @@ class MessageServiceManager
                     return $message->react("🔥");
             }
             return $this->civ13->reply($message, 'You need to be in any of the #ooc channels to use this command.');
-        }));
+        }), ['verified']);
 
         $this->offsetSet('asay', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -526,7 +526,7 @@ class MessageServiceManager
                 }
             }
             return $this->civ13->reply($message, 'You need to be in any of the #asay channels to use this command.');
-        }));
+        }), ['verified']);
 
         $this->offsetSet('globalooc', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         {
@@ -572,7 +572,7 @@ class MessageServiceManager
             if (! $json = Byond::bansearch_centcom($ckey)) return $this->civ13->reply($message, "Unable to locate bans were found for **$ckey** on centcom.melonmesa.com.");
             if ($json === '[]') return $this->civ13->reply($message, "No bans were found for **$ckey** on centcom.melonmesa.com.");
             return $this->civ13->reply($message, $json, $ckey.'_bans.json', true);
-        }));
+        }), ['verified']);
         $this->offsetSet('bancheck', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) {
             if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
             if (is_numeric($ckey)) {
@@ -887,7 +887,7 @@ class MessageServiceManager
                 if (! $this->civ13->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
                 if (! $msg = $this->civ13->getRanking($path)) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking!');
                 return $this->civ13->reply($message, $msg, 'ranking.txt');
-            }));
+            }), ['verified']);
 
             $this->offsetSet($gameserver->key.'rank', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($path): PromiseInterface
             {
@@ -899,7 +899,7 @@ class MessageServiceManager
                 if (! $msg = $this->civ13->getRank($path, $ckey)) return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
                 return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
                 // return $this->civ13->reply($message, "Your ranking is too long to display.");
-            }));
+            }), ['verified']);
         };
         
         if (isset($this->civ13->files['tdm_awards_path']) && file_exists($this->civ13->files['tdm_awards_path'])) {
@@ -936,7 +936,7 @@ class MessageServiceManager
                 if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `medals [ckey]`.');
                 if (! $msg = $medals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
                 return $this->civ13->reply($message, $msg, 'medals.txt');
-            }));
+            }), ['verified']);
         }
         if (isset($this->civ13->files['tdm_awards_br_path']) && file_exists($this->civ13->files['tdm_awards_br_path'])) {
             $brmedals = function (string $ckey): string
@@ -958,7 +958,7 @@ class MessageServiceManager
                 if (! $msg = $brmedals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
                 return $this->civ13->reply($message, $msg, 'brmedals.txt');
                 // return $this->civ13->reply($message, "Too many medals to display.");
-            }));
+            }), ['verified']);
         }
 
         $this->offsetSet('dumpappcommands', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($banlog_update): PromiseInterface {
