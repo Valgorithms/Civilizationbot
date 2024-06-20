@@ -209,7 +209,7 @@ foreach ($loadedData as $key => $value) $options[$key] = $value;
 $server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
     'tdm' => [
         'supported' => true,
-        'enabled' => false,
+        'enabled' => true,
         'name' => 'TDM',
         //'key' => 'tdm', // This must match the top-level key in the server_settings array
         'ip' => $civ13_ip,
@@ -239,7 +239,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
     ],
     'nomads' => [
         'supported' => true, // Whether the server is supported by the remote webserver
-        'enabled' => false, // Whether the server should have commands handled by the bot
+        'enabled' => true, // Whether the server should have commands handled by the bot
         'name' => 'Nomads', // Name of the server and the prefix of the playercount channel (e.g. nomads-999)
         //'key' => 'nomads', // This must match the top-level key in the server_settings array
         'ip' => $civ13_ip, // IP of the server
