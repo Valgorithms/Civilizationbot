@@ -555,6 +555,7 @@ class GameServer {
             if (isset($ban[8])) {
                 if ($ckey && $ckey != $ban[8]) continue;
                 if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') $oldlist[] = $bsplit;
+                else $temp[$ban[8]] = $bsplit;
             } else $temp[$ckey][] = $bsplit; // This is a ban that doesn't have a ckey, so we'll just add it to the temp array
         }
         /**

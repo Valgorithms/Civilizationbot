@@ -920,8 +920,8 @@ class MessageServiceManager
         $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface {
             $updated = false;
             foreach ($this->civ13->enabled_gameservers as &$gameserver) if ($gameserver->banlog_update() !== false) $updated = true;
-            if ($updated) return $message->react("👍");
-            return $message->react("🔥");
+            if (! $updated) return $message->react("🔥");
+            return $message->react("👍");
         }), ['Owner', 'High Staff']);
 
         $this->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface {
