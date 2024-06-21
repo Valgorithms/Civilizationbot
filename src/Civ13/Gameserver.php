@@ -591,6 +591,18 @@ class GameServer {
         $ckey ? file_put_contents($fp, $final, FILE_APPEND) : file_put_contents($fp, $final);
         return $final;
     }
+    public function listbans(): string|false
+    {
+        if (! @touch($fp = $this->basedir . Civ13::bans)) {
+            $this->logger->warning("Unable to open `$fp`");
+            return false;
+        }
+        if (! $banlog = file_get_contents($fp)) {
+            $this->logger->warning("Unable to read `$fp`");
+            return false;
+        }
+        return $banlog;
+    }
 
     /*
      * These functions determine which of the above methods should be used to process a ban or unban

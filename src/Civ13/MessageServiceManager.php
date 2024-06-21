@@ -684,8 +684,7 @@ class MessageServiceManager
         
         $this->offsetSet('listbans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            //return $this->civ13->banlogHandler($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
-            return $this->civ13->reply($message, 'This command is currently disabled.');
+            return $this->civ13->listbans($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
         }), ['Owner', 'High Staff', 'Admin']);
 
         $this->offsetSet('softban', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface

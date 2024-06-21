@@ -1124,21 +1124,26 @@ class Civ13
      * @param string $message_content_lower The message content in lowercase.
      * @return PromiseInterface
      */
-    public function banlogHandler(Message $message, string $message_content_lower): PromiseInterface 
+    public function listbans(Message $message, ?string $key = ''): PromiseInterface 
     {
-        $gameservers = array_filter($this->enabled_gameservers, function($gameserver) use ($message_content_lower) {
-            return $gameserver->key === strtolower($message_content_lower);
-        });
-        if (empty($gameservers)) return $this->reply($message, 'Please use the format `listbans {server}`. Valid servers: `' . implode(', ', array_keys($this->enabled_gameservers)) . '`');
-
-        foreach ($gameservers as &$gameserver) if (! @touch($filename = $gameserver->basedir . self::bans)) {
-            $this->logger->warning("Failed to create file $filename");
-            return $message->react("🔥");
+        $banlists = [];
+        if ($key && isset($this->enabled_gameservers[$key])) {
+            if (! $banlist = $this->enabled_gameservers[$key]->listbans()) {
+                $this->logger->warning('Unable to list bans for ' . $this->enabled_gameservers[$key]->key);
+                return $message->react('🔥');
+            }
+            $banlists[$this->enabled_gameservers[$key]->name] = $banlist; 
+        } else foreach ($this->enabled_gameservers as &$gameserver) {
+            if (! $banlist = $gameserver->listbans()) {
+                $this->logger->warning('Unable to list bans for ' . $gameserver->key);
+                continue;
+            }
+            $banlists[$gameserver->name] = $banlist;
         }
 
         $builder = MessageBuilder::new();
-        $builder->addFile($filename);
-        return $message->reply($builder);
+        foreach ($banlists as $key => $banlist) $builder->addFileFromContent("{$key}_bans.txt", $banlist);
+        return $message->reply($builder->setContent('Ban lists for: ' . implode(', ', array_keys($banlists))));
     }
     /**
      * Every 12 hours, this function checks if a user is banned and removes the banished role from them if they are not.
