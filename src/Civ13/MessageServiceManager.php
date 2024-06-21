@@ -919,11 +919,9 @@ class MessageServiceManager
         }), ['Owner', 'High Staff']);
 
         $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
-        {
+        { // Attempts to fill in any missing data for the ban
             $updated = false;
-            foreach ($this->civ13->enabled_gameservers as &$gameserver) foreach ($this->civ13->enabled_gameservers as &$gameserver2) {
-                if ($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs)) !== false) $updated = true; // Attempts to fill in any missing data for the ban
-            }
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) foreach ($this->civ13->enabled_gameservers as &$gameserver2) if ($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs)) !== false) $updated = true;
             if (! $updated) return $message->react("🔥");
             return $message->react("👍");
         }), ['Owner', 'High Staff']);
