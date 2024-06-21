@@ -1152,17 +1152,21 @@ class Civ13
     {
         // We don't want the persistence server to do this function
         if (! $this->enabled_gameservers) return false; // This function should only run if there are servers to check
-        foreach ($this->enabled_gameservers as $server) if (! @file_exists($path = $server->basedir . self::bans) || ! @touch($path)) {
-            $this->logger->warning("unable to open `$path`");
-            return false;
+        $atleastoneenabled = false;
+        foreach ($this->enabled_gameservers as &$gameserver) {
+            if (! @file_exists($path = $gameserver->basedir . self::bans) || ! @touch($path)) {
+                $this->logger->warning("unable to open `$path`");
+                continue;
+            } else $atleastoneenabled = true;
         }
+        if (! $atleastoneenabled) return false;
 
         $bancheckTimer = function () {
             $this->logger->debug('Running periodic bancheck...'); // This should take ~2.5 seconds to run
             if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
-                if (isset($this->verifier) && ! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
-                $banned = $this->bancheck($item['ss13'], true);
-                if ($banned && ! ($member->roles->has($this->role_ids['banished']) || $member->roles->has($this->role_ids['permabanished']))) {
+                if (! isset($this->verifier)) break;
+                if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
+                if (($banned = $this->bancheck($item['ss13'], true)) && ! ($member->roles->has($this->role_ids['banished']) || $member->roles->has($this->role_ids['permabanished']))) {
                     $member->addRole($this->role_ids['banished'], 'bancheck timer');
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
                 } elseif (! $banned && ($member->roles->has($this->role_ids['banished']) || $member->roles->has($this->role_ids['permabanished']))) {
@@ -1463,7 +1467,7 @@ class Civ13
         $file_contents = '';
         foreach ($this->enabled_gameservers as &$gameserver) {
             if (! @file_exists($gameserver->basedir . self::bans) || ! $fc = @file_get_contents($gameserver->basedir . self::bans)) {
-                $this->logger->warning('unable to open `' . $gameserver->basedir . self::bans . '`');
+                $this->logger->warning("Unable to open '{$gameserver->basedir}" . self::bans . '`');
                 continue;
             }
             $file_contents .= $fc;
@@ -1523,7 +1527,7 @@ class Civ13
         $file_contents = '';
         foreach ($this->enabled_gameservers as &$gameserver) {
             if (! @file_exists($gameserver->basedir . self::playerlogs) || ! $fc = @file_get_contents($gameserver->basedir . self::playerlogs)) {
-                $this->logger->warning('unable to open `' . $gameserver->basedir . self::playerlogs . '`');
+                $this->logger->warning("Unable to open `{$gameserver->basedir}" . self::playerlogs . '`');
                 continue;
             }
             $file_contents .= $fc;

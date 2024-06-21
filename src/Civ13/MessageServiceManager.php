@@ -684,7 +684,8 @@ class MessageServiceManager
         
         $this->offsetSet('listbans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            return $this->civ13->banlogHandler($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
+            //return $this->civ13->banlogHandler($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
+            return $this->civ13->reply($message, 'This command is currently disabled.');
         }), ['Owner', 'High Staff', 'Admin']);
 
         $this->offsetSet('softban', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -1080,79 +1081,32 @@ class MessageServiceManager
                     break;
                 }
             }
-            if ($allRequiredFilesExist) {
-                $serverhost = function (?Message $message = null) use (&$gameserver): void
-                {
-                    \execInBackground('python3 ' . $gameserver->basedir . Civ13::updateserverabspaths);
-                    if (file_exists($gameserver->basedir . Civ13::serverdata)) \execInBackground('rm -f ' . $gameserver->basedir . Civ13::serverdata);
-                    \execInBackground('python3 ' . $gameserver->basedir . Civ13::killsudos);
 
-                    if (! isset($this->civ13->timers["{$gameserver->key}host"])) {
-                        $this->civ13->timers["{$gameserver->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($gameserver, $message) {
-                            \execInBackground('nohup DreamDaemon ' . $gameserver->basedir . Civ13::dmb . ' ' . $gameserver->port . ' -trusted -webclient -logself &');
-                            if ($message) $message->react("👍");
-                            unset($this->civ13->timers["{$gameserver->key}host"]);
-                        });
-                    } else $this->logger->info("Server host timer already exists for {$gameserver->key}.");
-                    if ($message) $message->react("⏱️");
-                };
-                $this->offsetSet("{$gameserver->key}host", $serverhost, ['Owner', 'High Staff']);
-            }
-            
-            
-            if (! file_exists($gameserver->basedir . Civ13::killciv13)) $this->logger->debug("Skipping server function `{$gameserver->key}kill` because the required config files were not found.");
-            else {
-                $serverkill = function (?Message $message = null) use (&$gameserver): void
-                {
-                    $this->civ13->loop->addTimer(10, function () use ($gameserver, $message): void
-                    {
-                        \execInBackground('python3 ' . $gameserver->basedir . Civ13::killciv13);
-                        if ($message) $message->react("👍");
-                    });
-                    if ($message) $message->react("⏱️");
-                    $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
-                    $this->civ13->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender, $gameserver->key);
-                };
-                $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'High Staff']);
-            }
-            if ($this->offsetExists("{$gameserver->key}host") && $this->offsetExists("{$gameserver->key}kill")) {
-                $serverrestart = function (?Message $message = null) use (&$gameserver): ?PromiseInterface
-                {
-                    $this->civ13->loop->addTimer(10, function () use ($gameserver, $message): void
-                    {
-                        $kill = $this->offsetGet("{$gameserver->key}kill") ?? [];
-                        $host = $this->offsetGet("{$gameserver->key}host") ?? [];
-                        if (
-                            ($kill = array_shift($kill))
-                            && ($host = array_shift($host))
-                        ) {
-                            $kill($message);
-                            $this->civ13->loop->addTimer(10, function () use ($host, $message): void
-                            {
-                                $host();
-                                if ($message) $message->react("👍");
-                            });
-                        }
-                    });
-                    if ($message) $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username, $gameserver->key);
-                    else $this->civ13->OOCMessage("Server is now restarting.", $this->civ13->discord->username, $gameserver->key);
-                    if ($message) $message->react("⏱️");
-                    return null;
-                };
-                $this->offsetSet("{$gameserver->key}restart", $serverrestart, ['Owner', 'High Staff']);
-            }
-
-            if (! file_exists($gameserver->basedir . Civ13::mapswap)) $this->logger->debug("Skipping server function `{$gameserver->key}mapswap` because the required config files were not found.");
-            else {
-                $servermapswap = function (?Message $message, string $command, array $message_filtered) use (&$gameserver): ?PromiseInterface
-                {
-                    $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
-                    if (count($split_message) < 2 || !($mapto = strtoupper($split_message[1]))) return $this->civ13->reply($message, 'You need to include the name of the map.');
-                    $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username;
-                    return $this->civ13->reply($message, $gameserver->mapswap($mapto, $admin));
-                };
-                $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'High Staff', 'Admin']);
-            }
+            $serverhost = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            {
+                $gameserver->Host($message);
+                return $message->react("⏱️");
+            });
+            $this->offsetSet("{$gameserver->key}host", $serverhost, ['Owner', 'High Staff']);
+            $serverkill = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            {
+                $gameserver->Kill($message);
+                return $message->react("⏱️");
+            });
+            $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'High Staff']);
+            $serverrestart = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            {
+                $gameserver->Restart($message);
+                return $message->react("⏱️");
+            });
+            $this->offsetSet("{$gameserver->key}restart", $serverrestart, ['Owner', 'High Staff']);
+            $servermapswap = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            {
+                $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
+                if (isset($split_message[1])) return $this->civ13->reply($message, 'You need to include the name of the map.');
+                return $this->civ13->reply($message, $gameserver->mapswap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username));
+            });
+            $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'High Staff', 'Admin']);
 
             $serverban = function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {

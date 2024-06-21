@@ -196,7 +196,7 @@ class GameServer {
         fclose($socket);
         $playercount = 0;
         if (! @file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
-            $this->logger->warning("unable to open `{$this->serverdata}`");
+            $this->logger->warning("Unable to open `{$this->serverdata}`");
             return 0;
         }
         $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
@@ -308,7 +308,7 @@ class GameServer {
     {
         if (! $this->enabled) return false;
         if (! touch($path = $this->basedir . Civ13::discord2ooc) || ! $file = @fopen($path, 'a')) {
-            $this->logger->error("unable to open `$path` for writing");
+            $this->logger->error("Unable to open `$path` for writing");
             return false;
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
@@ -327,7 +327,7 @@ class GameServer {
     {
         if (! $this->enabled) return false;
         if (! @touch($path = $this->basedir . Civ13::discord2admin) || ! $file = @fopen($path, 'a')) {
-            $this->logger->error("unable to open `$path` for writing");
+            $this->logger->error("Unable to open `$path` for writing");
             return false;
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
@@ -366,7 +366,7 @@ class GameServer {
     {
         if (! $this->enabled) return false;
         if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! $file = @fopen($path, 'a')) {
-            $this->logger->debug("unable to open `$path` for writing");
+            $this->logger->debug("Unable to open `$path` for writing");
             return false;
         }
         fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
@@ -375,8 +375,44 @@ class GameServer {
         return true;
     }
 
+    public function Host(?Message $message = null): void
+    {
+        \execInBackground("python3 {$this->basedir}" . Civ13::updateserverabspaths);
+        if (file_exists($this->basedir . Civ13::serverdata)) \execInBackground("rm -f {$this->basedir}" . Civ13::serverdata);
+        \execInBackground("python3 $this->basedir}" . Civ13::killsudos);
+
+        if (! isset($this->civ13->timers["{$this->key}host"])) {
+            $this->civ13->timers["{$this->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($message) {
+                \execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself &");
+                unset($this->civ13->timers["{$this->key}host"]);
+                if ($message) $message->react('👍');
+            });
+        } else $this->logger->info("Server host timer already exists for {$this->key}.");
+    }
+    public function Kill(?Message $message = null, bool $notify = true): void
+    {
+        if ($notify) {
+            $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
+            $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender);
+        }
+        $this->civ13->loop->addTimer(10, function () use ($message): void
+        {
+            \execInBackground("python3 {$this->basedir}" . Civ13::killciv13);
+            if ($message) $message->react("👍");
+        });
+    }
+    public function Restart(?Message $message = null, bool $notify = true): void
+    {
+        $this->Kill(null, false);
+        $this->civ13->loop->addTimer(20, function () use ($message, &$gameserver): void
+        {
+            $this->Host($message);
+        });
+        if ($notify) $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $message ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username);
+    }
     public function mapswap(string $mapto, string $admin): string
     {
+        $mapto = strtoupper($mapto);
         if (! file_exists($fp = $this->civ13->files['map_defines_path']) || ! $file = @fopen($fp, 'r')) {
             $this->logger->error("Unable to open `$fp` for reading.");
             return "Unable to open `$fp` for reading.";
@@ -395,7 +431,7 @@ class GameServer {
             if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, $msg";
             $channel->sendMessage($msg);
         }
-        $func = function () use ($mapto) { \execInBackground('python3 ' . $this->basedir . Civ13::mapswap . " $mapto" ); };
+        $func = function () use ($mapto) { \execInBackground("python3 {$this->basedir}" . Civ13::mapswap . " $mapto" ); };
         $this->loop->addTimer(10, function () use ($promise, $func) {
             if ($promise instanceof PromiseInterface) $this->civ13->then($promise->then($func, $this->civ13->onRejectedDefault));
             else $func();
@@ -432,7 +468,7 @@ class GameServer {
     public function legacyPermabancheck(string $ckey): bool
     {
         if (! @file_exists($path = $this->basedir . Civ13::bans) || ! $file = @fopen($path, 'r')) {
-            $this->logger->debug("unable to open `$path`");
+            $this->logger->debug("Unable to open `$path`");
             return false;
         }
         while (($fp = fgets($file, 4096)) !== false) {
@@ -465,7 +501,7 @@ class GameServer {
     public function legacyBancheck(string $ckey): bool
     {
         if (! @file_exists($path = $this->basedir . Civ13::bans) || ! $file = @fopen($path, 'r')) {
-            $this->logger->debug("unable to open `$path`");
+            $this->logger->debug("Unable to open `$path`");
             return false;
         }
         while (($fp = fgets($file, 4096)) !== false) {
@@ -551,7 +587,7 @@ class GameServer {
          */
         if (empty($updated)) $final = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
         else $final = trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
-        file_put_contents($fp, $final);
+        //$ckey ? file_put_contents($fp, $final, FILE_APPEND) : file_put_contents($fp, $final);
         return $final;
     }
 
@@ -595,8 +631,8 @@ class GameServer {
         $admin = $admin ?? $this->discord->username;
         if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
         if (! @touch($this->discord2ban) || ! $file = @fopen($this->discord2ban, 'a')) {
-            $this->logger->warning("unable to open `{$this->discord2ban}`");
-            return "unable to open `{$this->discord2ban}`" . PHP_EOL;
+            $this->logger->warning("Unable to open `{$this->discord2ban}`");
+            return "Unable to open `{$this->discord2ban}`" . PHP_EOL;
         }
         fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
         fclose($file);
@@ -630,7 +666,7 @@ class GameServer {
     {
         $admin = $admin ?? $this->discord->username;
         if (! @touch($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
-            $this->logger->warning("unable to open `$this->discord2unban`");
+            $this->logger->warning("Unable to open `$this->discord2unban`");
             return;
         }
         fwrite($file, $admin . ":::$ckey");
@@ -652,7 +688,7 @@ class GameServer {
         $line_array = array();
         $return = '';
         if (! @touch($this->ranking_path) || ! $search = @fopen($this->ranking_path, 'r')) {
-            $this->logger->warning($return = "unable to open `{$this->ranking_path}`");
+            $this->logger->warning($return = "Unable to open `{$this->ranking_path}`");
             return $return;
         }
         while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
@@ -682,7 +718,7 @@ class GameServer {
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! $this->enabled) return false;
         if (! @touch($this->whitelist)) {
-            $this->logger->warning("unable to open `{$this->whitelist}`");
+            $this->logger->warning("Unable to open `{$this->whitelist}`");
             return false;
         }
         $file_paths = [];
@@ -710,7 +746,7 @@ class GameServer {
         if (! $this->enabled) return false;
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! @touch($this->factionlist)) {
-            $this->logger->warning("unable to open `{$this->factionlist}`");
+            $this->logger->warning("Unable to open `{$this->factionlist}`");
             return false;
         }
         $file_paths = [];
@@ -752,7 +788,7 @@ class GameServer {
         if (! $this->enabled) return false;
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! @touch($this->admins)) {
-            $this->logger->warning("unable to open `{$this->admins}`");
+            $this->logger->warning("Unable to open `{$this->admins}`");
             return false;
         }
         $file_paths[] = $this->admins;
