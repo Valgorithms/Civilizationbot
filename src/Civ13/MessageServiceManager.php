@@ -909,7 +909,8 @@ class MessageServiceManager
             }), ['Verified']);
         }
 
-        $this->offsetSet('dumpappcommands', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface {
+        $this->offsetSet('dumpappcommands', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
+        {
             $application_commands = $this->civ13->discord->__get('application_commands');
             $names = [];
             foreach ($application_commands as $command) $names[] = $command->getName();
@@ -917,14 +918,18 @@ class MessageServiceManager
             return $message->reply('Application commands: ' . $namesString);
         }), ['Owner', 'High Staff']);
 
-        $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface {
+        $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
+        {
             $updated = false;
-            foreach ($this->civ13->enabled_gameservers as &$gameserver) if ($gameserver->banlog_update() !== false) $updated = true;
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) foreach ($this->civ13->enabled_gameservers as &$gameserver2) {
+                if ($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs)) !== false) $updated = true; // Attempts to fill in any missing data for the ban
+            }
             if (! $updated) return $message->react("🔥");
             return $message->react("👍");
         }), ['Owner', 'High Staff']);
 
-        $this->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface {
+        $this->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface 
+        {
             if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $message->react("🔥");
             if (! $members = $guild->members->filter(function (Member $member) {
                 return ! $member->roles->has($this->civ13->role_ids['Verified'])
