@@ -543,6 +543,7 @@ class GameServer {
             $this->logger->warning("Unable to open `$fp`");
             return false;
         }
+        $this->logger->info("Updating ban log for {$this->name}. " . ($ckey ? "ckey: $ckey" : "All bans") . '.');
 
         if (! $playerlog) $playerlog = file_get_contents($this->basedir . Civ13::playerlogs);
         $banlog = file_get_contents($fp = $this->basedir . Civ13::bans);
