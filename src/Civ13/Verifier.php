@@ -265,13 +265,7 @@ class Verifier
         }
         if ($this->verified->get('ckey', $ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
-            if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
-            if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
-                $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                $msg = $this->civ13->ban($arr, null, null, true);
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
-                return $reason;
-            }
+            // Check if the player's account has played on the server before
             $found = false;
             $file_contents = '';
             foreach ($this->civ13->enabled_gameservers as &$gameserver) {
@@ -280,6 +274,14 @@ class Verifier
             }
             foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] === $ckey) { $found = true; break; }
             if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
+            // Check if the player's account is old enough
+            if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
+            if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
+                $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
+                $msg = $this->civ13->ban($arr, null, null, true);
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
+                return $reason;
+            }
             return 'Login to your profile at ' . Byond::PROFILE . ' and enter this token as your description: `' . $this->generateToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
         }
         return $this->new($discord_id)['error']; // ['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
