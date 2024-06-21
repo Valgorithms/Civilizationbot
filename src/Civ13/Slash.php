@@ -489,12 +489,10 @@ class Slash
         });
         $this->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface
         {
-            $gameserver = $this->civ13->enabled_gameservers[$interaction->data->options['server']->value];
-            if ($serverrestart = array_shift($this->civ13->messageServiceManager->messageHandler->offsetGet("{$gameserver->key}restart"))) {
-                $serverrestart();
-                return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `{$gameserver->name}` <byond://{$gameserver->ip}:{$gameserver->port}>"));
-            }
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No restart function found for `{$gameserver->name}`"));
+            if (! isset($this->civ13->enabled_gameservers[$interaction->data->options['server']->value])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No gamserver found for `{$interaction->data->options['server']->value}`"));
+            $gameserver = &$this->civ13->enabled_gameservers[$interaction->data->options['server']->value];
+            $gameserver->Restart();
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `{$gameserver->name}` <byond://{$gameserver->ip}:{$gameserver->port}>"));
         });
         
         $this->listenCommand('ping', function (Interaction $interaction): PromiseInterface
