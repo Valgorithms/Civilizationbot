@@ -708,7 +708,7 @@ class Civ13
      * @param string|int|null $server_key Server for sending the direct message (optional).
      * @return bool Returns true if the direct message was sent successfully, false otherwise.
      */
-    public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): bool
+    public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): PromiseInterface|bool
     {
         if (is_null($server_key)) {
             $sent = false;
