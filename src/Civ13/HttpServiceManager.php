@@ -875,7 +875,9 @@ class HttpServiceManager
                                         if (in_array($item['ss13'], $playerlist))
                                             { $urgent = false; break; }
                     }
-                    if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
+                    $member = null;
+                    if ($item = $this->civ13->verifier->get('ss13', $ckey)) $member = $guild->members->get('id', $item['discord']);
+                    if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, a request for help " . ($ckey ? "from `$ckey` " : '') . ($member ? "(<@{$member->id}>) " : '') . "has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
                 }
 
                 return new HttpResponse(HttpResponse::STATUS_OK);
