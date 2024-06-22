@@ -359,22 +359,28 @@ class HttpServiceManager
                 //if (strcmp($signature, $hash) == 0) {
                     //if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'GitHub push event webhook received');
                     if (! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                    $promise = $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/2)');
+                    $promise = $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/3)');
                     execInBackground('git pull');
                     $this->civ13->loop->addTimer(5, function () use ($promise) {
-                        $promise->then(function (Message $message) {
+                        $promise = $promise->then(function (Message $message) {
                             $builder = MessageBuilder::new();
-                            $message->edit($builder->setContent('Forcefully moving the HEAD back to origin/main... (2/2)'));
+                            $promise = $message->edit($builder->setContent('Forcefully moving the HEAD back to origin/main... (2/3)'));
                             execInBackground('git reset --hard origin/main');
-                        });
-                    });
-                    if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
-                    $this->civ13->timers['update_pending'] = $this->civ13->loop->addTimer(300, function () {
-                        $this->socket->close();
-                        if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
-                            \restart();
-                            $this->discord->close();
-                            die();
+                            if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
+                            $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($promise) {
+                                $promise->then(function (Message $message) {
+                                    $builder = MessageBuilder::new();
+                                    $promise = $message->edit($builder->setContent('Restarting... (3/3)'));
+                                    $promise->then(function (Message $message) {
+                                        $this->socket->close();
+                                        if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(2, function () {
+                                            \restart();
+                                            $this->discord->close();
+                                            die();
+                                        });
+                                    });
+                                });
+                            });
                         });
                     });
                     return new HttpResponse(HttpResponse::STATUS_OK);
@@ -391,9 +397,9 @@ class HttpServiceManager
 
         $this->httpHandler->offsetSet('/cancelupdaterestart', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
-            if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) {
-                $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
-                unset($this->civ13->timers['update_pending']);
+            if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) {
+                $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
+                unset($this->civ13->timers['restart_pending']);
                 return HttpResponse::plaintext('Restart cancelled.');
             }
             return HttpResponse::plaintext('No restart pending.');
