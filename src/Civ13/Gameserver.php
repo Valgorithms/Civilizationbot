@@ -334,7 +334,7 @@ class GameServer
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        //if ($this->ooc && $channel = $this->discord->getChannel($this->ooc)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender)) return $promise;
+        //if (($this->relay_method === 'file') && $this->ooc && $channel = $this->discord->getChannel($this->ooc)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender)) return $promise;
         return true;
     }
     /**
@@ -353,7 +353,7 @@ class GameServer
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        //if ($this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
+        //if (($this->relay_method === 'file') && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
         return true;
     }
     /**
@@ -373,7 +373,7 @@ class GameServer
         }
         fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
         fclose($file);
-        //if ($this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
+        //if (($this->relay_method === 'file') && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
         return true;
     }
 
