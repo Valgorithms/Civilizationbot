@@ -356,15 +356,11 @@ class HttpServiceManager
                 //$hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
                 //if (strcmp($signature, $hash) == 0) {
                     //if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'GitHub push event webhook received');
-                    if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/3)');
+                    if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/2)');
                     execInBackground('git pull');
                     $this->civ13->loop->addTimer(5, function () {
-                        if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
+                        if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/2)');
                         execInBackground('git reset --hard origin/main');
-                    });
-                    $this->civ13->loop->addTimer(10, function () {
-                        if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
-                        execInBackground('git pull');
                     });
                     if (isset($this->civ13->timers['update_pending']) && $this->civ13->timers['update_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['update_pending']);
                     $this->civ13->timers['update_pending'] = $this->civ13->loop->addTimer(300, function () {
