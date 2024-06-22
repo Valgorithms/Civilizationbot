@@ -278,8 +278,8 @@ class Verifier
             if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
-                $msg = $this->civ13->ban($arr, null, null, true);
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $msg);
+                $this->civ13->ban($arr, null, null, true);
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['High Staff']}>, Byond account `$ckey` was too new to complete the automatic verification process! Please investigate using the `ckeyinfo` command and manually approve if they should be allowed to bypass the requirements.");
                 return $reason;
             }
             return 'Login to your profile at ' . Byond::PROFILE . ' and enter this token as your description: `' . $this->generateToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
