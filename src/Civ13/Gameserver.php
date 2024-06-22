@@ -10,18 +10,39 @@
 namespace Civ13;
 
 use Discord\Discord;
-use Discord\Builders\MessageBuilder;
-use Discord\Parts\Channel\Channel;
+//use Discord\Builders\MessageBuilder;
+//use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
-use Discord\Parts\Thread\Thread;
+//use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
 
-class GameServer {
+class GameServer
+{
+    /**
+     * An array of admin permissions.
+     * Each permission is represented by a key-value pair, where the key is the role name
+     * and the value is an array containing the role name in-game and the permission level.
+     *
+     * @var array
+     */
+    public const ADMIN_PERMISSIONS = [
+        'Owner' => ['Host', '65535'],
+        'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
+        'Host' => ['Host', '65535'], // Default Host permission, only used if a higher listed role is not found first
+        'Head Admin' => ['Head Admin', '16382'], // Deprecation TBD
+        //'Manager' => ['Manager', '16382'], // Deprecated
+        //'Supervisor' => ['Supervisor', '16382'], // Deprecated
+        'Ambassador' => ['Ambassador', '16382'], // Default High Staff permission, only used if a higher listed role is not found first
+        'Admin' => ['Admin', '16254'],
+        //'Moderator' => ['Moderator', '25088'], // Deprecated
+        //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
+        //'Mentor' => ['Mentor', '16384'], // Deprecated
+    ];
     public Discord $discord;
     public Logger $logger;
     public StreamSelectLoop $loop;
@@ -783,22 +804,9 @@ class GameServer {
      * @param array $required_roles An array of required roles and their corresponding permissions.
      * @return bool Returns true if the update was successful, false otherwise.
      */
-    public function adminlistUpdate(
-        $required_roles = [
-            'Owner' => ['Host', '65535'],
-            'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
-            'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
-            'Head Admin' => ['Head Admin', '16382'],
-            'Manager' => ['Manager', '16382'],
-            'Supervisor' => ['Supervisor', '16382'],
-            'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
-            'Admin' => ['Admin', '16254'],
-            'Moderator' => ['Moderator', '25088'],
-            //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
-            'Mentor' => ['Mentor', '16384'],
-        ]
-    ): bool
+    public function adminlistUpdate(?array $required_roles = null): bool
     {
+        if (! $required_roles) $required_roles = self::ADMIN_PERMISSIONS;
         if (! $this->enabled) return false;
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! @touch($this->admins)) {

@@ -153,16 +153,16 @@ $options = array(
     'role_ids' => array(
         // Discord ranks
         // Staff Roles
-        'Owner' => '468980650914086913', // Civ13 Discord Server Owner
-        'Chief Technical Officer' => '791450326455681034', // Civ13 Debug Host / Database admin
-        'Host' => '677873806513274880', // Civ13 Server Host
-        'Head Admin' => '487608503553490965',
-        'Manager' => '496004389950193667',
-        'High Staff' => '792826030796308503',
-        'Supervisor' => '561770271300911105',
+        'Owner' => '468980650914086913', // Discord Server Owner
+        'Chief Technical Officer' => '791450326455681034', // Debug Host / Database admin
+        'Host' => '677873806513274880', // Server Host
+        'Head Admin' => '487608503553490965', // Deprecation TBD
+        //'Manager' => '496004389950193667', // Deprecated
+        'Ambassador' => '792826030796308503', // High Staff
+        //'Supervisor' => '561770271300911105', // Deprecated
         'Admin' => '468982360659066912',
-        'Moderator' => '823302316743589938',
-        'Mentor' => '469297467918254085',
+        //'Moderator' => '823302316743589938', // Deprecated
+        //'Mentor' => '469297467918254085', // Deprecated
         'Parolemin' => '743971427929030748', // Parole Admin
         // Player Roles
         'Verified' => '468982790772228127', // Verified

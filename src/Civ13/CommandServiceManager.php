@@ -157,7 +157,7 @@ class CommandServiceManager
             'general_usage'                     => 'Replies with Pong!',                                                            // Used when generating the help message/embed/file/etc. used in this class.
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
             'message_usage'                     => 'Replies with Pong!',                                                            // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
-            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
+            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'Ambassador', 'Admin'])
             'message_handler' => new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
             {
                 return $message->reply('Pong!');
@@ -193,7 +193,7 @@ class CommandServiceManager
             'general_usage'                     => 'Replies with information about a command (or all if none specified).',          // Used when generating the help message/embed/file/etc. used in this class.
             'message_method'                    => 'str_starts_with',                                                               // The method to use when determining if the function should be triggered ('str_starts_with', 'str_contains', 'str_ends_with', 'exact')
             'message_usage'                     => 'Replies with information about a command (or all if none specified).',          // Instructions for proper usage of the message handler. (NYI. Currently placed the description property, but never called on. Will be added to the 'help' command from the generateHelp() function in a future update.)
-            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'High Staff', 'Admin'])
+            'message_role_permissions'          => [],                                                                              // Empty array means everyone can use it, otherwise an array of names of roles as defined in the configuration. (e.g. ['Owner', 'Ambassador', 'Admin'])
             'message_handler' => new MessageHandlerCallback(function (Message $message, array $message_filtered, string $command_name): PromiseInterface
             {
                 if (! $desired_command_name = trim(substr($message_filtered['message_content_lower'], strlen($command_name)))) return $message->reply($this->getHelpMessageBuilder());

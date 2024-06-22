@@ -116,7 +116,7 @@ class MessageServiceManager
         {
             return $this->civ13->reply($message, $this->civ13->httpServiceManager->httpHandler->generateHelp(), 'httphelp.txt', true);
         });
-        $this->offsetSet('httphelp', $httphelp, ['Owner', 'High Staff']);
+        $this->offsetSet('httphelp', $httphelp, ['Owner', 'Ambassador']);
 
         $this->offsetSet('cpu', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -138,7 +138,7 @@ class MessageServiceManager
         /**
          * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
          * It also iterates through playerlogs ban logs to find all known ckeys, IPs, and CIDs.
-         * If the user has high staff privileges, it also displays primary IPs and CIDs.
+         * If the user has Ambassador privileges, it also displays primary IPs and CIDs.
          * @param Message $message The message object.
          * @param array $message_filtered The filtered message content.
          * @param string $command The command used to trigger this method.
@@ -156,7 +156,7 @@ class MessageServiceManager
                     return $message->member->roles->has($rank);
                 })) > 0;
             };
-            $high_staff = $high_rank_check($message, ['Owner', 'High Staff']);
+            $high_staff = $high_rank_check($message, ['Owner', 'Ambassador']);
             if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
             if (is_numeric($id)) {
                 if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
@@ -284,7 +284,7 @@ class MessageServiceManager
             if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
             $builder->addEmbed($embed);
             return $message->reply($builder);
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
         
         if (isset($this->civ13->role_ids['Verified']))
         $approveme = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -346,7 +346,7 @@ class MessageServiceManager
                 if ($item = $this->civ13->verifier->getVerifiedItem($member))
                     $this->civ13->bancheck($item['ss13']);
             return $message->react("👍");
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
         
         
         $this->offsetSet('playerlist', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
@@ -418,7 +418,7 @@ class MessageServiceManager
                 $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional);
             }
             return $this->civ13->reply($message, $string);
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
         
         if (isset($this->civ13->role_ids['paroled'], $this->civ13->channel_ids['parole_logs'])) {
             $release = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
@@ -432,7 +432,7 @@ class MessageServiceManager
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
             });
-            $this->offsetSet('release', ($release), ['Owner', 'High Staff', 'Admin']);
+            $this->offsetSet('release', ($release), ['Owner', 'Ambassador', 'Admin']);
         }
 
         $this->offsetSet('tests', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -475,7 +475,7 @@ class MessageServiceManager
                 default:
                     return $this->civ13->reply($message, 'Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
             }
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
 
         if (isset($this->civ13->functions['misc']['promotable_check']) && $promotable_check = $this->civ13->functions['misc']['promotable_check']) {
             $promotable = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($promotable_check): PromiseInterface
@@ -483,7 +483,7 @@ class MessageServiceManager
                 if (! $promotable_check($this->civ13, $this->civ13->sanitizeInput(substr($message_filtered['message_content'], strlen($command))))) return $message->react("👎");
                 return $message->react("👍");
             });
-            $this->offsetSet('promotable', $promotable, ['Owner', 'High Staff']);
+            $this->offsetSet('promotable', $promotable, ['Owner', 'Ambassador']);
         }
 
         if (isset($this->civ13->functions['misc']['mass_promotion_loop']) && $mass_promotion_loop = $this->civ13->functions['misc']['mass_promotion_loop'])
@@ -491,14 +491,14 @@ class MessageServiceManager
         {
             if (! $mass_promotion_loop($this->civ13)) return $message->react("👎");
             return $message->react("👍");
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
 
         if (isset($this->civ13->functions['misc']['mass_promotion_check']) && $mass_promotion_check = $this->civ13->functions['misc']['mass_promotion_check'])
         $this->offsetSet('mass_promotion_check', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($mass_promotion_check): PromiseInterface
         {
             if ($promotables = $mass_promotion_check($this->civ13)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
             return $message->react("👎");
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
         //
 
 
@@ -531,14 +531,14 @@ class MessageServiceManager
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
             if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
             return $message->react("🔥");
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('globalasay', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
             if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
             return $message->react("🔥");
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $directmessage = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -557,8 +557,8 @@ class MessageServiceManager
             }
             return $this->civ13->reply($message, 'You need to be in any of the #ic, #asay, or #ooc channels to use this command.');
         });
-        $this->offsetSet('dm', $directmessage, ['Owner', 'High Staff', 'Admin', 'Moderator']);
-        $this->offsetSet('pm', $directmessage, ['Owner', 'High Staff', 'Admin', 'Moderator']);
+        $this->offsetSet('dm', $directmessage, ['Owner', 'Ambassador', 'Admin']);
+        $this->offsetSet('pm', $directmessage, ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('bancheck_centcom', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -621,7 +621,7 @@ class MessageServiceManager
                 : $method = 'file';
             $this->civ13->relay_method = $method;
             return $this->civ13->reply($message, "Relay method changed to `$method`.");
-        }), ['Owner', 'High Staff']);    
+        }), ['Owner', 'Ambassador']);    
 
         $this->offsetSet('fullaltcheck', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -640,27 +640,27 @@ class MessageServiceManager
                 return $message->reply($builder);
             }
             return $this->civ13->reply($message, 'No alts found.');
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
 
         $this->offsetSet('permitted', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             if (empty($this->civ13->permitted)) return $this->civ13->reply($message, 'No users have been permitted to bypass the Byond account restrictions.');
             return $this->civ13->reply($message, 'The following ckeys are now permitted to bypass the Byond account limit and restrictions: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', array_keys($this->civ13->permitted)) . '`');
-        }), ['Owner', 'High Staff', 'Admin'], 'exact');
+        }), ['Owner', 'Ambassador', 'Admin'], 'exact');
 
         $this->offsetSet('permit', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $this->civ13->permitCkey($ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
             return $this->civ13->reply($message, "$ckey is now permitted to bypass the Byond account restrictions.");
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $revoke = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $this->civ13->permitCkey($ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
             return $this->civ13->reply($message, "$ckey is no longer permitted to bypass the Byond account restrictions.");
         });
-        $this->offsetSet('revoke', $revoke, ['Owner', 'High Staff', 'Admin']);
-        $this->offsetSet('unpermit', $revoke, ['Owner', 'High Staff', 'Admin']); // Alias for revoke
+        $this->offsetSet('revoke', $revoke, ['Owner', 'Ambassador', 'Admin']);
+        $this->offsetSet('unpermit', $revoke, ['Owner', 'Ambassador', 'Admin']); // Alias for revoke
         
         if (isset($this->civ13->role_ids['paroled'], $this->civ13->channel_ids['parole_logs'])) {
             $this->offsetSet('parole', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -673,31 +673,31 @@ class MessageServiceManager
                         $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
-            }), ['Owner', 'High Staff', 'Admin']);
+            }), ['Owner', 'Ambassador', 'Admin']);
         }
 
         $this->offsetSet('refresh', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             if ($this->civ13->verifier->getVerified(false)) return $message->react("👍");
             return $message->react("👎");
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
         
         $this->offsetSet('listbans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             return $this->civ13->listbans($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('softban', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $this->civ13->softban($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
             return $this->civ13->reply($message, "`$id` is no longer allowed to get verified.");
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('unsoftban', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $this->civ13->softban($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
             return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
         
         $this->offsetSet('ban', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -708,7 +708,7 @@ class MessageServiceManager
             if (! isset($split_message[2]) || ! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
             $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
             return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13']));
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
         
         $this->offsetSet('unban', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -717,14 +717,14 @@ class MessageServiceManager
                 else $ckey = $item['ss13'];
             $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
             return $this->civ13->reply($message, "**$admin** unbanned **$ckey**");
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         if (isset($this->civ13->files['map_defines_path']) && file_exists($this->civ13->files['map_defines_path']))
         $this->offsetSet('maplist', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             if (! $file_contents = @file_get_contents($this->civ13->files['map_defines_path'])) return $message->react("🔥");
             return $message->reply(MessageBuilder::new()->addFileFromContent('maps.txt', $file_contents));
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('adminlist', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {            
@@ -740,7 +740,7 @@ class MessageServiceManager
             }
             if (! $found) return $message->react("🔥");
             return $message->reply($builder);
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('factionlist', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {            
@@ -750,7 +750,7 @@ class MessageServiceManager
                 else $this->logger->warning("`$path is not a valid file path!");
             }
             return $message->reply($builder);
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         if (isset($this->civ13->files['tdm_sportsteams']) && file_exists($this->civ13->files['tdm_sportsteams']))
         $this->offsetSet('sportsteams', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -761,7 +761,7 @@ class MessageServiceManager
                 else $this->logger->warning("`$path is not a valid file path!");
             }
             return $message->reply($builder);
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $log_handler = function (Message $message, string $message_content): PromiseInterface
         {
@@ -788,7 +788,7 @@ class MessageServiceManager
         $this->offsetSet('logs', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($log_handler): PromiseInterface
         {
             return $log_handler($message, trim(substr($message_filtered['message_content'], strlen($command))));
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('playerlogs', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -801,7 +801,7 @@ class MessageServiceManager
                 return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
             }
             return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('stop', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered)//: PromiseInterface
         {
@@ -809,7 +809,7 @@ class MessageServiceManager
             $promise->then(function () { $this->civ13->stop(); });
             //return $promise; // Pending PromiseInterfaces v3
             return null;
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
 
         if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path']))
         $this->offsetSet('ts', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -916,7 +916,7 @@ class MessageServiceManager
             foreach ($application_commands as $command) $names[] = $command->getName();
             $namesString = '`' . implode('`, `', $names) . '`';
             return $message->reply('Application commands: ' . $namesString);
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
 
         $this->offsetSet('updatebans', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         { // Attempts to fill in any missing data for the ban
@@ -924,7 +924,7 @@ class MessageServiceManager
             foreach ($this->civ13->enabled_gameservers as &$gameserver) foreach ($this->civ13->enabled_gameservers as &$gameserver2) if ($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs)) !== false) $updated = true;
             if (! $updated) return $message->react("🔥");
             return $message->react("👍");
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
 
         $this->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface 
         {
@@ -937,12 +937,12 @@ class MessageServiceManager
             })) return $message->react("👎");
             foreach ($members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['Verified'], 'fixroles');
             return $message->react("👍");
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
 
         $this->offsetSet('panic_bunker', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             return $this->civ13->reply($message, 'Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.'));
-        }), ['Owner', 'High Staff']);
+        }), ['Owner', 'Ambassador']);
 
         $this->offsetSet('newmembers', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -986,7 +986,7 @@ class MessageServiceManager
 
             $message->react('⏱️');
             return $promise;
-        }), ['Owner', 'High Staff', 'Admin']);
+        }), ['Owner', 'Ambassador', 'Admin']);
         
         $this->__generateServerMessageCommands();
     }
@@ -1043,7 +1043,7 @@ class MessageServiceManager
                     
                     return $this->civ13->reply($message, $result, 'info.sav', true);
                 };
-                $this->offsetSet("{$gameserver->key}notes", $servernotes, ['Owner', 'High Staff', 'Admin']);
+                $this->offsetSet("{$gameserver->key}notes", $servernotes, ['Owner', 'Ambassador', 'Admin']);
             }
             
             $serverconfigexists = function (?Message $message = null) use (&$gameserver): PromiseInterface|bool
@@ -1056,7 +1056,7 @@ class MessageServiceManager
                 return false;
             };
             $this->logger->info("Generating {$gameserver->key}configexists command.");
-            $this->offsetSet("{$gameserver->key}configexists", $serverconfigexists, ['Owner', 'High Staff']);
+            $this->offsetSet("{$gameserver->key}configexists", $serverconfigexists, ['Owner', 'Ambassador']);
 
             $serverstatus = function (?Message $message = null, string $command, array $message_filtered): ?PromiseInterface
             {
@@ -1068,7 +1068,7 @@ class MessageServiceManager
                 }
                 return $message->reply($builder);
             };
-            $this->offsetSet('serverstatus', $serverstatus, ['Owner', 'High Staff']);
+            $this->offsetSet('serverstatus', $serverstatus, ['Owner', 'Ambassador']);
             
             $allRequiredFilesExist = true;
             foreach ([
@@ -1089,26 +1089,26 @@ class MessageServiceManager
                 $gameserver->Host($message);
                 return $message->react("⏱️");
             });
-            $this->offsetSet("{$gameserver->key}host", $serverhost, ['Owner', 'High Staff']);
+            $this->offsetSet("{$gameserver->key}host", $serverhost, ['Owner', 'Ambassador']);
             $serverkill = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 $gameserver->Kill($message);
                 return $message->react("⏱️");
             });
-            $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'High Staff']);
+            $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'Ambassador']);
             $serverrestart = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 $gameserver->Restart($message);
                 return $message->react("⏱️");
             });
-            $this->offsetSet("{$gameserver->key}restart", $serverrestart, ['Owner', 'High Staff']);
+            $this->offsetSet("{$gameserver->key}restart", $serverrestart, ['Owner', 'Ambassador']);
             $servermapswap = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
                 if (isset($split_message[1])) return $this->civ13->reply($message, 'You need to include the name of the map.');
                 return $this->civ13->reply($message, $gameserver->mapswap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username));
             });
-            $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'High Staff', 'Admin']);
+            $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'Ambassador', 'Admin']);
 
             $serverban = function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
@@ -1128,7 +1128,7 @@ class MessageServiceManager
                         $member->addRole($this->civ13->role_ids['banished'], $result);
                 return $this->civ13->reply($message, $result);
             };
-            $this->offsetSet("{$gameserver->key}ban", $serverban, ['Owner', 'High Staff', 'Admin']);
+            $this->offsetSet("{$gameserver->key}ban", $serverban, ['Owner', 'Ambassador', 'Admin']);
 
             $serverunban = function (Message $message, array $message_filtered) use (&$gameserver): PromiseInterface
             {
@@ -1145,7 +1145,7 @@ class MessageServiceManager
                         $member->removeRole($this->civ13->role_ids['banished'], $result);
                 return $this->civ13->reply($message, $result);
             };
-            $this->offsetSet("{$gameserver->key}unban",  $serverunban, ['Owner', 'High Staff', 'Admin']);
+            $this->offsetSet("{$gameserver->key}unban",  $serverunban, ['Owner', 'Ambassador', 'Admin']);
         }
         
         $this->__declareListener();

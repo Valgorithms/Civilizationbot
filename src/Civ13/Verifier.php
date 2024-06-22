@@ -81,21 +81,21 @@ class Verifier
             $this->getVerified();
             $this->civ13->whitelistUpdate();
             foreach ($faction_roles = ['red', 'blue'] as $role_id) if ($member->roles->has($this->civ13->role_ids[$role_id])) { $this->civ13->factionlistUpdate(); break;}
-            $admin_roles = [
+            $roles = [
                 'Owner',
                 'Chief Technical Officer',
                 'Head Admin',
-                'Manager',
-                'High Staff',
-                'Supervisor',
+                //'Manager',
+                'Ambassador',
+                //'Supervisor',
                 'Admin',
-                'Moderator',
-                'Mentor',
+                //'Moderator',
+                //'Mentor',
                 'Verified',
                 'banished',
                 'paroled',
             ];
-            foreach ($admin_roles as $role) if ($member->roles->has($this->civ13->role_ids[$role])) { $this->civ13->adminlistUpdate(); break; }
+            foreach ($roles as $role) if ($member->roles->has($this->civ13->role_ids[$role])) { $this->civ13->adminlistUpdate(); break; }
         });
         $this->civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
         {
@@ -113,21 +113,21 @@ class Verifier
             foreach ($faction_roles = ['red', 'blue'] as $role) 
                 if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
                     { $this->civ13->factionlistUpdate(); break;}
-            $admin_roles = [
+            $roles = [
                 'Owner',
                 'Chief Technical Officer',
                 'Head Admin',
-                'Manager',
-                'High Staff',
-                'Supervisor',
+                //'Manager',
+                'Ambassador',
+                //'Supervisor',
                 'Admin',
-                'Moderator',
-                'Mentor',
+                //'Moderator',
+                //'Mentor',
                 'Verified',
                 'banished',
                 'paroled',
             ];
-            foreach ($admin_roles as $role) 
+            foreach ($roles as $role) 
                 if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
                     { $this->civ13->adminlistUpdate(); break;}
         });
@@ -279,7 +279,7 @@ class Verifier
             if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
                 $this->civ13->ban($arr, null, null, true);
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['High Staff']}>, Byond account `$ckey` was too new to complete the automatic verification process! Please investigate using the `ckeyinfo` command and manually approve if they should be allowed to bypass the requirements.");
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Ambassador']}>, Byond account `$ckey` was too new to complete the automatic verification process! Please investigate using the `ckeyinfo` command and manually approve if they should be allowed to bypass the requirements.");
                 return $reason;
             }
             return 'Login to your profile at ' . Byond::PROFILE . ' and enter this token as your description: `' . $this->generateToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
@@ -302,7 +302,7 @@ class Verifier
         $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
         if (($ckeyinfo['altbanned'] || count($ckeyinfo['discords']) > 1) && ! isset($this->civ13->permitted[$item['ss13']])) { // TODO: Add check for permaban
             // TODO: add to pending list?
-            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['High Staff']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Ambassador']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
             return ['success' => false, 'error' => "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
         }
         return $this->verify($item['ss13'], $discord_id);

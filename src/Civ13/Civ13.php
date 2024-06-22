@@ -1868,19 +1868,7 @@ class Civ13
      * @return bool Returns true if the update was successful, false otherwise.
      */
     public function adminlistUpdate(
-        $required_roles = [
-            'Owner' => ['Host', '65535'],
-            'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
-            'Host' => ['Host', '65535'], // Default Host permission, only used if another role is not found first
-            'Head Admin' => ['Head Admin', '16382'],
-            'Manager' => ['Manager', '16382'],
-            'Supervisor' => ['Supervisor', '16382'],
-            'High Staff' => ['High Staff', '16382'], // Default High Staff permission, only used if another role is not found first
-            'Admin' => ['Admin', '16254'],
-            'Moderator' => ['Moderator', '25088'],
-            //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
-            'Mentor' => ['Mentor', '16384'],
-        ]
+        ?array $required_roles = null // Defined in Gameserver.php
     ): bool
     {
         $return = false;

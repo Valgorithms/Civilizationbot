@@ -98,9 +98,9 @@ class HttpServiceManager
 
     private function __populateWhitelist()
     {
-        if ($this->httpHandler && $this->civ13->civ13_guild_id && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) { // Whitelist the IPs of all High Staff
+        if ($this->httpHandler && $this->civ13->civ13_guild_id && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) { // Whitelist the IPs of all Ambassador
             $members = $guild->members->filter(function ($member) {
-                return $member->roles->has($this->civ13->role_ids['High Staff']);
+                return $member->roles->has($this->civ13->role_ids['Ambassador']);
             });
             foreach ($members as $member)
                 if ($item = $this->civ13->verifier->getVerifiedItem($member))
