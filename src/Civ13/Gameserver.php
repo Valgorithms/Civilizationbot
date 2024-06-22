@@ -556,7 +556,7 @@ class GameServer {
                 if ($ckey && $ckey != $ban[8]) continue;
                 if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') $oldlist[] = $bsplit;
                 else $temp[$ban[8]] = $bsplit;
-            } else $temp[$ckey][] = $bsplit; // This is a ban that doesn't have a ckey, so we'll just add it to the temp array
+            } else $temp[$ckey] = $bsplit; // This is a ban that doesn't have a ckey, so we'll just add it to the temp array
         }
         /**
          * This function takes a player log's content as a string and updates the corresponding logs in the game server.
