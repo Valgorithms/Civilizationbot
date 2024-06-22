@@ -731,7 +731,7 @@ class HttpServiceManager
         $relay = function($message, $channel, $ckey = null): ?PromiseInterface
         {
             if (! $ckey || ! $item = $this->civ13->verifier->get('ss13', $this->civ13->sanitizeInput(explode('/', $ckey)[0]))) return $this->civ13->sendMessage($channel, $message);
-            if (! $user = $this->discord->users->get('id', $item['discord'])) {
+            if ($item['discord'] && ! $user = $this->discord->users->get('id', $item['discord'])) {
                 $this->logger->warning("{$item['ss13']}'s Discord ID was not found not in the primary Discord server!");
                 $this->discord->users->fetch($item['discord']);
                 return $this->civ13->sendMessage($channel, $message);
