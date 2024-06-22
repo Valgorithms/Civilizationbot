@@ -277,10 +277,10 @@ class GameServer
         $this->players = [];
         foreach ($data_json as $server) {
             if (array_key_exists('ERROR', $server)) continue;
-            $stationname = $server['stationname'] ?? '';
+            //$stationname = $server['stationname'] ?? ''; // TODO: Compare this to the server's name as it appears on the Byond hub
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
-                if (isset($p[1]) && is_numeric($p[1])) $this->players[$stationname][] = $this->civ13->sanitizeInput(urldecode($server[$key]));
+                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = $this->civ13->sanitizeInput(urldecode($server[$key]));
             }
         }
         return $this->players;

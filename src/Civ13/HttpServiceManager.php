@@ -860,22 +860,20 @@ class HttpServiceManager
                 $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
                 
                 // Check if there are any Discord admins on the server, notify staff in Discord if there are not
-                if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+                if (isset($this->civ13->verifier) && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
                     $urgent = true;
                     $admin = false;
-                    if (isset($this->civ13->verifier)) {
-                        if ($item = $this->civ13->verifier->get('ss13', $ckey))
-                            if ($member = $guild->members->get('id', $item['discord']))
-                                if ($member->roles->has($this->civ13->role_ids['Admin']))
-                                    { $admin = true; $urgent = false;}
-                        if (! $admin) {
-                            if ($playerlist = $gameserver->players)
-                                if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
-                                    foreach ($admins as $member)
-                                        if ($item = $this->civ13->verifier->get('discord', $member->id))
-                                            if (in_array($item['ss13'], $playerlist))
-                                                { $urgent = false; break; }
-                        }
+                    if ($item = $this->civ13->verifier->get('ss13', $ckey))
+                        if ($member = $guild->members->get('id', $item['discord']))
+                            if ($member->roles->has($this->civ13->role_ids['Admin']))
+                                { $admin = true; $urgent = false;}
+                    if (! $admin) {
+                        if ($playerlist = $gameserver->players)
+                            if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
+                                foreach ($admins as $member)
+                                    if ($item = $this->civ13->verifier->get('discord', $member->id))
+                                        if (in_array($item['ss13'], $playerlist))
+                                            { $urgent = false; break; }
                     }
                     if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
                 }
@@ -921,7 +919,7 @@ class HttpServiceManager
                     }
                     if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
                 }
-                
+
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
