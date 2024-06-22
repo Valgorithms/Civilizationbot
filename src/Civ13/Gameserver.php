@@ -334,7 +334,7 @@ class GameServer
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        if ($this->ooc && $channel = $this->discord->getChannel($this->ooc)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender)) return $promise;
+        //if ($this->ooc && $channel = $this->discord->getChannel($this->ooc)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender)) return $promise;
         return true;
     }
     /**
@@ -353,27 +353,8 @@ class GameServer
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        $urgent = true; // Check if there are any admins on the server, if not then send the message as urgent
-        if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
-            $admin = false;
-            if (isset($this->civ13->verifier)) {
-                if ($item = $this->civ13->verifier->get('ss13', $sender))
-                    if ($member = $guild->members->get('id', $item['discord']))
-                        if ($member->roles->has($this->civ13->role_ids['Admin']))
-                            { $admin = true; $urgent = false;}
-                if (! $admin) {
-                    if ($playerlist = $this->players)
-                        if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
-                            foreach ($admins as $member)
-                                if ($item = $this->civ13->verifier->get('discord', $member->id))
-                                    if (in_array($item['ss13'], $playerlist))
-                                        { $urgent = false; break; }
-                }
-            }
-        }
-        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
+        //if ($this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
         return true;
-        
     }
     /**
      * Sends a direct message to a recipient using the specified sender and message.
@@ -392,7 +373,7 @@ class GameServer
         }
         fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
         fclose($file);
-        if ($this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
+        //if ($this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
         return true;
     }
 

@@ -10,9 +10,10 @@ namespace Civ13;
 
 use Byond\Byond;
 use Discord\Discord;
-use Discord\Builders\MessageBuilder;
 use Discord\DiscordWebAuth;
+use Discord\Builders\MessageBuilder;
 use Discord\Parts\Embed\Embed;
+use Discord\Parts\User\Member;
 use Monolog\Logger;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\TimerInterface;
@@ -853,10 +854,32 @@ class HttpServiceManager
                 $time = '['.date('H:i:s', time()).']';
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                $message = "**__{$time} AHELP__ $ckey**: " . $message;
+                $message = "**__{$time} AHELP__ $ckey:** " . $message;
 
                 //$relay($message, $channel, $ckey); //Bypass moderator
                 $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
+                
+                // Check if there are any Discord admins on the server, notify staff in Discord if there are not
+                if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+                    $urgent = true;
+                    $admin = false;
+                    if (isset($this->civ13->verifier)) {
+                        if ($item = $this->civ13->verifier->get('ss13', $ckey))
+                            if ($member = $guild->members->get('id', $item['discord']))
+                                if ($member->roles->has($this->civ13->role_ids['Admin']))
+                                    { $admin = true; $urgent = false;}
+                        if (! $admin) {
+                            if ($playerlist = $gameserver->players)
+                                if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
+                                    foreach ($admins as $member)
+                                        if ($item = $this->civ13->verifier->get('discord', $member->id))
+                                            if (in_array($item['ss13'], $playerlist))
+                                                { $urgent = false; break; }
+                        }
+                    }
+                    if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
+                }
+
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
@@ -871,12 +894,34 @@ class HttpServiceManager
                 $time = '['.date('H:i:s', time()).']';
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                //$message = "**__{$time} ASAY__ $ckey**: $message";
+                //$message = "**__{$time} ASAY__ $ckey:** $message";
                 $message = "**__{$time}__** $message";
 
                 
                 if (str_contains($data['message'], $this->discord->username)) $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key); // Message was probably meant for the bot
                 else $relay($message, $channel, $ckey); //Bypass moderator
+
+                // Check if there are any Discord admins on the server, notify staff in Discord if there are not
+                if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+                    $urgent = true;
+                    $admin = false;
+                    if (isset($this->civ13->verifier)) {
+                        if ($item = $this->civ13->verifier->get('ss13', $ckey))
+                            if ($member = $guild->members->get('id', $item['discord']))
+                                if ($member->roles->has($this->civ13->role_ids['Admin']))
+                                    { $admin = true; $urgent = false;}
+                        if (! $admin) {
+                            if ($playerlist = $gameserver->players)
+                                if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
+                                    foreach ($admins as $member)
+                                        if ($item = $this->civ13->verifier->get('discord', $member->id))
+                                            if (in_array($item['ss13'], $playerlist))
+                                                { $urgent = false; break; }
+                        }
+                    }
+                    if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
+                }
+                
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
@@ -892,7 +937,7 @@ class HttpServiceManager
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 $message = "<@{$this->civ13->role_ids['Admin']}>, ";
                 isset($data, $data['message']) ? $message .= strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message .= '(NULL)';
-                //$message = "**__{$time} ASAY__ $ckey**: $message";
+                //$message = "**__{$time} ASAY__ $ckey:** $message";
                 $message = "**__{$time}__** $message";
 
                 $relay($message, $channel, $ckey);
@@ -911,7 +956,7 @@ class HttpServiceManager
                 $time = '['.date('H:i:s', time()).']';
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                $message = "**__{$time} LOBBY__ $ckey**: $message";
+                $message = "**__{$time} LOBBY__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
                 $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
@@ -929,7 +974,7 @@ class HttpServiceManager
                 //$time = '['.date('H:i:s', time()).']';
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                //$message = "**__{$time} OOC__ $ckey**: $message";
+                //$message = "**__{$time} OOC__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
                 $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
@@ -947,7 +992,7 @@ class HttpServiceManager
                 //$time = '['.date('H:i:s', time()).']';
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                //$message = "**__{$time} OOC__ $ckey**: $message";
+                //$message = "**__{$time} OOC__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
                 $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key, false);
@@ -965,7 +1010,7 @@ class HttpServiceManager
                 $time = '['.date('H:i:s', time()).']';
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                $message = "**__{$time} EMOTE__ $ckey**: $message";
+                $message = "**__{$time} EMOTE__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
                 $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
@@ -983,7 +1028,7 @@ class HttpServiceManager
                 $time = '['.date('H:i:s', time()).']';
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                $message = "**__{$time} GARBAGE__ $ckey**: $message";
+                $message = "**__{$time} GARBAGE__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
                 $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
@@ -1106,7 +1151,7 @@ class HttpServiceManager
                 $time = '['.date('H:i:s', time()).']';
                 //isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                $message = "**__{$time} RUNTIME__**: $message";
+                $message = "**__{$time} RUNTIME__:** $message";
 
                 $relay($message, $channel);
                 return new HttpResponse(HttpResponse::STATUS_OK);
@@ -1122,7 +1167,7 @@ class HttpServiceManager
                 
                 $time = '['.date('H:i:s', time()).']';
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                $message = "**__{$time} ADMIN LOG__**: " . $message;
+                $message = "**__{$time} ADMIN LOG__:** " . $message;
 
                 $relay($message, $channel);
                 return new HttpResponse(HttpResponse::STATUS_OK);
@@ -1141,7 +1186,7 @@ class HttpServiceManager
                 isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = null;
                 isset($data, $data['ckey2']) ? $ckey2 = $this->civ13->sanitizeInput($data['ckey2']) : $ckey2 = null;
                 isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                $message = "**__{$time} ATTACK LOG__**: " . $message;
+                $message = "**__{$time} ATTACK LOG__:** " . $message;
                 if ($ckey && $ckey2) if ($ckey === $ckey2) $message .= " (Self-Attack)";
                 
                 $relay($message, $channel);
