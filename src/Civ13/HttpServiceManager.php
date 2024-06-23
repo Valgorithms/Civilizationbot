@@ -378,8 +378,7 @@ class HttpServiceManager
                     $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($promise) {
                         $promise->then(function (Message $message) {
                             $builder = MessageBuilder::new();
-                            $promise = $message->edit($builder->setContent('Restarting... (3/3)'));
-                            $promise->then(function (Message $message) {
+                            $message->edit($builder->setContent('Restarting... (3/3)'))->then(function (Message $message) {
                                 $this->socket->close();
                                 if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(2, function () {
                                     \restart();

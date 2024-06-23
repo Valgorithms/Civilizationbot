@@ -625,9 +625,9 @@ class GameServer
             $array['ckey'] = $item['ss13'];
         }
         if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($array['ckey'])) {
-            if (! $member->roles->has($this->civ13->role_ids['banished'])) {
+            if (! $member->roles->has($this->civ13->role_ids['Banished'])) {
                 $string = "Banned for {$array['duration']} with the reason {$array['reason']}";
-                $permanent ? $member->setRoles([$this->civ13->role_ids['banished'], $this->civ13->role_ids['permabanished']], $string) : $member->addRole($this->civ13->role_ids['banished'], $string);
+                $permanent ? $member->setRoles([$this->civ13->role_ids['Banished'], $this->civ13->role_ids['Permabanished']], $string) : $member->addRole($this->civ13->role_ids['Banished'], $string);
             }
         }
 
@@ -671,9 +671,9 @@ class GameServer
         $admin ??= $this->discord->username;
         $this->legacy ? $this->legacyUnban($ckey, $admin) : $this->sqlUnban($ckey, $admin);
         if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
-            if ($member->roles->has($this->civ13->role_ids['banished'])) $member->removeRole($this->civ13->role_ids['banished'], "Unbanned by $admin");
-            if ($member->roles->has($this->civ13->role_ids['permabanished'])) {
-                $member->removeRole($this->civ13->role_ids['permabanished'], "Unbanned by $admin");
+            if ($member->roles->has($this->civ13->role_ids['Banished'])) $member->removeRole($this->civ13->role_ids['Banished'], "Unbanned by $admin");
+            if ($member->roles->has($this->civ13->role_ids['Permabanished'])) {
+                $member->removeRole($this->civ13->role_ids['Permabanished'], "Unbanned by $admin");
                 $member->addRole($this->civ13->role_ids['Verified'], "Unbanned by $admin");
             }
         }

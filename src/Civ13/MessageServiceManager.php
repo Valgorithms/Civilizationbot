@@ -420,15 +420,15 @@ class MessageServiceManager
             return $this->civ13->reply($message, $string);
         }), ['Owner', 'Ambassador', 'Admin']);
         
-        if (isset($this->civ13->role_ids['paroled'], $this->civ13->channel_ids['parole_logs'])) {
+        if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs'])) {
             $release = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
             {
                 if (! $item = $this->civ13->verifier->getVerifiedItem($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
                 $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, false);
                 $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                 if ($member = $this->civ13->verifier->getVerifiedMember($item))
-                    if ($member->roles->has($this->civ13->role_ids['paroled']))
-                        $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
+                    if ($member->roles->has($this->civ13->role_ids['Paroled']))
+                        $member->removeRole($this->civ13->role_ids['Paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
             });
@@ -599,9 +599,9 @@ class MessageServiceManager
                 fclose($file);
             }
             if (! $found) $content .= "No bans were found for **$ckey**." . PHP_EOL;
-            elseif (isset($this->civ13->role_ids['banished']) && $member = $this->civ13->verifier->getVerifiedMember($ckey))
-                if (! $member->roles->has($this->civ13->role_ids['banished']))
-                    $member->addRole($this->civ13->role_ids['banished']);
+            elseif (isset($this->civ13->role_ids['Banished']) && $member = $this->civ13->verifier->getVerifiedMember($ckey))
+                if (! $member->roles->has($this->civ13->role_ids['Banished']))
+                    $member->addRole($this->civ13->role_ids['Banished']);
             return $this->civ13->reply($message, $content, 'bancheck.txt');
         }));
         
@@ -626,7 +626,7 @@ class MessageServiceManager
         $this->offsetSet('fullaltcheck', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $ckeys = [];
-            $members = $message->guild->members->filter(function (Member $member) { return ! $member->roles->has($this->civ13->role_ids['banished']); });
+            $members = $message->guild->members->filter(function (Member $member) { return ! $member->roles->has($this->civ13->role_ids['Banished']); });
             foreach ($members as $member)
                 if ($item = $this->civ13->verifier->getVerifiedItem($member->id)) {
                     $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
@@ -662,15 +662,15 @@ class MessageServiceManager
         $this->offsetSet('revoke', $revoke, ['Owner', 'Ambassador', 'Admin']);
         $this->offsetSet('unpermit', $revoke, ['Owner', 'Ambassador', 'Admin']); // Alias for revoke
         
-        if (isset($this->civ13->role_ids['paroled'], $this->civ13->channel_ids['parole_logs'])) {
+        if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs'])) {
             $this->offsetSet('parole', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
             {
                 if (! $item = $this->civ13->verifier->getVerifiedItem($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
                 $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, true);
                 $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                 if ($member = $this->civ13->verifier->getVerifiedMember($item))
-                    if (! $member->roles->has($this->civ13->role_ids['paroled']))
-                        $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
+                    if (! $member->roles->has($this->civ13->role_ids['Paroled']))
+                        $member->addRole($this->civ13->role_ids['Paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
                 return $message->react("👍");
             }), ['Owner', 'Ambassador', 'Admin']);
@@ -931,9 +931,9 @@ class MessageServiceManager
             if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $message->react("🔥");
             if (! $members = $guild->members->filter(function (Member $member) {
                 return ! $member->roles->has($this->civ13->role_ids['Verified'])
-                    && ! $member->roles->has($this->civ13->role_ids['banished'])
-                    && ! $member->roles->has($this->civ13->role_ids['permabanished'])
-                    && ! $member->roles->has($this->civ13->role_ids['dungeon']);
+                    && ! $member->roles->has($this->civ13->role_ids['Banished'])
+                    && ! $member->roles->has($this->civ13->role_ids['Permabanished'])
+                    && ! $member->roles->has($this->civ13->role_ids['Dungeon']);
             })) return $message->react("👎");
             foreach ($members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['Verified'], 'fixroles');
             return $message->react("👍");
@@ -1112,7 +1112,7 @@ class MessageServiceManager
 
             $serverban = function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
-                if (! $this->civ13->hasRequiredConfigRoles(['banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
+                if (! $this->civ13->hasRequiredConfigRoles(['Banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
                 if (! $message_content = substr($message_filtered['message_content'], strlen("{$gameserver->key}ban"))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
                 $split_message = explode('; ', $message_content); // $split_target[1] is the target
                 if (! $split_message[0]) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
@@ -1124,8 +1124,8 @@ class MessageServiceManager
                 $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
                 $result = $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $gameserver);
                 if ($member = $this->civ13->verifier->getVerifiedMember('id', $split_message[0]))
-                    if (! $member->roles->has($this->civ13->role_ids['banished']))
-                        $member->addRole($this->civ13->role_ids['banished'], $result);
+                    if (! $member->roles->has($this->civ13->role_ids['Banished']))
+                        $member->addRole($this->civ13->role_ids['Banished'], $result);
                 return $this->civ13->reply($message, $result);
             };
             $this->offsetSet("{$gameserver->key}ban", $serverban, ['Owner', 'Ambassador', 'Admin']);
@@ -1141,8 +1141,8 @@ class MessageServiceManager
                 $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $gameserver);
                 $result = "**$admin** unbanned **$ckey** from **{$gameserver->key}**";
                 if ($member = $this->civ13->verifier->getVerifiedMember('id', $ckey))
-                    if ($member->roles->has($this->civ13->role_ids['banished']))
-                        $member->removeRole($this->civ13->role_ids['banished'], $result);
+                    if ($member->roles->has($this->civ13->role_ids['Banished']))
+                        $member->removeRole($this->civ13->role_ids['Banished'], $result);
                 return $this->civ13->reply($message, $result);
             };
             $this->offsetSet("{$gameserver->key}unban",  $serverunban, ['Owner', 'Ambassador', 'Admin']);

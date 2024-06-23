@@ -589,8 +589,8 @@ class Slash
                 }
                 if (! $found) $response .= "No bans were found for **{$item['ss13']}**." . PHP_EOL;
                 elseif ($member = $this->civ13->verifier->getVerifiedMember($item['ss13']))
-                    if (! $member->roles->has($this->civ13->role_ids['banished']))
-                        $member->addRole($this->civ13->role_ids['banished']);
+                    if (! $member->roles->has($this->civ13->role_ids['Banished']))
+                        $member->addRole($this->civ13->role_ids['Banished']);
                 if (strlen($response)<=2000) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($response), true);
                 if (strlen($response)<=4096) {
                     $embed = new Embed($this->discord);
@@ -647,8 +647,8 @@ class Slash
             $this->civ13->paroleCkey($ckey = $item['ss13'], $interaction->user->id, true);
             $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'];
             if ($member = $this->civ13->verifier->getVerifiedMember($item))
-                if (! $member->roles->has($this->civ13->role_ids['paroled']))
-                    $member->addRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->username}) paroled `$ckey`");
+                if (! $member->roles->has($this->civ13->role_ids['Paroled']))
+                    $member->addRole($this->civ13->role_ids['Paroled'], "`$admin` ({$interaction->user->username}) paroled `$ckey`");
             if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$interaction->user->id}>).");
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` (<@{$item['discord']}>) has been placed on parole."), true);
         });
@@ -659,8 +659,8 @@ class Slash
             $this->civ13->paroleCkey($ckey = $item['ss13'], $interaction->user->id, false);
             $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'];
             if ($member = $this->civ13->verifier->getVerifiedMember($item))
-                if ($member->roles->has($this->civ13->role_ids['paroled']))
-                    $member->removeRole($this->civ13->role_ids['paroled'], "`$admin` ({$interaction->user->username}) released `$ckey`");
+                if ($member->roles->has($this->civ13->role_ids['Paroled']))
+                    $member->removeRole($this->civ13->role_ids['Paroled'], "`$admin` ({$interaction->user->username}) released `$ckey`");
             if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) $channel->sendMessage("`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$interaction->user->id}>).");
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` (<@{$item['discord']}>) has been released on parole."), true);
         });

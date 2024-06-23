@@ -166,10 +166,10 @@ $options = array(
         'Parolemin' => '743971427929030748', // Parole Admin
         // Player Roles
         'Verified' => '468982790772228127', // Verified
-        'banished' => '710328377210306641', // Banned in-game
-        'permabanished' => '1126137099209425017', // Permanently banned in-game
-        'dungeon' => '547186843746304020', // Dungeon, for those who have had their Discord permissions revoked
-        'paroled' => '745336314689355796', // On parole
+        'Banished' => '710328377210306641', // Banned in-game
+        'Permabanished' => '1126137099209425017', // Permanently banned in-game
+        'Dungeon' => '547186843746304020', // Dungeon, for those who have had their Discord permissions revoked
+        'Paroled' => '745336314689355796', // On parole
         
         // Factions
         'red' => '1132678312301428886', // Redmenia

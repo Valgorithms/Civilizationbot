@@ -70,8 +70,8 @@ class Verifier
                 if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
                 if (
                     $member_future->roles->has($this->civ13->role_ids['Verified']) ||
-                    $member_future->roles->has($this->civ13->role_ids['banished']) ||
-                    $member_future->roles->has($this->civ13->role_ids['permabanished'])
+                    $member_future->roles->has($this->civ13->role_ids['Banished']) ||
+                    $member_future->roles->has($this->civ13->role_ids['Permabanished'])
                 ) return null; // Don't kick if they have an verified or banned role
                 return $guild->members->kick($member_future, 'Not verified');
             });
@@ -92,8 +92,8 @@ class Verifier
                 //'Moderator',
                 //'Mentor',
                 'Verified',
-                'banished',
-                'paroled',
+                'Banished',
+                'Paroled',
             ];
             foreach ($roles as $role) if ($member->roles->has($this->civ13->role_ids[$role])) { $this->civ13->adminlistUpdate(); break; }
         });
@@ -124,8 +124,8 @@ class Verifier
                 //'Moderator',
                 //'Mentor',
                 'Verified',
-                'banished',
-                'paroled',
+                'Banished',
+                'Paroled',
             ];
             foreach ($roles as $role) 
                 if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
@@ -189,9 +189,9 @@ class Verifier
                 if (($item['ss13'] && isset($this->civ13->softbanned[$item['ss13']])) || isset($this->civ13->softbanned[$member->id])) return null;
                 $banned = $this->civ13->bancheck($item['ss13'], true);
                 $paroled = isset($this->civ13->paroled[$item['ss13']]);
-                if ($banned && $paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['banished'], $this->civ13->role_ids['paroled']], "bancheck join {$item['ss13']}");
-                if ($banned) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['banished']], "bancheck join {$item['ss13']}");
-                if ($paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['paroled']], "parole join {$item['ss13']}");
+                if ($banned && $paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished'], $this->civ13->role_ids['Paroled']], "bancheck join {$item['ss13']}");
+                if ($banned) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished']], "bancheck join {$item['ss13']}");
+                if ($paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Paroled']], "parole join {$item['ss13']}");
                 return $member->setroles([$this->civ13->role_ids['Verified']], "verified join {$item['ss13']}");
             }
         }
@@ -252,11 +252,11 @@ class Verifier
     {
         $ckey = $this->civ13->sanitizeInput($ckey);
         if (! isset($this->civ13->permitted[$ckey]) && $this->civ13->permabancheck($ckey)) {
-            if ($m && ! $m->roles->has($this->civ13->role_ids['permabanished'])) $m->addRole($this->civ13->role_ids['permabanished'], "permabancheck $ckey");
+            if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
             return 'This account needs to appeal an existing ban first.';
         }
         if (isset($this->civ13->softbanned[$ckey]) || isset($this->civ13->softbanned[$discord_id])) {
-            if ($m && ! $m->roles->has($this->civ13->role_ids['permabanished'])) $m->addRole($this->civ13->role_ids['permabanished'], "permabancheck $ckey");
+            if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
             return 'This account is currently under investigation.';
         }
         if ($this->verified->get('discord', $discord_id)) {
@@ -377,7 +377,7 @@ class Verifier
                     if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
                     if ($channel) $this->civ13->sendMessage($channel, "Verified and removed the panic bunker ban from $member ($ckey - {$this->civ13->ages[$ckey]}).");
                 } elseif ($this->civ13->bancheck($ckey, true)) {
-                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['banished']], "approveme verified ($ckey)");
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished']], "approveme verified ($ckey)");
                     if ($channel) $this->civ13->sendMessage($channel, "Added the banished role to $member ($ckey - {$this->civ13->ages[$ckey]}).");
                 } else {
                     if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
@@ -391,9 +391,9 @@ class Verifier
                 if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) break;
                 if (! $members = $guild->members->filter(function (Member $member) {
                     return ! $member->roles->has($this->civ13->role_ids['Verified'])
-                        && ! $member->roles->has($this->civ13->role_ids['banished'])
-                        && ! $member->roles->has($this->civ13->role_ids['permabanished'])
-                        && ! $member->roles->has($this->civ13->role_ids['dungeon']);
+                        && ! $member->roles->has($this->civ13->role_ids['Banished'])
+                        && ! $member->roles->has($this->civ13->role_ids['Permabanished'])
+                        && ! $member->roles->has($this->civ13->role_ids['Dungeon']);
                 })) break;
                 if (! $member = $members->get('id', $discord_id)) break;
                 if (! $m = $this->getVerifiedMember($member)) break;

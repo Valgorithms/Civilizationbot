@@ -1168,15 +1168,15 @@ class Civ13
 
         $bancheckTimer = function () {
             $this->logger->debug('Running periodic bancheck...'); // This should take ~2.5 seconds to run
-            if (isset($this->role_ids['banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
+            if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
                 if (! isset($this->verifier)) break;
                 if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
-                if (($banned = $this->bancheck($item['ss13'], true)) && ! ($member->roles->has($this->role_ids['banished']) || $member->roles->has($this->role_ids['permabanished']))) {
-                    $member->addRole($this->role_ids['banished'], 'bancheck timer');
+                if (($banned = $this->bancheck($item['ss13'], true)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
+                    $member->addRole($this->role_ids['Banished'], 'bancheck timer');
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
-                } elseif (! $banned && ($member->roles->has($this->role_ids['banished']) || $member->roles->has($this->role_ids['permabanished']))) {
-                    $member->removeRole($this->role_ids['banished'], 'bancheck timer');
-                    $member->removeRole($this->role_ids['permabanished'], 'bancheck timer');
+                } elseif (! $banned && ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
+                    $member->removeRole($this->role_ids['Banished'], 'bancheck timer');
+                    $member->removeRole($this->role_ids['Permabanished'], 'bancheck timer');
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
                 }
             }
@@ -1202,9 +1202,9 @@ class Civ13
         $banned = false;
         foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->bancheck($ckey)) $banned = true;
         if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey))) {
-            $hasBanishedRole = $member->roles->has($this->role_ids['banished']);
-            if ($banned && ! $hasBanishedRole) $member->addRole($this->role_ids['banished'], "bancheck ($ckey)");
-            elseif (! $banned && $hasBanishedRole) $member->removeRole($this->role_ids['banished'], "bancheck ($ckey)");
+            $hasBanishedRole = $member->roles->has($this->role_ids['Banished']);
+            if ($banned && ! $hasBanishedRole) $member->addRole($this->role_ids['Banished'], "bancheck ($ckey)");
+            elseif (! $banned && $hasBanishedRole) $member->removeRole($this->role_ids['Banished'], "bancheck ($ckey)");
         }
         return $banned;
     }
@@ -1214,9 +1214,9 @@ class Civ13
         $permabanned = false;
         foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->permabancheck($ckey)) $permabanned = true;
         if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)))
-            if ($permabanned && ! $member->roles->has($this->role_ids['permabanished'])) {
-                if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "permabancheck ($ckey)");
-            } elseif (! $permabanned && $member->roles->has($this->role_ids['permabanished'])) $member->removeRole($this->role_ids['permabanished'], "permabancheck ($ckey)");
+            if ($permabanned && ! $member->roles->has($this->role_ids['Permabanished'])) {
+                if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['Banished'], $this->role_ids['Permabanished']], "permabancheck ($ckey)");
+            } elseif (! $permabanned && $member->roles->has($this->role_ids['Permabanished'])) $member->removeRole($this->role_ids['Permabanished'], "permabancheck ($ckey)");
         return $permabanned;
     }
     /**
@@ -1271,9 +1271,9 @@ class Civ13
             if (isset($this->verifier) && ! $item = $this->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
         }
-        if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($array['ckey'])) if (! $member->roles->has($this->role_ids['banished'])) {
-            if (! $permanent) $member->addRole($this->role_ids['banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
-            else $member->setRoles([$this->role_ids['banished'], $this->role_ids['permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
+        if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($array['ckey'])) if (! $member->roles->has($this->role_ids['Banished'])) {
+            if (! $permanent) $member->addRole($this->role_ids['Banished'], "Banned for {$array['duration']} with the reason {$array['reason']}");
+            else $member->setRoles([$this->role_ids['Banished'], $this->role_ids['Permabanished']], "Banned for {$array['duration']} with the reason {$array['reason']}");
         }
         $return = '';
         if (is_null($server)) foreach ($this->enabled_gameservers as &$gameserver) $return .= $gameserver->ban($array, $admin, $permanent);
@@ -1291,9 +1291,9 @@ class Civ13
             return;
         }
         if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)) {
-            if ($member->roles->has($this->role_ids['banished'])) $member->removeRole($this->role_ids['banished'], "Unbanned by $admin");
-            if ($member->roles->has($this->role_ids['permabanished'])) {
-                $member->removeRole($this->role_ids['permabanished'], "Unbanned by $admin");
+            if ($member->roles->has($this->role_ids['Banished'])) $member->removeRole($this->role_ids['Banished'], "Unbanned by $admin");
+            if ($member->roles->has($this->role_ids['Permabanished'])) {
+                $member->removeRole($this->role_ids['Permabanished'], "Unbanned by $admin");
                 $member->addRole($this->role_ids['Verified'], "Unbanned by $admin");
             }
         }
