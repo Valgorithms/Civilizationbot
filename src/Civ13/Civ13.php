@@ -71,6 +71,9 @@ class Civ13
     const insults_path = 'insults.txt';
     const status = 'status.txt';
 
+    const array faction_teams = ['red', 'blue'];
+    const array faction_admins = ['organizer'];
+
     public bool $ready = false;
     public array $options = [];
     
@@ -545,6 +548,20 @@ class Civ13
     public function statusChanger(Activity $activity, string $state = 'online'): void
     {
         $this->discord->updatePresence($activity, false, $state);
+    }
+    public function removeRoles(Member $member, array $roles = []): void
+    {
+        $promise = null;
+        foreach ($roles as $role) if ($member->roles->has($role)) $promise = $promise ? $promise->then(function () use ($member, $role) {
+            return $member->removeRole($role);
+        }, $this->onRejectedDefault) : $promise = $member->removeRole($role);
+    }
+    public function addRoles(Member $member, array $roles = []): void
+    {
+        $promise = null;
+        foreach ($roles as $role) if ($member->roles->has($role)) $promise = $promise ? $promise->then(function () use ($member, $role) {
+            return $member->addRole($role);
+        }, $this->onRejectedDefault) : $promise = $member->addRole($role);
     }
     /**
      * Sends a message to the specified channel.
@@ -1851,8 +1868,9 @@ class Civ13
      * @param array|null $required_roles The required roles for updating the faction list. Default is ['red', 'blue', 'organizer'].
      * @return bool Returns true if the faction list is successfully updated, false otherwise.
      */
-    public function factionlistUpdate(?array $required_roles = ['red', 'blue', 'organizer']): bool
+    public function factionlistUpdate(?array $required_roles = null): bool
     {
+        if (! $required_roles) $required_roles = self::faction_teams + self::faction_admins;
         if (! isset($this->verifier)) {
             $this->logger->error('Unable to update faction list: Verifier is not set.');
             return false;

@@ -783,35 +783,31 @@ class Slash
             
             if (! $target_id = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
             if (! $target_member = $this->civ13->verifier->getVerifiedMember($target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is either not currently verified with a byond username or do not exist in the cache yet'), true);
-            if (! $target_team = $interaction->data->options['team']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid team.'), true);
-            $teams = ['red', 'blue'];
-            if ($target_team === 'random') $target_team = array_rand($teams);
+            if (! $target_team = $interaction->data->options['team']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid team.'), true);            
+            if ($target_team === 'random') $target_team = array_rand(Civ13::faction_teams);
             $role_id = null;
             if ($target_team !== 'none' && (! isset($this->civ13->role_ids[$target_team]) || ! $role_id = $this->civ13->role_ids[$target_team])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Team not configured: `$target_team`"), true);
             if ($role_id && $target_member->roles->has($role_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in this faction!'), true);
             //if ($target_member->roles->has($this->civ13->role_ids['red']) || $target_member->roles->has($this->civ13->role_ids['blue'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in a faction! Please remove their current faction role first.'), true); // Don't assign if they already have a faction role
 
-            if ($target_team === 'red' || $target_team === 'blue') {
-                $remove_role = function () use ($target_team, $target_member): ?PromiseInterface
-                { // If there is a different team role, remove it
-                    $new_member = $this->discord->guilds->get('id', $target_member->guild_id)->members->get('id', $target_member->id); // Refresh the member
-                    if ($target_team === 'red' && $new_member->roles->has($this->civ13->role_ids['blue'])) return $this->civ13->then($new_member->removeRole($this->civ13->role_ids['blue']));
-                    if ($target_team === 'blue' && $new_member->roles->has($this->civ13->role_ids['red'])) return $this->civ13->then($new_member->removeRole($this->civ13->role_ids['red']));
-                    return null;
-                };
-                $this->civ13->then($target_member->addRole($role_id), $remove_role);
+            if (in_array($target_team, Civ13::faction_teams)) {
+                $promise = $target_member->addRole($role_id)->then(function () use (&$promise, $target_member, $target_team) {
+                    foreach(Civ13::faction_teams as $team) if ($team !== $target_team && $target_member->roles->has($this->civ13->role_ids[$team])) {
+                        $promise = $promise->then(function() use ($target_member, $team) {
+                            return $target_member->removeRole($this->civ13->role_ids[$team]);
+                        }, $this->civ13->onRejectedDefault);
+                    }
+                }, $this->civ13->onRejectedDefault);
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The <@&$role_id> role has been assigned to <@{$target_member->id}>")->setAllowedMentions(['parse'=>['users']]), true);
             }
             if ($target_team === 'none') {
-                $remove_role = function(Member $member, string $team): ?PromiseInterface
-                {
-                    $new_member = $this->discord->guilds->get('id', $member->guild_id)->members->get('id', $member->id); // Refresh the member
-                    if ($new_member->roles->has($this->civ13->role_ids[$team])) return $new_member->removeRole($this->civ13->role_ids[$team]);
-                    return null;
-                };
                 $promise = null;
-                foreach ($teams as $team) $promise instanceof PromiseInterface ? $promise->then($remove_role($target_member, $team), $this->civ13->onRejectedDefault) : $promise = $remove_role($target_member, $team);
-                if ($promise instanceof PromiseInterface) $this->civ13->then($promise);
+                foreach(Civ13::faction_teams as $team) if ($target_member->roles->has($this->civ13->role_ids[$team])) {
+                    $promise = $promise ? $promise->then(function () use ($target_member, $team) {
+                        return $target_member->removeRole($this->civ13->role_ids[$team]);
+                    }, $this->civ13->onRejectedDefault) : $promise = $target_member->removeRole($team);
+                    $target_member = $this->discord->guilds->get('id', $target_member->guild_id)->members->get('id', $target_member->id); // Refresh the member
+                }
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The faction roles have been removed from <@{$target_member->id}>"), true);
             }
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Invalid team: `$target_team`."), true);

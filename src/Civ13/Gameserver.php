@@ -754,11 +754,12 @@ class GameServer
     /**
      * Updates the faction list based on the required roles.
      *
-     * @param array|null $required_roles The required roles for updating the faction list. Default is ['red', 'blue', 'organizer'].
+     * @param array|null $required_roles The required roles for updating the faction list.
      * @return bool Returns true if the faction list is successfully updated, false otherwise.
      */
-    public function factionlistUpdate(?array $required_roles = ['red', 'blue', 'organizer']): bool
+    public function factionlistUpdate(?array $required_roles = null): bool
     {
+        if (! $required_roles) $required_roles = Civ13::faction_teams + Civ13::faction_admins;
         if (! $this->enabled) return false;
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! @touch($this->factionlist)) {

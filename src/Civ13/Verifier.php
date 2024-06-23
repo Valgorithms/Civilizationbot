@@ -80,7 +80,7 @@ class Verifier
         {
             $this->getVerified();
             $this->civ13->whitelistUpdate();
-            foreach ($faction_roles = ['red', 'blue'] as $role_id) if ($member->roles->has($this->civ13->role_ids[$role_id])) { $this->civ13->factionlistUpdate(); break;}
+            foreach (Civ13::faction_teams as $faction_name) if ($member->roles->has($this->civ13->role_ids[$faction_name])) { $this->civ13->factionlistUpdate(); break;}
             $roles = [
                 'Owner',
                 'Chief Technical Officer',
@@ -95,7 +95,7 @@ class Verifier
                 'Banished',
                 'Paroled',
             ];
-            foreach ($roles as $role) if ($member->roles->has($this->civ13->role_ids[$role])) { $this->civ13->adminlistUpdate(); break; }
+            foreach ($roles as $role_name) if ($member->roles->has($this->civ13->role_ids[$role_name])) { $this->civ13->adminlistUpdate(); break; }
         });
         $this->civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
         {
@@ -110,9 +110,8 @@ class Verifier
                 $this->getVerified();
                 $this->civ13->whitelistUpdate();
             }
-            foreach ($faction_roles = ['red', 'blue'] as $role) 
-                if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
-                    { $this->civ13->factionlistUpdate(); break;}
+            foreach (Civ13::faction_teams as $role_name)  if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name]))
+                { $this->civ13->factionlistUpdate(); break;}
             $roles = [
                 'Owner',
                 'Chief Technical Officer',
@@ -127,8 +126,8 @@ class Verifier
                 'Banished',
                 'Paroled',
             ];
-            foreach ($roles as $role) 
-                if ($member->roles->has($this->civ13->role_ids[$role]) !== $member_old->roles->has($this->civ13->role_ids[$role]))
+            foreach ($roles as $role_name) 
+                if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name]))
                     { $this->civ13->adminlistUpdate(); break;}
         });
         $this->civ13->discord->once('init', function () {
