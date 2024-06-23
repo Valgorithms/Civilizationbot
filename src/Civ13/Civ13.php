@@ -71,7 +71,9 @@ class Civ13
     const insults_path = 'insults.txt';
     const status = 'status.txt';
 
+    /** @var array<string> */
     const array faction_teams = ['red', 'blue'];
+    /** @var array<string> */
     const array faction_admins = ['organizer'];
 
     public bool $ready = false;
@@ -549,19 +551,92 @@ class Civ13
     {
         $this->discord->updatePresence($activity, false, $state);
     }
-    public function removeRoles(Member $member, array $roles = []): void
+    /**
+     * Removes specified roles from a member.
+     *
+     * @param Member $member The member object from which the roles will be removed.
+     * @param Collection<Role>|array<string|int>|Role|string|int $roles An array of role IDs to be removed.
+     * @param bool $patch Determines whether to use patch mode or not. If true, the member's roles will be updated using setRoles method. If false, the member's roles will be updated using removeRole method.
+     * @return PromiseInterface<Member> A promise that resolves to the updated member object.
+     */
+    public function removeRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
-        $promise = null;
-        foreach ($roles as $role) if ($member->roles->has($role)) $promise = $promise ? $promise->then(function () use ($member, $role) {
-            return $member->removeRole($role);
-        }, $this->onRejectedDefault) : $promise = $member->removeRole($role);
+        if (! $roles) return \React\Promise\resolve($member);
+        $role_ids = [];
+        switch (true) {
+            case ($roles instanceof Collection && $roles->first() instanceof Role):
+                $role_ids = $roles->map(fn($role) => $role->id)->toArray();
+                break;
+            case (! $roles instanceof Collection && is_array($roles) && $roles[0] instanceof Role):
+                $role_ids = array_map(fn($role) => $role->id, $roles);
+                break;
+            case (is_array($roles)):
+                $role_ids = array_map('strval', $roles);
+                break;
+            case ($roles instanceof Role):
+                $role_ids[] = $roles->id;
+                break;
+            case (is_string($roles) || is_int($roles)):
+                $role_ids[] = "$roles";
+                break;
+            default:
+                $this->logger->warning('Roles not found for removeRoles: ' . json_encode($roles));
+                return \React\Promise\resolve($member);
+        }
+        foreach ($role_ids as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
+        if (! $role_ids) {
+            $this->logger->warning('No roles to remove for removeRoles');
+            return \React\Promise\resolve($member);
+        }
+        
+        return $patch
+            ? ((($new_roles = $member->roles->filter(function (Role $role) use ($role_ids) { return ! in_array($role->id, $role_ids); })->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : \React\Promise\resolve($member))
+            : \React\Promise\all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
+                ->then(function() use ($member) {
+                    return $member->guild->members->get('id', $member->id);
+                });
     }
-    public function addRoles(Member $member, array $roles = []): void
+    /**
+     * Adds specified roles to a member.
+     *
+     * @param Member $member The member object to which the roles will be added.
+     * @param Collection<Role>|array<string|int>|Role|string|int $roles An array of role IDs to be added.
+     * @param bool $patch Determines whether to use patch mode or not. If true, the member's roles will be updated using setRoles method. If false, the member's roles will be updated using addRole method.
+     * @return PromiseInterface<Member> A promise that resolves to the updated member object.
+     */
+    public function addRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
-        $promise = null;
-        foreach ($roles as $role) if ($member->roles->has($role)) $promise = $promise ? $promise->then(function () use ($member, $role) {
-            return $member->addRole($role);
-        }, $this->onRejectedDefault) : $promise = $member->addRole($role);
+        if (! $roles) return \React\Promise\resolve($member);
+        $role_ids = [];
+        switch (true) {
+            case ($roles instanceof Collection && $roles->first() instanceof Role):
+                $role_ids = $roles->map(fn($role) => $role->id)->toArray();
+                break;
+            case (! $roles instanceof Collection && is_array($roles) && $roles[0] instanceof Role):
+                $role_ids = array_map(fn($role) => $role->id, $roles);
+                break;
+            case ($roles instanceof Role):
+                $role_ids[] = $roles->id;
+                break;
+            case (is_string($roles) || is_int($roles)):
+                $role_ids[] = "$roles";
+                break;
+            default:
+                $this->logger->warning('Roles not found for addRoles: ' . json_encode($roles));
+                return \React\Promise\resolve($member);
+        }
+        foreach ($role_ids as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
+        if (! $role_ids) {
+            $this->logger->warning('No roles to add for addRoles');
+            return \React\Promise\resolve($member);
+        }
+
+        return $patch
+            ? $member->setRoles(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $role_ids))
+            : \React\Promise\all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
+                ->then(function() use ($member) {
+                    return $member->guild->members->get('id', $member->id);
+                });
     }
     /**
      * Sends a message to the specified channel.
