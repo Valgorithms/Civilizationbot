@@ -353,46 +353,45 @@ class HttpServiceManager
         }), true);
         $this->httpHandler->offsetSet('/githubupdated', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
-            if ($signature = $request->getHeaderLine('X-Hub-Signature')) {
-                // Secret isn't working right now, so we're not using it
-                //$hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
-                //if (strcmp($signature, $hash) == 0) {
-                    //if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'GitHub push event webhook received');
-                    if (! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                    $promise = $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/3)');
-                    execInBackground('git pull');
-                    $this->civ13->loop->addTimer(5, function () use ($promise) {
-                        $promise = $promise->then(function (Message $message) {
+            if (! $signature = $request->getHeaderLine('X-Hub-Signature')) {
+                $headers = $request->getHeaders();
+                $this->logger->warning("Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
+                //$this->logger->warning("Signature: $signature, Hash: $hash");
+                $tech_ping = '';
+                if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
+                return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
+            }
+            // Secret isn't working right now, so we're not using it
+            //$hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
+            //if (strcmp($signature, $hash) == 0) {
+                //if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'GitHub push event webhook received');
+            if (! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+            $promise = $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/3)');
+            execInBackground('git pull');
+            $this->civ13->loop->addTimer(5, function () use ($promise) {
+                $promise = $promise->then(function (Message $message) {
+                    $builder = MessageBuilder::new();
+                    $promise = $message->edit($builder->setContent('Forcefully moving the HEAD back to origin/main... (2/3)'));
+                    execInBackground('git reset --hard origin/main');
+                    if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
+                    $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($promise) {
+                        $promise->then(function (Message $message) {
                             $builder = MessageBuilder::new();
-                            $promise = $message->edit($builder->setContent('Forcefully moving the HEAD back to origin/main... (2/3)'));
-                            execInBackground('git reset --hard origin/main');
-                            if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
-                            $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($promise) {
-                                $promise->then(function (Message $message) {
-                                    $builder = MessageBuilder::new();
-                                    $promise = $message->edit($builder->setContent('Restarting... (3/3)'));
-                                    $promise->then(function (Message $message) {
-                                        $this->socket->close();
-                                        if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(2, function () {
-                                            \restart();
-                                            $this->discord->close();
-                                            die();
-                                        });
-                                    });
+                            $promise = $message->edit($builder->setContent('Restarting... (3/3)'));
+                            $promise->then(function (Message $message) {
+                                $this->socket->close();
+                                if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(2, function () {
+                                    \restart();
+                                    $this->discord->close();
+                                    die();
                                 });
                             });
                         });
                     });
-                    return new HttpResponse(HttpResponse::STATUS_OK);
-                //}
-            }
-            $headers = $request->getHeaders();
-            //$this->logger->warning("Unauthorized Request Headers on `$endpoint` endpoint: ", $headers);
-            //$this->logger->warning("Signature: $signature, Hash: $hash");
-            $tech_ping = '';
-            if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
-            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
-            return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
+                });
+            });
+            return new HttpResponse(HttpResponse::STATUS_OK);
         }));
 
         $this->httpHandler->offsetSet('/cancelupdaterestart', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
