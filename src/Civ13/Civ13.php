@@ -562,26 +562,9 @@ class Civ13
     public function removeRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
         if (! $roles) return \React\Promise\resolve($member);
-        $role_ids = [];
-        switch (true) {
-            case ($roles instanceof Collection && $roles->first() instanceof Role):
-                $role_ids = $roles->map(fn($role) => $role->id)->toArray();
-                break;
-            case (! $roles instanceof Collection && is_array($roles) && $roles[0] instanceof Role):
-                $role_ids = array_map(fn($role) => $role->id, $roles);
-                break;
-            case (is_array($roles)):
-                $role_ids = array_map('strval', $roles);
-                break;
-            case ($roles instanceof Role):
-                $role_ids[] = $roles->id;
-                break;
-            case (is_string($roles) || is_int($roles)):
-                $role_ids[] = "$roles";
-                break;
-            default:
-                $this->logger->warning('Roles not found for removeRoles: ' . json_encode($roles));
-                return \React\Promise\resolve($member);
+        if (! $role_ids = $this->__rolesToIdArray($roles)) {
+            $this->logger->warning('Roles not found for removeRoles: ' . json_encode($roles));
+            return \React\Promise\resolve($member);
         }
         foreach ($role_ids as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
         if (! $role_ids) {
@@ -607,6 +590,31 @@ class Civ13
     public function addRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
         if (! $roles) return \React\Promise\resolve($member);
+        if (! $role_ids = $this->__rolesToIdArray($roles)) {
+            $this->logger->warning('Roles not found for addRoles: ' . json_encode($roles));
+            return \React\Promise\resolve($member);
+        }
+        foreach ($role_ids as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
+        if (! $role_ids) {
+            $this->logger->warning('No roles to add for addRoles');
+            return \React\Promise\resolve($member);
+        }
+
+        return $patch
+            ? $member->setRoles(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $role_ids))
+            : \React\Promise\all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
+                ->then(function() use ($member) {
+                    return $member->guild->members->get('id', $member->id);
+                });
+    }
+    /**
+     * Convert roles to an array of role IDs.
+     *
+     * @param mixed $roles The roles to convert.
+     * @return array<string>|false The array of role IDs, or false if the conversion fails.
+     */
+    private function __rolesToIdArray($roles): array|false
+    {
         $role_ids = [];
         switch (true) {
             case ($roles instanceof Collection && $roles->first() instanceof Role):
@@ -625,21 +633,9 @@ class Civ13
                 $role_ids[] = "$roles";
                 break;
             default:
-                $this->logger->warning('Roles not found for addRoles: ' . json_encode($roles));
-                return \React\Promise\resolve($member);
+                return false;
         }
-        foreach ($role_ids as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
-        if (! $role_ids) {
-            $this->logger->warning('No roles to add for addRoles');
-            return \React\Promise\resolve($member);
-        }
-
-        return $patch
-            ? $member->setRoles(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $role_ids))
-            : \React\Promise\all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
-                ->then(function() use ($member) {
-                    return $member->guild->members->get('id', $member->id);
-                });
+        return $role_ids;
     }
     /**
      * Sends a message to the specified channel.
