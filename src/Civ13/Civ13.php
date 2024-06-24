@@ -555,7 +555,7 @@ class Civ13
      * Removes specified roles from a member.
      *
      * @param Member $member The member object from which the roles will be removed.
-     * @param Collection<Role>|array<string|int>|Role|string|int $roles An array of role IDs to be removed.
+     * @param Collection<Role>|array<Role|string|int>|Role|string|int $roles An array of role IDs to be removed.
      * @param bool $patch Determines whether to use patch mode or not. If true, the member's roles will be updated using setRoles method. If false, the member's roles will be updated using removeRole method.
      * @return PromiseInterface<Member> A promise that resolves to the updated member object.
      */
@@ -600,7 +600,7 @@ class Civ13
      * Adds specified roles to a member.
      *
      * @param Member $member The member object to which the roles will be added.
-     * @param Collection<Role>|array<string|int>|Role|string|int $roles An array of role IDs to be added.
+     * @param Collection<Role>|array<Role|string|int>|Role|string|int $roles An array of role IDs to be added.
      * @param bool $patch Determines whether to use patch mode or not. If true, the member's roles will be updated using setRoles method. If false, the member's roles will be updated using addRole method.
      * @return PromiseInterface<Member> A promise that resolves to the updated member object.
      */
