@@ -619,9 +619,10 @@ class Civ13
     {
         if (! $add_roles && ! $remove_roles) return \React\Promise\resolve($member);
         if (! ($add_roles = $this->__rolesToIdArray($add_roles)) && ! ($remove_roles = $this->__rolesToIdArray($remove_roles))) return \React\Promise\resolve($member);
-        if ($add_roles) foreach ($add_roles as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
-        if ($remove_roles) foreach ($remove_roles as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
-        return $member->setRoles(array_diff(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $add_roles), $remove_roles));
+        foreach ($add_roles as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
+        foreach ($remove_roles as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
+        if (! $updated_roles = array_diff(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $add_roles), $remove_roles)) return \React\Promise\resolve($member);
+        return $member->setRoles($updated_roles);
     }
     /**
      * Convert roles to an array of role IDs.
@@ -648,8 +649,6 @@ class Civ13
             case (is_string($roles) || is_int($roles)):
                 $role_ids[] = "$roles";
                 break;
-            default: // Invalid input
-                return [];
         }
         return $role_ids;
     }
