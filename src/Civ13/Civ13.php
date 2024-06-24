@@ -910,13 +910,11 @@ class Civ13
             $this->sendMessage($channel, $array['message'], 'relay.txt', false, false);
             return true;
         }
-        $builder = MessageBuilder::new();
         $embed = new Embed($this->discord);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
         $embed->setDescription($array['message']);
-        $builder->addEmbed($embed);
-        $channel->sendMessage($builder);
+        $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
         return true;
     }
     

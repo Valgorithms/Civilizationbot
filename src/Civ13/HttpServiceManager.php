@@ -371,14 +371,12 @@ class HttpServiceManager
             execInBackground('git pull');
             $this->civ13->loop->addTimer(5, function () use ($promise) {
                 $promise = $promise->then(function (Message $message) {
-                    $builder = MessageBuilder::new();
-                    $promise = $message->edit($builder->setContent('Forcefully moving the HEAD back to origin/main... (2/3)'));
+                    $promise = $message->edit(MessageBuilder::new()->setContent('Forcefully moving the HEAD back to origin/main... (2/3)'));
                     execInBackground('git reset --hard origin/main');
                     if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
                     $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($promise) {
                         $promise->then(function (Message $message) {
-                            $builder = MessageBuilder::new();
-                            $message->edit($builder->setContent('Restarting... (3/3)'))->then(function (Message $message) {
+                            $message->edit(MessageBuilder::new()->setContent('Restarting... (3/3)'))->then(function (Message $message) {
                                 $this->socket->close();
                                 if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(2, function () {
                                     \restart();
@@ -745,12 +743,10 @@ class HttpServiceManager
                 $this->discord->users->fetch($item['discord']);
                 return $this->civ13->sendMessage($channel, $message);
             } 
-            $builder = MessageBuilder::new();
             $embed = new Embed($this->discord);
             $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
             $embed->setDescription($message);
-            $builder->addEmbed($embed);
-            return $channel->sendMessage($builder);
+            return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
         };
         
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
