@@ -1386,8 +1386,9 @@ class Civ13
         if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->role_ids['Banished'])) $member->removeRole($this->role_ids['Banished'], "Unbanned by $admin");
             if ($member->roles->has($this->role_ids['Permabanished'])) {
-                $member->removeRole($this->role_ids['Permabanished'], "Unbanned by $admin");
-                $member->addRole($this->role_ids['Verified'], "Unbanned by $admin");
+                $member->removeRole($this->role_ids['Permabanished'], "Unbanned by $admin")->then(function () use (&$member, $admin) {
+                    $member->addRole($this->role_ids['Verified'], "Unbanned by $admin");
+                });
             }
         }
     }

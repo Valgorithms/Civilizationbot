@@ -365,19 +365,14 @@ class MessageServiceManager
             $members = [];
             foreach ($message->guild->members as $member) if ($member->roles->has($this->civ13->role_ids['veteran']) && ! $member->roles->has($this->civ13->role_ids['Verified'])) $members[] = $member;
             if (! $members) $message->react("👎");
+            
             $message->react("⏱️");
-
-            $func = function (Member $member): PromiseInterface
-            {
-                return $member->addRole($this->civ13->role_ids['Verified']);
-            };
-            $promise = array_shift($members)->addRole($this->civ13->role_ids['Verified']);
-            foreach ($members as $member) $promise = $promise->then(function () use ($member, $func) {
-                return $func($member);
-            });
-            $promise->then(function () use ($message) {
-                return $message->react("👍");
-            });
+            $promise = null;
+            foreach ($members as $member)
+                $promise = ($promise instanceof PromiseInterface)
+                    ? $promise->then(function () use (&$member) { $member->addRole($this->civ13->role_ids['Verified']); })
+                    : $member->addRole($this->civ13->role_ids['Verified']);
+            $promise->then(function () use ($message) { return $message->react("👍"); });
         }), ['Chief Technical Officer']);
 
         $this->offsetSet('retryregister', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface

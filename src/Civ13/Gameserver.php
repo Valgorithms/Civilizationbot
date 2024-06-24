@@ -673,8 +673,9 @@ class GameServer
         if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->civ13->role_ids['Banished'])) $member->removeRole($this->civ13->role_ids['Banished'], "Unbanned by $admin");
             if ($member->roles->has($this->civ13->role_ids['Permabanished'])) {
-                $member->removeRole($this->civ13->role_ids['Permabanished'], "Unbanned by $admin");
-                $member->addRole($this->civ13->role_ids['Verified'], "Unbanned by $admin");
+                $member->removeRole($this->civ13->role_ids['Permabanished'], "Unbanned by $admin")->then(function () use (&$member, $admin) {
+                    $member->addRole($this->civ13->role_ids['Verified'], "Unbanned by $admin");
+                });
             }
         }
     }
