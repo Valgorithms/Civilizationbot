@@ -760,7 +760,7 @@ class GameServer
      */
     public function factionlistUpdate(?array $required_roles = null): bool
     {
-        if (! $required_roles) $required_roles = Civ13::faction_teams + Civ13::faction_admins;
+        if (! $required_roles) $required_roles = array_merge(Civ13::faction_teams, Civ13::faction_admins);
         if (! $this->enabled) return false;
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! @touch($this->factionlist)) {

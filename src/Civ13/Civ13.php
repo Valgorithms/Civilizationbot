@@ -1965,7 +1965,7 @@ class Civ13
      */
     public function factionlistUpdate(?array $required_roles = null): bool
     {
-        if (! $required_roles) $required_roles = self::faction_teams + self::faction_admins;
+        if (! $required_roles) $required_roles = array_merge(self::faction_teams, self::faction_admins);
         if (! isset($this->verifier)) {
             $this->logger->error('Unable to update faction list: Verifier is not set.');
             return false;
