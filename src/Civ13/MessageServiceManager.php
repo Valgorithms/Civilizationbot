@@ -927,8 +927,7 @@ class MessageServiceManager
             if (! $members = $guild->members->filter(function (Member $member) {
                 return ! $member->roles->has($this->civ13->role_ids['Verified'])
                     && ! $member->roles->has($this->civ13->role_ids['Banished'])
-                    && ! $member->roles->has($this->civ13->role_ids['Permabanished'])
-                    && ! $member->roles->has($this->civ13->role_ids['Dungeon']);
+                    && ! $member->roles->has($this->civ13->role_ids['Permabanished']);
             })) return $message->react("👎");
             foreach ($members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['Verified'], 'fixroles');
             return $message->react("👍");

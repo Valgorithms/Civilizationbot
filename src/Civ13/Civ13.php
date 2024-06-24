@@ -72,9 +72,9 @@ class Civ13
     const status = 'status.txt';
 
     /** @var array<string> */
-    const array faction_teams = ['red', 'blue'];
+    const array faction_teams = ['Red Faction', 'Blue Faction'];
     /** @var array<string> */
-    const array faction_admins = ['organizer'];
+    const array faction_admins = ['Faction Organizer'];
 
     public bool $ready = false;
     public array $options = [];
@@ -1942,7 +1942,7 @@ class Civ13
     /**
      * Updates the faction list based on the required roles.
      *
-     * @param array|null $required_roles The required roles for updating the faction list. Default is ['red', 'blue', 'organizer'].
+     * @param array|null $required_roles The required roles for updating the faction list. Default is ['Red Faction', 'Blue Faction', 'Faction Organizer'].
      * @return bool Returns true if the faction list is successfully updated, false otherwise.
      */
     public function factionlistUpdate(?array $required_roles = null): bool

@@ -391,8 +391,7 @@ class Verifier
                 if (! $members = $guild->members->filter(function (Member $member) {
                     return ! $member->roles->has($this->civ13->role_ids['Verified'])
                         && ! $member->roles->has($this->civ13->role_ids['Banished'])
-                        && ! $member->roles->has($this->civ13->role_ids['Permabanished'])
-                        && ! $member->roles->has($this->civ13->role_ids['Dungeon']);
+                        && ! $member->roles->has($this->civ13->role_ids['Permabanished']);
                 })) break;
                 if (! $member = $members->get('id', $discord_id)) break;
                 if (! $m = $this->getVerifiedMember($member)) break;

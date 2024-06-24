@@ -168,13 +168,12 @@ $options = array(
         'Verified' => '468982790772228127', // Verified
         'Banished' => '710328377210306641', // Banned in-game
         'Permabanished' => '1126137099209425017', // Permanently banned in-game
-        'Dungeon' => '547186843746304020', // Dungeon, for those who have had their Discord permissions revoked
         'Paroled' => '745336314689355796', // On parole
         
         // Factions
-        'red' => '1132678312301428886', // Redmenia
-        'blue' => '1132678353070067802', // Blugoslavia
-        'organizer' => '1089060051425165362', // Admin / Faction Organizer
+        'Red Faction' => '1132678312301428886', // Redmenia
+        'Blue Faction' => '1132678353070067802', // Blugoslavia
+        'Faction Organizer' => '1089060051425165362', // Admin / Faction Organizer
         // Notification pings
         'mapswap' => '1200520534262284288', // Map Swap Ping
         'round_start' => '1110597830403424328', // Round Start Ping

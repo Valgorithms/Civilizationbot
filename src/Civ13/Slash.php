@@ -274,12 +274,12 @@ class Slash
                         'required'		=> true,
                         'choices'       => [
                             [
-                                'name' => 'Red',
-                                'value' => 'red'
+                                'name' => 'Red Faction',
+                                'value' => 'Red Faction'
                             ],
                             [
-                                'name' => 'Blue',
-                                'value' => 'blue'
+                                'name' => 'Blue Faction',
+                                'value' => 'Blue Faction'
                             ],
                             [
                                 'name' => 'Random',
@@ -768,18 +768,18 @@ class Slash
             //return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Factions are not ready to be assigned yet'), true);
             if (! $this->civ13->verifier->getVerifiedItem($interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are either not currently verified with a byond username or do not exist in the cache yet'), true);
             
-            foreach ($interaction->member->roles as $role) if ($role->id === $this->civ13->role_ids['red'] || $role->id === $this->civ13->role_ids['blue']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are already in a faction!'), true);
+            foreach ($interaction->member->roles as $role) if ($role->id === $this->civ13->role_ids['Red Faction'] || $role->id === $this->civ13->role_ids['Blue Faction']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are already in a faction!'), true);
 
-            $redCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['red']))->count();
-            $blueCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['blue']))->count();
-            $roleIds = [$this->civ13->role_ids['red'], $this->civ13->role_ids['blue']];
-            $interaction->member->addRole($redCount > $blueCount ? $this->civ13->role_ids['blue'] : ($blueCount > $redCount ? $this->civ13->role_ids['red'] : $roleIds[array_rand($roleIds)]));
+            $redCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['Red Faction']))->count();
+            $blueCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['Blue Faction']))->count();
+            $roleIds = [$this->civ13->role_ids['Red Faction'], $this->civ13->role_ids['Blue Faction']];
+            $interaction->member->addRole($redCount > $blueCount ? $this->civ13->role_ids['Blue Faction'] : ($blueCount > $redCount ? $this->civ13->role_ids['Red Faction'] : $roleIds[array_rand($roleIds)]));
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('A faction has been assigned'), true);
         });
 
         $this->listenCommand('assign_faction', function (Interaction $interaction): PromiseInterface
         {
-            if (! $interaction->member->roles->has($this->civ13->role_ids['organizer'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You do not have permission to assign factions!'), true);
+            if (! $interaction->member->roles->has($this->civ13->role_ids['Faction Organizer'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You do not have permission to assign factions!'), true);
             
             if (! $target_id = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
             if (! $target_member = $this->civ13->verifier->getVerifiedMember($target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is either not currently verified with a byond username or do not exist in the cache yet'), true);
@@ -788,7 +788,7 @@ class Slash
             $role_id = null;
             if ($target_team !== 'none' && (! isset($this->civ13->role_ids[$target_team]) || ! $role_id = $this->civ13->role_ids[$target_team])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Team not configured: `$target_team`"), true);
             if ($role_id && $target_member->roles->has($role_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in this faction!'), true);
-            //if ($target_member->roles->has($this->civ13->role_ids['red']) || $target_member->roles->has($this->civ13->role_ids['blue'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in a faction! Please remove their current faction role first.'), true); // Don't assign if they already have a faction role
+            //if ($target_member->roles->has($this->civ13->role_ids['Red Faction']) || $target_member->roles->has($this->civ13->role_ids['Blue Faction'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in a faction! Please remove their current faction role first.'), true); // Don't assign if they already have a faction role
             $faction_ids = array_filter(array_map(fn($key) => $this->civ13->role_ids[$key] ?? null, Civ13::faction_teams));
 
             if (in_array($target_team, Civ13::faction_teams)) {
