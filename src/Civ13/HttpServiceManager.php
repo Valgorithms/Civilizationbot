@@ -377,12 +377,7 @@ class HttpServiceManager
                     $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($promise) {
                         $promise->then(function (Message $message) {
                             $message->edit(MessageBuilder::new()->setContent('Restarting... (3/3)'))->then(function (Message $message) {
-                                $this->socket->close();
-                                if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(2, function () {
-                                    \restart();
-                                    $this->discord->close();
-                                    die();
-                                });
+                                $this->civ13->restart();
                             });
                         });
                     });
@@ -418,11 +413,8 @@ class HttpServiceManager
         {
             $message = 'Restarting...';
             if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-            $this->socket->close();
             if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
-                \restart();
-                $this->discord->close();
-                die();
+                $this->civ13->restart();
             });
             return HttpResponse::plaintext($message);
         }), true);

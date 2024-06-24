@@ -419,9 +419,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
         }
         $socket->close();
         if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = $civ13->discord->getLoop()->addTimer(5, function () use (&$civ13) {
-            \restart();
-            $civ13->discord->close();
-            die();
+            $civ13->restart();
         });
     }
 });

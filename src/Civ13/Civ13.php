@@ -538,10 +538,17 @@ class Civ13
      *
      * @return void
      */
-    public function stop(): void
+    public function stop(bool $closeLoop = true): void
     {
         $this->logger->info('Shutting down');
-        if ((isset($this->discord))) $this->discord->stop();
+        if (isset($this->httpServiceManager->socket)) $this->httpServiceManager->socket->close();
+        if (isset($this->discord)) $this->discord->close(false);
+        if ($closeLoop) $this->loop->stop();
+    }
+    public function restart()
+    {
+        $this->stop();
+        \restart();
     }
 
     /*
