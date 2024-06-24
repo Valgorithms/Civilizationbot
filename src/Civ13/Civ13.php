@@ -608,12 +608,28 @@ class Civ13
                 });
     }
     /**
+     * Updates specifiec roles for a member.
+     *
+     * @param Member $member The member object to which will have its roles updated.
+     * @param Collection<Role>|array<Role|string|int>|Role|string|int $roles An array of role IDs to be added.
+     * @param Collection<Role>|array<Role|string|int>|Role|string|int $roles An array of role IDs to be removed.
+     * @return PromiseInterface<Member> A promise that resolves to the updated member object.
+     */
+    public function setRoles(Member $member, Collection|array|Role|string|int $add_roles = [], Collection|array|Role|string|int $remove_roles = []): PromiseInterface
+    {
+        if (! $add_roles && ! $remove_roles) return \React\Promise\resolve($member);
+        if (! ($add_roles = $this->__rolesToIdArray($add_roles)) && ! ($remove_roles = $this->__rolesToIdArray($remove_roles))) return \React\Promise\resolve($member);
+        if ($add_roles) foreach ($add_roles as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
+        if ($remove_roles) foreach ($remove_roles as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
+        return $member->setRoles(array_diff(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $add_roles), $remove_roles));
+    }
+    /**
      * Convert roles to an array of role IDs.
      *
      * @param mixed $roles The roles to convert.
-     * @return array<string>|false The array of role IDs, or false if the conversion fails.
+     * @return array<string>|array<null> The array of role IDs, or an empty array if the conversion fails.
      */
-    private function __rolesToIdArray($roles): array|false
+    private function __rolesToIdArray($roles): array
     {
         $role_ids = [];
         switch (true) {
@@ -632,8 +648,8 @@ class Civ13
             case (is_string($roles) || is_int($roles)):
                 $role_ids[] = "$roles";
                 break;
-            default:
-                return false;
+            default: // Invalid input
+                return [];
         }
         return $role_ids;
     }
