@@ -615,6 +615,9 @@ class Civ13
             case (! $roles instanceof Collection && is_array($roles) && $roles[0] instanceof Role):
                 $role_ids = array_map(fn($role) => $role->id, $roles);
                 break;
+            case (is_array($roles)):
+                $role_ids = array_map('strval', $roles);
+                break;
             case ($roles instanceof Role):
                 $role_ids[] = $roles->id;
                 break;
