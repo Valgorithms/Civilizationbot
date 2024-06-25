@@ -33,6 +33,7 @@ use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
+use React\Promise;
 use React\Http\Browser;
 use React\Filesystem\AdapterInterface;
 use React\Filesystem\Factory as FilesystemFactory;
@@ -568,16 +569,16 @@ class Civ13
      */
     public function removeRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
-        if (! $roles) return \React\Promise\resolve($member);
+        if (! $roles) return Promise\resolve($member);
         foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
         if (! $role_ids) {
             $this->logger->warning('No roles to remove for removeRoles');
-            return \React\Promise\resolve($member);
+            return Promise\resolve($member);
         }
         
         return $patch
-            ? ((($new_roles = $member->roles->filter(function (Role $role) use ($role_ids) { return ! in_array($role->id, $role_ids); })->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : \React\Promise\resolve($member))
-            : \React\Promise\all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
+            ? ((($new_roles = $member->roles->filter(function (Role $role) use ($role_ids) { return ! in_array($role->id, $role_ids); })->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : Promise\resolve($member))
+            : Promise\all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
                 ->then(function() use ($member) {
                     return $member->guild->members->get('id', $member->id);
                 });
@@ -592,16 +593,16 @@ class Civ13
      */
     public function addRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
-        if (! $roles) return \React\Promise\resolve($member);
+        if (! $roles) return Promise\resolve($member);
         foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
         if (! $role_ids) {
             $this->logger->warning('No roles to add for addRoles');
-            return \React\Promise\resolve($member);
+            return Promise\resolve($member);
         }
 
         return $patch
             ? $member->setRoles(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $role_ids))
-            : \React\Promise\all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
+            : Promise\all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
                 ->then(function() use ($member) {
                     return $member->guild->members->get('id', $member->id);
                 });
@@ -616,11 +617,11 @@ class Civ13
      */
     public function setRoles(Member $member, Collection|array|Role|string|int $add_roles = [], Collection|array|Role|string|int $remove_roles = []): PromiseInterface
     {
-        if (! $add_roles && ! $remove_roles) return \React\Promise\resolve($member);
-        if (! ($add_roles = $this->__rolesToIdArray($add_roles)) && ! ($remove_roles = $this->__rolesToIdArray($remove_roles))) return \React\Promise\resolve($member);
+        if (! $add_roles && ! $remove_roles) return Promise\resolve($member);
+        if (! ($add_roles = $this->__rolesToIdArray($add_roles)) && ! ($remove_roles = $this->__rolesToIdArray($remove_roles))) return Promise\resolve($member);
         foreach ($add_roles as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
         foreach ($remove_roles as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
-        if (! $updated_roles = array_diff(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $add_roles), $remove_roles)) return \React\Promise\resolve($member);
+        if (! $updated_roles = array_diff(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $add_roles), $remove_roles)) return Promise\resolve($member);
         return $member->setRoles($updated_roles);
     }
     /**
