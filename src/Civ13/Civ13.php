@@ -280,7 +280,7 @@ class Civ13
             });
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
-            if (! empty($this->functions['init'])) foreach ($this->functions['init'] as $func) $func($this);
+            foreach ($this->functions['init'] as $func) $func($this);
         });
     }
     /**
