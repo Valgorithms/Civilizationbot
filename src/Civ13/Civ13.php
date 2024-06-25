@@ -461,9 +461,9 @@ class Civ13
      */
     public function then(PromiseInterface $promise, ?callable $onFulfilled = null, ?callable $onRejected = null): PromiseInterface
     {
-        if (! $onRejected) $onRejectedDefault = function ($reason) use ($promise, $onFulfilled): void
+        if (! $onRejected) $onRejectedDefault = function (\Throwable $reason) use ($promise, $onFulfilled): void
         { // TODO: Add a check for Discord disconnects and refire the promise
-            $this->logger->error("Promise rejected with reason: `$reason'`");
+            $this->logger->error("Promise rejected with reason: `$reason`");
             if (str_starts_with($reason, 'Promise rejected with reason: `RuntimeException: Connection to tls://discord.com:443 timed out after 60 seconds (ETIMEDOUT)')) { // Promise attempted to resolve while Discord was disconnected
                 ob_start();
                 var_dump($promise);
@@ -569,11 +569,7 @@ class Civ13
     public function removeRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
         if (! $roles) return \React\Promise\resolve($member);
-        if (! $role_ids = $this->__rolesToIdArray($roles)) {
-            $this->logger->warning('Roles not found for removeRoles: ' . json_encode($roles));
-            return \React\Promise\resolve($member);
-        }
-        foreach ($role_ids as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
+        foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
         if (! $role_ids) {
             $this->logger->warning('No roles to remove for removeRoles');
             return \React\Promise\resolve($member);
@@ -597,11 +593,7 @@ class Civ13
     public function addRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
         if (! $roles) return \React\Promise\resolve($member);
-        if (! $role_ids = $this->__rolesToIdArray($roles)) {
-            $this->logger->warning('Roles not found for addRoles: ' . json_encode($roles));
-            return \React\Promise\resolve($member);
-        }
-        foreach ($role_ids as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
+        foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
         if (! $role_ids) {
             $this->logger->warning('No roles to add for addRoles');
             return \React\Promise\resolve($member);
