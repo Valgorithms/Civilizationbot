@@ -307,26 +307,29 @@ class MessageServiceManager
             }
             if (! $rounds) return $this->civ13->reply($message, 'No data found for that round.');
             $ckey = isset($input[1]) ? $this->civ13->sanitizeInput($input[1]) : null;
+            $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador']);
+            $staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador', 'Admin']);
             $builder = MessageBuilder::new()->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
             foreach ($rounds as $server => $r) {
                 $embed = new Embed($this->discord);
                 if ($log = $r['log'] ?? null) $log = $gameserver->basedir . Civ13::log_basedir . $log;
                 $embed->setTitle($server);
                 //$embed->addFieldValues('Game ID', $game_id);
-                $embed->addFieldValues('Log', $r['log'] ?? 'Unknown');
                 $embed->addFieldValues('Start', $r['start'] ?? 'Unknown');
                 $embed->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
-                $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No');
                 $embed->addFieldValues('Players (' . count($r['players']) . ')', implode(', ', array_keys($r['players'])));
                 if ($ckey && $player = $r['players'][$ckey]) {
                     $player['ip'] ??= [];
                     $player['cid'] ??= [];
-                    $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador']);
                     $ip = $high_staff ? implode(', ', $player['ip']) : 'Redacted';
                     $cid = $high_staff ? implode(', ', $player['cid']): 'Redacted';
                     $login = $player['login'] ?? 'Unknown';
                     $logout = $player['logout'] ?? 'Unknown';
                     $embed->addFieldValues('Player Data', "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
+                }
+                if ($staff) {
+                    $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No');
+                    $embed->addFieldValues('Log', $r['log'] ?? 'Unknown');
                 }
                 $builder->addEmbed($embed);
             }
