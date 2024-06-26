@@ -788,11 +788,10 @@ class GameServer
             $this->logger->warning("No current round found for logPlayerLogout.");
             return;
         }
-        $this->rounds[$this->current_round]['players'][$ckey] ??= [ // Initialize the player if they don't exist
+        $this->rounds[$this->current_round]['players'][$ckey] ??= [
             'ip' => [],
             'cid' => [],
-            'login' => $time,
-            'logout' => $time
+            'login' => $time
         ];
         $this->rounds[$this->current_round]['players'][$ckey]['logout'] = $time;
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
