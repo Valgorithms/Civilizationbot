@@ -317,13 +317,15 @@ class MessageServiceManager
                 //$embed->addFieldValues('Game ID', $game_id);
                 $embed->addFieldValues('Start', $r['start'] ?? 'Unknown');
                 $embed->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
-                $embed->addFieldValues('Players (' . count($r['players']) . ')', implode(', ', array_keys($r['players'])));
+                if (($players = implode(', ', array_keys($r['players']))) && strlen($players <= 1024)) $embed->addFieldValues('Players (' . count($r['players']) . ')', $players);
+                else $embed->addFieldValues('Players (' . count($r['players']) . ')', 'Either none or too many to list!');
                 $discord_ids = [];
                 foreach (array_keys($r['players']) as $ckey) {
                     $ckey = $this->civ13->sanitizeInput($ckey);
                     if ($item = $this->civ13->verifier->get('ss13', $ckey)) $discord_ids[] = "<@{$item['discord']}>";                    
                 }
-                if ($discord_ids) $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', implode(', ', $discord_ids));
+                if ($discord_ids && strlen($verified_players = implode(', ', $discord_ids)) <= 1024) $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', $verified_players);
+                else $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', 'Either none or too many to list!');
                 if ($ckey && $player = $r['players'][$ckey]) {
                     $player['ip'] ??= [];
                     $player['cid'] ??= [];
