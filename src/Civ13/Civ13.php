@@ -944,7 +944,7 @@ class Civ13
      * @param array $allowed_ranks The allowed ranks. Defaults to ['Owner', 'Ambassador'].
      * @return bool Returns true if the member has any of the allowed ranks, false otherwise.
      */
-    function hasRank(Member $member, array $allowed_ranks = ['Owner', 'Ambassador']): bool
+    function hasRank(Member $member, array $allowed_ranks = ['Owner', 'Chief Technical Officer', 'Ambassador']): bool
     {
         $resolved_ranks = array_map(function ($rank) {
             return isset($this->role_ids[$rank]) ? $this->role_ids[$rank] : null;

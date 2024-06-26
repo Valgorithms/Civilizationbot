@@ -148,7 +148,7 @@ class MessageServiceManager
          */
         $this->offsetSet('ckeyinfo', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Ambassador']);
+            $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador']);
             if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
             if (is_numeric($id)) {
                 if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
@@ -321,7 +321,7 @@ class MessageServiceManager
                 if ($ckey && $player = $r['players'][$ckey]) {
                     $player['ip'] ??= [];
                     $player['cid'] ??= [];
-                    $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Ambassador']);
+                    $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador']);
                     $ip = $high_staff ? implode(', ', $player['ip']) : 'Redacted';
                     $cid = $high_staff ? implode(', ', $player['cid']): 'Redacted';
                     $login = $player['login'] ?? 'Unknown';
