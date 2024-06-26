@@ -648,7 +648,7 @@ class Civ13
      * @param string $content The content of the message.
      * @param string $file_name The name of the file to attach to the message. Default is 'message.txt'.
      * @param bool $prevent_mentions Whether to prevent mentions in the message. Default is false.
-     * @return PromiseInterface|null A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
+     * @return PromiseInterface<Message>|null A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
      */
     public function sendMessage(Channel|Thread|string $channel, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): ?PromiseInterface
     {
@@ -672,7 +672,7 @@ class Civ13
      * @param string $content The content of the reply message.
      * @param string $file_name The name of the file to attach to the reply message (default: 'message.txt').
      * @param bool $prevent_mentions Whether to prevent mentions in the reply message (default: false).
-     * @return PromiseInterface|null A promise that resolves to the sent reply message, or null if the reply message could not be sent.
+     * @return PromiseInterface<Message>|null A promise that resolves to the sent reply message, or null if the reply message could not be sent.
      */
     public function reply(Message $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): ?PromiseInterface
     {
@@ -694,7 +694,7 @@ class Civ13
      * @param string $content The content of the message.
      * @param Embed $embed The embed object to send.
      * @param bool $prevent_mentions (Optional) Whether to prevent mentions in the message. Default is false.
-     * @return PromiseInterface|null A promise that resolves to the sent message, or null if the channel is not found.
+     * @return PromiseInterface<Message>|null A promise that resolves to the sent message, or null if the channel is not found.
      */
     public function sendEmbed(Channel|Thread|string $channel, Embed $embed, string $content, bool $prevent_mentions = false): ?PromiseInterface
     {
@@ -724,7 +724,7 @@ class Civ13
      * @param string $recipient The recipient of the message (optional).
      * @param string $file_name The name of the file to attach to the message (default: 'message.txt').
      * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
-     * @return PromiseInterface|null A promise that resolves to the sent message, or null if the message couldn't be sent.
+     * @return PromiseInterface<Message>|null A promise that resolves to the sent message, or null if the message couldn't be sent.
      */
     public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface|false
     {
@@ -766,7 +766,7 @@ class Civ13
      * @param string|int|null $server_key Server for the message (optional).
      * @return bool Returns true if the message was sent successfully, false otherwise.
      */
-    public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): PromiseInterface|bool
+    public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
         if (is_null($server_key)) {
             $sent = false;
@@ -803,7 +803,7 @@ class Civ13
      * @param string|int|null $server_key Server for sending the direct message (optional).
      * @return bool Returns true if the direct message was sent successfully, false otherwise.
      */
-    public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): PromiseInterface|bool
+    public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): bool
     {
         if (is_null($server_key)) {
             $sent = false;
@@ -887,7 +887,7 @@ class Civ13
      * Relays game chat messages to a Discord channel.
      *
      * @param Channel|Thread|string $channel The Discord channel to send the message to.
-     * * @param array $array The array containing the chat message information.
+     * @param array $array The array containing the chat message information.
      * @param bool $moderate (optional) Whether to apply moderation to the message. Default is true.
      * @param bool $ooc (optional) Whether the message is out-of-character (OOC) or in-character (IC). Default is true.
      * @return bool Returns true if the message was successfully relayed, false otherwise.
@@ -948,7 +948,7 @@ class Civ13
     /**
      * Returns the highest role from a collection of roles.
      *
-     * @param Collection $roles The collection of roles.
+     * @param Collection<Role> $roles The collection of roles.
      * @return Role|null The highest role, or null if the collection is empty.
      */
     function getHighestRole(Collection $roles): ?Role
