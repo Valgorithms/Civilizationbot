@@ -569,13 +569,8 @@ class Civ13
      */
     public function removeRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
-        if (! $roles) return Promise\resolve($member);
         foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
-        if (! $role_ids) {
-            $this->logger->warning('No roles to remove for removeRoles');
-            return Promise\resolve($member);
-        }
-        
+        if (! $role_ids) return Promise\resolve($member);
         return $patch
             ? ((($new_roles = $member->roles->filter(function (Role $role) use ($role_ids) { return ! in_array($role->id, $role_ids); })->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : Promise\resolve($member))
             : Promise\all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
@@ -593,13 +588,8 @@ class Civ13
      */
     public function addRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
-        if (! $roles) return Promise\resolve($member);
         foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
-        if (! $role_ids) {
-            $this->logger->warning('No roles to add for addRoles');
-            return Promise\resolve($member);
-        }
-
+        if (! $role_ids) return Promise\resolve($member);
         return $patch
             ? $member->setRoles(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $role_ids))
             : Promise\all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
@@ -617,7 +607,6 @@ class Civ13
      */
     public function setRoles(Member $member, Collection|array|Role|string|int $add_roles = [], Collection|array|Role|string|int $remove_roles = []): PromiseInterface
     {
-        if (! $add_roles && ! $remove_roles) return Promise\resolve($member);
         if (! ($add_roles = $this->__rolesToIdArray($add_roles)) && ! ($remove_roles = $this->__rolesToIdArray($remove_roles))) return Promise\resolve($member);
         foreach ($add_roles as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
         foreach ($remove_roles as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
@@ -627,10 +616,10 @@ class Civ13
     /**
      * Convert roles to an array of role IDs.
      *
-     * @param mixed $roles The roles to convert.
+     * @param Collection<Role>|array<Role|string|int>|Role|string|int $roles The roles to convert.
      * @return array<string>|array<null> The array of role IDs, or an empty array if the conversion fails.
      */
-    private function __rolesToIdArray($roles): array
+    private function __rolesToIdArray(Collection|array|Role|string|int $roles): array
     {
         $role_ids = [];
         switch (true) {
