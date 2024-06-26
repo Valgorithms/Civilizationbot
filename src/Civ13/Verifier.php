@@ -630,18 +630,21 @@ class Verifier
      */
     public function getVerifiedItem(Member|User|array|string $input): ?array
     {
-        if (is_string($input)) {
-            if (! $input = $this->civ13->sanitizeInput($input)) return null;
-            if (is_numeric($input) && $item = $this->verified->get('discord', $input)) return $item;
-            if ($item = $this->verified->get('ss13', $input)) return $item;
+        switch (true) {
+            case is_string($input):
+                if (! $input = $this->civ13->sanitizeInput($input)) return null;
+                if (is_numeric($input) && $item = $this->verified->get('discord', $input)) return $item;
+                if ($item = $this->verified->get('ss13', $input)) return $item;
+                break;
+            case ($input instanceof Member || $input instanceof User):
+                if ($item = $this->verified->get('discord', $input->id)) return $item;
+                break;
+            case is_array($input):
+                if (! isset($input['discord']) && ! isset($input['ss13'])) return null;
+                if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->verified->get('discord', $this->civ13->sanitizeInput($input['discord']))) return $item;
+                if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->civ13->sanitizeInput($input['ss13']))) return $item;
+                break;
         }
-        if (($input instanceof Member || $input instanceof User) && ($item = $this->verified->get('discord', $input->id))) return $item;
-        if (is_array($input)) {
-            if (! isset($input['discord']) && ! isset($input['ss13'])) return null;
-            if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->verified->get('discord', $this->civ13->sanitizeInput($input['discord']))) return $item;
-            if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->verified->get('ss13', $this->civ13->sanitizeInput($input['ss13']))) return $item;
-        }
-
         return null;
     }
     /**
@@ -669,20 +672,55 @@ class Verifier
 
         // Get Discord ID
         $id = null;
-        if ($input instanceof Member || $input instanceof User) $id = $input->id;
-        elseif (is_string($input)) {
-            if (is_numeric($input = $this->civ13->sanitizeInput($input))) $id = $input;
-            elseif ($item = $this->verified->get('ss13', $input)) $id = $item['discord'];
-        } elseif (is_array($input)) {
-            if (isset($input['discord'])) {
-                if (is_numeric($discordId = $this->civ13->sanitizeInput($input['discord']))) $id = $discordId;
-            } elseif (isset($input['ss13'])) {
-                if ($item = $this->verified->get('ss13', $this->civ13->sanitizeInput($input['ss13']))) $id = $item['discord'];
-            }
+        switch (true) {
+            case ($input instanceof Member || $input instanceof User):
+                $id = $input->id;
+                break;
+            case is_string($input):
+                if (is_numeric($input = $this->civ13->sanitizeInput($input))) {
+                    $id = $input;
+                } elseif ($item = $this->verified->get('ss13', $input)) {
+                    $id = $item['discord'];
+                }
+                break;
+            case is_array($input):
+                if (isset($input['discord']) && is_numeric($discord_id = $this->civ13->sanitizeInput($input['discord']))) $id = $discord_id;
+                elseif (isset($input['ss13']) && ($item = $this->verified->get('ss13', $this->civ13->sanitizeInput($input['ss13'])))) $id = $item['discord'];
+                break;
         }
         if (! $id || ! $this->isVerified($id)) return null;
         return $guild->members->get('id', $id);
     }
+    public function getVerifiedUser(Member|User|array|string|null $input): ?User
+    {
+        if (! $input) return null;
+        if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
+
+        // Get Discord ID
+        $id = null;
+        switch (true) {
+            case ($input instanceof Member || $input instanceof User):
+                $id = $input->id;
+                break;
+            case is_string($input):
+                if (is_numeric($input = $this->civ13->sanitizeInput($input))) {
+                    $id = $input;
+                } elseif ($item = $this->verified->get('ss13', $input)) {
+                    $id = $item['discord'];
+                }
+                break;
+            case is_array($input):
+                if (isset($input['discord']) && is_numeric($discord_id = $this->civ13->sanitizeInput($input['discord']))) $id = $discord_id;
+                elseif (isset($input['ss13']) && ($item = $this->verified->get('ss13', $this->civ13->sanitizeInput($input['ss13'])))) $id = $item['discord'];
+                break;
+        }
+        if (! $id || ! $this->isVerified($id)) return null;
+        if ($user = $this->discord->users->get('id', $id)); return $user;
+        $this->logger->warning("Unable to find user with ID `$id`.");
+        $promise = $this->discord->users->fetch('id', $id);
+        return null;
+    }
+
 
     public function verifierStatusTimer(): TimerInterface
     {

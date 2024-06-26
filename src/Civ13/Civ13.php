@@ -33,11 +33,13 @@ use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
-use React\Promise;
 use React\Http\Browser;
 use React\Filesystem\AdapterInterface;
 use React\Filesystem\Factory as FilesystemFactory;
 use ReflectionFunction;
+
+use function React\Promise\resolve;
+use function React\Promise\all;
 
 class Civ13
 {
@@ -175,6 +177,8 @@ class Civ13
     public array $tests = []; // Staff application test templates
     public bool $panic_bunker = false; // If true, the bot will server ban anyone who is not verified when they join the server
     public array $panic_bans = []; // List of ckeys that have been banned by the panic bunker in the current runtime
+
+    public Message $restart_message;
 
     /**
      * Creates a Civ13 client instance.
@@ -544,10 +548,10 @@ class Civ13
     public function removeRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
         foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
-        if (! $role_ids) return Promise\resolve($member);
+        if (! $role_ids) return resolve($member);
         return $patch
-            ? ((($new_roles = $member->roles->filter(function (Role $role) use ($role_ids) { return ! in_array($role->id, $role_ids); })->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : Promise\resolve($member))
-            : Promise\all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
+            ? ((($new_roles = $member->roles->filter(function (Role $role) use ($role_ids) { return ! in_array($role->id, $role_ids); })->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : resolve($member))
+            : all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
                 ->then(function() use ($member) {
                     return $member->guild->members->get('id', $member->id);
                 });
@@ -563,10 +567,10 @@ class Civ13
     public function addRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
         foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
-        if (! $role_ids) return Promise\resolve($member);
+        if (! $role_ids) return resolve($member);
         return $patch
             ? $member->setRoles(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $role_ids))
-            : Promise\all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
+            : all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
                 ->then(function() use ($member) {
                     return $member->guild->members->get('id', $member->id);
                 });
@@ -581,10 +585,10 @@ class Civ13
      */
     public function setRoles(Member $member, Collection|array|Role|string|int $add_roles = [], Collection|array|Role|string|int $remove_roles = []): PromiseInterface
     {
-        if (! ($add_roles = $this->__rolesToIdArray($add_roles)) && ! ($remove_roles = $this->__rolesToIdArray($remove_roles))) return Promise\resolve($member);
+        if (! ($add_roles = $this->__rolesToIdArray($add_roles)) && ! ($remove_roles = $this->__rolesToIdArray($remove_roles))) return resolve($member);
         foreach ($add_roles as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
         foreach ($remove_roles as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
-        if (! $updated_roles = array_diff(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $add_roles), $remove_roles)) return Promise\resolve($member);
+        if (! $updated_roles = array_diff(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $add_roles), $remove_roles)) return resolve($member);
         return $member->setRoles($updated_roles);
     }
     /**
@@ -710,12 +714,12 @@ class Civ13
 
         // Sender is the ckey or Discord username
         $ckey = null;
-        $member = null;
+        $user = null;
         $verified = false;
         if (isset($this->verifier) && $item = $this->verifier->getVerifiedItem($sender)) {
             $ckey = $item['ss13'];
             $verified = true;
-            $member = $this->verifier->getVerifiedMember($ckey);
+            $user = $this->verifier->getVerifiedUser($ckey);
         }
         $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
 
@@ -726,7 +730,7 @@ class Civ13
         if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
         $embed = new Embed($this->discord);
         if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
-        if ($member) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
+        if ($user) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         $embed->setDescription($content);
         $builder->addEmbed($embed);
         return $channel->sendMessage($builder)->then($then, null);
@@ -931,6 +935,16 @@ class Civ13
             if ($prev === null) return $role;
             return ($this->comparePositionTo($role, $prev) > 0 ? $role : $prev);
         });
+    }
+    function hasRank(Member $member, array $allowed_ranks = ['Owner', 'Ambassador']): bool
+    {
+        $resolved_ranks = array_map(function ($rank) {
+            return isset($this->role_ids[$rank]) ? $this->role_ids[$rank] : null;
+        }, $allowed_ranks);
+
+        return count(array_filter($resolved_ranks, function ($rank) use ($member) {
+            return $member->roles->has($rank);
+        })) > 0;
     }
     /**
      * Retrieves the Role object based on the given input.
@@ -1367,7 +1381,7 @@ class Civ13
         if (! $ckeyinfo) $ckeyinfo = $this->ckeyinfo($ckey);
         $embed = new Embed($this->discord);
         $embed->setTitle($ckey);
-        if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
+        if (isset($this->verifier) && $user = $this->verifier->getVerifiedUser($ckey)) $embed->setAuthor("{$user->user->username} ({$user->id})", $user->avatar);
         if (! empty($ckeyinfo['ckeys'])) {
             foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->ages[$ckey])) $ckey = "$ckey ({$this->ages[$ckey]})";
             $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));

@@ -713,7 +713,7 @@ class Slash
             $players = [];
             $embed = new Embed($this->discord);
             $embed->setTitle($item['ss13']);
-            if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
+            if ($user = $this->civ13->verifier->getVerifiedUser($item)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
             foreach ($this->civ13->enabled_gameservers as &$server) {
                 $collection = $server->getRoundsCollection();
                 foreach ($collection as $round) {

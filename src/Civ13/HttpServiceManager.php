@@ -369,17 +369,15 @@ class HttpServiceManager
             if (! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
             $promise = $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/3)');
             execInBackground('git pull');
-            $this->civ13->loop->addTimer(5, function () use ($promise) {
-                $promise = $promise->then(function (Message $message) {
+            $this->civ13->loop->addTimer(5, function () use ($promise, $channel) {
+                $promise = $promise->then(function (Message $message) use ($channel) {
                     $promise = $message->edit(MessageBuilder::new()->setContent('Forcefully moving the HEAD back to origin/main... (2/3)'));
+                    $promise->then(fn(Message $message) => $this->civ13->restart_message = $message);
                     execInBackground('git reset --hard origin/main');
                     if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
-                    $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($promise) {
-                        $promise->then(function (Message $message) {
-                            $message->edit(MessageBuilder::new()->setContent('Restarting... (3/3)'))->then(function (Message $message) {
-                                $this->civ13->restart();
-                            });
-                        });
+                    $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($channel) {
+                        if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Restarting... (3/3)'))->then(fn () => $this->civ13->restart());
+                        else $this->civ13->sendMessage($channel, 'Restarting... (3/3)')->then(fn () => $this->civ13->restart());
                     });
                 });
             });
@@ -411,11 +409,12 @@ class HttpServiceManager
         }), true);
         $this->httpHandler->offsetSet('/restart', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
-            $message = 'Restarting...';
-            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
-            if (! isset($this->civ13->timers['restart'])) $this->civ13->timers['restart'] = $this->discord->getLoop()->addTimer(5, function () {
-                $this->civ13->restart();
-            });
+            $message = 'Manually Restarting...';
+            if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) {
+                $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting... (3/3)'))->then(fn () => $this->civ13->restart());
+                return HttpResponse::plaintext($message);
+            }
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message)->then(fn () => $this->civ13->restart());
             return HttpResponse::plaintext($message);
         }), true);
 

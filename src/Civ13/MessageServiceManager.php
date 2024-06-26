@@ -17,6 +17,8 @@ use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\Promise\PromiseInterface;
 
+use function React\Promise\resolve;
+
 class MessageServiceManager
 {
     public Civ13 $civ13;
@@ -146,17 +148,7 @@ class MessageServiceManager
          */
         $this->offsetSet('ckeyinfo', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            $high_rank_check = function (Message $message, array $allowed_ranks = []): bool
-            {
-                $resolved_ranks = array_map(function ($rank) {
-                    return isset($this->civ13->role_ids[$rank]) ? $this->civ13->role_ids[$rank] : null;
-                }, $allowed_ranks);
-
-                return count(array_filter($resolved_ranks, function ($rank) use ($message) {
-                    return $message->member->roles->has($rank);
-                })) > 0;
-            };
-            $high_staff = $high_rank_check($message, ['Owner', 'Ambassador']);
+            $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Ambassador']);
             if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
             if (is_numeric($id)) {
                 if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
@@ -168,8 +160,8 @@ class MessageServiceManager
             $embed->setTitle($ckey);
             if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) {
                 $ckey = $item['ss13'];
-                if ($member = $this->civ13->verifier->getVerifiedMember($item))
-                    $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
+                if ($user = $this->civ13->verifier->getVerifiedUser($item))
+                    $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
             }
             $ckeys = [$ckey];
             $ips = [];
@@ -285,6 +277,68 @@ class MessageServiceManager
             $builder->addEmbed($embed);
             return $message->reply($builder);
         }), ['Owner', 'Ambassador', 'Admin']);
+        $this->offsetSet('getrounds', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
+        {
+            if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: getrounds `ckey`');
+            if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No verified data found for ID `$id`.");
+            $rounds = [];
+            foreach ($this->civ13->enabled_gameservers as $gameserver) if ($r = $gameserver->getRounds([$item['ss13']])) $rounds[$gameserver->name] = $r;
+            if (! $rounds) return $this->civ13->reply($message, 'No data found for that ckey.');
+            $builder = MessageBuilder::new();
+            foreach ($rounds as $server_name => $rounds) {
+                $embed = new Embed($this->discord);
+                $embed->setTitle($server_name);
+                if ($user = $this->civ13->verifier->getVerifiedUser($item))
+                    $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
+                $embed->addFieldValues('Rounds', count($rounds));
+                $builder->addEmbed($embed);
+            }
+            return $message->reply($builder);
+        }), ['Owner', 'Ambassador', 'Admin']);
+        $this->offsetSet('getround', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
+        {
+            if (! $input = trim(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: getround `game_id`');
+            $input = explode(' ', $input);
+            $game_id = $input[0];
+            $rounds = [];
+            foreach ($this->civ13->enabled_gameservers as $gameserver) if ($round = $gameserver->getRound($game_id)) {
+                if ($log = $round['log'] ?? null) $round['log'] = $gameserver->basedir . Civ13::log_basedir . $log;
+                $rounds[$gameserver->name] = $round;
+            }
+            if (! $rounds) return $this->civ13->reply($message, 'No data found for that round.');
+            $ckey = isset($input[1]) ? $this->civ13->sanitizeInput($input[1]) : null;
+            $builder = MessageBuilder::new()->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
+            foreach ($rounds as $server => $r) {
+                $embed = new Embed($this->discord);
+                if ($log = $r['log'] ?? null) $log = $gameserver->basedir . Civ13::log_basedir . $log;
+                $embed->setTitle("$server => $game_id");
+                $embed->addFieldValues('Game ID', $game_id);
+                $embed->addFieldValues('Log', $r['log'] ?? 'Unknown');
+                $embed->addFieldValues('Start', $r['start'] ?? 'Unknown');
+                $embed->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
+                $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No');
+                $embed->addFieldValues('Players (' . count($r['players']) . ')', implode(', ', array_keys($r['players'])));
+                if ($ckey && $player = $r['players'][$ckey]) {
+                    $player['ip'] ??= [];
+                    $player['cid'] ??= [];
+                    $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Ambassador']);
+                    $ip = $high_staff ? implode(', ', $player['ip']) : 'Redacted';
+                    $cid = $high_staff ? implode(', ', $player['cid']): 'Redacted';
+                    $login = $player['login'] ?? 'Unknown';
+                    $logout = $player['logout'] ?? 'Unknown';
+                    $embed->addFieldValues('Player Data', "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
+                }
+                $builder->addEmbed($embed);
+            }
+            return $message->reply($builder);
+        }), ['Owner', 'Ambassador', 'Admin']);
+        $this->offsetSet('listrounds', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
+        {
+            $rounds = [];
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) if ($r = $gameserver->getRounds()) $rounds[$gameserver->name] = $r;
+            if (! $rounds) return $this->civ13->reply($message, 'No data found.');
+            return $this->civ13->reply($message, "Rounds: " . json_encode($rounds));
+        }), ['Chief Technical Officer']);
         
         if (isset($this->civ13->role_ids['Verified']))
         $approveme = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -804,7 +858,15 @@ class MessageServiceManager
             $promise->then(function () { $this->civ13->stop(); });
             //return $promise; // Pending PromiseInterfaces v3
             return null;
-        }), ['Owner', 'Ambassador']);
+        }), ['Owner', 'Chief Technical Officer']);
+        $this->offsetSet('restart', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered)//: PromiseInterface
+        {
+            return $message->react("👍")->then(function () {
+                if (isset($this->civ13->restart_message)) return $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting...'))->then(fn() => $this->civ13->restart());
+                elseif (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return $this->civ13->sendMessage($channel, 'Manually Restarting...')->then(fn () => $this->civ13->restart());
+                return $this->civ13->restart();
+            });
+        }), ['Owner', 'Chief Technical Officer']);
 
         if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path']))
         $this->offsetSet('ts', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -942,7 +1004,7 @@ class MessageServiceManager
         {
             $newMembers = $message->guild->members->toArray(); // Check all members without filtering by date (it's too slow and not necessary because we're only displaying the 10 most recent members anyway)
             // usort MIGHT be too slow if there are thousands of members. It currently resolves in less than a second with 669 members, but this is a future-proofed method.
-            $promise = \React\Promise\resolve($newMembers)
+            $promise = resolve($newMembers)
                 ->then(function ($members) {
                     return \React\Promise\all($members);
                 })

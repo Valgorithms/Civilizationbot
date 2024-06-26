@@ -134,10 +134,11 @@ class GameServer
         $this->runtime = $options['runtime'];
         $this->attack = $options['attack'];
         $this->rounds = $this->civ13->VarLoad("{$this->key}_rounds.json") ?? [];
-        if ($this->current_round = $this->civ13->VarLoad("{$this->key}_current_round.json") ?? '') {
-            $this->rounds[$this->current_round]['interrupted'] = true;
+        $current_round = $this->civ13->VarLoad("{$this->key}_current_round.json") ?? [];
+        if ($current_round = array_shift($current_round)) {
+            $this->rounds[$this->current_round = $current_round]['interrupted'] = true;
             $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
-        }
+        } else $this->logger->warning("No current round found for {$this->key}.");
         $this->afterConstruct();
     }
     private function afterConstruct(): void
@@ -733,6 +734,7 @@ class GameServer
             $this->rounds[$this->current_round]['end'] ??= $time; // Set end time of previous round
         $this->rounds[$this->current_round = $game_id] = [
             'game_id' => $game_id,
+            'log' => '/' . date("Y/m-F/d-l") . ".log",
             'start' => $time,
             'end' => null,
             'players' => [],
@@ -794,6 +796,26 @@ class GameServer
         ];
         $this->rounds[$this->current_round]['players'][$ckey]['logout'] = $time;
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+    }
+    /**
+     * Retrieves the rounds based on the provided criteria.
+     *
+     * @param string|null $ckey The first player's key (optional).
+     * @param string|null $ckey2 The second player's key (optional).
+     * @param array|null $rounds The array of rounds (optional).
+     * @return array The filtered array of rounds.
+     */
+    public function getRounds(?array $ckeys = [], ?array $rounds = null): array
+    {
+        if (! $ckeys) return $rounds ?? $this->rounds;        
+        return array_filter($rounds ?? $this->rounds, function($round) use ($ckeys) {
+            foreach ($ckeys as $ckey) if (! isset($round['players'][$ckey])) return false;
+            return true;
+        });
+    }
+    public function getRound(string $game_id): array
+    {
+        return $this->rounds[$game_id] ?? [];
     }
 
     /**
