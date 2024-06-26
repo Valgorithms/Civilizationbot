@@ -125,9 +125,6 @@ class Civ13
     public array $seen_players = []; // Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
 
-    public array $current_rounds = [];
-    public array $rounds = [];
-
     /**
      * @var Gameserver[]
      */
@@ -379,29 +376,6 @@ class Civ13
     {
         if (! $tests = $this->VarLoad('tests.json')) $tests = [];
         $this->tests = $tests;
-        if (! $rounds = $this->VarLoad('rounds.json')) {
-            $rounds = [];
-            $this->VarSave('rounds.json', $rounds);
-        }
-        $this->rounds = $rounds;
-        if (! $current_rounds = $this->VarLoad('current_rounds.json')) {
-            $current_rounds = [];
-            $this->VarSave('current_rounds.json', $current_rounds);
-        }
-        $this->current_rounds = $current_rounds;
-        // If the bot was restarted during a round, mark it as interrupted and do not continue tracking the current round
-        if ($this->current_rounds) {
-            $updated = false;
-            foreach ($this->current_rounds as $server => $game_id) if (isset($this->rounds[$server]) && isset($this->rounds[$server][$game_id])) {
-                $this->rounds[$server][$game_id]['interrupted'] = true;
-                $this->current_rounds[$server] = '';
-                $updated = true;
-            }
-            if ($updated) {
-                $this->VarSave('current_rounds.json', $this->current_rounds);
-                $this->VarSave('rounds.json', $this->rounds);
-            }
-        }
         if (! $paroled = $this->VarLoad('paroled.json')) {
             $paroled = [];
             $this->VarSave('paroled.json', $paroled);
@@ -861,7 +835,7 @@ class Civ13
      * @return bool Returns true if the message was successfully relayed, false otherwise.
      */
     public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, string|int $gameserver_key, ?bool $ooc = true): bool
-    {
+    { // TODO: Move to Gameserver.php
         if ($this->relay_method !== 'webhook') return false;
         if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
             $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
@@ -893,7 +867,7 @@ class Civ13
      * @return bool Returns true if the message was successfully relayed, false otherwise.
      */
     private function __gameChatRelay(Channel|Thread|string $channel, array $array, string|int $gameserver_key, ?bool $ooc = true): bool
-    {
+    { // TODO: Move to Gameserver.php
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error("Channel not found for __gameChatRelay");
             return null;
@@ -1095,89 +1069,6 @@ class Civ13
         if (! in_array($subdir = trim($subdir), $scandir)) return [false, $scandir, $subdir];
         if (is_file("$basedir/$subdir")) return [true, "$basedir/$subdir"];
         return $this->FileNav("$basedir/$subdir", $subdirs);
-    }
-
-    /**
-     * Retrieves an array of collections containing information about rounds.
-     *
-     * @return array An array of collections, where each collection represents a server and its rounds.
-     */
-    public function getRoundsCollections(): array // [string $server, collection $rounds]
-    {
-        $collections_array = [];
-        foreach ($this->rounds as $server => $rounds) {
-            $r = [];
-            foreach ($rounds as $game_id => $round) {
-                $r[] = [
-                    'game_id' => $game_id,
-                    'start' => $round['start'] ?? null,
-                    'end' => $round['end'] ?? null,
-                    'players' => $round['players'] ?? [],
-                ];
-            }
-            $collections_array[] = [$server => new Collection($r, 'game_id')];
-        }
-        return $collections_array;
-    }
-    /**
-     * Logs a new round in the game.
-     *
-     * @param string $server The server name.
-     * @param string $game_id The game ID.
-     * @param string $time The current time.
-     * @return void
-     */
-    public function logNewRound(string $server, string $game_id, string $time): void
-    {
-        if (array_key_exists($server, $this->current_rounds) && array_key_exists($this->current_rounds[$server], $this->rounds[$server]) && $this->rounds[$server][$this->current_rounds[$server]] && $game_id !== $this->current_rounds[$server]) // If the round already exists and is not the current round
-            $this->rounds[$server][$this->current_rounds[$server]]['end'] = $time; // Set end time of previous round
-        $this->current_rounds[$server] = $game_id; // Update current round
-        $this->VarSave('current_rounds.json', $this->current_rounds); // Update log of currently running game_ids
-        $round =& $this->rounds[$server][$game_id];
-        $round = []; // Initialize round array
-        $round['start'] = $time; // Set start time
-        $round['end'] = null;
-        $round['players'] = [];
-        $round['interrupted'] = false;
-        $this->VarSave('rounds.json', $this->rounds); // Update log of rounds
-    }
-    /**
-     * Logs the login of a player.
-     *
-     * @param string $server The server name.
-     * @param string $ckey The player's ckey.
-     * @param string $time The login time.
-     * @param string $ip The player's IP address (optional).
-     * @param string $cid The player's CID (optional).
-     * @return void
-     */
-    public function logPlayerLogin(string $server, string $ckey, string $time, string $ip = '', string $cid = ''): void
-    {
-        if ($game_id = $this->current_rounds[$server] ?? null) {
-            $this->rounds[$server][$game_id]['players'][$ckey] = $this->rounds[$server][$game_id]['players'][$ckey] ?? [];
-            $this->rounds[$server][$game_id]['players'][$ckey]['login'] = $this->rounds[$server][$game_id]['players'][$ckey]['login'] ?? $time;
-            if ($ip && ! in_array($ip, $this->rounds[$server][$game_id]['players'][$ckey]['ip'] ?? [])) $this->rounds[$server][$game_id]['players'][$ckey]['ip'][] = $ip; 
-            if ($cid && ! in_array($cid, $this->rounds[$server][$game_id]['players'][$ckey]['cid'] ?? [])) $this->rounds[$server][$game_id]['players'][$ckey]['cid'][] = $cid;
-            $this->VarSave('rounds.json', $this->rounds);
-        }
-    }
-    /**
-     * Logs the logout time of a player.
-     *
-     * @param string $server The server name.
-     * @param string $ckey The player's ckey.
-     * @param string $time The logout time.
-     * @return void
-     */
-    public function logPlayerLogout(string $server, string $ckey, string $time): void
-    {
-        if (array_key_exists($server, $this->current_rounds)
-            && array_key_exists($ckey, $this->rounds[$server][$this->current_rounds[$server]]['players'])
-            && array_key_exists('login', $this->rounds[$server][$this->current_rounds[$server]]['players'][$ckey]))
-        {
-            $this->rounds[$server][$this->current_rounds[$server]]['players'][$ckey]['logout'] = $time;
-            $this->VarSave('rounds.json', $this->rounds);
-        }
     }
 
     /**

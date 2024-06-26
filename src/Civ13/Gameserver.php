@@ -11,6 +11,7 @@ namespace Civ13;
 
 use Discord\Discord;
 //use Discord\Builders\MessageBuilder;
+use Discord\Helpers\Collection;
 //use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
@@ -132,7 +133,11 @@ class GameServer
         $this->garbage = $options['garbage'];
         $this->runtime = $options['runtime'];
         $this->attack = $options['attack'];
-        if ($current_round = $this->civ13->VarLoad('current_round.json')) $this->current_round = array_shift($current_round);
+        $this->rounds = $this->civ13->VarLoad("{$this->key}_rounds.json") ?? [];
+        if ($this->current_round = $this->civ13->VarLoad("{$this->key}_current_round.json") ?? '') {
+            $this->rounds[$this->current_round]['interrupted'] = true;
+            $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+        }
         $this->afterConstruct();
     }
     private function afterConstruct(): void
@@ -285,8 +290,11 @@ class GameServer
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
                 if (isset($p[1]) && is_numeric($p[1])) {
-                    $this->players[] = $this->civ13->sanitizeInput(urldecode($server[$key]));
-                    if (! in_array($this->civ13->sanitizeInput(urldecode($server[$key])), $this->rounds[$this->current_round]['players'])) $this->rounds[$this->current_round]['players'][] = $this->civ13->sanitizeInput(urldecode($server[$key]));
+                    $this->players[] = $ckey = $this->civ13->sanitizeInput(urldecode($server[$key]));
+                    if (! array_key_exists($ckey, $this->rounds[$this->current_round]['players'])) {
+                        // TODO
+                        $this->rounds[$this->current_round]['players'][$ckey] = [];
+                    }
                 }
             }
         }
@@ -702,6 +710,17 @@ class GameServer
     }
 
     /**
+     * Retrieves an array of collections containing information about rounds.
+     *
+     * @return array An array of collections, where each collection represents a server and its rounds.
+     */
+    public function getRoundsCollection(): Collection // [string $server, collection $rounds]
+    {
+        $array = [];
+        foreach ($this->rounds as $game_id => $round) $array[] = array_merge($round, ['game_id' => $game_id]);
+        return new Collection($array, 'game_id');
+    }
+    /**
      * Logs a new round in the game.
      *
      * @param string $game_id The game ID.
@@ -710,16 +729,71 @@ class GameServer
      */
     public function logNewRound(string $game_id, string $time): void
     {
-        if (array_key_exists($this->current_round, $this->rounds) && $this->rounds[$this->current_round] && $game_id !== $this->current_round) // If the round already exists and is not the current round
-            $this->rounds[$this->current_round]['end'] = $time; // Set end time of previous round
-        $round = &$this->rounds[$game_id];
-        $round['start'] ??= $time;
-        $round['end'] ??= null;
-        $round['players'] ??= [];
-        $round['interrupted'] ??= false;
-        $this->rounds[$game_id] = $round;
+        if (isset($this->rounds[$this->current_round])) // If the round already exists and is not the current round
+            $this->rounds[$this->current_round]['end'] ??= $time; // Set end time of previous round
+        $this->rounds[$this->current_round = $game_id] = [
+            'game_id' => $game_id,
+            'start' => $time,
+            'end' => null,
+            'players' => [],
+            'interrupted' => false
+        ];
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
-        $this->civ13->VarSave('current_round.json', [$this->current_round = $game_id]);
+        $this->civ13->VarSave("{$this->key}_current_round.json", [$this->current_round]);
+    }
+    /**
+     * Logs the login of a player.
+     *
+     * @param string $ckey The player's ckey.
+     * @param string $time The login time.
+     * @param string $ip The player's IP address (optional).
+     * @param string $cid The player's CID (optional).
+     * @return void
+     */
+    public function logPlayerLogin(string $ckey, string $time, string $ip = '', string $cid = ''): void
+    {
+        if (! $this->enabled) return;
+        if ($ckey === '(NULL)') return;
+        if (! in_array($ckey, $this->players)) $this->players[] = $ckey;
+        if (! $this->current_round) {
+            $this->logger->warning("No current round found for logPlayerLogin.");
+            return;
+        }
+        $this->rounds[$this->current_round]['players'][$ckey] ??= [ // Initialize the player if they don't exist
+            'ip' => [],
+            'cid' => [],
+            'login' => $time
+        ];
+        if ($ip && ! in_array($ip, $this->rounds[$this->current_round]['players'][$ckey]['ip'] ?? [])) $this->rounds[$this->current_round]['players'][$ckey]['ip'][] = $ip; 
+        if ($cid && ! in_array($cid, $this->rounds[$this->current_round]['players'][$ckey]['cid'] ?? [])) $this->rounds[$this->current_round]['players'][$ckey]['cid'][] = $cid;
+        $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+    }
+    /**
+     * Logs the logout of a player.
+     *
+     * @param string $ckey The player's ckey.
+     * @param string $time The login time.
+     * @param string $ip The player's IP address (optional).
+     * @param string $cid The player's CID (optional).
+     * @return void
+     */
+    public function logPlayerLogout(string $ckey, string $time): void
+    {
+        if (! $this->enabled) return;
+        if ($ckey === '(NULL)') return;
+        if (in_array($ckey, $this->players)) unset($this->players[array_search($ckey, $this->players)]);
+        if (! $this->current_round) {
+            $this->logger->warning("No current round found for logPlayerLogout.");
+            return;
+        }
+        $this->rounds[$this->current_round]['players'][$ckey] ??= [ // Initialize the player if they don't exist
+            'ip' => [],
+            'cid' => [],
+            'login' => $time,
+            'logout' => $time
+        ];
+        $this->rounds[$this->current_round]['players'][$ckey]['logout'] = $time;
+        $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
     }
 
     /**

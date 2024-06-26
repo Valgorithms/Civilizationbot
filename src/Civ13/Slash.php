@@ -702,10 +702,11 @@ class Slash
         });
 
         $this->listenCommand('statistics', function (Interaction $interaction): PromiseInterface
-        {
+        { // TODO: Review this and make it actually useful
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Currently disabled'), true);
+            
             $game_ids = [];
-            $servers = [];
             $ips = [];
             $regions = [];
             // $cids = [];
@@ -713,8 +714,8 @@ class Slash
             $embed = new Embed($this->discord);
             $embed->setTitle($item['ss13']);
             if ($member = $this->civ13->verifier->getVerifiedMember($item)) $embed->setAuthor("{$member->user->username} ({$member->id})", $member->avatar);
-            foreach ($this->civ13->getRoundsCollections() as $server => $arr) foreach ($arr as $collection) {
-                if (! in_array($server, $servers)) $servers[] = $server;
+            foreach ($this->civ13->enabled_gameservers as &$server) {
+                $collection = $server->getRoundsCollection();
                 foreach ($collection as $round) {
                     $game_id = $round['game_id'] ?? null;
                     $p = $round['players'] ?? [];
