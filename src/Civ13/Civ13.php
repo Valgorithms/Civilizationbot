@@ -331,9 +331,9 @@ class Civ13
                     if ($returnType->getName() === 'void')
                         { $this->onRejectedDefault = $options['onRejectedDefault']; $onRejectedDefaultValid = true; }
         }
-        if (! $onRejectedDefaultValid) $this->onRejectedDefault = function ($reason): void
+        if (! $onRejectedDefaultValid) $this->onRejectedDefault = function (\Throwable $reason): void
         {
-            $this->logger->error("Promise rejected with reason: `$reason'`");
+            $this->logger->error("Promise rejected with reason: `$reason`");
         };
 
         if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! is_dir($value) || ! @mkdir($value, 0664, true)) {
@@ -443,7 +443,7 @@ class Civ13
         if (! $onRejected) $onRejectedDefault = function (\Throwable $reason) use ($promise, $onFulfilled): void
         { // TODO: Add a check for Discord disconnects and refire the promise
             $this->logger->error("Promise rejected with reason: `$reason`");
-            if (str_starts_with($reason, 'Promise rejected with reason: `RuntimeException: Connection to tls://discord.com:443 timed out after 60 seconds (ETIMEDOUT)')) { // Promise attempted to resolve while Discord was disconnected
+            if (str_starts_with($reason, 'Promise rejected with reason: `RuntimeException: Connection to tls://discord.com:443 timed out after 60 seconds (ETIMEDOUT)`')) { // Promise attempted to resolve while Discord was disconnected
                 ob_start();
                 var_dump($promise);
                 $debug_string = ob_get_clean();
