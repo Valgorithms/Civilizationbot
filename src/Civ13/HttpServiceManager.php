@@ -1045,7 +1045,7 @@ class HttpServiceManager
                 if (isset($this->civ13->role_ids['round_start'])) $message .= "<@&{$this->civ13->role_ids['round_start']}>, ";
                 $message .= 'New round ';
                 if (isset($data, $data['round']) && $game_id = $data['round']) {
-                    $this->civ13->logNewRound($gameserver->key, $game_id, $time);
+                    $gameserver->logNewRound($game_id, $time);
                     $message .= "`$game_id` ";
                 }
                 $message .= 'has started!';

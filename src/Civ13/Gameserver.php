@@ -95,6 +95,9 @@ class GameServer
     public array $serverinfo = [];
     public array $players = [];
     public array $seen_players = [];
+    public string $current_round = '';
+    /** @var array<array> */
+    public array $rounds = [];
     private int $playercount_ticker = 0;
 
     public function __construct(Civ13 &$civ13, array &$options)
@@ -129,6 +132,7 @@ class GameServer
         $this->garbage = $options['garbage'];
         $this->runtime = $options['runtime'];
         $this->attack = $options['attack'];
+        if ($current_round = $this->civ13->VarLoad('current_round.json')) $this->current_round = array_shift($current_round);
         $this->afterConstruct();
     }
     private function afterConstruct(): void
@@ -280,7 +284,10 @@ class GameServer
             //$stationname = $server['stationname'] ?? ''; // TODO: Compare this to the server's name as it appears on the Byond hub
             foreach (array_keys($server) as $key) {
                 $p = explode('player', $key); 
-                if (isset($p[1]) && is_numeric($p[1])) $this->players[] = $this->civ13->sanitizeInput(urldecode($server[$key]));
+                if (isset($p[1]) && is_numeric($p[1])) {
+                    $this->players[] = $this->civ13->sanitizeInput(urldecode($server[$key]));
+                    if (! in_array($this->civ13->sanitizeInput(urldecode($server[$key])), $this->rounds[$this->current_round]['players'])) $this->rounds[$this->current_round]['players'][] = $this->civ13->sanitizeInput(urldecode($server[$key]));
+                }
             }
         }
         return $this->players;
@@ -323,9 +330,9 @@ class GameServer
      *
      * @param string $message The message to be sent.
      * @param string $sender The sender of the message.
-     * @return PromiseInterface|bool Returns a PromiseInterface if the message is successfully sent, or false if sending the message fails.
+     * @return bool Returns a PromiseInterface if the message is successfully sent, or false if sending the message fails.
      */
-    public function OOCMessage(string $message, string $sender): PromiseInterface|bool
+    public function OOCMessage(string $message, string $sender): bool
     {
         if (! $this->enabled) return false;
         if (! touch($path = $this->basedir . Civ13::discord2ooc) || ! $file = @fopen($path, 'a')) {
@@ -692,6 +699,27 @@ class GameServer
     private function sqlUnban($array, ?string $admin = null): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
+    }
+
+    /**
+     * Logs a new round in the game.
+     *
+     * @param string $game_id The game ID.
+     * @param string $time The current time.
+     * @return void
+     */
+    public function logNewRound(string $game_id, string $time): void
+    {
+        if (array_key_exists($this->current_round, $this->rounds) && $this->rounds[$this->current_round] && $game_id !== $this->current_round) // If the round already exists and is not the current round
+            $this->rounds[$this->current_round]['end'] = $time; // Set end time of previous round
+        $round = &$this->rounds[$game_id];
+        $round['start'] ??= $time;
+        $round['end'] ??= null;
+        $round['players'] ??= [];
+        $round['interrupted'] ??= false;
+        $this->rounds[$game_id] = $round;
+        $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+        $this->civ13->VarSave('current_round.json', [$this->current_round = $game_id]);
     }
 
     /**
