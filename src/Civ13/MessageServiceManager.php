@@ -318,6 +318,12 @@ class MessageServiceManager
                 $embed->addFieldValues('Start', $r['start'] ?? 'Unknown');
                 $embed->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
                 $embed->addFieldValues('Players (' . count($r['players']) . ')', implode(', ', array_keys($r['players'])));
+                $discord_ids = [];
+                foreach (array_keys($r['players']) as $ckey) {
+                    $ckey = $this->civ13->sanitizeInput($ckey);
+                    if ($item = $this->civ13->verifier->get('ss13', $ckey)) $discord_ids[] = "<@{$item['discord']}>";                    
+                }
+                if ($discord_ids) $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', implode(', ', $discord_ids));
                 if ($ckey && $player = $r['players'][$ckey]) {
                     $player['ip'] ??= [];
                     $player['cid'] ??= [];
@@ -333,6 +339,7 @@ class MessageServiceManager
                 }
                 $builder->addEmbed($embed);
             }
+            $builder->setAllowedMentions(['parse' => []]);
             return $message->reply($builder);
         }), ['Owner', 'Ambassador', 'Admin']);
         $this->offsetSet('listrounds', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
