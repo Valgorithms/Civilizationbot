@@ -936,6 +936,14 @@ class Civ13
             return ($this->comparePositionTo($role, $prev) > 0 ? $role : $prev);
         });
     }
+    /**
+     * Checks if a member has a specific rank.
+     * The ranks are defined in the bot's config file.
+     *
+     * @param Member $member The member to check.
+     * @param array $allowed_ranks The allowed ranks. Defaults to ['Owner', 'Ambassador'].
+     * @return bool Returns true if the member has any of the allowed ranks, false otherwise.
+     */
     function hasRank(Member $member, array $allowed_ranks = ['Owner', 'Ambassador']): bool
     {
         $resolved_ranks = array_map(function ($rank) {
