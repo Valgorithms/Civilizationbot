@@ -311,8 +311,8 @@ class MessageServiceManager
             foreach ($rounds as $server => $r) {
                 $embed = new Embed($this->discord);
                 if ($log = $r['log'] ?? null) $log = $gameserver->basedir . Civ13::log_basedir . $log;
-                $embed->setTitle("$server => $game_id");
-                $embed->addFieldValues('Game ID', $game_id);
+                $embed->setTitle($server);
+                //$embed->addFieldValues('Game ID', $game_id);
                 $embed->addFieldValues('Log', $r['log'] ?? 'Unknown');
                 $embed->addFieldValues('Start', $r['start'] ?? 'Unknown');
                 $embed->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
