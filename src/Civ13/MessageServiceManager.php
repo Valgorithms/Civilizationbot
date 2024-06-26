@@ -302,7 +302,7 @@ class MessageServiceManager
             $game_id = $input[0];
             $rounds = [];
             foreach ($this->civ13->enabled_gameservers as $gameserver) if ($round = $gameserver->getRound($game_id)) {
-                if ($log = $round['log'] ?? null) $round['log'] = $gameserver->basedir . Civ13::log_basedir . $log;
+                $round['server_key'] = $gameserver->key;
                 $rounds[$gameserver->name] = $round;
             }
             if (! $rounds) return $this->civ13->reply($message, 'No data found for that round.');
@@ -312,7 +312,7 @@ class MessageServiceManager
             $builder = MessageBuilder::new()->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
             foreach ($rounds as $server => $r) {
                 $embed = new Embed($this->discord);
-                if ($log = $r['log'] ?? null) $log = $gameserver->basedir . Civ13::log_basedir . $log;
+                if ($log = $r['log'] ?? null) $log = str_replace('/', ';', "logs {$r['server_key']}$log");
                 $embed->setTitle($server);
                 //$embed->addFieldValues('Game ID', $game_id);
                 $embed->addFieldValues('Start', $r['start'] ?? 'Unknown');
@@ -325,11 +325,11 @@ class MessageServiceManager
                     $cid = $high_staff ? implode(', ', $player['cid']): 'Redacted';
                     $login = $player['login'] ?? 'Unknown';
                     $logout = $player['logout'] ?? 'Unknown';
-                    $embed->addFieldValues('Player Data', "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
+                    $embed->addFieldValues("Player Data ($ckey)", "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
                 }
                 if ($staff) {
                     $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No');
-                    $embed->addFieldValues('Log', $r['log'] ?? 'Unknown');
+                    $embed->addFieldValues('Log Command', $log ?? 'Unknown');
                 }
                 $builder->addEmbed($embed);
             }
