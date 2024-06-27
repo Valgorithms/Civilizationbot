@@ -758,7 +758,7 @@ class GameServer
         if ($ckey === '(NULL)') return;
         if (! in_array($ckey, $this->players)) $this->players[] = $ckey;
         if (! $this->current_round) {
-            $this->logger->warning("No current round found for logPlayerLogin.");
+            $this->logger->warning("No current round found for {$this->key} logPlayerLogin.");
             return;
         }
         $this->rounds[$this->current_round]['players'][$ckey] ??= [ // Initialize the player if they don't exist
@@ -785,7 +785,7 @@ class GameServer
         if ($ckey === '(NULL)') return;
         if (in_array($ckey, $this->players)) unset($this->players[array_search($ckey, $this->players)]);
         if (! $this->current_round) {
-            $this->logger->warning("No current round found for logPlayerLogout.");
+            $this->logger->warning("No current round found for {$this->key} logPlayerLogout");
             return;
         }
         $this->rounds[$this->current_round]['players'][$ckey] ??= [
