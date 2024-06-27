@@ -444,16 +444,13 @@ class GameServer
         fclose($file);
         if (! in_array($mapto, $maps)) return "`$mapto` was not found in the map definitions.";
 
-        $promise = $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->username);
+        $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->username);
         if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
             if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, {$this->name} $msg";
             $channel->sendMessage($msg);
         }
         $func = function () use ($mapto) { \execInBackground("python3 {$this->basedir}" . Civ13::mapswap . " $mapto" ); };
-        $this->loop->addTimer(10, function () use ($promise, $func) {
-            if ($promise instanceof PromiseInterface) $this->civ13->then($promise->then($func, $this->civ13->onRejectedDefault));
-            else $func();
-        });
+        $this->loop->addTimer(10, fn () => $func());
         return $msg;
     }
 
