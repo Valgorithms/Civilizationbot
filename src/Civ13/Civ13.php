@@ -1389,7 +1389,7 @@ class Civ13
         if (! $ckeyinfo) $ckeyinfo = $this->ckeyinfo($ckey);
         $embed = new Embed($this->discord);
         $embed->setTitle($ckey);
-        if (isset($this->verifier) && $user = $this->verifier->getVerifiedUser($ckey)) $embed->setAuthor("{$user->user->username} ({$user->id})", $user->avatar);
+        if (isset($this->verifier) && $user = $this->verifier->getVerifiedUser($ckey)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         if (! empty($ckeyinfo['ckeys'])) {
             foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->ages[$ckey])) $ckey = "$ckey ({$this->ages[$ckey]})";
             $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
