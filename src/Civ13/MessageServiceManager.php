@@ -272,6 +272,7 @@ class MessageServiceManager
             if ($banned) $embed->addfieldValues('Currently Banned', $banned, true);
             if ($altbanned) $embed->addfieldValues('Alt Banned', $altbanned, true);
             $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
+            $embed->setFooter($this->civ13->embed_footer);
             $builder = MessageBuilder::new();
             if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
             $builder->addEmbed($embed);
@@ -291,6 +292,7 @@ class MessageServiceManager
                 if ($user = $this->civ13->verifier->getVerifiedUser($item))
                     $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
                 $embed->addFieldValues('Rounds', count($rounds));
+                $embed->setFooter($this->civ13->embed_footer);
                 $builder->addEmbed($embed);
             }
             return $message->reply($builder);
@@ -339,6 +341,7 @@ class MessageServiceManager
                     $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No');
                     $embed->addFieldValues('Log Command', $log ?? 'Unknown');
                 }
+                $embed->setFooter($this->civ13->embed_footer);
                 $builder->addEmbed($embed);
             }
             $builder->setAllowedMentions(['parse' => []]);

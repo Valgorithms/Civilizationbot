@@ -990,6 +990,7 @@ class GameServer
             $embed->addFieldValues('Players', $players_list, true);
         }
         if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
+        $embed->setFooter($this->civ13->embed_footer);
         //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
         //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
         return $embed;

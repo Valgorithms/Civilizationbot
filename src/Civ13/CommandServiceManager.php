@@ -362,7 +362,7 @@ class CommandServiceManager
     
     public function getHelpMessageBuilder(?string $guild_id = null, ?string $command = null, ?MessageBuilder $messagebuilder = new MessageBuilder()): MessageBuilder
     {
-        if ($embed = $this->getHelpEmbed($guild_id, $command)) return $messagebuilder->addEmbed($embed);
+        if ($embed = $this->getHelpEmbed($guild_id, $command)) return $messagebuilder->addEmbed($embed->setFooter($this->civ13->embed_footer));
         return $messagebuilder->addFileFromContent('commands.txt', $this->getHelpString($guild_id, $command));
     }
     public function getHelpEmbed(?string $guild_id = null, ?string $command_name = null): Embed|false

@@ -640,7 +640,9 @@ class Civ13
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
         if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
         $embed = new Embed($this->discord);
-        $embed->setDescription($content);
+        $embed
+            ->setDescription($content)
+            ->setFooter($this->embed_footer);
         return $channel->sendMessage($builder->addEmbed($embed));
     }
     /**
@@ -659,8 +661,11 @@ class Civ13
         if (strlen($content)<=2000) return $message->reply($builder->setContent($content));
         if (strlen($content)<=4096) {
             $embed = new Embed($this->discord);
-            $embed->setDescription($content);
+            $embed
+                ->setDescription($content)
+                ->setFooter($this->embed_footer);
             $builder->addEmbed($embed);
+            
             return $message->reply($builder);
         }
         return $message->reply($builder->addFileFromContent($file_name, $content));
@@ -689,7 +694,7 @@ class Civ13
             return null;
         }
         $builder->setContent($content);
-        $builder->addEmbed($embed);
+        $builder->addEmbed($embed->setFooter($this->embed_footer));
         return $channel->sendMessage($builder);
     }
     /**
@@ -731,7 +736,9 @@ class Civ13
         $embed = new Embed($this->discord);
         if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
         if ($user) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
-        $embed->setDescription($content);
+        $embed
+            ->setDescription($content)
+            ->setFooter($this->embed_footer);
         $builder->addEmbed($embed);
         return $channel->sendMessage($builder)->then($then, null);
         
@@ -1409,6 +1416,7 @@ class Civ13
         $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
         $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');
         $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No');
+        $embed->setFooter($this->embed_footer);
         return $embed;
     }
     /*

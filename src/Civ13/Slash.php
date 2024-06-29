@@ -507,7 +507,7 @@ class Slash
 
         $this->listenCommand('stats', function (Interaction $interaction): PromiseInterface
         {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()));
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()->setFooter($this->civ13->embed_footer)));
         });
         
         $this->listenCommand('invite', function (Interaction $interaction): PromiseInterface
@@ -594,7 +594,9 @@ class Slash
                 if (strlen($response)<=2000) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($response), true);
                 if (strlen($response)<=4096) {
                     $embed = new Embed($this->discord);
-                    $embed->setDescription($response);
+                    $embed
+                        ->setDescription($response)
+                        ->setFooter($this->civ13->embed_footer);
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed));
                 }
                 return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($item['ss13'].'_bans.json', $response), true);
@@ -745,13 +747,13 @@ class Slash
             if (! empty($regions)) $embed->addFieldValues('Region Codes', implode(', ', $regions), true);
             // $embed->addFieldValues('Known IP addresses', count($ips));
             // $embed->addFieldValues('Known Computer IDs', count($cids));
-            $embed->addFieldValues('Games Played', count($game_ids), true);
-            $embed->addFieldValues('Unique Players Played With', count($players), true);
-
-            $embed->setFooter($this->civ13->embed_footer);
-            $embed->setColor(0xe1452d);
-            $embed->setTimestamp();
-            $embed->setURL('');
+            $embed
+                ->addFieldValues('Games Played', count($game_ids), true)
+                ->addFieldValues('Unique Players Played With', count($players), true)
+                ->setFooter($this->civ13->embed_footer)
+                ->setColor(0xe1452d)
+                ->setTimestamp()
+                ->setURL('');
 
             $messagebuilder = MessageBuilder::new();
             $messagebuilder->setContent("Statistics for `{$item['ss13']}` starting from <t:1688464620:D>");
