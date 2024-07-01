@@ -739,8 +739,8 @@ class HttpServiceManager
             $embed = new Embed($this->discord);
             $embed
                 ->setAuthor("{$user->username} ({$user->id})", $user->avatar)
-                ->setDescription($message)
-                ->setFooter($this->civ13->embed_footer);
+                ->setDescription($message);
+                //->setFooter($this->civ13->embed_footer) // This just makes it harder to read the messages here
             return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
         };
         

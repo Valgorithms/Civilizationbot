@@ -736,9 +736,8 @@ class Civ13
         $embed = new Embed($this->discord);
         if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
         if ($user) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
-        $embed
-            ->setDescription($content)
-            ->setFooter($this->embed_footer);
+        $embed->setDescription($content);
+        //$embed->setFooter($this->embed_footer);
         $builder->addEmbed($embed);
         return $channel->sendMessage($builder)->then($then, null);
         
