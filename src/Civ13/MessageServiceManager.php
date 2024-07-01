@@ -156,8 +156,7 @@ class MessageServiceManager
             } else $ckey = $id;
             if (! $collectionsArray = $this->civ13->getCkeyLogCollections($ckey)) return $this->civ13->reply($message, 'No data found for that ckey.');
 
-            $embed = new Embed($this->discord);
-            $embed->setTitle($ckey);
+            $embed = $this->civ13->createEmbed()->setTitle($ckey);
             if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) {
                 $ckey = $item['ss13'];
                 if ($user = $this->civ13->verifier->getVerifiedUser($item))
@@ -287,12 +286,10 @@ class MessageServiceManager
             if (! $rounds) return $this->civ13->reply($message, 'No data found for that ckey.');
             $builder = MessageBuilder::new();
             foreach ($rounds as $server_name => $rounds) {
-                $embed = new Embed($this->discord);
-                $embed->setTitle($server_name);
+                $embed = $this->civ13->createEmbed()->setTitle($server_name);
                 if ($user = $this->civ13->verifier->getVerifiedUser($item))
                     $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
                 $embed->addFieldValues('Rounds', count($rounds));
-                $embed->setFooter($this->civ13->embed_footer);
                 $builder->addEmbed($embed);
             }
             return $message->reply($builder);

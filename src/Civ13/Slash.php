@@ -592,13 +592,7 @@ class Slash
                     if (! $member->roles->has($this->civ13->role_ids['Banished']))
                         $member->addRole($this->civ13->role_ids['Banished']);
                 if (strlen($response)<=2000) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($response), true);
-                if (strlen($response)<=4096) {
-                    $embed = new Embed($this->discord);
-                    $embed
-                        ->setDescription($response)
-                        ->setFooter($this->civ13->embed_footer);
-                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($embed));
-                }
+                if (strlen($response)<=4096) return $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($this->civ13->createEmbed()->setDescription($response)));
                 return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($item['ss13'].'_bans.json', $response), true);
             });
         });
@@ -713,8 +707,7 @@ class Slash
             $regions = [];
             // $cids = [];
             $players = [];
-            $embed = new Embed($this->discord);
-            $embed->setTitle($item['ss13']);
+            $embed = $this->civ13->createEmbed()->setTitle($item['ss13']);
             if ($user = $this->civ13->verifier->getVerifiedUser($item)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
             foreach ($this->civ13->enabled_gameservers as &$server) {
                 $collection = $server->getRoundsCollection();

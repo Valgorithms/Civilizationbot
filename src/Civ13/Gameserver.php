@@ -944,11 +944,7 @@ class GameServer
             $this->logger->warning("Unable to open `{$this->basedir}" . Civ13::serverdata . "`");
             return null;
         }
-        $embed = new Embed($this->discord);
-        $embed->setFooter($this->civ13->embed_footer);
-        $embed->setColor(0xe1452d);
-        $embed->setTimestamp();
-        $embed->setURL('');
+        $embed = $this->civ13->createEmbed();
         if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) {
             $embed->addFieldValues($this->name, 'Offline');
             return $embed;
@@ -997,12 +993,11 @@ class GameServer
     }
     public function toEmbed(): Embed
     {
-        $embed = new Embed($this->discord);
-        $embed->title = $this->name;
-        $embed->addFieldValues("Server URL", "byond://{$this->ip}:{$this->port}", false);
-        $embed->addFieldValues('Host', $this->host, true);
-        $embed->addFieldValues('Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
-        $embed->color = hexdec('FF0000');
+        $embed = $this->civ13->createEmbed()
+            ->setTitle($this->name)
+            ->addFieldValues("Server URL", "byond://{$this->ip}:{$this->port}", false)
+            ->addFieldValues('Host', $this->host, true)
+            ->addFieldValues('Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
         return $embed;
     }
     // Magic Methods

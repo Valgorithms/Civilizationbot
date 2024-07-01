@@ -639,11 +639,7 @@ class Civ13
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
         if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
-        $embed = new Embed($this->discord);
-        $embed
-            ->setDescription($content)
-            ->setFooter($this->embed_footer);
-        return $channel->sendMessage($builder->addEmbed($embed));
+        return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)));
     }
     /**
      * Sends a message as a reply to another message.
@@ -660,12 +656,7 @@ class Civ13
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (strlen($content)<=2000) return $message->reply($builder->setContent($content));
         if (strlen($content)<=4096) {
-            $embed = new Embed($this->discord);
-            $embed
-                ->setDescription($content)
-                ->setFooter($this->embed_footer);
-            $builder->addEmbed($embed);
-            
+            $builder->addEmbed($this->createEmbed()->setDescription($content));
             return $message->reply($builder);
         }
         return $message->reply($builder->addFileFromContent($file_name, $content));
@@ -696,6 +687,16 @@ class Civ13
         $builder->setContent($content);
         $builder->addEmbed($embed->setFooter($this->embed_footer));
         return $channel->sendMessage($builder);
+    }
+    public function createEmbed(): Embed
+    {
+        $embed = new Embed($this->discord);
+        $embed
+            ->setColor(0xe1452d)
+            ->setFooter($this->embed_footer)
+            ->setTimestamp()
+            ->setURL('');
+        return $embed;
     }
     /**
      * Sends a player message to a channel.
@@ -894,10 +895,9 @@ class Civ13
             $this->sendMessage($channel, $array['message'], 'relay.txt', false, false);
             return true;
         }
-        $embed = new Embed($this->discord);
+        $embed = $this->createEmbed()->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
-        $embed->setDescription($array['message']);
         $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
         return true;
     }
@@ -1393,8 +1393,7 @@ class Civ13
     public function ckeyinfoEmbed(string $ckey, ?array $ckeyinfo = null): Embed
     {
         if (! $ckeyinfo) $ckeyinfo = $this->ckeyinfo($ckey);
-        $embed = new Embed($this->discord);
-        $embed->setTitle($ckey);
+        $embed = $this->createEmbed()->setTitle($ckey);
         if (isset($this->verifier) && $user = $this->verifier->getVerifiedUser($ckey)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         if (! empty($ckeyinfo['ckeys'])) {
             foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->ages[$ckey])) $ckey = "$ckey ({$this->ages[$ckey]})";
@@ -1415,7 +1414,6 @@ class Civ13
         $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
         $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');
         $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No');
-        $embed->setFooter($this->embed_footer);
         return $embed;
     }
     /*
@@ -1675,11 +1673,7 @@ class Civ13
      */
     public function generateServerstatusEmbed(): Embed
     {        
-        $embed = new Embed($this->discord);
-        $embed->setFooter($this->embed_footer);
-        $embed->setColor(0xe1452d);
-        $embed->setTimestamp();
-        $embed->setURL('');
+        $embed = $this->createEmbed();
         foreach ($this->enabled_gameservers as &$gameserver) {            
             if (! isset($gameserver->ip, $gameserver->port)) {
                 $this->logger->warning("Server {$gameserver->key} is missing required settings in config!");
