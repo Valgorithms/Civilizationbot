@@ -854,7 +854,7 @@ class HttpServiceManager
                 $message = "**__{$time} AHELP__ $ckey:** " . $message;
 
                 //$relay($message, $channel, $ckey); //Bypass moderator
-                $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
+                $gameserver->gameChatWebhookRelay($ckey, $message, $channel_id, true);
                 
                 // Check if there are any Discord admins on the server, notify staff in Discord if there are not
                 if (isset($this->civ13->verifier) && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
@@ -896,7 +896,7 @@ class HttpServiceManager
                 $message = "**__{$time}__** $message";
 
                 
-                if (str_contains($data['message'], $this->discord->username)) $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key); // Message was probably meant for the bot
+                if (str_contains($data['message'], $this->discord->username)) $gameserver->gameChatWebhookRelay($ckey, $message, $channel_id, true); // Message was probably meant for the bot
                 else $relay($message, $channel, $ckey); //Bypass moderator
 
                 // Check if there are any Discord admins on the server, notify staff in Discord if there are not
@@ -940,7 +940,7 @@ class HttpServiceManager
                 $message = "**__{$time}__** $message";
 
                 $relay($message, $channel, $ckey);
-                //$this->gameChatWebhookRelay($ckey, $message, $channel_id);
+                //$this->gameChatWebhookRelay($ckey, $message, $channel_id, true);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
@@ -959,7 +959,7 @@ class HttpServiceManager
                 $message = "**__{$time} LOBBY__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
-                $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
+                $gameserver->gameChatWebhookRelay($ckey, $message, $channel_id, true);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
@@ -978,7 +978,7 @@ class HttpServiceManager
                 //$message = "**__{$time} OOC__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
-                $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
+                $gameserver->gameChatWebhookRelay($ckey, $message, $channel_id, true);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
@@ -997,7 +997,7 @@ class HttpServiceManager
                 //$message = "**__{$time} OOC__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
-                $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key, false);
+                $gameserver->gameChatWebhookRelay($ckey, $message, $channel_id, false);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
@@ -1016,7 +1016,7 @@ class HttpServiceManager
                 $message = "**__{$time} EMOTE__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
-                $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
+                $gameserver->gameChatWebhookRelay($ckey, $message, $channel_id, false);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
@@ -1035,7 +1035,7 @@ class HttpServiceManager
                 $message = "**__{$time} GARBAGE__ $ckey:** $message";
 
                 //$relay($message, $channel, $ckey);
-                $this->civ13->gameChatWebhookRelay($ckey, $message, $channel_id, $gameserver->key);
+                $gameserver->gameChatWebhookRelay($ckey, $message, $channel_id);
                 return new HttpResponse(HttpResponse::STATUS_OK);
             }), true);
 
