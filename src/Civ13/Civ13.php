@@ -1050,10 +1050,7 @@ class Civ13
             return false;
         }
         
-        $filePath = $this->filecache_path . $filename;
-        $jsonData = json_encode($assoc_array);
-        
-        if (file_put_contents($filePath, $jsonData) === false) {
+        if (file_put_contents($filePath = $this->filecache_path . $filename, json_encode($assoc_array)) === false) {
             $this->logger->warning("Unable to save data to file: $filePath");
             return false;
         }
