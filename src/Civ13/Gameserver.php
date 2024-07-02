@@ -114,7 +114,7 @@ class GameServer
         $this->loop = $civ13->loop;
         $this->resolveOptions($options);
         $this->basedir = $options['basedir'];
-        $this->basedir = $options['gitdir'];
+        $this->gitdir = $options['gitdir'];
         $this->key = $options['key'];
         $this->name = $options['name'];
         $this->ip = $options['ip'];
