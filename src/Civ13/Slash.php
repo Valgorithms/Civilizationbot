@@ -769,8 +769,7 @@ class Slash
                 $this->civ13->removeRoles($target_member, $this->civ13->faction_ids, true); // Multiple roles COULD be removed so we should PATCH
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The faction roles have been removed from <@{$target_member->id}>"), true);
             }
-            if (! in_array($target_team, Civ13::faction_teams)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Invalid team: `$target_team`."), true);
-            if (! isset($this->civ13->role_ids[$target_team]) || ! $role_id = $this->civ13->role_ids[$target_team] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Team not configured: `$target_team`"), true);
+            if (! in_array($target_team, Civ13::faction_teams) || ! isset($this->civ13->role_ids[$target_team]) || ! $role_id = $this->civ13->role_ids[$target_team] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Invalid or unconfigured team: `$target_team`."), true);
             if ($target_member->roles->has($role_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in this faction!'), true);
             $this->civ13->removeRoles($target_member, $this->civ13->faction_ids, true)->then(function (Member $member) use ($role_id) {
                 $this->civ13->addRoles($member, $role_id); // Only one role is being added so we don't need to PATCH
