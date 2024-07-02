@@ -760,10 +760,9 @@ class Slash
         $this->listenCommand('assign_faction', function (Interaction $interaction): PromiseInterface
         {
             if (! $interaction->member->roles->has($this->civ13->role_ids['Faction Organizer'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You do not have permission to assign factions!'), true);
-            
-            if (! $target_id = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
+            if (! isset($interaction->data->options['team']) || ! $target_team = $interaction->data->options['team']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid team.'), true);
+            if (! isset($interaction->data->options['ckey']) || ! $target_id = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
             if (! $target_member = $this->civ13->verifier->getVerifiedMember($target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is either not currently verified with a byond username or do not exist in the cache yet'), true);
-            if (! isset($interaction->data->options['team']) || ! $target_team = $interaction->data->options['team']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid team.'), true);            
             if ($target_team === 'random') $target_team = array_rand(Civ13::faction_teams); 
             if ($target_team === 'none') {
                 $this->civ13->removeRoles($target_member, $this->civ13->faction_ids, true); // Multiple roles COULD be removed so we should PATCH
