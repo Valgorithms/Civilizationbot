@@ -139,7 +139,6 @@ class Civ13
      * @var Gameserver[]
      */
     public array $enabled_gameservers = [];
-    public bool $legacy_relay = false; // Method to use for relaying messages to Discord, either false for webhook or true for file
     public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list
     public array $ooc_badwords = [];
     public array $ooc_badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
@@ -231,7 +230,6 @@ class Civ13
         if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
         if (isset($options['webserver_url'])) $this->webserver_url = $options['webserver_url'];
         if (isset($options['legacy']) && is_bool($options['legacy'])) $this->legacy = $options['legacy'];
-        if (isset($options['legacy_relay']) && is_bool($options['legacy_relay'])) $this->legacy_relay = $options['legacy_relay'];
         if (isset($options['moderate']) && is_bool($options['moderate'])) $this->moderate = $options['moderate'];
         if (isset($options['ooc_badwords']) && is_array($options['ooc_badwords'])) $this->ooc_badwords = $options['ooc_badwords'];
         if (isset($options['ic_badwords']) && is_array($options['ic_badwords'])) $this->ic_badwords = $options['ic_badwords'];

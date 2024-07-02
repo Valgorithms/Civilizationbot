@@ -671,8 +671,14 @@ class MessageServiceManager
          */
         $this->offsetSet('togglerelaymethod', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            $this->civ13->legacy_relay = ! $this->civ13->legacy_relay;
-            return $this->civ13->reply($message, 'Relay method changed to `' . ($this->civ13->legacy_relay ? 'file' : 'webhook') . '`.');
+            $key = [];
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
+                $keys[] = $gameserver->key;
+                if ($key !== $gameserver->key) continue; // Check if server is valid
+                $gameserver->legacy_relay = ! $gameserver->legacy_relay;
+                return $this->civ13->reply($message, 'Relay method changed to `' . ($gameserver->legacy_relay ? 'file' : 'webhook') . '`.');
+            }
+            return $this->civ13->reply($message, 'Invalid format! Please use the format `togglerelaymethod ['.implode('`, `', $keys).']`.');
         }), ['Owner', 'Ambassador']);    
 
         $this->offsetSet('fullaltcheck', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
