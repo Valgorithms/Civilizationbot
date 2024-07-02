@@ -774,11 +774,14 @@ class MessageServiceManager
             return $this->civ13->reply($message, "**$admin** unbanned **$ckey**");
         }), ['Owner', 'Ambassador', 'Admin']);
 
-        if (isset($this->civ13->files['map_defines_path']) && file_exists($this->civ13->files['map_defines_path']))
         $this->offsetSet('maplist', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            if (! $file_contents = @file_get_contents($this->civ13->files['map_defines_path'])) return $message->react("🔥");
-            return $message->reply(MessageBuilder::new()->addFileFromContent('maps.txt', $file_contents));
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
+                if (! file_exists($gameserver->basedir . Civ13::maps)) continue;
+                if (! $file_contents = @file_get_contents($gameserver->gitdir . Civ13::maps)) return $message->react("🔥");
+                return $message->reply(MessageBuilder::new()->addFileFromContent('maps.txt', $file_contents));
+            }
+            return $message->react("🔥");
         }), ['Owner', 'Ambassador', 'Admin']);
 
         $this->offsetSet('adminlist', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -807,15 +810,14 @@ class MessageServiceManager
             return $message->reply($builder);
         }), ['Owner', 'Ambassador', 'Admin']);
 
-        if (isset($this->civ13->files['tdm_sportsteams']) && file_exists($this->civ13->files['tdm_sportsteams']))
-        $this->offsetSet('sportsteams', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
+        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::sportsteams))
+        $this->offsetSet('sportsteams', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
         {   
-            $builder = MessageBuilder::new()->setContent('Sports Teams');      
-            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                if (file_exists($path = $gameserver->basedir . Civ13::sportsteams)) $builder->addfile($path, $gameserver->key . '_sports_teams.txt');
-                else $this->logger->warning("`$path is not a valid file path!");
+            if (! file_exists($fp)) {
+                $this->logger->warning("`$fp` is not a valid file path!");
+                return $message->react("🔥");
             }
-            return $message->reply($builder);
+            return $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfile($fp, 'tdm_sports_teams.txt'));
         }), ['Owner', 'Ambassador', 'Admin']);
 
         $log_handler = function (Message $message, string $message_content): PromiseInterface
@@ -913,11 +915,11 @@ class MessageServiceManager
             }), ['Verified']);
         };
         
-        if (isset($this->civ13->files['tdm_awards_path']) && file_exists($this->civ13->files['tdm_awards_path'])) {
-            $medals = function (string $ckey): false|string
+        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards)) {
+            $medals = function (string $ckey) use ($fp): false|string
             {
                 $result = '';
-                if (! $search = @fopen($this->civ13->files['tdm_awards_path'], 'r')) return false;
+                if (! $search = @fopen($fp, 'r')) return false;
                 $found = false;
                 while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
                     $found = true;
@@ -949,11 +951,11 @@ class MessageServiceManager
                 return $this->civ13->reply($message, $msg, 'medals.txt');
             }), ['Verified']);
         }
-        if (isset($this->civ13->files['tdm_awards_br_path']) && file_exists($this->civ13->files['tdm_awards_br_path'])) {
-            $brmedals = function (string $ckey): string
+        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br)) {
+            $brmedals = function (string $ckey) use ($fp): string
             {
                 $result = '';
-                if (! $search = @fopen($this->civ13->files['tdm_awards_br_path'], 'r')) return "Error opening {$this->civ13->files['tdm_awards_br_path']}.";
+                if (! $search = @fopen($fp, 'r')) return "Error opening $fp.";
                 $found = false;
                 while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
                     $found = true;

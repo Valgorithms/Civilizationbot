@@ -43,6 +43,8 @@ use function React\Promise\all;
 
 class Civ13
 {
+    const maps = '/code/__defines/maps.dm'; // Found in the cloned git repo, (e.g. '/home/civ13/civ13-git/code/__defines/maps.dm')
+
     const log_basedir = '/data/logs';
     const playernotes_basedir = '/data/player_saves';
     
@@ -57,8 +59,8 @@ class Civ13
     const playerlogs = '/SQL/playerlogs.txt';
     const factionlist = '/SQL/factionlist.txt';
     const sportsteams = '/SQL/sports_teams.txt';
-    const awards_path = '/SQL/awards.txt';
-    const awards_br_path = '/SQL/awards_br.txt';
+    const awards = '/SQL/awards.txt';
+    const awards_br = '/SQL/awards_br.txt';
 
     const updateserverabspaths = '/scripts/updateserverabspaths.py';
     const serverdata = '/serverdata.txt';
@@ -1746,9 +1748,9 @@ class Civ13
     public function recalculateRanking(): bool
     {
         foreach ($this->enabled_gameservers as &$gameserver) {
-            if ( ! @touch($awards_path = $gameserver->basedir . self::awards_path)) return false;
+            if ( ! @touch($awards = $gameserver->basedir . self::awards)) return false;
             if ( ! @touch($ranking_path = $gameserver->basedir . self::ranking_path)) return false;
-            if (! $lines = file($awards_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
+            if (! $lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
             $result = array();
             foreach ($lines as $line) {
                 $medal_s = 0;

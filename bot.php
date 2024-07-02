@@ -136,10 +136,6 @@ $options = array(
         // 'typespess_path' => '/home/civ13/civ13-typespess',
     ),
     'files' => array( // Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
-        'map_defines_path' => '/home/civ13/civ13-git/code/__defines/maps.dm',
-        'tdm_sportsteams' => '/home/civ13/civ13-tdm/SQL/sports_teams.txt', // Football Teams (This is only used for the 'sportsteams' chat command)
-        'tdm_awards_path' => '/home/civ13/civ13-tdm/SQL/awards.txt', // Medals
-        'tdm_awards_br_path' => '/home/civ13/civ13-tdm/SQL/awards_br.txt', // Battle Royale Medals
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
     ),
     'channel_ids' => array(
@@ -222,6 +218,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'moderate' => true,
         'relay_method' => 'webhook',
         'basedir' => '/home/civ13/civ13-tdm', // Base directory of the server
+        'gitdir' => '/home/civ13/civ13-git', // Path to the git repository
         // Primary channels
         'discussion' => '799952134426591273', // #tdm
         'playercount' => '1048777462898761789', // tdm-#
@@ -252,6 +249,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'moderate' => true, // Whether chat moderation is enabled
         'relay_method' => 'webhook', // How messages are relayed to the server
         'basedir' => '/home/civ13/civ13-rp', // Base directory of the server
+        'gitdir' => '/home/civ13/civ13-git', // Path to the git repository
         // Primary channels
         'discussion' => '799952084505067581', // #nomads
         'playercount' => '1048777424894185484', // nomads-#
@@ -282,6 +280,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'moderate' => true,
         'relay_method' => 'webhook',
         'basedir' => '/home/valithor/VPS/civ13-rp', // Base directory of the server
+        'gitdir' => '/home/valithor/VPS/civ13-git', // Path to the git repository
         // Primary channels
         'discussion' => '799951945346711552', // #pers
         'playercount' => '1090788345082298369', // pers-#
