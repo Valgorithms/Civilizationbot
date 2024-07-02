@@ -139,7 +139,7 @@ class Civ13
      * @var Gameserver[]
      */
     public array $enabled_gameservers = [];
-    public string $relay_method = 'webhook'; // Method to use for relaying messages to Discord, either 'webhook' or 'file'
+    public bool $legacy_relay = false; // Method to use for relaying messages to Discord, either false for webhook or true for file
     public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list
     public array $ooc_badwords = [];
     public array $ooc_badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
@@ -231,9 +231,7 @@ class Civ13
         if (isset($options['serverinfo_url'])) $this->serverinfo_url = $options['serverinfo_url'];
         if (isset($options['webserver_url'])) $this->webserver_url = $options['webserver_url'];
         if (isset($options['legacy']) && is_bool($options['legacy'])) $this->legacy = $options['legacy'];
-        if (isset($options['relay_method']) && is_string($options['relay_method']))
-            if (in_array($relay_method = strtolower($options['relay_method']), ['file', 'webhook']))
-                $this->relay_method = $relay_method;
+        if (isset($options['legacy_relay']) && is_bool($options['legacy_relay'])) $this->legacy_relay = $options['legacy_relay'];
         if (isset($options['moderate']) && is_bool($options['moderate'])) $this->moderate = $options['moderate'];
         if (isset($options['ooc_badwords']) && is_array($options['ooc_badwords'])) $this->ooc_badwords = $options['ooc_badwords'];
         if (isset($options['ic_badwords']) && is_array($options['ic_badwords'])) $this->ic_badwords = $options['ic_badwords'];
@@ -818,9 +816,9 @@ class Civ13
      */
     public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $moderate = false, ?bool $ooc = true): bool
     {
-        if ($this->relay_method !== 'file') return false;
+        if (! $this->legacy_relay) return false;
         if (! @touch($file_path) || ! $file = @fopen($file_path, 'r+')) {
-            $this->relay_method = 'webhook'; // Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
+            $this->legacy_relay = false; // Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
             $this->logger->warning("gameChatFileRelay() was called with an invalid file path: `$file_path`, falling back to using webhooks for relaying instead.");
             return false;
         }
@@ -852,7 +850,7 @@ class Civ13
      */
     public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, string|int $gameserver_key, ?bool $ooc = true): bool
     { // TODO: Move to Gameserver.php
-        if ($this->relay_method !== 'webhook') return false;
+        if ($this->legacy_relay) return false;
         if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
             $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
             return false;

@@ -92,7 +92,7 @@ $options = array(
     'discord_invite' => 'https://civ13.com/discord',
     'discord_formatted' => 'civ13.com slash discord',
     'rules' => 'civ13.com slash rules',
-    'relay_method' => 'webhook',
+    'legacy_relay' => false,
     'legacy' => true, // Whether to use the filesystem or SQL database system
     'moderate' => true, // Whether to moderate in-game chat
     // The Verify URL is where verification requests are sent to and where the verification list is retrieved from
@@ -215,7 +215,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'log_attacks' => false,
         'legacy' => true,
         'moderate' => true,
-        'relay_method' => 'webhook',
+        'legacy_relay' => false,
         'basedir' => '/home/civ13/civ13-tdm', // Base directory of the server
         'gitdir' => '/home/civ13/civ13-git', // Path to the git repository
         // Primary channels
@@ -246,7 +246,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'log_attacks' => true,
         'legacy' => true, // Legacy mode will use the file system instead of an SQL database
         'moderate' => true, // Whether chat moderation is enabled
-        'relay_method' => 'webhook', // How messages are relayed to the server
+        'legacy_relay' => false, // How messages are relayed to the server
         'basedir' => '/home/civ13/civ13-rp', // Base directory of the server
         'gitdir' => '/home/civ13/civ13-git', // Path to the git repository
         // Primary channels
@@ -277,7 +277,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'log_attacks' => true,
         'legacy' => true,
         'moderate' => true,
-        'relay_method' => 'webhook',
+        'legacy_relay' => false,
         'basedir' => '/home/valithor/VPS/civ13-rp', // Base directory of the server
         'gitdir' => '/home/valithor/VPS/civ13-git', // Path to the git repository
         // Primary channels

@@ -671,11 +671,8 @@ class MessageServiceManager
          */
         $this->offsetSet('ckeyrelayinfo', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            $this->civ13->relay_method === 'file'
-                ? $method = 'webhook'
-                : $method = 'file';
-            $this->civ13->relay_method = $method;
-            return $this->civ13->reply($message, "Relay method changed to `$method`.");
+            $this->civ13->legacy_relay = ! $this->civ13->legacy_relay;
+            return $this->civ13->reply($message, 'Relay method changed to `' . ($this->civ13->legacy_relay ? 'file' : 'webhook') . '`.');
         }), ['Owner', 'Ambassador']);    
 
         $this->offsetSet('fullaltcheck', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface

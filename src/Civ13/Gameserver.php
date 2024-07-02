@@ -75,7 +75,7 @@ class GameServer
     public bool $moderate;       // Whether the server should moderate chat using the bot.
     public bool $panic_bunker;   // Whether the server should only allow verified users to join.
     public bool $log_attacks;    // Whether the server should log attacks to the attack channel.
-    public string $relay_method; // The method used to relay chat messages to the server (either 'file' or 'webhook').
+    public bool $legacy_relay; // The method used to relay chat messages to the server (either 'file' or 'webhook').
 
     // Discord Channel IDs
     public string $discussion;
@@ -127,7 +127,7 @@ class GameServer
         $this->moderate = $options['moderate'] ?? true;
         $this->panic_bunker = $options['panic_bunker']  ?? false;
         $this->log_attacks = $options['log_attacks'] ?? true;
-        $this->relay_method = $options['relay_method'] ?? 'webhook';
+        $this->legacy_relay = $options['legacy_relay'] ?? false;
         $this->discussion = $options['discussion'];
         $this->playercount = $options['playercount'];
         $this->ooc = $options['ooc'];
@@ -278,7 +278,7 @@ class GameServer
             $this->logger->debug("Starting file chat relay timer for {$this->key}");
             if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function ()
             {
-                if ($this->relay_method !== 'file') return null;
+                if (! $this->legacy_relay) return null;
                 if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
                 if ($channel = $guild->channels->get('id', $this->ooc)) $this->civ13->gameChatFileRelay($this->basedir . Civ13::ooc_path, $channel);  // #ooc-server
                 if ($channel = $guild->channels->get('id', $this->asay)) $this->civ13->gameChatFileRelay($this->basedir . Civ13::admin_path, $channel);  // #asay-server
@@ -367,7 +367,7 @@ class GameServer
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        //if (($this->relay_method === 'file') && $this->ooc && $channel = $this->discord->getChannel($this->ooc)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender)) return $promise;
+        //if (($this->legacy_relay) && $this->ooc && $channel = $this->discord->getChannel($this->ooc)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender)) return $promise;
         return true;
     }
     /**
@@ -386,7 +386,7 @@ class GameServer
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        //if (($this->relay_method === 'file') && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
+        //if (($this->legacy_relay) && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
         return true;
     }
     /**
@@ -406,7 +406,7 @@ class GameServer
         }
         fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
         fclose($file);
-        //if (($this->relay_method === 'file') && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
+        //if (($this->legacy_relay) && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->civ13->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
         return true;
     }
 
