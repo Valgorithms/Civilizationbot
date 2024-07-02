@@ -61,13 +61,14 @@ class GameServer
     private readonly string $ranking_path;
 
     // Required settings
-    public string $basedir; // The base directory on the local filesystem.
-    public string $gitdir; // The base directory of the git repository.
-    public string $key; // The shorthand alias for the server.
-    public string $name; // The name.
-    public string $ip; // The IP.
-    public string $port; // The port.
-    public string $host; // The host (e.g. Taislin).
+    public readonly string $basedir; // The base directory on the local filesystem.
+    public readonly string $gitdir; // The base directory of the git repository.
+    public readonly string $key; // The shorthand alias for the server.
+    public readonly string $name; // The name.
+    public readonly string $ip; // The IP.
+    public readonly string $port; // The port.
+    public readonly string $host; // The host (e.g. Taislin).
+
     public bool $supported; // Whether the server is supported by the remote webserver and will appear in data retrieved from it.
     public bool $enabled; // Whether the server is enabled and accessible by this bot.
     public bool $legacy; // Whether the server uses Civ13 legacy file cache or newer SQL methods.
