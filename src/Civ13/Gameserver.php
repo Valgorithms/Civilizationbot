@@ -33,17 +33,17 @@ class GameServer
      * @var array
      */
     public const ADMIN_PERMISSIONS = [
-        'Owner' => ['Host', '65535'],
-        'Chief Technical Officer' => ['Chief Technical Officer', '65535'],
-        'Host' => ['Host', '65535'], // Default Host permission, only used if a higher listed role is not found first
-        'Head Admin' => ['Head Admin', '16382'], // Deprecation TBD
-        //'Manager' => ['Manager', '16382'], // Deprecated
-        //'Supervisor' => ['Supervisor', '16382'], // Deprecated
-        'Ambassador' => ['Ambassador', '16382'], // Default High Staff permission, only used if a higher listed role is not found first
-        'Admin' => ['Admin', '16254'],
-        //'Moderator' => ['Moderator', '25088'], // Deprecated
-        //'Developer' => ['Developer', '7288'], // This Discord role doesn't exist
-        //'Mentor' => ['Mentor', '16384'], // Deprecated
+        'Owner'                     => ['Host',                     '65535'],
+        'Chief Technical Officer'   => ['Chief Technical Officer',  '65535'],
+        'Host'                      => ['Host',                     '65535'], // Default Host permission, only used if a higher listed role is not found first
+        'Head Admin'                => ['Head Admin',               '16382'], // Deprecation TBD
+        //'Manager'                 => ['Manager',                  '16382'], // Deprecated
+        //'Supervisor'              => ['Supervisor',               '16382'], // Deprecated
+        'Ambassador'                => ['Ambassador',               '16382'], // Default High Staff permission, only used if a higher listed role is not found first
+        'Admin'                     => ['Admin',                    '16254'],
+        //'Moderator'               => ['Moderator',                '25088'], // Deprecated
+        //'Developer'               => ['Developer',                 '7288'], // This Discord role doesn't exist
+        //'Mentor'                  => ['Mentor',                   '16384'], // Deprecated
     ];
     public Discord $discord;
     public Logger $logger;
