@@ -1864,7 +1864,7 @@ class Civ13
     /**
      * Updates the faction list based on the required roles.
      *
-     * @param array|null $required_roles The required roles for updating the faction list. Default is ['Red Faction', 'Blue Faction', 'Faction Organizer'].
+     * @param array|null $required_roles The required roles for updating the faction list.
      * @return bool Returns true if the faction list is successfully updated, false otherwise.
      */
     public function factionlistUpdate(?array $required_roles = null): bool
