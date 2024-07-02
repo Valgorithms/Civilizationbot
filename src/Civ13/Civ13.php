@@ -78,7 +78,7 @@ class Civ13
     const array faction_teams = ['Red Faction', 'Blue Faction'];
     /** @var array<string> */
     const array faction_admins = ['Faction Organizer'];
-    /** @var array<string> */
+    /** @var array<string|null> */
     public readonly array $faction_ids;
 
     public bool $ready = false;
