@@ -477,6 +477,7 @@ class Slash
         });
         $this->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface
         {
+            if (! isset($interaction->data->options['server'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No server specified"));
             if (! isset($this->civ13->enabled_gameservers[$interaction->data->options['server']->value])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No gamserver found for `{$interaction->data->options['server']->value}`"));
             $gameserver = &$this->civ13->enabled_gameservers[$interaction->data->options['server']->value];
             $gameserver->Restart();
@@ -587,20 +588,23 @@ class Slash
 
         $this->listenCommand('bancheck_ckey', function (Interaction $interaction): PromiseInterface
         {
-            if ($this->civ13->bancheck($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is currently banned on one of the Civ13.com servers."), true);
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->options['ckey']->value}` is not currently banned on one of the Civ13.com servers."), true);
+            if (! isset($interaction->data->options['ckey']) || ! $ckey = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No ckey specified"), true);
+            if ($this->civ13->bancheck($ckey)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` is currently banned on one of the Civ13.com servers."), true);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` is not currently banned on one of the Civ13.com servers."), true);
         });
 
         $this->listenCommand('bansearch_centcom', function (Interaction $interaction): PromiseInterface
         {
-            if (! $json = Byond::bansearch_centcom($ckey = $interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to locate bans for **$ckey** on centcom.melonmesa.com."), true);
+            if (! isset($interaction->data->options['ckey']) || ! $ckey = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No ckey specified"), true);
+            if (! $json = Byond::bansearch_centcom($ckey)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to locate bans for **$ckey** on centcom.melonmesa.com."), true);
             if ($json === '[]') return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No bans were found for **$ckey** on centcom.melonmesa.com."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($ckey.'_bans.json', $json), true);
         });
 
         $this->listenCommand('ban', function (Interaction $interaction): PromiseInterface
         {
-            $arr = ['ckey' => $interaction->data->options['ckey']->value, 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->discord_formatted}"];
+            if (! isset($interaction->data->options['ckey'], $interaction->data->options['duration'], $interaction->data->options['reason'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Missing required parameters"), true);
+            $arr = ['ckey' => $this->civ13->sanitizeInput($interaction->data->options['ckey']->value), 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->discord_formatted}"];
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($interaction->user)['ss13'])));
         });
         
