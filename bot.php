@@ -150,7 +150,7 @@ $options = array(
         'parole_logs' => '985606778916048966', // #parole-logs (for tracking)
         'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
     ),
-    'role_ids' => array(
+    'role_ids' => array( // The keys in this array must directly correspond to the expected role names and as defined in the code. Do not alter these keys unless you know what you are doing.
         // Discord ranks
         // Staff Roles
         'Owner' => '468980650914086913', // Discord Server Owner

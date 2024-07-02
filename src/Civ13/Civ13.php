@@ -78,6 +78,8 @@ class Civ13
     const array faction_teams = ['Red Faction', 'Blue Faction'];
     /** @var array<string> */
     const array faction_admins = ['Faction Organizer'];
+    /** @var array<string> */
+    public readonly array $faction_ids;
 
     public bool $ready = false;
     public array $options = [];
@@ -420,6 +422,7 @@ class Civ13
         $this->embed_footer = $this->github 
         ? $this->github . PHP_EOL
         : '';
+        $this->faction_ids = array_values(array_filter(array_map(fn($key) => $this->role_ids[$key] ?? null, Civ13::faction_teams)));
     }
     /**
      * Loads or initializes the variables used by the Civ13 class.
