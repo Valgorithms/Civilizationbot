@@ -369,13 +369,9 @@ class CommandServiceManager
     {
         if (! $description = $this->getGlobalHelpString($command_name) . $this->getGuildHelpString($guild_id, $command_name)) return false;
         if (strlen($description) > 4096) return false;
-        $embed = new Embed($this->discord);
-        $embed->setTitle('Commands List');
-        $embed->setDescription($description);
-        $embed->setColor(0xe1452d);
-        $embed->setFooter($this->civ13->embed_footer);
-        $embed->setTimestamp();
-        return $embed;
+        return $this->civ13->createEmbed()
+            ->setTitle('Commands List')
+            ->setDescription($description);
     }
     public function getHelpString(?string $guild_id = null, ?string $command = null): string
     {

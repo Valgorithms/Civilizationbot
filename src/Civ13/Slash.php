@@ -742,15 +742,12 @@ class Slash
             // $embed->addFieldValues('Known Computer IDs', count($cids));
             $embed
                 ->addFieldValues('Games Played', count($game_ids), true)
-                ->addFieldValues('Unique Players Played With', count($players), true)
-                ->setFooter($this->civ13->embed_footer)
-                ->setColor(0xe1452d)
-                ->setTimestamp()
-                ->setURL('');
+                ->addFieldValues('Unique Players Played With', count($players), true);
 
             $messagebuilder = MessageBuilder::new();
-            $messagebuilder->setContent("Statistics for `{$item['ss13']}` starting from <t:1688464620:D>");
-            $messagebuilder->addEmbed($embed);
+            $messagebuilder
+                ->setContent("Statistics for `{$item['ss13']}` starting from <t:1688464620:D>")
+                ->addEmbed($embed);
             return $interaction->respondWithMessage($messagebuilder, true);
         });
         

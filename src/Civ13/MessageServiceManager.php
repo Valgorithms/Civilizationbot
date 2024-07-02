@@ -286,10 +286,8 @@ class MessageServiceManager
             if (! $rounds) return $this->civ13->reply($message, 'No data found for that ckey.');
             $builder = MessageBuilder::new();
             foreach ($rounds as $server_name => $rounds) {
-                $embed = $this->civ13->createEmbed()->setTitle($server_name);
-                if ($user = $this->civ13->verifier->getVerifiedUser($item))
-                    $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
-                $embed->addFieldValues('Rounds', count($rounds));
+                $embed = $this->civ13->createEmbed()->setTitle($server_name)->addFieldValues('Rounds', count($rounds));
+                if ($user = $this->civ13->verifier->getVerifiedUser($item)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
                 $builder->addEmbed($embed);
             }
             return $message->reply($builder);
@@ -310,12 +308,12 @@ class MessageServiceManager
             $staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador', 'Admin']);
             $builder = MessageBuilder::new()->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
             foreach ($rounds as $server => $r) {
-                $embed = new Embed($this->discord);
                 if ($log = $r['log'] ?? null) $log = str_replace('/', ';', "logs {$r['server_key']}$log");
-                $embed->setTitle($server);
-                //$embed->addFieldValues('Game ID', $game_id);
-                $embed->addFieldValues('Start', $r['start'] ?? 'Unknown');
-                $embed->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
+                $embed = $this->civ13->createEmbed()
+                    ->setTitle($server)
+                    //->addFieldValues('Game ID', $game_id);
+                    ->addFieldValues('Start', $r['start'] ?? 'Unknown')
+                    ->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
                 if (($players = implode(', ', array_keys($r['players']))) && strlen($players <= 1024)) $embed->addFieldValues('Players (' . count($r['players']) . ')', $players);
                 else $embed->addFieldValues('Players (' . count($r['players']) . ')', 'Either none or too many to list!');
                 $discord_ids = [];
@@ -334,11 +332,7 @@ class MessageServiceManager
                     $logout = $player['logout'] ?? 'Unknown';
                     $embed->addFieldValues("Player Data ($ckey)", "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
                 }
-                if ($staff) {
-                    $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No');
-                    $embed->addFieldValues('Log Command', $log ?? 'Unknown');
-                }
-                $embed->setFooter($this->civ13->embed_footer);
+                if ($staff) $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No')->addFieldValues('Log Command', $log ?? 'Unknown');
                 $builder->addEmbed($embed);
             }
             $builder->setAllowedMentions(['parse' => []]);

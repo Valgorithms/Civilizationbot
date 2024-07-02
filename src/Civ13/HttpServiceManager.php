@@ -245,12 +245,11 @@ class HttpServiceManager
 
             $builder = MessageBuilder::new();
             if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]) && $user = $this->discord->users->get('id', $this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) { // This will not work if the user didn't login with oauth2 during this runtime session (i.e. the bot was restarted)
-                $embed = new Embed($this->discord);
-                $embed
+                $builder->addEmbed($this->civ13->createEmbed()
                     ->setAuthor("{$user->username} ({$user->id})", $user->avatar)
                     ->addField('Message', $content)
-                    ->setFooter($this->civ13->embed_footer);
-                $builder->addEmbed($embed);
+                    ->setFooter($this->civ13->embed_footer)
+                );
             } else {
                 $builder->setContent($content);
                 $this->logger->info("Either the IP was not associated with a user or no user could be found.");
@@ -736,11 +735,9 @@ class HttpServiceManager
                 $this->discord->users->fetch($item['discord']);
                 return $this->civ13->sendMessage($channel, $message);
             } 
-            $embed = new Embed($this->discord);
-            $embed
+            $embed = $this->civ13->createEmbed()
                 ->setAuthor("{$user->username} ({$user->id})", $user->avatar)
                 ->setDescription($message);
-                //->setFooter($this->civ13->embed_footer) // This just makes it harder to read the messages here
             return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
         };
         
