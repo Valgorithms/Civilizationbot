@@ -147,8 +147,7 @@ $options = array(
         'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
     ),
     'role_ids' => array( // The keys in this array must directly correspond to the expected role names and as defined in Gameserver.php. Do not alter these keys unless you know what you are doing.
-        // Discord ranks
-        // Staff Roles
+        /* Discord Staff Roles */
         'Owner' => '468980650914086913', // Discord Server Owner
         'Chief Technical Officer' => '791450326455681034', // Debug Host / Database admin
         'Host' => '677873806513274880', // Server Host
@@ -160,26 +159,26 @@ $options = array(
         //'Moderator' => '823302316743589938', // Deprecated
         //'Mentor' => '469297467918254085', // Deprecated
         'Parolemin' => '743971427929030748', // Parole Admin
-        // Player Roles
+        /* Discord Player Roles */
         'Verified' => '468982790772228127', // Verified
         'Banished' => '710328377210306641', // Banned in-game
         'Permabanished' => '1126137099209425017', // Permanently banned in-game
         'Paroled' => '745336314689355796', // On parole
         
-        // Factions
+        /* Factions */
         'Red Faction' => '1132678312301428886', // Redmenia
         'Blue Faction' => '1132678353070067802', // Blugoslavia
         'Faction Organizer' => '1089060051425165362', // Admin / Faction Organizer
-        // Notification pings
+        /* Notification pings */
         'mapswap' => '1200520534262284288', // Map Swap Ping
         'round_start' => '1110597830403424328', // Round Start Ping
         '2+' => '981963719804346418', // LowPopStart
         '15+' => '981963721817620511', // 15+ Popping
         '30+' => '981963696895062106', // 30+ Popping
-        // Server channels
-        'tdm' => '753768519203684445',
-        'nomads' => '753768513671397427',
-        'pers' => '753768492834095235',
+        /* Server pings (Deprecated) */
+        //'tdm' => '753768519203684445',
+        //'nomads' => '753768513671397427',
+        //'pers' => '753768492834095235',
     ),
 );
 $options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `{$options['command_symbol']} approveme` chat command or the `/approveme` slash command. Failure to verify in a timely manner will result in an automatic removal from the server.";
