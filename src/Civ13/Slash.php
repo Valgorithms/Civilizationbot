@@ -798,11 +798,12 @@ class Slash
         $this->listenCommand('approveme', function (Interaction $interaction): PromiseInterface
         {
             if ($interaction->member->roles->has($this->civ13->role_ids['Verified'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
-            if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$this->civ13->sanitizeInput($interaction->data->options['ckey']->value)])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('This account is currently under investigation.'));
+            if (! isset($interaction->data->options['ckey']) || ! $ckey = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey.'), true);
+            if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$ckey])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('This account is currently under investigation.'));
             if (! $item = $this->civ13->verifier->get('discord', $interaction->member->id))
-                return $interaction->acknowledge()->then(function () use ($interaction): PromiseInterface { // wait until the bot says "Is thinking..."
-                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Working...'))->then(function (Message $message) use ($interaction): PromiseInterface {
-                        return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($this->civ13->verifier->process($interaction->data->options['ckey']->value, $interaction->member->id, $interaction->member)), true)->then(function (Message $message) use ($interaction): PromiseInterface {
+                return $interaction->acknowledge()->then(function () use ($interaction, $ckey): PromiseInterface { // wait until the bot says "Is thinking..."
+                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Working...'))->then(function (Message $message) use ($interaction, $ckey): PromiseInterface {
+                        return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($this->civ13->verifier->process($ckey, $interaction->member->id, $interaction->member)), true)->then(function (Message $message) use ($interaction): PromiseInterface {
                             return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Verified request received. Please check my response for further instructions."));
                         });
                     });
