@@ -1072,21 +1072,17 @@ class Civ13
             return null;
         }
         
-        $filePath = $this->filecache_path . $filename;
-        
-        if (! file_exists($filePath)) {
+        if (! file_exists($filePath = $this->filecache_path . $filename)) {
             $this->logger->debug("File does not exist: $filePath");
             return null;
         }
         
-        $jsonData = @file_get_contents($filePath);
-        if ($jsonData === false) {
+        if (($jsonData = @file_get_contents($filePath)) === false) {
             $this->logger->warning("Unable to load data from file: $filePath");
             return null;
         }
         
-        $assoc_array = @json_decode($jsonData, true);
-        if ($assoc_array === null) {
+        if (($assoc_array = @json_decode($jsonData, true)) === null) {
             $this->logger->warning("Unable to decode JSON data from file: $filePath");
             return null;
         }
