@@ -669,7 +669,7 @@ class MessageServiceManager
          *
          * @return PromiseInterface
          */
-        $this->offsetSet('ckeyrelayinfo', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
+        $this->offsetSet('togglerelaymethod', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $this->civ13->legacy_relay = ! $this->civ13->legacy_relay;
             return $this->civ13->reply($message, 'Relay method changed to `' . ($this->civ13->legacy_relay ? 'file' : 'webhook') . '`.');
