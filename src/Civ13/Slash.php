@@ -763,14 +763,14 @@ class Slash
         {
             //return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Factions are not ready to be assigned yet'), true);
             if (! $this->civ13->verifier->getVerifiedItem($interaction->member->id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are either not currently verified with a byond username or do not exist in the cache yet'), true);
-            
-            foreach ($interaction->member->roles as $role) if ($role->id === $this->civ13->role_ids['Red Faction'] || $role->id === $this->civ13->role_ids['Blue Faction']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are already in a faction!'), true);
-
-            $redCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['Red Faction']))->count();
-            $blueCount = $interaction->guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['Blue Faction']))->count();
-            $roleIds = [$this->civ13->role_ids['Red Faction'], $this->civ13->role_ids['Blue Faction']];
-            $interaction->member->addRole($redCount > $blueCount ? $this->civ13->role_ids['Blue Faction'] : ($blueCount > $redCount ? $this->civ13->role_ids['Red Faction'] : $roleIds[array_rand($roleIds)]));
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('A faction has been assigned'), true);
+            $faction_ids = array_values(array_filter(array_map(fn($key) => $this->civ13->role_ids[$key] ?? null, Civ13::faction_teams)));
+            foreach ($interaction->member->roles as $role) if (in_array($role->id, $faction_ids)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You are already in a faction!'), true);
+            $roleCounts = [];
+            foreach ($faction_ids as $role_id) $roleCounts[$role_id] = $interaction->guild->members->filter(fn($member) => $member->roles->has($role_id))->count();
+            if (! $roleCounts) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('No factions are currently available'), true);
+            $selectedRoles = array_keys($roleCounts, min($roleCounts)); // Get the role(s) with the lowest member count
+            $interaction->member->addRole($selectedRole = $selectedRoles[array_rand($selectedRoles)]);
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("You've been assigned to <@&$selectedRole>")->setAllowedMentions(['parse'=>[]]), true);
         });
 
         $this->listenCommand('assign_faction', function (Interaction $interaction): PromiseInterface
