@@ -332,7 +332,7 @@ class GameServer
      * @param bool $ooc (optional) Whether the message is out-of-character (OOC) or in-character (IC). Default is true.
      * @return bool Returns true if the message was successfully relayed, false otherwise.
      */
-    public function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $ooc = true, ?bool $moderate = true): bool
+    private function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $ooc = true, ?bool $moderate = true): bool
     { // TODO: Move to Gameserver.php
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error("Channel not found for __gameChatRelay");
@@ -343,8 +343,8 @@ class GameServer
             return false;
         }
         if (isset($this->civ13->moderator) && $this->moderate && $moderate) {
-            if ($ooc) $this->civ13->moderator->moderate($array['ckey'], $array['message'], $this->civ13->ooc_badwords, $this->civ13->ooc_badwords_warnings, $this->key);
-            else $this->civ13->moderator->moderate($array['ckey'], $array['message'], $this->civ13->ic_badwords, $this->civ13->ic_badwords_warnings, $this->key);
+            if ($ooc) $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ooc_badwords, $this->civ13->ooc_badwords_warnings);
+            else $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ic_badwords, $this->civ13->ic_badwords_warnings);
         }
         if (! $item = $this->civ13->verifier->get('ss13', $this->civ13->sanitizeInput($array['ckey']))) {
             $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);

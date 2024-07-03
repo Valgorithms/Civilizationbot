@@ -202,6 +202,7 @@ $exact_netspeak = [ // Words that are not necessarily bad, but are used in a way
     'skibidi',
     'gyatt',
     'rizz',
+    'rekt',
     'sussy',
     'sigma',
     'goon',
