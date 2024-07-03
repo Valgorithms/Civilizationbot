@@ -202,7 +202,9 @@ $exact_netspeak = [ // Words that are not necessarily bad, but are used in a way
     'skibidi',
     'gyatt',
     'rizz',
+    'ligma',
     'rekt',
+    'cope and seethe',
     'sussy',
     'sigma',
     'goon',
@@ -215,7 +217,7 @@ $exact_netspeak = [ // Words that are not necessarily bad, but are used in a way
 foreach ($exact_netspeak as $word) $options['ic_badwords'][] = [
     'word' => $word,
     'duration' => '1 week',
-    'reason' => 'You must speak with the proper lingo/vocabulary of the current epoch and setting you’re playing.',
+    'reason' => "You must speak with the proper lingo/vocabulary of the current epoch and setting you're playing.",
     'category' => 'netspeak',
     'method' => 'exact',
     'warnings' => 3
