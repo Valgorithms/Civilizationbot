@@ -298,18 +298,18 @@ class GameServer
      * @param string $channel_id The ID of the Discord channel to relay the message to.
      * @param bool|null $moderate Whether to moderate the message or not. Defaults to true.
      * @param bool|null $ooc Whether the message is out-of-character or not. Defaults to true.
-     * @return bool Returns true if the message was successfully relayed, false otherwise.
+     * @return void
      */
-    public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $ooc = true): bool
+    public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $ooc = true): void
     { // TODO: Move to Gameserver.php
-        if ($this->legacy_relay) return false;
+        if ($this->legacy_relay) return;
         if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
             $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
-            return false;
+            return;
         }
         if (! $channel = $this->discord->getChannel($channel_id)) {
             $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
-            return false;
+            return;
         }
         if (! $this->ready) {
             $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
@@ -318,10 +318,9 @@ class GameServer
                 $this->discord->removeListener('init', $listener);
             };
             $this->discord->on('init', $listener);
-            return true; // Assume that the function will succeed when the bot is ready
+            return; // Assume that the function will succeed when the bot is ready
         }
-        
-        return $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc);
+        $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc);
     }
     /**
      * Relays game chat messages to a Discord channel.
@@ -330,17 +329,17 @@ class GameServer
      * @param array $array The array containing the chat message information.
      * @param bool $moderate (optional) Whether to apply moderation to the message. Default is true.
      * @param bool $ooc (optional) Whether the message is out-of-character (OOC) or in-character (IC). Default is true.
-     * @return bool Returns true if the message was successfully relayed, false otherwise.
+     * @return void
      */
-    private function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $ooc = true, ?bool $moderate = true): bool
+    private function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $ooc = true, ?bool $moderate = true): void
     { // TODO: Move to Gameserver.php
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error("Channel not found for __gameChatRelay");
-            return null;
+            return;
         }
         if (! $array || ! isset($array['ckey']) || ! isset($array['message']) || ! isset($array['server']) || ! $array['ckey'] || ! $array['message'] || ! $array['server']) {
             $this->logger->warning('__gameChatRelay() was called with an empty array or invalid content.');
-            return false;
+            return;
         }
         if (isset($this->civ13->moderator) && $this->moderate && $moderate) {
             if ($ooc) $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ooc_badwords, $this->civ13->ooc_badwords_warnings);
@@ -348,7 +347,7 @@ class GameServer
         }
         if (! $item = $this->civ13->verifier->get('ss13', $this->civ13->sanitizeInput($array['ckey']))) {
             $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
-            return true;
+            return;
         }
         $embed = new Embed($this->discord);
         $embed
@@ -359,7 +358,6 @@ class GameServer
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
         $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
-        return true;
     }
     public function relayTimer(): TimerInterface
     {
