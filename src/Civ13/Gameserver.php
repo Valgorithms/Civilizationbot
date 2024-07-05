@@ -750,10 +750,7 @@ class GameServer
 
         if ($this->legacy) {
             if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($array) {
-                foreach ($this->civ13->gameservers as &$gameserver) {
-                    if (! $gameserver->enabled) continue;
-                    $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)); // Attempts to fill in any missing data for the ban
-                }
+                foreach ($this->civ13->enabled_gameservers as &$gameserver) $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)); // Attempts to fill in any missing data for the ban
             });
             return $this->legacyBan($array, $admin);
         }
@@ -946,6 +943,63 @@ class GameServer
         }
         if (! $found) return "No medals found for ckey `$ckey`.";
         return $result;
+    }
+    /**
+     * Retrieves the ranking from a file and returns it as a formatted string.
+     *
+     * @param string $path The path to the file containing the ranking data.
+     * @return false|string Returns the top 10 ranks as a string if found, or false if the file does not exist or cannot be opened.
+     */
+    
+     public function getRanking(): false|string
+     {
+        $line_array = array();
+        if (! @touch($path = $this->basedir . Civ13::ranking_path) || ! $search = @fopen($path, 'r')) return false;
+        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+        fclose($search);
+    
+        $topsum = 1;
+        $msg = '';
+        foreach ($line_array as $line) {
+            $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+            $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
+            if (($topsum += 1) > 10) break;
+        }
+        return $msg;
+     }
+    /*
+     * This function calculates the player's ranking based on their medals
+     * Returns true if the required files are successfully read, false otherwise
+     */
+    public function recalculateRanking(): bool
+    {
+        if ( ! @touch($awards = $this->basedir . Civ13::awards)) return false;
+        if ( ! @touch($ranking_path = $this->basedir . Civ13::ranking_path)) return false;
+        if (! $lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
+        $result = array();
+        foreach ($lines as $line) {
+            $medal_s = 0;
+            $duser = explode(';', trim($line));
+            $medalScores = [
+                'long service medal' => 0.5,
+                'wounded badge' => 0.5,
+                'tank destroyer silver badge' => 0.75,
+                'wounded silver badge' => 0.75,
+                'wounded gold badge' => 1,
+                'assault badge' => 1.5,
+                'tank destroyer gold badge' => 1.5,
+                'combat medical badge' => 2,
+                'iron cross 1st class' => 3,
+                'iron cross 2nd class' => 5,
+            ];
+            if (! isset($result[$duser[0]])) $result[$duser[0]] = 0;
+            if (isset($duser[2]) && isset($medalScores[$duser[2]])) $medal_s += $medalScores[$duser[2]];
+            $result[$duser[0]] += $medal_s;
+        }
+        arsort($result);
+        if (file_put_contents($ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
+            return "$score;$ckey";
+        }, array_keys($result), $result))) === false) return false;
     }
 
     /**

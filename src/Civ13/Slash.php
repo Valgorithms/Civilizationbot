@@ -761,8 +761,10 @@ class Slash
         
         $this->listenCommand('ranking', function (Interaction $interaction): PromiseInterface
         {
-            return $interaction->acknowledge()->then(function () use ($interaction): PromiseInterface { // wait until the bot says "Is thinking..."
-                if (! $ranking = $this->civ13->getRanking($this->civ13->enabled_gameservers[$server = $interaction->data->options['server']->value]->basedir . Civ13::ranking_path)) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Ranking for the `$server` server are not currently available."), true);
+            if (! isset($interaction->data->options['server']->value) || ! $server = $interaction->data->options['server']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No server specified"), true);
+            if (! $gameserver = $this->civ13->enabled_gameservers[$server]) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No enabled server found for `{$server}`"), true);
+            return $interaction->acknowledge()->then(function () use ($interaction, $gameserver): PromiseInterface { // wait until the bot says "Is thinking..."
+                if (! $ranking = $gameserver->getRanking()) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Ranking for the `{$gameserver->name}` server are not currently available."), true);
                 return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
             });
         });

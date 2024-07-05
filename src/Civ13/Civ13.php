@@ -1556,94 +1556,6 @@ class Civ13
         $this->logger->debug("Successfully retrieved serverinfo from `{$this->serverinfo_url}`");
         return $this->serverinfo = $data_json;
     }
-
-    /*
-     * This function calculates the player's ranking based on their medals
-     * Returns true if the required files are successfully read, false otherwise
-     */
-    public function recalculateRanking(): bool
-    {
-        foreach ($this->enabled_gameservers as &$gameserver) {
-            if ( ! @touch($awards = $gameserver->basedir . self::awards)) return false;
-            if ( ! @touch($ranking_path = $gameserver->basedir . self::ranking_path)) return false;
-            if (! $lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
-            $result = array();
-            foreach ($lines as $line) {
-                $medal_s = 0;
-                $duser = explode(';', trim($line));
-                $medalScores = [
-                    'long service medal' => 0.5,
-                    'wounded badge' => 0.5,
-                    'tank destroyer silver badge' => 0.75,
-                    'wounded silver badge' => 0.75,
-                    'wounded gold badge' => 1,
-                    'assault badge' => 1.5,
-                    'tank destroyer gold badge' => 1.5,
-                    'combat medical badge' => 2,
-                    'iron cross 1st class' => 3,
-                    'iron cross 2nd class' => 5,
-                ];
-                if (! isset($result[$duser[0]])) $result[$duser[0]] = 0;
-                if (isset($duser[2]) && isset($medalScores[$duser[2]])) $medal_s += $medalScores[$duser[2]];
-                $result[$duser[0]] += $medal_s;
-            }
-            arsort($result);
-            if (file_put_contents($ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
-                return "$score;$ckey";
-            }, array_keys($result), $result))) === false) return false;
-        }
-        return true;
-    }
-    /**
-     * Retrieves the ranking from a file and returns it as a formatted string.
-     *
-     * @param string $path The path to the file containing the ranking data.
-     * @return false|string Returns the top 10 ranks as a string if found, or false if the file does not exist or cannot be opened.
-     */
-    
-    public function getRanking(string $path): false|string
-    {
-        $line_array = array();
-        if (! @touch($path) || ! $search = @fopen($path, 'r')) return false;
-        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-        fclose($search);
-    
-        $topsum = 1;
-        $msg = '';
-        foreach ($line_array as $line) {
-            $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-            $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
-            if (($topsum += 1) > 10) break;
-        }
-        return $msg;
-    }
-    /**
-     * Retrieves the rank for a given ckey from a file.
-     *
-     * @param string $path The path to the file containing the ranking data.
-     * @param string $ckey The ckey to search for.
-     * @return false|string Returns the rank for the ckey as a string if found, or false if the file does not exist or cannot be accessed.
-     */
-    public function getRank(string $path, string $ckey): false|string
-    {
-        $line_array = array();
-        if (! @touch($path) || ! $search = @fopen($path, 'r')) return false;
-        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
-        fclose($search);
-        
-        $found = false;
-        $result = '';
-        foreach ($line_array as $line) {
-            $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-            if ($sline[1] == $ckey) {
-                $found = true;
-                $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
-            };
-        }
-        if (! $found) return "No medals found for ckey `$ckey`.";
-        return $result;
-    }
-
     /**
      * This function is used to update the contents of files based on the roles of verified members.
      * The callback function is used to determine what to write to the file.
@@ -1699,12 +1611,10 @@ class Civ13
     /**
      * Updates admin lists with required roles and permissions.
      *
-     * @param array $required_roles An array of required roles and their corresponding permissions.
+     * @param array $required_roles An array of required roles and their corresponding permissions. (Defined in Gameserver.php)
      * @return bool Returns true if the update was successful, false otherwise.
      */
-    public function adminlistUpdate(
-        ?array $required_roles = null // Defined in Gameserver.php
-    ): bool
+    public function adminlistUpdate(?array $required_roles = null): bool
     {
         $return = false;
         foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->adminlistUpdate($required_roles)) $return = true;
