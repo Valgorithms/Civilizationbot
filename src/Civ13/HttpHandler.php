@@ -11,6 +11,7 @@ namespace Civ13;
 use Civ13\Interfaces\HttpHandlerCallbackInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response as HttpResponse;
+use Handler\Handler;
 
 final class HttpHandlerCallback implements HttpHandlerCallbackInterface
 {
@@ -55,7 +56,7 @@ final class HttpHandlerCallback implements HttpHandlerCallbackInterface
 use Civ13\Interfaces\HttpHandlerInterface;
 //use Discord\Helpers\Collection;
 
-class HttpHandler extends Handler implements HttpHandlerInterface
+class HttpHandler extends CivHandler implements HttpHandlerInterface
 {
     public string $external_ip = '127.0.0.1';
     private string $key = '';

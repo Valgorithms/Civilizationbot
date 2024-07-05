@@ -8,6 +8,7 @@
 
 namespace Civ13\Interfaces;
 
+use Handler\HandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response as HttpResponse;
 

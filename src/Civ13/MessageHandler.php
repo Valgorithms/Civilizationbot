@@ -55,7 +55,7 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
 
 use Civ13\Interfaces\MessageHandlerInterface;
 
-class MessageHandler extends Handler implements MessageHandlerInterface
+class MessageHandler extends CivHandler implements MessageHandlerInterface
 {
     protected array $required_permissions;
     /** 
@@ -194,17 +194,19 @@ class MessageHandler extends Handler implements MessageHandlerInterface
         return $return;
     }
 
-    public function fill(array $commands, array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
+    public function fill(array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
     {
-        if (count($commands) !== count($handlers)) {
-            throw new \Exception('Commands and Handlers must be the same length.');
-            return $this;
-        }
-        foreach($commands as $command) {
+        if (parent::isAssociative($handlers)) foreach ($handlers as $command => $handler) {
             parent::pushHandler(array_shift($handlers), $command);
             $this->pushPermission(array_shift($required_permissions), $command);
             $this->pushMethod(array_shift($match_methods), $command);
             $this->pushDescription(array_shift($descriptions), $command);
+        }
+        else foreach ($handlers as $handler) {
+            parent::pushHandler(array_shift($handler));
+            $this->pushPermission(array_shift($required_permissions));
+            $this->pushMethod(array_shift($match_methods));
+            $this->pushDescription(array_shift($descriptions));
         }
         return $this;
     }

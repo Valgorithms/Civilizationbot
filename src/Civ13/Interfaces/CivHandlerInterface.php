@@ -8,11 +8,10 @@
 
 namespace Civ13\Interfaces;
 
-use Discord\Parts\Channel\Message;
+use Discord\Helpers\Collection;
 use Handler\HandlerInterface;
-use React\Promise\PromiseInterface;
 
-interface MessageHandlerInterface extends HandlerInterface
+interface CivHandlerInterface extends HandlerInterface
 {
-    public function handle(Message $message): ?PromiseInterface;
+    public function checkRank(?Collection $roles = null, array $allowed_ranks = []): bool;
 }
