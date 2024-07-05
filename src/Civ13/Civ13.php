@@ -1613,7 +1613,7 @@ class Civ13
                 $players = explode('&', $data[11]);
                 $players = array_map(fn($player) => $this->sanitizeInput($player), $players);
                 if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
-                $embed->addFieldValues('Players', $players_list, true);
+                $embed->addFieldValues('Players (' . count($players) . ')', $players_list, true);
             }
             if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
             //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
