@@ -1087,7 +1087,7 @@ class GameServer
             $players = explode('&', $data[11]);
             $players = array_map(fn($player) => $this->civ13->sanitizeInput($player), $players);
             if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
-            $embed->addFieldValues('Players', $players_list, true);
+            $embed->addFieldValues('Players (' . count($players) . ')', $players_list, true);
         }
         if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
         $embed->setFooter($this->civ13->embed_footer);

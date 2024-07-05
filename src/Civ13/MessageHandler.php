@@ -58,11 +58,11 @@ use Civ13\Interfaces\MessageHandlerInterface;
 class MessageHandler extends CivHandler implements MessageHandlerInterface
 {
     protected array $required_permissions;
-    /** 
-     * @var array<string|callable>
-     */
+    /** @var array<string|callable> */
     protected array $match_methods;
     protected array $descriptions;
+    /** @inheritdoc */
+    public array $handlers = [];
 
     public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $match_methods = [], array $descriptions = [])
     {
