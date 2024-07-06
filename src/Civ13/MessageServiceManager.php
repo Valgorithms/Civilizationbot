@@ -780,8 +780,8 @@ class MessageServiceManager
         $this->offsetSet('maplist', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                if (! file_exists($gameserver->basedir . Civ13::maps)) continue;
-                if (! $file_contents = @file_get_contents($gameserver->gitdir . Civ13::maps)) return $message->react("🔥");
+                if (! file_exists($fp = $gameserver->gitdir . Civ13::maps)) continue;
+                if (! $file_contents = @file_get_contents($fp)) return $message->react("🔥");
                 return $message->reply(MessageBuilder::new()->addFileFromContent('maps.txt', $file_contents));
             }
             return $message->react("🔥");
