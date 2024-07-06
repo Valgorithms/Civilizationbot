@@ -131,6 +131,7 @@ class Civ13
     public array $seen_players = []; // Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
 
+    public readonly string $gitdir;  // The base directory of the git repository.
     /**
      * @var Gameserver[]
      */
@@ -223,6 +224,7 @@ class Civ13
         if (isset($options['verify_url'])) $this->verify_url = $options['verify_url'];
         if (isset($options['discord_formatted'])) $this->discord_formatted = $options['discord_formatted'];
         if (isset($options['rules'])) $this->rules = $options['rules'];
+        if (isset($options['gitdir'])) $this->gitdir = $options['gitdir'];
         if (isset($options['github'])) $this->github = $options['github'];
         if (isset($options['discord_invite'])) $this->discord_invite = $options['discord_invite'];
         if (isset($options['civ13_guild_id'])) $this->civ13_guild_id = $options['civ13_guild_id'];

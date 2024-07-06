@@ -62,7 +62,6 @@ class GameServer
 
     // Required settings
     public readonly string $basedir; // The base directory on the local filesystem.
-    public readonly string $gitdir;  // The base directory of the git repository.
     public readonly string $key;     // The shorthand alias for the server.
     public readonly string $name;    // The name.
     public readonly string $ip;      // The IP.
@@ -115,7 +114,6 @@ class GameServer
         $this->loop = $civ13->loop;
         $this->resolveOptions($options);
         $this->basedir = $options['basedir'];
-        $this->gitdir = $options['gitdir'];
         $this->key = $options['key'];
         $this->name = $options['name'];
         $this->ip = $options['ip'];
@@ -535,7 +533,7 @@ class GameServer
     public function mapswap(string $mapto, string $admin): string
     {
         $mapto = strtoupper($mapto);
-        if (! file_exists($fp = $this->gitdir . Civ13::maps) || ! $file = @fopen($fp, 'r')) {
+        if (! file_exists($fp = $this->civ13->gitdir . Civ13::maps) || ! $file = @fopen($fp, 'r')) {
             $this->logger->error("Unable to open `$fp` for reading.");
             return "Unable to open `$fp` for reading.";
         }

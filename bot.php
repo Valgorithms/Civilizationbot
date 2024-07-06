@@ -92,6 +92,7 @@ $options = array(
     'discord_invite' => 'https://civ13.com/discord',
     'discord_formatted' => 'civ13.com slash discord',
     'rules' => 'civ13.com slash rules',
+    'gitdir' => '/home/civ13/civ13-git', // Path to the git repository
     'legacy' => true, // Whether to use the filesystem or SQL database system
     'moderate' => true, // Whether to moderate in-game chat
     // The Verify URL is where verification requests are sent to and where the verification list is retrieved from
@@ -262,7 +263,6 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'moderate' => true,
         'legacy_relay' => false,
         'basedir' => '/home/civ13/civ13-tdm', // Base directory of the server
-        'gitdir' => '/home/civ13/civ13-git', // Path to the git repository
         // Primary channels
         'discussion' => '799952134426591273', // #tdm
         'playercount' => '1048777462898761789', // tdm-#
@@ -293,7 +293,6 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'moderate' => true, // Whether chat moderation is enabled
         'legacy_relay' => false, // How messages are relayed to the server
         'basedir' => '/home/civ13/civ13-rp', // Base directory of the server
-        'gitdir' => '/home/civ13/civ13-git', // Path to the git repository
         // Primary channels
         'discussion' => '799952084505067581', // #nomads
         'playercount' => '1048777424894185484', // nomads-#
@@ -324,7 +323,6 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'moderate' => true,
         'legacy_relay' => false,
         'basedir' => '/home/valithor/VPS/civ13-rp', // Base directory of the server
-        'gitdir' => '/home/valithor/VPS/civ13-git', // Path to the git repository
         // Primary channels
         'discussion' => '799951945346711552', // #pers
         'playercount' => '1090788345082298369', // pers-#
