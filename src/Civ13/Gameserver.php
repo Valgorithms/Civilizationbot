@@ -347,11 +347,7 @@ class GameServer
             $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
             return;
         }
-        $embed = new Embed($this->discord);
-        $embed
-            ->setColor(0xe1452d)
-            ->setTimestamp()
-            ->setURL('')
+        $embed = $this->civ13->createEmbed(false)
             ->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting

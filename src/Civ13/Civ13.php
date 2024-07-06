@@ -691,12 +691,12 @@ class Civ13
         $builder->addEmbed($embed->setFooter($this->embed_footer));
         return $channel->sendMessage($builder);
     }
-    public function createEmbed(): Embed
+    public function createEmbed(?bool $footer = true): Embed
     {
         $embed = new Embed($this->discord);
+        if ($footer) $embed->setFooter($this->embed_footer);
         $embed
             ->setColor(0xe1452d)
-            ->setFooter($this->embed_footer)
             ->setTimestamp()
             ->setURL('');
         return $embed;
@@ -737,7 +737,7 @@ class Civ13
         if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
         if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
-        $embed = new Embed($this->discord);
+        $embed = $this->createEmbed(false);
         if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
         if ($user) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         $embed->setDescription($content);
