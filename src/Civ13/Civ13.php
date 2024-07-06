@@ -1552,29 +1552,6 @@ class Civ13
         return $this->serverinfo = $data_json;
     }
     /**
-     * This function is used to update the contents of files based on the roles of verified members.
-     * The callback function is used to determine what to write to the file.
-     *
-     * @param callable $callback The callback function that determines what to write to the file.
-     * @param array $file_paths An array of file paths to update.
-     * @param array $required_roles An array of required roles for the members.
-     * @return void
-     */
-    public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
-    {
-        if (! isset($this->verifier)) {
-            $this->logger->error('Unable to update files from member roles: Verifier is not set.');
-            return;
-        } 
-        $file_contents = '';
-        foreach ($this->verifier->verified as $item)
-            if ($member = $this->verifier->getVerifiedMember($item))
-                $file_contents .= $callback($member, $item, $required_roles);
-        if ($file_contents) foreach ($file_paths as $fp) if (@touch($fp))
-            if (file_put_contents($fp, $file_contents) === false) // Attempt to write to the file
-                $this->logger->error("Failed to write to file `$fp`"); // Log an error if the write failed
-    }
-    /**
      * Updates the whitelist based on the member roles.
      *
      * @param array|null $required_roles The required roles for whitelisting. Default is ['Verified'].
