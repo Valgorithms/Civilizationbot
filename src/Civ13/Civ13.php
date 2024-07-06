@@ -1369,9 +1369,8 @@ class Civ13
         return $this->softbanned;
     }
 
-    public function bansToCollection(): Collection
+    public function bansToCollection($ban_collection = new Collection([], 'increment')): Collection
     {
-        // Get the contents of the file
         $file_contents = '';
         foreach ($this->enabled_gameservers as &$gameserver) {
             if (! @file_exists($gameserver->basedir . self::bans) || ! $fc = @file_get_contents($gameserver->basedir . self::bans)) {
@@ -1380,11 +1379,7 @@ class Civ13
             }
             $file_contents .= $fc;
         }
-        
-        // Create a new collection
-        $ban_collection = new Collection([], 'increment');
-        if (! $file_contents) return $ban_collection;
-        $file_contents = str_replace(PHP_EOL, '', $file_contents);
+        if (! $file_contents = str_replace(PHP_EOL, '', $file_contents)) return $ban_collection;
         $increment = 0;
         foreach (explode('|||', $file_contents) as $item) if ($ban = $this->banArrayToAssoc(explode(';', $item))) {
             $ban['increment'] = ++$increment;
@@ -1599,13 +1594,8 @@ class Civ13
      */
     public function factionlistUpdate(?array $required_roles = null): bool
     {
-        if (! $required_roles) $required_roles = array_merge(self::faction_teams, self::faction_admins);
-        if (! isset($this->verifier)) {
-            $this->logger->error('Unable to update faction list: Verifier is not set.');
-            return false;
-        }
         $return = false;
-        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->factionlistUpdate($required_roles)) $return = true;
+        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->factionlistUpdate()) $return = true;
         return $return;
     }
     /**

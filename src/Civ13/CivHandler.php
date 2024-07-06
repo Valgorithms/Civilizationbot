@@ -21,6 +21,9 @@ class CivHandler extends Handler implements CivHandlerInterface
     public Logger $logger;
 
     use RankTrait;
+
+    /** @inheritdoc */
+    public array $handlers = [];
     
     public function __construct(Civ13 &$civ13, array $handlers = [])
     {

@@ -1038,8 +1038,8 @@ class GameServer
      */
     public function factionlistUpdate(?array $required_roles = null): bool
     {
-        if (! $required_roles) $required_roles = array_merge(Civ13::faction_teams, Civ13::faction_admins);
         if (! $this->enabled) return false;
+        if (! $required_roles) $required_roles = array_merge(Civ13::faction_teams, Civ13::faction_admins);
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
         if (! @touch($this->factionlist)) {
             $this->logger->warning("Unable to open `{$this->factionlist}`");
@@ -1067,8 +1067,8 @@ class GameServer
      */
     public function adminlistUpdate(?array $required_roles = null): bool
     {
-        if (! $required_roles) $required_roles = self::ADMIN_PERMISSIONS;
         if (! $this->enabled) return false;
+        if (! $required_roles) $required_roles = self::ADMIN_PERMISSIONS;
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! @touch($this->admins)) {
             $this->logger->warning("Unable to open `{$this->admins}`");
