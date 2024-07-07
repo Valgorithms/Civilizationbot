@@ -1051,6 +1051,17 @@ class MessageServiceManager
             return $promise;
         }), ['Owner', 'Ambassador', 'Admin']);
         
+        $this->offsetSet('serverstatus', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
+        {
+            $builder = MessageBuilder::new();
+            $content = '';
+            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
+                $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
+                if ($embed = $gameserver->generateServerstatusEmbed()) $builder->addEmbed($embed);
+            }
+            return $message->reply($builder);
+        }), ['Owner', 'Ambassador']);
+        
         $this->__generateServerMessageCommands();
     }
 
@@ -1073,12 +1084,13 @@ class MessageServiceManager
      */
     private function __generateServerMessageCommands(): void
     {
+        
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->debug("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
             else {
-                $servernotes = function (Message $message, array $message_filtered) use (&$gameserver): PromiseInterface
+                $this->offsetSet("{$gameserver->key}notes", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                 {
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content'], strlen("{$gameserver->key}notes")))) return $this->civ13->reply($message, 'Missing ckey! Please use the format `notes ckey`');
+                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Missing ckey! Please use the format `notes ckey`');
                     $first_letter_lower = strtolower(substr($ckey, 0, 1));
                     $first_letter_upper = strtoupper(substr($ckey, 0, 1));
                     
@@ -1105,11 +1117,11 @@ class MessageServiceManager
                     else return $this->civ13->reply($message, "A notes file with path `$file_path` was found for `$ckey`, however the file could not be read.");
                     
                     return $this->civ13->reply($message, $result, 'info.sav', true);
-                };
-                $this->offsetSet("{$gameserver->key}notes", $servernotes, ['Owner', 'Ambassador', 'Admin']);
+                }), ['Owner', 'Ambassador', 'Admin']);
             }
             
-            $serverconfigexists = function (?Message $message = null) use (&$gameserver): PromiseInterface|bool
+            $this->logger->info("Generating {$gameserver->key}configexists command.");
+            $this->offsetSet("{$gameserver->key}configexists", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface|bool
             {
                 if (isset($gameserver->key)) {
                     if ($message) return $message->react("👍");
@@ -1117,35 +1129,7 @@ class MessageServiceManager
                 }
                 if ($message) return $message->react("👎");
                 return false;
-            };
-            $this->logger->info("Generating {$gameserver->key}configexists command.");
-            $this->offsetSet("{$gameserver->key}configexists", $serverconfigexists, ['Owner', 'Ambassador']);
-
-            $serverstatus = function (?Message $message = null, string $command, array $message_filtered): ?PromiseInterface
-            {
-                $builder = MessageBuilder::new();
-                $content = '';
-                foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                    $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
-                    if ($embed = $gameserver->generateServerstatusEmbed()) $builder->addEmbed($embed);
-                }
-                return $message->reply($builder);
-            };
-            $this->offsetSet('serverstatus', $serverstatus, ['Owner', 'Ambassador']);
-            
-            $allRequiredFilesExist = true;
-            foreach ([
-                //$gameserver->basedir . Civ13::serverdata, // This file is created by the server host process but it doesn't need to exist for the server to be hosted, only deleted
-                $gameserver->basedir . Civ13::killsudos,
-                $gameserver->basedir . Civ13::dmb,
-                $gameserver->basedir . Civ13::updateserverabspaths
-            ] as $fp) {
-                if (! file_exists($fp)) {
-                    $this->logger->debug("Skipping server function `{$gameserver->key}host` because the required config file `$fp` was not found.");
-                    $allRequiredFilesExist = false;
-                    break;
-                }
-            }
+            }), ['Owner', 'Ambassador']);            
 
             $this->offsetSet("{$gameserver->key}host", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
@@ -1172,7 +1156,7 @@ class MessageServiceManager
             $this->offsetSet("{$gameserver->key}ban", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 if (! $this->civ13->hasRequiredConfigRoles(['Banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
-                if (! $message_content = substr($message_filtered['message_content'], strlen("{$gameserver->key}ban"))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
+                if (! $message_content = substr($message_filtered['message_content'], strlen($command))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
                 $split_message = explode('; ', $message_content); // $split_target[1] is the target
                 if (! $split_message[0]) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
                 if (! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
@@ -1190,7 +1174,7 @@ class MessageServiceManager
 
             $this->offsetSet("{$gameserver->key}unban", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
-                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen("{$gameserver->key}unban")))) return $this->civ13->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
+                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
                 if (is_numeric($ckey)) {
                     if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
                     $ckey = $item['ckey'];
