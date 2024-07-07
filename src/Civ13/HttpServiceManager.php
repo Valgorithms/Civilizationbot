@@ -735,7 +735,7 @@ class HttpServiceManager
                 $this->discord->users->fetch($item['discord']);
                 return $this->civ13->sendMessage($channel, $message);
             } 
-            $embed = $this->civ13->createEmbed()
+            $embed = $this->civ13->createEmbed(false)
                 ->setAuthor("{$user->username} ({$user->id})", $user->avatar)
                 ->setDescription($message);
             return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
