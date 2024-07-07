@@ -1147,33 +1147,29 @@ class MessageServiceManager
                 }
             }
 
-            $serverhost = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            $this->offsetSet("{$gameserver->key}host", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 $gameserver->Host($message);
                 return $message->react("⏱️");
-            });
-            $this->offsetSet("{$gameserver->key}host", $serverhost, ['Owner', 'Ambassador']);
-            $serverkill = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            }), ['Owner', 'Ambassador']);
+            $this->offsetSet("{$gameserver->key}kill", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 $gameserver->Kill($message);
                 return $message->react("⏱️");
-            });
-            $this->offsetSet("{$gameserver->key}kill", $serverkill, ['Owner', 'Ambassador']);
-            $serverrestart = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            }), ['Owner', 'Ambassador']);
+            $this->offsetSet("{$gameserver->key}restart", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 $gameserver->Restart($message);
                 return $message->react("⏱️");
-            });
-            $this->offsetSet("{$gameserver->key}restart", $serverrestart, ['Owner', 'Ambassador']);
-            $servermapswap = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            }), ['Owner', 'Ambassador']);
+            $this->offsetSet("{$gameserver->key}mapswap", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
                 if (! isset($split_message[1])) return $this->civ13->reply($message, 'You need to include the name of the map.');
                 return $this->civ13->reply($message, $gameserver->mapswap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username));
-            });
-            $this->offsetSet("{$gameserver->key}mapswap", $servermapswap, ['Owner', 'Ambassador', 'Admin']);
+            }), ['Owner', 'Ambassador', 'Admin']);
 
-            $serverban = function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            $this->offsetSet("{$gameserver->key}ban", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 if (! $this->civ13->hasRequiredConfigRoles(['Banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
                 if (! $message_content = substr($message_filtered['message_content'], strlen("{$gameserver->key}ban"))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
@@ -1190,10 +1186,9 @@ class MessageServiceManager
                     if (! $member->roles->has($this->civ13->role_ids['Banished']))
                         $member->addRole($this->civ13->role_ids['Banished'], $result);
                 return $this->civ13->reply($message, $result);
-            };
-            $this->offsetSet("{$gameserver->key}ban", $serverban, ['Owner', 'Ambassador', 'Admin']);
+            }), ['Owner', 'Ambassador', 'Admin']);
 
-            $serverunban = function (Message $message, array $message_filtered) use (&$gameserver): PromiseInterface
+            $this->offsetSet("{$gameserver->key}unban", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
             {
                 if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen("{$gameserver->key}unban")))) return $this->civ13->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
                 if (is_numeric($ckey)) {
@@ -1207,8 +1202,7 @@ class MessageServiceManager
                     if ($member->roles->has($this->civ13->role_ids['Banished']))
                         $member->removeRole($this->civ13->role_ids['Banished'], $result);
                 return $this->civ13->reply($message, $result);
-            };
-            $this->offsetSet("{$gameserver->key}unban",  $serverunban, ['Owner', 'Ambassador', 'Admin']);
+            }), ['Owner', 'Ambassador', 'Admin']);
         }
         
         $this->__declareListener();
