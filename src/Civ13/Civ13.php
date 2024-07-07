@@ -691,12 +691,12 @@ class Civ13
         $builder->addEmbed($embed->setFooter($this->embed_footer));
         return $channel->sendMessage($builder);
     }
-    public function createEmbed(?bool $footer = true): Embed
+    public function createEmbed(?bool $footer = true, int $color = 0xE1452D): Embed
     {
         $embed = new Embed($this->discord);
         if ($footer) $embed->setFooter($this->embed_footer);
         $embed
-            ->setColor(0xe1452d)
+            ->setColor($color)
             ->setTimestamp()
             ->setURL('');
         return $embed;
