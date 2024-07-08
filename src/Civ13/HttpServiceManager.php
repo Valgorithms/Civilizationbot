@@ -13,7 +13,6 @@ use Discord\Discord;
 use Discord\DiscordWebAuth;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
-use Discord\Parts\Embed\Embed;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
 use Psr\Http\Message\ServerRequestInterface;
@@ -87,15 +86,6 @@ class HttpServiceManager
     {
         if ($this->civ13->ready) return $this->httpHandler->handle($request);
         return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
-    }
-
-    public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
-    {
-        return $this->httpHandler->offsetSet($offset, $callback, $whitelisted, $method, $description);
-    }
-    public function setRateLimit(string $endpoint, int $limit, int $window): HttpHandler
-    {
-        return $this->httpHandler->setRateLimit($endpoint, $limit, $window);
     }
 
     private function __populateWhitelist()
@@ -280,7 +270,7 @@ class HttpServiceManager
             return HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /');
         });
         $this->httpHandler->offsetSet('/robots.txt', $robots);
-        $this->httpHandler->offsetSet('/.well-known/security.txt', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        $this->httpHandler->offsetSet($endpoint = '/.well-known/security.txt', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
             return HttpResponse::plaintext(//'Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
             "Contact: {$this->civ13->github}" . PHP_EOL .
@@ -288,7 +278,7 @@ class HttpServiceManager
             'Preferred-Languages: en' . PHP_EOL . 
             "Canonical: http://{$this->httpHandler->external_ip}:{$this->http_port}/.well-known/security.txt" . PHP_EOL . 
             'Policy: http://valzargaming.com/legal');
-        }))->setRateLimit('/.well-known/security.txt', 1, 10); // 1 request per 10 seconds
+        }))->setRateLimit($endpoint, 1, 10); // 1 request per 10 seconds
         $this->httpHandler->offsetSet('/ping', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!");
@@ -733,10 +723,7 @@ class HttpServiceManager
                 $this->discord->users->fetch($item['discord']);
                 return $this->civ13->sendMessage($channel, $message);
             } 
-            $embed = $this->civ13->createEmbed(false, 0xFFD700)
-                ->setAuthor("{$user->username} ({$user->id})", $user->avatar)
-                ->setDescription($message);
-            return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
+            return $channel->sendMessage(MessageBuilder::new()->addEmbed($this->civ13->createEmbed(false, 0xFFD700)->setAuthor("{$user->username} ({$user->id})", $user->avatar)->setDescription($message)));
         };
         
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
@@ -1237,12 +1224,10 @@ class HttpServiceManager
             //$this->logger->debug("Registered HTML endpoint: `$endpoint`");
         }
         $xml .= '</urlset>';
-        $sitemapxml = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($xml): HttpResponse
+        $this->httpHandler->offsetSet($endpoint = '/sitemap.xml', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($xml): HttpResponse
         {
             return HttpResponse::xml($xml);
-        });
-        $this->httpHandler->offsetSet('/sitemap.xml', $sitemapxml);
-        $this->httpHandler->setRateLimit('/sitemap.xml', 1, 10); // 1 request per 10 seconds
+        }))->setRateLimit($endpoint, 1, 10); // 1 request per 10 seconds
 
         $sitemalxsl = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
@@ -1282,5 +1267,19 @@ class HttpServiceManager
         });
         //$this->httpHandler->offsetSet('/sitemap.xsl', $sitemalxsl);
         //$this->httpHandler->setRateLimit('/sitemap.xsl', 1, 10); // 1 request per 10 seconds
+    }
+
+    /**
+     * Magic method to dynamically call methods on the HttpHandler object.
+     *
+     * @param string $name The name of the method being called.
+     * @param array $arguments The arguments passed to the method.
+     * @return mixed The result of the method call.
+     * @throws \BadMethodCallException If the method does not exist.
+     */
+    public function __call(string $name, array $arguments)
+    { // Forward calls to the HttpHandler object (offsetSet, setRateLimit, etc.)
+        if (method_exists($this->httpHandler, $name)) return call_user_func_array([$this->httpHandler, $name], $arguments);
+        throw new \BadMethodCallException("Method {$name} does not exist.");
     }
 }

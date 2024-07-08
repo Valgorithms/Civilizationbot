@@ -298,26 +298,23 @@ class CommandServiceManager
      */
     private function setupInteractionCommands(): void
     {
-        if ($this->global_commands) {
-            $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
-            {
-                foreach ($this->global_commands as $command) if ($this->validateInteractionCallback($command)) {
-                    if (str_starts_with($command['name'], '/')) continue; // Skip slash commands for now
-                    if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_definer']);
-                    $this->listenCommand($command['name'], $command('interaction_handler'));
-                }
-                $this->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->global_commands)) . '`');
-            });
-        }
-        if ($this->guild_commands) {
-            foreach (array_keys($this->guild_commands) as $key) if ($guild = $this->discord->guilds->get('id', $key)) $guild->commands->freshen()->then(function (GuildCommandRepository $commands) use ($key) {
-                foreach ($this->guild_commands[$key] as $command) if ($this->validateInteractionCallback($command)) {
-                    if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_definer']);
-                    $this->listenCommand($command['name'], $command['interaction_handler']);
-                }
-                foreach (array_keys($this->guild_commands) as $guild_id) $this->logger->debug("[GUILD APPLICATION COMMAND LIST FOR GUILD `$guild_id`]" . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->guild_commands[$guild_id])) . '`');
-            });
-        }
+        if ($this->global_commands) $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
+        {
+            foreach ($this->global_commands as $command) if ($this->validateInteractionCallback($command)) {
+                if (str_starts_with($command['name'], '/')) continue; // Skip slash commands for now
+                if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_definer']);
+                $this->listenCommand($command['name'], $command('interaction_handler'));
+            }
+            $this->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->global_commands)) . '`');
+        });
+        if ($this->guild_commands) foreach (array_keys($this->guild_commands) as $key) if ($guild = $this->discord->guilds->get('id', $key)) $guild->commands->freshen()->then(function (GuildCommandRepository $commands) use ($key)
+        {
+            foreach ($this->guild_commands[$key] as $command) if ($this->validateInteractionCallback($command)) {
+                if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_definer']);
+                $this->listenCommand($command['name'], $command['interaction_handler']);
+            }
+            foreach (array_keys($this->guild_commands) as $guild_id) $this->logger->debug("[GUILD APPLICATION COMMAND LIST FOR GUILD `$guild_id`]" . PHP_EOL . '`' . implode('`, `', array_map(function($command) { return $command['name']; }, $this->guild_commands[$guild_id])) . '`');
+        });
     }
     private function setupHTTPCommands(): void
     {

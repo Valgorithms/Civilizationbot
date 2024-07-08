@@ -40,11 +40,6 @@ class MessageServiceManager
         $this->logger->debug('[CHAT COMMAND LIST] ' . PHP_EOL . $this->messageHandler->generateHelp());
     }
 
-    public function generateHelp(?Collection $roles): string
-    {
-        return $this->messageHandler->generateHelp($roles);
-    }
-
     public function handle(Message $message): ?PromiseInterface
     {
         if ($return = $this->messageHandler->handle($message)) return $return;
@@ -76,21 +71,6 @@ class MessageServiceManager
         return null;
     }
 
-    public function offsetGet(int|string $offset): array
-    {
-        return $this->messageHandler->offsetGet($offset);
-    }
-    
-    public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): MessageHandler
-    {
-        return $this->messageHandler->offsetSet($offset, $callback, $required_permissions, $method, $description);
-    }
-
-    public function offsetExists(int|string $offset): bool
-    {
-        return $this->messageHandler->offsetExists($offset);
-    }
-
     /*
      * The generated functions include `ping`, `help`, `cpu`, `approveme`, and `insult`.
      * The `ping` function replies with "Pong!" when called.
@@ -114,11 +94,10 @@ class MessageServiceManager
         $this->offsetSet('help', $help);
         $this->offsetSet('commands', $help);
 
-        $httphelp = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
+        $this->offsetSet('httphelp', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             return $this->civ13->reply($message, $this->civ13->httpServiceManager->httpHandler->generateHelp(), 'httphelp.txt', true);
-        });
-        $this->offsetSet('httphelp', $httphelp, ['Owner', 'Ambassador']);
+        }), ['Owner', 'Ambassador']);
 
         $this->offsetSet('cpu', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -532,31 +511,6 @@ class MessageServiceManager
             }
         }), ['Owner', 'Ambassador']);
 
-        if (isset($this->civ13->functions['misc']['promotable_check']) && $promotable_check = $this->civ13->functions['misc']['promotable_check']) {
-            $promotable = new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($promotable_check): PromiseInterface
-            {
-                if (! $promotable_check($this->civ13, $this->civ13->sanitizeInput(substr($message_filtered['message_content'], strlen($command))))) return $message->react("👎");
-                return $message->react("👍");
-            });
-            $this->offsetSet('promotable', $promotable, ['Owner', 'Ambassador']);
-        }
-
-        if (isset($this->civ13->functions['misc']['mass_promotion_loop']) && $mass_promotion_loop = $this->civ13->functions['misc']['mass_promotion_loop'])
-        $this->offsetSet('mass_promotion_loop', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($mass_promotion_loop): PromiseInterface
-        {
-            if (! $mass_promotion_loop($this->civ13)) return $message->react("👎");
-            return $message->react("👍");
-        }), ['Owner', 'Ambassador']);
-
-        if (isset($this->civ13->functions['misc']['mass_promotion_check']) && $mass_promotion_check = $this->civ13->functions['misc']['mass_promotion_check'])
-        $this->offsetSet('mass_promotion_check', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($mass_promotion_check): PromiseInterface
-        {
-            if ($promotables = $mass_promotion_check($this->civ13)) return $message->reply(MessageBuilder::new()->addFileFromContent('promotables.txt', json_encode($promotables)));
-            return $message->react("👎");
-        }), ['Owner', 'Ambassador']);
-        //
-
-
         $this->offsetSet('ooc', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         {
             $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
@@ -891,88 +845,6 @@ class MessageServiceManager
             }
         }), ['Owner']);
 
-        
-        foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-            if (! file_exists($path = $gameserver->basedir . Civ13::ranking_path) || ! @touch($path)) continue;
-            $this->offsetSet($gameserver->key.'ranking', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver, $path): PromiseInterface
-            {
-                if (! $gameserver->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                if (! $msg = $gameserver->getRanking($path)) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking!');
-                return $this->civ13->reply($message, $msg, 'ranking.txt');
-            }), ['Verified']);
-
-            $this->offsetSet($gameserver->key.'rank', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver,  $path): PromiseInterface
-            {
-                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                    if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
-                    $ckey = $item['ss13'];
-                }
-                if (! $gameserver->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                if (! $msg = $gameserver->getRank($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
-                return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
-                // return $this->civ13->reply($message, "Your ranking is too long to display.");
-            }), ['Verified']);
-        };
-        
-        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards)) {
-            $medals = function (string $ckey) use ($fp): false|string
-            {
-                $result = '';
-                if (! $search = @fopen($fp, 'r')) return false;
-                $found = false;
-                while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
-                    $found = true;
-                    $duser = explode(';', $line);
-                    if ($duser[0] === $ckey) {
-                        switch ($duser[2]) {
-                            case 'long service medal': $medal_s = '<:long_service:705786458874707978>'; break;
-                            case 'combat medical badge': $medal_s = '<:combat_medical_badge:706583430141444126>'; break;
-                            case 'tank destroyer silver badge': $medal_s = '<:tank_silver:705786458882965504>'; break;
-                            case 'tank destroyer gold badge': $medal_s = '<:tank_gold:705787308926042112>'; break;
-                            case 'assault badge': $medal_s = '<:assault:705786458581106772>'; break;
-                            case 'wounded badge': $medal_s = '<:wounded:705786458677706904>'; break;
-                            case 'wounded silver badge': $medal_s = '<:wounded_silver:705786458916651068>'; break;
-                            case 'wounded gold badge': $medal_s = '<:wounded_gold:705786458845216848>'; break;
-                            case 'iron cross 1st class': $medal_s = '<:iron_cross1:705786458572587109>'; break;
-                            case 'iron cross 2nd class': $medal_s = '<:iron_cross2:705786458849673267>'; break;
-                            default:  $medal_s = '<:long_service:705786458874707978>';
-                        }
-                        $result .= "**{$duser[1]}:** {$medal_s} **{$duser[2]}**, *{$duser[4]}*, {$duser[5]}" . PHP_EOL;
-                    }
-                }
-                if ($result != '') return $result;
-                if (! $found && ($result === '')) return 'No medals found for this ckey.';
-            };
-            $this->offsetSet('medals', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($medals): PromiseInterface
-            {
-                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `medals [ckey]`.');
-                if (! $msg = $medals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
-                return $this->civ13->reply($message, $msg, 'medals.txt');
-            }), ['Verified']);
-        }
-        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br)) {
-            $brmedals = function (string $ckey) use ($fp): string
-            {
-                $result = '';
-                if (! $search = @fopen($fp, 'r')) return "Error opening $fp.";
-                $found = false;
-                while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
-                    $found = true;
-                    $duser = explode(';', $line);
-                    if ($duser[0] === $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
-                }
-                if (! $found) return 'No medals found for this ckey.';
-                return $result;
-            };
-            $this->offsetSet('brmedals', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($brmedals): PromiseInterface
-            {
-                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
-                if (! $msg = $brmedals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
-                return $this->civ13->reply($message, $msg, 'brmedals.txt');
-                // return $this->civ13->reply($message, "Too many medals to display.");
-            }), ['Verified']);
-        }
-
         $this->offsetSet('dumpappcommands', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $application_commands = $this->civ13->discord->__get('application_commands');
@@ -1084,6 +956,64 @@ class MessageServiceManager
      */
     private function __generateServerMessageCommands(): void
     {
+        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards)) {
+            $medals = function (string $ckey) use ($fp): false|string
+            {
+                $result = '';
+                if (! $search = @fopen($fp, 'r')) return false;
+                $found = false;
+                while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
+                    $found = true;
+                    $duser = explode(';', $line);
+                    if ($duser[0] === $ckey) {
+                        switch ($duser[2]) {
+                            case 'long service medal': $medal_s = '<:long_service:705786458874707978>'; break;
+                            case 'combat medical badge': $medal_s = '<:combat_medical_badge:706583430141444126>'; break;
+                            case 'tank destroyer silver badge': $medal_s = '<:tank_silver:705786458882965504>'; break;
+                            case 'tank destroyer gold badge': $medal_s = '<:tank_gold:705787308926042112>'; break;
+                            case 'assault badge': $medal_s = '<:assault:705786458581106772>'; break;
+                            case 'wounded badge': $medal_s = '<:wounded:705786458677706904>'; break;
+                            case 'wounded silver badge': $medal_s = '<:wounded_silver:705786458916651068>'; break;
+                            case 'wounded gold badge': $medal_s = '<:wounded_gold:705786458845216848>'; break;
+                            case 'iron cross 1st class': $medal_s = '<:iron_cross1:705786458572587109>'; break;
+                            case 'iron cross 2nd class': $medal_s = '<:iron_cross2:705786458849673267>'; break;
+                            default:  $medal_s = '<:long_service:705786458874707978>';
+                        }
+                        $result .= "**{$duser[1]}:** {$medal_s} **{$duser[2]}**, *{$duser[4]}*, {$duser[5]}" . PHP_EOL;
+                    }
+                }
+                if ($result != '') return $result;
+                if (! $found && ($result === '')) return 'No medals found for this ckey.';
+            };
+            $this->offsetSet('medals', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($medals): PromiseInterface
+            {
+                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `medals [ckey]`.');
+                if (! $msg = $medals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
+                return $this->civ13->reply($message, $msg, 'medals.txt');
+            }), ['Verified']);
+        }
+        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br)) {
+            $brmedals = function (string $ckey) use ($fp): string
+            {
+                $result = '';
+                if (! $search = @fopen($fp, 'r')) return "Error opening $fp.";
+                $found = false;
+                while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
+                    $found = true;
+                    $duser = explode(';', $line);
+                    if ($duser[0] === $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
+                }
+                if (! $found) return 'No medals found for this ckey.';
+                return $result;
+            };
+            $this->offsetSet('brmedals', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($brmedals): PromiseInterface
+            {
+                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
+                if (! $msg = $brmedals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
+                return $this->civ13->reply($message, $msg, 'brmedals.txt');
+                // return $this->civ13->reply($message, "Too many medals to display.");
+            }), ['Verified']);
+        }
         
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->debug("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
@@ -1120,6 +1050,25 @@ class MessageServiceManager
                 }), ['Owner', 'Ambassador', 'Admin']);
             }
             
+            $this->offsetSet($gameserver->key.'ranking', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            {
+                if (! $gameserver->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
+                if (! $msg = $gameserver->getRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking!');
+                return $this->civ13->reply($message, $msg, 'ranking.txt');
+            }), ['Verified']);
+
+            $this->offsetSet($gameserver->key.'rank', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+            {
+                if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
+                    if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
+                    $ckey = $item['ss13'];
+                }
+                if (! $gameserver->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
+                if (! $msg = $gameserver->getRank($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
+                return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
+                // return $this->civ13->reply($message, "Your ranking is too long to display.");
+            }), ['Verified']);
+
             $this->logger->info("Generating {$gameserver->key}configexists command.");
             $this->offsetSet("{$gameserver->key}configexists", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface|bool
             {
@@ -1214,5 +1163,19 @@ class MessageServiceManager
                 //else $this->logger->debug('No message variable functions found!');
             }
         });
+    }
+
+    /**
+     * Magic method to dynamically call methods on the MessageHandler object.
+     *
+     * @param string $name The name of the method being called.
+     * @param array $arguments The arguments passed to the method.
+     * @return mixed The result of the method call.
+     * @throws \BadMethodCallException If the method does not exist.
+     */
+    public function __call(string $name, array $arguments)
+    { // Forward calls to the MessageHandler object (generateHelp, offsetGet, offsetSet, offsetExists, etc.)
+        if (method_exists($this->messageHandler, $name)) return call_user_func_array([$this->messageHandler, $name], $arguments);
+        throw new \BadMethodCallException("Method {$name} does not exist.");
     }
 }
