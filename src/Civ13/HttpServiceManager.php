@@ -280,17 +280,15 @@ class HttpServiceManager
             return HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /');
         });
         $this->httpHandler->offsetSet('/robots.txt', $robots);
-        $security = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+        $this->httpHandler->offsetSet('/.well-known/security.txt', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
-            return HttpResponse::plaintext('Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
-            "Contact: {$this->civ13->github}}" . PHP_EOL .
+            return HttpResponse::plaintext(//'Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
+            "Contact: {$this->civ13->github}" . PHP_EOL .
+            'Acknowledgments: http://valzargaming.com/partners' . PHP_EOL .
             'Preferred-Languages: en' . PHP_EOL . 
             "Canonical: http://{$this->httpHandler->external_ip}:{$this->http_port}/.well-known/security.txt" . PHP_EOL . 
-            'Policy: http://valzargaming.com/legal' . PHP_EOL . 
-            'Acknowledgments: http://valzargaming.com/partners');
-        });
-        $this->httpHandler->offsetSet('/.well-known/security.txt', $security);
-        $this->httpHandler->setRateLimit('/.well-known/security.txt', 1, 10); // 1 request per 10 seconds
+            'Policy: http://valzargaming.com/legal');
+        }))->setRateLimit('/.well-known/security.txt', 1, 10); // 1 request per 10 seconds
         $this->httpHandler->offsetSet('/ping', new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
             return HttpResponse::plaintext("Hello wörld!");
