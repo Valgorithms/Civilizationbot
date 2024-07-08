@@ -125,6 +125,7 @@ $options = array(
         
         ['word' => 'cunt',        'duration' => '1 minute',  'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
         ['word' => 'retard',      'duration' => '1 minute',  'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
+        ['word' => 'stfu',        'duration' => '1 minute',  'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
         ['word' => 'kys',         'duration' => '1 week',    'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
 
         ['word' => 'penis',       'duration' => '999 years',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'str_contains', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
