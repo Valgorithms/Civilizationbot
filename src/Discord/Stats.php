@@ -23,7 +23,13 @@ class Stats
     
     private Discord $discord;
 
-    public function init(&$discord): void
+    public static function new(Discord &$discord): static
+    {
+        $instance = new static();
+        $instance->init($discord);
+        return $instance;
+    }
+    public function init(Discord &$discord): void
     {
         $this->startTime = $this->lastReconnect = Carbon::now();
         

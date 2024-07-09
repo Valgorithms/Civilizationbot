@@ -67,8 +67,7 @@ $discord = new Discord([
     'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::MESSAGE_CONTENT,
 ]);
 
-$stats = new Stats();
-$stats->init($discord);
+$stats = Stats::new($discord);
 $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; // execInBackground(), portIsAvailable()
