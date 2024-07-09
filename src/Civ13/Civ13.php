@@ -122,9 +122,7 @@ class Civ13
     ];
     public array $blacklisted_countries = ['IL', 'ISR'];
 
-    /**
-     * @var Timerinterface[]
-     */
+    /** @var Timerinterface[] */
     public array $timers = [];
     public array $serverinfo = []; // Collected automatically by serverinfo_timer
     public array $players = []; // Collected automatically by serverinfo_timer
@@ -132,13 +130,9 @@ class Civ13
     public int $playercount_ticker = 0;
 
     public readonly string $gitdir;  // The base directory of the git repository.
-    /**
-     * @var Gameserver[]
-     */
+    /** @var Gameserver[] */
     public array $gameservers = [];
-    /**
-     * @var Gameserver[]
-     */
+    /** @var Gameserver[] */
     public array $enabled_gameservers = [];
     public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list
     public array $ooc_badwords = [];
@@ -469,12 +463,12 @@ class Civ13
     public function filterMessage(Message $message): array
     {
         if (! $message->guild || $message->guild->owner_id != $this->owner_id)  return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
-        $message_content = '';
-        $prefix = $this->command_symbol;
-        $called = false;
-        if (str_starts_with($message->content, $call = $prefix . ' ')) { $message_content = trim(substr($message->content, strlen($call))); $called = true; }
-        elseif (str_starts_with($message->content, $call = "<@!{$this->discord->id}>")) { $message_content = trim(substr($message->content, strlen($call))); $called = true; }
-        elseif (str_starts_with($message->content, $call = "<@{$this->discord->id}>")) { $message_content = trim(substr($message->content, strlen($call))); $called = true; }
+        $message_content = ''; $called = false;
+        if (str_starts_with($message->content, $call = $this->command_symbol . ' ') ||
+            str_starts_with($message->content, $call = "<@!{$this->discord->id}>") ||
+            str_starts_with($message->content, $call = "<@{$this->discord->id}>")) {
+            $message_content = trim(substr($message->content, strlen($call))); $called = true;
+        }
         return ['message_content' => $message_content, 'message_content_lower' => strtolower($message_content), 'called' => $called];
     }
     /**
@@ -658,10 +652,7 @@ class Civ13
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (strlen($content)<=2000) return $message->reply($builder->setContent($content));
-        if (strlen($content)<=4096) {
-            $builder->addEmbed($this->createEmbed()->setDescription($content));
-            return $message->reply($builder);
-        }
+        if (strlen($content)<=4096) return $message->reply($builder->addEmbed($this->createEmbed()->setDescription($content)));
         return $message->reply($builder->addFileFromContent($file_name, $content));
     }
     /**
@@ -700,51 +691,6 @@ class Civ13
             ->setTimestamp()
             ->setURL('');
         return $embed;
-    }
-    /**
-     * Sends a player message to a channel.
-     *
-     * @param Channel|Thread|string $channel The channel to send the message to.
-     * @param bool $urgent Whether the message is urgent or not.
-     * @param string $content The content of the message.
-     * @param string $sender The sender of the message (ckey or Discord username).
-     * @param string $recipient The recipient of the message (optional).
-     * @param string $file_name The name of the file to attach to the message (default: 'message.txt').
-     * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
-     * @return PromiseInterface<Message>|null A promise that resolves to the sent message, or null if the message couldn't be sent.
-     */
-    public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface|false
-    {
-        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
-            $this->logger->error("Channel not found for relayPlayerMessage");
-            return false;
-        }
-        $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
-
-        // Sender is the ckey or Discord username
-        $ckey = null;
-        $user = null;
-        $verified = false;
-        if (isset($this->verifier) && $item = $this->verifier->getVerifiedItem($sender)) {
-            $ckey = $item['ss13'];
-            $verified = true;
-            $user = $this->verifier->getVerifiedUser($ckey);
-        }
-        $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
-
-        $builder = MessageBuilder::new();
-        if ($urgent) $builder->setContent("<@&{$this->role_ids['Admin']}>, an urgent message has been sent!");
-        if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
-        if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
-        $embed = $this->createEmbed(false);
-        if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
-        if ($user) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
-        $embed->setDescription($content);
-        //$embed->setFooter($this->embed_footer);
-        $builder->addEmbed($embed);
-        return $channel->sendMessage($builder)->then($then, null);
-        
     }
     /**
      * Sends an out-of-character (OOC) message.
@@ -1481,25 +1427,7 @@ class Civ13
                 return ['playerlogs' => $playerlog, 'bans' => $bans];
         return [];
     }
-    
-    /*
-     * This function returns the current ckeys playing on the servers as stored in the cache
-     * It returns an array of ckeys or an empty array if the cache is empty
-     */
-    public function serverinfoPlayers(): array
-    { 
-        if (empty($data_json = $this->serverinfo)) return [];
-        $this->players = [];
-        foreach ($data_json as $server) {
-            if (array_key_exists('ERROR', $server)) continue;
-            $stationname = $server['stationname'] ?? '';
-            foreach (array_keys($server) as $key) {
-                $p = explode('player', $key); 
-                if (isset($p[1]) && is_numeric($p[1])) $this->players[$stationname][] = $this->sanitizeInput(urldecode($server[$key]));
-            }
-        }
-        return $this->players;
-    }
+
     public function webserverStatusChannelUpdate(bool $status): ?PromiseInterface
     {
         if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return null;
