@@ -127,20 +127,23 @@ class MessageServiceManager
          */
         $this->offsetSet('ckeyinfo', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
-            $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador']);
             if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
+            $ckey = null;
             if (is_numeric($id)) {
                 if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
-                $ckey = $item['ss13'];
-            } else $ckey = $id;
-            if (! $collectionsArray = $this->civ13->getCkeyLogCollections($ckey)) return $this->civ13->reply($message, 'No data found for that ckey.');
-
-            $embed = $this->civ13->createEmbed()->setTitle($ckey);
-            if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) {
-                $ckey = $item['ss13'];
-                if ($user = $this->civ13->verifier->getVerifiedUser($item))
-                    $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
+                $ckey = $item['ss13'] ?? $id;
+            } else {
+                $item = $this->civ13->verifier->getVerifiedItem($id);
+                $ckey = $item['ss13'] ?? $id;
             }
+            if (! $ckey) return $this->civ13->reply($message, "Invalid ckey `$ckey`.");
+            if (! $collectionsArray = $this->civ13->getCkeyLogCollections($ckey)) return $this->civ13->reply($message, "No data found for ckey `$ckey`.");
+            $builder = MessageBuilder::new();
+            $embed = $this->civ13->createEmbed()->setTitle($ckey);
+            if ($item && isset($item['ss13']))
+                if ($user = $this->civ13->verifier->getVerifiedUser($item['ss13']))
+                    $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
+
             $ckeys = [$ckey];
             $ips = [];
             $cids = [];
@@ -157,17 +160,21 @@ class MessageServiceManager
                 if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
             }
             $ckey_age = [];
-            if (! empty($ckeys)) {
+            if ($ckeys) {
                 foreach ($ckeys as $c) ($age = $this->civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
-                $ckey_age_string = '';
-                foreach ($ckey_age as $key => $value) $ckey_age_string .= " $key ($value) ";
-                if ($ckey_age_string) $embed->addFieldValues('Primary Ckeys', trim($ckey_age_string));
+                $ckey_age_string = implode(', ', array_map(fn($key, $value) => "$key ($value)", array_keys($ckey_age), $ckey_age));
+                if (strlen($ckey_age_string) > 1 && strlen($ckey_age_string) <= 1024) $embed->addFieldValues('Primary Ckeys', $ckey_age_string);
+                elseif (strlen($ckey_age_string) > 1024) $builder->addFileFromContent('primary_ckeys.txt', $ckey_age_string);
             }
-            if ($high_staff) {
-                if (! empty($ips) && $ips) $embed->addFieldValues('Primary IPs', implode(', ', $ips), true);
-                if (! empty($cids) && $cids) $embed->addFieldValues('Primary CIDs', implode(', ', $cids), true);
+            if ($high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador'])) {
+                $ips_string = implode(', ', $ips);
+                $cids_string = implode(',', $cids);
+                if (strlen($ips_string) > 1 && strlen($ips_string) <= 1024) $embed->addFieldValues('Primary IPs', $ips_string, true);
+                elseif (strlen($ips_string) > 1024) $builder->addFileFromContent('primary_ips.txt', $ips_string);
+                if (strlen($cids_string) > 1 && strlen($cids_string) <= 1024) $embed->addFieldValues('Primary CIDs', $cids_string, true);
+                elseif (strlen($cids_string) > 1024) $builder->addFileFromContent('primary_cids.txt', $cids_string);
             }
-            if (! empty($dates) && $dates) $embed->addFieldValues('Primary Dates', implode(', ', $dates));
+            if ($dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('First Seen Dates', $dates_string);
 
             // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
             $playerlogs = $this->civ13->playerlogsToCollection(); // This is ALL players
@@ -224,37 +231,46 @@ class MessageServiceManager
 
             $verified = 'No';
             if ($this->civ13->verifier->get('ss13', $ckey)) $verified = 'Yes';
-            if (! empty($ckeys) && $ckeys) {
+            if (! $ckeys) {
                 foreach ($ckeys as $c) if (! isset($ckey_age[$c])) ($age = $this->civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
-                $ckey_age_string = '';
-                foreach ($ckey_age as $key => $value) $ckey_age_string .= "$key ($value) ";
-                if ($ckey_age_string) $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
+                $ckey_age_string = implode(', ', array_map(fn($key, $value) => "$key ($value)", array_keys($ckey_age), $ckey_age));
+                if (strlen($ckey_age_string) > 1 && strlen($ckey_age_string) <= 1024) $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
+                elseif (strlen($ckey_age_string) > 1025) $builder->addFileFromContent('matched_ckeys.txt', $ckey_age_string);
             }
             if ($high_staff) {
-                if (! empty($ips) && $ips) $embed->addFieldValues('Matched IPs', implode(', ', $ips), true);
-                if (! empty($cids) && $cids) $embed->addFieldValues('Matched CIDs', implode(', ', $cids), true);
+                if ($ips && ($matched_ips_string = implode(', ', $ips)) !== $ips_string) {
+                    if (strlen($matched_ips_string) > 1 && strlen($matched_ips_string) <= 1024) $embed->addFieldValues('Matched IPs', $matched_ips_string, true);
+                    elseif (strlen($matched_ips_string) > 1024) $builder->addFileFromContent('matched_ips.txt', $matched_ips_string);
+                }
+                if ($cids && ($matched_cids_string = implode(',', $cids)) !== $cids_string) {
+                    if (strlen($matched_cids_string) > 1 && strlen($cids_string) <= 1024) $embed->addFieldValues('Matched CIDs', $cids_string, true);
+                    elseif (strlen($matched_cids_string) > 1024) $builder->addFileFromContent('matched_cids.txt', $cids_string);
+                }
             }
-            if (! empty($ips) && $ips) {
-                $regions = [];
-                foreach ($ips as $ip) if (! in_array($region = $this->civ13->IP2Country($ip), $regions)) $regions[] = $region;
-                if ($regions) $embed->addFieldValues('Regions', implode(', ', $regions));
+            if ($ips) {
+                $regions = array_unique(array_map(fn($ip) => $this->civ13->IP2Country($ip), $ips));
+                $regions_string = implode(', ', $regions);
+                if (strlen($regions_string) > 1 && strlen($regions_string) <= 1024) $embed->addFieldValues('Regions', $regions_string, true);
+                elseif (strlen($regions_string) > 1024) $builder->addFileFromContent('regions.txt', $regions_string);
             }
-            if (! empty($dates) && $dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('Dates', $dates_string);
+            if ($dates && ($matched_dates_string = implode(', ', $dates)) !== $dates_string) {
+                if (strlen($matched_dates_string) > 1 && strlen($matched_dates_string) <= 1024) $embed->addFieldValues('Matched Dates', $matched_dates_string, true);
+                elseif (strlen($matched_dates_string) > 1024) $builder->addFileFromContent('matched_dates.txt', $matched_dates_string);
+            }
             if ($verified) $embed->addfieldValues('Verified', $verified, true);
             $discords = [];
             if ($ckeys) foreach ($ckeys as $c) if ($item = $this->civ13->verifier->get('ss13', $c)) $discords[] = $item['discord'];
             if ($discords) {
-                foreach ($discords as &$id) $id = "<@{$id}>";
-                $embed->addfieldValues('Discord', implode(', ', $discords));
+                $discords = array_map(fn($id) => "<@{$id}>", $discords);
+                $discord_string = implode(', ', $discords);
+                if (strlen($discord_string) > 1 && strlen($discord_string) <= 1024) $embed->addFieldValues('Discord', $discord_string, true);
+                elseif (strlen($discord_string) > 1024) $builder->addFileFromContent('discord.txt', $discord_string);                
             }
             if ($banned) $embed->addfieldValues('Currently Banned', $banned, true);
             if ($altbanned) $embed->addfieldValues('Alt Banned', $altbanned, true);
             $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
-            $embed->setFooter($this->civ13->embed_footer);
-            $builder = MessageBuilder::new();
             if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
-            $builder->addEmbed($embed);
-            return $message->reply($builder);
+            return $message->reply($builder->addEmbed($embed));
         }), ['Owner', 'Ambassador', 'Admin']);
         $this->offsetSet('getrounds', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
@@ -293,7 +309,7 @@ class MessageServiceManager
                     //->addFieldValues('Game ID', $game_id);
                     ->addFieldValues('Start', $r['start'] ?? 'Unknown')
                     ->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
-                if (($players = implode(', ', array_keys($r['players']))) && strlen($players <= 1024)) $embed->addFieldValues('Players (' . count($r['players']) . ')', $players);
+                if (($players = implode(', ', array_keys($r['players']))) && strlen($players) <= 1024) $embed->addFieldValues('Players (' . count($r['players']) . ')', $players);
                 else $embed->addFieldValues('Players (' . count($r['players']) . ')', 'Either none or too many to list!');
                 $discord_ids = [];
                 foreach (array_keys($r['players']) as $ckey) {
@@ -639,12 +655,11 @@ class MessageServiceManager
         {
             $ckeys = [];
             $members = $message->guild->members->filter(function (Member $member) { return ! $member->roles->has($this->civ13->role_ids['Banished']); });
-            foreach ($members as $member)
-                if ($item = $this->civ13->verifier->getVerifiedItem($member->id)) {
-                    $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
-                    if (count($ckeyinfo['ckeys']) > 1)
-                        $ckeys = array_unique(array_merge($ckeys, $ckeyinfo['ckeys']));
-                }
+            foreach ($members as $member) if ($item = $this->civ13->verifier->getVerifiedItem($member->id)) {
+                if (!isset($item['ss13'])) continue;
+                $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
+                if (count($ckeyinfo['ckeys']) > 1) $ckeys = array_unique(array_merge($ckeys, $ckeyinfo['ckeys']));
+            }
             if ($ckeys) {
                 $builder = MessageBuilder::new();
                 $builder->addFileFromContent('alts.txt', '`'.implode('`' . PHP_EOL . '`', $ckeys));
