@@ -218,7 +218,7 @@ $exact_netspeak = [ // Words that are not necessarily bad, but are used in a way
     'cope and seethe',
     'sussy',
     'sigma',
-    'goon',
+    'gooning',
     'pog',
     'poggers',
     'cringe',
