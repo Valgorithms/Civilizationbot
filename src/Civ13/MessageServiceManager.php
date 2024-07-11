@@ -248,7 +248,7 @@ class MessageServiceManager
                 }
             }
             if ($ips) {
-                $regions = array_unique(array_map(fn($ip) => $this->civ13->IP2Country($ip), $ips));
+                $regions = array_unique(array_map(fn($ip) => IPToCountryResolver::IP2CountryOffline($ip), $ips));
                 $regions_string = implode(', ', $regions);
                 if (strlen($regions_string) > 1 && strlen($regions_string) <= 1024) $embed->addFieldValues('Regions', $regions_string, true);
                 elseif (strlen($regions_string) > 1024) $builder->addFileFromContent('regions.txt', $regions_string);
