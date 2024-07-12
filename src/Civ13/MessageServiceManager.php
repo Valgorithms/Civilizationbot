@@ -356,7 +356,7 @@ class MessageServiceManager
                 );
             }
             return $message->reply($builder->setAllowedMentions(['parse' => []]));
-        }), ['Owner', 'Ambassador', 'Admin']);
+        }), ['Verified']);
         $this->offsetSet('listrounds', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
             $rounds = [];
