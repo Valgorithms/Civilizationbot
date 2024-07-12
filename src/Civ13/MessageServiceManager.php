@@ -9,10 +9,13 @@ namespace Civ13;
 
 use Byond\Byond;
 use Discord\Discord;
+use Discord\Builders\Components\ActionRow;
+use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
+use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\Promise\PromiseInterface;
@@ -317,18 +320,40 @@ class MessageServiceManager
                     $embed->addFieldValues("Player Data ($ckey)", "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
                 }
                 if ($staff) $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No', true)->addFieldValues('Log Command', $log ?? 'Unknown', true);
-                $callback = function (\Discord\Parts\Interactions\Interaction $interaction): PromiseInterface
+                
+                
+                $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
                 {
-                    return $interaction->acknowledge();
+                    $command = substr($command, strlen('logs '));
+                    $tokens = explode(';', $command);
+                    $keys = [];
+                    foreach ($this->civ13->enabled_gameservers as &$gameserver) {
+                        $keys[] = $gameserver->key;
+                        if (trim($tokens[0]) !== $gameserver->key) continue; // Check if server is valid
+                        if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::log_basedir)) {
+                            $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
+                            return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($error));
+                        }
+
+                        unset($tokens[0]);
+                        $results = $this->civ13->FileNav($gameserver->basedir . Civ13::log_basedir, $tokens);
+                        if ($results[0]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->addFile($results[1], 'log.txt'));
+                        if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
+                        if (! isset($results[2]) || ! $results[2]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`'));
+                        return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`'));
+                    }
+                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`'));
                 };
-                $builder->addComponent(
-                    \Discord\Builders\Components\ActionRow::new()->addComponent(
-                            \Discord\Builders\Components\Button::new(\Discord\Builders\Components\Button::STYLE_PRIMARY, 'log_command')
+                $builder
+                    ->addComponent(
+                        ActionRow::new()->addComponent(
+                            Button::new(Button::STYLE_PRIMARY, $log)
                                 ->setLabel('Log')
                                 ->setEmoji('📝')
-                                ->setListener($callback, $this->discord, $oneOff = false)
-                    ));
-                $builder->addEmbed($embed);
+                                ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $interaction_log_handler($interaction, $interaction->data['custom_id'])), $this->discord, $oneOff = true)
+                        )
+                    )
+                    ->addEmbed($embed);
             }
             $builder->setAllowedMentions(['parse' => []]);
             return $message->reply($builder);
