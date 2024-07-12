@@ -346,7 +346,7 @@ class MessageServiceManager
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`'));
                 };
                 $builder->addEmbed($embed);
-                if ($message->member->roles->has($this->civ13->role_ids['Admin'])) $builder->addComponent(
+                if ($staff) $builder->addComponent(
                     ActionRow::new()->addComponent(
                         Button::new(Button::STYLE_PRIMARY, $log)
                             ->setLabel('Log')
