@@ -284,9 +284,8 @@ class MessageServiceManager
         {
             if (! $input = trim(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: getround `game_id`');
             $input = explode(' ', $input);
-            $game_id = $input[0];
             $rounds = [];
-            foreach ($this->civ13->enabled_gameservers as $gameserver) if ($round = $gameserver->getRound($game_id)) {
+            foreach ($this->civ13->enabled_gameservers as $gameserver) if ($round = $gameserver->getRound($game_id = $input[0])) {
                 $round['server_key'] = $gameserver->key;
                 $rounds[$gameserver->name] = $round;
             }
@@ -300,17 +299,14 @@ class MessageServiceManager
                 $embed = $this->civ13->createEmbed()
                     ->setTitle($server)
                     //->addFieldValues('Game ID', $game_id);
-                    ->addFieldValues('Start', $r['start'] ?? 'Unknown')
-                    ->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown');
+                    ->addFieldValues('Start', $r['start'] ?? 'Unknown', true)
+                    ->addFieldValues('End', $r['end'] ?? 'Ongoing/Unknown', true);
                 if (($players = implode(', ', array_keys($r['players']))) && strlen($players) <= 1024) $embed->addFieldValues('Players (' . count($r['players']) . ')', $players);
                 else $embed->addFieldValues('Players (' . count($r['players']) . ')', 'Either none or too many to list!');
-                $discord_ids = [];
-                foreach (array_keys($r['players']) as $ckey) {
-                    $ckey = $this->civ13->sanitizeInput($ckey);
-                    if ($item = $this->civ13->verifier->get('ss13', $ckey)) $discord_ids[] = "<@{$item['discord']}>";                    
+                if ($discord_ids = array_filter(array_map(fn($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, array_keys($r['players'])))) {
+                    if (strlen($verified_players = implode(', ', $discord_ids)) <= 1024) $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', $verified_players);
+                    else $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', 'Too many to list!');
                 }
-                if ($discord_ids && strlen($verified_players = implode(', ', $discord_ids)) <= 1024) $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', $verified_players);
-                else $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', 'Either none or too many to list!');
                 if ($ckey && $player = $r['players'][$ckey]) {
                     $player['ip'] ??= [];
                     $player['cid'] ??= [];
@@ -320,7 +316,7 @@ class MessageServiceManager
                     $logout = $player['logout'] ?? 'Unknown';
                     $embed->addFieldValues("Player Data ($ckey)", "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
                 }
-                if ($staff) $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No')->addFieldValues('Log Command', $log ?? 'Unknown');
+                if ($staff) $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No', true)->addFieldValues('Log Command', $log ?? 'Unknown', true);
                 $builder->addEmbed($embed);
             }
             $builder->setAllowedMentions(['parse' => []]);
