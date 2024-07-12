@@ -1242,7 +1242,7 @@ class Civ13
         if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']));
         if (! empty($ckeyinfo['ips'])) {
             $regions = [];
-            foreach ($ckeyinfo['ips'] as $ip) if (! in_array($region = IPToCountryResolver::IP2CountryOffline($ip), $regions)) $regions[] = $region;
+            foreach ($ckeyinfo['ips'] as $ip) if (! in_array($region = IPToCountryResolver::Offline($ip), $regions)) $regions[] = $region;
             $embed->addFieldValues('Regions', implode(', ', $regions));
         }
         $embed->addfieldValues('Verified', $ckeyinfo['Verified'] ? 'Yes' : 'No');

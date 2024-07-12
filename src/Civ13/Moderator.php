@@ -56,7 +56,7 @@ class Moderator
             if ($ckeyinfo['altbanned']) { // Banned with a different ckey
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true) . ' (Alt Banned)');
             } else foreach ($ckeyinfo['ips'] as $ip) {
-                if (in_array(IPToCountryResolver::IP2CountryOffline($ip), $this->civ13->blacklisted_countries)) { // Country code
+                if (in_array(IPToCountryResolver::Offline($ip), $this->civ13->blacklisted_countries)) { // Country code
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true) . ' (Blacklisted Country)');
                     break;
                 } else foreach ($this->civ13->blacklisted_regions as $region) if (str_starts_with($ip, $region)) { // IP Segments

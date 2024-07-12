@@ -246,7 +246,7 @@ class MessageServiceManager
                     elseif (strlen($matched_cids_string) > 1024) $builder->addFileFromContent('matched_cids.txt', $cids_string);
                 }
             }
-            if ($ips && $regions_string = implode(', ', array_unique(array_map(fn($ip) => IPToCountryResolver::IP2CountryOffline($ip), $ips)))) {
+            if ($ips && $regions_string = implode(', ', array_unique(array_map(fn($ip) => IPToCountryResolver::Offline($ip), $ips)))) {
                 if (strlen($regions_string) > 1 && strlen($regions_string) <= 1024) $embed->addFieldValues('Regions', $regions_string, true);
                 elseif (strlen($regions_string) > 1024) $builder->addFileFromContent('regions.txt', $regions_string);
             }
@@ -317,7 +317,17 @@ class MessageServiceManager
                     $embed->addFieldValues("Player Data ($ckey)", "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
                 }
                 if ($staff) $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No', true)->addFieldValues('Log Command', $log ?? 'Unknown', true);
-                $builder->addComponent(\Discord\Builders\Components\ActionRow::new()->addComponent(\Discord\Builders\Components\Button::new(\Discord\Builders\Components\Button::STYLE_PRIMARY, 'log_command')->setLabel('Log')->setEmoji('📝')));
+                $callback = function (\Discord\Parts\Interactions\Interaction $interaction): PromiseInterface
+                {
+                    return $interaction->acknowledge();
+                };
+                $builder->addComponent(
+                    \Discord\Builders\Components\ActionRow::new()->addComponent(
+                            \Discord\Builders\Components\Button::new(\Discord\Builders\Components\Button::STYLE_PRIMARY, 'log_command')
+                                ->setLabel('Log')
+                                ->setEmoji('📝')
+                                ->setListener($callback, $this->discord, $oneOff = false)
+                    ));
                 $builder->addEmbed($embed);
             }
             $builder->setAllowedMentions(['parse' => []]);

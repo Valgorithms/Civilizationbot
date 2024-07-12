@@ -26,7 +26,7 @@ class IPToCountryResolver
      * @param string $ip The IP address to resolve.
      * @return string The country code, region, and city of the IP address in the format 'CC->REGION->CITY'.
      */
-    public static function IP2CountryOnline(string $ip): string
+    public static function Online(string $ip): string
     {
         // TODO: Add caching and error handling for 429s
         $ch = curl_init(); 
@@ -47,7 +47,7 @@ class IPToCountryResolver
      * @param string $ip The IP address to resolve.
      * @return string The country associated with the IP address, or 'unknown' if not found.
      */
-    public static function IP2CountryOffline(string $ip): string
+    public static function Offline(string $ip): string
     {
         /** @var string[][] */
         $ranges = [];
@@ -60,6 +60,6 @@ class IPToCountryResolver
 
     public function __invoke(string $ip): string
     {
-        return $this->online ? self::IP2CountryOnline($ip) : self::IP2CountryOffline($ip);
+        return $this->online ? self::Online($ip) : self::Offline($ip);
     }
 }
