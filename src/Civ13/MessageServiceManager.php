@@ -168,7 +168,7 @@ class MessageServiceManager
             }
             if ($high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador'])) {
                 $ips_string = implode(', ', $ips);
-                $cids_string = implode(',', $cids);
+                $cids_string = implode(', ', $cids);
                 if (strlen($ips_string) > 1 && strlen($ips_string) <= 1024) $embed->addFieldValues('Primary IPs', $ips_string, true);
                 elseif (strlen($ips_string) > 1024) $builder->addFileFromContent('primary_ips.txt', $ips_string);
                 if (strlen($cids_string) > 1 && strlen($cids_string) <= 1024) $embed->addFieldValues('Primary CIDs', $cids_string, true);
@@ -176,7 +176,6 @@ class MessageServiceManager
             }
             if ($dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('First Seen Dates', $dates_string);
 
-            // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
             $playerlogs = $this->civ13->playerlogsToCollection(); // This is ALL players
             $i = 0;
             $break = false;
@@ -207,14 +206,14 @@ class MessageServiceManager
             $found = true;
             $i = 0;
             $break = false;
-            do { // Iterate through playerlogs to find all known ckeys, ips, and cids
+            do { // Iterate through banlogs to find all known ckeys, ips, and cids
                 $found = false;
                 $found_ckeys = [];
                 $found_ips = [];
                 $found_cids = [];
                 $found_dates = [];
                 foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                    if (! in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
+                    if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                     if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                     if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
                     if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
@@ -231,25 +230,23 @@ class MessageServiceManager
 
             $verified = 'No';
             if ($this->civ13->verifier->get('ss13', $ckey)) $verified = 'Yes';
-            if (! $ckeys) {
-                foreach ($ckeys as $c) if (! isset($ckey_age[$c])) ($age = $this->civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
-                $ckey_age_string = implode(', ', array_map(fn($key, $value) => "$key ($value)", array_keys($ckey_age), $ckey_age));
-                if (strlen($ckey_age_string) > 1 && strlen($ckey_age_string) <= 1024) $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
-                elseif (strlen($ckey_age_string) > 1025) $builder->addFileFromContent('matched_ckeys.txt', $ckey_age_string);
+            if ($ckeys) {
+                if ($ckey_age_string = implode(', ', array_map(fn($c) => "$c (" . ($ckey_age[$c] ?? ($this->civ13->getByondAge($c) !== false ? $this->civ13->getByondAge($c) : "N/A")) . ")", $ckeys))) {
+                    if (strlen($ckey_age_string) > 1 && strlen($ckey_age_string) <= 1024) $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
+                    elseif (strlen($ckey_age_string) > 1025) $builder->addFileFromContent('matched_ckeys.txt', $ckey_age_string);
+                }
             }
             if ($high_staff) {
                 if ($ips && ($matched_ips_string = implode(', ', $ips)) !== $ips_string) {
                     if (strlen($matched_ips_string) > 1 && strlen($matched_ips_string) <= 1024) $embed->addFieldValues('Matched IPs', $matched_ips_string, true);
                     elseif (strlen($matched_ips_string) > 1024) $builder->addFileFromContent('matched_ips.txt', $matched_ips_string);
                 }
-                if ($cids && ($matched_cids_string = implode(',', $cids)) !== $cids_string) {
+                if ($cids && ($matched_cids_string = implode(', ', $cids)) !== $cids_string) {
                     if (strlen($matched_cids_string) > 1 && strlen($cids_string) <= 1024) $embed->addFieldValues('Matched CIDs', $cids_string, true);
                     elseif (strlen($matched_cids_string) > 1024) $builder->addFileFromContent('matched_cids.txt', $cids_string);
                 }
             }
-            if ($ips) {
-                $regions = array_unique(array_map(fn($ip) => IPToCountryResolver::IP2CountryOffline($ip), $ips));
-                $regions_string = implode(', ', $regions);
+            if ($ips && $regions_string = implode(', ', array_unique(array_map(fn($ip) => IPToCountryResolver::IP2CountryOffline($ip), $ips)))) {
                 if (strlen($regions_string) > 1 && strlen($regions_string) <= 1024) $embed->addFieldValues('Regions', $regions_string, true);
                 elseif (strlen($regions_string) > 1024) $builder->addFileFromContent('regions.txt', $regions_string);
             }
@@ -258,11 +255,7 @@ class MessageServiceManager
                 elseif (strlen($matched_dates_string) > 1024) $builder->addFileFromContent('matched_dates.txt', $matched_dates_string);
             }
             if ($verified) $embed->addfieldValues('Verified', $verified, true);
-            $discords = [];
-            if ($ckeys) foreach ($ckeys as $c) if ($item = $this->civ13->verifier->get('ss13', $c)) $discords[] = $item['discord'];
-            if ($discords) {
-                $discords = array_map(fn($id) => "<@{$id}>", $discords);
-                $discord_string = implode(', ', $discords);
+            if ($discord_string = implode(', ', array_filter(array_map(fn($c) => ($result = $this->civ13->verifier->get('ss13', $c)) ? "<@{$result['discord']}>" : null, $ckeys)))) {
                 if (strlen($discord_string) > 1 && strlen($discord_string) <= 1024) $embed->addFieldValues('Discord', $discord_string, true);
                 elseif (strlen($discord_string) > 1024) $builder->addFileFromContent('discord.txt', $discord_string);                
             }
