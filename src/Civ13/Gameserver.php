@@ -262,11 +262,7 @@ class GameServer
         10 => season={season}
         11 => ckey_list={ckey&ckey}
         */
-        if (isset($data[11])) { // Player list
-            $players = explode('&', $data[11]);
-            $players = array_filter($players, fn($player) => ! empty($player));
-            $players = array_map(fn($player) => $this->civ13->sanitizeInput($player), $players);
-        }
+        if (isset($data[11])) $players = array_filter(array_map(fn($player) => $this->civ13->sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
         if (isset($data[4])) $playercount = $data[4]; // Player count
         $this->players = $players;
         return $playercount;
