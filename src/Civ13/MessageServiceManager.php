@@ -346,6 +346,7 @@ class MessageServiceManager
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`'));
                 };
                 $builder
+                    ->addEmbed($embed)
                     ->addComponent(
                         ActionRow::new()->addComponent(
                             Button::new(Button::STYLE_PRIMARY, $log)
@@ -353,11 +354,9 @@ class MessageServiceManager
                                 ->setEmoji('📝')
                                 ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $interaction_log_handler($interaction, $interaction->data['custom_id'])), $this->discord, $oneOff = true)
                         )
-                    )
-                    ->addEmbed($embed);
+                    );
             }
-            $builder->setAllowedMentions(['parse' => []]);
-            return $message->reply($builder);
+            return $message->reply($builder->setAllowedMentions(['parse' => []]));
         }), ['Owner', 'Ambassador', 'Admin']);
         $this->offsetSet('listrounds', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
