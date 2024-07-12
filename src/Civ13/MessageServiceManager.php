@@ -345,16 +345,15 @@ class MessageServiceManager
                     }
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`'));
                 };
-                $builder
-                    ->addEmbed($embed)
-                    ->addComponent(
-                        ActionRow::new()->addComponent(
-                            Button::new(Button::STYLE_PRIMARY, $log)
-                                ->setLabel('Log')
-                                ->setEmoji('📝')
-                                ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $interaction_log_handler($interaction, $interaction->data['custom_id'])), $this->discord, $oneOff = true)
-                        )
-                    );
+                $builder->addEmbed($embed);
+                if ($message->member->roles->has($this->civ13->role_ids['Admin'])) $builder->addComponent(
+                    ActionRow::new()->addComponent(
+                        Button::new(Button::STYLE_PRIMARY, $log)
+                            ->setLabel('Log')
+                            ->setEmoji('📝')
+                            ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $interaction_log_handler($interaction, $interaction->data['custom_id'])), $this->discord, $oneOff = true)
+                    )
+                );
             }
             return $message->reply($builder->setAllowedMentions(['parse' => []]));
         }), ['Owner', 'Ambassador', 'Admin']);
