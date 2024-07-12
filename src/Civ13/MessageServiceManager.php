@@ -317,7 +317,7 @@ class MessageServiceManager
                     $embed->addFieldValues("Player Data ($ckey)", "IP: $ip" . PHP_EOL . "CID: $cid" . PHP_EOL . "Login: $login" . PHP_EOL . "Logout: $logout");
                 }
                 if ($staff) $embed->addFieldValues('Bot Logging Interrupted', $r['interrupted'] ? 'Yes' : 'No', true)->addFieldValues('Log Command', $log ?? 'Unknown', true);
-                $builder->addComponent(\Discord\Builders\Components\Button::new(\Discord\Builders\Components\Button::STYLE_PRIMARY)->setLabel('Log')->setCustomId('log_command')->setEmoji('📝'));
+                $builder->addComponent(\Discord\Builders\Components\Button::new(\Discord\Builders\Components\Button::STYLE_PRIMARY, 'log_command')->setLabel('Log')->setEmoji('📝'));
                 $builder->addEmbed($embed);
             }
             $builder->setAllowedMentions(['parse' => []]);
