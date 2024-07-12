@@ -828,6 +828,11 @@ class MessageServiceManager
             return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
         }), ['Owner', 'Ambassador', 'Admin']);
 
+        $this->offsetSet('botlog', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($log_handler): PromiseInterface
+        {
+            return $message->reply(MessageBuilder::new()->addFile('botlog.txt'));
+        }), ['Owner', 'Chief Technical Officer']);
+
         $this->offsetSet('stop', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered)//: PromiseInterface
         {
             $promise = $message->react("🛑");
