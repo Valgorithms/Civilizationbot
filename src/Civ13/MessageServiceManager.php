@@ -295,7 +295,7 @@ class MessageServiceManager
             if (! $rounds) return $this->civ13->reply($message, 'No data found for that round.');
             $ckey = isset($input[1]) ? $this->civ13->sanitizeInput($input[1]) : null;
             $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador']);
-            $staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador', 'Admin']);
+            $staff = $this->civ13->hasRank($message->member, ['Admin']);
             $builder = MessageBuilder::new()->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
             foreach ($rounds as $server => $r) {
                 if ($log = $r['log'] ?? null) $log = str_replace('/', ';', "logs {$r['server_key']}$log");
