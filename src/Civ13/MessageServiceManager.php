@@ -338,7 +338,7 @@ class MessageServiceManager
 
                         unset($tokens[0]);
                         $results = $this->civ13->FileNav($gameserver->basedir . Civ13::log_basedir, $tokens);
-                        if ($results[0]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->addFile($results[1], 'log.txt'));
+                        if ($results[0]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->addFile($results[1], 'log.txt'), true);
                         if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
                         if (! isset($results[2]) || ! $results[2]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`'));
                         return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`'));
