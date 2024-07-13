@@ -345,7 +345,6 @@ class MessageServiceManager
                     }
                     return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`'));
                 };
-                $builder->addEmbed($embed);
                 if ($staff) $builder->addComponent(
                     ActionRow::new()->addComponent(
                         Button::new(Button::STYLE_PRIMARY, $log)
@@ -355,7 +354,7 @@ class MessageServiceManager
                     )
                 );
             }
-            return $message->reply($builder->setAllowedMentions(['parse' => []]));
+            return $message->reply($builder->addEmbed($embed)->setAllowedMentions(['parse' => []]));
         }), ['Verified']);
         $this->offsetSet('listrounds', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface
         {
