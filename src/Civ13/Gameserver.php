@@ -1196,7 +1196,7 @@ class GameServer
         if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
         if (isset($data[11])) { // Player list
             $players = explode('&', $data[11]);
-            $players = array_map(fn($player) => $this->civ13->sanitizeInput($player), $players);
+            $players = array_filter(array_map(fn($player) => $this->civ13->sanitizeInput($player), $players));
             if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
             $embed->addFieldValues('Players (' . count($players) . ')', $players_list, true);
         }
