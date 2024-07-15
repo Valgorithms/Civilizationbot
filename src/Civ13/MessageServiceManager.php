@@ -147,6 +147,7 @@ class MessageServiceManager
                 if ($user = $this->civ13->verifier->getVerifiedUser($item['ss13']))
                     $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
 
+            /** @var string[] */
             $ckeys = [$ckey];
             $ips = [];
             $cids = [];
@@ -258,7 +259,7 @@ class MessageServiceManager
                 elseif (strlen($matched_dates_string) > 1024) $builder->addFileFromContent('matched_dates.txt', $matched_dates_string);
             }
             if ($verified) $embed->addfieldValues('Verified', $verified, true);
-            if ($discord_string = implode(', ', array_filter(array_map(fn($c) => ($result = $this->civ13->verifier->get('ss13', $c)) ? "<@{$result['discord']}>" : null, $ckeys)))) {
+            if ($discord_string = implode(', ', array_filter(array_map(fn(string $c) => ($result = $this->civ13->verifier->get('ss13', $c)) ? "<@{$result['discord']}>" : null, $ckeys)))) {
                 if (strlen($discord_string) > 1 && strlen($discord_string) <= 1024) $embed->addFieldValues('Discord', $discord_string, true);
                 elseif (strlen($discord_string) > 1024) $builder->addFileFromContent('discord.txt', $discord_string);                
             }

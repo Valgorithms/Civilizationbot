@@ -360,8 +360,7 @@ class Verifier
             CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
         ]);
         $result = curl_exec($ch);
-        $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
-        curl_close($ch);
+        $http_status = ($result === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
         switch ($http_status) {
             case 200: // Verified
                 $success = true;
@@ -425,7 +424,6 @@ class Verifier
                 $error = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
         }
-        if (isset($ch)) curl_close($ch);
         return ['success' => $success, 'error' => $error];
     }
     /**
@@ -471,8 +469,7 @@ class Verifier
                 CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
             ]);
             $result = curl_exec($ch);
-            $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
-            curl_close($ch);
+            $http_status = ($result === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
             switch ($http_status) {
                 case 200: // Verified
                     if (! $member = $this->getVerifiedMember($id)) $message = "`$id` was unverified but the member couldn't be found in the server.";
@@ -507,7 +504,6 @@ class Verifier
                     $message = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
             }
-            if (isset($ch)) curl_close($ch);
         }
         
         $removed_items = implode(PHP_EOL, array_map(fn($item) => json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), $removed));
@@ -600,10 +596,10 @@ class Verifier
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
         curl_setopt($ch, CURLOPT_HEADER, true); // Enable header retrieval
         $response = curl_exec($ch);
-        $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Get the HTTP status code
+        $http_status = ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
         $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE); // Get the size of the headers
         $json = (! is_bool($response) && $response !== false) ? substr($response, $header_size) : ''; // Extract the JSON response
-        curl_close($ch);
+        
         $this->civ13->verifier_online = ($json !== false && $http_status === 200);
         $this->logger->debug('Verifier status: ' . ($this->civ13->verifier_online ? 'Online' : 'Offline'));
         $this->verifierStatusChannelUpdate($this->civ13->verifier_online);
