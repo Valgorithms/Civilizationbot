@@ -10,12 +10,15 @@
 namespace Civ13;
 
 use Discord\Discord;
+use Discord\Builders\Components\ActionRow;
+use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Role;
+use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
@@ -102,6 +105,7 @@ class GameServer
     public array $players = [];
     public array $seen_players = [];
     public string $current_round = '';
+    public ?string $current_round_message_id = null;
     /** @var array<array> */
     public array $rounds = [];
     private int $playercount_ticker = 0;
@@ -167,6 +171,7 @@ class GameServer
             $this->playercountTimer(); // Update playercount channel every 10 minutes
             $this->serverinfoTimer(); // Hard check playercount and  ckeys to scrutinizeCkey() every 3 minutes
             $this->relayTimer(); // File chat relay
+            $this->currentRoundEmbedTimer();
         });
     }
     /**
@@ -397,6 +402,99 @@ class GameServer
         }
         return $this->players;
     }
+    /**
+     * Returns the current round's embed timer.
+     * This timer is used to update the current round's embed message every 10 minutes.
+     * If the timer doesn't exist, it is created and returned.
+     * If the timer already exists, it is returned.
+     * If the current_round_message_id cannot be fetched or is not set, the timer created a new embed message.
+     *
+     * @return TimerInterface The current round's embed timer.
+     */
+    private function currentRoundEmbedTimer(): TimerInterface
+    {
+        if (! isset($this->timers['current_round_embed]'])) $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, function () { // Update playercount channel every 10 minutes
+            $this->updateCurrentRoundEmbedMessageBuilder();
+        });
+        $this->updateCurrentRoundEmbedMessageBuilder();
+        return $this->timers['current_round_embed'];
+    }
+    /**
+     * Updates the current round embed message builder.
+     *
+     * @param MessageBuilder|null $builder The message builder to used to perform the update the message. Defaults to null.
+     * @return PromiseInterface A promise that resolves when the update is complete.
+     */
+    private function updateCurrentRoundEmbedMessageBuilder(?MessageBuilder $builder = null): PromiseInterface
+    {
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
+        if (! $channel = $guild->channels->get('id', $this->playercount)) return $this->logger->error("Could not find Channel with ID `{$this->playercount}`");
+        if (! $builder = $this->createCurrentRoundEmbedMessageBuilder()) return $this->logger->error("Could not create a MessageBuilder for {$this->key}");
+
+        $fulfilledEdit = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
+        $fulfilledSend = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
+        $fulfilledReject = fn(\Throwable $error) => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
+        
+        if ($this->current_round_message_id) return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
+        if (! $this->current_round_message_id) // Attempt to load the current round message ID from the file cache
+            if ($serialized_array = $this->civ13->VarLoad("{$this->key}_current_round_message_id.json"))
+                if ($this->current_round_message_id = array_shift($serialized_array))
+                    return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
+        return $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
+    }
+    /**
+     * Creates the current round embed message builder.
+     *
+     * @return MessageBuilder|null The created message builder, or null if the round data is not available.
+     */
+    public function createCurrentRoundEmbedMessageBuilder(): ?MessageBuilder
+    {
+        if (! $round = $this->getRound($this->current_round)) return null;
+        
+        $round_embed_builder = function () use ($round): MessageBuilder
+        {
+            $builder = MessageBuilder::new()->setContent("Round data for game_id `$this->current_round`");
+            $embed = $this->civ13->createEmbed()
+                    ->setTitle($this->name)
+                    //->addFieldValues('Game ID', $game_id);
+                    ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
+                    ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
+            if ($this->players) $embed->addFieldValues('Online Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
+            if (($players = implode(', ', array_keys($round['players']))) && strlen($players) <= 1024) $embed->addFieldValues('Participating Players (' . count($round['players']) . ')', $players);
+            else $embed->addFieldValues('Participating Players (' . count($round['players']) . ')', 'Either none or too many to list!');
+            if ($discord_ids = array_filter(array_map(fn($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, array_keys($round['players'])))) {
+                if (strlen($verified_players = implode(', ', $discord_ids)) <= 1024) $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', $verified_players);
+                else $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', 'Too many to list!');
+            }
+            return $builder->addEmbed($embed);
+        };
+        $builder = $round_embed_builder();
+
+        $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
+        {
+            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'));
+            $tokens = explode(';', substr($command, strlen('logs ')));
+            if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) return $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
+
+            unset($tokens[0]);
+            $results = $this->civ13->FileNav($this->basedir . Civ13::log_basedir, $tokens);
+            if (! $results[0]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('No logs found.'), true);
+            return $interaction->sendFollowUpMessage(MessageBuilder::new()->addFile($results[1], 'log.txt'), true);
+            
+        };
+        if ($log = str_replace('/', ';', "logs {$this->key}{$round['log']}")) $builder->addComponent(
+            ActionRow::new()->addComponent(
+                Button::new(Button::STYLE_PRIMARY, $log)
+                    ->setLabel('Log')
+                    ->setEmoji('📝')
+                    ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $interaction_log_handler($interaction, $interaction->data['custom_id'])), $this->discord, $oneOff = false)
+            )
+        );
+        return $builder;
+    }
+    
+
+
 
     public function playercountTimer(): TimerInterface
     {
