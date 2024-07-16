@@ -299,7 +299,7 @@ class MessageServiceManager
             $staff = $this->civ13->hasRank($message->member, ['Admin']);
             $builder = MessageBuilder::new()->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
             foreach ($rounds as $server => $r) {
-                if ($log = $r['log'] ?? null) $log = str_replace('/', ';', "logs {$r['server_key']}$log");
+                if ($log = $r['log'] ?? '') $log = str_replace('/', ';', "logs {$r['server_key']}$log");
                 $embed = $this->civ13->createEmbed()
                     ->setTitle($server)
                     //->addFieldValues('Game ID', $game_id);
