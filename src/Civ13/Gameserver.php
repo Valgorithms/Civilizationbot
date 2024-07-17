@@ -1306,12 +1306,11 @@ class GameServer
     }
     public function toEmbed(): Embed
     {
-        $embed = $this->civ13->createEmbed()
+        return $this->civ13->createEmbed()
             ->setTitle($this->name)
             ->addFieldValues("Server URL", "byond://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
             ->addFieldValues('Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
-        return $embed;
     }
     // Magic Methods
     public function __toString(): string
