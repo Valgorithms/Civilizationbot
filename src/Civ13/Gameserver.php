@@ -963,11 +963,11 @@ class GameServer
     public function logNewRound(string $game_id, string $time): void
     {
         if (isset($this->rounds[$this->current_round])) // If the round already exists and is not the current round
-            $this->rounds[$this->current_round]['end'] ??= substr($time, 1, -1) . date("d/m/Y"); // Set end time of previous round
+            $this->rounds[$this->current_round]['end'] ??= substr($time, 1, -1) . ' ' . date("d/m/Y"); // Set end time of previous round
         $this->rounds[$this->current_round = $game_id] = [
             'game_id' => $game_id,
             'log' => '/' . date("Y/m-F/d-l") . ".log",
-            'start' => substr($time, 1, -1) . date("d/m/Y"),
+            'start' => substr($time, 1, -1) . ' ' . date("d/m/Y"),
             'end' => null,
             'players' => [],
             'interrupted' => false
