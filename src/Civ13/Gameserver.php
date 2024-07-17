@@ -951,9 +951,7 @@ class GameServer
      */
     public function getRoundsCollection(): Collection // [string $server, collection $rounds]
     {
-        $array = [];
-        foreach ($this->rounds as $game_id => $round) $array[] = array_merge($round, ['game_id' => $game_id]);
-        return new Collection($array, 'game_id');
+        return new Collection(array_filter(array_map(fn($game_id, $round) => array_merge($round, ['game_id' => $game_id]), array_keys($this->rounds), $this->rounds)), 'game_id');
     }
     /**
      * Logs a new round in the game.
