@@ -968,13 +968,8 @@ class MessageServiceManager
         
         $this->offsetSet('serverstatus', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): ?PromiseInterface
         {
-            $builder = MessageBuilder::new();
-            $content = '';
-            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
-                if ($embed = $gameserver->generateServerstatusEmbed()) $builder->addEmbed($embed);
-            }
-            return $message->reply($builder);
+            return $message->reply('Command disabled.');
+            return $message->reply(MessageBuilder::new()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
         }), ['Owner', 'Ambassador']);
         
         $this->__generateServerMessageCommands();
