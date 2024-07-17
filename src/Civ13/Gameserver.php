@@ -453,12 +453,16 @@ class GameServer
         
         $round_embed_builder = function () use ($round): MessageBuilder
         {
-            $builder = MessageBuilder::new()->setContent("Round data for game_id `$this->current_round`");
+            if (file_exists($this->serverdata) && $data = @file_get_contents($this->serverdata)) $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
             $embed = $this->civ13->createEmbed()
                     ->setTitle($this->name)
                     //->addFieldValues('Game ID', $game_id);
                     ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
                     ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
+            if (isset($data[7])) $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
+            if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true);
+            if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
+            if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
             if ($this->players) $embed->addFieldValues('Online Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
             if (($players = implode(', ', array_keys($round['players']))) && strlen($players) <= 1024) $embed->addFieldValues('Participating Players (' . count($round['players']) . ')', $players);
             else $embed->addFieldValues('Participating Players (' . count($round['players']) . ')', 'Either none or too many to list!');
@@ -466,7 +470,7 @@ class GameServer
                 if (strlen($verified_players = implode(', ', $discord_ids)) <= 1024) $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', $verified_players);
                 else $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', 'Too many to list!');
             }
-            return $builder->addEmbed($embed);
+            return MessageBuilder::new()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
         };
         $builder = $round_embed_builder();
 
@@ -1245,6 +1249,13 @@ class GameServer
         return true;
     }
 
+    public function parseRoundTime(string $time)
+    {
+        [$hours, $minutes] = array_map('intval', explode(':', $time));
+        $hours = $hours % 24;
+        $days = floor($hours / 24);
+        return ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
+    }
     /**
      * Generates a server status embed.
      *
@@ -1280,15 +1291,7 @@ class GameServer
         */
         if (isset($data[1])) $embed->addFieldValues($this->name, '<'.$data[1].'>');
         $embed->addFieldValues('Host', $this->host, true);
-        if (isset($data[7])) {
-            list($hours, $minutes) = explode(':', $data[7]);
-            $hours = intval($hours);
-            $minutes = intval($minutes);
-            $days = floor($hours / 24);
-            $hours = $hours % 24;
-            $time = ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
-            $embed->addFieldValues('Round Time', $time, true);
-        }
+        if (isset($data[7])) $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
         if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data
         //if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3], true);
         if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
