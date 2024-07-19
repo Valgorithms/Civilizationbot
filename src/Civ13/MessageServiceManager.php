@@ -907,7 +907,7 @@ class MessageServiceManager
 
         $this->offsetSet('fixroles', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered): PromiseInterface 
         {
-            if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $message->react("🔥");
+            if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $message->react("🔥");
             if (! $members = $guild->members->filter(function (Member $member) {
                 return ! $member->roles->has($this->civ13->role_ids['Verified'])
                     && ! $member->roles->has($this->civ13->role_ids['Banished'])
