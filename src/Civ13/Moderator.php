@@ -136,6 +136,13 @@ class Moderator
     private function __relayViolation(Gameserver $gameserver, string $ckey, array $badwords_array, array &$badword_warnings): string|false
     {
         if ($this->civ13->sanitizeInput($ckey) === $this->civ13->sanitizeInput($this->discord->username)) return false; // Don't ban the bot
+        if (isset($this->civ13->verifier))
+            if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id))
+                if ($item = $this->civ13->verifier->get('ss13', $ckey))
+                    if ($member = $guild->members->get('id', $item['discord']))    
+                        if ($member->roles->has($this->civ13->role_ids['Admin']))
+                            return false; // Don't ban an admin
+
         $filtered = substr($badwords_array['word'], 0, 1) . str_repeat('%', strlen($badwords_array['word'])-2) . substr($badwords_array['word'], -1, 1);
         if (! $this->__relayWarningCounter($ckey, $badwords_array, $badword_warnings)) return $this->civ13->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->civ13->rules}. Appeal at {$this->civ13->discord_formatted}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->civ13->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
