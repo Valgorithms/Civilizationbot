@@ -21,7 +21,7 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
 
     /**
      * @param callable $callback The callback function to be executed.
-     * @throws \InvalidArgumentException If the callback does not have the expected number of parameters or if any parameter does not have a type hint or is of the wrong type.
+     * @throws \InvalidArgumentException If the callback does not have the expected number of parameters, if any parameter does not have a type hint, or a type hint is of the wrong type.
      */
     public function __construct(callable $callback)
     {
@@ -77,6 +77,12 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
      *
      * @param callable $callback The callback function to be executed.
      * @return callable The new callback, which was validated by the MessageHandlerCallback class.
+     */
+    /**
+     * Validates a callback function and returns a new instance of MessageHandlerCallback.
+     *
+     * @param callable $callback The callable function to be validated.
+     * @return callable New instance of MessageHandlerCallback, which can be invoked as the callable.
      */
     public function validate(callable $callback): callable
     {
@@ -321,8 +327,12 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $return;
     }
     
+    /**
+     * @throws \InvalidArgumentException If the callback does not have the expected number of parameters, if any parameter does not have a type hint, or a type hint is of the wrong type.
+     */    
     public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
+        $callback = $this->validate($callback); // @throws InvalidArgumentException
         parent::offsetSet($offset, $callback);
         $this->required_permissions[$offset] = $required_permissions;
         $this->match_methods[$offset] = $method;
