@@ -330,6 +330,18 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         if ($method === 'exact') $this->__reorderHandlers();
         return $this;
     }
+
+    public function offsetSets(array $offsets, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
+    {
+        parent::offsetSets($offsets, $callback);
+        foreach ($offsets as $offset) {
+            $this->required_permissions[$offset] = $required_permissions;
+            $this->match_methods[$offset] = $method;
+            $this->descriptions[$offset] = $description;
+        }
+        if ($method === 'exact') $this->__reorderHandlers();
+        return $this;
+    }
     /**
      * Reorders the handlers based on the match methods.
      *

@@ -84,8 +84,7 @@ class MessageServiceManager
      */
     private function __generateGlobalMessageCommands(): void
     {
-        // MessageHandler
-        $this
+        $this->messageHandler // MessageHandler
             ->offsetSet('stop',
                 function (Message $message, string $command, array $message_filtered): null
                 {
