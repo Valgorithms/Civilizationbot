@@ -792,15 +792,6 @@ class MessageServiceManager
                 return $message->reply(MessageBuilder::new()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
             }), ['Owner', 'Ambassador']);
             
-            if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::sportsteams))
-            $this->offsetSet('sportsteams', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
-            {   
-                if (! file_exists($fp)) {
-                    $this->logger->warning("`$fp` is not a valid file path!");
-                    return $message->react("🔥");
-                }
-                return $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfile($fp, 'tdm_sports_teams.txt'));
-            }), ['Owner', 'Ambassador', 'Admin']);
             $log_handler = function (Message $message, string $message_content): PromiseInterface
             {
                 $tokens = explode(';', $message_content);
@@ -1080,7 +1071,7 @@ class MessageServiceManager
                 {
                     $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
                     if (! isset($split_message[1])) return $this->civ13->reply($message, 'You need to include the name of the map.');
-                    return $this->civ13->reply($message, $gameserver->mapswap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username));
+                    return $this->civ13->reply($message, $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username));
                 }), ['Owner', 'Ambassador', 'Admin'])
                 ->offsetSet("{$gameserver->key}ban", new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                 {
@@ -1114,6 +1105,11 @@ class MessageServiceManager
                         if ($member->roles->has($this->civ13->role_ids['Banished']))
                             $member->removeRole($this->civ13->role_ids['Banished'], $result);
                     return $this->civ13->reply($message, $result);
+                }), ['Owner', 'Ambassador', 'Admin'])
+                ->offsetSet($gameserver->key.'sportsteam', new MessageHandlerCallback(function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+                { // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.
+                    if (! $content = $gameserver->sportsteam()) return $message->react("🔥");
+                    return $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content));
                 }), ['Owner', 'Ambassador', 'Admin']);
         }
         

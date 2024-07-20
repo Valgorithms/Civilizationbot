@@ -449,7 +449,6 @@ class GameServer
     public function createCurrentRoundEmbedMessageBuilder(): ?MessageBuilder
     {
         if (! $round = $this->getRound($this->current_round)) return null;
-        
         $round_embed_builder = function () use ($round): MessageBuilder
         {
             if (file_exists($this->serverdata) && $data = @file_get_contents($this->serverdata)) $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
@@ -495,9 +494,6 @@ class GameServer
         );
         return $builder;
     }
-    
-
-
 
     public function playercountTimer(): TimerInterface
     {
@@ -551,6 +547,45 @@ class GameServer
         return true;
     }
     /**
+     * Sends an admin message to the server.
+     *
+     * @param string $message The message to send.
+     * @param string $sender The sender of the message.
+     * @return bool Returns true if the message was sent successfully, false otherwise.
+     */
+    public function AdminMessage(string $message, string $sender): PromiseInterface|bool
+    {
+        if (! $this->enabled) return false;
+        if (! @touch($path = $this->basedir . Civ13::discord2admin) || ! $file = @fopen($path, 'a')) {
+            $this->logger->error("Unable to open `$path` for writing");
+            return false;
+        }
+        fwrite($file, "$sender:::$message" . PHP_EOL);
+        fclose($file);
+        //if (($this->legacy_relay) && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
+        return true;
+    }
+    /**
+     * Sends a direct message to a recipient using the specified sender and message.
+     *
+     * @param string $recipient The recipient of the direct message.
+     * @param string $message The content of the direct message.
+     * @param string $sender The sender of the direct message.
+     * @return bool Returns true if the direct message was sent successfully, false otherwise.
+     */
+    public function DirectMessage(string $message, string $sender, string $recipient): PromiseInterface|bool
+    {
+        if (! $this->enabled) return false;
+        if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! $file = @fopen($path, 'a')) {
+            $this->logger->debug("Unable to open `$path` for writing");
+            return false;
+        }
+        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
+        fclose($file);
+        //if (($this->legacy_relay) && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
+        return true;
+    }
+    /**
      * Sends a player message to a channel.
      *
      * @param Channel|Thread|string $channel The channel to send the message to.
@@ -592,46 +627,6 @@ class GameServer
         return $channel->sendMessage($builder->addEmbed($embed))->then($then, null);
     }*/
 
-    /**
-     * Sends an admin message to the server.
-     *
-     * @param string $message The message to send.
-     * @param string $sender The sender of the message.
-     * @return bool Returns true if the message was sent successfully, false otherwise.
-     */
-    public function AdminMessage(string $message, string $sender): PromiseInterface|bool
-    {
-        if (! $this->enabled) return false;
-        if (! @touch($path = $this->basedir . Civ13::discord2admin) || ! $file = @fopen($path, 'a')) {
-            $this->logger->error("Unable to open `$path` for writing");
-            return false;
-        }
-        fwrite($file, "$sender:::$message" . PHP_EOL);
-        fclose($file);
-        //if (($this->legacy_relay) && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
-        return true;
-    }
-    /**
-     * Sends a direct message to a recipient using the specified sender and message.
-     *
-     * @param string $recipient The recipient of the direct message.
-     * @param string $message The content of the direct message.
-     * @param string $sender The sender of the direct message.
-     * @return bool Returns true if the direct message was sent successfully, false otherwise.
-     */
-    public function DirectMessage(string $message, string $sender, string $recipient): PromiseInterface|bool
-    {
-        if (! $this->enabled) return false;
-        if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! $file = @fopen($path, 'a')) {
-            $this->logger->debug("Unable to open `$path` for writing");
-            return false;
-        }
-        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
-        fclose($file);
-        //if (($this->legacy_relay) && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
-        return true;
-    }
-
     public function Host(?Message $message = null): void
     {
         \execInBackground("python3 {$this->basedir}" . Civ13::updateserverabspaths);
@@ -667,7 +662,7 @@ class GameServer
         });
         if ($notify) $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $message ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username);
     }
-    public function mapswap(string $mapto, string $admin): string
+    public function MapSwap(string $mapto, string $admin): string
     {
         $mapto = strtoupper($mapto);
         if (! file_exists($fp = $this->civ13->gitdir . Civ13::maps) || ! $file = @fopen($fp, 'r')) {
@@ -1133,6 +1128,18 @@ class GameServer
         if (file_put_contents($ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
             return "$score;$ckey";
         }, array_keys($result), $result))) === false) return false;
+    }
+    public function sportsteam(): string|false
+    {
+        if (! file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::sportsteams)) {
+            $this->logger->warning("Unable to find `$fp`");
+            return false;
+        }
+        if (! $content = file_get_contents($fp)) {
+            $this->logger->warning("Unable to read `$fp`");
+            return false;
+        }
+        return $content;
     }
 
     /**
