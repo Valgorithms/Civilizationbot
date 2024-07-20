@@ -14,5 +14,6 @@ use React\Promise\PromiseInterface;
 
 interface MessageHandlerInterface extends HandlerInterface
 {
+    public function validate(callable $callback): callable;
     public function handle(Message $message): ?PromiseInterface;
 }

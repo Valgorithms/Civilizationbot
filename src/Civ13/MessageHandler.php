@@ -72,6 +72,16 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $this->descriptions = $descriptions;
         $this->afterConstruct();
     }
+    /**
+     * Creates a new callback for the MessageHandler.
+     *
+     * @param callable $callback The callback function to be executed.
+     * @return callable The new callback, which was validated by the MessageHandlerCallback class.
+     */
+    public function validate(callable $callback): callable
+    {
+        return new MessageHandlerCallback($callback);
+    }
     private function afterConstruct(): void
     {
         $this->__setDefaultRatelimits();
