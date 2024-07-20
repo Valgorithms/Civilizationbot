@@ -273,9 +273,7 @@ class Civ13
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__UpdateDiscordVariables();
             //else $this->logger->debug('No ready functions found!');
-            $this->loop->addTimer(5, function () {
-                $this->slash = new Slash($this);
-            });
+            $this->loop->addTimer(5, fn() => $this->slash = new Slash($this));
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
             foreach ($this->functions['init'] as $func) $func($this);
@@ -327,7 +325,7 @@ class Civ13
                     if ($returnType->getName() === 'void')
                         { $this->onRejectedDefault = $options['onRejectedDefault']; $onRejectedDefaultValid = true; }
         }
-        if (! $onRejectedDefaultValid) $this->onRejectedDefault = function (\Throwable $reason): void
+        if (! $onRejectedDefaultValid) $this->onRejectedDefault = function(\Throwable $reason): void
         {
             $this->logger->error("Promise rejected with reason: `$reason`");
         };
@@ -547,11 +545,9 @@ class Civ13
         foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
         if (! $role_ids) return resolve($member);
         return $patch
-            ? ((($new_roles = $member->roles->filter(function (Role $role) use ($role_ids) { return ! in_array($role->id, $role_ids); })->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : resolve($member))
+            ? ((($new_roles = $member->roles->filter(fn(Role $role) => ! in_array($role->id, $role_ids))->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : resolve($member))
             : all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
-                ->then(function() use ($member) {
-                    return $member->guild->members->get('id', $member->id);
-                });
+                ->then(fn() => $member->guild->members->get('id', $member->id));
     }
     /**
      * Adds specified roles to a member.
@@ -783,10 +779,7 @@ class Civ13
      */
     function getHighestRole(Collection $roles): ?Role
     {
-        return array_reduce($roles->toArray(), function ($prev, $role) {
-            if ($prev === null) return $role;
-            return ($this->comparePositionTo($role, $prev) > 0 ? $role : $prev);
-        });
+        return array_reduce($roles->toArray(), fn($prev, $role) => ($prev === null ? $role : ($this->comparePositionTo($role, $prev) > 0 ? $role : $prev)));
     }
     /**
      * Checks if a member has a specific rank.
@@ -798,13 +791,8 @@ class Civ13
      */
     function hasRank(Member $member, array $allowed_ranks = ['Owner', 'Chief Technical Officer', 'Ambassador']): bool
     {
-        $resolved_ranks = array_map(function ($rank) {
-            return isset($this->role_ids[$rank]) ? $this->role_ids[$rank] : null;
-        }, $allowed_ranks);
-
-        return count(array_filter($resolved_ranks, function ($rank) use ($member) {
-            return $member->roles->has($rank);
-        })) > 0;
+        $resolved_ranks = array_map(fn($rank) => isset($this->role_ids[$rank]) ? $this->role_ids[$rank] : null, $allowed_ranks);
+        return count(array_filter($resolved_ranks, fn($rank) => $member->roles->has($rank))) > 0;
     }
     /**
      * Retrieves the Role object based on the given input.
@@ -1034,7 +1022,7 @@ class Civ13
             $this->logger->debug('Periodic bancheck complete.');
         };
         $bancheckTimer();
-        if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, function () use ($bancheckTimer) { $bancheckTimer(); });
+        if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $bancheckTimer());
         return true;
     }
     /**
@@ -1143,11 +1131,7 @@ class Civ13
         }
         if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->role_ids['Banished'])) $member->removeRole($this->role_ids['Banished'], "Unbanned by $admin");
-            if ($member->roles->has($this->role_ids['Permabanished'])) {
-                $member->removeRole($this->role_ids['Permabanished'], "Unbanned by $admin")->then(function () use (&$member, $admin) {
-                    $member->addRole($this->role_ids['Verified'], "Unbanned by $admin");
-                });
-            }
+            if ($member->roles->has($this->role_ids['Permabanished'])) $member->removeRole($this->role_ids['Permabanished'], "Unbanned by $admin")->then(fn() => $member->addRole($this->role_ids['Verified'], "Unbanned by $admin"));
         }
     }
 
@@ -1389,8 +1373,8 @@ class Civ13
     }
     public function getCkeyLogCollections(string $ckey): ?array
     {
-        if ($playerlog = $this->playerlogsToCollection()->filter(function (array $item) use ($ckey) { return $item['ckey'] === $ckey; }))
-            if ($bans = $this->bansToCollection()->filter(function(array $item) use ($playerlog) { return $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid']); }));
+        if ($playerlog = $this->playerlogsToCollection()->filter(fn(array $item) => $item['ckey'] === $ckey))
+            if ($bans = $this->bansToCollection()->filter(fn(array $item) => $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid'])))
                 return ['playerlogs' => $playerlog, 'bans' => $bans];
         return [];
     }
@@ -1405,13 +1389,7 @@ class Civ13
         if ($reported_status != $status) {
             //if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
             $channel->name = "{$webserver_name}-{$status}";
-            $success = function ($result) use ($channel, $status) {
-                $this->loop->addTimer(2, function () use ($channel, $status): void
-                {
-                    $channel_new = $this->discord->getChannel($channel->id);
-                    $this->sendMessage($channel_new, "Webserver is now **{$status}**.");
-                });
-            };
+            $success = fn($result) => $this->loop->addTimer(2, fn() => $this->sendMessage($this->discord->getChannel($channel->id), "Webserver is now **{$status}**."));
             return $this->then($channel->guild->channels->save($channel), $success);
         }
         return null;
