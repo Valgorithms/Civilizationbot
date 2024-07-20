@@ -350,8 +350,7 @@ class GameServer
             $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
             return;
         }
-        $embed = $this->civ13->createEmbed(false)
-            ->setDescription($array['message']);
+        $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
         $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
@@ -431,8 +430,8 @@ class GameServer
         if (! $channel = $guild->channels->get('id', $this->playercount)) return $this->logger->error("Could not find Channel with ID `{$this->playercount}`");
         if (! $builder = $this->createCurrentRoundEmbedMessageBuilder()) return $this->logger->error("Could not create a MessageBuilder for {$this->key}");
 
-        $fulfilledEdit = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
-        $fulfilledSend = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
+        $fulfilledEdit   = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
+        $fulfilledSend   = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
         $fulfilledReject = fn(\Throwable $error) => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
         
         if ($this->current_round_message_id) return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
