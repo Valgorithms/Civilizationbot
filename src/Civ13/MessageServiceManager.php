@@ -266,167 +266,12 @@ class MessageServiceManager
                     }
                     return $message->reply($builder->addEmbed($embed)->setAllowedMentions(['parse' => []]));
                 }, ['Verified'])
-            ->offsetSet('ckey',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey = $message->user_id)) return $this->civ13->reply($message, "You are not registered to any byond username");
-                        return $this->civ13->reply($message, "You are registered to `{$item['ss13']}`");
-                    }
-                    if (is_numeric($ckey)) {
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`$ckey` is not registered to any ckey");
-                        if (! $age = $this->civ13->getByondAge($item['ss13'])) return $this->civ13->reply($message, "`{$item['ss13']}` does not exist");
-                        return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
-                    }
-                    if (! $age = $this->civ13->getByondAge($ckey)) return $this->civ13->reply($message, "`$ckey` does not exist");
-                    if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
-                    return $this->civ13->reply($message, "`$ckey` is not registered to any discord id ($age)");
-                }, ['Verified'])
             ->offsetSet('discord2ckey',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     if (! $item = $this->civ13->verifier->get('discord', $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$id` is not registered to any byond username");
                     return $this->civ13->reply($message, "`$id` is registered to `{$item['ss13']}`");
                 }, ['Verified'])
-            ->offsetSet('ckey2discord',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! $item = $this->civ13->verifier->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$ckey` is not registered to any discord id");
-                    return $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
-                }, ['Verified'])
-            ->offsetSet('ooc',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) switch (strtolower($message->channel->name)) {
-                        case "ooc-{$gameserver->key}":                    
-                            if ($gameserver->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
-                            return $message->react("🔥");
-                    }
-                    return $this->civ13->reply($message, 'You need to be in any of the #ooc channels to use this command.');
-                }, ['Verified'])
-            ->offsetSet('asay',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-                    foreach ($this->civ13->enabled_gameservers as $server) {
-                        switch (strtolower($message->channel->name)) {
-                            case "asay-{$server->key}":
-                                if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $server->key)) return $message->react("📧");
-                                return $message->react("🔥");
-                        }
-                    }
-                    return $this->civ13->reply($message, 'You need to be in any of the #asay channels to use this command.');
-                }, ['Verified'])
-            ->offsetSets(['dm', 'pm'],
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! str_contains($message_filtered['message_content'], ';')) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.');
-                    $explode = explode(';', $message_filtered['message_content']);
-                    $recipient = $this->civ13->sanitizeInput(substr(array_shift($explode), strlen($command)));
-                    $msg = implode(' ', $explode);
-                    foreach ($this->civ13->enabled_gameservers as $server) {
-                        switch (strtolower($message->channel->name)) {
-                            case "asay-{$server->key}":
-                            case "ic-{$server->key}":
-                            case "ooc-{$server->key}":
-                                if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $recipient, $server->key)) return $message->react("📧");
-                                return $message->react("🔥");
-                        }
-                    }
-                    return $this->civ13->reply($message, 'You need to be in any of the #ic, #asay, or #ooc channels to use this command.');
-                }, ['Admin'])
-            ->offsetSet('globalooc',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-                    if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
-                    return $message->react("🔥");
-                }, ['Admin'])
-            ->offsetSet('globalasay',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-                    if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
-                    return $message->react("🔥");
-                }, ['Admin'])
-            ->offsetSet('permit',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $this->civ13->permitCkey($ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
-                    return $this->civ13->reply($message, "$ckey is now permitted to bypass the Byond account restrictions.");
-                }, ['Admin'])
-            ->offsetSets(['unpermit', 'revoke'],
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $this->civ13->permitCkey($ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
-                    return $this->civ13->reply($message, "$ckey is no longer permitted to bypass the Byond account restrictions.");
-                }, ['Admin'])
-            ->offsetSet('permitted',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (empty($this->civ13->permitted)) return $this->civ13->reply($message, 'No users have been permitted to bypass the Byond account restrictions.');
-                    return $this->civ13->reply($message, 'The following ckeys are now permitted to bypass the Byond account limit and restrictions: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', array_keys($this->civ13->permitted)) . '`');
-                }, ['Admin'], 'exact')
-            ->offsetSet('refresh',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if ($this->civ13->verifier->getVerified(false)) return $message->react("👍");
-                    return $message->react("👎");
-                }, ['Admin'])
-            ->offsetSet('discard',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
-                    $string = "`$ckey` will no longer attempt to be automatically registered.";
-                    if (isset($this->civ13->verifier->provisional[$ckey])) {
-                        if ($member = $message->guild->members->get($this->civ13->verifier->provisional[$ckey])) {
-                            $member->removeRole($this->civ13->role_ids['Verified']);
-                            $string .= " The <@&{$this->civ13->role_ids['Verified']}> role has been removed from $member.";
-                        }
-                        unset($this->civ13->verifier->provisional[$ckey]);
-                        $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional);
-                    }
-                    return $this->civ13->reply($message, $string);
-                }, ['Admin'])
-            ->offsetSet('listbans',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    return $this->civ13->listbans($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
-                }, ['Admin'])
-            ->offsetSet('softban',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $this->civ13->softban($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
-                    return $this->civ13->reply($message, "`$id` is no longer allowed to get verified.");
-                }, ['Admin'])
-            ->offsetSet('unsoftban',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $this->civ13->softban($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
-                    return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
-                }, ['Admin'])
-            ->offsetSet('ban',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
-                    $split_message = explode('; ', $message_filtered['message_content']);
-                    if (! $split_message[0] = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
-                    if (! isset($split_message[1]) || ! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
-                    if (! isset($split_message[2]) || ! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
-                    $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
-                    return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13']));
-                }, ['Admin'])
-            ->offsetSet('unban',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (is_numeric($ckey = $this->civ13->sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], trim(strlen($command))))))
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
-                        else $ckey = $item['ss13'];
-                    $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
-                    return $this->civ13->reply($message, "**$admin** unbanned **$ckey**");
-                }, ['Admin'])
             ->offsetSet('ckeyinfo',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
@@ -568,6 +413,161 @@ class MessageServiceManager
                     $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
                     if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
                     return $message->reply($builder->addEmbed($embed));
+                }, ['Admin'])
+            ->offsetSet('ckey2discord',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    if (! $item = $this->civ13->verifier->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "`$ckey` is not registered to any discord id");
+                    return $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>");
+                }, ['Verified'])
+            ->offsetSet('ckey',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
+                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
+                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey = $message->user_id)) return $this->civ13->reply($message, "You are not registered to any byond username");
+                        return $this->civ13->reply($message, "You are registered to `{$item['ss13']}`");
+                    }
+                    if (is_numeric($ckey)) {
+                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`$ckey` is not registered to any ckey");
+                        if (! $age = $this->civ13->getByondAge($item['ss13'])) return $this->civ13->reply($message, "`{$item['ss13']}` does not exist");
+                        return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+                    }
+                    if (! $age = $this->civ13->getByondAge($ckey)) return $this->civ13->reply($message, "`$ckey` does not exist");
+                    if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
+                    return $this->civ13->reply($message, "`$ckey` is not registered to any discord id ($age)");
+                }, ['Verified'])
+                ->offsetSet('ooc',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
+                    foreach ($this->civ13->enabled_gameservers as &$gameserver) switch (strtolower($message->channel->name)) {
+                        case "ooc-{$gameserver->key}":                    
+                            if ($gameserver->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
+                            return $message->react("🔥");
+                    }
+                    return $this->civ13->reply($message, 'You need to be in any of the #ooc channels to use this command.');
+                }, ['Verified'])
+            ->offsetSet('asay',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
+                    foreach ($this->civ13->enabled_gameservers as $server) {
+                        switch (strtolower($message->channel->name)) {
+                            case "asay-{$server->key}":
+                                if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $server->key)) return $message->react("📧");
+                                return $message->react("🔥");
+                        }
+                    }
+                    return $this->civ13->reply($message, 'You need to be in any of the #asay channels to use this command.');
+                }, ['Verified'])
+            ->offsetSets(['dm', 'pm'],
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    if (! str_contains($message_filtered['message_content'], ';')) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.');
+                    $explode = explode(';', $message_filtered['message_content']);
+                    $recipient = $this->civ13->sanitizeInput(substr(array_shift($explode), strlen($command)));
+                    $msg = implode(' ', $explode);
+                    foreach ($this->civ13->enabled_gameservers as $server) {
+                        switch (strtolower($message->channel->name)) {
+                            case "asay-{$server->key}":
+                            case "ic-{$server->key}":
+                            case "ooc-{$server->key}":
+                                if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $recipient, $server->key)) return $message->react("📧");
+                                return $message->react("🔥");
+                        }
+                    }
+                    return $this->civ13->reply($message, 'You need to be in any of the #ic, #asay, or #ooc channels to use this command.');
+                }, ['Admin'])
+            ->offsetSet('globalooc',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
+                    if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
+                    return $message->react("🔥");
+                }, ['Admin'])
+            ->offsetSet('globalasay',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
+                    if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
+                    return $message->react("🔥");
+                }, ['Admin'])
+            ->offsetSet('permit',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $this->civ13->permitCkey($ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
+                    return $this->civ13->reply($message, "$ckey is now permitted to bypass the Byond account restrictions.");
+                }, ['Admin'])
+            ->offsetSets(['unpermit', 'revoke'],
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $this->civ13->permitCkey($ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
+                    return $this->civ13->reply($message, "$ckey is no longer permitted to bypass the Byond account restrictions.");
+                }, ['Admin'])
+            ->offsetSet('permitted',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    if (empty($this->civ13->permitted)) return $this->civ13->reply($message, 'No users have been permitted to bypass the Byond account restrictions.');
+                    return $this->civ13->reply($message, 'The following ckeys are now permitted to bypass the Byond account limit and restrictions: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', array_keys($this->civ13->permitted)) . '`');
+                }, ['Admin'], 'exact')
+            ->offsetSet('refresh',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    if ($this->civ13->verifier->getVerified(false)) return $message->react("👍");
+                    return $message->react("👎");
+                }, ['Admin'])
+            ->offsetSet('discard',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
+                    $string = "`$ckey` will no longer attempt to be automatically registered.";
+                    if (isset($this->civ13->verifier->provisional[$ckey])) {
+                        if ($member = $message->guild->members->get($this->civ13->verifier->provisional[$ckey])) {
+                            $member->removeRole($this->civ13->role_ids['Verified']);
+                            $string .= " The <@&{$this->civ13->role_ids['Verified']}> role has been removed from $member.";
+                        }
+                        unset($this->civ13->verifier->provisional[$ckey]);
+                        $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional);
+                    }
+                    return $this->civ13->reply($message, $string);
+                }, ['Admin'])
+            ->offsetSet('listbans',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    return $this->civ13->listbans($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
+                }, ['Admin'])
+            ->offsetSet('softban',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $this->civ13->softban($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
+                    return $this->civ13->reply($message, "`$id` is no longer allowed to get verified.");
+                }, ['Admin'])
+            ->offsetSet('unsoftban',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $this->civ13->softban($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
+                    return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
+                }, ['Admin'])
+            ->offsetSet('ban',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
+                    $split_message = explode('; ', $message_filtered['message_content']);
+                    if (! $split_message[0] = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+                    if (! isset($split_message[1]) || ! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
+                    if (! isset($split_message[2]) || ! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
+                    $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
+                    return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13']));
+                }, ['Admin'])
+            ->offsetSet('unban',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    if (is_numeric($ckey = $this->civ13->sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], trim(strlen($command))))))
+                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
+                        else $ckey = $item['ss13'];
+                    $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
+                    return $this->civ13->reply($message, "**$admin** unbanned **$ckey**");
                 }, ['Admin'])
             ->offsetSet('maplist',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -896,8 +896,7 @@ class MessageServiceManager
                     {
                         return $message->reply(MessageBuilder::new()->addFile('botlog.txt'));
                     }, ['Owner', 'Chief Technical Officer']);
-                    
-
+            
             if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs']))
                 $this->messageHandler->offsetSet('parole',
                     function (Message $message, string $command, array $message_filtered): PromiseInterface

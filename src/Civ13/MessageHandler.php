@@ -72,22 +72,6 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $this->descriptions = $descriptions;
         $this->afterConstruct();
     }
-    /**
-     * Creates a new callback for the MessageHandler.
-     *
-     * @param callable $callback The callback function to be executed.
-     * @return callable The new callback, which was validated by the MessageHandlerCallback class.
-     */
-    /**
-     * Validates a callback function and returns a new instance of MessageHandlerCallback.
-     *
-     * @param callable $callback The callable function to be validated.
-     * @return callable New instance of MessageHandlerCallback, which can be invoked as the callable.
-     */
-    public function validate(callable $callback): callable
-    {
-        return new MessageHandlerCallback($callback);
-    }
     private function afterConstruct(): void
     {
         $this->__setDefaultRatelimits();
@@ -112,6 +96,16 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             $this->logger->error("Message Handler error: An endpoint for `$message->content` failed with error `{$e->getMessage()}`");
             return $message->react('🔥');
         }
+    }
+    /**
+     * Validates a callback function and returns a new instance of MessageHandlerCallback.
+     *
+     * @param callable $callback The callable function to be validated.
+     * @return callable New instance of MessageHandlerCallback, which can be invoked as the callable.
+     */
+    public function validate(callable $callback): callable
+    {
+        return new MessageHandlerCallback($callback);
     }
     /**
      * Retrieves the callback information for a given message.
