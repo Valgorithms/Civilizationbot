@@ -939,13 +939,9 @@ class MessageServiceManager
                 $this->messageHandler->offsetSet('insult',
                     function (Message $message, string $command, array $message_filtered): PromiseInterface
                     {
-                        $split_message = explode(' ', $message_filtered['message_content']); // $split_target[1] is the target
-                        if (count($split_message) <= 1 || strlen($split_message[1]) === 0) $split_message[1] = "<@{$message->user_id}>";
-                        if (! empty($insults_array = file(Civ13::insults_path, FILE_IGNORE_NEW_LINES))) {
-                            $random_insult = $insults_array[array_rand($insults_array)];
-                            return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $random_insult)->setAllowedMentions(['parse' => []]));
-                        }
-                        return $this->civ13->reply($message, 'No insults found!');
+                        if (! $insults_array = file(Civ13::insults_path, FILE_IGNORE_NEW_LINES)) return $this->civ13->reply($message, 'No insults found!');
+                        if (! ($split_message = explode(' ', $message_filtered['message_content'])) || count($split_message) <= 1 || strlen($split_message[1]) === 0) $split_message[1] = "<@{$message->user_id}>"; // $split_target[1] is the target of the insult
+                        return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $insults_array[array_rand($insults_array)])->setAllowedMentions(['parse' => []]));
                     }, ['Verified']);
             
             if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path']))
@@ -959,10 +955,9 @@ class MessageServiceManager
                         \execInBackground('git pull');
                         \execInBackground("sh {$this->civ13->files['typespess_launch_server_path']}&");
                         return $this->civ13->reply($message, 'Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
-                    } else {
-                        \execInBackground('killall index.js');
-                        return $this->civ13->reply($message, '**TypeSpess Civ13** test server down.');
                     }
+                    \execInBackground('killall index.js');
+                    return $this->civ13->reply($message, '**TypeSpess Civ13** test server down.');
                 }, ['Owner']);
 
             $this->__generateServerMessageCommands();
@@ -1106,7 +1101,7 @@ class MessageServiceManager
                     {
                         if (! $this->civ13->hasRequiredConfigRoles(['Banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
                         if (! $message_content = substr($message_filtered['message_content'], strlen($command))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
-                        $split_message = explode('; ', $message_content); // $split_target[1] is the target
+                        if (! $split_message = explode('; ', $message_content)) return $this->civ13->reply($message, 'Invalid format! Please use the format `{server}ban ckey; duration; reason`');
                         if (! $split_message[0]) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
                         if (! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
                         if (! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
