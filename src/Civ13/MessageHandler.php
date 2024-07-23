@@ -359,14 +359,13 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     {
         $exactHandlers = [];
         $otherHandlers = [];
-        foreach ($this->handlers as $command => $handler) {
-            if ($this->match_methods[$command] === 'exact') {
-                $exactHandlers[$command] = $handler;
-            } else {
-                $otherHandlers[$command] = $handler;
-            }
+        $commands = array_keys($this->handlers);
+        usort($commands, fn($a, $b) => strlen($b) <=> strlen($a)); // Prioritize longer commands to avoid improper matching
+        foreach ($commands as $command) {
+            if ($this->match_methods[$command] === 'exact') $exactHandlers[$command] = $this->handlers[$command];
+            else $otherHandlers[$command] = $this->handlers[$command];
         }
-        $this->handlers = $otherHandlers + $exactHandlers;
+        $this->handlers = array_filter(array_merge($otherHandlers, $exactHandlers));
     }
     
     public function setOffset(int|string $newOffset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
