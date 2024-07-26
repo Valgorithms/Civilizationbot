@@ -1125,7 +1125,7 @@ class MessageServiceManager
                         }
                         
                         $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $gameserver);
-                        $result = "**$admin** unbanned **$ckey** from **{$gameserver->key}**";
+                        $result = "**$admin** unbanned **$ckey** from **{$gameserver->name}**";
                         if ($member = $this->civ13->verifier->getVerifiedMember('id', $ckey))
                             if ($member->roles->has($this->civ13->role_ids['Banished']))
                                 $member->removeRole($this->civ13->role_ids['Banished'], $result);
