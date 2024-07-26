@@ -474,7 +474,7 @@ class GameServer
 
         $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
         {
-            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'));
+            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'), true);
             $tokens = explode(';', substr($command, strlen('logs ')));
             if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) return $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
 

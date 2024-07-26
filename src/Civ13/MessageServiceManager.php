@@ -235,7 +235,7 @@ class MessageServiceManager
                         
                         $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
                         {
-                            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'));
+                            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'), true);
                             $tokens = explode(';', substr($command, strlen('logs ')));
                             $keys = [];
                             foreach ($this->civ13->enabled_gameservers as &$gameserver) {
