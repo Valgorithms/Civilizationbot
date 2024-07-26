@@ -948,17 +948,17 @@ class MessageServiceManager
                 $this->messageHandler->offsetSet('ts',
                     function (Message $message, string $command, array $message_filtered): PromiseInterface
                     {
-                    if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
-                    if (! in_array($state, ['on', 'off'])) return $this->civ13->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
-                    if ($state === 'on') {
-                        \execInBackground("cd {$this->civ13->folders['typespess_path']}");
-                        \execInBackground('git pull');
-                        \execInBackground("sh {$this->civ13->files['typespess_launch_server_path']}&");
-                        return $this->civ13->reply($message, 'Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
-                    }
-                    \execInBackground('killall index.js');
-                    return $this->civ13->reply($message, '**TypeSpess Civ13** test server down.');
-                }, ['Owner']);
+                        if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
+                        if (! in_array($state, ['on', 'off'])) return $this->civ13->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
+                        if ($state === 'on') {
+                            \execInBackground("cd {$this->civ13->folders['typespess_path']}");
+                            \execInBackground('git pull');
+                            \execInBackground("sh {$this->civ13->files['typespess_launch_server_path']}&");
+                            return $this->civ13->reply($message, 'Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
+                        }
+                        \execInBackground('killall index.js');
+                        return $this->civ13->reply($message, '**TypeSpess Civ13** test server down.');
+                    }, ['Owner']);
 
             $this->__generateServerMessageCommands();
     }
