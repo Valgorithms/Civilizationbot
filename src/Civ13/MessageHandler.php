@@ -204,6 +204,11 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $return;
     }
 
+    public function push(callable $callback, int|string|null $offset = null): self
+    {
+        return $this;
+    }
+
     public function fill(array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
     {
         if (! array_is_list($handlers)) foreach ($handlers as $command => $handler) {
@@ -218,6 +223,15 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             $this->pushMethod(array_shift($match_methods));
             $this->pushDescription(array_shift($descriptions));
         }
+        return $this;
+    }
+
+    public function clear(): self
+    {
+        parent::clear();
+        $this->required_permissions = [];
+        $this->match_methods = [];
+        $this->descriptions = [];
         return $this;
     }
     
@@ -268,15 +282,6 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             if ($callback($handler))
                 return [$handler, $this->required_permissions[$index] ?? [], $this->match_methods[$index] ?? 'str_starts_with', $this->descriptions[$index] ?? ''];
         return [];
-    }
-
-    public function clear(): self
-    {
-        parent::clear();
-        $this->required_permissions = [];
-        $this->match_methods = [];
-        $this->descriptions = [];
-        return $this;
     }
     
     // TODO: Review this method
@@ -372,6 +377,11 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    public function getIterator(): \Traversable
+    {
+        return new \ArrayIterator($this->handlers);
+    }
+    
     public function toArray(): array
     {
         $toArray = parent::toArray();
