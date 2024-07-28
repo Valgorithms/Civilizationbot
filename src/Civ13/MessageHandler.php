@@ -303,15 +303,6 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
-    public function toArray(): array
-    {
-        $toArray = parent::toArray();
-        $toArray[] = $this->required_permissions ?? [];
-        $toArray[] = $this->match_methods ?? [];
-        $toArray[] = $this->descriptions ?? [];
-        return $toArray;
-    }
-
     public function offsetGet(int|string $offset): array
     {
         $return = parent::offsetGet($offset);
@@ -379,6 +370,15 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $this->match_methods[$newOffset] = $method;
         $this->descriptions[$newOffset] = $description;
         return $this;
+    }
+
+    public function toArray(): array
+    {
+        $toArray = parent::toArray();
+        $toArray[] = $this->required_permissions ?? [];
+        $toArray[] = $this->match_methods ?? [];
+        $toArray[] = $this->descriptions ?? [];
+        return $toArray;
     }
 
     public function __debugInfo(): array
