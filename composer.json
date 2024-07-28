@@ -14,7 +14,7 @@
         "wyrihaximus/react-cache-redis": "^4.2.0",
         "react/filesystem": "^0.2@dev",
         "react/async": "4.x-dev",
-        "react/child-process": "0.6.4",
+        "react/child-process": "0.6.5",
         "vzgcoders/twitchphp": "dev-main",
         "valzargaming/byond": "dev-main",
         "valzargaming/handler": "dev-main"
