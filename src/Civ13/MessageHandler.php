@@ -207,13 +207,13 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     public function fill(array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
     {
         if (! array_is_list($handlers)) foreach ($handlers as $command => $handler) {
-            parent::pushHandler(array_shift($handlers), $command);
+            parent::push(array_shift($handlers), $command);
             $this->pushPermission(array_shift($required_permissions), $command);
             $this->pushMethod(array_shift($match_methods), $command);
             $this->pushDescription(array_shift($descriptions), $command);
         }
         else foreach ($handlers as $handler) {
-            parent::pushHandler(array_shift($handler));
+            parent::push(array_shift($handler));
             $this->pushPermission(array_shift($required_permissions));
             $this->pushMethod(array_shift($match_methods));
             $this->pushDescription(array_shift($descriptions));
