@@ -57,19 +57,25 @@ use Civ13\Interfaces\MessageHandlerInterface;
 
 class MessageHandler extends CivHandler implements MessageHandlerInterface
 {
-    protected array $required_permissions;
-    /** @var array<string|callable> */
-    protected array $match_methods;
-    protected array $descriptions;
-    /** @inheritdoc */
-    public array $handlers = [];
+    protected array $fillable = [
+        'handlers',
+        'required_permissions',
+        'match_methods',
+        'descriptions',
+    ];
+    protected array $attributes = [
+        'handlers' => [], // array of callables
+        'required_permissions' => [],
+        'match_methods' => [], // array of strings or callables
+        'descriptions' => [],
+    ];
 
     public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $match_methods = [], array $descriptions = [])
     {
         parent::__construct($civ13, $handlers);
-        $this->required_permissions = $required_permissions;
-        $this->match_methods = $match_methods;
-        $this->descriptions = $descriptions;
+        $this->attributes['required_permissions'] = $required_permissions;
+        $this->attributes['match_methods'] = $match_methods;
+        $this->attributes['descriptions'] = $descriptions;
         $this->afterConstruct();
     }
     private function afterConstruct(): void
@@ -117,17 +123,17 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     {
         // if (! $message->member) return $message->reply('Unable to get Discord Member class. endpoints are only available in guilds.');
         if (! $message->member) return null;
-        //if (empty($this->handlers)) $this->logger->debug('No message handlers found!');
+        //if (empty($this->attributes['handlers'])) $this->logger->debug('No message handlers found!');
         $message_filtered = $this->civ13->filterMessage($message);
         if (
             (isset($message_filtered['message_content_lower']) && $endpoint = $message_filtered['message_content_lower'])
-            && (isset($this->handlers[$endpoint]) && $callback = $this->handlers[$endpoint])
-            && (isset($this->match_methods[$endpoint]) && $matchMethod = $this->match_methods[$endpoint])
+            && (isset($this->attributes['handlers'][$endpoint]) && $callback = $this->attributes['handlers'][$endpoint])
+            && (isset($this->attributes['match_methods'][$endpoint]) && $matchMethod = $this->attributes['match_methods'][$endpoint])
             && ($matchMethod === 'exact')
         ) return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback, ];
         
-        foreach ($this->handlers as $endpoint => $callback) if (isset($this->match_methods[$endpoint])) {
-            $matchMethod = $this->match_methods[$endpoint] ?? 'str_starts_with';
+        foreach ($this->attributes['handlers'] as $endpoint => $callback) if (isset($this->attributes['match_methods'][$endpoint])) {
+            $matchMethod = $this->attributes['match_methods'][$endpoint] ?? 'str_starts_with';
             if ($matchMethod === 'exact') continue; // We've reached the end of the relevant array and there were no exact matches
             if (is_callable($matchMethod) && call_user_func($matchMethod, $message_filtered['message_content_lower'], $endpoint))
                 return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
@@ -148,12 +154,12 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
      */
     private function __processCallback(callable $callback, Message $message, string $endpoint, array $message_filtered): ?PromiseInterface
     {
-        $required_permissions = $this->required_permissions[$endpoint] ?? [];
+        $required_permissions = $this->attributes['required_permissions'][$endpoint] ?? [];
         if ($lowest_rank = array_pop($required_permissions)) {
             if (! isset($this->civ13->role_ids[$lowest_rank])) {
                 $this->logger->warning("Unable to find role ID for rank `$lowest_rank`");
                 throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
-            } elseif (! $this->checkRank($message->member->roles, $this->required_permissions[$endpoint] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
+            } elseif (! $this->checkRank($message->member->roles, $this->attributes['required_permissions'][$endpoint] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
         }
         $this->logger->debug("Endpoint '$endpoint' triggered");
         try {
@@ -164,40 +170,31 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         }
     }
 
-    public function get(): array
-    {
-        return [$this->handlers, $this->required_permissions, $this->match_methods, $this->descriptions];
-    }
-
-    public function set(array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
-    {
-        parent::set($handlers);
-        $this->required_permissions = $required_permissions;
-        $this->match_methods = $match_methods;
-        $this->descriptions = $descriptions;
-        return $this;
-    }
-
     public function pull(int|string $index, ?callable $defaultCallables = null, array $default_required_permissions = null, array $default_match_methods = null, array $default_descriptions = null): array
     {
         $return = [];
-        $return[] = parent::pull($index, $defaultCallables);
 
-        if (isset($this->required_permissions[$index])) {
-            $default_required_permissions = $this->required_permissions[$index];
-            unset($this->required_permissions[$index]);
+        if (isset($this->attributes['handlers'][$index])) {
+            $default_handlers = $this->attributes['handlers'][$index] ?? null;
+            unset($this->attributes['handlers'][$index]);
+        }
+        $return[] = $default_handlers;
+
+        if (isset($this->attributes['required_permissions'][$index])) {
+            $default_required_permissions = $this->attributes['required_permissions'][$index] ?? null;
+            unset($this->attributes['required_permissions'][$index]);
         }
         $return[] = $default_required_permissions;
 
-        if (isset($this->match_methods[$index])) {
-            $default_match_methods = $this->match_methods[$index];
-            unset($this->match_methods[$index]);
+        if (isset($this->attributes['match_methods'][$index])) {
+            $default_match_methods = $this->attributes['match_methods'][$index] ?? null;
+            unset($this->attributes['match_methods'][$index]);
         }
         $return[] = $default_match_methods;
 
-        if (isset($this->descriptions[$index])) {
-            $default_descriptions = $this->descriptions[$index];
-            unset($this->descriptions[$index]);
+        if (isset($this->attributes['descriptions'][$index])) {
+            $default_descriptions = $this->attributes['descriptions'][$index] ?? null;
+            unset($this->attributes['descriptions'][$index]);
         }
         $return[] = $default_descriptions;
 
@@ -210,15 +207,15 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     }
 
     public function fill(array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
-    {
+    { // TODO: This should overwrite the existing handlers, not append to them
         if (! array_is_list($handlers)) foreach ($handlers as $command => $handler) {
-            parent::push(array_shift($handlers), $command);
+            $this->pushHandler($handler, $command);
             $this->pushPermission(array_shift($required_permissions), $command);
             $this->pushMethod(array_shift($match_methods), $command);
             $this->pushDescription(array_shift($descriptions), $command);
         }
-        else foreach ($handlers as $handler) {
-            parent::push(array_shift($handler));
+        else foreach ($handlers as $name => $handler) {
+            $this->pushHandler($name, $handler);
             $this->pushPermission(array_shift($required_permissions));
             $this->pushMethod(array_shift($match_methods));
             $this->pushDescription(array_shift($descriptions));
@@ -226,68 +223,118 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
-    public function clear(): self
+    public function clear(): void
     {
-        parent::clear();
-        $this->required_permissions = [];
-        $this->match_methods = [];
-        $this->descriptions = [];
-        return $this;
+        parent::__clear();
     }
     
-    public function pushPermission(array $required_permissions, int|string|null $command = null): ?self
+    public function getHandler(int|string $offset): ?callable
     {
-        if ($command) $this->required_permissions[$command] = $required_permissions;
-        else $this->required_permissions[] = $required_permissions;
+        return $this->attributes['handlers'][$offset] ?? null;
+    }
+
+    public function pushHandlers(array $handlers): self
+    {
+        foreach ($handlers as $handler) $this->pushHandler($handler);
         return $this;
     }
 
-    public function pushMethod(string $method, int|string|null $command = null): ?self
+    public function pushHandler(callable $handler, int|string|null $command = null): self
     {
-        if ($command) $this->match_methods[$command] = $method;
-        else $this->match_methods[] = $method;
+        if ($command) $this->attributes['handlers'][$command] = $handler;
+        else $this->attributes['handlers'][] = $handler;
         return $this;
     }
 
-    public function pushDescription(string $description, int|string|null $command = null): ?self
+    public function pullHandler(null|int|string $offset = null, mixed $default = null): mixed
     {
-        if ($command) $this->descriptions[$command] = $description;
-        else $this->descriptions[] = $description;
+        if (isset($this->attributes['handlers'][$offset])) {
+            $item = $this->attributes['handlers'][$offset];
+            unset($this->attributes['handlers'][$offset]);
+            return $item;
+        }
+        return $default;
+    }
+
+    public function fillHandlers(array $items): self
+    {
+        foreach ($items as $command => $handler) $this->pushHandler($handler, $command);
         return $this;
     }
 
-    public function first(): array
+    public function clearHandlers(): self
+    {
+        $this->attributes['handlers'] = [];
+        
+        return $this;
+    }
+
+    public function pushPermission(array $required_permissions, int|string|null $command = null): self
+    {
+        if ($command) $this->attributes['required_permissions'][$command] = $required_permissions;
+        else $this->attributes['required_permissions'][] = $required_permissions;
+        return $this;
+    }
+
+    public function pushMethod(string $method, int|string|null $command = null): self
+    {
+        if ($command) $this->attributes['match_methods'][$command] = $method;
+        else $this->attributes['match_methods'][] = $method;
+        return $this;
+    }
+
+    public function pushDescription(string $description, int|string|null $command = null): self
+    {
+        if ($command) $this->attributes['descriptions'][$command] = $description;
+        else $this->attributes['descriptions'][] = $description;
+        return $this;
+    }
+
+    public function first(null|int|string $name = null): mixed
     {
         $toArray = $this->toArray();
         $return = [];
-        $return[] = array_shift(array_shift($toArray) ?? []);
-        $return[] = array_shift(array_shift($toArray) ?? []);
-        $return[] = array_shift(array_shift($toArray) ?? []);
+        $return[] = array_shift($toArray) ?? [];
+        $return[] = array_shift($toArray) ?? [];
+        $return[] = array_shift($toArray) ?? [];
         return $return;
     }
     
-    public function last(): array
+    public function last(null|int|string $name = null): mixed
     {
         $toArray = $this->toArray();
         $return = [];
-        $return[] = array_pop(array_shift($toArray) ?? []);
-        $return[] = array_pop(array_shift($toArray) ?? []);
-        $return[] = array_pop(array_shift($toArray) ?? []);
+        $return[] = array_pop($toArray) ?? [];
+        $return[] = array_pop($toArray) ?? [];
+        $return[] = array_pop($toArray) ?? [];
         return $return;
     }
 
     public function find(callable $callback): array
     {
-        foreach ($this->handlers as $index => $handler)
+        foreach ($this->attributes['handlers'] as $index => $handler)
             if ($callback($handler))
-                return [$handler, $this->required_permissions[$index] ?? [], $this->match_methods[$index] ?? 'str_starts_with', $this->descriptions[$index] ?? ''];
+                return [$handler, $this->attributes['required_permissions'][$index] ?? [], $this->attributes['match_methods'][$index] ?? 'str_starts_with', $this->attributes['descriptions'][$index] ?? ''];
         return [];
+    }
+
+    public function isset(int|string $offset): bool
+    {
+        return isset($this->attributes['handlers'][$offset]);
+    }
+
+    public function has(array ...$offsets): bool
+    {
+        foreach ($offsets as $offset)
+            if (! isset($this->attributes['handlers'][$offset]))
+                return false;
+        return true;
     }
     
     // TODO: Review this method
     public function map(callable $callback): static
     {
-        $arr = array_combine(array_keys($this->handlers), array_map($callback, array_values($this->toArray())));
+        $arr = array_combine(array_keys($this->attributes['handlers']), array_map($callback, array_values($this->toArray())));
         return new static($this->civ13, array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? []);
     }
 
@@ -301,19 +348,33 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             return $this;
         }
         $toArray = $handler->toArray();
-        $this->handlers = array_merge($this->handlers, array_shift($toArray) ?? []);
-        $this->required_permissions = array_merge($this->required_permissions, array_shift($toArray) ?? []);
-        $this->match_methods = array_merge($this->match_methods, array_shift($toArray) ?? []);
-        $this->descriptions = array_merge($this->descriptions, array_shift($toArray) ?? []);
+        $this->attributes['handlers'] = array_merge($this->attributes['handlers'], array_shift($toArray) ?? []);
+        $this->attributes['required_permissions'] = array_merge($this->attributes['required_permissions'], array_shift($toArray) ?? []);
+        $this->attributes['match_methods'] = array_merge($this->attributes['match_methods'], array_shift($toArray) ?? []);
+        $this->attributes['descriptions'] = array_merge($this->attributes['descriptions'], array_shift($toArray) ?? []);
         return $this;
     }
 
-    public function offsetGet(int|string $offset): array
+    public function offsetExists(int|string $offset, ?string $name = null): bool
     {
-        $return = parent::offsetGet($offset);
-        $return[] = $this->required_permissions[$offset] ?? null;
-        $return[] = $this->match_methods[$offset] ?? null;
-        $return[] = $this->descriptions[$offset] ?? null;
+        if ($name) {
+            if (! $attribute = $this->__offsetGet($name)) return false;
+            return isset($attribute[$name][$offset]);
+        }
+        return isset($this->attributes['handlers'][$offset]);
+    }
+
+    public function offsetGet(int|string $offset, ?string $name = null): mixed
+    {
+        if ($name) {
+            if (! $attribute = $this->__offsetGet($name)) return null;
+            return $attribute[$offset] ?? null;
+        }
+        $return[] = $this->attributes['handlers'][$offset] ?? null;
+        $return[] = $this->attributes['required_permissions'][$offset] ?? null;
+        $return[] = $this->attributes['match_methods'][$offset] ?? null;
+        $return[] = $this->attributes['descriptions'][$offset] ?? null;
+        if (! $return) return null;
         return $return;
     }
     
@@ -323,25 +384,31 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
         $callback = $this->validate($callback); // @throws InvalidArgumentException
-        parent::offsetSet($offset, $callback);
-        $this->required_permissions[$offset] = $required_permissions;
-        $this->match_methods[$offset] = $method;
-        $this->descriptions[$offset] = $description;
+        $this->attributes['handlers'][$offset] = $callback;
+        $this->attributes['required_permissions'][$offset] = $required_permissions;
+        $this->attributes['match_methods'][$offset] = $method;
+        $this->attributes['descriptions'][$offset] = $description;
         if ($method === 'exact') $this->__reorderHandlers();
         return $this;
     }
 
     public function offsetSets(array $offsets, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
-        parent::offsetSets($offsets, $callback);
         foreach ($offsets as $offset) {
-            $this->required_permissions[$offset] = $required_permissions;
-            $this->match_methods[$offset] = $method;
-            $this->descriptions[$offset] = $description;
+            $this->attributes['handlers'][$offset] = $callback;
+            $this->attributes['required_permissions'][$offset] = $required_permissions;
+            $this->attributes['match_methods'][$offset] = $method;
+            $this->attributes['descriptions'][$offset] = $description;
         }
         if ($method === 'exact') $this->__reorderHandlers();
         return $this;
     }
+
+    public function getOffset(callable $callback): int|string|false
+    {
+        return parent::__getOffset('handlers', $callback);
+    }
+
     /**
      * Reorders the handlers based on the match methods.
      *
@@ -355,45 +422,48 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     {
         $exactHandlers = [];
         $otherHandlers = [];
-        $commands = array_keys($this->handlers);
+        $commands = array_keys($this->attributes['handlers']);
         usort($commands, fn($a, $b) => strlen($b) <=> strlen($a)); // Prioritize longer commands to avoid improper matching
         foreach ($commands as $command) {
-            if ($this->match_methods[$command] === 'exact') $exactHandlers[$command] = $this->handlers[$command];
-            else $otherHandlers[$command] = $this->handlers[$command];
+            if ($this->attributes['match_methods'][$command] === 'exact') $exactHandlers[$command] = $this->attributes['handlers'][$command];
+            else $otherHandlers[$command] = $this->attributes['handlers'][$command];
         }
-        $this->handlers = array_filter(array_merge($otherHandlers, $exactHandlers));
+        $this->attributes['handlers'] = array_filter(array_merge($otherHandlers, $exactHandlers));
     }
     
     public function setOffset(int|string $newOffset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
-        parent::setOffset($newOffset, $callback);
-        if ($offset = $this->getOffset($callback) === false) $offset = $newOffset;
-        unset($this->required_permissions[$offset]);
-        unset($this->match_methods[$offset]);
-        unset($this->descriptions[$offset]);
-        $this->required_permissions[$newOffset] = $required_permissions;
-        $this->match_methods[$newOffset] = $method;
-        $this->descriptions[$newOffset] = $description;
+        while ($offset = $this->getOffset($callback) !== false) {
+            unset($this->attributes['handlers'][$offset]);
+            unset($this->attributes['required_permissions'][$offset]);
+            unset($this->attributes['match_methods'][$offset]);
+            unset($this->attributes['descriptions'][$offset]);
+        }
+        $this->attributes['handlers'][$newOffset] = $callback;
+        $this->attributes['required_permissions'][$newOffset] = $required_permissions;
+        $this->attributes['match_methods'][$newOffset] = $method;
+        $this->attributes['descriptions'][$newOffset] = $description;
         return $this;
     }
 
     public function getIterator(): \Traversable
     {
-        return new \ArrayIterator($this->handlers);
+        return new \ArrayIterator($this->attributes['handlers']);
     }
     
     public function toArray(): array
     {
-        $toArray = parent::toArray();
-        $toArray[] = $this->required_permissions ?? [];
-        $toArray[] = $this->match_methods ?? [];
-        $toArray[] = $this->descriptions ?? [];
-        return $toArray;
+        return [
+            $this->attributes['handlers'] ?? [],
+            $this->attributes['required_permissions'] ?? [],
+            $this->attributes['match_methods'] ?? [],
+            $this->attributes['descriptions'] ?? []
+        ];
     }
 
     public function __debugInfo(): array
     {
-        return ['civ13' => isset($this->civ13) ? $this->civ13 instanceof Civ13 : false, 'handlers' => array_keys($this->handlers)];
+        return ['civ13' => isset($this->civ13) ? $this->civ13 instanceof Civ13 : false, 'handlers' => array_keys($this->attributes['handlers'])];
     }
 
     // Don't forget to use ->setAllowedMentions(['parse'=>[]]) on the MessageBuilder object to prevent all roles being pinged
@@ -403,11 +473,11 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $ranks[] = 'everyone';
         
         $array = [];
-        foreach (array_keys($this->handlers) as $command) {
-            $required_permissions = $this->required_permissions[$command] ?? [];
+        foreach (array_keys($this->attributes['handlers']) as $command) {
+            $required_permissions = $this->attributes['required_permissions'][$command] ?? [];
             $lowest_rank = array_pop($required_permissions) ?? 'everyone';
             if (! $roles) $array[$lowest_rank][] = $command;
-            elseif ($lowest_rank == 'everyone' || $this->checkRank($roles, $this->required_permissions[$command])) $array[$lowest_rank][] = $command;
+            elseif ($lowest_rank == 'everyone' || $this->checkRank($roles, $this->attributes['required_permissions'][$command])) $array[$lowest_rank][] = $command;
         }
         $string = '';
         foreach ($ranks as $rank) {

@@ -254,12 +254,10 @@ class HttpServiceManager
         // HttpHandler website endpoints
         $index = new HttpHandlerCallback(function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
-            if ($whitelisted) {
-                $method = $this->httpHandler->offsetGet('/botlog') ?? [];
-                if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
-            }
-            $method = $this->httpHandler->offsetGet('/home.html') ?? [];
-            if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
+            if ($whitelisted)
+                if ($method = $this->httpHandler->offsetGet('/botlog', 'handlers'))
+                    return $method($request, $endpoint, $whitelisted);
+            if ($method = $this->httpHandler->offsetGet('/home.html', 'handlers')) return $method($request, $endpoint, $whitelisted);
             return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
         });
         $this->httpHandler->offsetSet('/', $index);
@@ -324,8 +322,7 @@ class HttpServiceManager
                 if ($this->httpHandler->whitelist($ip))
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot']))
                         $this->civ13->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
-                $method = $this->httpHandler->offsetGet('/botlog') ?? [];
-                if ($method = array_shift($method))
+                if ($this->httpHandler->offsetGet('/botlog', 'handlers'))
                     return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
             }
 
@@ -814,8 +811,7 @@ class HttpServiceManager
             {
                 $params = $request->getQueryParams();
                 //if ($params['method']) $this->logger->info("[METHOD] `{$params['method']}`");
-                $method = $this->httpHandler->offsetGet($endpoint.'/'.($params['method'] ?? '')) ?? [];
-                if ($method = array_shift($method)) return $method($request, $endpoint, $whitelisted);
+                if ($method = $this->httpHandler->offsetGet($endpoint.'/'.($params['method'] ?? ''), 'handlers') ?? []) return $method($request, $endpoint, $whitelisted);
                 else {
                     if ($params['method'] ?? '') $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
                     return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);

@@ -14,20 +14,18 @@ use Discord\Discord;
 use Monolog\Logger;
 use Handler\Handler;
 
-class CivHandler extends Handler implements CivHandlerInterface
+abstract class CivHandler extends Handler implements CivHandlerInterface
 {
     public Civ13 $civ13;
     public Discord $discord;
     public Logger $logger;
 
     use RankTrait;
-
-    /** @inheritdoc */
-    public array $handlers = [];
     
     public function __construct(Civ13 &$civ13, array $handlers = [])
     {
-        parent::__construct($handlers);
+        parent::__construct();
+        $this->attributes['handlers'] = $handlers;
         $this->civ13 =& $civ13;
         $this->discord =& $civ13->discord;
         $this->logger =& $civ13->logger;

@@ -1183,7 +1183,7 @@ class MessageServiceManager
      */
     private function __declareListener()
     {
-        if (! $this->messageHandler->handlers) {
+        if (! $this->messageHandler->first()) {
             $this->logger->debug('No message handlers found!');
             return;
         }

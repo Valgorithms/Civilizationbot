@@ -60,17 +60,6 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
 {
     public string $external_ip = '127.0.0.1';
     private string $key = '';
-    protected array $whitelist = [];
-    protected array $ratelimits = [];
-
-    protected array $endpoints = [];
-    
-    protected array $whitelisted = [];
-    /** 
-     * @var array<string|callable>
-     */
-    protected array $match_methods = [];
-    protected array $descriptions = [];
 
     public string $last_ip = '';
 
@@ -85,6 +74,14 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     public function __construct(Civ13 &$civ13, array $handlers = [], array $whitelist = [], string $key = '')
     {
         parent::__construct($civ13, $handlers);
+        $this->attributes['whitelisted'] = [];
+        $this->attributes['match_methods'] = [];
+        $this->attributes['descriptions'] = [];
+
+        $this->attributes['whitelist'] = [];
+        $this->attributes['ratelimits'] = [];
+        //$this->attributes['endpoints'] = [];
+
         if ($external_ip = file_get_contents('http://ipecho.net/plain')) $this->external_ip = $external_ip;
         foreach ($whitelist as $ip) $this->whitelist($ip);
         $this->key = $key;
@@ -142,12 +139,12 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     private function __getCallback(ServerRequestInterface $request): ?array
     {
         //$ext = pathinfo($request->getUri()->getQuery(), PATHINFO_EXTENSION); // We need the .ext too!
-        $matchMethod = $this->match_methods[$path = $request->getUri()->getPath()] ?? 'str_starts_with';
-        if (isset($this->handlers[$path]) && $matchMethod === 'exact')
-            return ['callback' => $this->handlers[$path], 'endpoint' => $path];
+        $matchMethod = $this->attributes['match_methods'][$path = $request->getUri()->getPath()] ?? 'str_starts_with';
+        if (isset($this->attributes['handlers'][$path]) && $matchMethod === 'exact')
+            return ['callback' => $this->attributes['handlers'][$path], 'endpoint' => $path];
         
-        foreach ($this->handlers as $endpoint => $callback) {
-            $matchMethod = $this->match_methods[$endpoint] ?? 'str_starts_with';
+        foreach ($this->attributes['handlers'] as $endpoint => $callback) {
+            $matchMethod = $this->attributes['match_methods'][$endpoint] ?? 'str_starts_with';
             if ($matchMethod === 'exact') continue; // We've reached the end of the relevant array and there were no exact matches
             if ( is_callable($matchMethod) && call_user_func($matchMethod, $endpoint, $path))
                 return ['callback' => $callback, 'endpoint' => $endpoint];
@@ -168,7 +165,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     {
         // Check if the endpoint and IP address are whitelisted
         if (! $whitelisted = $this->__isWhitelisted($request, $this->last_ip))
-            if (($this->whitelisted[$endpoint] ?? false) !== false)
+            if (($this->attributes['whitelisted'][$endpoint] ?? false) !== false)
                 return $this->__throwError("You do not have permission to access this endpoint.", HttpResponse::STATUS_FORBIDDEN);
 
         // Check if the endpoint is rate limited
@@ -180,7 +177,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
             return $this->__throwError("Callback for the endpoint `{$request->getUri()->getPath()}` is disabled due to an invalid HttpResponse.", HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
         // Update the rate limit requests
-        if (isset($this->ratelimits[$endpoint]['requests']) && $requests = $this->ratelimits[$endpoint]['requests']) {
+        if (isset($this->attributes['ratelimits'][$endpoint]['requests']) && $requests = $this->attributes['ratelimits'][$endpoint]['requests']) {
             $lastRequest = end($requests);
             if ($lastRequest['status'] !== $status = $response->getStatusCode()) // Status code could be null or otherwise different if the callback changed it
                 $lastRequest['status'] = $status;
@@ -199,7 +196,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     public function generateHelp(): string
     {   
         $array = [];
-        foreach (array_keys($this->handlers) as $command) $array[$command] = $this->whitelisted[$command] ? true : false;
+        foreach (array_keys($this->attributes['handlers']) as $command) $array[$command] = $this->attributes['whitelisted'][$command] ? true : false;
         $public = '';
         $restricted = '';
         $webhooks = '';
@@ -234,12 +231,12 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
             $this->logger->debug("HTTP Server error: `$ip` is not a valid IP address.");
             return false;
         }
-        if (in_array($ip, $this->whitelist)) {
+        if (in_array($ip, $this->attributes['whitelist'])) {
             $this->logger->debug("HTTP Server error: `$ip` is already whitelisted.");
             return false;
         }
         $this->logger->info("HTTP Server: `$ip` has been whitelisted.");
-        $this->whitelist[] = $ip;
+        $this->attributes['whitelist'][] = $ip;
         return true;
     }
     /**
@@ -254,11 +251,11 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
             $this->logger->debug("HTTP Server error: `$ip` is not a valid IP address.");
             return false;
         }
-        if (! (($key = array_search($ip, $this->whitelist)) !== false)) {
+        if (! (($key = array_search($ip, $this->attributes['whitelist'])) !== false)) {
             $this->logger->debug("HTTP Server error: `$ip` is not already whitelisted.");
             return false;
         }
-        unset($this->whitelist[$key]);
+        unset($this->attributes['whitelist'][$key]);
         $this->logger->info("HTTP Server: `$ip` has been unwhitelisted.");
         return true;
     }
@@ -273,7 +270,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
      */
     public function setRateLimit(string $endpoint, int $limit, int $window): HttpHandler
     {
-        $this->ratelimits[$endpoint] = [
+        $this->attributes['ratelimits'][$endpoint] = [
             'limit' => $limit,
             'window' => $window,
             'requests' => [],
@@ -322,17 +319,17 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
      */
     public function isRateLimited(string $endpoint, string $ip): ?int
     {
-        if (isset($this->ratelimits[$endpoint])) $this->addRequestToRateLimit($endpoint, $ip);
+        if (isset($this->attributes['ratelimits'][$endpoint])) $this->addRequestToRateLimit($endpoint, $ip);
         return $this->__getRateLimitExpiration($endpoint, $ip);
     }
     public function __getRateLimitExpiration(string $endpoint, string $ip): ?int
     {
-        if (! isset($this->ratelimits[$endpoint])) {
+        if (! isset($this->attributes['ratelimits'][$endpoint])) {
             //$this->logger->info("`$endpoint` has no rate limit defined.");
             return null;
         }
 
-        $rateLimit = $this->ratelimits[$endpoint];
+        $rateLimit = $this->attributes['ratelimits'][$endpoint];
         $currentTime = time();
 
         // Remove expired requests from the rate limit tracking
@@ -367,13 +364,27 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     private function addRequestToRateLimit(string $endpoint, string $ip, ?int $status = null, ?int $currentTime = null): void
     {
         if (! $currentTime) $currentTime = time();
-        $rateLimit = $this->ratelimits[$endpoint] ?? [];
+        $rateLimit = $this->attributes['ratelimits'][$endpoint] ?? [];
         $rateLimit['requests'][] = [
             'ip' => $ip,
             'time' => $currentTime,
             'status' => $status,
         ];
-        $this->ratelimits[$endpoint] = $rateLimit;
+        $this->attributes['ratelimits'][$endpoint] = $rateLimit;
+    }
+
+    public function offsetGet(int|string $offset, ?string $name = null): mixed
+    {
+        if ($name) {
+            if (! $attribute = $this->__offsetGet($name)) return null;
+            return $attribute[$offset] ?? null;
+        }
+        $return[] = $this->attributes['handlers'][$offset] ?? null;
+        $return[] = $this->attributes['whitelisted'][$offset] ?? null;
+        $return[] = $this->attributes['match_methods'][$offset] ?? null;
+        $return[] = $this->attributes['descriptions'][$offset] ?? null;
+        if (! $return) return null;
+        return $return;
     }
 
     /**
@@ -388,10 +399,10 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
      */
     public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
-        parent::offsetSet($offset, $callback);
-        $this->whitelisted[$offset] = $whitelisted;
-        $this->match_methods[$offset] = $method;
-        $this->descriptions[$offset] = $description;
+        $this->attributes['handlers'][$offset] = $callback;;
+        $this->attributes['whitelisted'][$offset] = $whitelisted;
+        $this->attributes['match_methods'][$offset] = $method;
+        $this->attributes['descriptions'][$offset] = $description;
         if ($method === 'exact') $this->__reorderHandlers();
         return $this;
     }
@@ -409,14 +420,14 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     {
         $exactHandlers = [];
         $otherHandlers = [];
-        foreach ($this->handlers as $command => $handler) {
-            if ($this->match_methods[$command] === 'exact') {
+        foreach ($this->attributes['handlers'] as $command => $handler) {
+            if ($this->attributes['match_methods'][$command] === 'exact') {
                 $exactHandlers[$command] = $handler;
             } else {
                 $otherHandlers[$command] = $handler;
             }
         }
-        $this->handlers = $otherHandlers + $exactHandlers;
+        $this->attributes['handlers'] = $otherHandlers + $exactHandlers;
     }
 
     /**
@@ -434,7 +445,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
                 if ($data['key'] === $this->key)
                     return true;
         }
-        return (in_array($ip, $this->whitelist) || $this->__isLocal($ip));
+        return (in_array($ip, $this->attributes['whitelist']) || $this->__isLocal($ip));
     }
     
     /**
@@ -482,6 +493,15 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
+    public function __debugInfo(): array
+    {
+        return [
+            'external_ip' => $this->external_ip,
+            'key' => $this->key,
+            'last_ip' => $this->last_ip,
+            'attributes' => $this->attributes,
+        ];
+    }
     /**
      * Throws an error response with the specified error message and status code.
      *
