@@ -370,12 +370,8 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             if (! $attribute = $this->__offsetGet($name)) return null;
             return $attribute[$offset] ?? null;
         }
-        $return[] = $this->attributes['handlers'][$offset] ?? null;
-        $return[] = $this->attributes['required_permissions'][$offset] ?? null;
-        $return[] = $this->attributes['match_methods'][$offset] ?? null;
-        $return[] = $this->attributes['descriptions'][$offset] ?? null;
-        if (! $return) return null;
-        return $return;
+        if ($return = array_filter(array_map(fn($attribute) => $attribute[$offset] ?? null, $this->attributes))) return $return;
+        return null;
     }
     
     /**
