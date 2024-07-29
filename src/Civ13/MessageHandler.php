@@ -353,25 +353,26 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
      */    
     public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
-        $this->attributes = array_merge([
-            'handlers' => [$offset => $this->validate($callback)], // @throws InvalidArgumentException
-            'required_permissions' => [$offset => $required_permissions],
-            'match_methods' => [$offset => $method],
-            'descriptions' => [$offset => $description]
-        ], $this->attributes);
-        if ($method === 'exact') $this->__reorderHandlers();
+        $this->attributes['handlers'][$offset] = $this->validate($callback); // @throws InvalidArgumentException
+        $this->attributes['required_permissions'][$offset] = $required_permissions;
+        $this->attributes['match_methods'][$offset] = $method;
+        $this->attributes['descriptions'][$offset] = $description;
+        //if ($method === 'exact')
+            $this->__reorderHandlers();
         return $this;
     }
 
     public function offsetSets(array $offsets, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
-        array_map(fn($offset) => $this->attributes = array_merge([
-            'handlers' => [$offset => $this->validate($callback)], // @throws InvalidArgumentException
-            'required_permissions' => [$offset => $required_permissions],
-            'match_methods' => [$offset => $method],
-            'descriptions' => [$offset => $description]
-        ], $this->attributes), $offsets);
-        if ($method === 'exact') $this->__reorderHandlers();
+        $callback = $this->validate($callback); // @throws InvalidArgumentException
+        foreach ($offsets as $offset) {
+            $this->attributes['handlers'][$offset] = $callback;
+            $this->attributes['required_permissions'][$offset] = $required_permissions;
+            $this->attributes['match_methods'][$offset] = $method;
+            $this->attributes['descriptions'][$offset] = $description;
+        }
+        //if ($method === 'exact')
+            $this->__reorderHandlers();
         return $this;
     }
 
