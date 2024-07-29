@@ -172,32 +172,18 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
 
     public function pull(int|string $index, ?callable $defaultCallables = null, array $default_required_permissions = null, array $default_match_methods = null, array $default_descriptions = null): array
     {
-        $return = [];
-
-        if (isset($this->attributes['handlers'][$index])) {
-            $default_handlers = $this->attributes['handlers'][$index] ?? null;
-            unset($this->attributes['handlers'][$index]);
-        }
-        $return[] = $default_handlers;
-
-        if (isset($this->attributes['required_permissions'][$index])) {
-            $default_required_permissions = $this->attributes['required_permissions'][$index] ?? null;
-            unset($this->attributes['required_permissions'][$index]);
-        }
-        $return[] = $default_required_permissions;
-
-        if (isset($this->attributes['match_methods'][$index])) {
-            $default_match_methods = $this->attributes['match_methods'][$index] ?? null;
-            unset($this->attributes['match_methods'][$index]);
-        }
-        $return[] = $default_match_methods;
-
-        if (isset($this->attributes['descriptions'][$index])) {
-            $default_descriptions = $this->attributes['descriptions'][$index] ?? null;
-            unset($this->attributes['descriptions'][$index]);
-        }
-        $return[] = $default_descriptions;
-
+        $return = [
+            'handlers' => $this->attributes['handlers'][$index] ?? null,
+            'required_permissions' => $this->attributes['required_permissions'][$index] ?? null,
+            'match_methods' => $this->attributes['match_methods'][$index] ?? null,
+            'descriptions' => $this->attributes['descriptions'][$index] ?? null,
+        ];
+        unset(
+            $this->attributes['handlers'][$index],
+            $this->attributes['required_permissions'][$index],
+            $this->attributes['match_methods'][$index],
+            $this->attributes['descriptions'][$index]
+        );
         return $return;
     }
 
@@ -292,22 +278,12 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
 
     public function first(null|int|string $name = null): mixed
     {
-        $toArray = $this->toArray();
-        $return = [];
-        $return[] = array_shift($toArray) ?? [];
-        $return[] = array_shift($toArray) ?? [];
-        $return[] = array_shift($toArray) ?? [];
-        return $return;
+        return array_map(fn($array) => array_shift($array) ?? null, $this->toArray());
     }
     
     public function last(null|int|string $name = null): mixed
     {
-        $toArray = $this->toArray();
-        $return = [];
-        $return[] = array_pop($toArray) ?? [];
-        $return[] = array_pop($toArray) ?? [];
-        $return[] = array_pop($toArray) ?? [];
-        return $return;
+        return array_map(fn($array) => array_pop($array) ?? null, $this->toArray());
     }
 
     public function find(callable $callback): array
@@ -334,8 +310,8 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     // TODO: Review this method
     public function map(callable $callback): static
     {
-        $arr = array_combine(array_keys($this->attributes['handlers']), array_map($callback, array_values($this->toArray())));
-        return new static($this->civ13, array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? [], array_shift($arr) ?? []);
+        $this->attributes = array_map($callback, $this->attributes);
+        return $this;
     }
 
     /**
@@ -348,10 +324,8 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             return $this;
         }
         $toArray = $handler->toArray();
-        $this->attributes['handlers'] = array_merge($this->attributes['handlers'], array_shift($toArray) ?? []);
-        $this->attributes['required_permissions'] = array_merge($this->attributes['required_permissions'], array_shift($toArray) ?? []);
-        $this->attributes['match_methods'] = array_merge($this->attributes['match_methods'], array_shift($toArray) ?? []);
-        $this->attributes['descriptions'] = array_merge($this->attributes['descriptions'], array_shift($toArray) ?? []);
+        $this->attributes = array_map(fn($key) => [...$this->attributes[$key], ...array_shift($toArray[$key] ?? [])], array_keys($this->fillable));
+        $this->__reorderHandlers();
         return $this;
     }
 
@@ -379,23 +353,24 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
      */    
     public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
-        $callback = $this->validate($callback); // @throws InvalidArgumentException
-        $this->attributes['handlers'][$offset] = $callback;
-        $this->attributes['required_permissions'][$offset] = $required_permissions;
-        $this->attributes['match_methods'][$offset] = $method;
-        $this->attributes['descriptions'][$offset] = $description;
+        $this->attributes = array_merge([
+            'handlers' => [$offset => $this->validate($callback)], // @throws InvalidArgumentException
+            'required_permissions' => [$offset => $required_permissions],
+            'match_methods' => [$offset => $method],
+            'descriptions' => [$offset => $description]
+        ], $this->attributes);
         if ($method === 'exact') $this->__reorderHandlers();
         return $this;
     }
 
     public function offsetSets(array $offsets, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
-        foreach ($offsets as $offset) {
-            $this->attributes['handlers'][$offset] = $callback;
-            $this->attributes['required_permissions'][$offset] = $required_permissions;
-            $this->attributes['match_methods'][$offset] = $method;
-            $this->attributes['descriptions'][$offset] = $description;
-        }
+        array_map(fn($offset) => $this->attributes = array_merge([
+            'handlers' => [$offset => $this->validate($callback)], // @throws InvalidArgumentException
+            'required_permissions' => [$offset => $required_permissions],
+            'match_methods' => [$offset => $method],
+            'descriptions' => [$offset => $description]
+        ], $this->attributes), $offsets);
         if ($method === 'exact') $this->__reorderHandlers();
         return $this;
     }
@@ -430,15 +405,19 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     public function setOffset(int|string $newOffset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
         while ($offset = $this->getOffset($callback) !== false) {
-            unset($this->attributes['handlers'][$offset]);
-            unset($this->attributes['required_permissions'][$offset]);
-            unset($this->attributes['match_methods'][$offset]);
-            unset($this->attributes['descriptions'][$offset]);
+            unset(
+                $this->attributes['handlers'][$offset],
+                $this->attributes['required_permissions'][$offset],
+                $this->attributes['match_methods'][$offset],
+                $this->attributes['descriptions'][$offset]
+            );
         }
-        $this->attributes['handlers'][$newOffset] = $callback;
-        $this->attributes['required_permissions'][$newOffset] = $required_permissions;
-        $this->attributes['match_methods'][$newOffset] = $method;
-        $this->attributes['descriptions'][$newOffset] = $description;
+        $this->attributes = array_merge([
+            'handlers' => [$newOffset => $callback],
+            'required_permissions' => [$newOffset => $required_permissions],
+            'match_methods' => [$newOffset => $method],
+            'descriptions' => [$newOffset => $description]
+        ], $this->attributes);
         return $this;
     }
 
@@ -450,10 +429,10 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     public function toArray(): array
     {
         return [
-            $this->attributes['handlers'] ?? [],
-            $this->attributes['required_permissions'] ?? [],
-            $this->attributes['match_methods'] ?? [],
-            $this->attributes['descriptions'] ?? []
+            'handlers' => $this->attributes['handlers'] ?? [],
+            'required_permissions' => $this->attributes['required_permissions'] ?? [],
+            'match_methods' => $this->attributes['match_methods'] ?? [],
+            'descriptions' => $this->attributes['descriptions'] ?? []
         ];
     }
 
