@@ -263,31 +263,23 @@ class HttpServiceManager
                     return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
                 })
             ->offsetSet('/robots.txt',
-                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-                {
-                    return HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /');
-                })
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /'))
             ->offsetSet($endpoint = '/.well-known/security.txt',
-                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-                {
-                    return HttpResponse::plaintext(//'Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    HttpResponse::plaintext(//'Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
                     "Contact: {$this->civ13->github}" . PHP_EOL .
                     'Acknowledgments: http://valzargaming.com/partners' . PHP_EOL .
                     'Preferred-Languages: en' . PHP_EOL . 
                     "Canonical: http://{$this->httpHandler->external_ip}:{$this->http_port}/.well-known/security.txt" . PHP_EOL . 
-                    'Policy: http://valzargaming.com/legal');
-                })->setRateLimit($endpoint, 1, 10) // 1 request per 10 seconds
+                    'Policy: http://valzargaming.com/legal'))
+                ->setRateLimit($endpoint, 1, 10) // 1 request per 10 seconds
             ->offsetSet('/ping',
-                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-                {
-                    return HttpResponse::plaintext("Hello wörld!");
-                })
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    HttpResponse::plaintext("Hello wörld!"))
             ->offsetSet('/favicon.ico',
-                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-                {
-                    if ($favicon = @file_get_contents('favicon.ico')) return new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon', 'Cache-Control' => 'public, max-age=2592000'], $favicon);
-                    return new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`");
-                })
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    ($favicon = @file_get_contents('favicon.ico')) ? new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon', 'Cache-Control' => 'public, max-age=2592000'], $favicon) : new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`"))
             // HttpHandler management endpoints
             ->offsetSet('/reset',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
@@ -646,10 +638,9 @@ class HttpServiceManager
                     return HttpResponse::html($webpage_content($return));
                 }, true)
             ->offsetSet('/verified',
-                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-                {
-                    return HttpResponse::json($this->civ13->verifier->verified->toArray());
-                }, true)
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    HttpResponse::json($this->civ13->verifier->verified->toArray())
+                    , true)
             // HttpHandler data endpoints
             /*
             ->offsetSet('/endpoint',
@@ -713,20 +704,16 @@ class HttpServiceManager
         if ($this->civ13->github)
         $this->httpHandler
             ->offsetSet('/github',
-                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-                {
-                    return new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->civ13->github]);
-                })
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->civ13->github]))
             ;
 
         if ($this->civ13->discord_invite)
         $this->httpHandler
             ->offsetSet('/discord',
-                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted ): HttpResponse
-                {
-                    return new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->civ13->discord_invite]);
-                })
-            ;
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    new HttpResponse(HttpResponse::STATUS_FOUND,['Location' => $this->civ13->discord_invite]))
+        ;
 
         $this->__generateServerEndpoints();
         $this->__generateWebsiteEndpoints();
@@ -1195,10 +1182,8 @@ class HttpServiceManager
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSets([$server_endpoint.'roundstatus', $server_endpoint.'status_update'],
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-                    { // NYI
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    }, true)
+                    fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => new HttpResponse(HttpResponse::STATUS_OK)
+                    , true)
                 /*
                 ->offsetSet($server_endpoint.'/', (function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($key, $server, $relay): HttpResponse
                 {
@@ -1211,12 +1196,11 @@ class HttpServiceManager
 
     private function __generateWebsiteEndpoints()
     {
-        if (! is_dir($dirPath = $this->basedir . self::HTMLDIR))
-            if (! mkdir($dirPath, 0664, true))
+        if (! is_dir($dirPath = $this->basedir . self::HTMLDIR) && ! mkdir($dirPath, 0664, true))
                 return $this->logger->error('Failed to create `/html` directory');
         $files = [];
         foreach (new \DirectoryIterator($dirPath) as $file) {
-            if ($file->isDot() || !$file->isFile() || $file->getExtension() !== 'html') continue;
+            if ($file->isDot() || ! $file->isFile() || $file->getExtension() !== 'html') continue;
             $files[] = substr($file->getPathname(), strlen($dirPath));
         }
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . /*<?xml-stylesheet type="text/xsl" href="sitemap.xsl"?> .*/ '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
@@ -1226,17 +1210,12 @@ class HttpServiceManager
                 unset($file);
                 continue;
             }
-            $this->httpHandler->offsetSet($file, (function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($fileContent): HttpResponse {
-                return HttpResponse::html($fileContent);
-            }));
+            $this->httpHandler->offsetSet($file, fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted) => HttpResponse::html($fileContent));
             $xml .= "<url><loc>$file</loc></url>";
             //$this->logger->debug("Registered HTML endpoint: `$endpoint`");
         }
         $xml .= '</urlset>';
-        $this->httpHandler->offsetSet($endpoint = '/sitemap.xml', (function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($xml): HttpResponse
-        {
-            return HttpResponse::xml($xml);
-        }))->setRateLimit($endpoint, 1, 10); // 1 request per 10 seconds
+        $this->httpHandler->offsetSet($endpoint = '/sitemap.xml', fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted) => HttpResponse::xml($xml))->setRateLimit($endpoint, 1, 10);
 
         $sitemalxsl = (function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
         {
