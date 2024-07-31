@@ -12,9 +12,7 @@ use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
-use Discord\Helpers\Collection;
 use Discord\Parts\Channel\Message;
-use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
@@ -86,13 +84,9 @@ class MessageServiceManager
     {
         $this->messageHandler
             ->offsetSet('stop',
-                function (Message $message, string $command, array $message_filtered): null
-                {
-                    $promise = $message->react("🛑");
-                    $promise->then(function () { $this->civ13->stop(); });
-                    //return $promise; // Pending PromiseInterfaces v3
-                    return null;
-                }, ['Owner', 'Chief Technical Officer'])    
+                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $message->react("🛑")->then(fn() => $this->civ13->stop()),
+                ['Owner', 'Chief Technical Officer'])    
             ->offsetSet('restart',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
@@ -679,7 +673,8 @@ class MessageServiceManager
                 {
                     return $message->reply('Command disabled.');
                     return $message->reply(MessageBuilder::new()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
-                }, ['Ambassador'])
+                },
+                ['Ambassador'])
             ->offsetSet('newmembers',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
