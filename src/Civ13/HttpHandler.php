@@ -131,6 +131,16 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         }
     }
     /**
+     * Validates a callback function and returns a new instance of HttpHandlerCallback.
+     *
+     * @param callable $callback The callable function to be validated.
+     * @return callable New instance of HttpHandlerCallback, which can be invoked as the callable.
+     */
+    public function validate(callable $callback): callable
+    {
+        return new HttpHandlerCallback($callback);
+    }
+    /**
      * Retrieves the callback and endpoint based on the request path.
      *
      * @param ServerRequestInterface $request The server request object.
@@ -399,11 +409,24 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
      */
     public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
-        $this->attributes['handlers'][$offset] = $callback;;
+        $this->attributes['handlers'][$offset] = $this->validate($callback);
         $this->attributes['whitelisted'][$offset] = $whitelisted;
         $this->attributes['match_methods'][$offset] = $method;
         $this->attributes['descriptions'][$offset] = $description;
         if ($method === 'exact') $this->__reorderHandlers();
+        return $this;
+    }
+
+    public function offsetSets(array $offsets, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
+    {
+        foreach ($offsets as $offset) {
+            $this->attributes['handlers'][$offset] = $this->validate($callback); // @throws InvalidArgumentException
+            $this->attributes['whitelisted'][$offset] = $whitelisted;
+            $this->attributes['match_methods'][$offset] = $method;
+            $this->attributes['descriptions'][$offset] = $description;
+        }
+        //if ($method === 'exact')
+            $this->__reorderHandlers();
         return $this;
     }
 
