@@ -35,9 +35,7 @@ class IPToCountryResolver
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
         $response = curl_exec($ch);
-        curl_close($ch);
-        $json = @json_decode($response, true);
-        if (! $json) return ''; // If the request timed out or if the service 429'd us
+        if (! $json = @json_decode($response, true)) return ''; // If the request timed out or if the service 429'd us
         if ($json['status'] === 'success') return $json['countryCode'] . '->' . $json['region'] . '->' . $json['city'];
     }
 

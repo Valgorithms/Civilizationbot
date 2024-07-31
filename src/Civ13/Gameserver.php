@@ -302,7 +302,7 @@ class GameServer
      * @return void
      */
     public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $ooc = true): void
-    { // TODO: Move to Gameserver.php
+    {
         if ($this->legacy_relay) return;
         if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
             $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
@@ -333,7 +333,7 @@ class GameServer
      * @return void
      */
     private function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $ooc = true, ?bool $moderate = true): void
-    { // TODO: Move to Gameserver.php
+    {
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error("Channel not found for __gameChatRelay");
             return;
