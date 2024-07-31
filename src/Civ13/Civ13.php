@@ -525,6 +525,15 @@ class Civ13
         \restart();
     }
 
+    public function CPU(): string
+    {
+        return match (PHP_OS_FAMILY) {
+            "Windows" => 'CPU Usage: ' . trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"')) . '%',
+            "Linux" => 'CPU Usage: ' . (array_sum(sys_getloadavg()) / 3) . '%',
+            default => "Unrecognized operating system!"
+        };
+    }
+
     /*
      * This function is used to change the bot's status on Discord
      */
