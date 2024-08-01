@@ -1018,7 +1018,7 @@ class MessageServiceManager
                 }, ['Verified']);
         
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-            if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->debug("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
+            if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->warning("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
             else {
                 $this->messageHandler
                     ->offsetSet("{$gameserver->key}notes",
@@ -1080,7 +1080,7 @@ class MessageServiceManager
                 ->offsetSet("{$gameserver->key}ban",
                     function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                     {
-                        if (! $this->civ13->hasRequiredConfigRoles(['Banished'])) $this->logger->debug("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
+                        if (! $this->civ13->hasRequiredConfigRoles(['Banished'])) $this->logger->warning("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
                         if (! $message_content = substr($message_filtered['message_content'], strlen($command))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
                         if (! $split_message = explode('; ', $message_content)) return $this->civ13->reply($message, 'Invalid format! Please use the format `{server}ban ckey; duration; reason`');
                         if (! $split_message[0]) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
