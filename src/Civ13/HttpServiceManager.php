@@ -641,7 +641,7 @@ class HttpServiceManager
                 fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
                     HttpResponse::json($this->civ13->verifier->verified->toArray()),
                 true)
-            ->offsetSet('/contact',
+            ->offsetSet($endpoint = '/contact',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
                 {
                     $parsedBody = $request->getParsedBody();
@@ -662,8 +662,8 @@ class HttpServiceManager
                     $this->logger->info("[CONTACT FORM] IP: $ip, Byond Username: $ckey, Email: $email, Message: $messageContent");
                     if (isset($this->civ13->channel_ids['email']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['email'])) $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
                     return HttpResponse::plaintext('Form submitted successfully');
-                },
-                true)
+                })
+                ->setRateLimit($endpoint, 1, 43200) // 1 form every 12 hours
 
             // HttpHandler data endpoints
             /*
