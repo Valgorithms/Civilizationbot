@@ -78,7 +78,7 @@ include 'civ_token.php'; // $civ_token
 $civ13_ip = gethostbyname('www.civ13.com');
 $vzg_ip = gethostbyname('www.valzargaming.com');
 $http_whitelist = [$civ13_ip, $vzg_ip];
-$http_key = getenv('WEBAPI_TOKEN') ?? '';
+$http_key = getenv('WEBAPI_TOKEN');
 
 $webapi = null;
 $socket = null;
@@ -155,6 +155,7 @@ $options = array(
         'staff_bot' => '712685552155230278', // #staff-bot
         'parole_logs' => '985606778916048966', // #parole-logs (for tracking)
         'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
+        'email' => '1225600172336353430', // #email
     ),
     'role_ids' => array( // The keys in this array must directly correspond to the expected role names and as defined in Gameserver.php. Do not alter these keys unless you know what you are doing.
         /* Discord Staff Roles */
@@ -353,7 +354,7 @@ $hidden_options = [
     'webapi' => &$webapi,
     'socket' => &$socket,
     'web_address' => $web_address = 'www.civ13.com',
-    'http_port' => $http_port = 55555,
+    'http_port' => $http_port = 55555, // 25565 for testing on Windows
     'http_key' => $http_key,
     'http_whitelist' => $http_whitelist,
     'civ_token' => getenv('CIV_TOKEN') ?? $civ_token ?? 'CHANGEME',
@@ -424,7 +425,8 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $http_port), [], $loop);
  */
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (&$civ13): Response
 {
-    if (! $civ13 || ! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
+    if (! $civ13 || ! $civ13 instanceof Civ13) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
+    if (! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Not Yet Ready');
     return $civ13->httpServiceManager->handle($request);
 });
 /**

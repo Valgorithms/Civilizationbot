@@ -639,8 +639,32 @@ class HttpServiceManager
                 }, true)
             ->offsetSet('/verified',
                 fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
-                    HttpResponse::json($this->civ13->verifier->verified->toArray())
-                    , true)
+                    HttpResponse::json($this->civ13->verifier->verified->toArray()),
+                true)
+            ->offsetSet('/contact',
+                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+                {
+                    $parsedBody = $request->getParsedBody();
+                    $ip = $request->getServerParams()['REMOTE_ADDR'];
+                    $ckey = htmlspecialchars($parsedBody['ckey'] ?? 'Anonymous');
+                    $email = htmlspecialchars($parsedBody['email'] ?? 'No email provided');
+                    $messageContent = htmlspecialchars($parsedBody['message'] ?? 'No message provided');
+                    
+                    $embed = $this->civ13->createEmbed()
+                        ->addFieldValues('IP', $ip)
+                        ->addFieldValues('Byond Username', $ckey)
+                        ->addFieldValues('Email', $email)
+                        ->addFieldValues('Message', $messageContent)
+                        ->setAuthor('Anonymous', $this->discord->avatar);
+                    if ($item = $this->civ13->verifier->getVerifiedItem($this->civ13->sanitizeInput($ckey)))
+                        if (isset($item['discord']) && $user = $this->discord->users->get('id', $item['discord']))
+                            $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar ?? $this->discord->avatar);
+                    $this->logger->info("[CONTACT FORM] IP: $ip, Byond Username: $ckey, Email: $email, Message: $messageContent");
+                    if (isset($this->civ13->channel_ids['email']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['email'])) $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
+                    return HttpResponse::plaintext('Form submitted successfully');
+                },
+                true)
+
             // HttpHandler data endpoints
             /*
             ->offsetSet('/endpoint',
@@ -1212,7 +1236,7 @@ class HttpServiceManager
             }
             $this->httpHandler->offsetSet($file, fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted) => HttpResponse::html($fileContent));
             $xml .= "<url><loc>$file</loc></url>";
-            //$this->logger->debug("Registered HTML endpoint: `$endpoint`");
+            $this->logger->debug("Registered HTML endpoint: `$file`");
         }
         $xml .= '</urlset>';
         $this->httpHandler->offsetSet($endpoint = '/sitemap.xml', fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted) => HttpResponse::xml($xml))->setRateLimit($endpoint, 1, 10);

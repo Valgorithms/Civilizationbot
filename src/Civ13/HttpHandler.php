@@ -126,7 +126,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
             if (! $array = $this->__getCallback($request)) return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
             return $this->__processCallback($array['callback'], $request, $array['endpoint']);
         } catch (\Throwable $e) {
-            $this->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`");
+            $this->logger->error("HTTP Server error: An endpoint for `$path` failed with error `{$e->getMessage()}`. Stack Trace:" . PHP_EOL . str_replace('#', PHP_EOL . '#', $e->getTraceAsString()));
             return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
         }
     }
