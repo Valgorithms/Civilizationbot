@@ -1225,8 +1225,7 @@ class HttpServiceManager
         $files = [];
         foreach (new \DirectoryIterator($dirPath) as $file) {
             if ($file->isDot() || ! $file->isFile() || $file->getExtension() !== 'html') continue;
-            $files[] = $fp = substr($file->getPathname(), strlen($dirPath));
-            $this->logger->debug("[HTTP FILE ENDPOINT] $fp");
+            $files[] = substr($file->getPathname(), strlen($dirPath));
         }
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . /*<?xml-stylesheet type="text/xsl" href="sitemap.xsl"?> .*/ '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         foreach ($files as &$file) {
@@ -1237,7 +1236,7 @@ class HttpServiceManager
             }
             $this->httpHandler->offsetSet($file, fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted) => HttpResponse::html($fileContent));
             $xml .= "<url><loc>$file</loc></url>";
-            $this->logger->debug("Registered HTML endpoint: `$file`");
+            $this->logger->info("[HTTP FILE ENDPOINT] `$file`");
         }
         $xml .= '</urlset>';
         $this->httpHandler->offsetSet($endpoint = '/sitemap.xml', fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted) => HttpResponse::xml($xml))->setRateLimit($endpoint, 1, 10);
