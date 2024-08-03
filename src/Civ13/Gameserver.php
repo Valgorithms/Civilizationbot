@@ -1071,25 +1071,28 @@ class GameServer
     /**
      * Retrieves the ranking from a file and returns it as a formatted string.
      *
-     * @param string $path The path to the file containing the ranking data.
      * @return false|string Returns the top 10 ranks as a string if found, or false if the file does not exist or cannot be opened.
      */
     
      public function getRanking(): false|string
      {
-        $line_array = array();
         if (! @touch($path = $this->basedir . Civ13::ranking_path) || ! $search = @fopen($path, 'r')) return false;
+        
+        $line_array = array();
         while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
         fclose($search);
     
-        $topsum = 1;
-        $msg = '';
+        $topsum = 0;
+        /*$msg = '';
         foreach ($line_array as $line) {
             $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
             $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
             if (($topsum += 1) > 10) break;
-        }
-        return $msg;
+        }*/
+        return implode(PHP_EOL, array_map(function ($line) use (&$topsum) {
+            $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+            return '('.++$topsum."): **{$sline[1]}** with **{$sline[0]}** points.";
+        }, array_slice($line_array, 0, 10))); // Limit the array to only 10 values
      }
     /*
      * This function calculates the player's ranking based on their medals
