@@ -1225,7 +1225,8 @@ class HttpServiceManager
         $files = [];
         foreach (new \DirectoryIterator($dirPath) as $file) {
             if ($file->isDot() || ! $file->isFile() || $file->getExtension() !== 'html') continue;
-            $files[] = substr($file->getPathname(), strlen($dirPath));
+            $files[] = $fp = substr($file->getPathname(), strlen($dirPath));
+            $this->logger->debug("[HTTP FILE ENDPOINT] $fp");
         }
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . /*<?xml-stylesheet type="text/xsl" href="sitemap.xsl"?> .*/ '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         foreach ($files as &$file) {
