@@ -796,8 +796,12 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // This function is only authorized to be used by the database administrator
                     if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-                    foreach ($this->civ13->verifier->provisional as $ckey => $discord_id) $this->civ13->verifier->provisionalRegistration($ckey, $discord_id); // Attempt to register all provisional users
-                    return $this->civ13->reply($message, 'Attempting to register all provisional users.');
+                    $msg = '';
+                    foreach ($this->civ13->verifier->provisional as $ckey => $discord_id)
+                        $msg .= $this->civ13->verifier->provisionalRegistration($ckey, $discord_id)
+                            ? "Successfully verified $ckey to <@{$discord_id}>" . PHP_EOL
+                            : "Failed to verify $ckey to <@{$discord_id}>" . PHP_EOL;
+                    return $this->civ13->reply($message, $msg ? $msg : 'Attempting to register all provisional users.');
                 }, ['Chief Technical Officer'])
             ->offsetSet('register',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
