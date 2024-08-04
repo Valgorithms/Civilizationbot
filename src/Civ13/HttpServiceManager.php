@@ -315,8 +315,8 @@ class HttpServiceManager
                             execInBackground('git reset --hard origin/main');
                             if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
                             $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($channel) {
-                                if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Restarting... (3/3)'))->then(fn () => $this->civ13->restart());
-                                else $this->civ13->sendMessage($channel, 'Restarting... (3/3)')->then(fn () => $this->civ13->restart());
+                                if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Restarting... (3/3)'))->then(fn() => $this->civ13->restart());
+                                else $this->civ13->sendMessage($channel, 'Restarting... (3/3)')->then(fn() => $this->civ13->restart());
                             });
                         });
                     });
@@ -353,10 +353,10 @@ class HttpServiceManager
                 {
                     $message = 'Manually Restarting...';
                     if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) {
-                        $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting... (3/3)'))->then(fn () => $this->civ13->restart());
+                        $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting... (3/3)'))->then(fn() => $this->civ13->restart());
                         return HttpResponse::plaintext($message);
                     }
-                    if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message)->then(fn () => $this->civ13->restart());
+                    if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message)->then(fn() => $this->civ13->restart());
                     return HttpResponse::plaintext($message);
                 }, true)
             ->offsetSet('/bancheck_centcom',

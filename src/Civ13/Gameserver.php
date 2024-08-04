@@ -680,7 +680,7 @@ class GameServer
             $channel->sendMessage($msg);
         }
         $func = function () use ($mapto) { \execInBackground("python3 {$this->basedir}" . Civ13::mapswap . " $mapto" ); };
-        $this->loop->addTimer(10, fn () => $func());
+        $this->loop->addTimer(10, fn() => $func());
         return $msg;
     }
 

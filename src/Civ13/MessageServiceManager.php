@@ -84,7 +84,7 @@ class MessageServiceManager
     {
         $this->messageHandler
             ->offsetSet('stop',
-                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->react("🛑")->then(fn() => $this->civ13->stop()),
                 ['Owner', 'Chief Technical Officer'])    
             ->offsetSet('restart',
@@ -92,7 +92,7 @@ class MessageServiceManager
                 {
                     return $message->react("👍")->then(function () {
                         if (isset($this->civ13->restart_message)) return $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting...'))->then(fn() => $this->civ13->restart());
-                        elseif (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return $this->civ13->sendMessage($channel, 'Manually Restarting...')->then(fn () => $this->civ13->restart());
+                        elseif (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return $this->civ13->sendMessage($channel, 'Manually Restarting...')->then(fn() => $this->civ13->restart());
                         return $this->civ13->restart();
                     });
                 }, ['Owner', 'Chief Technical Officer'])
@@ -107,7 +107,7 @@ class MessageServiceManager
                     $this->civ13->reply($message, $this->civ13->httpServiceManager->httpHandler->generateHelp(), 'httphelp.txt', true),
                 ['Owner', 'Chief Technical Officer'])
             ->offsetSet('cpu',
-                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message,$this->civ13->CPU()),
                 ['Verified'])
             ->offsetSet('checkip',
@@ -245,7 +245,7 @@ class MessageServiceManager
                     return $message->reply($builder->addEmbed($embed)->setAllowedMentions(['parse' => []]));
                 }, ['Verified'])
             ->offsetSet('discord2ckey',
-                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     ($item = $this->civ13->verifier->get('discord', $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
                         ? $this->civ13->reply($message, "`$id` is registered to `{$item['ss13']}`")
                         : $this->civ13->reply($message, "`$id` is not registered to any byond username"),
@@ -393,7 +393,7 @@ class MessageServiceManager
                     return $message->reply($builder->addEmbed($embed));
                 }, ['Admin'])
             ->offsetSet('ckey2discord',
-                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     ($item = $this->civ13->verifier->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
                         ? $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>")
                         : $this->civ13->reply($message, "`$ckey` is not registered to any discord id"),
@@ -645,13 +645,15 @@ class MessageServiceManager
                     return $message->react("👍");
                 }, ['Ambassador'])    
             ->offsetSet('updatebans',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                { // Attempts to fill in any missing data for the ban
-                    $updated = false;
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) foreach ($this->civ13->enabled_gameservers as &$gameserver2) if ($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs)) !== false) $updated = true;
-                    if (! $updated) return $message->react("🔥");
-                    return $message->react("👍");
-                }, ['Ambassador'])
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
+                    array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
+                        return $carry || array_reduce($this->civ13->enabled_gameservers, function ($carry2, $gameserver2) use ($gameserver) {
+                            return $carry2 || $gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs)) !== false;
+                        }, false);
+                    }, false)
+                        ? $message->react("👍")
+                        : $message->react("🔥"),
+                ['Ambassador'])
             ->offsetSet('fixroles',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface 
                 {
@@ -753,7 +755,7 @@ class MessageServiceManager
                     return $this->civ13->reply($message, 'Relay method changed to `' . (($gameserver->legacy_relay = ! $gameserver->legacy_relay) ? 'file' : 'webhook') . '`.');
                 }, ['Ambassador'])
             ->offsetSet('listrounds',
-                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     ($rounds = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
                         if ($r = $gameserver->getRounds()) $carry[$gameserver->name] = $r;
                         return $carry;
@@ -816,7 +818,7 @@ class MessageServiceManager
                     return $this->civ13->reply($message, $this->civ13->verifier->unverify($id)['message']);
                 }, ['Chief Technical Officer'])   
             ->offsetSet('dumpappcommands',
-                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply('Application commands: `' . implode('`, `', array_map(fn($command) => $command->getName(), $this->civ13->discord->__get('application_commands'))) . '`'),
                 ['Chief Technical Officer'])            
             ;
@@ -1109,7 +1111,7 @@ class MessageServiceManager
                     },
                     ['Admin'])
                 ->offsetSet("{$gameserver->key}configexists",
-                    fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                         isset($gameserver->key)
                             ? $message->react("👍")
                             : $message->react("👎"),
@@ -1119,7 +1121,7 @@ class MessageServiceManager
                         $message->react("⏱️")->then(fn() => $gameserver->Host($message)),
                     ['Ambassador'])
                 ->offsetSet("{$gameserver->key}kill",
-                    fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                         $message->react("⏱️")->then(fn() => $gameserver->Kill($message))
                     , ['Ambassador'])
                 ->offsetSet("{$gameserver->key}restart",
@@ -1134,7 +1136,7 @@ class MessageServiceManager
                         return $this->civ13->reply($message, $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username));
                     }, ['Ambassador'])
                 ->offsetSet("{$gameserver->key}sportsteam",
-                    fn (Message $message, string $command, array $message_filtered): PromiseInterface => // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface => // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.
                         ($content = $gameserver->sportsteam())
                             ? $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content))
                             : $message->react("🔥"),
