@@ -88,14 +88,13 @@ class MessageServiceManager
                     $message->react("🛑")->then(fn() => $this->civ13->stop()),
                 ['Owner', 'Chief Technical Officer'])    
             ->offsetSet('restart',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    return $message->react("👍")->then(function () {
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>                
+                    $message->react("👍")->then(function () {
                         if (isset($this->civ13->restart_message)) return $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting...'))->then(fn() => $this->civ13->restart());
                         elseif (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return $this->civ13->sendMessage($channel, 'Manually Restarting...')->then(fn() => $this->civ13->restart());
                         return $this->civ13->restart();
-                    });
-                }, ['Owner', 'Chief Technical Officer'])
+                    }),
+                ['Owner', 'Chief Technical Officer'])
             ->offsetSet('ping',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, 'Pong!'))
@@ -458,19 +457,17 @@ class MessageServiceManager
                     return $this->civ13->reply($message, 'You need to be in any of the #ic, #asay, or #ooc channels to use this command.');
                 }, ['Admin'])
             ->offsetSet('globalooc',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-                    if ($this->civ13->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
-                    return $message->react("🔥");
-                }, ['Admin'])
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $this->civ13->OOCMessage(trim(substr($message_filtered['message_content'], trim(strlen($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
+                        ? $message->react("📧")
+                        : $message->react("🔥"),
+                ['Admin'])
             ->offsetSet('globalasay',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
-                    if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
-                    return $message->react("🔥");
-                }, ['Admin'])
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $this->civ13->AdminMessage(trim(substr($message_filtered['message_content'], trim(strlen($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
+                        ? $message->react("📧")
+                        : $message->react("🔥"),
+                ['Admin'])
             ->offsetSet('permit',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
@@ -509,10 +506,9 @@ class MessageServiceManager
                     return $this->civ13->reply($message, $string);
                 }, ['Admin'])
             ->offsetSet('listbans',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    return $this->civ13->listbans($message, trim(substr($message_filtered['message_content_lower'], strlen($command))));
-                }, ['Admin'])
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $this->civ13->listbans($message, trim(substr($message_filtered['message_content_lower'], strlen($command)))),
+                ['Admin'])
             ->offsetSet('softban',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
@@ -546,11 +542,11 @@ class MessageServiceManager
                     return $this->civ13->reply($message, "**$admin** unbanned **$ckey**");
                 }, ['Admin'])
             ->offsetSet('maplist',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! file_exists($fp = $this->civ13->gitdir . Civ13::maps) || ! $file_contents = @file_get_contents($fp)) return $message->react("🔥");
-                    return $message->reply(MessageBuilder::new()->addFileFromContent('maps.txt', $file_contents));
-                }, ['Admin'])
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    (file_exists($fp = $this->civ13->gitdir . Civ13::maps) && $file_contents = @file_get_contents($fp))
+                        ? $message->reply(MessageBuilder::new()->addFileFromContent('maps.txt', $file_contents))
+                        : $message->react("🔥"),
+                ['Admin'])
             ->offsetSet('adminlist',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {            
@@ -571,10 +567,10 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {            
                     $builder = MessageBuilder::new()->setContent('Faction Lists');
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                        if (file_exists($path = $gameserver->basedir . Civ13::factionlist)) $builder->addfile($path, $gameserver->key . '_factionlist.txt');
-                        else $this->logger->warning("`$path is not a valid file path!");
-                    }
+                    foreach ($this->civ13->enabled_gameservers as &$gameserver)
+                        file_exists($path = $gameserver->basedir . Civ13::factionlist)
+                            ? $builder->addfile($path, $gameserver->key . '_factionlist.txt')
+                            : $this->logger->warning("`$path is not a valid file path!");
                     return $message->reply($builder);
                 },
                 ['Admin'])
@@ -790,16 +786,16 @@ class MessageServiceManager
                     return $promise->then(fn() => $message->react("👍"));
                 }, ['Chief Technical Officer'])
             ->offsetSet('retryregister',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                { // This function is only authorized to be used by the database administrator
-                    if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-                    $msg = '';
-                    foreach ($this->civ13->verifier->provisional as $ckey => $discord_id)
-                        $msg .= $this->civ13->verifier->provisionalRegistration($ckey, $discord_id)
-                            ? "Successfully verified $ckey to <@{$discord_id}>" . PHP_EOL
-                            : "Failed to verify $ckey to <@{$discord_id}>" . PHP_EOL;
-                    return $this->civ13->reply($message, $msg ? $msg : 'Attempting to register all provisional users.');
-                }, ['Chief Technical Officer'])
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // This function is only authorized to be used by the database administrator
+                    (($message->user_id === $this->civ13->technician_id)
+                    && $msg = implode(PHP_EOL, array_map(function ($ckey, $discord_id) {
+                        return $this->civ13->verifier->provisionalRegistration($ckey, $discord_id)
+                            ? "Successfully verified $ckey to <@{$discord_id}>"
+                            : "Failed to verify $ckey to <@{$discord_id}>";
+                    }, array_keys($this->civ13->verifier->provisional), array_values($this->civ13->verifier->provisional))))
+                        ? $this->civ13->reply($message, $msg)
+                        : $this->civ13->reply($message, 'Unable to register provisional users.'),
+                ['Chief Technical Officer'])
             ->offsetSet('register',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // This function is only authorized to be used by the database administrator
