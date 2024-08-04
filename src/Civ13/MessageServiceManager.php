@@ -749,23 +749,18 @@ class MessageServiceManager
             ->offsetSet('togglerelaymethod',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $key = [];
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                        $keys[] = $gameserver->key;
-                        if ($key !== $gameserver->key) continue; // Check if server is valid
-                        $gameserver->legacy_relay = ! $gameserver->legacy_relay;
-                        return $this->civ13->reply($message, 'Relay method changed to `' . ($gameserver->legacy_relay ? 'file' : 'webhook') . '`.');
-                    }
-                    return $this->civ13->reply($message, 'Invalid format! Please use the format `togglerelaymethod ['.implode('`, `', $keys).']`.');
+                    if (! ($key = trim(substr($message_filtered['message_content'], strlen($command)))) || ! isset($this->civ13->enabled_gameservers[$key]) || ! $gameserver = $this->civ13->enabled_gameservers[$key]) return $this->civ13->reply($message, 'Invalid format! Please use the format `togglerelaymethod ['.implode('`, `', array_keys($this->civ13->enabled_gameservers)).']`.');
+                    return $this->civ13->reply($message, 'Relay method changed to `' . (($gameserver->legacy_relay = ! $gameserver->legacy_relay) ? 'file' : 'webhook') . '`.');
                 }, ['Ambassador'])
             ->offsetSet('listrounds',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $rounds = [];
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) if ($r = $gameserver->getRounds()) $rounds[$gameserver->name] = $r;
-                    if (! $rounds) return $this->civ13->reply($message, 'No data found.');
-                    return $this->civ13->reply($message, "Rounds: " . json_encode($rounds));
-                }, ['Ambassador'])
+                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    ($rounds = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
+                        if ($r = $gameserver->getRounds()) $carry[$gameserver->name] = $r;
+                        return $carry;
+                    }, []))
+                        ? $this->civ13->reply($message, "Rounds: " . json_encode($rounds))
+                        :  $this->civ13->reply($message, 'No data found.'),
+                ['Ambassador'])
             ->offsetSet('playerlist',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // This function is only authorized to be used by the database administrator
@@ -821,14 +816,9 @@ class MessageServiceManager
                     return $this->civ13->reply($message, $this->civ13->verifier->unverify($id)['message']);
                 }, ['Chief Technical Officer'])   
             ->offsetSet('dumpappcommands',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $application_commands = $this->civ13->discord->__get('application_commands');
-                    $names = [];
-                    foreach ($application_commands as $command) $names[] = $command->getName();
-                    $namesString = '`' . implode('`, `', $names) . '`';
-                    return $message->reply('Application commands: ' . $namesString);
-                }, ['Chief Technical Officer'])            
+                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $message->reply('Application commands: `' . implode('`, `', array_map(fn($command) => $command->getName(), $this->civ13->discord->__get('application_commands'))) . '`'),
+                ['Chief Technical Officer'])            
             ;
             $log_handler = function (Message $message, string $message_content): PromiseInterface
             {
