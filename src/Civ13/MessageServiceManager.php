@@ -760,14 +760,11 @@ class MessageServiceManager
                         :  $this->civ13->reply($message, 'No data found.'),
                 ['Ambassador'])
             ->offsetSet('playerlist',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                { // This function is only authorized to be used by the database administrator
-                    if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-                    $playerlist = [];
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) $playerlist = array_unique(array_merge($playerlist, $gameserver->players));
-                    if ($playerlist) return $this->civ13->reply($message, implode(', ', $playerlist));
-                    return $this->civ13->reply($message, 'No players found.');
-                }, ['Chief Technical Officer'])
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // This function is only authorized to be used by the database administrator
+                    (($message->user_id === $this->civ13->technician_id) && $playerlist = array_unique(array_merge(...array_map(fn($gameserver) => $gameserver->players, $this->civ13->enabled_gameservers))))
+                        ? $this->civ13->reply($message, implode(', ', $playerlist))
+                        : $message->react("❌"),
+                ['Chief Technical Officer'])
             ->offsetSet('unvet',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // Adds the infantry role to all veterans
