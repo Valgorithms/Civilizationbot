@@ -11,7 +11,6 @@ namespace Civ13;
 use Civ13\Interfaces\HttpHandlerCallbackInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response as HttpResponse;
-use Handler\Handler;
 
 final class HttpHandlerCallback implements HttpHandlerCallbackInterface
 {

@@ -14,21 +14,14 @@ use React\Promise\PromiseInterface;
 
 interface MessageHandlerInterface extends HandlerInterface
 {
-    // Basic CRUD Operations
-    public function pull(int|string $offset, ?callable $default = null): array;
-    public function push(callable $callback, int|string|null $offset = null): self;
-    public function fill(array $handlers): self;
-
-    //public function get(string $name): mixed;
-    //public function set(string $name, mixed $value): self;
-    //public function push(null|int|string $name, mixed $value): self;
-    //public function pushItems(null|int|string $name, mixed ...$items): self;
+    // Item Operations
     //public function pull(int|string $name, mixed $default = null): mixed;
-    //public function fill(array $values): self;
+    public function pull(int|string $index, ?callable $defaultCallables = null, array $default_required_permissions = null, array $default_match_methods = null, array $default_descriptions = null): array;
+    public function fill(array $values): self;
     //public function clear(): self;
+    public function clear(): void;
 
     // Count and Access
-    //public function count(null|int|string $name): int;
     public function first(null|int|string $name = null): mixed;
     public function last(null|int|string $name = null): mixed;
 
@@ -38,12 +31,11 @@ interface MessageHandlerInterface extends HandlerInterface
 
     // Search and Filter
     public function find(callable $callback): array;
-    //public function filter(callable $callback): self;
     public function map(callable $callback): self;
 
     // Merge and Offset Operations
     public function merge(object $handler): self;
-    //public function offsetExists(int|string $offset): bool;
+    public function offsetExists(int|string $offset): bool;
     public function offsetGet(int|string $offset, ?string $name = null): mixed;
     public function offsetSet(int|string $offset, callable $callback): self;
     public function offsetSets(array $offsets, callable $callback): self;
@@ -59,7 +51,7 @@ interface MessageHandlerInterface extends HandlerInterface
     public function clearHandlers(): self;
     
     // Message Handler Operations
-    //public function getmessageHandler();
+    //public function getMessageHandler();
     //public function pushMessageHandler();
     //public function pullMessageHandler();
     //public function fillMessageHandlers();
