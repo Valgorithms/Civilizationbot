@@ -199,7 +199,7 @@ foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к'
     $options['ic_badwords'][] = $arr;
 }
 
-$exact_netspeak = [ // Words that are not necessarily bad, but are used in a way that is disruptive to the server
+/*$exact_netspeak = [ // Words that are not necessarily bad, but are used in a way that is disruptive to the server
     'omg',
     'brb',
     'g2g',
@@ -233,7 +233,7 @@ foreach ($exact_netspeak as $word) $options['ic_badwords'][] = [
     'category' => 'netspeak',
     'method' => 'exact',
     'warnings' => 3
-];
+];*/
 
 // Write editable configurations to a single JSON file
 /*
