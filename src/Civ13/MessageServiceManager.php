@@ -495,13 +495,13 @@ class MessageServiceManager
                 {
                     if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
                     $string = "`$ckey` will no longer attempt to be automatically registered.";
-                    if (isset($this->civ13->verifier->provisional[$ckey])) {
-                        if ($member = $message->guild->members->get($this->civ13->verifier->provisional[$ckey])) {
+                    if ($item = $this->civ13->verifier->provisional->get('ss13', $ckey)) {
+                        if ($member = $message->guild->members->get('id', $item['discord'])) {
                             $member->removeRole($this->civ13->role_ids['Verified']);
                             $string .= " The <@&{$this->civ13->role_ids['Verified']}> role has been removed from $member.";
                         }
-                        unset($this->civ13->verifier->provisional[$ckey]);
-                        $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional);
+                        $this->civ13->verifier->provisional->pull($ckey);
+                        $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional->toArray());
                     }
                     return $this->civ13->reply($message, $string);
                 }, ['Admin'])
@@ -783,24 +783,51 @@ class MessageServiceManager
                     return $promise->then(fn() => $message->react("👍"));
                 }, ['Chief Technical Officer'])
             ->offsetSet('retryregister',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // This function is only authorized to be used by the database administrator
-                    (($message->user_id === $this->civ13->technician_id)
-                    && $msg = implode(PHP_EOL, array_map(function ($ckey, $discord_id) {
+                function (Message $message, string $command, array $message_filtered): PromiseInterface { // This function is only authorized to be used by the database administrator
+                    if ($message->user_id !== $this->civ13->technician_id) return $message->react("❌");
+                    $msg = implode(PHP_EOL, array_map(function ($item) {
+                        if (!isset($item['ss13']) || !isset($item['discord'])) return "Invalid provisional item: " . json_encode($item) . PHP_EOL;
+                        $ckey = $item['ss13'];
+                        $discord_id = $item['discord'];
                         return $this->civ13->verifier->provisionalRegistration($ckey, $discord_id)
                             ? "Successfully verified $ckey to <@{$discord_id}>"
                             : "Failed to verify $ckey to <@{$discord_id}>";
-                    }, array_keys($this->civ13->verifier->provisional), array_values($this->civ13->verifier->provisional))))
-                        ? $this->civ13->reply($message, $msg)
-                        : $this->civ13->reply($message, 'Unable to register provisional users.'),
+                    }, $this->civ13->verifier->provisional->toArray()));
+                    return $msg ? $this->civ13->reply($message, $msg) : $this->civ13->reply($message, 'Unable to register provisional users.');
+                },
                 ['Chief Technical Officer'])
+            ->offsetSet('listprovisional',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface {
+                    if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
+                    if (! $this->civ13->verifier->provisional->toArray()) return $this->civ13->reply($message, 'No users are pending verification.');
+                    if ($msg = implode(PHP_EOL, array_map(fn($ckey, $discord_id) => "$ckey: <@$discord_id>", array_keys($this->civ13->verifier->provisional->toArray()), array_values($this->civ13->verifier->provisional->toArray())))) return $this->civ13->reply($message, $msg);
+                    return $message->react("❌");
+                }, ['Admin'])
             ->offsetSet('register',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // This function is only authorized to be used by the database administrator
                     if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
                     $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
+                    if (! isset($split_message[1])) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
                     if (! $ckey = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
                     if (! is_numeric($discord_id = $this->civ13->sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
                     return $this->civ13->reply($message, $this->civ13->verifier->register($ckey, $discord_id)['error']);
+                }, ['Chief Technical Officer'])
+            ->offsetSet('provision',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                { // This function is only authorized to be used by the database administrator
+                    if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
+                    $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
+                    if (! isset($split_message[1])) return $this->civ13->reply($message, 'Invalid format! Please use the format `provision <byond username>; <discord id>`.');
+                    if (! $ckey = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
+                    if (! is_numeric($discord_id = $this->civ13->sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
+                    if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
+                    if (! $this->civ13->verifier->provisional->get('ss13', $ckey)) {
+                        $this->civ13->verifier->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
+                        $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional->toArray());
+                    }
+                    return $this->civ13->reply($message, "Provisional registration for `$ckey` to <@$discord_id> has been added.");
+                    
                 }, ['Chief Technical Officer'])
             ->offsetSet('unverify',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface

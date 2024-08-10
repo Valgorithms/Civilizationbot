@@ -99,7 +99,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             if (! $array = $this->__getCallback($message)) return null;
             return $this->__processCallback($array['callback'], $array['message'], $array['endpoint'], $array['message_filtered']);
         } catch (\Throwable $e) {
-            $this->logger->error("Message Handler error: An endpoint for `$message->content` failed with error `{$e->getMessage()}`");
+            $this->logger->error("Message Handler error: An endpoint for `$message->content` failed with error `{$e->getMessage()}`. Stack Trace:" . PHP_EOL . str_replace('#', PHP_EOL . '#', $e->getTraceAsString()));
             return $message->react('🔥');
         }
     }
@@ -165,7 +165,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         try {
             return $callback($message, $endpoint, $message_filtered);
         } catch (\Exception $e) {
-            $this->logger->error("Message Handler error: `A callback for `$endpoint` failed with error `{$e->getMessage()}`");
+            $this->logger->error("Message Handler error: `A callback for `$endpoint` failed with error `{$e->getMessage()}`. Stack Trace:" . PHP_EOL . str_replace('#', PHP_EOL . '#', $e->getTraceAsString()));
             return $message->react('🔥');
         }
     }
