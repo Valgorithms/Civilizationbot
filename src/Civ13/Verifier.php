@@ -16,6 +16,7 @@ use Discord\Parts\User\User;
 use Monolog\Logger;
 use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
+use Traversable;
 
 class Verifier
 {
@@ -744,6 +745,11 @@ class Verifier
         if ($item = $this->verified->get($discrim, $key)) return $item;
         if ($item = $this->provisional->get($discrim, $key)) return $item;
         return null;
+    }
+
+    public function getIterator(): Traversable
+    {
+        return $this->verified->getIterator();
     }
     // Magic Methods
     public function __destruct()
