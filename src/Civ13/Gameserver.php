@@ -398,20 +398,18 @@ class GameServer
         return $this->players;
     }
     /**
-     * Returns the current round's embed timer.
-     * This timer is used to update the current round's embed message every 10 minutes.
-     * If the timer doesn't exist, it is created and returned.
-     * If the timer already exists, it is returned.
-     * If the current_round_message_id cannot be fetched or is not set, the timer created a new embed message.
+     * Creates and returns a periodic timer for updating the current round embed message.
+     * If the timer does not already exist, it initializes the timer and sets it to update
+     * the current round embed message every 60 seconds.
      *
-     * @return TimerInterface The current round's embed timer.
+     * @return TimerInterface The periodic timer for updating the current round embed message.
      */
-    private function currentRoundEmbedTimer(): TimerInterface
+    public function currentRoundEmbedTimer(): TimerInterface
     {
-        if (! isset($this->timers['current_round_embed]'])) $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, function () { // Update playercount channel every 10 minutes
+        if (! isset($this->timers['current_round_embed'])) {
             $this->updateCurrentRoundEmbedMessageBuilder();
-        });
-        $this->updateCurrentRoundEmbedMessageBuilder();
+            $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, fn() => $this->updateCurrentRoundEmbedMessageBuilder());
+        }
         return $this->timers['current_round_embed'];
     }
     /**
