@@ -425,7 +425,7 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $http_port), [], $loop);
  */
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (&$civ13): Response
 {
-    if (! $civ13 || ! $civ13 instanceof Civ13) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
+    if (! $civ13 || ! $civ13 instanceof Civ13 || ! $civ13->httpServiceManager instanceof HttpServiceManager) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     if (! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Not Yet Ready');
     return $civ13->httpServiceManager->handle($request);
 });
