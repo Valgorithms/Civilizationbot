@@ -128,6 +128,7 @@ class HttpServiceManager
                     $guildStyle = $doc->createElement('style', '.guild { margin-bottom: 20px; }');
                     $html->appendChild($guildStyle);
 
+                    /** @var \Discord\Parts\Guild\Guild $guild An instance of a Discord guild. */
                     foreach ($this->discord->guilds as $guild) {
                         $guildDiv = $doc->createElement('div');
                         $guildDiv->setAttribute('class', 'guild');
@@ -142,12 +143,9 @@ class HttpServiceManager
                         $channelStyle = $doc->createElement('style', '.channel { margin-left: 20px; }');
                         $guildDiv->appendChild($channelStyle);
                         
-                        $channels = [];
-                        foreach ($guild->channels as $channel) if ($channel->isTextBased()) $channels[] = $channel;
-
-                        usort($channels, function ($a, $b) {
-                            return $a->position - $b->position;
-                        });                
+                        $channels = $guild->channels->filter(fn($channel) => $channel->isTextBased());
+                        $channels = $channels->toArray();
+                        usort($channels, fn($a, $b) => $a->position <=> $b->position);
 
                         foreach ($channels as $channel) {
                             $channelDiv = $doc->createElement('div');
