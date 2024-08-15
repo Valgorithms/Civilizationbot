@@ -820,26 +820,22 @@ class Civ13
     {
         $this->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
         {
-            if (! empty($this->functions['GUILD_MEMBER_ADD'])) foreach ($this->functions['GUILD_MEMBER_ADD'] as $func) $func($this, $member);
-            //else $this->logger->debug('No GUILD_MEMBER_ADD functions found!');
+            ! empty($this->functions['GUILD_MEMBER_ADD']) && array_walk($this->functions['GUILD_MEMBER_ADD'], fn($func) => $func($this, $member));
         });
 
         $this->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
         {
-            if (! empty($this->functions['GUILD_MEMBER_REMOVE'])) foreach ($this->functions['GUILD_MEMBER_REMOVE'] as $func) $func($this, $member);
-            //else $this->logger->debug('No GUILD_MEMBER_REMOVE functions found!');
+            ! empty($this->functions['GUILD_MEMBER_REMOVE']) && array_walk($this->functions['GUILD_MEMBER_REMOVE'], fn($func) => $func($this, $member));
         });
 
         $this->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
         {
-            if (! empty($this->functions['GUILD_MEMBER_UPDATE'])) foreach ($this->functions['GUILD_MEMBER_UPDATE'] as $func) $func($this, $member);
-            //else $this->logger->debug('No GUILD_MEMBER_UPDATE functions found!');
+            ! empty($this->functions['GUILD_MEMBER_UPDATE']) && array_walk($this->functions['GUILD_MEMBER_UPDATE'], fn($func) => $func($this, $member));
         });
 
         $this->discord->on('GUILD_CREATE', function (Guild $guild): void
         {
-            if (! empty($this->functions['GUILD_CREATE'])) foreach ($this->functions['GUILD_CREATE'] as $func) $func($this, $guild);
-            //else $this->logger->debug('No GUILD_CREATE functions found!');
+            ! empty($this->functions['GUILD_CREATE']) && array_walk($this->functions['GUILD_CREATE'], fn($func) => $func($this, $guild));
         });
     }
     
