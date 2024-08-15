@@ -530,6 +530,7 @@ class Verifier
         $provisionalRegistration = function (string $ckey, string $discord_id) use (&$provisionalRegistration) {
             if ($this->verified->get('discord', $discord_id)) { // User already verified, this function shouldn't be called (may happen anyway because of the timer)
                 $this->provisional->pull($ckey);
+                $this->civ13->VarSave('provisional.json', $this->provisional->toArray());
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "User <@$discord_id> is already verified and could not be provisionally registered.");
                 return false;
             }
