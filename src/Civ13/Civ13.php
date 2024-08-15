@@ -1378,10 +1378,10 @@ class Civ13
     }
     public function getCkeyLogCollections(string $ckey): ?array
     {
-        if ($playerlog = $this->playerlogsToCollection()->filter(fn(array $item) => $item['ckey'] === $ckey))
-            if ($bans = $this->bansToCollection()->filter(fn(array $item) => $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid'])))
-                return ['playerlogs' => $playerlog, 'bans' => $bans];
-        return [];
+        return (
+                ($playerlog = $this->playerlogsToCollection()->filter(fn(array $item) => $item['ckey'] === $ckey))
+                && ($bans = $this->bansToCollection()->filter(fn(array $item) => $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid'])))
+            ) ? ['playerlogs' => $playerlog, 'bans' => $bans] : [];
     }
 
     public function webserverStatusChannelUpdate(bool $status): ?PromiseInterface
@@ -1451,9 +1451,7 @@ class Civ13
      */
     public function factionlistUpdate(?array $required_roles = null): bool
     {
-        $return = false;
-        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->factionlistUpdate()) $return = true;
-        return $return;
+        return array_reduce($this->enabled_gameservers, fn($carry, $gameserver) => $gameserver->factionlistUpdate() || $carry, false);
     }
     /**
      * Updates admin lists with required roles and permissions.
@@ -1463,9 +1461,7 @@ class Civ13
      */
     public function adminlistUpdate(?array $required_roles = null): bool
     {
-        $return = false;
-        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->adminlistUpdate($required_roles)) $return = true;
-        return $return;
+        return array_reduce($this->enabled_gameservers, fn($carry, $gameserver) => $gameserver->adminlistUpdate($required_roles) || $carry, false);
     }
 
     // Magic Methods
