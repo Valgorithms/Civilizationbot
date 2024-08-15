@@ -469,25 +469,21 @@ class Slash
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Attempted to kill, update, and bring up `{$gameserver->name}` <byond://{$gameserver->ip}:{$gameserver->port}>"));
         });
         
-        $this->discord->listenCommand('ping', function (Interaction $interaction): PromiseInterface
-        {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'));
-        });
+        $this->discord->listenCommand('ping', fn(Interaction $interaction): PromiseInterface =>
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'))
+        );
 
-        $this->discord->listenCommand('help', function (Interaction $interaction): PromiseInterface
-        {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->messageServiceManager->generateHelp($interaction->member->roles)), true);
-        });
+        $this->discord->listenCommand('help', fn(Interaction $interaction): PromiseInterface =>
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->messageServiceManager->generateHelp($interaction->member->roles)), true)
+        );
 
-        $this->discord->listenCommand('stats', function (Interaction $interaction): PromiseInterface
-        {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()->setFooter($this->civ13->embed_footer)));
-        });
+        $this->discord->listenCommand('stats', fn(Interaction $interaction): PromiseInterface =>
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()->setFooter($this->civ13->embed_footer)))
+        );
         
-        $this->discord->listenCommand('invite', function (Interaction $interaction): PromiseInterface
-        {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->discord->application->getInviteURLAttribute('8')), true);
-        });
+        $this->discord->listenCommand('invite', fn(Interaction $interaction): PromiseInterface =>
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->discord->application->getInviteURLAttribute('8')), true)
+        );
 
         $this->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
         {
@@ -500,11 +496,11 @@ class Slash
             return $interaction->respondWithMessage($builder->setContent($content));
         });
 
-        $this->discord->listenCommand('ckey', function (Interaction $interaction): PromiseInterface
-        {
-            if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss13']}`"), true);
-        });
+        $this->discord->listenCommand('ckey', fn(Interaction $interaction): PromiseInterface =>
+            ($item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) 
+                ? $interaction->respondWithMessage(MessageBuilder::new()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss13']}`"), true)
+                : $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true)    
+        );
 
         $this->discord->listenCommand('bancheck', function (Interaction $interaction): PromiseInterface
         {
@@ -630,17 +626,17 @@ class Slash
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("**`{$interaction->user->username}`** has removed permission from **`{$item['ss13']}`** to bypass Byond account restrictions."));
         });
 
-        $this->discord->listenCommand('ckeyinfo', function (Interaction $interaction): PromiseInterface
-        {
-            if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            return $interaction->acknowledge()->then(function () use ($interaction, $item): PromiseInterface  { // wait until the bot says "Is thinking..."
-                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating ckeyinfo for `{$item['ss13']}`..."), true)->then(function (Message $message) use ($interaction, $item): PromiseInterface {
-                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($this->civ13->ckeyinfoEmbed($item['ss13'])), true)->then(function (Message $message) use ($interaction, $item): PromiseInterface {
-                        return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated ckeyinfo for `{$item['ss13']}`."));
-                    });
-                });
-            });
-        });
+        $this->discord->listenCommand('ckeyinfo', fn(Interaction $interaction): PromiseInterface =>
+            ($item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) 
+            ? $interaction->acknowledge()->then(fn(): PromiseInterface  => // wait until the bot says "Is thinking..."
+                $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating ckeyinfo for `{$item['ss13']}`..."), true)->then(fn(Message $message): PromiseInterface =>
+                    $interaction->sendFollowUpMessage(MessageBuilder::new()->addEmbed($this->civ13->ckeyinfoEmbed($item['ss13'])), true)->then(fn(Message $message): PromiseInterface =>
+                        $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Generated ckeyinfo for `{$item['ss13']}`."))
+                    )
+                )
+            )
+            : $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true)
+        );
 
         $this->discord->listenCommand('statistics', function (Interaction $interaction): PromiseInterface
         { // TODO: Review this and make it actually useful
@@ -696,10 +692,9 @@ class Slash
             return $interaction->respondWithMessage($messagebuilder, true);
         });
         
-        $this->discord->listenCommand('panic_bunker', function (Interaction $interaction): PromiseInterface
-        {
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')));
-        });
+        $this->discord->listenCommand('panic_bunker', fn(Interaction $interaction): PromiseInterface =>
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent('Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')))
+        );
 
         $this->discord->listenCommand('join_campaign', function (Interaction $interaction): PromiseInterface
         {
@@ -727,9 +722,7 @@ class Slash
             }
             if (! in_array($target_team, Civ13::faction_teams) || ! isset($this->civ13->role_ids[$target_team]) || ! $role_id = $this->civ13->role_ids[$target_team] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Invalid or unconfigured team: `$target_team`."), true);
             if ($target_member->roles->has($role_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is already in this faction!'), true);
-            $this->civ13->removeRoles($target_member, $this->civ13->faction_ids, true)->then(function (Member $member) use ($role_id) {
-                $this->civ13->addRoles($member, $role_id); // Only one role is being added so we don't need to PATCH
-            });
+            $this->civ13->removeRoles($target_member, $this->civ13->faction_ids, true)->then(fn(Member $member) => $this->civ13->addRoles($member, $role_id)); // Only one role is being added so we don't need to PATCH
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The <@&$role_id> role has been assigned to <@{$target_member->id}>")->setAllowedMentions(['parse'=>['users']]), true);
         });
 
@@ -737,21 +730,22 @@ class Slash
         {
             if (! isset($interaction->data->options['ckey']) || ! $ckey = $interaction->data->options['ckey']->value ?? $this->civ13->verifier->get('discord', $interaction->member->id)['ss13'] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->member->id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             if (is_numeric($ckey = $this->civ13->sanitizeInput($ckey)) && ! $ckey = $this->civ13->verifier->get('discord', $ckey)['ss13']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The Byond username or Discord ID `{$interaction->data->options['ckey']->value}` is not currently verified with a Byond username or it does not exist in the cache yet"), true);
-            return $interaction->acknowledge()->then(function () use ($interaction, $ckey): PromiseInterface { // wait until the bot says "Is thinking..."
-                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating rank for `$ckey`..."), true)->then(function ($message) use ($interaction, $ckey): PromiseInterface {
-                    return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($this->civ13->enabled_gameservers[$interaction->data->options['server']->value]->getRank($ckey), true));
-                });
-            });
+            return $interaction->acknowledge()->then(fn(): PromiseInterface => // wait until the bot says "Is thinking..."
+                $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating rank for `$ckey`..."), true)->then(fn($message): PromiseInterface =>
+                    $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($this->civ13->enabled_gameservers[$interaction->data->options['server']->value]->getRank($ckey), true))
+                )
+            );
         });
         
         $this->discord->listenCommand('ranking', function (Interaction $interaction): PromiseInterface
         {
             if (! isset($interaction->data->options['server']) || ! $server = $interaction->data->options['server']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No server specified"), true);
             if (! $gameserver = $this->civ13->enabled_gameservers[$server]) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No enabled server found for `{$server}`"), true);
-            return $interaction->acknowledge()->then(function () use ($interaction, $gameserver): PromiseInterface { // wait until the bot says "Is thinking..."
-                if (! $ranking = $gameserver->getRanking()) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Ranking for the `{$gameserver->name}` server are not currently available."), true);
-                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true);
-            });
+            return $interaction->acknowledge()->then(fn(): PromiseInterface => // wait until the bot says "Is thinking..."
+                ($ranking = $gameserver->getRanking())
+                    ? $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true)
+                    : $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Ranking for the `{$gameserver->name}` server are not currently available."), true)
+            );
         });
 
         $this->discord->listenCommand('approveme', function (Interaction $interaction): PromiseInterface
@@ -760,16 +754,16 @@ class Slash
             if (! isset($interaction->data->options['ckey']) || ! $ckey = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey.'), true);
             if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$ckey])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('This account is currently under investigation.'));
             if (! $item = $this->civ13->verifier->get('discord', $interaction->member->id))
-                return $interaction->acknowledge()->then(function () use ($interaction, $ckey): PromiseInterface { // wait until the bot says "Is thinking..."
-                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Working...'))->then(function (Message $message) use ($interaction, $ckey): PromiseInterface {
-                        return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($this->civ13->verifier->process($ckey, $interaction->member->id, $interaction->member)), true)->then(function (Message $message) use ($interaction): PromiseInterface {
-                            return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Verified request received. Please check my response for further instructions."));
-                        });
-                    });
-                });
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Welcome to {$interaction->member->guild->name}}! Your roles have been set and you should now have access to the rest of the server."), true)->then(function () use ($interaction, $item): PromiseInterface {
-                return $interaction->member->setRoles([$this->civ13->role_ids['Verified']], "approveme {$item['ss13']}");
-            });
+                return $interaction->acknowledge()->then(fn(): PromiseInterface => // wait until the bot says "Is thinking..."
+                    $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Working...'))->then(fn(Message $message): PromiseInterface =>
+                        $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($this->civ13->verifier->process($ckey, $interaction->member->id, $interaction->member)), true)->then(fn(Message $message): PromiseInterface =>
+                            $interaction->updateOriginalResponse(MessageBuilder::new()->setContent("Verified request received. Please check my response for further instructions."))
+                        )
+                    )
+                );
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Welcome to {$interaction->member->guild->name}}! Your roles have been set and you should now have access to the rest of the server."), true)->then(fn (): PromiseInterface =>
+                $interaction->member->setRoles([$this->civ13->role_ids['Verified']], "approveme {$item['ss13']}")
+            );
         });
     }
 }
