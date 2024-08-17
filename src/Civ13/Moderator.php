@@ -89,39 +89,55 @@ class Moderator
     public function moderate(Gameserver $gameserver, string $ckey, string $string, array $badwords_array, array &$badword_warnings): void
     {
         $lower = strtolower($string);
+        array_walk($badwords_array, function($badwords) use ($gameserver, $ckey, $lower, &$badword_warnings) {
+            $patterns = [
+                'exact' => '/\b' . preg_quote($badwords['word'], '/') . '\b/i',
+                'cyrillic' => '/\p{Cyrillic}/ui',
+                'str_starts_with' => '/^' . preg_quote($badwords['word'], '/') . '/i',
+                'str_ends_with' => '/' . preg_quote($badwords['word'], '/') . '$/i',
+                'str_contains' => '/' . preg_quote($badwords['word'], '/') . '/i'
+            ];
+
+            if (preg_match($patterns[$badwords['method'] ?? 'str_contains'], $lower)) {
+                $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings);
+                return false; // Break out of array_walk
+            }
+        });
+        /*
         foreach ($badwords_array as $badwords) switch ($badwords['method']) {
             case 'exact': // ban ckey if $string contains a blacklisted phrase exactly as it is defined
                 if (preg_match('/\b' . $badwords['word'] . '\b/i', $lower)) {
                     $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings);
-                    break 2;
+                    return;
                 }
                 continue 2;
             case 'cyrillic': // ban ckey if $string contains a cyrillic character
                 if (preg_match('/\p{Cyrillic}/ui', $lower)) {
                     $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings);
-                    break 2;
+                    return;
                 }
                 continue 2;
             case 'str_starts_with':
                 if (str_starts_with($lower, $badwords['word'])) {
                     $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings);
-                    break 2;
+                    return;
                 }
                 continue 2;
             case 'str_ends_with':
                 if (str_ends_with($lower, $badwords['word'])) {
                     $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings);
-                    break 2;
+                    return;
                 }
                 continue 2;
             case 'str_contains': // ban ckey if $string contains a blacklisted word
             default: // default to 'contains'
                 if (str_contains($lower, $badwords['word'])) {
                     $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings);
-                    break 2;
+                    return;
                 }
                 continue 2;
         }
+        */
     }
     /**
      * This function is called from the game's chat hook if a player says something that contains a blacklisted word.
