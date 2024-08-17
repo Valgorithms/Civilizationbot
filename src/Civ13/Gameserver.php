@@ -872,9 +872,7 @@ class GameServer
         }
 
         if ($this->legacy) {
-            if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($array) {
-                foreach ($this->civ13->enabled_gameservers as &$gameserver) $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)); // Attempts to fill in any missing data for the ban
-            });
+            if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(30, fn() => array_walk($this->civ13->enabled_gameservers, fn(&$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)))); // Attempts to fill in any missing data for the ban
             return $this->legacyBan($array, $admin);
         }
         return $this->sqlBan($array, $admin);
