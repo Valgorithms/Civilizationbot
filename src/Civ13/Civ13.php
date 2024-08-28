@@ -1227,21 +1227,21 @@ class Civ13
             foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->ages[$ckey])) $ckey = "$ckey ({$this->ages[$ckey]})";
             $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
         }
-        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']));
-        if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']));
+        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']), true);
+        if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']), true);
         if (! empty($ckeyinfo['ips'])) {
             $regions = [];
             foreach ($ckeyinfo['ips'] as $ip) if (! in_array($region = IPToCountryResolver::Offline($ip), $regions)) $regions[] = $region;
-            $embed->addFieldValues('Regions', implode(', ', $regions));
+            $embed->addFieldValues('Regions', implode(', ', $regions), true);
         }
         $embed->addfieldValues('Verified', $ckeyinfo['Verified'] ? 'Yes' : 'No');
         if (! empty($ckeyinfo['discords'])) {
             foreach ($ckeyinfo['discords'] as &$id) if ($id) $id = "<@{$id}>";
-            $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']));
+            $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']), true);
         }
-        $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No');
-        $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No');
-        $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No');
+        $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No', true);
+        $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No', true);
+        $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No', true);
         return $embed;
     }
     /**
