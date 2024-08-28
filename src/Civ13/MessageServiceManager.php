@@ -354,8 +354,7 @@ class MessageServiceManager
                     $altbanned = 'No';
                     foreach ($ckeys as $key) if ($key != $ckey) if ($this->civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
 
-                    $verified = 'No';
-                    if ($this->civ13->verifier->get('ss13', $ckey)) $verified = 'Yes';
+                    $verified = $this->civ13->verifier->get('ss13', $ckey) ? 'Yes' : 'No';
                     if ($ckeys) {
                         if ($ckey_age_string = implode(', ', array_map(fn($c) => "$c (" . ($ckey_age[$c] ?? ($this->civ13->getByondAge($c) !== false ? $this->civ13->getByondAge($c) : "N/A")) . ")", $ckeys))) {
                             if (strlen($ckey_age_string) > 1 && strlen($ckey_age_string) <= 1024) $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
@@ -380,13 +379,13 @@ class MessageServiceManager
                         if (strlen($matched_dates_string) > 1 && strlen($matched_dates_string) <= 1024) $embed->addFieldValues('Matched Dates', $matched_dates_string, true);
                         elseif (strlen($matched_dates_string) > 1024) $builder->addFileFromContent('matched_dates.txt', $matched_dates_string);
                     }
-                    if ($verified) $embed->addfieldValues('Verified', $verified, true);
+                    $embed->addfieldValues('Verified', $verified, true);
                     if ($discord_string = implode(', ', array_filter(array_map(fn(string $c) => ($result = $this->civ13->verifier->get('ss13', $c)) ? "<@{$result['discord']}>" : null, $ckeys)))) {
                         if (strlen($discord_string) > 1 && strlen($discord_string) <= 1024) $embed->addFieldValues('Discord', $discord_string, true);
                         elseif (strlen($discord_string) > 1024) $builder->addFileFromContent('discord.txt', $discord_string);                
                     }
-                    if ($banned) $embed->addfieldValues('Currently Banned', $banned, true);
-                    if ($altbanned) $embed->addfieldValues('Alt Banned', $altbanned, true);
+                    $embed->addfieldValues('Currently Banned', $banned, true);
+                    $embed->addfieldValues('Alt Banned', $altbanned, true);
                     $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
                     if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
                     return $message->reply($builder->addEmbed($embed));
