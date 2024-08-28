@@ -62,11 +62,8 @@ class CommandServiceManager
         $this->discord->once('init', function() {
             $this->logger->info('Setting up CommandServiceManager...');
             $this->setup();
-            if ($application_commands = $this->discord->__get('application_commands')) {
-                $names = [];
-                foreach ($application_commands as $command) $names[] = $command->getName();
-                $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
-            }
+            if ($application_commands = $this->discord->__get('application_commands'))
+                $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', array_map(fn($command) => $command->getName(), $application_commands)) . '`');
         });
     }
     /**
@@ -92,35 +89,54 @@ class CommandServiceManager
     }
 
     /**
-     * Validates the command callback.
+     * Validates the command array.
      *
      * @param array $command The command to validate.
      * @return bool Returns true if the command callback is valid, false otherwise.
      */
-    private function validateInteractionCallback(array $command): bool
+    public function validateCommand($command): bool
     {
+        if (! is_array($command)) {
+            $this->logger->warning('Command must be an array');
+            return false;
+        }
         if (! isset($command['name']) || ! $command['name']) {
             $this->logger->warning('Invalid command name');
             return false;
         }
-        if (! isset($command['interaction_handler'], $command['interaction_definer']) || ! is_callable($command['interaction_handler'])) {
-            $this->logger->warning("Invalid interaction definitions for {$command['name']} command");
+        if (isset($command['message_handler']) && (! is_callable($command['message_handler']) || ! $command['message_handler'] instanceof MessageHandlerCallback)) {
+            $this->logger->warning("Invalid Message handler for `{$command['name']}`");
             return false;
         }
-        if (! $reflection = new ReflectionFunction($command['interaction_handler'])) {
-            $this->logger->warning("Invalid reflection for {$command['name']} command");
+        if (isset($command['http_handler']) && (! is_callable($command['http_handler']) || ! $command['http_handler'] instanceof HttpHandlerCallback)) {
+            $this->logger->warning("Invalid HTTP handler for `{$command['name']}`");
             return false;
         }
-        if (! $returnType = $reflection->getReturnType()) {
-            $this->logger->warning("Invalid return type for {$command['name']} command");
-            return false;
-        }
-        if ($returnType->getName() !== 'React\Promise\PromiseInterface') {
-            $this->logger->warning("Invalid return type for {$command['name']}. command. Found {$returnType->getName()} instead of PromiseInterface");
-            return false;
+        
+        if (isset($command['interaction_handler'])) {
+            $command['interaction_definer']['name'] = $command['name'];
+            if (! isset($command['interaction_definer']) || ! is_array($command['interaction_definer'])) {
+                $this->logger->warning("Invalid interaction definitions for `{$command['name']}`");
+                return false;
+            }
+            if (! is_callable($command['interaction_handler'])) {
+                $this->logger->warning("Invalid interaction handler for `{$command['name']}`");
+                return false;
+            }
+            if (! $reflection = new ReflectionFunction($command['interaction_handler'])) {
+                $this->logger->warning("Invalid reflection for `{$command['name']}`");
+                return false;
+            }
+            if (! $returnType = $reflection->getReturnType()) {
+                $this->logger->warning("Invalid return type for `{$command['name']}`");
+                return false;
+            }
+            if ($returnType->getName() !== 'React\Promise\PromiseInterface') {
+                $this->logger->warning("Invalid return type for `{$command['name']}`, found {$returnType->getName()} instead of PromiseInterface");
+                return false;
+            }
         }
 
-        $command['interaction_definer']['name'] = $command['name'];
         return true;
     }
     /**
@@ -147,10 +163,9 @@ class CommandServiceManager
         return $this->civ13->then($commands->save($command));
     }
 
-    private function populateCommands(): array
+    private function populateCommands(array $array = []): array
     {
-        $array = [];
-        $ping = [
+        $array[] = [
             'name'                              => 'ping',                                                                          // Name of the command.
             'alias'                             => ['pong'],                                                                        // Aliases for the command.
             'guilds'                            => [],                                                                              // Global if empty, otherwise specify guild ids.
@@ -181,7 +196,6 @@ class CommandServiceManager
                 return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'), true);
             },
         ];
-        $array[] = $ping;
         return $array;
     }
     private function loadDefaultHelpCommand():void
@@ -247,34 +261,31 @@ class CommandServiceManager
             }
         }
     }
+    
     private function setupMessageCommands(): void
     {
-        $createCommand = function ($command): bool
-        {
-            if (! isset($command['name']) || ! $command['name']) {
-                $this->logger->warning('Invalid command name');
-                return false;
-            }
-            if (! isset($command['message_handler']) || ! is_callable($command['message_handler']) || ! $command['message_handler'] instanceof MessageHandlerCallback) {
-                $this->logger->warning("Invalid Message handler for `{$command['name']}` command");
-                return false;
-            }
-            $names[] = $command['name'];
-            $names = array_merge($names, (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : []);
-            foreach ($names as $name) {
-                $this->messageServiceManager->offsetSet(
-                    $name,
-                    $command['message_handler'],
-                    (isset($command['message_role_permissions']) && is_array($command['message_role_permissions'])) ? $command['message_role_permissions'] : [],
-                    (isset($command['message_method']) && is_string($command['message_method'])) ? $command['message_method'] : 'str_starts_with',
-                    (isset($command['message_usage']) && is_string($command['message_usage'])) ? $command['message_usage'] : '',
-                );
-            }
-            return true;
-        };
-        foreach ($this->global_commands as $global_command) $createCommand($global_command);
-        foreach ($this->guild_commands as $guild_command) $createCommand($guild_command);
+        foreach ($this->global_commands as $global_command) $this->createMessageCommand($global_command);
+        foreach ($this->guild_commands as $guild_command) $this->createMessageCommand($guild_command);
     }
+    public function createMessageCommand(array $command): bool
+    {
+        if (! isset($command['message_handler'])) {
+            $this->logger->warning("Invalid Message handler for `{$command['name']}` command");
+            return false;
+        }
+        $names = array_merge([$command['name']], $command['alias'] ?? []);
+        foreach ($names as $name) {
+            $this->messageServiceManager->offsetSet(
+                $name,
+                $command['message_handler'],
+                (isset($command['message_role_permissions']) && is_array($command['message_role_permissions'])) ? $command['message_role_permissions'] : [],
+                (isset($command['message_method']) && is_string($command['message_method'])) ? $command['message_method'] : 'str_starts_with',
+                (isset($command['message_usage']) && is_string($command['message_usage'])) ? $command['message_usage'] : '',
+            );
+        }
+        return true;
+    }
+
     /**
      * Checks if a command is unique.
      *
@@ -283,7 +294,6 @@ class CommandServiceManager
      */
     private function isUnique($command): bool
     {
-        $names = [];
         $names[] = $command['name'];
         //$names = array_merge($names, isset($command['alias']) ? $command['alias'] : []);
         foreach ($names as $name) if (isset($this->global_commands[$name])) return false;
@@ -300,7 +310,7 @@ class CommandServiceManager
     {
         if ($this->global_commands) $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
         {
-            foreach ($this->global_commands as $command) if ($this->validateInteractionCallback($command)) {
+            foreach ($this->global_commands as $command) if ($this->validateCommand($command)) {
                 if (str_starts_with($command['name'], '/')) continue; // Skip slash commands for now
                 if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_definer']);
                 $this->listenCommand($command['name'], $command('interaction_handler'));
@@ -309,7 +319,7 @@ class CommandServiceManager
         });
         if ($this->guild_commands) foreach (array_keys($this->guild_commands) as $key) if ($guild = $this->discord->guilds->get('id', $key)) $guild->commands->freshen()->then(function (GuildCommandRepository $commands) use ($key)
         {
-            foreach ($this->guild_commands[$key] as $command) if ($this->validateInteractionCallback($command)) {
+            foreach ($this->guild_commands[$key] as $command) if ($this->validateCommand($command)) {
                 if (! $commands->get('name', $command['name'])) $this->save($commands, $command['interaction_definer']);
                 $this->listenCommand($command['name'], $command['interaction_handler']);
             }
@@ -318,43 +328,28 @@ class CommandServiceManager
     }
     private function setupHTTPCommands(): void
     {
-        $createCommand = function (array $command): bool
-        {
-            if (! isset($command['name']) || ! $command['name']) {
-                $this->logger->warning('Invalid command name');
-                return false;
-            }
-            if (! isset($command['http_handler'])) {
-                $this->logger->warning('Invalid HTTP handler');
-                return false;
-            }
-            if (! is_callable($command['http_handler'])){
-                $this->logger->warning("Invalid HTTP handler for `{$command['name']}` command. Not callable.");
-                return false;
-            }
-            if (! $command['http_handler'] instanceof HttpHandlerCallback) {
-                $this->logger->warning("Invalid HTTP handler for `{$command['name']}` command. Not an instance of HttpHandlerCallback.");
-                return false;
-            }
-            $names[] = $command['name'];
-            $names = array_merge($names, (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : []);
-            foreach ($names as $name) {
-                $this->httpServiceManager->offsetSet(
-                    "/$name",
-                    $command['http_handler'],
-                    (isset($command['http_whitelisted']) && $command['http_whitelisted']),
-                    (isset($command['http_method']) && $command['http_method']) ? $command['http_method'] : 'exact',
-                    (isset($command['http_usage']) && $command['http_usage']) ? $command['http_usage'] : '',
-                );
-                if (isset($command['http_limit'], $command['http_window']) && is_numeric($command['http_limit']) && is_numeric($command['http_window'])) {
-                    $this->httpServiceManager->setRateLimit($command['name'], $command['http_limit'], $command['http_window']);
-                }
-            }
-            return true;
-        };
-        foreach ($this->global_commands as $global_command) $createCommand($global_command);
-        foreach ($this->guild_commands as $guild_command) $createCommand($guild_command);
-
+        foreach ($this->global_commands as $global_command) if ($this->validateCommand($global_command)) $this->createHTTPCommand($global_command);
+        foreach ($this->guild_commands as $guild_command) if ($this->validateCommand($guild_command)) $this->createHTTPCommand($guild_command);
+    }
+    public function createHTTPCommand(array $command): bool
+    {
+        if (! isset($command['http_handler'])) {
+            $this->logger->warning('Invalid HTTP handler');
+            return false;
+        }
+        $names = array_merge($command['name'], (isset($command['alias']) && is_array($command['alias'])) ? $command['alias'] : []);
+        foreach ($names as $name) {
+            $this->httpServiceManager->offsetSet(
+                "/$name",
+                $command['http_handler'],
+                (isset($command['http_whitelisted']) && $command['http_whitelisted']),
+                (isset($command['http_method']) && $command['http_method']) ? $command['http_method'] : 'exact',
+                (isset($command['http_usage']) && $command['http_usage']) ? $command['http_usage'] : '',
+            );
+            if (isset($command['http_limit'], $command['http_window']) && is_numeric($command['http_limit']) && is_numeric($command['http_window']))
+                $this->httpServiceManager->setRateLimit($command['name'], $command['http_limit'], $command['http_window']);
+        }
+        return true;
     }
     
     public function getHelpMessageBuilder(?string $guild_id = null, ?string $command = null, ?MessageBuilder $messagebuilder = new MessageBuilder()): MessageBuilder
