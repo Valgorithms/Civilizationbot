@@ -1214,7 +1214,7 @@ class Civ13
             'cids' => $cids,
             'banned' => $this->bancheck($ckey),
             'altbanned' => $altbanned,
-            'Verified' => $verified,
+            'verified' => $verified,
             'discords' => $discords
         ];
     }
@@ -1223,22 +1223,12 @@ class Civ13
         if (! $ckeyinfo) $ckeyinfo = $this->ckeyinfo($ckey);
         $embed = $this->createEmbed()->setTitle($ckey);
         if (isset($this->verifier) && $user = $this->verifier->getVerifiedUser($ckey)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
-        if (! empty($ckeyinfo['ckeys'])) {
-            foreach ($ckeyinfo['ckeys'] as &$ckey) if (isset($this->ages[$ckey])) $ckey = "$ckey ({$this->ages[$ckey]})";
-            $embed->addFieldValues('Ckeys', implode(', ', $ckeyinfo['ckeys']));
-        }
+        if (! empty($ckeyinfo['ckeys'])) $embed->addFieldValues('Ckeys', implode(', ', array_map(fn($ckey) => isset($this->ages[$ckey]) ? "$ckey ({$this->ages[$ckey]})" : $ckey, $ckeyinfo['ckeys'])));
         if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']), true);
         if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']), true);
-        if (! empty($ckeyinfo['ips'])) {
-            $regions = [];
-            foreach ($ckeyinfo['ips'] as $ip) if (! in_array($region = IPToCountryResolver::Offline($ip), $regions)) $regions[] = $region;
-            $embed->addFieldValues('Regions', implode(', ', $regions), true);
-        }
-        $embed->addfieldValues('Verified', $ckeyinfo['Verified'] ? 'Yes' : 'No');
-        if (! empty($ckeyinfo['discords'])) {
-            foreach ($ckeyinfo['discords'] as &$id) if ($id) $id = "<@{$id}>";
-            $embed->addfieldValues('Discord', implode(', ', $ckeyinfo['discords']), true);
-        }
+        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('Regions', implode(', ', array_unique(array_map(fn($ip) => IPToCountryResolver::Offline($ip), $ckeyinfo['ips']))), true);
+        $embed->addfieldValues('verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
+        if (! empty($ckeyinfo['discords'])) $embed->addfieldValues('Discord', implode(', ', array_map(fn($id) => $id ? "<@{$id}>" : $id, $ckeyinfo['discords'])), true);
         $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No', true);
         $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No', true);
         $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No', true);
