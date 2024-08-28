@@ -89,7 +89,7 @@ class Slash
                 'description' => 'Replies with Pong!',
             ]));
 
-            // if ($command = $commands->get('name', 'ping')) $commands->delete($command);
+            // if ($command = $commands->get('name', 'help')) $commands->delete($command);
             if (! $commands->get('name', 'help')) $this->save($commands, new Command($this->discord, [
                 'name'          => 'help',
                 'description'   => 'View a list of available commands',
@@ -298,7 +298,8 @@ class Slash
     }
     private function __updateGuildCommands(): void
     {
-        $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands) {
+        $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands): void
+        {
             $names = [];
             foreach ($commands as $command) if ($command->name) $names[] = $command->name;
             if ($names) $this->logger->debug('[GUILD APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
