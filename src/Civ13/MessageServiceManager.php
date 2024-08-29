@@ -263,7 +263,7 @@ class MessageServiceManager
                     $cids = [];
                     $dates = [];
                     $ckey_age = [];
-                    // Get the ckey's primary identifiers
+                    // Get the ckey's primary identifiers and fill in any blanks
                     foreach (['playerlogs', 'bans'] as $type) foreach ($collectionsArray[$type] as $log) {
                         if (isset($log['ip'])   && ! isset($ips[$log['ip']]))     $ips[$log['ip']]     = $log['ip'];
                         if (isset($log['cid'])  && ! isset($cids[$log['cid']]))   $cids[$log['cid']]   = $log['cid'];
@@ -351,7 +351,7 @@ class MessageServiceManager
                             if (strlen($matched_cids_string) > 1 && strlen($cids_string) <= 1024) $embed->addFieldValues('Matched CIDs', $cids_string, true);
                             elseif (strlen($matched_cids_string) > 1024) $builder->addFileFromContent('matched_cids.txt', $cids_string);
                         }
-                    }
+                    } else $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
                     if ($ips && $regions_string = implode(', ', array_unique(array_map(fn($ip) => IPToCountryResolver::Offline($ip), $ips)))) {
                         if (strlen($regions_string) > 1 && strlen($regions_string) <= 1024) $embed->addFieldValues('Regions', $regions_string, true);
                         elseif (strlen($regions_string) > 1024) $builder->addFileFromContent('regions.txt', $regions_string);
@@ -368,7 +368,6 @@ class MessageServiceManager
                     $embed->addfieldValues('Currently Banned', $this->civ13->bancheck($ckey) ? 'Yes' : 'No', true);
                     $embed->addfieldValues('Alt Banned', $this->civ13->altbancheck($ckeys, $ckey) ? 'Yes' : 'No', true);
                     $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
-                    if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
                     return $message->reply($builder->addEmbed($embed));
                 }, ['Admin'])
             ->offsetSet('ckey2discord',
