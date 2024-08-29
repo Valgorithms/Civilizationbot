@@ -290,48 +290,30 @@ class MessageServiceManager
                     }
                     if ($dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('First Seen Dates', $dates_string);
 
-                    $playerlogs = $this->civ13->playerlogsToCollection(); // This is ALL players
+                    $updateCkeyinfoVariables = static function(array &$ckeys, array &$ips, array &$cids, array &$dates, \Traversable $logs, array &$found_ckeys, array &$found_ips, array &$found_cids, array &$found_dates, bool $update_found_ckeys = true, int $i = 0, bool $found = false) use (&$updateCkeyinfoVariables): void
+                    {
+                        // Iterate through logs to find all known ckeys, ips, and cids
+                        foreach ($logs as $log) if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
+                            if ((isset($log['ckey']) === $update_found_ckeys) && !isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = Civ13::sanitizeInput($log['ckey']); $found = true; }
+                            if (!isset($log['ip'], $ips[$log['ip']], $found_ips[$log['ip']])) { $found_ips[$log['ip']] = $log['ip']; $found = true; }
+                            if (!isset($log['cid'], $cids[$log['cid']], $found_cids[$log['cid']])) { $found_cids[$log['cid']] = $log['cid']; $found = true; }
+                            if (!isset($log['date'], $dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
+                        }
+
+                        if ($ckeys !== $found_ckeys) $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+                        if ($ips   !== $found_ips)   $ips   = array_unique(array_merge($ips, $found_ips));
+                        if ($cids  !== $found_cids)  $cids  = array_unique(array_merge($cids, $found_cids));
+                        if ($dates !== $found_dates) $dates = array_unique(array_merge($dates, $found_dates));
+
+                        if (! $found && ++$i > 10) return; // Helps to prevent infinite loops, just in case
+                        $updateCkeyinfoVariables($ckeys, $ips, $cids, $dates, $logs, $found_ckeys, $found_ips, $found_cids, $found_dates, $update_found_ckeys, $i, $found); // Recursively call the function until no new ckeys, ips, or cids are found
+                    };
                     $found_ckeys = [];
                     $found_ips = [];
                     $found_cids = [];
                     $found_dates = [];
-                    $i = 0;
-                    $break = false;
-                    do { // Iterate through playerlogs to find all known ckeys, ips, and cids
-                        $found = false;
-                        foreach ($playerlogs as $log) if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
-                            if (isset($log['ckey']) && ! isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = Civ13::sanitizeInput($log['ckey']); $found = true; }
-                            if (isset($log['ip'])   && ! isset($ips[$log['ip']],     $found_ips[$log['ip']]))     { $found_ips[$log['ip']]     = $log['ip']; $found = true; }
-                            if (isset($log['cid'])  && ! isset($cids[$log['cid']],   $found_cids[$log['cid']]))   { $found_cids[$log['cid']]   = $log['cid']; $found = true; }
-                            if (isset($log['date']) && ! isset($dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
-                        }
-                        if ($ckeys !== $found_ckeys) $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
-                        if ($ips   !== $found_ips)   $ips   = array_unique(array_merge($ips, $found_ips));
-                        if ($cids  !== $found_cids)  $cids  = array_unique(array_merge($cids, $found_cids));
-                        if ($dates !== $found_dates) $dates = array_unique(array_merge($dates, $found_dates));
-                        if ($i++ > 10) $break = true;
-                    } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
-
-                    $banlogs = $this->civ13->bansToCollection();
-                    $found = true;
-                    $i = 0;
-                    $break = false;
-                    do { // Iterate through banlogs to find all known ckeys, ips, and cids
-                        $found = false;
-                        $found_dates = [];
-                        foreach ($banlogs as $log) if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
-                            if (! isset($log['ckey'], $ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = Civ13::sanitizeInput($log['ckey']); $found = true; }
-                            if (! isset($log['ip'],   $ips[$log['ip']],     $found_ips[$log['ip']]))     { $found_ips[$log['ip']]     = $log['ip']; $found = true; }
-                            if (! isset($log['cid'],  $cids[$log['cid']],   $found_cids[$log['cid']]))   { $found_cids[$log['cid']]   = $log['cid']; $found = true; }
-                            if (! isset($log['date'], $dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
-                        }
-                        if ($ckeys !== $found_ckeys) $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
-                        if ($ips   !== $found_ips)   $ips   = array_unique(array_merge($ips, $found_ips));
-                        if ($cids  !== $found_cids)  $cids  = array_unique(array_merge($cids, $found_cids));
-                        if ($dates !== $found_dates) $dates = array_unique(array_merge($dates, $found_dates));
-                        if ($i > 10) $break = true;
-                        $i++;
-                    } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
+                    $updateCkeyinfoVariables($ckeys, $ips, $cids, $dates, $this->civ13->playerlogsToCollection(), $found_ckeys, $found_ips, $found_cids, $found_dates, true);
+                    $updateCkeyinfoVariables($ckeys, $ips, $cids, $dates, $this->civ13->bansToCollection(), $found_ckeys, $found_ips, $found_cids, $found_dates, false);
 
                     if ($ckeys) {
                         if ($ckey_age_string = implode(', ', array_map(fn($c) => "$c (" . ($ckey_age[$c] ?? ($this->civ13->getByondAge($c) !== false ? $this->civ13->getByondAge($c) : "N/A")) . ")", $ckeys))) {
