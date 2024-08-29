@@ -305,10 +305,10 @@ class MessageServiceManager
                             if (isset($log['cid'])  && ! isset($cids[$log['cid']],   $found_cids[$log['cid']]))   { $found_cids[$log['cid']]   = $log['cid']; $found = true; }
                             if (isset($log['date']) && ! isset($dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
                         }
-                        $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
-                        $ips = array_unique(array_merge($ips, $found_ips));
-                        $cids = array_unique(array_merge($cids, $found_cids));
-                        $dates = array_unique(array_merge($dates, $found_dates));
+                        if ($ckeys !== $found_ckeys) $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+                        if ($ips   !== $found_ips)   $ips   = array_unique(array_merge($ips, $found_ips));
+                        if ($cids  !== $found_cids)  $cids  = array_unique(array_merge($cids, $found_cids));
+                        if ($dates !== $found_dates) $dates = array_unique(array_merge($dates, $found_dates));
                         if ($i++ > 10) $break = true;
                     } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
 
@@ -325,10 +325,10 @@ class MessageServiceManager
                             if (! isset($log['cid'],  $cids[$log['cid']],   $found_cids[$log['cid']]))   { $found_cids[$log['cid']]   = $log['cid']; $found = true; }
                             if (! isset($log['date'], $dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
                         }
-                        $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
-                        $ips = array_unique(array_merge($ips, $found_ips));
-                        $cids = array_unique(array_merge($cids, $found_cids));
-                        $dates = array_unique(array_merge($dates, $found_dates));
+                        if ($ckeys !== $found_ckeys) $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
+                        if ($ips   !== $found_ips)   $ips   = array_unique(array_merge($ips, $found_ips));
+                        if ($cids  !== $found_cids)  $cids  = array_unique(array_merge($cids, $found_cids));
+                        if ($dates !== $found_dates) $dates = array_unique(array_merge($dates, $found_dates));
                         if ($i > 10) $break = true;
                         $i++;
                     } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
