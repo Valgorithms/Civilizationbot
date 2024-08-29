@@ -151,7 +151,7 @@ class Moderator
     // This function is called from the game's chat hook if a player says something that contains a blacklisted word
     private function __relayViolation(Gameserver $gameserver, string $ckey, array $badwords_array, array &$badword_warnings): string|false
     {
-        if ($this->civ13->sanitizeInput($ckey) === $this->civ13->sanitizeInput($this->discord->username)) return false; // Don't ban the bot
+        if (Civ13::sanitizeInput($ckey) === Civ13::sanitizeInput($this->discord->username)) return false; // Don't ban the bot
         if (isset($this->civ13->verifier))
             if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id))
                 if ($item = $this->civ13->verifier->get('ss13', $ckey))

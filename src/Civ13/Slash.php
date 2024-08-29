@@ -538,14 +538,14 @@ class Slash
 
         $this->discord->listenCommand('bancheck_ckey', function (Interaction $interaction): PromiseInterface
         {
-            if (! isset($interaction->data->options['ckey']) || ! $ckey = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No ckey specified"), true);
+            if (! isset($interaction->data->options['ckey']) || ! $ckey = Civ13::sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No ckey specified"), true);
             if ($this->civ13->bancheck($ckey)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` is currently banned on one of the Civ13.com servers."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent("`$ckey` is not currently banned on one of the Civ13.com servers."), true);
         });
 
         $this->discord->listenCommand('bansearch_centcom', function (Interaction $interaction): PromiseInterface
         {
-            if (! isset($interaction->data->options['ckey']) || ! $ckey = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No ckey specified"), true);
+            if (! isset($interaction->data->options['ckey']) || ! $ckey = Civ13::sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No ckey specified"), true);
             if (! $json = Byond::bansearch_centcom($ckey)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Unable to locate bans for **$ckey** on centcom.melonmesa.com."), true);
             if ($json === '[]') return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No bans were found for **$ckey** on centcom.melonmesa.com."), true);
             return $interaction->respondWithMessage(MessageBuilder::new()->addFileFromContent($ckey.'_bans.json', $json), true);
@@ -554,7 +554,7 @@ class Slash
         $this->discord->listenCommand('ban', function (Interaction $interaction): PromiseInterface
         {
             if (! isset($interaction->data->options['ckey'], $interaction->data->options['duration'], $interaction->data->options['reason'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("Missing required parameters"), true);
-            $arr = ['ckey' => $this->civ13->sanitizeInput($interaction->data->options['ckey']->value), 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->discord_formatted}"];
+            $arr = ['ckey' => Civ13::sanitizeInput($interaction->data->options['ckey']->value), 'duration' => $interaction->data->options['duration']->value, 'reason' => $interaction->data->options['reason']->value . " Appeal at {$this->civ13->discord_formatted}"];
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($interaction->user)['ss13'])));
         });
         
@@ -714,7 +714,7 @@ class Slash
         {
             if (! $interaction->member->roles->has($this->civ13->role_ids['Faction Organizer'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You do not have permission to assign factions!'), true);
             if (! isset($interaction->data->options['team']) || ! $target_team = $interaction->data->options['team']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid team.'), true);
-            if (! isset($interaction->data->options['ckey']) || ! $target_id = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
+            if (! isset($interaction->data->options['ckey']) || ! $target_id = Civ13::sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey or Discord ID.'), true);
             if (! $target_member = $this->civ13->verifier->getVerifiedMember($target_id)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('The member is either not currently verified with a byond username or do not exist in the cache yet'), true);
             if ($target_team === 'random') $target_team = array_rand(Civ13::faction_teams); 
             if ($target_team === 'none') {
@@ -730,7 +730,7 @@ class Slash
         $this->discord->listenCommand('rank', function (Interaction $interaction): PromiseInterface
         {
             if (! isset($interaction->data->options['ckey']) || ! $ckey = $interaction->data->options['ckey']->value ?? $this->civ13->verifier->get('discord', $interaction->member->id)['ss13'] ?? null) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("<@{$interaction->member->id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
-            if (is_numeric($ckey = $this->civ13->sanitizeInput($ckey)) && ! $ckey = $this->civ13->verifier->get('discord', $ckey)['ss13']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The Byond username or Discord ID `{$interaction->data->options['ckey']->value}` is not currently verified with a Byond username or it does not exist in the cache yet"), true);
+            if (is_numeric($ckey = Civ13::sanitizeInput($ckey)) && ! $ckey = $this->civ13->verifier->get('discord', $ckey)['ss13']) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("The Byond username or Discord ID `{$interaction->data->options['ckey']->value}` is not currently verified with a Byond username or it does not exist in the cache yet"), true);
             return $interaction->acknowledge()->then(fn(): PromiseInterface => // wait until the bot says "Is thinking..."
                 $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Generating rank for `$ckey`..."), true)->then(fn($message): PromiseInterface =>
                     $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($this->civ13->enabled_gameservers[$interaction->data->options['server']->value]->getRank($ckey), true))
@@ -752,7 +752,7 @@ class Slash
         $this->discord->listenCommand('approveme', function (Interaction $interaction): PromiseInterface
         {
             if ($interaction->member->roles->has($this->civ13->role_ids['Verified'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
-            if (! isset($interaction->data->options['ckey']) || ! $ckey = $this->civ13->sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey.'), true);
+            if (! isset($interaction->data->options['ckey']) || ! $ckey = Civ13::sanitizeInput($interaction->data->options['ckey']->value)) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Invalid ckey.'), true);
             if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$ckey])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('This account is currently under investigation.'));
             if (! $item = $this->civ13->verifier->get('discord', $interaction->member->id))
                 return $interaction->acknowledge()->then(fn(): PromiseInterface => // wait until the bot says "Is thinking..."

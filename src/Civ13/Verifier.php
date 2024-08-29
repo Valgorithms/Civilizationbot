@@ -252,7 +252,7 @@ class Verifier
      */
     public function process(string $ckey, string $discord_id, ?Member $m = null): string
     {
-        $ckey = $this->civ13->sanitizeInput($ckey);
+        $ckey = Civ13::sanitizeInput($ckey);
         if (! isset($this->civ13->permitted[$ckey]) && $this->civ13->permabancheck($ckey)) {
             if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
             return 'This account needs to appeal an existing ban first.';
@@ -633,7 +633,7 @@ class Verifier
     {
         switch (true) {
             case is_string($input):
-                if (! $input = $this->civ13->sanitizeInput($input)) return null;
+                if (! $input = Civ13::sanitizeInput($input)) return null;
                 if (is_numeric($input) && $item = $this->get('discord', $input)) return $item;
                 if ($item = $this->get('ss13', $input)) return $item;
                 break;
@@ -642,8 +642,8 @@ class Verifier
                 break;
             case is_array($input):
                 if (! isset($input['discord']) && ! isset($input['ss13'])) return null;
-                if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->get('discord', $this->civ13->sanitizeInput($input['discord']))) return $item;
-                if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->get('ss13', $this->civ13->sanitizeInput($input['ss13']))) return $item;
+                if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->get('discord', Civ13::sanitizeInput($input['discord']))) return $item;
+                if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->get('ss13', Civ13::sanitizeInput($input['ss13']))) return $item;
                 break;
         }
         return null;
@@ -678,15 +678,15 @@ class Verifier
                 $id = $input->id;
                 break;
             case is_string($input):
-                if (is_numeric($input = $this->civ13->sanitizeInput($input))) {
+                if (is_numeric($input = Civ13::sanitizeInput($input))) {
                     $id = $input;
                 } elseif ($item = $this->get('ss13', $input)) {
                     $id = $item['discord'];
                 }
                 break;
             case is_array($input):
-                if (isset($input['discord']) && is_numeric($discord_id = $this->civ13->sanitizeInput($input['discord']))) $id = $discord_id;
-                elseif (isset($input['ss13']) && ($item = $this->get('ss13', $this->civ13->sanitizeInput($input['ss13'])))) $id = $item['discord'];
+                if (isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord']))) $id = $discord_id;
+                elseif (isset($input['ss13']) && ($item = $this->get('ss13', Civ13::sanitizeInput($input['ss13'])))) $id = $item['discord'];
                 break;
         }
         if (! $id || ! $this->isVerified($id)) return null;
@@ -704,15 +704,15 @@ class Verifier
                 $id = $input->id;
                 break;
             case is_string($input):
-                if (is_numeric($input = $this->civ13->sanitizeInput($input))) {
+                if (is_numeric($input = Civ13::sanitizeInput($input))) {
                     $id = $input;
                 } elseif ($item = $this->get('ss13', $input)) {
                     $id = $item['discord'];
                 }
                 break;
             case is_array($input):
-                if (isset($input['discord']) && is_numeric($discord_id = $this->civ13->sanitizeInput($input['discord']))) $id = $discord_id;
-                elseif (isset($input['ss13']) && ($item = $this->get('ss13', $this->civ13->sanitizeInput($input['ss13'])))) $id = $item['discord'];
+                if (isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord']))) $id = $discord_id;
+                elseif (isset($input['ss13']) && ($item = $this->get('ss13', Civ13::sanitizeInput($input['ss13'])))) $id = $item['discord'];
                 break;
         }
         if (! $id || ! $this->isVerified($id)) return null;

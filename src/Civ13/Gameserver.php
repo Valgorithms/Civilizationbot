@@ -267,7 +267,7 @@ class GameServer
         10 => season={season}
         11 => ckey_list={ckey&ckey}
         */
-        if (isset($data[11])) $players = array_filter(array_map(fn($player) => $this->civ13->sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
+        if (isset($data[11])) $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
         if (isset($data[4])) $playercount = $data[4]; // Player count
         $this->players = $players;
         return $playercount;
@@ -346,7 +346,7 @@ class GameServer
             if ($ooc) $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ooc_badwords, $this->civ13->ooc_badwords_warnings);
             else $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ic_badwords, $this->civ13->ic_badwords_warnings);
         }
-        if (! $item = $this->civ13->verifier->get('ss13', $this->civ13->sanitizeInput($array['ckey']))) {
+        if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) {
             $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
             return;
         }
@@ -389,7 +389,7 @@ class GameServer
             if (array_key_exists('ERROR', $server)) continue;
             //$stationname = $server['stationname'] ?? ''; // TODO: Compare this to the server's name as it appears on the Byond hub
             foreach (array_keys($server) as $key) if (($p = explode('player', $key)) && isset($p[1]) && is_numeric($p[1])) {
-                $this->players[] = $ckey = $this->civ13->sanitizeInput(urldecode($server[$key]));
+                $this->players[] = $ckey = Civ13::sanitizeInput(urldecode($server[$key]));
                 if (! array_key_exists($ckey, $this->rounds[$this->current_round]['players'])) { // TODO
                     $this->rounds[$this->current_round]['players'][$ckey] = [];
                 }
@@ -697,7 +697,7 @@ class GameServer
     }
     public function permabancheck(string $id, bool $bypass = false): bool
     {
-        if (! $id = $this->civ13->sanitizeInput($id)) return false;
+        if (! $id = Civ13::sanitizeInput($id)) return false;
         $permabanned = ($this->legacy ? $this->legacyPermabancheck($id) : $this->sqlPermabancheck($id));
         return $permabanned;
     }
@@ -860,7 +860,7 @@ class GameServer
         if ($array['duration'] === '999 years') $permanent = true;
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
 
-        if (is_numeric($array['ckey'] = $this->civ13->sanitizeInput($array['ckey']))) {
+        if (is_numeric($array['ckey'] = Civ13::sanitizeInput($array['ckey']))) {
             if (! isset($this->civ13->verifier) || ! $item = $this->civ13->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
         }
@@ -1295,7 +1295,7 @@ class GameServer
         if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
         if (isset($data[11])) { // Player list
             $players = explode('&', $data[11]);
-            $players = array_filter(array_map(fn($player) => $this->civ13->sanitizeInput($player), $players));
+            $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), $players));
             if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
             $embed->addFieldValues('Players (' . count($players) . ')', $players_list, true);
         }

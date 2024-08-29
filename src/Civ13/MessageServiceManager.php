@@ -116,7 +116,7 @@ class MessageServiceManager
             ->offsetSet('bancheck_centcom',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
+                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
                     if (is_numeric($ckey)) {
                         if (! $item = $this->civ13->verifier->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
                         $ckey = $item['ss13'];
@@ -128,7 +128,7 @@ class MessageServiceManager
             ->offsetSet('bancheck',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
+                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
                     if (is_numeric($ckey)) {
                         if (! $item = $this->civ13->verifier->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
                         $ckey = $item['ss13'];
@@ -181,7 +181,7 @@ class MessageServiceManager
                         $rounds[$gameserver->name] = $round;
                     }
                     if (! $rounds) return $this->civ13->reply($message, 'No data found for that round.');
-                    $ckey = isset($input[1]) ? $this->civ13->sanitizeInput($input[1]) : null;
+                    $ckey = isset($input[1]) ? Civ13::sanitizeInput($input[1]) : null;
                     $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador']);
                     $staff = $this->civ13->hasRank($message->member, ['Admin']);
                     $builder = MessageBuilder::new()->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
@@ -245,14 +245,14 @@ class MessageServiceManager
                 }, ['Verified'])
             ->offsetSet('discord2ckey',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    ($item = $this->civ13->verifier->get('discord', $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
+                    ($item = $this->civ13->verifier->get('discord', $id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
                         ? $this->civ13->reply($message, "`$id` is registered to `{$item['ss13']}`")
                         : $this->civ13->reply($message, "`$id` is not registered to any byond username"),
                 ['Verified'])
             ->offsetSet('ckeyinfo',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
+                    if (! $id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
                     if (! ($item = $this->civ13->verifier->getVerifiedItem($id) ?? []) && is_numeric($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
                     if (! $ckey = $item['ss13'] ?? $id) return $this->civ13->reply($message, "Invalid ckey `$ckey`.");
                     if (! $collectionsArray = $this->civ13->getCkeyLogCollections($ckey)) return $this->civ13->reply($message, "No data found for ckey `$ckey`.");
@@ -335,8 +335,6 @@ class MessageServiceManager
                         if ($i > 10) $break = true;
                         $i++;
                     } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
-                    $altbanned = 'No';
-                    foreach ($ckeys as $key) if ($key != $ckey && $this->civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
 
                     if ($ckeys) {
                         if ($ckey_age_string = implode(', ', array_map(fn($c) => "$c (" . ($ckey_age[$c] ?? ($this->civ13->getByondAge($c) !== false ? $this->civ13->getByondAge($c) : "N/A")) . ")", $ckeys))) {
@@ -368,14 +366,14 @@ class MessageServiceManager
                         elseif (strlen($discord_string) > 1024) $builder->addFileFromContent('discord.txt', $discord_string);                
                     }
                     $embed->addfieldValues('Currently Banned', $this->civ13->bancheck($ckey) ? 'Yes' : 'No', true);
-                    $embed->addfieldValues('Alt Banned', $altbanned, true);
+                    $embed->addfieldValues('Alt Banned', $this->civ13->altbancheck($ckeys, $ckey) ? 'Yes' : 'No', true);
                     $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
                     if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
                     return $message->reply($builder->addEmbed($embed));
                 }, ['Admin'])
             ->offsetSet('ckey2discord',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    ($item = $this->civ13->verifier->get('ss13', $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
+                    ($item = $this->civ13->verifier->get('ss13', $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
                         ? $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>")
                         : $this->civ13->reply($message, "`$ckey` is not registered to any discord id"),
                 ['Verified'])
@@ -383,7 +381,7 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
+                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
                         if (! $item = $this->civ13->verifier->getVerifiedItem($ckey = $message->user_id)) return $this->civ13->reply($message, "You are not registered to any byond username");
                         return $this->civ13->reply($message, "You are registered to `{$item['ss13']}`");
                     }
@@ -425,7 +423,7 @@ class MessageServiceManager
                 {
                     if (! str_contains($message_filtered['message_content'], ';')) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.');
                     $explode = explode(';', $message_filtered['message_content']);
-                    $recipient = $this->civ13->sanitizeInput(substr(array_shift($explode), strlen($command)));
+                    $recipient = Civ13::sanitizeInput(substr(array_shift($explode), strlen($command)));
                     $msg = implode(' ', $explode);
                     foreach ($this->civ13->enabled_gameservers as $server) {
                         switch (strtolower($message->channel->name)) {
@@ -453,13 +451,13 @@ class MessageServiceManager
             ->offsetSet('permit',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $this->civ13->permitCkey($ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
+                    $this->civ13->permitCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
                     return $this->civ13->reply($message, "$ckey is now permitted to bypass the Byond account restrictions.");
                 }, ['Admin'])
             ->offsetSets(['unpermit', 'revoke'],
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $this->civ13->permitCkey($ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
+                    $this->civ13->permitCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
                     return $this->civ13->reply($message, "$ckey is no longer permitted to bypass the Byond account restrictions.");
                 }, ['Admin'])
             ->offsetSet('permitted',
@@ -475,7 +473,7 @@ class MessageServiceManager
             ->offsetSet('discard',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
+                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
                     $string = "`$ckey` will no longer attempt to be automatically registered.";
                     if ($item = $this->civ13->verifier->provisional->get('ss13', $ckey)) {
                         if ($member = $message->guild->members->get('id', $item['discord'])) {
@@ -494,13 +492,13 @@ class MessageServiceManager
             ->offsetSet('softban',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $this->civ13->softban($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
+                    $this->civ13->softban($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
                     return $this->civ13->reply($message, "`$id` is no longer allowed to get verified.");
                 }, ['Admin'])
             ->offsetSet('unsoftban',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $this->civ13->softban($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
+                    $this->civ13->softban($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
                     return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
                 }, ['Admin'])
             ->offsetSet('ban',
@@ -508,7 +506,7 @@ class MessageServiceManager
                 {
                     $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
                     $split_message = explode('; ', $message_filtered['message_content']);
-                    if (! $split_message[0] = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
+                    if (! $split_message[0] = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
                     if (! isset($split_message[1]) || ! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
                     if (! isset($split_message[2]) || ! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
                     $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
@@ -517,7 +515,7 @@ class MessageServiceManager
             ->offsetSet('unban',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    if (is_numeric($ckey = $this->civ13->sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], trim(strlen($command))))))
+                    if (is_numeric($ckey = Civ13::sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], trim(strlen($command))))))
                         if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
                         else $ckey = $item['ss13'];
                     $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
@@ -559,7 +557,7 @@ class MessageServiceManager
             ->offsetSet('getrounds',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: getrounds `ckey`');
+                    if (! $id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: getrounds `ckey`');
                     if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No verified data found for ID `$id`.");
                     $rounds = [];
                     foreach ($this->civ13->enabled_gameservers as $gameserver) if ($r = $gameserver->getRounds([$item['ss13']])) $rounds[$gameserver->name] = $r;
@@ -791,8 +789,8 @@ class MessageServiceManager
                     if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
                     $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
                     if (! isset($split_message[1])) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
-                    if (! $ckey = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
-                    if (! is_numeric($discord_id = $this->civ13->sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
+                    if (! $ckey = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
+                    if (! is_numeric($discord_id = Civ13::sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
                     return $this->civ13->reply($message, $this->civ13->verifier->register($ckey, $discord_id)['error']);
                 }, ['Chief Technical Officer'])
             ->offsetSet('provision',
@@ -801,8 +799,8 @@ class MessageServiceManager
                     if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
                     $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
                     if (! isset($split_message[1])) return $this->civ13->reply($message, 'Invalid format! Please use the format `provision <byond username>; <discord id>`.');
-                    if (! $ckey = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
-                    if (! is_numeric($discord_id = $this->civ13->sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
+                    if (! $ckey = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
+                    if (! is_numeric($discord_id = Civ13::sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
                     if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
                     if (! $this->civ13->verifier->provisional->get('ss13', $ckey)) {
                         $this->civ13->verifier->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
@@ -816,7 +814,7 @@ class MessageServiceManager
                 { // This function is only authorized to be used by the database administrator
                     if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
                     if (! $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
-                    if (! $id = $this->civ13->sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Please use the format `register <byond username>; <discord id>`.');
+                    if (! $id = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Please use the format `register <byond username>; <discord id>`.');
                     return $this->civ13->reply($message, $this->civ13->verifier->unverify($id)['message']);
                 }, ['Chief Technical Officer'])   
             ->offsetSet('dumpappcommands',
@@ -873,7 +871,7 @@ class MessageServiceManager
                     ->offsetSet('parole',
                         function (Message $message, string $command, array $message_filtered): PromiseInterface
                         {
-                            if (! $item = $this->civ13->verifier->getVerifiedItem($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
+                            if (! $item = $this->civ13->verifier->getVerifiedItem($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
                             $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, true);
                             $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                             if ($member = $this->civ13->verifier->getVerifiedMember($item))
@@ -885,7 +883,7 @@ class MessageServiceManager
                     ->offsetSet('release',
                         function (Message $message, string $command, array $message_filtered): PromiseInterface
                         {
-                            if (! $item = $this->civ13->verifier->getVerifiedItem($id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
+                            if (! $item = $this->civ13->verifier->getVerifiedItem($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
                             $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, false);
                             $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                             if ($member = $this->civ13->verifier->getVerifiedMember($item))
@@ -905,7 +903,7 @@ class MessageServiceManager
                             $message->member->setRoles([$this->civ13->role_ids['Verified']], "approveme {$item['ss13']}");
                             return $message->react("👍");
                         }
-                        if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
+                        if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
                         return $this->civ13->reply($message, $this->civ13->verifier->process($ckey, $message->user_id, $message->member));
                     });
 
@@ -960,7 +958,7 @@ class MessageServiceManager
             $this->messageHandler->offsetSet('medals',
                 function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
                 {
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `medals [ckey]`.');
+                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `medals [ckey]`.');
                     $medals = function (string $ckey) use ($fp): false|string
                     {
                         $result = '';
@@ -996,7 +994,7 @@ class MessageServiceManager
             $this->messageHandler->offsetSet('brmedals',
                 function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
                 {
-                    if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
+                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
                     $brmedals = function (string $ckey) use ($fp): string
                     {
                         $result = '';
@@ -1022,7 +1020,7 @@ class MessageServiceManager
                     ->offsetSet("{$gameserver->key}notes",
                         function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                         {
-                            if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Missing ckey! Please use the format `notes ckey`');
+                            if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Missing ckey! Please use the format `notes ckey`');
                             $first_letter_lower = strtolower(substr($ckey, 0, 1));
                             $first_letter_upper = strtoupper(substr($ckey, 0, 1));
                             
@@ -1065,7 +1063,7 @@ class MessageServiceManager
                 ->offsetSet("{$gameserver->key}rank",
                     function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                     {
-                        if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
+                        if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
                             if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
                             $ckey = $item['ss13'];
                         }
@@ -1098,7 +1096,7 @@ class MessageServiceManager
                 ->offsetSet("{$gameserver->key}unban",
                     function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                     {
-                        if (! $ckey = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
+                        if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
                         if (is_numeric($ckey)) {
                             if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
                             $ckey = $item['ckey'];

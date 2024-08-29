@@ -475,7 +475,7 @@ class Civ13
      * @param string $input The input string to be sanitized.
      * @return string The sanitized input string.
      */
-    public function sanitizeInput(string $input): string
+    public static function sanitizeInput(string $input): string
     {
         return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', '+', ' '], '', strtolower($input)));
     }
@@ -812,7 +812,7 @@ class Civ13
     public function getRole(string $input): ?Role
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null;
-        if (is_numeric($input = $this->sanitizeInput($input))) return $guild->roles->get('id', $input);
+        if (is_numeric($input = self::sanitizeInput($input))) return $guild->roles->get('id', $input);
         return $guild->roles->get('name', $input);
     }
 
@@ -1042,7 +1042,7 @@ class Civ13
      */
     public function bancheck(string $ckey, bool $bypass = false): bool
     {
-        if (! $ckey = $this->sanitizeInput($ckey)) return false;
+        if (! $ckey = self::sanitizeInput($ckey)) return false;
         $banned = false;
         foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->bancheck($ckey)) $banned = true;
         if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey))) {
@@ -1052,9 +1052,13 @@ class Civ13
         }
         return $banned;
     }
+    public function altbancheck(array $ckeys, ?string $exclude = null): bool
+    {
+        return array_reduce($ckeys, fn($carry, $key) => $carry || ($key !== $exclude && $this->bancheck($key)), false);
+    }
     public function permabancheck(string $ckey, bool $bypass = false): bool
     {
-        if (! $ckey = $this->sanitizeInput($ckey)) return false;
+        if (! $ckey = self::sanitizeInput($ckey)) return false;
         $permabanned = false;
         foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->permabancheck($ckey)) $permabanned = true;
         if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)))
@@ -1110,7 +1114,7 @@ class Civ13
         if (! isset($array['duration'])) return "You must specify a duration to ban for.";
         if ($array['duration'] === '999 years') $permanent = true;
         if (! isset($array['reason'])) return "You must specify a reason for the ban.";
-        $array['ckey'] = $this->sanitizeInput($array['ckey']);
+        $array['ckey'] = self::sanitizeInput($array['ckey']);
         if (is_numeric($array['ckey'])) {
             if (isset($this->verifier) && ! $item = $this->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             $array['ckey'] = $item['ss13'];
@@ -1148,7 +1152,7 @@ class Civ13
      */
     public function ckeyinfo(string $ckey): array
     {
-        if (! $ckey = $this->sanitizeInput($ckey)) return [null, null, null, false, false];
+        if (! $ckey = self::sanitizeInput($ckey)) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->verifier->getVerifiedItem($ckey)) $ckey = $item['ss13'];
         $ckeys = [$ckey];

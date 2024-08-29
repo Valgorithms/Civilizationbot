@@ -654,7 +654,7 @@ class HttpServiceManager
                         ->addFieldValues('Email', $email)
                         ->addFieldValues('Message', $messageContent)
                         ->setAuthor('Anonymous', $this->discord->avatar);
-                    if ($item = $this->civ13->verifier->getVerifiedItem($this->civ13->sanitizeInput($ckey)))
+                    if ($item = $this->civ13->verifier->getVerifiedItem(Civ13::sanitizeInput($ckey)))
                         if (isset($item['discord']) && $user = $this->discord->users->get('id', $item['discord']))
                             $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar ?? $this->discord->avatar);
                     $this->logger->info("[CONTACT FORM] IP: $ip, Byond Username: $ckey, Email: $email, Message: $messageContent");
@@ -745,7 +745,7 @@ class HttpServiceManager
     {
         $relay = function($message, $channel, $ckey = null): ?PromiseInterface
         {
-            if (! $ckey || ! $item = $this->civ13->verifier->get('ss13', $this->civ13->sanitizeInput(explode('/', $ckey)[0]))) return $this->civ13->sendMessage($channel, $message);
+            if (! $ckey || ! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput(explode('/', $ckey)[0]))) return $this->civ13->sendMessage($channel, $message);
             if ($item['discord'] && ! $user = $this->discord->users->get('id', $item['discord'])) {
                 $this->logger->warning("{$item['ss13']}'s Discord ID was not found not in the primary Discord server!");
                 $this->discord->users->fetch($item['discord']);
@@ -851,7 +851,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         $time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} AHELP__ $ckey:** " . $message;
 
@@ -892,7 +892,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
 
                         $time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         //$message = "**__{$time} ASAY__ $ckey:** $message";
                         $message = "**__{$time}__** $message";
@@ -935,7 +935,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         $time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         $message = "<@{$this->civ13->role_ids['Admin']}>, ";
                         isset($data, $data['message']) ? $message .= strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message .= '(NULL)';
                         //$message = "**__{$time} ASAY__ $ckey:** $message";
@@ -957,7 +957,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         $time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} LOBBY__ $ckey:** $message";
 
@@ -976,7 +976,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         //$time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         //$message = "**__{$time} OOC__ $ckey:** $message";
 
@@ -995,7 +995,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         //$time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         //$message = "**__{$time} OOC__ $ckey:** $message";
 
@@ -1014,7 +1014,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         $time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} EMOTE__ $ckey:** $message";
 
@@ -1033,7 +1033,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         $time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} GARBAGE__ $ckey:** $message";
 
@@ -1097,7 +1097,7 @@ class HttpServiceManager
 
                         $data = [];
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                             if ($gameserver = $this->civ13->enabled_gameservers[$gameserver->key])
                             if (! $ckey !== '(NULL)' && ! in_array($ckey, $gameserver->players))
                                 $gameserver->players[] = $ckey;
@@ -1131,7 +1131,7 @@ class HttpServiceManager
 
                         $data = [];
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         
                         $time = '['.date('H:i:s', time()).']';
                         $message = "$ckey disconnected from the server.";
@@ -1158,7 +1158,7 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         $time = '['.date('H:i:s', time()).']';
-                        //isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        //isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} RUNTIME__:** $message";
 
@@ -1194,8 +1194,8 @@ class HttpServiceManager
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
                         
                         $time = '['.date('H:i:s', time()).']';
-                        isset($data, $data['ckey']) ? $ckey = $this->civ13->sanitizeInput($data['ckey']) : $ckey = null;
-                        isset($data, $data['ckey2']) ? $ckey2 = $this->civ13->sanitizeInput($data['ckey2']) : $ckey2 = null;
+                        isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = null;
+                        isset($data, $data['ckey2']) ? $ckey2 = Civ13::sanitizeInput($data['ckey2']) : $ckey2 = null;
                         isset($data, $data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} ATTACK LOG__:** " . $message;
                         if ($ckey && $ckey2) if ($ckey === $ckey2) $message .= " (Self-Attack)";
