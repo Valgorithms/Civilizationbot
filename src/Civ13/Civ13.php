@@ -1052,6 +1052,13 @@ class Civ13
         }
         return $banned;
     }
+    /**
+     * Checks if any of the provided keys are banned, excluding a specific key if provided.
+     *
+     * @param array $ckeys An array of keys to check.
+     * @param string|null $exclude A key to exclude from the check, or null to include all keys.
+     * @return bool True if any key (excluding the specified key) is banned, otherwise false.
+     */
     public function altbancheck(array $ckeys, ?string $exclude = null): bool
     {
         return array_reduce($ckeys, fn($carry, $key) => $carry || ($key !== $exclude && $this->bancheck($key)), false);

@@ -291,16 +291,16 @@ class MessageServiceManager
                     if ($dates && strlen($dates_string = implode(', ', $dates)) <= 1024) $embed->addFieldValues('First Seen Dates', $dates_string);
 
                     $playerlogs = $this->civ13->playerlogsToCollection(); // This is ALL players
+                    $found_ckeys = [];
+                    $found_ips = [];
+                    $found_cids = [];
+                    $found_dates = [];
                     $i = 0;
                     $break = false;
                     do { // Iterate through playerlogs to find all known ckeys, ips, and cids
                         $found = false;
-                        $found_ckeys = [];
-                        $found_ips = [];
-                        $found_cids = [];
-                        $found_dates = [];
                         foreach ($playerlogs as $log) if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
-                            if (isset($log['ckey']) && ! isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = $log['ckey']; $found = true; }
+                            if (isset($log['ckey']) && ! isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = Civ13::sanitizeInput($log['ckey']); $found = true; }
                             if (isset($log['ip'])   && ! isset($ips[$log['ip']],     $found_ips[$log['ip']]))     { $found_ips[$log['ip']]     = $log['ip']; $found = true; }
                             if (isset($log['cid'])  && ! isset($cids[$log['cid']],   $found_cids[$log['cid']]))   { $found_cids[$log['cid']]   = $log['cid']; $found = true; }
                             if (isset($log['date']) && ! isset($dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
@@ -318,12 +318,9 @@ class MessageServiceManager
                     $break = false;
                     do { // Iterate through banlogs to find all known ckeys, ips, and cids
                         $found = false;
-                        $found_ckeys = [];
-                        $found_ips = [];
-                        $found_cids = [];
                         $found_dates = [];
                         foreach ($banlogs as $log) if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
-                            if (! isset($log['ckey'], $ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = $log['ckey']; $found = true; }
+                            if (! isset($log['ckey'], $ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = Civ13::sanitizeInput($log['ckey']); $found = true; }
                             if (! isset($log['ip'],   $ips[$log['ip']],     $found_ips[$log['ip']]))     { $found_ips[$log['ip']]     = $log['ip']; $found = true; }
                             if (! isset($log['cid'],  $cids[$log['cid']],   $found_cids[$log['cid']]))   { $found_cids[$log['cid']]   = $log['cid']; $found = true; }
                             if (! isset($log['date'], $dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
@@ -366,7 +363,7 @@ class MessageServiceManager
                         elseif (strlen($discord_string) > 1024) $builder->addFileFromContent('discord.txt', $discord_string);                
                     }
                     $embed->addfieldValues('Currently Banned', $this->civ13->bancheck($ckey) ? 'Yes' : 'No', true);
-                    $embed->addfieldValues('Alt Banned', $this->civ13->altbancheck($ckeys, $ckey) ? 'Yes' : 'No', true);
+                    $embed->addfieldValues('Alt Banned', $this->civ13->altbancheck($found_ckeys, $ckey) ? 'Yes' : 'No', true);
                     $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
                     return $message->reply($builder->addEmbed($embed));
                 }, ['Admin'])
