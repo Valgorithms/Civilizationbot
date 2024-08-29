@@ -253,27 +253,16 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     if (! $id = $this->civ13->sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
-                    $ckey = null;
-                    if (is_numeric($id)) {
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
-                        $ckey = $item['ss13'] ?? $id;
-                    } else {
-                        $item = $this->civ13->verifier->getVerifiedItem($id);
-                        $ckey = $item['ss13'] ?? $id;
-                    }
-                    if (! $ckey) return $this->civ13->reply($message, "Invalid ckey `$ckey`.");
+                    if (! ($item = $this->civ13->verifier->getVerifiedItem($id) ?? []) && is_numeric($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
+                    if (! $ckey = $item['ss13'] ?? $id) return $this->civ13->reply($message, "Invalid ckey `$ckey`.");
                     if (! $collectionsArray = $this->civ13->getCkeyLogCollections($ckey)) return $this->civ13->reply($message, "No data found for ckey `$ckey`.");
-                    $builder = MessageBuilder::new();
-                    $embed = $this->civ13->createEmbed()->setTitle($ckey);
-                    if ($item && isset($item['ss13']))
-                        if ($user = $this->civ13->verifier->getVerifiedUser($item['ss13']))
-                            $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
 
                     /** @var string[] */
                     $ckeys = [$ckey];
                     $ips = [];
                     $cids = [];
                     $dates = [];
+                    $ckey_age = [];
                     // Get the ckey's primary identifiers
                     foreach ($collectionsArray['playerlogs'] as $log) {
                         if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
@@ -285,13 +274,17 @@ class MessageServiceManager
                         if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
                         if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
                     }
-                    $ckey_age = [];
+
+                    $builder = MessageBuilder::new();
+                    $embed = $this->civ13->createEmbed()->setTitle($ckey);
                     if ($ckeys) {
                         foreach ($ckeys as $c) ($age = $this->civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
                         $ckey_age_string = implode(', ', array_map(fn($key, $value) => "$key ($value)", array_keys($ckey_age), $ckey_age));
                         if (strlen($ckey_age_string) > 1 && strlen($ckey_age_string) <= 1024) $embed->addFieldValues('Primary Ckeys', $ckey_age_string);
                         elseif (strlen($ckey_age_string) > 1024) $builder->addFileFromContent('primary_ckeys.txt', $ckey_age_string);
                     }
+                    if ($item && isset($item['ss13']) && $user = $this->civ13->verifier->getVerifiedUser($item['ss13']))
+                        $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
                     if ($high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador'])) {
                         $ips_string = implode(', ', $ips);
                         $cids_string = implode(', ', $cids);
@@ -321,8 +314,7 @@ class MessageServiceManager
                         $ips = array_unique(array_merge($ips, $found_ips));
                         $cids = array_unique(array_merge($cids, $found_cids));
                         $dates = array_unique(array_merge($dates, $found_dates));
-                        if ($i > 10) $break = true;
-                        $i++;
+                        if ($i++ > 10) $break = true;
                     } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
 
                     $banlogs = $this->civ13->bansToCollection();
