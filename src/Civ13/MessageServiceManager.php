@@ -264,15 +264,10 @@ class MessageServiceManager
                     $dates = [];
                     $ckey_age = [];
                     // Get the ckey's primary identifiers
-                    foreach ($collectionsArray['playerlogs'] as $log) {
-                        if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-                        if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
-                        if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
-                    }
-                    foreach ($collectionsArray['bans'] as $log) {
-                        if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-                        if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
-                        if (isset($log['date']) && ! in_array($log['date'], $dates)) $dates[] = $log['date'];
+                    foreach (['playerlogs', 'bans'] as $type) foreach ($collectionsArray[$type] as $log) {
+                        if (isset($log['ip'])   && ! isset($ips[$log['ip']]))     $ips[$log['ip']]     = $log['ip'];
+                        if (isset($log['cid'])  && ! isset($cids[$log['cid']]))   $cids[$log['cid']]   = $log['cid'];
+                        if (isset($log['date']) && ! isset($dates[$log['date']])) $dates[$log['date']] = $log['date'];
                     }
 
                     $builder = MessageBuilder::new();
@@ -304,11 +299,11 @@ class MessageServiceManager
                         $found_ips = [];
                         $found_cids = [];
                         $found_dates = [];
-                        foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                            if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                            if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                            if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                            if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
+                        foreach ($playerlogs as $log) if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
+                            if (isset($log['ckey']) && ! isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = $log['ckey']; $found = true; }
+                            if (isset($log['ip'])   && ! isset($ips[$log['ip']],     $found_ips[$log['ip']]))     { $found_ips[$log['ip']]     = $log['ip']; $found = true; }
+                            if (isset($log['cid'])  && ! isset($cids[$log['cid']],   $found_cids[$log['cid']]))   { $found_cids[$log['cid']]   = $log['cid']; $found = true; }
+                            if (isset($log['date']) && ! isset($dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
                         }
                         $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
                         $ips = array_unique(array_merge($ips, $found_ips));
@@ -318,9 +313,6 @@ class MessageServiceManager
                     } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
 
                     $banlogs = $this->civ13->bansToCollection();
-                    $this->civ13->bancheck($ckey)
-                        ? $banned = 'Yes'
-                        : $banned = 'No';
                     $found = true;
                     $i = 0;
                     $break = false;
@@ -330,11 +322,11 @@ class MessageServiceManager
                         $found_ips = [];
                         $found_cids = [];
                         $found_dates = [];
-                        foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                            if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                            if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                            if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-                            if (! in_array($log['date'], $dates)) { $found_dates[] = $log['date']; }
+                        foreach ($banlogs as $log) if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
+                            if (! isset($log['ckey'], $ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) { $found_ckeys[$log['ckey']] = $log['ckey']; $found = true; }
+                            if (! isset($log['ip'],   $ips[$log['ip']],     $found_ips[$log['ip']]))     { $found_ips[$log['ip']]     = $log['ip']; $found = true; }
+                            if (! isset($log['cid'],  $cids[$log['cid']],   $found_cids[$log['cid']]))   { $found_cids[$log['cid']]   = $log['cid']; $found = true; }
+                            if (! isset($log['date'], $dates[$log['date']], $found_dates[$log['date']])) { $found_dates[$log['date']] = $log['date']; }
                         }
                         $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
                         $ips = array_unique(array_merge($ips, $found_ips));
@@ -344,9 +336,8 @@ class MessageServiceManager
                         $i++;
                     } while ($found && ! $break); // Keep iterating until no new ckeys, ips, or cids are found
                     $altbanned = 'No';
-                    foreach ($ckeys as $key) if ($key != $ckey) if ($this->civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
+                    foreach ($ckeys as $key) if ($key != $ckey && $this->civ13->bancheck($key)) { $altbanned = 'Yes'; break; }
 
-                    $verified = $this->civ13->verifier->get('ss13', $ckey) ? 'Yes' : 'No';
                     if ($ckeys) {
                         if ($ckey_age_string = implode(', ', array_map(fn($c) => "$c (" . ($ckey_age[$c] ?? ($this->civ13->getByondAge($c) !== false ? $this->civ13->getByondAge($c) : "N/A")) . ")", $ckeys))) {
                             if (strlen($ckey_age_string) > 1 && strlen($ckey_age_string) <= 1024) $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
@@ -371,12 +362,12 @@ class MessageServiceManager
                         if (strlen($matched_dates_string) > 1 && strlen($matched_dates_string) <= 1024) $embed->addFieldValues('Matched Dates', $matched_dates_string, true);
                         elseif (strlen($matched_dates_string) > 1024) $builder->addFileFromContent('matched_dates.txt', $matched_dates_string);
                     }
-                    $embed->addfieldValues('Verified', $verified, true);
+                    $embed->addfieldValues('Verified', $this->civ13->verifier->get('ss13', $ckey) ? 'Yes' : 'No', true);
                     if ($discord_string = implode(', ', array_filter(array_map(fn(string $c) => ($result = $this->civ13->verifier->get('ss13', $c)) ? "<@{$result['discord']}>" : null, $ckeys)))) {
                         if (strlen($discord_string) > 1 && strlen($discord_string) <= 1024) $embed->addFieldValues('Discord', $discord_string, true);
                         elseif (strlen($discord_string) > 1024) $builder->addFileFromContent('discord.txt', $discord_string);                
                     }
-                    $embed->addfieldValues('Currently Banned', $banned, true);
+                    $embed->addfieldValues('Currently Banned', $this->civ13->bancheck($ckey) ? 'Yes' : 'No', true);
                     $embed->addfieldValues('Alt Banned', $altbanned, true);
                     $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->civ13->permitted[$ckey]) ? 'Yes' : 'No', true);
                     if (! $high_staff) $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
