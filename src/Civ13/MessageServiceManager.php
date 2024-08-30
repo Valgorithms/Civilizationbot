@@ -305,7 +305,7 @@ class MessageServiceManager
                         if ($cids  !== $found_cids)  $cids  = array_unique(array_merge($cids, $found_cids));
                         if ($dates !== $found_dates) $dates = array_unique(array_merge($dates, $found_dates));
 
-                        if (! $found && ++$i > 10) return; // Helps to prevent infinite loops, just in case
+                        if (++$i > 10 || ! $found) return; // Helps to prevent infinite loops, just in case
                         $updateCkeyinfoVariables($ckeys, $ips, $cids, $dates, $logs, $found_ckeys, $found_ips, $found_cids, $found_dates, $update_found_ckeys, $i, $found); // Recursively call the function until no new ckeys, ips, or cids are found
                     };
                     $found_ckeys = [];
