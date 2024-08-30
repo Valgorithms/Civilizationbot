@@ -1234,25 +1234,27 @@ class Civ13
      * This function iterates through the logs to find all known ckeys, ips, and cids, and updates the provided arrays accordingly.
      * It also ensures that no duplicates are added and prevents infinite loops by limiting the recursion depth.
      *
-     * @param array $ckeys Reference to the array of ckeys to be updated.
-     * @param array $ips Reference to the array of ips to be updated.
-     * @param array $cids Reference to the array of cids to be updated.
-     * @param array $dates Reference to the array of dates to be updated.
-     * @param \Traversable $logs The logs to be processed.
-     * @param array $found_ckeys Reference to the array of found ckeys.
-     * @param array $found_ips Reference to the array of found ips.
-     * @param array $found_cids Reference to the array of found cids.
-     * @param array $found_dates Reference to the array of found dates.
-     * @param bool $update_found_ckeys Flag to determine if found ckeys should be updated.
-     * @param int $i The current recursion depth.
-     * @param bool $found Flag to indicate if new values were found in the current iteration.
+     * @param \Traversable  $logs               The logs to be processed.
+     * @param array        &$ckeys              Reference to the array of ckeys to be updated.
+     * @param array        &$ips                Reference to the array of ips to be updated.
+     * @param array        &$cids               Reference to the array of cids to be updated.
+     * @param array        &$dates              Reference to the array of dates to be updated.
+     * @param array        &$found_ckeys        Reference to the array of found ckeys.
+     * @param array        &$found_ips          Reference to the array of found ips.
+     * @param array        &$found_cids         Reference to the array of found cids.
+     * @param array        &$found_dates        Reference to the array of found dates.
+     * @param bool          $update_found_ckeys Flag to determine if found ckeys should be updated.
+     * @param int           $i                  The current recursion depth.
+     * @param bool          $found              Flag to indicate if new values were found in the current iteration.
      *
      * @return void
      */
     public static function updateCkeyinfoVariables(
-        array &$ckeys, array &$ips, array &$cids, array &$dates,
         \Traversable $logs,
-        array &$found_ckeys, array &$found_ips, array &$found_cids, array &$found_dates, bool $update_found_ckeys = true, int $i = 0, bool $found = false
+        array &$ckeys, array &$ips, array &$cids, array &$dates,
+        array &$found_ckeys, array &$found_ips, array &$found_cids, array &$found_dates,
+        bool $update_found_ckeys = true,
+        int $i = 0, bool $found = false // Passed internally within the function, not to be provided by the user
         ): void
     {
         // Iterate through logs to find all known ckeys, ips, and cids
@@ -1270,7 +1272,7 @@ class Civ13
         if ($dates !== $found_dates) $dates = array_unique(array_merge($dates, $found_dates));
 
         if (++$i > 10 || ! $found) return; // Helps to prevent infinite loops, just in case
-        self::updateCkeyinfoVariables($ckeys, $ips, $cids, $dates, $logs, $found_ckeys, $found_ips, $found_cids, $found_dates, $update_found_ckeys, $i, $found); // Recursively call the function until no new ckeys, ips, or cids are found
+        self::updateCkeyinfoVariables($logs, $ckeys, $ips, $cids, $dates, $found_ckeys, $found_ips, $found_cids, $found_dates, $update_found_ckeys, $i, $found); // Recursively call the function until no new ckeys, ips, or cids are found
     }
     public function ckeyinfoEmbed(string $ckey, ?array $ckeyinfo = null): Embed
     {

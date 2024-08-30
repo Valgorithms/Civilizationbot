@@ -294,8 +294,8 @@ class MessageServiceManager
                     $found_ips = [];
                     $found_cids = [];
                     $found_dates = [];
-                    Civ13::updateCkeyinfoVariables($ckeys, $ips, $cids, $dates, $this->civ13->playerlogsToCollection(), $found_ckeys, $found_ips, $found_cids, $found_dates, true);
-                    Civ13::updateCkeyinfoVariables($ckeys, $ips, $cids, $dates, $this->civ13->bansToCollection(), $found_ckeys, $found_ips, $found_cids, $found_dates, false);
+                    Civ13::updateCkeyinfoVariables($this->civ13->playerlogsToCollection(), $ckeys, $ips, $cids, $dates, $found_ckeys, $found_ips, $found_cids, $found_dates, true);
+                    Civ13::updateCkeyinfoVariables($this->civ13->bansToCollection(), $ckeys, $ips, $cids, $dates, $found_ckeys, $found_ips, $found_cids, $found_dates, false);
 
                     if ($ckeys) {
                         if ($ckey_age_string = implode(', ', array_map(fn($c) => "$c (" . ($ckey_age[$c] ?? ($this->civ13->getByondAge($c) !== false ? $this->civ13->getByondAge($c) : "N/A")) . ")", $ckeys))) {
