@@ -1430,14 +1430,11 @@ class Civ13
             ) ? ['playerlogs' => $playerlog, 'bans' => $bans] : [];
     }
 
-    public function webserverStatusChannelUpdate(bool $status): ?PromiseInterface
+    public function statusChannelUpdate(string $channel, bool $status): ?PromiseInterface
     {
         if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return null;
         [$webserver_name, $reported_status] = explode('-', $channel->name);
-        $status = $this->webserver_online
-            ? 'online'
-            : 'offline';
-        if ($reported_status != $status) {
+        if ($reported_status != ($status = $status ? 'online' : 'offline')) {
             //if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
             $channel->name = "{$webserver_name}-{$status}";
             $success = fn($result) => $this->loop->addTimer(2, fn() => $this->sendMessage($this->discord->getChannel($channel->id), "Webserver is now **{$status}**."));
@@ -1445,21 +1442,6 @@ class Civ13
         }
         return null;
     }
-    /*public function statusChannelUpdate(bool $status, string $channel_id): ?PromiseInterface
-    {
-        if (! $channel = $this->discord->getChannel($channel_id)) return null;
-        [$server_name, $reported_status] = explode('-', $channel->name);
-        $status_string = $status
-            ? 'online'
-            : 'offline';
-        if ($reported_status != $status_string) {
-            //if ($status === 'offline') $msg .= PHP_EOL . "Server technician <@{$this->technician_id}> has been notified.";
-            $this->sendMessage($channel, "Server is now **{$status_string}**.");
-            $channel->name = "{$server_name}-{$status_string}";
-            return $channel->guild->channels->save($channel);
-        }
-        return null;
-    }*/
     /**
      * Fetches server information from the specified URL.
      *
@@ -1470,10 +1452,10 @@ class Civ13
         $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
         if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, $context),  true)) {
             $this->logger->debug("Unable to retrieve serverinfo from `{$this->serverinfo_url}`");
-            $this->webserverStatusChannelUpdate($this->webserver_online = false);
+            $this->statusChannelUpdate($this->channel_ids['webserver-status'], $this->webserver_online = false);
             return [];
         }
-        $this->webserverStatusChannelUpdate($this->webserver_online = true);
+        $this->statusChannelUpdate($this->channel_ids['webserver-status'], $this->webserver_online = true);
         $this->logger->debug("Successfully retrieved serverinfo from `{$this->serverinfo_url}`");
         return $this->serverinfo = $data_json;
     }
