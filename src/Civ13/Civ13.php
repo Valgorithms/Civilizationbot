@@ -1221,12 +1221,12 @@ class Civ13
 
         return [
             'ckeys' => $ckeys,
+            'discords' => $discords,
             'ips' => $ips,
             'cids' => $cids,
             'banned' => $this->bancheck($ckey),
             'altbanned' => $altbanned,
-            'verified' => $verified,
-            'discords' => $discords
+            'verified' => $verified
         ];
     }
     /**
@@ -1280,11 +1280,11 @@ class Civ13
         $embed = $this->createEmbed()->setTitle($ckey);
         if (isset($this->verifier) && $user = $this->verifier->getVerifiedUser($ckey)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         if (! empty($ckeyinfo['ckeys'])) $embed->addFieldValues('Ckeys', implode(', ', array_map(fn($ckey) => isset($this->ages[$ckey]) ? "$ckey ({$this->ages[$ckey]})" : $ckey, $ckeyinfo['ckeys'])));
+        if (! empty($ckeyinfo['discords'])) $embed->addfieldValues('Discord', implode(', ', array_map(fn($id) => $id ? "<@{$id}>" : $id, $ckeyinfo['discords'])), true);
         if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']), true);
         if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']), true);
         if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('Regions', implode(', ', array_unique(array_map(fn($ip) => IPToCountryResolver::Offline($ip), $ckeyinfo['ips']))), true);
         $embed->addfieldValues('verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
-        if (! empty($ckeyinfo['discords'])) $embed->addfieldValues('Discord', implode(', ', array_map(fn($id) => $id ? "<@{$id}>" : $id, $ckeyinfo['discords'])), true);
         $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No', true);
         $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No', true);
         $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No', true);
@@ -1319,22 +1319,22 @@ class Civ13
         return $this->softbanned;
     }
 
-    public function bansToCollection($ban_collection = new Collection([], 'increment')): Collection
+    public function bansToCollection($ban_collection = new Collection([], 'increment'), int $increment = 0): Collection
     {
-        $file_contents = '';
         foreach ($this->enabled_gameservers as &$gameserver) {
-            if (! @file_exists($gameserver->basedir . self::bans) || ! $fc = @file_get_contents($gameserver->basedir . self::bans)) {
-                $this->logger->warning("Unable to open '{$gameserver->basedir}" . self::bans . '`');
+            if (! @file_exists($file_path = $gameserver->basedir . self::bans) || ! $file_contents = @file_get_contents($file_path)) {
+                $this->logger->warning("Unable to open '{$file_path}'");
                 continue;
             }
-            $file_contents .= $fc;
+
+            foreach (explode('|||', str_replace(PHP_EOL, '', $file_contents)) as $item) {
+                if ($ban = $this->banArrayToAssoc(explode(';', $item))) {
+                    $ban['increment'] = ++$increment;
+                    $ban_collection->pushItem($ban);
+                }
+            }
         }
-        if (! $file_contents = str_replace(PHP_EOL, '', $file_contents)) return $ban_collection;
-        $increment = 0;
-        foreach (explode('|||', $file_contents) as $item) if ($ban = $this->banArrayToAssoc(explode(';', $item))) {
-            $ban['increment'] = ++$increment;
-            $ban_collection->pushItem($ban);
-        }
+
         return $ban_collection;
     }
     /*
