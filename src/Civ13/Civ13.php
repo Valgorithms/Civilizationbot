@@ -1014,9 +1014,9 @@ class Civ13
             if (! isset($this->verifier)) return;
             $this->logger->debug('Running periodic bancheck...');
             foreach ($this->enabled_gameservers as &$gameserver) {
-                $gameserver->cleanupBans()
-                    ? $this->logger->debug("Cleaned bans for {$gameserver->name}...")
-                    : $this->logger->warning("Unable to clean bans for {$gameserver->name}...");
+                $gameserver->cleanupLogs()
+                    ? $this->logger->debug("Removed duplicate ban and player logs for {$gameserver->name}...")
+                    : $this->logger->warning("Unable to remove duplicate ban or player logs for {$gameserver->name}...");
             }
             if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
                 if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;

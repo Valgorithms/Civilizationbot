@@ -683,9 +683,14 @@ class GameServer
         return $msg;
     }
 
-    public function cleanupBans(): bool
+    public function cleanupLogs(): void
     {
-        if (! @file_exists($path = $this->basedir . Civ13::bans)) {
+        $this->__cleanupLog($this->basedir . Civ13::bans);
+        $this->__cleanupLog($this->basedir . Civ13::playerlogs);
+    }
+    public function __cleanupLog(string $path): bool
+    {
+        if (! @file_exists($path)) {
             $this->logger->debug("Unable to open `$path`");
             return false;
         }
