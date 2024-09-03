@@ -1319,7 +1319,7 @@ class Civ13
         return $this->softbanned;
     }
 
-    public function bansToCollection($ban_collection = new Collection([], 'increment'), int $increment = 0): Collection
+    public function bansToCollection($log_collection = new Collection([], 'increment'), int $increment = 0): Collection
     {
         foreach ($this->enabled_gameservers as &$gameserver) {
             if (! @file_exists($file_path = $gameserver->basedir . self::bans) || ! $file_contents = @file_get_contents($file_path)) {
@@ -1330,13 +1330,32 @@ class Civ13
             foreach (explode('|||', str_replace(PHP_EOL, '', $file_contents)) as $item) {
                 if ($ban = $this->banArrayToAssoc(explode(';', $item))) {
                     $ban['increment'] = ++$increment;
-                    $ban_collection->pushItem($ban);
+                    $log_collection->pushItem($ban);
                 }
             }
         }
 
-        return $ban_collection;
+        return $log_collection;
     }
+
+    public function playerlogsToCollection($log_collection = new Collection([], 'increment'), int $increment = 0): Collection
+    {
+        foreach ($this->enabled_gameservers as &$gameserver) {
+            if (! @file_exists($file_path = $gameserver->basedir . self::playerlogs) || ! $file_contents = @file_get_contents($file_path)) {
+                $this->logger->warning("Unable to open '{$file_path}'");
+                continue;
+            }
+            foreach (explode('|||', str_replace(PHP_EOL, '', $file_contents)) as $item) {
+                if ($log = $this->playerlogArrayToAssoc(explode(';', $item))) {
+                    $log['increment'] = ++$increment;
+                    $log_collection->pushItem($log);
+                }
+            }
+        }
+
+        return $log_collection;
+    }
+
     /*
      * Creates a Collection from the bans file
      * Player logs are formatting by the following:
@@ -1373,29 +1392,6 @@ class Civ13
 
         // Add the ban record to the collection
         return $ban;
-    }
-    public function playerlogsToCollection(): Collection
-    {
-        // Get the contents of the file
-        $file_contents = '';
-        foreach ($this->enabled_gameservers as &$gameserver) {
-            if (! @file_exists($gameserver->basedir . self::playerlogs) || ! $fc = @file_get_contents($gameserver->basedir . self::playerlogs)) {
-                $this->logger->warning("Unable to open `{$gameserver->basedir}" . self::playerlogs . '`');
-                continue;
-            }
-            $file_contents .= $fc;
-        }
-        $file_contents = str_replace(PHP_EOL, '', $file_contents);
-
-        $arrays = [];
-        $i = 0;
-        foreach (explode('|', $file_contents) as $item) {
-            if ($log = $this->playerlogArrayToAssoc(explode(';', $item))) {
-                $log['increment'] = ++$i;
-                $arrays[] = $log;
-            }
-        }
-        return new Collection($arrays, 'increment');
     }
     /*
      * Creates a Collection from the playerlogs file
