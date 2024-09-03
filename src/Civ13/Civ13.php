@@ -1174,13 +1174,12 @@ class Civ13
             if (isset($log['cid']) && ! in_array($log['cid'], $ips)) $cids[] = $log['cid'];
         }
         // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
-        $playerlogs = $this->playerlogsToCollection();
         for ($i = 0; $i < 10; $i++) {
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
-            foreach ($playerlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+            foreach ($this->playerlogsToCollection() as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
@@ -1191,13 +1190,12 @@ class Civ13
             $cids = array_unique(array_merge($cids, $found_cids));
         }
 
-        $banlogs = $this->bansToCollection();
         for ($i = 0; $i < 10; $i++) {
             $found = false;
             $found_ckeys = [];
             $found_ips = [];
             $found_cids = [];
-            foreach ($banlogs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+            foreach ($this->bansToCollection() as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
                 if (! in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
                 if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
                 if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
