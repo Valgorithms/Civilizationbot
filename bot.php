@@ -38,11 +38,11 @@ require getcwd() . '/token.php'; // $token
 include getcwd() . '/vendor/autoload.php';
 include 'vendor/autoload.php';
 
-$streamHandler = new StreamHandler('php://stdout', Level::Info);
+$streamHandler = new StreamHandler('php://stdout', Level::Debug);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$streamHandler]);
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
-$logger->pushHandler(new StreamHandler('output.log', Level::Info));
+$logger->pushHandler(new StreamHandler('output.log', Level::Debug));
 $logger->info('Loading configurations for the bot...');
 
 $discord = new Discord([
