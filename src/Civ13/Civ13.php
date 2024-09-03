@@ -1007,15 +1007,20 @@ class Civ13
                 $this->logger->warning("unable to open `$path`");
                 continue;
             } else $atleastoneenabled = true;
+            $gameserver->cleanupBans()
+                ? $this->logger->debug("Cleaned bans for {$gameserver->name}...")
+                : $this->logger->warning("Unable to clean bans for {$gameserver->name}...");
         }
         if (! $atleastoneenabled) return false;
 
         $bancheckTimer = function () {
+            if (! isset($this->verifier)) return;
             $this->logger->debug('Running periodic bancheck...'); // This should take ~2.5 seconds to run
             if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
-                if (! isset($this->verifier)) break;
                 if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
-                if (($banned = $this->bancheck($item['ss13'], true)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
+                if (! isset($item['ss13'])) continue;
+                //$this->logger->debug("Checking bans for {$item['ss13']}...");
+                if (($banned = $this->bancheck($item['ss13'], true, true)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
                     $member->addRole($this->role_ids['Banished'], 'bancheck timer');
                     if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
                 } elseif (! $banned && ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
@@ -1040,12 +1045,20 @@ class Civ13
      * @param bool $bypass (optional) If set to true, the function will not add or remove the banished role from the user.
      * @return bool Returns true if the ckey is found in either ban file, false otherwise.
      */
-    public function bancheck(string $ckey, bool $bypass = false): bool
+    public function bancheck(string $ckey, bool $bypass = false, bool $use_cache = false): bool
     {
         if (! $ckey = self::sanitizeInput($ckey)) return false;
         $banned = false;
-        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->bancheck($ckey)) $banned = true;
+        foreach ($this->enabled_gameservers as &$gameserver) {
+            //$this->logger->debug("Checking for bans on {$gameserver->key}...");
+            if ($gameserver->bancheck($ckey, false, $use_cache)) {
+                $this->logger->debug("{$gameserver->key} bancheck: $ckey is banned");
+                $banned = true;
+                break;
+            }
+        }
         if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey))) {
+            //$this->logger->debug("Checking for roles on $ckey...");
             $hasBanishedRole = $member->roles->has($this->role_ids['Banished']);
             if ($banned && ! $hasBanishedRole) $member->addRole($this->role_ids['Banished'], "bancheck ($ckey)");
             elseif (! $banned && $hasBanishedRole) $member->removeRole($this->role_ids['Banished'], "bancheck ($ckey)");

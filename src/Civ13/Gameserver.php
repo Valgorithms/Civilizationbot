@@ -110,6 +110,8 @@ class GameServer
     public array $rounds = [];
     private int $playercount_ticker = 0;
 
+    public string $bancheck_cache = '';
+
     public function __construct(Civ13 &$civ13, array &$options)
     {
         $this->civ13 =& $civ13;
@@ -681,6 +683,29 @@ class GameServer
         return $msg;
     }
 
+    public function cleanupBans(): bool
+    {
+        if (! @file_exists($path = $this->basedir . Civ13::bans)) {
+            $this->logger->debug("Unable to open `$path`");
+            return false;
+        }
+        if (($file_contents = file_get_contents($path)) === false) {
+            $this->logger->debug("Unable to read `$path`");
+            return false;
+        }
+        // Remove duplicate lines
+        $file_contents = explode(PHP_EOL, $file_contents);
+        $file_contents = array_unique($file_contents);
+        $file_contents = implode(PHP_EOL, $file_contents);
+
+        // Write the results back to the file
+        if (file_put_contents($path, $file_contents) === false) {
+            $this->logger->debug("Unable to write to `$path`");
+            return false;
+        }
+
+        return true;
+    }
     /**
      * Determines whether a ckey is currently banned from the server.
      *
@@ -691,9 +716,9 @@ class GameServer
      * @param bool $bypass (optional) If set to true, the function will not add or remove the banished role from the user.
      * @return bool Returns true if the ckey is found in either ban file, false otherwise.
      */
-    public function bancheck(string $ckey, bool $bypass = false): bool
+    public function bancheck(string $ckey, bool $bypass = false, bool $use_cache = false): bool
     {
-        return $this->legacy ? $this->legacyBancheck($ckey) : $this->sqlBancheck($ckey);
+        return $this->legacy ? $this->legacyBancheck($ckey, $use_cache) : $this->sqlBancheck($ckey);
     }
     public function permabancheck(string $id, bool $bypass = false): bool
     {
@@ -740,21 +765,22 @@ class GameServer
      * @param string $ckey The ckey to check for ban.
      * @return bool Returns true if the ckey is banned, false otherwise.
      */
-    public function legacyBancheck(string $ckey): bool
+    public function legacyBancheck(string $ckey, bool $use_cache = false): bool
     {
-        if (! @file_exists($path = $this->basedir . Civ13::bans) || ! $file = @fopen($path, 'r')) {
-            $this->logger->debug("Unable to open `$path`");
-            return false;
-        }
-        while (($fp = fgets($file, 4096)) !== false) {
-            // str_replace(PHP_EOL, '', $fp); // Is this necessary?
-            $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-            if ((count($linesplit)>=8) && ($linesplit[8] === $ckey)) {
-                fclose($file);
-                return true;
+        if (! $use_cache || ! $this->bancheck_cache) {
+            if (! @file_exists($path = $this->basedir . Civ13::bans)) {
+                $this->logger->debug("Unable to open `$path`");
+                return false;
             }
+            if (($file_contents = file_get_contents($path)) === false) {
+                $this->logger->debug("Unable to read `$path`");
+                return false;
+            }
+            $this->bancheck_cache = $file_contents;
         }
-        fclose($file);
+        foreach (explode(PHP_EOL, $this->bancheck_cache) as $line)
+            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey))
+                return true; // $split_ckey[0] is the ckey
         return false;
     }
     /**
