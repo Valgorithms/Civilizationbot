@@ -691,11 +691,11 @@ class GameServer
     public function __cleanupLog(string $path): bool
     {
         if (! @file_exists($path)) {
-            $this->logger->debug("Unable to open `$path`");
+            $this->logger->warning("Unable to open `$path`");
             return false;
         }
         if (($original_file_contents = file_get_contents($path)) === false) {
-            $this->logger->debug("Unable to read `$path`");
+            $this->logger->warning("Unable to read `$path`");
             return false;
         }
         // Remove duplicate lines
@@ -707,7 +707,7 @@ class GameServer
 
         // Write the results back to the file
         if (file_put_contents($path, $original_file_contents) === false) {
-            $this->logger->debug("Unable to write to `$path`");
+            $this->logger->warning("Unable to write to `$path`");
             return false;
         }
 
