@@ -1007,15 +1007,17 @@ class Civ13
                 $this->logger->warning("unable to open `$path`");
                 continue;
             } else $atleastoneenabled = true;
-            $gameserver->cleanupBans()
-                ? $this->logger->debug("Cleaned bans for {$gameserver->name}...")
-                : $this->logger->warning("Unable to clean bans for {$gameserver->name}...");
         }
         if (! $atleastoneenabled) return false;
 
         $bancheckTimer = function () {
             if (! isset($this->verifier)) return;
-            $this->logger->debug('Running periodic bancheck...'); // This should take ~2.5 seconds to run
+            $this->logger->debug('Running periodic bancheck...');
+            foreach ($this->enabled_gameservers as &$gameserver) {
+                $gameserver->cleanupBans()
+                    ? $this->logger->debug("Cleaned bans for {$gameserver->name}...")
+                    : $this->logger->warning("Unable to clean bans for {$gameserver->name}...");
+            }
             if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
                 if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
                 if (! isset($item['ss13'])) continue;

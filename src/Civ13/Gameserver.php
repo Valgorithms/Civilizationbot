@@ -689,17 +689,19 @@ class GameServer
             $this->logger->debug("Unable to open `$path`");
             return false;
         }
-        if (($file_contents = file_get_contents($path)) === false) {
+        if (($original_file_contents = file_get_contents($path)) === false) {
             $this->logger->debug("Unable to read `$path`");
             return false;
         }
         // Remove duplicate lines
-        $file_contents = explode(PHP_EOL, $file_contents);
-        $file_contents = array_unique($file_contents);
-        $file_contents = implode(PHP_EOL, $file_contents);
+        $new_file_contents = explode(PHP_EOL, $original_file_contents);
+        $new_file_contents = array_unique($new_file_contents);
+        $new_file_contents = implode(PHP_EOL, $new_file_contents);
+
+        if ($original_file_contents === $new_file_contents) return true; // No changes were made
 
         // Write the results back to the file
-        if (file_put_contents($path, $file_contents) === false) {
+        if (file_put_contents($path, $original_file_contents) === false) {
             $this->logger->debug("Unable to write to `$path`");
             return false;
         }
