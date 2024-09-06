@@ -57,6 +57,42 @@ enum CommandPrefix: string
     }
 }
 
+enum CPUUsage: string
+{
+    case Windows = 'Windows';
+    case Linux = 'Linux';
+    case Unknown = 'Unknown';
+
+    public static function fromPHPOSFamily(): self
+    {
+        return match (PHP_OS_FAMILY) {
+            'Windows' => self::Windows,
+            'Linux' => self::Linux,
+            default => self::Unknown,
+        };
+    }
+
+    public function __invoke(): string
+    {
+        return match ($this) {
+            self::Windows => self::getWindowsUsage(),
+            self::Linux => self::getLinuxUsage(),
+            self::Unknown => "Unrecognized operating system!",
+            default => "Unsupported operating system!",
+        };
+    }
+
+    private static function getWindowsUsage(): string
+    {
+        return 'CPU Usage: ' . round(trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"')), 2) . '%';
+    }
+
+    private static function getLinuxUsage(): string
+    {
+        return 'CPU Usage: ' . round(sys_getloadavg()[0] * 100 / shell_exec("nproc"), 2) . '%';
+    }
+}
+
 class Civ13
 {
     const maps = '/code/__defines/maps.dm'; // Found in the cloned git repo, (e.g. '/home/civ13/civ13-git/code/__defines/maps.dm')
@@ -552,11 +588,7 @@ class Civ13
 
     public function CPU(): string
     {
-        return match (PHP_OS_FAMILY) {
-            "Windows" => 'CPU Usage: ' . round(trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"')), 2) . '%',
-            "Linux" => 'CPU Usage: ' . round(sys_getloadavg()[0] * 100 / shell_exec("nproc"), 2) . '%',
-            default => "Unrecognized operating system!"
-        };
+        return (CPUUsage::fromPHPOSFamily())();
     }
 
     /*
