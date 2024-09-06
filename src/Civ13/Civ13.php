@@ -41,6 +41,22 @@ use ReflectionFunction;
 use function React\Promise\resolve;
 use function React\Promise\all;
 
+enum CommandPrefix: string
+{
+    case COMMAND_SYMBOL = 'command_symbol';
+    case MENTION_WITH_EXCLAMATION = 'mention_with_exclamation';
+    case MENTION = 'mention';
+    
+    public static function getPrefix(self $prefix, string $discordId, string $commandSymbol): ?string {
+        return match ($prefix) {
+            self::COMMAND_SYMBOL => $commandSymbol,
+            self::MENTION_WITH_EXCLAMATION => "<@!{$discordId}>",
+            self::MENTION => "<@{$discordId}>",
+            default => null,
+        };
+    }
+}
+
 class Civ13
 {
     const maps = '/code/__defines/maps.dm'; // Found in the cloned git repo, (e.g. '/home/civ13/civ13-git/code/__defines/maps.dm')
@@ -452,6 +468,14 @@ class Civ13
         return $promise->then($onFulfilled ?? $this->onFulfilledDefault, $onRejected ?? $onRejectedDefault ?? $this->onRejectedDefault);
     }
 
+    private function startsWithCommandPrefix(string $content): ?string {
+        foreach (CommandPrefix::cases() as $prefix)
+            $call = CommandPrefix::getPrefix($prefix, $this->discord->id, $this->command_symbol);
+            if (str_starts_with($content, $call))
+                return $call;
+        return null;
+    }
+
     /**
      * Filters the message and extracts relevant information.
      *
@@ -460,14 +484,16 @@ class Civ13
      */
     public function filterMessage(Message $message): array
     {
-        if (! $message->guild || $message->guild->owner_id != $this->owner_id)  return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
-        $message_content = ''; $called = false;
-        if (str_starts_with($message->content, $call = $this->command_symbol . ' ') ||
-            str_starts_with($message->content, $call = "<@!{$this->discord->id}>") ||
-            str_starts_with($message->content, $call = "<@{$this->discord->id}>")) {
-            $message_content = trim(substr($message->content, strlen($call))); $called = true;
-        }
-        return ['message_content' => $message_content, 'message_content_lower' => strtolower($message_content), 'called' => $called];
+        if (! $message->guild || $message->guild->owner_id != $this->owner_id) return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
+        
+        $call = $this->startsWithCommandPrefix($message->content);
+        $message_content = $call ? trim(substr($message->content, strlen($call))) : $message->content;
+
+        return [
+            'message_content' => $message_content,
+            'message_content_lower' => strtolower($message_content),
+            'called' => $call ? true : false
+        ];
     }
     /**
      * Sanitizes the input (either a ckey or a Discord snowflake) by removing specific characters and converting it to lowercase.
