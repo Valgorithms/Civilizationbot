@@ -678,11 +678,8 @@ class Verifier
                 $id = $input->id;
                 break;
             case is_string($input):
-                if (is_numeric($input = Civ13::sanitizeInput($input))) {
-                    $id = $input;
-                } elseif ($item = $this->get('ss13', $input)) {
-                    $id = $item['discord'];
-                }
+                if (is_numeric($input = Civ13::sanitizeInput($input))) $id = $input;
+                elseif ($item = $this->get('ss13', $input)) $id = $item['discord'];
                 break;
             case is_array($input):
                 if (isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord']))) $id = $discord_id;
