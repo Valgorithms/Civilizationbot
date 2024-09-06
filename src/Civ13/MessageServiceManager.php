@@ -264,7 +264,7 @@ class MessageServiceManager
                     $dates = [];
                     $ckey_age = [];
                     // Get the ckey's primary identifiers and fill in any blanks
-                    foreach (['playerlogs', 'bans'] as $type) foreach ($collectionsArray[$type] as $log) {
+                    foreach ($collectionsArray as $item) foreach ($item as $log) {
                         if (isset($log['ip'])   && ! isset($ips[$log['ip']]))     $ips[$log['ip']]     = $log['ip'];
                         if (isset($log['cid'])  && ! isset($cids[$log['cid']]))   $cids[$log['cid']]   = $log['cid'];
                         if (isset($log['date']) && ! isset($dates[$log['date']])) $dates[$log['date']] = $log['date'];

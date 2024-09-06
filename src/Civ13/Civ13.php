@@ -1404,14 +1404,14 @@ class Civ13
         return $log_collection;
     }
 
-    public function playerlogsToCollection($log_collection = new Collection([], 'increment'), int $increment = 0): Collection
+    public function playerlogsToCollection(&$log_collection = new Collection([], 'increment'), int &$increment = 0): Collection
     {
         foreach ($this->enabled_gameservers as &$gameserver) {
             if (! @file_exists($file_path = $gameserver->basedir . self::playerlogs) || ! $file_contents = @file_get_contents($file_path)) {
                 $this->logger->warning("Unable to open '{$file_path}'");
                 continue;
             }
-            foreach (explode('|||', str_replace(PHP_EOL, '', $file_contents)) as $item) {
+            foreach (explode('|', str_replace(PHP_EOL, '', $file_contents)) as $item) {
                 if ($log = $this->playerlogArrayToAssoc(explode(';', $item))) {
                     $log['increment'] = ++$increment;
                     $log_collection->pushItem($log);
