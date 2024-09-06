@@ -105,13 +105,10 @@ class Moderator
      * @param string $server The server where the chat message is being sent.
      * @return string The original chat message string.
      */
-    public function moderate(Gameserver $gameserver, string $ckey, string $string, array $badwords_array, array &$badword_warnings): void
+    public function moderate(Gameserver $gameserver, string $ckey, string $string, array $badwords_array, array &$badword_warnings): array
     {
         $lower = strtolower($string);
-        foreach ($badwords_array as $badwords) if (ModerationMethod::from($badwords['method'] ?? 'str_contains')->matches($lower, $badwords)) {
-            $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings);
-            return; // Break out of the loop
-        }
+        return array_filter($badwords_array, fn($badwords) => ModerationMethod::from($badwords['method'] ?? 'str_contains')->matches($lower, $badwords) && $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings));
     }
     /**
      * This function is called from the game's chat hook if a player says something that contains a blacklisted word.
@@ -120,7 +117,7 @@ class Moderator
      * @param string $ckey The player's unique identifier.
      * @param array $badwords_array An array containing information about the blacklisted word.
      * @param array &$badword_warnings A reference to an array that stores the number of warnings for each player.
-     * @return string|bool Returns a string if the player is banned, or false if the player is not banned.
+     * @return string|false The warning message or false if the player should not be warned or banned.
      */
     // This function is called from the game's chat hook if a player says something that contains a blacklisted word
     private function __relayViolation(Gameserver $gameserver, string $ckey, array $badwords_array, array &$badword_warnings): string|false
@@ -137,8 +134,8 @@ class Moderator
         if (! $this->__relayWarningCounter($ckey, $badwords_array, $badword_warnings)) return $this->civ13->ban(['ckey' => $ckey, 'duration' => $badwords_array['duration'], 'reason' => "Blacklisted phrase ($filtered). Review the rules at {$this->civ13->rules}. Appeal at {$this->civ13->discord_formatted}"]);
         $warning = "You are currently violating a server rule. Further violations will result in an automatic ban that will need to be appealed on our Discord. Review the rules at {$this->civ13->rules}. Reason: {$badwords_array['reason']} ({$badwords_array['category']} => $filtered)";
         if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "`$ckey` is" . substr($warning, 7));
-        return $gameserver->DirectMessage($warning, $this->discord->username, $ckey);
-        return false;
+        $gameserver->DirectMessage($warning, $this->discord->username, $ckey);
+        return $warning;
     }
     /*
      * This function determines if a player has been warned too many times for a specific category of bad words

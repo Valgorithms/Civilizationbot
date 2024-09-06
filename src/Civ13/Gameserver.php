@@ -569,7 +569,7 @@ class GameServer
      * @param string $sender The sender of the direct message.
      * @return bool Returns true if the direct message was sent successfully, false otherwise.
      */
-    public function DirectMessage(string $message, string $sender, string $recipient): PromiseInterface|bool
+    public function DirectMessage(string $message, string $sender, string $recipient): bool
     {
         if (! $this->enabled) return false;
         if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! $file = @fopen($path, 'a')) {
