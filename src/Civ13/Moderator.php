@@ -144,15 +144,15 @@ class Moderator
      */
     private function __relayWarningCounter(string $ckey, array $badwords_array, array &$badword_warnings): bool
     {
-        if (! isset($badword_warnings[$ckey][$badwords_array['category']])) $badword_warnings[$ckey][$badwords_array['category']] = 1;
-        else ++$badword_warnings[$ckey][$badwords_array['category']];
+        $badword_warnings[$ckey][$badwords_array['category']] = ($badword_warnings[$ckey][$badwords_array['category']] ?? 0) + 1;
 
-        $filename = '';
-        if ($badword_warnings === $this->civ13->ic_badwords_warnings) $filename = 'ic_badwords_warnings.json';
-        elseif ($badword_warnings === $this->civ13->ooc_badwords_warnings) $filename = 'ooc_badwords_warnings.json';
-        if ($filename !== '') $this->civ13->VarSave($filename, $badword_warnings);
+        if ($filename = $badword_warnings === $this->civ13->ic_badwords_warnings
+            ? 'ic_badwords_warnings.json'
+            : ($badword_warnings === $this->civ13->ooc_badwords_warnings
+                ? 'ooc_badwords_warnings.json'
+                : null)
+        ) $this->civ13->VarSave($filename, $badword_warnings);
 
-        if ($badword_warnings[$ckey][$badwords_array['category']] > $badwords_array['warnings']) return false;
-        return true;
+        return $badword_warnings[$ckey][$badwords_array['category']] <= $badwords_array['warnings'];
     }
 }
