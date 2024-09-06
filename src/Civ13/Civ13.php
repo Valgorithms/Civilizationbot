@@ -470,8 +470,7 @@ class Civ13
 
     private function startsWithCommandPrefix(string $content): ?string {
         foreach (CommandPrefix::cases() as $prefix)
-            $call = CommandPrefix::getPrefix($prefix, $this->discord->id, $this->command_symbol);
-            if (str_starts_with($content, $call))
+            if (str_starts_with($content, $call = CommandPrefix::getPrefix($prefix, $this->discord->id, $this->command_symbol)))
                 return $call;
         return null;
     }
@@ -554,8 +553,8 @@ class Civ13
     public function CPU(): string
     {
         return match (PHP_OS_FAMILY) {
-            "Windows" => 'CPU Usage: ' . trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"')) . '%',
-            "Linux" => 'CPU Usage: ' . (array_sum(sys_getloadavg()) / 3) . '%',
+            "Windows" => 'CPU Usage: ' . round(trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"')), 2) . '%',
+            "Linux" => 'CPU Usage: ' . round(sys_getloadavg()[0] * 100 / shell_exec("nproc"), 2) . '%',
             default => "Unrecognized operating system!"
         };
     }
