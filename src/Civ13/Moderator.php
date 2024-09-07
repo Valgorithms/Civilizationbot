@@ -21,7 +21,7 @@ enum ModerationMethod: string {
     public function matches(string $lower, array $badwords): bool {
         return match ($this) {
             self::EXACT => preg_match('/\b' . preg_quote($badwords['word'], '/') . '\b/i', $lower),
-            self::CYRILLIC => preg_match('/\p{Cyrillic}/ui', $lower),
+            self::CYRILLIC => preg_match('/[\p{Cyrillic}]/u', $lower),
             self::STR_STARTS_WITH => str_starts_with($lower, $badwords['word']),
             self::STR_ENDS_WITH => str_ends_with($lower, $badwords['word']),
             self::STR_CONTAINS => str_contains($lower, $badwords['word']),
