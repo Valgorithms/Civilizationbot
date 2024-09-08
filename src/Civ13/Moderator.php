@@ -103,10 +103,19 @@ class Moderator
      * @param string $server The server where the chat message is being sent.
      * @return string The original chat message string.
      */
-    public function moderate(Gameserver $gameserver, string $ckey, string $string, array $badwords_array, array &$badword_warnings): array
+    public function moderate(Gameserver $gameserver, string $ckey, string $string, array $badwords_array, array &$badword_warnings): bool
     {
         $lower = strtolower($string);
-        return array_filter($badwords_array, fn($badwords) => ModerationMethod::from($badwords['method'] ?? 'str_contains')->matches($lower, $badwords) && $this->__relayViolation($gameserver, $ckey, $badwords, $badword_warnings));
+        $seenCategories = [];
+        $infractions = array_filter($badwords_array, function($badwords) use ($lower, &$seenCategories) {
+            if ($badwords['category'] && ! isset($seenCategories[$badwords['category']]) && ModerationMethod::from($badwords['method'] ?? 'str_contains')->matches($lower, $badwords)) {
+                $seenCategories[$badwords['category']] = true;
+                return true;
+            }
+            return false;
+        });
+        foreach ($infractions as $badwords_array) $this->__relayViolation($gameserver, $ckey, $badwords_array, $badword_warnings);
+        return ($seenCategories ? true : false);
     }
     /**
      * This function is called from the game's chat hook if a player says something that contains a blacklisted word.
