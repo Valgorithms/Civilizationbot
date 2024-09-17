@@ -148,7 +148,9 @@ class Civ13
     public \Closure $onRejectedDefault;
 
     public Slash $slash;
+    /** @var HttpServiceManager&HttpManager */
     public HttpServiceManager $httpServiceManager;
+    /** @var HttpServiceManager&MessageHandler */
     public MessageServiceManager $messageServiceManager;
     public CommandServiceManager $commandServiceManager;
     

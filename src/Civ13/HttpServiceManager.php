@@ -27,7 +27,6 @@ class HttpServiceManager
     const HTMLDIR = '/html';
     readonly string $basedir;
 
-    public Civ13 $civ13;
     public Discord $discord;
     public Logger $logger;
     public HttpHandler $httpHandler;
@@ -40,8 +39,7 @@ class HttpServiceManager
     protected array $dwa_timers = [];
     protected array $dwa_discord_ids = [];
 
-    public function __construct(Civ13 &$civ13) {
-        $this->civ13 =& $civ13;
+    public function __construct(public Civ13 &$civ13) {
         $this->discord =& $civ13->discord;
         $this->logger =& $civ13->logger;
         $this->httpHandler = new HttpHandler($this->civ13, [], $this->civ13->options['http_whitelist'] ?? [], $this->civ13->options['http_key'] ?? '');
