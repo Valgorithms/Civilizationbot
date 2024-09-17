@@ -25,7 +25,7 @@ use Monolog\Handler\StreamHandler;
 use Discord\WebSockets\Intents;
 use React\Http\Browser;
 
-$testing = false; // Set to true to disable certain features that may be disruptive to the server when testing locally
+define('CIVILIZATIONBOT_START', microtime(true));
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
@@ -34,9 +34,25 @@ ignore_user_abort(1);
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', '-1'); // Unlimited memory usage
 define('MAIN_INCLUDED', 1); // Token and SQL credential files may be protected locally and require this to be defined to access
-require getcwd() . '/token.php'; // $token
-include getcwd() . '/vendor/autoload.php';
-include 'vendor/autoload.php';
+
+//if (! $token_included = require getcwd() . '/token.php') // $token
+    //throw new \Exception('Token file not found. Create a file named token.php in the root directory with the bot token.');
+if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : __DIR__.'/../../autoload.php')
+    throw new \Exception('Composer autoloader not found. Run `composer install` and try again.');
+function loadEnv(string $filePath = __DIR__ . '/.env'): void
+{
+    if (! file_exists($filePath)) throw new Exception("The .env file does not exist.");
+
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $trimmedLines = array_map('trim', $lines);
+    $filteredLines = array_filter($trimmedLines, fn($line) => $line && ! str_starts_with($line, '#'));
+
+    array_walk($filteredLines, function($line) {
+        [$name, $value] = array_map('trim', explode('=', $line, 2));
+        if (! array_key_exists($name, $_ENV)) putenv(sprintf('%s=%s', $name, $value));
+    });
+}
+loadEnv(getcwd() . '/.env');
 
 $streamHandler = new StreamHandler('php://stdout', Level::Info);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
@@ -61,7 +77,7 @@ $discord = new Discord([
     'socket_options' => [
         'dns' => '8.8.8.8', // can change dns
     ],
-    'token' => $token,
+    'token' => getenv('TOKEN'),
     'loadAllMembers' => true,
     'storeMessages' => true, // Because why not?
     'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::MESSAGE_CONTENT,
@@ -72,13 +88,11 @@ $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
 include 'functions.php'; // execInBackground(), portIsAvailable()
 include 'variable_functions.php';
-include 'civ_token.php'; // $civ_token
 
 // TODO: Add a timer and a callable function to update these IP addresses every 12 hours
 $civ13_ip = gethostbyname('www.civ13.com');
 $vzg_ip = gethostbyname('www.valzargaming.com');
 $http_whitelist = [$civ13_ip, $vzg_ip];
-$http_key = getenv('WEBAPI_TOKEN');
 
 $webapi = null;
 $socket = null;
@@ -92,7 +106,7 @@ $socket = null;
     'warnings' => 1 // Number of warnings before a ban
 */
 $ic_badwords = $ooc_badwords = [
-    ['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'str_contains', 'warnings' => 1], // Used to test the system
+    //['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'str_contains', 'warnings' => 1], // Used to test the system
 
     ['word' => 'beaner',      'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
     ['word' => 'chink',       'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
@@ -246,6 +260,7 @@ $loadedData = json_decode($json, true);
 foreach ($loadedData as $key => $value) $options[$key] = $value;
 */
 
+//TODO: Move this to a separate file, like .env
 $server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
     'tdm' => [
         'supported' => true,
@@ -350,11 +365,11 @@ $hidden_options = [
 
     'webapi' => &$webapi,
     'socket' => &$socket,
-    'web_address' => $web_address = 'www.civ13.com',
-    'http_port' => $http_port = 55555, // 25565 for testing on Windows
-    'http_key' => $http_key,
+    'web_address' => getenv('web_address') ?? 'www.civ13.com',
+    'http_port' => getenv('http_port') ?? 55555, // 25565 for testing on Windows
+    'http_key' => getenv('WEBAPI_TOKEN') ?? 'CHANGEME',
     'http_whitelist' => $http_whitelist,
-    'civ_token' => getenv('CIV_TOKEN') ?? $civ_token ?? 'CHANGEME',
+    'civ_token' => getenv('CIV_TOKEN') ?? 'CHANGEME',
     'server_settings' => $server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
     'functions' => array(
         'init' => [
@@ -413,7 +428,7 @@ use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use Psr\Http\Message\ServerRequestInterface;
-$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', $http_port), [], $loop);
+$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?? 55555), [], $loop);
 /**
  * Handles the HTTP request using the HttpServiceManager.
  *
@@ -441,7 +456,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
  * @param bool $testing Flag indicating if the script is running in testing mode.
  * @return void
  */
-$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use (&$civ13, &$logger, &$socket, &$testing) {
+$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use (&$civ13, &$logger, &$socket) {
     if (
         str_starts_with($e->getMessage(), 'Received request with invalid protocol version')
     ) return; // Ignore this error, it's not important
@@ -451,7 +466,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
     if (str_starts_with($e->getMessage(), 'The response callback')) {
         $logger->info('[WEBAPI] ERROR - RESTART');
         if (! $civ13) return;
-        if (! $testing && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
+        if (! getenv('testing') && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
             $builder = MessageBuilder::new()
                 ->setContent('Restarting due to error in HttpServer API...')
                 ->addFileFromContent('httpserver_error.txt', preg_replace('/(?<=key=)[^&]+/', '********', $error));

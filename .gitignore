@@ -52,3 +52,4 @@ dwa_secrets.php
 output.log
 html/civ13-wiki/
 html/import.py
+.env
