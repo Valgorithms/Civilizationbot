@@ -197,8 +197,8 @@ class Verifier
                 return $member->setroles([$this->civ13->role_ids['Verified']], "verified join {$item['ss13']}");
             }
         }
-        if (($channel_id = getenv('get-approved')) && isset($this->civ13->welcome_message) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
-            if ($channel = $this->civ13->discord->getChannel($channel_id))
+        if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['get-approved']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
+            if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['get-approved']))
                 return $this->civ13->sendMessage($channel, "<@{$member->id}>, {$this->civ13->welcome_message}");
         return null;
     }
