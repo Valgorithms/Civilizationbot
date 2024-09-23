@@ -331,6 +331,11 @@ class Civ13
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
             foreach ($this->functions['init'] as $func) $func($this);
+
+            $this->discord->emojis->freshen()->then(function ($emojis)
+            {
+                $this->logger->info('Emojis: ' . json_encode($emojis));
+            });
         });
     }
     /**
