@@ -1070,7 +1070,11 @@ class Civ13
         }, false)) return false;
 
         $bancheckTimer = function () {
-            if (! isset($this->verifier)) return;
+            if (! isset($this->verifier)) {
+                $this->loop->cancelTimer($this->timers['bancheck_timer']);
+                unset($this->timers['bancheck_timer']);
+                return;
+            }
             $this->logger->debug('Running periodic bancheck...');
             foreach ($this->enabled_gameservers as &$gameserver) $gameserver->cleanupLogs();
             if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
