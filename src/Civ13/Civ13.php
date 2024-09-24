@@ -331,11 +331,7 @@ class Civ13
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
             foreach ($this->functions['init'] as $func) $func($this);
-
-            $this->discord->emojis->freshen()->then(function ($emojis)
-            {
-                $this->logger->info('Emojis: ' . json_encode($emojis));
-            });
+            $this->discord->emojis->freshen();
         });
     }
     /**
@@ -1065,14 +1061,13 @@ class Civ13
     {
         // We don't want the persistence server to do this function
         if (! $this->enabled_gameservers) return false; // This function should only run if there are servers to check
-        $atleastoneenabled = false;
-        foreach ($this->enabled_gameservers as &$gameserver) {
+        if (! array_reduce($this->enabled_gameservers, function ($carry, $gameserver) { // Check if the ban files exist and create them if they don't
             if (! @file_exists($path = $gameserver->basedir . self::bans) || ! @touch($path)) {
                 $this->logger->warning("unable to open `$path`");
-                continue;
-            } else $atleastoneenabled = true;
-        }
-        if (! $atleastoneenabled) return false;
+                return $carry;
+            }
+            return true;
+        }, false)) return false;
 
         $bancheckTimer = function () {
             if (! isset($this->verifier)) return;
