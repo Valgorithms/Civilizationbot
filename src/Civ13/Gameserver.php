@@ -30,7 +30,7 @@ class GameServer
 {
     /**
      * An array of admin permissions.
-     * Each permission is represented by a key-value pair, where the key is the role name
+     * Each permission is represented by a key-value pair, where the key is the role name in Discord
      * and the value is an array containing the role name in-game and the permission level.
      *
      * @var array
@@ -51,7 +51,6 @@ class GameServer
     public Discord $discord;
     public Logger $logger;
     public StreamSelectLoop $loop;
-    public Civ13 $civ13;
     public bool $ready = false;
 
     // Resolved paths
@@ -112,9 +111,8 @@ class GameServer
 
     public string $bancheck_cache = '';
 
-    public function __construct(Civ13 &$civ13, array &$options)
+    public function __construct(public Civ13 &$civ13, array &$options)
     {
-        $this->civ13 =& $civ13;
         $this->discord =& $civ13->discord;
         $this->logger =& $civ13->logger;
         $this->loop = $civ13->loop;
