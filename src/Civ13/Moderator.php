@@ -18,8 +18,8 @@ enum ModerationMethod: string {
     case STR_ENDS_WITH = 'str_ends_with';
     case STR_CONTAINS = 'str_contains';
 
-    public function matches(string $lower, array $badwords): bool {
-        return match ($this) {
+    public static function matches(string $lower, array $badwords): bool {
+        return match (self::from($badwords['method'] ?? 'str_contains')) {
             self::EXACT => preg_match('/\b' . preg_quote($badwords['word'], '/') . '\b/i', $lower),
             self::CYRILLIC => preg_match('/[\p{Cyrillic}]/u', $lower),
             self::STR_STARTS_WITH => str_starts_with($lower, $badwords['word']),
