@@ -749,6 +749,13 @@ class Slash
             );
         });
 
+        /**
+         * 1. Checks if the member already has the 'Verified' role and responds accordingly.
+         * 2. Validates the provided 'ckey' option and responds with an error message if invalid.
+         * 3. Checks if the member or 'ckey' is softbanned and responds with an investigation message if true.
+         * 4. If the member is not already verified, acknowledges the interaction and processes the verification.
+         * 5. If the member is already verified, responds with a welcome message and sets the 'Verified' role.
+         */
         $this->discord->listenCommand('approveme', function (Interaction $interaction): PromiseInterface
         {
             if ($interaction->member->roles->has($this->civ13->role_ids['Verified'])) return $interaction->respondWithMessage(MessageBuilder::new()->setContent('You already have the verification role!'), true);
