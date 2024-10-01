@@ -108,7 +108,7 @@ class Moderator
         $lower = strtolower($string);
         $seenCategories = [];
         $infractions = array_filter($badwords_array, function($badwords) use ($lower, &$seenCategories) {
-            if ($badwords['category'] && ! isset($seenCategories[$badwords['category']]) && ModerationMethod::from($badwords['method'] ?? 'str_contains')->matches($lower, $badwords)) {
+            if ($badwords['category'] && ! isset($seenCategories[$badwords['category']]) && ModerationMethod::matches($lower, $badwords)) {
                 $seenCategories[$badwords['category']] = true;
                 return true;
             }
