@@ -1104,7 +1104,7 @@ class MessageServiceManager
                         ($content = $gameserver->sportsteam())
                             ? $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content))
                             : $message->react("🔥"),
-                    ['Ambassador']);
+                    ['Ambassador', 'Admin']);
         }
         
         $this->__declareListener();
