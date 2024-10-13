@@ -343,12 +343,14 @@ class GameServer
             return;
         }
         if (isset($this->civ13->moderator) && $this->moderate && $moderate)
+            $badwords = $ooc ? $this->civ13->ooc_badwords : $this->civ13->ic_badwords;
+            $badword_warnings = $ooc ? $this->civ13->ooc_badwords_warnings : $this->civ13->ic_badwords_warnings;
             $this->civ13->moderator->moderate(
                 $this,
                 $array['ckey'],
                 $array['message'],
-                $ooc ? $this->civ13->ooc_badwords : $this->civ13->ic_badwords,
-                $ooc ? $this->civ13->ooc_badwords_warnings : $this->civ13->ic_badwords_warnings
+                $badwords,
+                $badword_warnings
             );
         if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) {
             $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
