@@ -1286,7 +1286,7 @@ class GameServer
 
     public function parseRoundTime(string $time)
     {
-        [$hours, $minutes] = array_map('intval', explode(':', $time));
+        [$hours, $minutes] = array_map('intval', explode(':', $time) + [0, 0]);
         $hours = $hours % 24;
         $days = floor($hours / 24);
         return ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
