@@ -495,16 +495,14 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {            
                     $builder = MessageBuilder::new();
-                    $found = false;
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) {
+                    if (! $found = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) use ($builder) {
                         if (! file_exists($path = $gameserver->basedir . Civ13::admins) || ! $file_contents = @file_get_contents($path)) {
                             $this->logger->debug("`$path` is not a valid file path!");
-                            continue;
+                            return $carry;
                         }
                         $builder->addFileFromContent($path, $file_contents);
-                        $found = true;
-                    }
-                    if (! $found) return $message->react("🔥");
+                        return true;
+                    }, false)) return $message->react("🔥");
                     return $message->reply($builder);
                 }, ['Admin'])
             ->offsetSet('factionlist',
@@ -577,13 +575,11 @@ class MessageServiceManager
                     }
                 }, ['Ambassador'])
             ->offsetSet('fullbancheck',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    foreach ($message->guild->members as $member)
-                        if ($item = $this->civ13->verifier->getVerifiedItem($member))
-                            $this->civ13->bancheck($item['ss13']);
-                    return $message->react("👍");
-                }, ['Ambassador'])    
+                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    array_map(fn($member) => ($item = $this->civ13->verifier->getVerifiedItem($member)) ? $this->civ13->bancheck($item['ss13']) : null, $message->guild->members->toArray())
+                        ? $message->react("👍")
+                        : $message->react("👎"),
+                ['Ambassador'])
             ->offsetSet('updatebans',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
                     array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
