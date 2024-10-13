@@ -82,7 +82,11 @@ class HttpServiceManager
 
     public function handle(ServerRequestInterface $request): HttpResponse
     {
-        if ($this->civ13->ready) return $this->httpHandler->handle($request);
+        if ($this->civ13->ready) {
+            $response = $this->httpHandler->handle($request);
+            if ($response->getStatusCode() === HttpResponse::STATUS_INTERNAL_SERVER_ERROR) $this->logger->warning('Internal Server Error on ' .  $request->getUri()->getPath());
+            return $response;
+        }
         return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     }
 
