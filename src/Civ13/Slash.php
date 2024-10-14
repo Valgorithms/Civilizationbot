@@ -678,7 +678,7 @@ class Slash
             }
             
             if (isset($this->civ13->ages[$item['ss13']])) $embed->addFieldValues('Created', $this->civ13->ages[$item['ss13']], true);
-            foreach ($ips as $ip) if (! in_array($region = IPToCountryResolver::Offline($ip), $regions)) $regions[] = $region;
+            foreach ($ips as $ip) if (! in_array($region = $this->civ13->getIpData($ip)['region'], $regions)) $regions[] = $region;
             if (! empty($regions)) $embed->addFieldValues('Region Codes', implode(', ', $regions), true);
             // $embed->addFieldValues('Known IP addresses', count($ips));
             // $embed->addFieldValues('Known Computer IDs', count($cids));

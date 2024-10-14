@@ -23,6 +23,8 @@ use Discord\Parts\Guild\Role;
 use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Activity;
 use Discord\Parts\User\Member;
+//use Discord\Repository\EntitlementRepository;
+//use Discord\Repository\SKUsRepository;
 use Discord\Stats;
 use Monolog\Logger;
 use Monolog\Level;
@@ -168,6 +170,8 @@ class Civ13
     public array $softbanned = []; // List of ckeys and discord IDs that are not allowed to go through the verification process
     public array $paroled = []; // List of ckeys that are no longer banned but have been paroled
     public array $ages = []; // $ckey => $age, temporary cache to avoid spamming the Byond REST API, but we don't want to save it to a file because we also use it to check if the account still exists
+    public array $ip_data = [];
+    public const IP_DATA_TTL = 604800; // 1 week
     public string $minimum_age = '-21 days'; // Minimum age of a ckey
     public array $permitted = []; // List of ckeys that are permitted to use the verification command even if they don't meet the minimum account age requirement or are banned with another ckey
     public array $blacklisted_regions =[
@@ -331,9 +335,21 @@ class Civ13
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
             foreach ($this->functions['init'] as $func) $func($this);
-            $this->discord->emojis->freshen();
-            $this->discord->sounds->freshen();
-            if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) $guild->sounds->freshen();
+            //$this->discord->emojis->freshen()->then(fn() => $this->logger->info('Emojis fetched: ' . json_encode($this->discord->emojis)));
+            //if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) $guild->emojis->freshen()->then(fn() => $this->logger->info('Guild Emojis fetched: ' . json_encode($guild->emojis)));
+            //$this->discord->sounds->freshen();
+            //if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) $guild->sounds->freshen();
+            //$this->logger->info('.....');
+
+            //$this->logger->info(json_encode(array_keys($this->discord->guilds->toArray())));
+            //$this->discord->requestSoundboardSounds(array_keys($this->discord->guilds->toArray()));
+
+            //$this->discord->skus->freshen()->then(fn(SKUsRepository $skus) => $this->logger->info('SKUs fetched: ' . json_encode($skus)));
+            //if (! isset($this->discord->entitlements)) {
+                //$this->logger->info('Entitlements Not Set');
+                //$this->logger->info('Entitlements Set: ' . json_encode($this->discord->entitlements));
+            //}
+            //$this->discord->skus->freshen()->then(fn(SKUsRepository $skus) => $this->logger->info('SKUs fetched: ' . json_encode($skus)));
         });
     }
     /**
@@ -467,6 +483,11 @@ class Civ13
             $this->VarSave('ages.json', $ages);
         }
         $this->ages = $ages;
+        if (! $ip_data = $this->VarLoad('ip_data.json')) {
+            $ip_data = [];
+            $this->VarSave('ip_data.json', $ip_data);
+        }
+        $this->ip_data = $ip_data;
         if (! $this->serverinfo_url) $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json"; // Default to VZG unless passed manually in config
         $this->embed_footer = $this->github 
         ? $this->github . PHP_EOL
@@ -1228,6 +1249,25 @@ class Civ13
     }
 
     /**
+     * Retrieves IP data, checking for expiration based on TTL.
+     *
+     * @param string $ip The IP address to retrieve data for.
+     * @return array The IP data.
+     */
+    public function getIpData(string $ip): array
+    {
+        $currentTime = time();
+        if (isset($this->ip_data[$ip])) 
+            if ((($currentTime) - $this->ip_data[$ip]['timestamp']) <= Civ13::IP_DATA_TTL)
+                return $this->ip_data[$ip];
+        $ip_data = IPToCountryResolver::Online($ip);
+        $ip_data['timestamp'] = $currentTime;
+        $this->ip_data[$ip] = $ip_data;
+        $this->VarSave('ip_data.json', $this->ip_data);
+        return $ip_data;
+    }
+
+    /**
      * Retrieves information about a given ckey.
      *
      * @param string $ckey The ckey to retrieve information for.
@@ -1357,7 +1397,7 @@ class Civ13
         if (! empty($ckeyinfo['discords'])) $embed->addfieldValues('Discord', implode(', ', array_map(fn($id) => $id ? "<@{$id}>" : $id, $ckeyinfo['discords'])), true);
         if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']), true);
         if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']), true);
-        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('Regions', implode(', ', array_unique(array_map(fn($ip) => IPToCountryResolver::Offline($ip), $ckeyinfo['ips']))), true);
+        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('Regions', implode(', ', array_unique(array_map(fn($ip) => $this->getIpData($ip)['region'], $ckeyinfo['ips']))), true);
         $embed->addfieldValues('verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
         $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No', true);
         $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No', true);
