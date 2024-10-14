@@ -83,6 +83,6 @@ class IPToCountryResolver
 
     public function __invoke(string $ip): string
     {
-        return $this->online ? self::Online($ip)['region'] : self::Offline($ip);
+        return $this->online ? self::Online($ip)['region'] ?? 'unknown' : self::Offline($ip);
     }
 }
