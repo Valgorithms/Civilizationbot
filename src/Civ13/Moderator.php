@@ -82,7 +82,7 @@ class Moderator
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true) . ' (Hosting)');
                     break;
                 }
-                if (isset($ip_data['region']) && in_array($ip_data['region'], $this->civ13->blacklisted_countries)) { // Country code
+                if (isset($ip_data['region']) && in_array($ip_data['region'] ?? 'unknown', $this->civ13->blacklisted_countries)) { // Country code
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true) . ' (Blacklisted Country)');
                     break;
                 }

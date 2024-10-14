@@ -1397,7 +1397,7 @@ class Civ13
         if (! empty($ckeyinfo['discords'])) $embed->addfieldValues('Discord', implode(', ', array_map(fn($id) => $id ? "<@{$id}>" : $id, $ckeyinfo['discords'])), true);
         if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']), true);
         if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']), true);
-        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('Regions', implode(', ', array_unique(array_map(fn($ip) => $this->getIpData($ip)['region'], $ckeyinfo['ips']))), true);
+        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('Regions', implode(', ', array_unique(array_map(fn($ip) => $this->getIpData($ip)['region'] ?? 'unknown', $ckeyinfo['ips']))), true);
         $embed->addfieldValues('verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
         $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No', true);
         $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No', true);
