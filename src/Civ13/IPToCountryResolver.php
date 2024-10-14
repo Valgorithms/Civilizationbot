@@ -48,7 +48,7 @@ class IPToCountryResolver
      * @param string $ip The IP address to resolve.
      * @return string The country code, region, and city of the IP address in the format 'CC->REGION->CITY'.
      */
-    public static function Online(string $ip): string
+    public static function Online(string $ip): array
     {
         // TODO: Add caching and error handling for 429s
         $ch = curl_init(); 
@@ -57,9 +57,10 @@ class IPToCountryResolver
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
         $response = curl_exec($ch);
-        if (! $json = @unserialize($response)) return ''; // If the request timed out or if the service 429'd us
-        if (! isset($json['status']) || $json['status'] !== 'success') return '';
-        return $json;
+        if (! $array = @unserialize($response)) return []; // If the request timed out or if the service 429'd us
+        assert(is_array($array));
+        if (! isset($array['status']) || $array['status'] !== 'success') return [];
+        return $array;
         //if ($json['status'] === 'success') return $json;
     }
 
