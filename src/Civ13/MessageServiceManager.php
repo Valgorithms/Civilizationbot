@@ -827,11 +827,11 @@ class MessageServiceManager
                         $message->reply(MessageBuilder::new()->addFile('botlog.txt')),
                     ['Owner', 'Chief Technical Officer'])
                 ->offsetSet('ip_data',
-                    function(Message $message, string $command, array $message_filtered): PromiseInterface {
-                        if (! $input = trim(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ip_data `ip address`');
-                        if (! $data = $this->civ13->getIpData($input)) return $this->civ13->reply($message, 'No data found.');
-                        return $this->civ13->reply($message, json_encode($data, JSON_PRETTY_PRINT));
-                    },
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $this->civ13->reply($message, ($input = trim(substr($message_filtered['message_content'], strlen($command)))) && ($data = $this->civ13->getIpData($input))
+                            ? json_encode($data, JSON_PRETTY_PRINT)
+                            : 'Invalid format or no data found. Please use the format: ip_data `ip address`'
+                        ),
                     ['Owner', 'Chief Technical Officer']);  
             if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs']))
                 $this->messageHandler
