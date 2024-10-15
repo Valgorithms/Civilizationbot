@@ -830,7 +830,7 @@ class MessageServiceManager
                     function(Message $message, string $command, array $message_filtered): PromiseInterface {
                         if (! $input = trim(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ip_data `ip address`');
                         if (! $data = $this->civ13->getIpData($input)) return $this->civ13->reply($message, 'No data found.');
-                        return $this->civ13->reply($message, json_encode($data));
+                        return $this->civ13->reply($message, json_encode($data, JSON_PRETTY_PRINT));
                     },
                     ['Owner', 'Chief Technical Officer']);  
             if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs']))
