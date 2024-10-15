@@ -1025,6 +1025,18 @@ class GameServer
         if ($ip && ! in_array($ip, $this->rounds[$this->current_round]['players'][$ckey]['ip'] ?? [])) $this->rounds[$this->current_round]['players'][$ckey]['ip'][] = $ip; 
         if ($cid && ! in_array($cid, $this->rounds[$this->current_round]['players'][$ckey]['cid'] ?? [])) $this->rounds[$this->current_round]['players'][$ckey]['cid'][] = $cid;
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+
+        $ip_data = $this->civ13->getIpData($ip);
+        $conditions = [
+            'Proxy' => isset($ip_data['proxy']) && $ip_data['proxy'],
+            'Hosting' => isset($ip_data['hosting']) && $ip_data['hosting'],
+        ];
+        $banReason = array_reduce(array_keys($conditions), function ($carry, $key) use ($conditions) {
+            return $carry ?: ($conditions[$key] ? $key : null);
+        }, null);
+        if ($banReason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+            $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, null, true) . " ($banReason)");
+        }
     }
     /**
      * Logs the logout of a player.

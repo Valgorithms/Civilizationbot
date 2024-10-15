@@ -74,6 +74,7 @@ class Moderator
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true) . ' (Alt Banned)');
             } else foreach ($ckeyinfo['ips'] as $ip) {
                 $ip_data = $this->civ13->getIpData($ip);
+                /* We should only check new connections
                 if (isset($ip_data['proxy']) && $ip_data['proxy']) { // Proxy
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true) . ' (Proxy)');
                     break;
@@ -81,7 +82,7 @@ class Moderator
                 if (isset($ip_data['hosting']) && $ip_data['hosting']) {
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true) . ' (Hosting)');
                     break;
-                }
+                }*/
                 if (isset($ip_data['region']) && in_array($ip_data['region'] ?? 'unknown', $this->civ13->blacklisted_countries)) { // Country code
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true) . ' (Blacklisted Country)');
                     break;
