@@ -1032,9 +1032,7 @@ class GameServer
                 'Proxy' => isset($ip_data['proxy']) && $ip_data['proxy'],
                 'Hosting' => isset($ip_data['hosting']) && $ip_data['hosting'],
             ];
-            $banReason = array_reduce(array_keys($conditions), function ($carry, $key) use ($conditions) {
-                return $carry ?: ($conditions[$key] ? $key : null);
-            }, null);
+            $banReason = array_reduce(array_keys($conditions), fn($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
             if ($banReason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
                 $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, null, true) . " ($banReason)");
             }
