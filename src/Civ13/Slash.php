@@ -45,11 +45,9 @@ class Slash
         $this->discord->once('init', function() {
             $this->logger->info('Setting up Interaction commands...');
             $this->setup();
-            if ($application_commands = $this->discord->__get('application_commands')) {
-                $names = [];
-                foreach ($application_commands as $command) $names[] = $command->getName();
-                $this->logger->debug('[APPLICATION COMMAND LIST] ' . PHP_EOL . '`' . implode('`, `', $names) . '`');
-            }
+            if ($application_commands = $this->discord->__get('application_commands'))
+                if ($names = array_map(fn($command) => $command->getName(), $application_commands))
+                    $this->logger->debug(sprintf('[APPLICATION COMMAND LIST] `%s`', implode('`, `', $names)));
         });
     }
     /**
@@ -79,9 +77,8 @@ class Slash
     {
         $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
         {
-            $names = [];
-            foreach ($commands as $command) if ($command->name) $names[] = $command->name;
-            if ($names) $this->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
+            if ($names = array_map(fn($command) => $command->name, iterator_to_array($commands)))
+                $this->logger->debug(sprintf('[GLOBAL APPLICATION COMMAND LIST] `%s`', implode('`, `', $names)));
 
             // if ($command = $commands->get('name', 'ping')) $commands->delete($command);
             if (! $commands->get('name', 'ping')) $this->save($commands, new Command($this->discord, [
@@ -300,9 +297,8 @@ class Slash
     {
         $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands): void
         {
-            $names = [];
-            foreach ($commands as $command) if ($command->name) $names[] = $command->name;
-            if ($names) $this->logger->debug('[GUILD APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
+            if ($names = array_map(fn($command) => $command->name, iterator_to_array($commands)))
+                $this->logger->debug(sprintf('[GUILD APPLICATION COMMAND LIST] `%s`', implode('`, `', $names)));
             
             // if ($command = $commands->get('name', 'unban')) $commands->delete($command);
             if (! $commands->get('name', 'unban')) $this->save($commands, new Command($this->discord, [
