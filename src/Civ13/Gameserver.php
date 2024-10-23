@@ -318,7 +318,7 @@ class GameServer
                 $this->gameChatWebhookRelay($ckey, $message, $channel_id, $ooc);
                 $this->discord->removeListener('init', $listener);
             };
-            $this->discord->on('init', $listener);
+            $this->discord->once('init', $listener);
             return; // Assume that the function will succeed when the bot is ready
         }
         $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc);
