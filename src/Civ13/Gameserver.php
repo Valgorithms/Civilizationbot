@@ -274,6 +274,19 @@ class GameServer
     }
     
     /**
+     * Relays game chat messages to specified paths.
+     *
+     * This method takes an array of paths and relays game chat messages to those paths.
+     * If no paths are provided, it defaults to relaying to the #ooc-server and #asay-server paths.
+     *
+     * @param array $paths An associative array where keys are file paths and values are the corresponding chat channels IDs.
+     * @return bool Returns true if all chat messages were successfully relayed, false otherwise.
+     */
+    private function __gameChatFileRelay(array $paths): bool
+    {
+        return array_reduce(array_keys($paths), fn($carry, $path) => $carry && ($this->gameChatFileRelay($this->basedir . $path, $paths[$path]) ?: $this->logger->error("Failed to relay game chat for {$path}.")), true);
+    }
+    /**
      * Relays in-game chat messages to Discord and handles chat moderation.
      *
      * This function reads chat messages from a file and relays them to a Discord channel.
@@ -354,17 +367,12 @@ class GameServer
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
         $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
     }
-    public function relayTimer(): TimerInterface
+    public function relayTimer(): ?TimerInterface
     {
-        if ($this->discord->guilds->get('id', $this->civ13->civ13_guild_id) && (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface))) {
+        if (! $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
+        if (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface)) {
             $this->logger->debug("Starting file chat relay timer for {$this->key}");
-            if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, function ()
-            {
-                if (! $this->legacy_relay) return null;
-                if (! $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
-                $this->gameChatFileRelay($this->basedir . Civ13::ooc_path, $this->ooc);  // #ooc-server
-                $this->gameChatFileRelay($this->basedir . Civ13::asay_path, $this->asay); // #asay-server
-            });
+            if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, fn () => $this->__gameChatFileRelay([Civ13::ooc_path => $this->ooc, Civ13::asay_path => $this->asay]));
         }
         return $this->timers['relay_timer'];
     }
