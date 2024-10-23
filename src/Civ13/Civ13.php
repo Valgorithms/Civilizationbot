@@ -927,6 +927,10 @@ class Civ13
         {
             ! empty($this->functions['GUILD_CREATE']) && array_walk($this->functions['GUILD_CREATE'], fn($func) => $func($this, $guild));
         });
+        
+        $this->discord->on('INTERACTION_CREATE', function ($interaction, Discord $discord) {
+            $this->logger->info('Interaction create event: ' . get_class($interaction));
+        });
     }
     
     /**
