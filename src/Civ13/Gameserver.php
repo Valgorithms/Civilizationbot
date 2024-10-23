@@ -284,7 +284,11 @@ class GameServer
      */
     private function __gameChatFileRelay(array $paths): bool
     {
-        return array_reduce(array_keys($paths), fn($carry, $path) => $carry && ($this->gameChatFileRelay($this->basedir . $path, $paths[$path]) ?: $this->logger->error("Failed to relay game chat for {$path}.")), true);
+        $result = true;
+        foreach ($paths as $filepath => $channel)
+            $this->gameChatFileRelay($this->basedir . $filepath, $channel)
+                ?: (($result = false) && $this->logger->error("Failed to relay chat messages to $filepath"));
+        return $result;
     }
     /**
      * Relays in-game chat messages to Discord and handles chat moderation.
