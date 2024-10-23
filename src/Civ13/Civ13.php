@@ -529,6 +529,13 @@ class Civ13
         };
         return $promise->then($onFulfilled ?? $this->onFulfilledDefault, $onRejected ?? $onRejectedDefault ?? $this->onRejectedDefault);
     }
+    public function deferUntilReady(callable $callback, string $event): void
+    {
+        if ($event) $this->logger->info("Deferring callback until ready for event: $event");
+        $this->ready
+            ? $callback()
+            : $this->discord->once('init', $callback);
+    }
 
     private function startsWithCommandPrefix(string $content): ?string {
         foreach (CommandPrefix::cases() as $prefix)

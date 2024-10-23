@@ -312,16 +312,9 @@ class GameServer
             $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
             return;
         }
-        if (! $this->ready) {
-            $this->logger->warning('gameChatWebhookRelay() was called before the bot was ready');
-            $listener = function () use ($ckey, $message, $channel_id, $ooc, &$listener) {
-                $this->gameChatWebhookRelay($ckey, $message, $channel_id, $ooc);
-                $this->discord->removeListener('init', $listener);
-            };
-            $this->discord->once('init', $listener);
-            return; // Assume that the function will succeed when the bot is ready
-        }
-        $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc);
+        $this->ready && $this->civ13->ready
+            ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc)
+            : $this->civ13->deferUntilReady(fn() => $this->gameChatWebhookRelay($ckey, $message, $channel_id, $ooc), 'gameChatWebhookRelay');
     }
     /**
      * Relays game chat messages to a Discord channel.
