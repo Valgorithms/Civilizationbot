@@ -44,7 +44,8 @@ if (PHP_OS_FAMILY == 'Windows') {
         });
         return $process;
     }
-    function execInBackground($cmd) {
+    function execInBackground($cmd): bool
+    {
         // exec("sudo $cmd > /dev/null &"); // Executes within the same shell
         $descriptorspec = [
             0 => ['pipe', 'r'],
@@ -52,10 +53,11 @@ if (PHP_OS_FAMILY == 'Windows') {
             2 => ['pipe', 'w']
         ];
         $output = "sudo nohup $cmd > /dev/null &";
-        $proc = proc_open($output, $descriptorspec, $pipes);
-        $proc_details = proc_get_status($proc);
-        $pid = $proc_details['pid'];
+        if (! $proc = proc_open($output, $descriptorspec, $pipes)) return false;
+        if (! $proc_details = proc_get_status($proc)) return false;
+        if (! isset($proc_details['pid']) || ! $pid = $proc_details['pid']) return false;
         echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
+        return true;
     };
     function restart() {
         // exec("sudo nohup php bot.php > botlog.txt &");

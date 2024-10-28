@@ -705,6 +705,12 @@ class MessageServiceManager
                         ? $this->civ13->reply($message, implode(', ', $playerlist))
                         : $message->react("❌"),
                 ['Chief Technical Officer'])
+            ->offsetSet('pullrepo',
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    (is_dir($fp = $this->civ13->gitdir) && \execInBackground("git -C {$fp} pull"))
+                        ? $message->react("👍")
+                        : $message->react("🔥"),
+                ['Ambassador'])
             ->offsetSet('unvet',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // Adds the infantry role to all veterans
