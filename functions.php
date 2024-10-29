@@ -7,17 +7,25 @@
  */
 
 if (PHP_OS_FAMILY == 'Windows') {
-    function spawnChildProcess($cmd) { // Not tested
-        execInBackground($cmd);
+    function spawnChildProcess($cmd): bool
+    { // Not tested
+        return execInBackground($cmd);
     }
-    function execInBackground($cmd) {
-        pclose(popen("start {$cmd}", "r")); // pclose(popen("start /B ". $cmd, "r"));;
+    function execInBackground($cmd): bool
+    {
+        if (($p = popen("start {$cmd}", "r")) === false) return false;
+        if (pclose($p) === -1) return false;; // pclose(popen("start /B ". $cmd, "r"));;
+        return true;
     };
-    function restart() {
-        pclose(popen('cmd /c "'. getcwd() . '\run.bat"', "r")); // pclose(popen("start /B ". $cmd, "r"));;
+    function restart(): bool
+    {
+        if (($p = popen('cmd /c "'. getcwd() . '\run.bat"', "r")) === false) return false;
+        if (pclose($p) === -1) return false; // pclose(popen("start /B ". $cmd, "r"));;
+        return true;
     };
 } else {
-    function spawnChildProcess($cmd) {
+    function spawnChildProcess($cmd): \React\ChildProcess\Process
+    {
         $process = new React\ChildProcess\Process("sudo nohup $cmd");        
         $process->stdout->on('data', function ($chunk) {
             echo $chunk . PHP_EOL;
@@ -59,7 +67,8 @@ if (PHP_OS_FAMILY == 'Windows') {
         echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
         return true;
     };
-    function restart() {
+    function restart(): bool
+    {
         // exec("sudo nohup php bot.php > botlog.txt &");
         $descriptorspec = [
             0 => ['pipe', 'r'],
@@ -67,32 +76,27 @@ if (PHP_OS_FAMILY == 'Windows') {
             2 => ['pipe', 'w']
         ];
         $output = 'sudo nohup php bot.php > botlog.txt &';
-        $pid = proc_get_status(proc_open($output, $descriptorspec, $pipes))['pid'];
+        if (($proc = proc_open($output, $descriptorspec, $pipes)) === false) return false;
+        if (! $pid = proc_get_status($proc)['pid']) return false;
         echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
+        return true;
     };
 }
 
-function termChildProcess(React\ChildProcess\Process $process) {
+function termChildProcess(React\ChildProcess\Process $process): bool
+{
     foreach ($process->pipes as $pipe) {
         $pipe->close();
     }
-    $process->terminate();
+    if (! $process->terminate()) return false;
     echo 'Child process terminated' . PHP_EOL;
+    return true;
 }
 
 function portIsAvailable(int $port = 1714): bool
 {
-    $s = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-
-    try {
-        if (var_dump(socket_bind($s, '127.0.0.1', $port))) {
-            socket_close($s);
-            return true;
-        }
-    } catch (Exception $e) {
-        socket_close($s);
-        return false;
-    }
+    if (($s = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) return false;
+    if (socket_bind($s, '127.0.0.1', $port) === false) return false;
     socket_close($s);
-    return false;
+    return true;
 }
