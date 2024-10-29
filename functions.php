@@ -14,42 +14,24 @@ if (PHP_OS_FAMILY == 'Windows') {
     function execInBackground($cmd): bool
     {
         if (($p = popen("start {$cmd}", "r")) === false) return false;
-        if (pclose($p) === -1) return false;; // pclose(popen("start /B ". $cmd, "r"));;
+        if (pclose($p) === -1) return false; // pclose(popen("start /B ". $cmd, "r"));
         return true;
     };
     function restart(): bool
     {
         if (($p = popen('cmd /c "'. getcwd() . '\run.bat"', "r")) === false) return false;
-        if (pclose($p) === -1) return false; // pclose(popen("start /B ". $cmd, "r"));;
+        if (pclose($p) === -1) return false; // pclose(popen("start /B ". $cmd, "r"));
         return true;
     };
 } else {
     function spawnChildProcess($cmd): \React\ChildProcess\Process
     {
         $process = new React\ChildProcess\Process("sudo nohup $cmd");        
-        $process->stdout->on('data', function ($chunk) {
-            echo $chunk . PHP_EOL;
-        });
-        
-        $process->stdout->on('end', function () {
-            echo 'ended' . PHP_EOL;
-        });
-        
-        $process->stdout->on('error', function (Exception $e) {
-            echo 'error: ' . $e->getMessage() . PHP_EOL;
-        });
-        
-        $process->stdout->on('close', function () {
-            echo 'closed' . PHP_EOL;
-        });
-        
-        $process->on('exit', function ($exitCode, $termSignal) {
-            if ($termSignal === null) {
-                echo "Process exited with code $exitCode" . PHP_EOL;
-            } else {
-                echo "Process terminated with signal $termSignal" . PHP_EOL;
-            }
-        });
+        $process->stdout->on('data', fn ($chunk) => error_log($chunk . PHP_EOL));
+        $process->stdout->on('end', fn () => error_log('ended' . PHP_EOL));
+        $process->stdout->on('error', fn (Exception $e) => error_log('error: ' . $e->getMessage() . PHP_EOL));
+        $process->stdout->on('close', fn () => error_log('closed' . PHP_EOL));
+        $process->on('exit', fn ($exitCode, $termSignal) => error_log(($termSignal === null) ? "Process exited with code $exitCode" . PHP_EOL : "Process terminated with signal $termSignal" . PHP_EOL));
         return $process;
     }
     function execInBackground($cmd): bool
@@ -85,9 +67,7 @@ if (PHP_OS_FAMILY == 'Windows') {
 
 function termChildProcess(React\ChildProcess\Process $process): bool
 {
-    foreach ($process->pipes as $pipe) {
-        $pipe->close();
-    }
+    foreach ($process->pipes as $pipe) $pipe->close();
     if (! $process->terminate()) return false;
     echo 'Child process terminated' . PHP_EOL;
     return true;
