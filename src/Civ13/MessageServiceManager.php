@@ -722,10 +722,12 @@ class MessageServiceManager
                     )) return $message->react("👎");
                     
                     $message->react("⏱️");
-                    $promise = null;
-                    foreach ($members as $member) $promise = ($promise instanceof PromiseInterface)
-                        ? $promise->then(fn() => $member->addRole($this->civ13->role_ids['Verified']))
-                        : $member->addRole($this->civ13->role_ids['Verified']);
+                    if (! $members_array = $members->toArray()) return $message->react("❌"); // No members to process
+                    $promise = array_shift($members_array)->addRole($this->civ13->role_ids['Verified']);
+                    if (! $members_array) return $promise->then(fn() => $message->react("👍")); // There was only one member to process
+                    $promise = array_reduce($members_array, fn(PromiseInterface $carry_promise, Member $member) =>
+                        $carry_promise->then(fn() => $member->addRole($this->civ13->role_ids['Verified'])),
+                    $promise);
                     return $promise->then(fn() => $message->react("👍"));
                 }, ['Chief Technical Officer'])
             ->offsetSet('retryregister',
