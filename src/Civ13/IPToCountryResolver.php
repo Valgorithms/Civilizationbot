@@ -10,7 +10,7 @@ namespace Civ13;
 
 class IPToCountryResolver
 {
-    public bool $online = false;
+    public bool $online = true;
 
     public function __construct(bool $online = false)
     {
@@ -61,7 +61,6 @@ class IPToCountryResolver
         assert(is_array($array));
         if (! isset($array['status']) || $array['status'] !== 'success') return [];
         return $array;
-        //if ($json['status'] === 'success') return $json;
     }
 
     /**
@@ -81,7 +80,7 @@ class IPToCountryResolver
         return reset($country) ?: 'unknown';
     }
 
-    public function __invoke(string $ip): string
+    public function __invoke(string $ip): array|string
     {
         return $this->online ? self::Online($ip)['region'] ?? 'unknown' : self::Offline($ip);
     }
