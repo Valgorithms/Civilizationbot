@@ -789,58 +789,58 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply('Application commands: `' . implode('`, `', array_map(fn($command) => $command->getName(), $this->civ13->discord->__get('application_commands'))) . '`'),
                 ['Chief Technical Officer'])            
-            ;
-            $log_handler = function (Message $message, string $message_content): PromiseInterface
-            {
-                $tokens = explode(';', $message_content);
-                $keys = [];
-                foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                    $keys[] = $gameserver->key;
-                    if (trim($tokens[0]) !== $gameserver->key) continue; // Check if server is valid
-                    if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::log_basedir)) {
-                        $this->logger->warning("Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
-                        return $message->react("🔥");
-                    }
-    
-                    unset($tokens[0]);
-                    $results = $this->civ13->FileNav($gameserver->basedir . Civ13::log_basedir, $tokens);
-                    if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
-                    if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-                    if (! isset($results[2]) || ! $results[2]) return $this->civ13->reply($message, 'Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-                    return $this->civ13->reply($message, "{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-                }
-                return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`');
-            };
-            $this->messageHandler
-                ->offsetSet('logs',
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $log_handler($message, trim(substr($message_filtered['message_content'], strlen($command)))),
-                    ['Admin'])
-                ->offsetSet('playerlogs',
-                    function (Message $message, string $command, array $message_filtered): PromiseInterface
+            ->offsetSet('logs',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $log_handler = function (Message $message, string $message_content): PromiseInterface
                     {
-                        $tokens = explode(';', trim(substr($message_filtered['message_content'], strlen($command))));
+                        $tokens = explode(';', $message_content);
                         $keys = [];
                         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
                             $keys[] = $gameserver->key;
-                            if (trim($tokens[0]) !== $gameserver->key) continue;
-                            if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::playerlogs) || ! $file_contents = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) return $message->react("🔥");
-                            return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
+                            if (trim($tokens[0]) !== $gameserver->key) continue; // Check if server is valid
+                            if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::log_basedir)) {
+                                $this->logger->warning("Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
+                                return $message->react("🔥");
+                            }
+            
+                            unset($tokens[0]);
+                            $results = $this->civ13->FileNav($gameserver->basedir . Civ13::log_basedir, $tokens);
+                            if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
+                            if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
+                            if (! isset($results[2]) || ! $results[2]) return $this->civ13->reply($message, 'Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+                            return $this->civ13->reply($message, "{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
                         }
-                        return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
-                    },
-                    ['Admin'])
-                ->offsetSet('botlog',
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->reply(MessageBuilder::new()->addFile('botlog.txt')),
-                    ['Owner', 'Chief Technical Officer'])
-                ->offsetSet('ip_data',
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $this->civ13->reply($message, ($input = trim(substr($message_filtered['message_content'], strlen($command)))) && ($data = $this->civ13->getIpData($input))
-                            ? json_encode($data, JSON_PRETTY_PRINT)
-                            : 'Invalid format or no data found. Please use the format: ip_data `ip address`'
-                        ),
-                    ['Owner', 'Chief Technical Officer']);  
+                        return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`');
+                    };
+                    return $log_handler($message, trim(substr($message_filtered['message_content'], strlen($command))));
+                },
+                ['Admin'])
+            ->offsetSet('playerlogs',
+                function (Message $message, string $command, array $message_filtered): PromiseInterface
+                {
+                    $tokens = explode(';', trim(substr($message_filtered['message_content'], strlen($command))));
+                    $keys = [];
+                    foreach ($this->civ13->enabled_gameservers as &$gameserver) {
+                        $keys[] = $gameserver->key;
+                        if (trim($tokens[0]) !== $gameserver->key) continue;
+                        if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::playerlogs) || ! $file_contents = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) return $message->react("🔥");
+                        return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
+                    }
+                    return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
+                },
+                ['Admin'])
+            ->offsetSet('botlog',
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $message->reply(MessageBuilder::new()->addFile('botlog.txt')),
+                ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('ip_data',
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $this->civ13->reply($message, ($input = trim(substr($message_filtered['message_content'], strlen($command)))) && ($data = $this->civ13->getIpData($input))
+                        ? json_encode($data, JSON_PRETTY_PRINT)
+                        : 'Invalid format or no data found. Please use the format: ip_data `ip address`'
+                    ),
+                ['Owner', 'Chief Technical Officer']);  
             if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs']))
                 $this->messageHandler
                     ->offsetSet('parole',
