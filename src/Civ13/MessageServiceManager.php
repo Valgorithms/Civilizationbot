@@ -753,9 +753,12 @@ class MessageServiceManager
             ->offsetSet('listprovisional',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface {
                     if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
-                    if (! $this->civ13->verifier->provisional->toArray()) return $this->civ13->reply($message, 'No users are pending verification.');
-                    if ($msg = implode(PHP_EOL, array_map(fn($ckey, $discord_id) => "$ckey: <@$discord_id>", array_keys($this->civ13->verifier->provisional->toArray()), array_values($this->civ13->verifier->provisional->toArray())))) return $this->civ13->reply($message, $msg);
-                    return $message->react("❌");
+                    if (! $arr = $this->civ13->verifier->provisional->toArray()) return $this->civ13->reply($message, 'No users are pending verification.');
+                    return ($msg = implode(PHP_EOL, array_map(function ($item) {
+                        $ckey = $item['ss13'] ?? 'Unknown';
+                        $discord_id = $item['discord'] ?? 'Unknown';
+                        return "$ckey: <@$discord_id>";
+                    }, $arr))) ? $this->civ13->reply($message, $msg) : $message->react("❌");
                 }, ['Admin'])
             ->offsetSet('register',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
