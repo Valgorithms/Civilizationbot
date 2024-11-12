@@ -18,6 +18,9 @@ use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
 use Traversable;
 
+use function React\Promise\reject;
+use function React\Promise\resolve;
+
 class Verifier
 {
     public Civ13 $civ13;
@@ -566,6 +569,25 @@ class Verifier
             return false;
         };
         return $provisionalRegistration($ckey, $discord_id);
+    }
+
+    /**
+     * Provisions a Byond username and Discord ID for provisional registration.
+     *
+     * @param string|null $ckey The Byond username to provision.
+     * @param string|null $discord_id The Discord ID to provision.
+     * @return PromiseInterface A promise that resolves with a success message or rejects with an error message.
+     */
+    public function __provision(?string $ckey = '', ?string $discord_id = ''): PromiseInterface
+    {
+        if (! $ckey || ! $discord_id) return reject('Invalid format! Please use the format `provision <byond username>; <discord id>`.');
+        if (! $ckey = Civ13::sanitizeInput($ckey)) return reject('Byond username was not passed. Please use the format `provision <byond username>; <discord id>`.');
+        if (! is_numeric($discord_id = Civ13::sanitizeInput($discord_id))) return reject("Discord id `$discord_id` must be numeric.");
+        if (! $this->civ13->verifier->provisional->get('ss13', $ckey)) {
+            $this->civ13->verifier->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
+            $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional->toArray());
+        }
+        return resolve("Provisional registration for `$ckey` to <@$discord_id> has been added.");
     }
 
     /**

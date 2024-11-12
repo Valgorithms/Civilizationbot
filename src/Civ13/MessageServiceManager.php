@@ -575,7 +575,7 @@ class MessageServiceManager
                     }
                 }, ['Ambassador'])
             ->offsetSet('fullbancheck',
-                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     array_map(fn($member) => ($item = $this->civ13->verifier->getVerifiedItem($member)) ? $this->civ13->bancheck($item['ss13']) : null, $message->guild->members->toArray())
                         ? $message->react("👍")
                         : $message->react("👎"),
@@ -712,7 +712,7 @@ class MessageServiceManager
                         : $message->react("🔥"),
                 ['Ambassador'])
             ->offsetSet('updatedeps',
-                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     \execInBackground('composer update')
                         ? $message->react("👍")
                         : $message->react("🔥"),
@@ -770,18 +770,13 @@ class MessageServiceManager
             ->offsetSet('provision',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // This function is only authorized to be used by the database administrator
-                    if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-                    $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
-                    if (! isset($split_message[1])) return $this->civ13->reply($message, 'Invalid format! Please use the format `provision <byond username>; <discord id>`.');
-                    if (! $ckey = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
-                    if (! is_numeric($discord_id = Civ13::sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
+                    if ($message->user_id !== $this->civ13->technician_id) return $message->react("❌");
                     if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
-                    if (! $this->civ13->verifier->provisional->get('ss13', $ckey)) {
-                        $this->civ13->verifier->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
-                        $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional->toArray());
-                    }
-                    return $this->civ13->reply($message, "Provisional registration for `$ckey` to <@$discord_id> has been added.");
-                    
+                    $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
+                    return $this->civ13->verifier->__provision($split_message[0] ?? null, $split_message[1] ?? null)->then(
+                        fn($result) => $message->react('👍')->then($this->civ13->reply($message, $result)),
+                        fn($error) => $message->react('👎')->then($this->civ13->reply($message, $error))
+                    );
                 }, ['Chief Technical Officer'])
             ->offsetSet('unverify',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
