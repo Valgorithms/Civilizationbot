@@ -354,9 +354,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
         $this->attributes['handlers'][$offset] = $this->validate($callback); // @throws InvalidArgumentException
-        $this->attributes['required_permissions'][$offset] = $required_permissions;
-        $this->attributes['match_methods'][$offset] = $method;
-        $this->attributes['descriptions'][$offset] = $description;
+        $this->attributes['required_permissions'][$offset] = $required_permissions ?? [];
+        $this->attributes['match_methods'][$offset] = $method ?? 'str_starts_with';
+        $this->attributes['descriptions'][$offset] = $description ?? '';
         //if ($method === 'exact')
             $this->__reorderHandlers();
         return $this;
@@ -367,9 +367,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $callback = $this->validate($callback); // @throws InvalidArgumentException
         foreach ($offsets as $offset) {
             $this->attributes['handlers'][$offset] = $callback;
-            $this->attributes['required_permissions'][$offset] = $required_permissions;
-            $this->attributes['match_methods'][$offset] = $method;
-            $this->attributes['descriptions'][$offset] = $description;
+            $this->attributes['required_permissions'][$offset] = $required_permissions ?? [];
+            $this->attributes['match_methods'][$offset] = $method ?? 'str_starts_with';
+            $this->attributes['descriptions'][$offset] = $description ?? '';
         }
         //if ($method === 'exact')
             $this->__reorderHandlers();
