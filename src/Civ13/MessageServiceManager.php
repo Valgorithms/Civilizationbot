@@ -739,15 +739,14 @@ class MessageServiceManager
             ->offsetSet('retryregister',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface { // This function is only authorized to be used by the database administrator
                     if ($message->user_id !== $this->civ13->technician_id) return $message->react("❌");
-                    $msg = implode(PHP_EOL, array_map(function ($item) {
-                        if (!isset($item['ss13']) || !isset($item['discord'])) return "Invalid provisional item: " . json_encode($item) . PHP_EOL;
-                        $ckey = $item['ss13'];
-                        $discord_id = $item['discord'];
+                    if (! $arr = $this->civ13->verifier->provisional->toArray()) return $this->civ13->reply($message, 'No users are pending verification.');
+                    return ($msg = implode(PHP_EOL, array_map(function ($item) {
+                        $ckey = $item['ss13'] ?? 'Unknown';
+                        $discord_id = $item['discord'] ?? 'Unknown';
                         return $this->civ13->verifier->provisionalRegistration($ckey, $discord_id)
                             ? "Successfully verified $ckey to <@{$discord_id}>"
                             : "Failed to verify $ckey to <@{$discord_id}>";
-                    }, $this->civ13->verifier->provisional->toArray()));
-                    return $msg ? $this->civ13->reply($message, $msg) : $this->civ13->reply($message, 'Unable to register provisional users.');
+                    }, $arr))) ? $this->civ13->reply($message, $msg) : $this->civ13->reply($message, 'Unable to register provisional users.');
                 },
                 ['Chief Technical Officer'])
             ->offsetSet('listprovisional',
