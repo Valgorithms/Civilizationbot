@@ -583,22 +583,27 @@ class Verifier
         if (! $ckey || ! $discord_id) return reject('Invalid format! Please use the format `provision <byond username>; <discord id>`.');
         if (! $ckey = Civ13::sanitizeInput($ckey)) return reject('Byond username was not passed. Please use the format `provision <byond username>; <discord id>`.');
         if (! is_numeric($discord_id = Civ13::sanitizeInput($discord_id))) return reject("Discord id `$discord_id` must be numeric.");
-        if (! $this->civ13->verifier->provisional->get('ss13', $ckey)) {
-            $this->civ13->verifier->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
-            $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional->toArray());
+        if ($this->isVerified($ckey, $discord_id)) return reject("Either Byond account `$ckey` or <@$discord_id> has already been verified.");
+        if (! $this->provisional->get('ss13', $ckey)) {
+            $this->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
+            $this->civ13->VarSave('provisional.json', $this->provisional->toArray());
         }
         return resolve("Provisional registration for `$ckey` to <@$discord_id> has been added.");
     }
 
     /**
-     * Checks if the input is verified.
+     * Verifies if any of the provided inputs are verified.
      *
-     * @param string $input The input to be checked.
-     * @return bool Returns true if the input is verified, false otherwise.
+     * This method checks each input against two conditions:
+     * 1. If the input is verified in the 'ss13' context.
+     * 2. If the input is numeric and verified in the 'discord' context.
+     *
+     * @param string ...$inputs The inputs to be verified.
+     * @return bool Returns true if any of the inputs are verified, otherwise false.
      */
-    public function isVerified(string $input): bool
+    public function isVerified(...$inputs): bool
     {
-        return $this->get('ss13', $input) ?? (is_numeric($input) && ($this->get('discord', $input)));
+        return array_reduce($inputs, fn($carry, $input) => $carry || $this->get('ss13', $input) || (is_numeric($input) && $this->get('discord', $input)), false);
     }
     /*
      * This function is used to refresh the bot's cache of verified users
