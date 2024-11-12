@@ -711,6 +711,12 @@ class MessageServiceManager
                         ? $message->react("👍")
                         : $message->react("🔥"),
                 ['Ambassador'])
+            ->offsetSet('updatedeps',
+                fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    \execInBackground('composer update')
+                        ? $message->react("👍")
+                        : $message->react("🔥"),
+                ['Ambassador'])
             ->offsetSet('unvet',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // Adds the infantry role to all veterans
