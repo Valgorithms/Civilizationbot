@@ -376,7 +376,6 @@ class CommandServiceManager
         $help .= '# Global Commands' . PHP_EOL;
         foreach ($this->global_commands as $command) if (isset($command['general_usage'])) $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
         return $help;
-        
     }
     /**
      * Retrieves the help string for guild commands.
