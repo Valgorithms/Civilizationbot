@@ -18,6 +18,7 @@ use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
 use Traversable;
 
+use function React\Async\await;
 use function React\Promise\reject;
 use function React\Promise\resolve;
 
@@ -762,7 +763,9 @@ class Verifier
         if (! $id || ! $this->isVerified($id)) return null;
         if ($user = $this->discord->users->get('id', $id)); return $user;
         $this->logger->warning("Unable to find user with ID `$id`.");
-        $promise = $this->discord->users->fetch('id', $id);
+        try { if ($user = await($this->discord->users->fetch('id', $id))) return $user;
+        } catch (\Throwable $e) { $this->logger->warning("Unable to fetch user with ID `$id`. Error: {$e->getMessage()}"); }
+        $this->logger->warning("Unable to find user with ID `$id`.");
         return null;
     }
 
