@@ -157,8 +157,8 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $required_permissions = $this->attributes['required_permissions'][$endpoint] ?? [];
         if ($lowest_rank = array_pop($required_permissions)) {
             if (! isset($this->civ13->role_ids[$lowest_rank])) {
-                $this->logger->warning("Unable to find role ID for rank `$lowest_rank`");
-                throw new \Exception("Unable to find role ID for rank `$lowest_rank`");
+                $this->logger->warning($err = "Unable to find role ID for rank `$lowest_rank`");
+                throw new \Exception($err);
             } elseif (! $this->checkRank($message->member->roles, $this->attributes['required_permissions'][$endpoint] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
         }
         $this->logger->debug("Endpoint '$endpoint' triggered");
