@@ -1121,9 +1121,10 @@ class MessageServiceManager
                     }, ['Ambassador'])
                 ->offsetSet("{$gameserver->key}sportsteam",
                     fn(Message $message, string $command, array $message_filtered): PromiseInterface => // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.
-                        ($content = $gameserver->sportsteam())
-                            ? $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content))
-                            : $message->react("🔥"),
+                        $gameserver->sportsteam()->then(
+                            fn($content) => $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content)),
+                            fn(\Throwable $error) => $message->react("🔥")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
+                        ),
                     ['Ambassador', 'Admin']);
         }
         

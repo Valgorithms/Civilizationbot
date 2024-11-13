@@ -1191,17 +1191,23 @@ class GameServer
             return "$score;$ckey";
         }, array_keys($result), $result))) === false) return false;
     }
-    public function sportsteam(): string|false
+    /**
+     * Reads the content of the sports teams file and returns it as a promise.
+     *
+     * @return PromiseInterface<string> A promise that resolves with the content of the sports teams file.
+     * @throws FileNotFoundException If the file does not exist or cannot be read.
+     */
+    public function sportsteam(): PromiseInterface
     {
         if (! file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::sportsteams)) {
-            $this->logger->warning("Unable to find `$fp`");
-            return false;
+            $this->logger->warning($err = "Unable to find `$fp`");
+            return reject(new FileNotFoundException($err));
         }
         if (! $content = file_get_contents($fp)) {
-            $this->logger->warning("Unable to read `$fp`");
-            return false;
+            $this->logger->warning($err = "Unable to read `$fp`");
+            return reject(new FileNotFoundException($err));
         }
-        return $content;
+        return resolve($content);
     }
 
     /**
