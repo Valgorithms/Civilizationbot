@@ -28,6 +28,9 @@ use React\Http\Message\Response as HttpResponse;
 use React\Promise\PromiseInterface;
 use ReflectionFunction;
 
+use function React\Promise\resolve;
+use function React\Promise\reject;
+
 class CommandServiceManager
 {
     public Discord $discord;
@@ -70,11 +73,11 @@ class CommandServiceManager
      * Sets up the bot by updating commands, guild commands, and declaring listeners.
      * This method should be called in the scope of $this->discord->on('init', fn() => $this->setup());
      */
-    private function setup(): void
+    private function setup(): PromiseInterface
     {
         if (isset($this->setup)) {
-            $this->logger->warning('Setup already called');
-            return;
+            $this->logger->warning($err = 'Setup already called');
+            return reject(new \Exception($err));
         }
         $this->loadCommands();
         $this->loadDefaultHelpCommand();
@@ -86,6 +89,7 @@ class CommandServiceManager
         $this->setup = true;
         $this->logger->info('CommandServiceManager setup complete');
         $this->logger->info($this->httpServiceManager->httpHandler->generateHelp());
+        return resolve();
     }
 
     /**
@@ -198,7 +202,7 @@ class CommandServiceManager
         ];
         return $array;
     }
-    private function loadDefaultHelpCommand():void
+    private function loadDefaultHelpCommand(): void
     {
         $help = [
             'name'                              => 'help',                                                                          // Name of the command.

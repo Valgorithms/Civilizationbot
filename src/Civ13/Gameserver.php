@@ -13,6 +13,7 @@ use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\Exceptions\PartException;
 use Civ13\Exceptions\UserInputException;
+use Civ13\Exceptions\VerifierException;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
@@ -1235,13 +1236,13 @@ class GameServer
      * @param callable $callback The callback function that determines what to write to the file.
      * @param array $file_paths An array of file paths to update.
      * @param array $required_roles An array of required roles for the members.
-     * @return void
+     * @return PromiseInterface A promise that resolves when the files are successfully updated, or rejects if there is an error.
      */
-    public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): void
+    public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): PromiseInterface
     {
         if (! isset($this->civ13->verifier)) {
-            $this->logger->error('Unable to update files from member roles: Verifier is not set.');
-            return;
+            $this->logger->error($err = 'Unable to update files from member roles: Verifier is not set.');
+            return reject(new VerifierException($err));
         } 
         $file_contents = '';
         foreach ($this->civ13->verifier->verified as $item)
@@ -1250,6 +1251,7 @@ class GameServer
         if ($file_contents) foreach ($file_paths as $fp) if (@touch($fp))
             if (file_put_contents($fp, $file_contents) === false) // Attempt to write to the file
                 $this->logger->error("Failed to write to file `$fp`"); // Log an error if the write failed
+        return resolve();
     }
     /**
      * Updates the whitelist based on the member roles.
@@ -1312,16 +1314,16 @@ class GameServer
      * Updates admin lists with required roles and permissions.
      *
      * @param array $required_roles An array of required roles and their corresponding permissions.
-     * @return bool Returns true if the update was successful, false otherwise.
+     * @return PromiseInterface A promise that resolves when the admin list is successfully updated, or rejects if there is an error.
      */
-    public function adminlistUpdate(?array $required_roles = null): bool
+    public function adminlistUpdate(?array $required_roles = null): PromiseInterface
     {
         if (! $this->enabled) return false;
         if (! $required_roles) $required_roles = self::ADMIN_PERMISSIONS;
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! @touch($this->admins)) {
-            $this->logger->warning("Unable to open `{$this->admins}`");
-            return false;
+            $this->logger->warning($err = "Unable to open `{$this->admins}`");
+            return reject();
         }
         $file_paths[] = $this->admins;
 
@@ -1336,7 +1338,7 @@ class GameServer
             return $string;
         };
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
-        return true;
+        return resolve();
     }
 
     public function parseRoundTime(string $time)

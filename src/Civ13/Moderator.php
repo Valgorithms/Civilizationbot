@@ -10,6 +10,10 @@ namespace Civ13;
 
 use Discord\Discord;
 use Monolog\Logger;
+use React\Promise\PromiseInterface;
+
+use function React\Promise\resolve;
+use function React\Promise\reject;
 
 enum ModerationMethod: string {
     case EXACT = 'exact';
@@ -50,12 +54,13 @@ class Moderator
     {
         $this->discord->once('init', fn() => $this->setup());
     }
-    public function setup(): void
+    public function setup(): PromiseInterface
     {
-        if ($this->ready) return;
+        if ($this->ready) return reject(new \Exception('Moderator already setup'));
         $this->civ13->moderator =& $this;
         $this->logger->info("Added Moderator");
         $this->ready = true;
+        return resolve();
     }
 
     /**
