@@ -885,7 +885,7 @@ class Civ13
      * The ranks are defined in the bot's config file.
      *
      * @param Member $member The member to check.
-     * @param array $allowed_ranks The allowed ranks. Defaults to ['Owner', 'Ambassador'].
+     * @param array $allowed_ranks The allowed ranks. Defaults to ['Owner', 'Chief Technical Officer', 'Ambassador'].
      * @return bool Returns true if the member has any of the allowed ranks, false otherwise.
      */
     function hasRank(Member $member, array $allowed_ranks = ['Owner', 'Chief Technical Officer', 'Ambassador']): bool
