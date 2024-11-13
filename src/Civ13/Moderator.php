@@ -56,7 +56,7 @@ class Moderator
     }
     public function setup(): PromiseInterface
     {
-        if ($this->ready) return reject(new \Exception('Moderator already setup'));
+        if ($this->ready) return reject(new \LogicException('Moderator already setup'));
         $this->civ13->moderator =& $this;
         $this->logger->info("Added Moderator");
         $this->ready = true;

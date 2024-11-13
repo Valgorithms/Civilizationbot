@@ -77,7 +77,7 @@ class CommandServiceManager
     {
         if (isset($this->setup)) {
             $this->logger->warning($err = 'Setup already called');
-            return reject(new \Exception($err));
+            return reject(new \LogicException($err));
         }
         $this->loadCommands();
         $this->loadDefaultHelpCommand();

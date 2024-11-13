@@ -29,6 +29,7 @@ use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
+use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
@@ -324,22 +325,23 @@ class GameServer
      * @param string $channel_id The ID of the Discord channel to relay the message to.
      * @param bool|null $moderate Whether to moderate the message or not. Defaults to true.
      * @param bool|null $ooc Whether the message is out-of-character or not. Defaults to true.
-     * @return void
+     * @return PromiseInterface
      */
-    public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $ooc = true): void
+    public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $ooc = true): PromiseInterface
     {
-        if ($this->legacy_relay) return;
+        if ($this->legacy_relay) return reject(new \LogicException('gameChatWebhookRelay() is not available for legacy relays.'));
         if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
-            $this->logger->warning('gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
-            return;
+            $this->logger->warning($err = 'gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
+            return reject(new \InvalidArgumentException($err));
         }
         if (! $channel = $this->discord->getChannel($channel_id)) {
-            $this->logger->warning("gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
-            return;
+            $this->logger->warning($err = "gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
+            return reject(new PartException($err));
         }
         $this->ready && $this->civ13->ready
             ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc)
             : $this->civ13->deferUntilReady(fn() => $this->gameChatWebhookRelay($ckey, $message, $channel_id, $ooc), 'gameChatWebhookRelay');
+        return resolve();
     }
     /**
      * Relays game chat messages to a Discord channel.
@@ -348,17 +350,17 @@ class GameServer
      * @param array $array The array containing the chat message information.
      * @param bool $moderate (optional) Whether to apply moderation to the message. Default is true.
      * @param bool $ooc (optional) Whether the message is out-of-character (OOC) or in-character (IC). Default is true.
-     * @return void
+     * @return PromiseInterface<Message> A promise that resolves with the message sent to the channel.
      */
-    private function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $ooc = true, ?bool $moderate = true): void
+    private function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $ooc = true, ?bool $moderate = true): PromiseInterface
     {
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
-            $this->logger->error("Channel not found for __gameChatRelay");
-            return;
+            $this->logger->error($err = "Channel not found for __gameChatRelay");
+            return reject(new PartException($err));
         }
         if (! $array || ! isset($array['ckey']) || ! isset($array['message']) || ! isset($array['server']) || ! $array['ckey'] || ! $array['message'] || ! $array['server']) {
-            $this->logger->warning('__gameChatRelay() was called with an empty array or invalid content.');
-            return;
+            $this->logger->warning($err = '__gameChatRelay() was called with an empty array or invalid content.');
+            return reject(new \InvalidArgumentException($err));
         }
         if (isset($this->civ13->moderator) && $this->moderate && $moderate)
             $badwords = $ooc ? $this->civ13->ooc_badwords : $this->civ13->ic_badwords;
@@ -371,13 +373,12 @@ class GameServer
                 $badword_warnings
             );
         if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) {
-            $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
-            return;
+            return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
         }
         $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
-        $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
+        return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
     }
     public function relayTimer(): ?TimerInterface
     {
@@ -977,15 +978,16 @@ class GameServer
             }
         }
     }
-    private function legacyUnban(string $ckey, ?string $admin = null): void
+    private function legacyUnban(string $ckey, ?string $admin = null): PromiseInterface
     {
         $admin = $admin ?? $this->discord->username;
         if (! @touch($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
-            $this->logger->warning("Unable to open `$this->discord2unban`");
-            return;
+            $this->logger->warning($err = "Unable to open `$this->discord2unban`");
+            return reject(new MissingSystemPermissionException($err));
         }
         fwrite($file, $admin . ":::$ckey");
         fclose($file);
+        return resolve();
     }
     private function sqlUnban($array, ?string $admin = null): string
     {
@@ -1030,16 +1032,16 @@ class GameServer
      * @param string $time The login time.
      * @param string $ip The player's IP address (optional).
      * @param string $cid The player's CID (optional).
-     * @return void
+     * @return PromiseInterface<?Message> A promise that resolves with the message sent to the staff channel
      */
-    public function logPlayerLogin(string $ckey, string $time, string $ip = '', string $cid = ''): void
+    public function logPlayerLogin(string $ckey, string $time, string $ip = '', string $cid = ''): PromiseInterface
     {
-        if (! $this->enabled) return;
-        if ($ckey === '(NULL)') return;
+        if (! $this->enabled) return reject(new \LogicException("Game server is not enabled."));
+        if ($ckey === '(NULL)') return reject (new \InvalidArgumentException("Invalid ckey provided."));
         if (! in_array($ckey, $this->players)) $this->players[] = $ckey;
         if (! $this->current_round) {
-            $this->logger->warning("No current round found for {$this->key} logPlayerLogin.");
-            return;
+            $this->logger->warning($err = "No current round found for {$this->key} logPlayerLogin.");
+            return reject(new \LogicException($err));
         }
         $this->rounds[$this->current_round]['players'][$ckey] ??= [ // Initialize the player if they don't exist
             'ip' => [],
@@ -1058,9 +1060,10 @@ class GameServer
             ];
             $banReason = array_reduce(array_keys($conditions), fn($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
             if ($banReason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, null, true) . " ($banReason)");
+                return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, null, true) . " ($banReason)");
             }
         }
+        return resolve();
     }
     /**
      * Logs the logout of a player.
@@ -1069,16 +1072,16 @@ class GameServer
      * @param string $time The login time.
      * @param string $ip The player's IP address (optional).
      * @param string $cid The player's CID (optional).
-     * @return void
+     * @return PromiseInterface<array>
      */
-    public function logPlayerLogout(string $ckey, string $time): void
+    public function logPlayerLogout(string $ckey, string $time): PromiseInterface
     {
-        if (! $this->enabled) return;
-        if ($ckey === '(NULL)') return;
+        if (! $this->enabled) return reject(new \LogicException("Game server is not enabled."));
+        if ($ckey === '(NULL)') return reject(new \InvalidArgumentException("Invalid ckey provided."));
         if (in_array($ckey, $this->players)) unset($this->players[array_search($ckey, $this->players)]);
         if (! $this->current_round) {
-            $this->logger->warning("No current round found for {$this->key} logPlayerLogout");
-            return;
+            $this->logger->warning($err = "No current round found for {$this->key} logPlayerLogout");
+            return reject(new \LogicException($err));
         }
         $this->rounds[$this->current_round]['players'][$ckey] ??= [
             'ip' => [],
@@ -1087,6 +1090,7 @@ class GameServer
         ];
         $this->rounds[$this->current_round]['players'][$ckey]['logout'] = $time;
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+        return resolve($this->rounds);
     }
     /**
      * Retrieves the rounds based on the provided criteria.

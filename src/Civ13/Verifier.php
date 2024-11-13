@@ -62,7 +62,8 @@ class Verifier
     }
     public function afterConstruct(): void
     {
-        $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member) {
+        $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
+        {
             $this->getVerified();
             $this->joinRoles($member);
             if (isset($this->civ13->timers["add_{$member->id}"])) {

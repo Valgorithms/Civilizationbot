@@ -40,6 +40,7 @@ use React\Filesystem\AdapterInterface;
 use React\Filesystem\Factory as FilesystemFactory;
 use ReflectionFunction;
 
+use function React\Promise\reject;
 use function React\Promise\resolve;
 use function React\Promise\all;
 
@@ -1240,19 +1241,20 @@ class Civ13
         else $return .= "Invalid server specified for ban.";
         return $return;
     }
-    public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): void
+    public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): PromiseInterface
     {
         $admin ??= $this->discord->username;
         if (is_null($gameserver)) foreach ($this->enabled_gameservers as &$gameserver) $this->unban($ckey, $admin, $gameserver->key);
         elseif(isset($this->enabled_gameservers[$gameserver])) $this->enabled_gameservers[$gameserver]->unban($ckey, $admin);
         else {
-            $this->logger->warning("Invalid server specified for unban.");
-            return;
+            $this->logger->warning($err = "Invalid server specified for unban.");
+            return reject(new \InvalidArgumentException($err));
         }
         if (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)) {
             if ($member->roles->has($this->role_ids['Banished'])) $member->removeRole($this->role_ids['Banished'], "Unbanned by $admin");
             if ($member->roles->has($this->role_ids['Permabanished'])) $member->removeRole($this->role_ids['Permabanished'], "Unbanned by $admin")->then(fn() => $member->addRole($this->role_ids['Verified'], "Unbanned by $admin"));
         }
+        return resolve();
     }
 
     /**

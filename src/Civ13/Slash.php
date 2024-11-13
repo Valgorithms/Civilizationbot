@@ -24,6 +24,8 @@ use Discord\Repository\Interaction\GlobalCommandRepository;
 use Monolog\Logger;
 
 use function React\Async\await;
+use function React\Promise\resolve;
+use function React\Promise\reject;
 
 class Slash
 {
@@ -57,12 +59,13 @@ class Slash
      * Sets up the bot by updating commands, guild commands, and declaring listeners.
      * This method should be called in the scope of $this->discord->once('init', fn() => $this->setup());
      */
-    private function setup(): void
+    private function setup(): PromiseInterface
     {
-        if ($this->setup) return;
+        if ($this->setup) return reject(new \LogicException('Slash commands already setup'));
         $this->__updateCommands();
         $this->__updateGuildCommands();
         $this->setup = true;
+        return resolve();
     }
     /**
      * Saves a command to the specified repository.
