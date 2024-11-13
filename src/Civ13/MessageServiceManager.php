@@ -1113,7 +1113,7 @@ class MessageServiceManager
                     function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                     {
                         $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
-                        if (! isset($split_message[1])) return $this->civ13->reply($message, 'You need to include the name of the map.');
+                        if (! isset($split_message[1])) return $message->react("❌")->then(fn () => $this->civ13->reply($message, 'You need to include the name of the map.'));
                         return $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username)->then(
                             fn ($result) => $message->react("👍")->then($this->civ13->reply($message, $result)),
                             fn (\Throwable $error) => $message->react(($error instanceof FileNotFoundException) ? "🔥" : "👎")->then($this->civ13->reply($message, $error->getMessage()))
