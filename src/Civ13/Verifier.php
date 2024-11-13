@@ -573,12 +573,13 @@ class Verifier
 
     /**
      * Provisions a Byond username and Discord ID for provisional registration.
+     * This function bypasses the verification process and should only be used when the user has been verified manually.
      *
-     * @param string|null $ckey The Byond username to provision.
+     * @param string|null $ckey The Byond ckey to provision.
      * @param string|null $discord_id The Discord ID to provision.
      * @return PromiseInterface A promise that resolves with a success message or rejects with an error message.
      */
-    public function __provision(?string $ckey = '', ?string $discord_id = ''): PromiseInterface
+    public function provision(?string $ckey = '', ?string $discord_id = ''): PromiseInterface
     {
         if (! $ckey || ! $discord_id) return reject(new \InvalidArgumentException('Invalid format! Please use the format `provision <byond username>; <discord id>`.'));
         if (! $ckey = Civ13::sanitizeInput($ckey)) return reject(new \InvalidArgumentException('Byond username was not passed. Please use the format `provision <byond username>; <discord id>`.'));

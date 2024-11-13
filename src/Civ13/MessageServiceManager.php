@@ -778,7 +778,7 @@ class MessageServiceManager
                     if ($message->user_id !== $this->civ13->technician_id) return $message->react("❌");
                     if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
                     $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
-                    return $this->civ13->verifier->__provision($split_message[0] ?? null, $split_message[1] ?? null)->then(
+                    return $this->civ13->verifier->provision($split_message[0] ?? null, $split_message[1] ?? null)->then(
                         fn($result) => $message->react('👍')->then($this->civ13->reply($message, $result)),
                         fn(\Throwable $error) => $message->react(($error instanceof \InvalidArgumentException) ? "❌" : "👎")->then($this->civ13->reply($message, $error->getMessage()))
                     );
