@@ -622,16 +622,7 @@ class Verifier
     public function getVerified(bool $initialize = true): Collection
     {
         $this->logger->debug('Refreshing verified list...');
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->verify_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
-        curl_setopt($ch, CURLOPT_HEADER, true); // Enable header retrieval
-        $response = curl_exec($ch);
-        $http_status = ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
-        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE); // Get the size of the headers
-        $json = (! is_bool($response) && $response !== false) ? substr($response, $header_size) : ''; // Extract the JSON response
+        ['json' => $json, 'http_status' => $http_status] = $this->fetchVerifiedData();
         
         $this->civ13->verifier_online = ($json !== false && $http_status === 200);
         $this->logger->debug('Verifier status: ' . ($this->civ13->verifier_online ? 'Online' : 'Offline'));
@@ -648,6 +639,34 @@ class Verifier
             return $this->verified = new Collection($verified_array, 'discord');
         }
         return $this->verified ?? new Collection($verified_array ?? [], 'discord'); 
+    }
+
+    /**
+     * Fetches the verified data from the specified URL.
+     *
+     * This method initializes a cURL session to the URL specified in the `verify_url` property,
+     * sets various cURL options, and executes the request. It retrieves both the response headers
+     * and the body, and returns them along with the HTTP status code.
+     *
+     * @return array An associative array containing:
+     *               - 'json': The JSON response body (or an empty string if the request failed).
+     *               - 'http_status': The HTTP status code of the response (0 if the request failed).
+     */
+    public function fetchVerifiedData(): array
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $this->verify_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+        curl_setopt($ch, CURLOPT_HEADER, true); // Enable header retrieval
+        $response = curl_exec($ch);
+        $http_status = ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE); // Get the size of the headers
+        return [
+            'json' => (! is_bool($response) && $response !== false) ? substr($response, $header_size) : '',
+            'http_status' => $http_status
+        ];
     }
     /**
      * This function is used to get a verified item from a ckey or Discord ID.
