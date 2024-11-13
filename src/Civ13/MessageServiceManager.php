@@ -8,6 +8,7 @@
 namespace Civ13;
 
 use Byond\Byond;
+use Civ13\Exceptions\FileNotFoundException;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
@@ -18,7 +19,9 @@ use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\Promise\PromiseInterface;
 
+use function React\Async\await;
 use function React\Promise\resolve;
+use function React\Promise\reject;
 
 class MessageServiceManager
 {
@@ -584,7 +587,7 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
                     array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
                         return $carry || array_reduce($this->civ13->enabled_gameservers, function ($carry2, $gameserver2) use ($gameserver) {
-                            return $carry2 || $gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs)) !== false;
+                            return $carry2 || (! await($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs))) instanceof \Throwable);
                         }, false);
                     }, false)
                         ? $message->react("👍")
@@ -777,7 +780,7 @@ class MessageServiceManager
                     $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
                     return $this->civ13->verifier->__provision($split_message[0] ?? null, $split_message[1] ?? null)->then(
                         fn($result) => $message->react('👍')->then($this->civ13->reply($message, $result)),
-                        fn($error) => $message->react('👎')->then($this->civ13->reply($message, $error))
+                        fn(\Throwable $error) => $message->react(($error instanceof \InvalidArgumentException) ? "❌" : "👎")->then($this->civ13->reply($message, $error->getMessage()))
                     );
                 }, ['Chief Technical Officer'])
             ->offsetSet('unverify',
@@ -1111,7 +1114,10 @@ class MessageServiceManager
                     {
                         $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
                         if (! isset($split_message[1])) return $this->civ13->reply($message, 'You need to include the name of the map.');
-                        return $this->civ13->reply($message, $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username));
+                        return $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username)->then(
+                            fn ($result) => $message->react("👍")->then($this->civ13->reply($message, $result)),
+                            fn (\Throwable $error) => $message->react(($error instanceof FileNotFoundException) ? "🔥" : "👎")->then($this->civ13->reply($message, $error->getMessage()))
+                        );
                     }, ['Ambassador'])
                 ->offsetSet("{$gameserver->key}sportsteam",
                     fn(Message $message, string $command, array $message_filtered): PromiseInterface => // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.

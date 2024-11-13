@@ -9,6 +9,8 @@
 
 namespace Civ13;
 
+use Civ13\Exceptions\FileNotFoundException;
+use Civ13\Exceptions\UserInputException;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
@@ -25,6 +27,9 @@ use Monolog\Logger;
 use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
+
+use function React\Promise\reject;
+use function React\Promise\resolve;
 
 class GameServer
 {
@@ -667,12 +672,19 @@ class GameServer
         });
         if ($notify) $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $message ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username);
     }
-    public function MapSwap(string $mapto, string $admin): string
+    /**
+     * Swaps the current map to the specified map.
+     *
+     * @param string $mapto The name of the map to switch to.
+     * @param string $admin The name of the admin requesting the map swap.
+     * @return PromiseInterface<string> A promise that resolves with a success message or rejects with an error message.
+     */
+    public function MapSwap(string $mapto, string $admin): PromiseInterface
     {
         $mapto = strtoupper($mapto);
         if (! file_exists($fp = $this->civ13->gitdir . Civ13::maps) || ! $file = @fopen($fp, 'r')) {
-            $this->logger->error("Unable to open `$fp` for reading.");
-            return "Unable to open `$fp` for reading.";
+            $this->logger->error($err = "Unable to open `$fp` for reading.");
+            return reject(new FileNotFoundException($err));
         }
     
         $maps = array();
@@ -681,7 +693,7 @@ class GameServer
             if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
         }
         fclose($file);
-        if (! in_array($mapto, $maps)) return "`$mapto` was not found in the map definitions.";
+        if (! in_array($mapto, $maps)) return reject(new UserInputException("`$mapto` was not found in the map definitions."));
 
         $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->username);
         if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
@@ -689,7 +701,7 @@ class GameServer
             $channel->sendMessage($msg);
         }
         $this->loop->addTimer(10, fn() => \execInBackground("python3 {$this->basedir}" . Civ13::mapswap . " $mapto"));
-        return $msg;
+        return resolve($msg);
     }
 
     public function cleanupLogs(): void
@@ -815,17 +827,17 @@ class GameServer
      *
      * @param int|string|null $ckey The ckey of the player to update the ban log for. If null, all bans will be updated.
      * @param string|null $playerlog The player log content as a string. If not provided, the player log file for this server will be used.
-     * @return string|false The updated ban log as a string, or false if there was an error.
+     * @return PromiseInterface<string> The updated ban log as a string, or a throwable string if there was an error.
      */
-    public function banlog_update(int|string|null $ckey = null, ?string $playerlog = ''): string|false
+    public function banlog_update(int|string|null $ckey = null, ?string $playerlog = ''): PromiseInterface
     {
         if (! touch($fp = $this->basedir . Civ13::playerlogs)) {
-            $this->logger->warning("Unable to open `$fp`");
-            return false;
+            $this->logger->warning($err = "Unable to open `$fp`");
+            return reject(new FileNotFoundException($err));
         }
         if (! touch($fp = $this->basedir . Civ13::bans)) {
-            $this->logger->warning("Unable to open `$fp`");
-            return false;
+            $this->logger->warning($err = "Unable to open `$fp`");
+            return reject(new FileNotFoundException($err));
         }
         $this->logger->debug("Updating ban log for {$this->name}. " . ($ckey ? "ckey: $ckey" : "All bans") . '.');
 
@@ -874,7 +886,7 @@ class GameServer
         if (empty($updated)) $final = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
         else $final = trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
         $ckey ? file_put_contents($fp, $final, FILE_APPEND) : file_put_contents($fp, $final);
-        return $final;
+        return resolve($final);
     }
     public function listbans(): string|false
     {
@@ -916,7 +928,7 @@ class GameServer
         if (! isset($this->timers["ban_cleanup_timer"])) $this->civ13->timers["ban_cleanup_timer"] = $this->civ13->discord->getLoop()->addTimer(300, fn() => $this->cleanupLogs());
 
         if ($this->legacy) {
-            if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn() => array_walk($this->civ13->enabled_gameservers, fn(&$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)))); // Attempts to fill in any missing data for the ban
+            if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn() => array_walk($this->civ13->enabled_gameservers, fn(GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)))); // Attempts to fill in any missing data for the ban
             return $this->legacyBan($array, $admin);
         }
         return $this->sqlBan($array, $admin);
