@@ -8,6 +8,8 @@
 
 namespace Civ13;
 
+use Civ13\Exceptions\CallbackHandlerException;
+use Civ13\Exceptions\InvalidConfigException;
 use Civ13\Interfaces\MessageHandlerCallbackInterface;
 use Discord\Parts\Channel\Message;
 use Discord\Helpers\Collection;
@@ -92,13 +94,14 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
      *
      * @param Message $message The incoming message object.
      * @return PromiseInterface|null A PromiseInterface object or null.
+     * @throws CallbackHandlerException If the callback function fails to execute.
      */
     public function handle(Message $message): ?PromiseInterface
     {
         try {
             if (! $array = $this->__getCallback($message)) return null;
             return $this->__processCallback($array['callback'], $array['message'], $array['endpoint'], $array['message_filtered']);
-        } catch (\Throwable $e) {
+        } catch (CallbackHandlerException $e) {
             $this->logger->error("Message Handler error: An endpoint for `$message->content` failed with error `{$e->getMessage()}`. Stack Trace:" . PHP_EOL . str_replace('#', PHP_EOL . '#', $e->getTraceAsString()));
             return $message->react('🔥');
         }
@@ -150,7 +153,8 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
      * @param string $endpoint The endpoint being processed.
      * @param callable $callback The callback function to be executed.
      * @return PromiseInterface|null Returns a PromiseInterface if the callback is asynchronous, otherwise returns null.
-     * @throws \Exception Throws an exception if the role ID for the lowest rank is not found.
+     * @throws InvalidConfigException If the required role ID for the lowest rank cannot be found.
+     * @throws CallbackHandlerException If the callback function fails to execute
      */
     private function __processCallback(callable $callback, Message $message, string $endpoint, array $message_filtered): ?PromiseInterface
     {
@@ -158,13 +162,13 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         if ($lowest_rank = array_pop($required_permissions)) {
             if (! isset($this->civ13->role_ids[$lowest_rank])) {
                 $this->logger->warning($err = "Unable to find role ID for rank `$lowest_rank`");
-                throw new \Exception($err);
+                throw new InvalidConfigException($err);
             } elseif (! $this->checkRank($message->member->roles, $this->attributes['required_permissions'][$endpoint] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
         }
         $this->logger->debug("Endpoint '$endpoint' triggered");
         try {
             return $callback($message, $endpoint, $message_filtered);
-        } catch (\Exception $e) {
+        } catch (CallbackHandlerException $e) {
             $this->logger->error("Message Handler error: `A callback for `$endpoint` failed with error `{$e->getMessage()}`. Stack Trace:" . PHP_EOL . str_replace('#', PHP_EOL . '#', $e->getTraceAsString()));
             return $message->react('🔥');
         }
@@ -320,7 +324,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     public function merge(object $handler): self
     {
         if (! property_exists($handler, 'toArray')) {
-            throw new \Exception('Handler::merge() expects parameter 1 to be an object with a method named "toArray", ' . gettype($handler) . ' given');
+            throw new \InvalidArgumentException('Handler::merge() expects parameter 1 to be an object with a method named "toArray", ' . gettype($handler) . ' given');
             return $this;
         }
         $toArray = $handler->toArray();
