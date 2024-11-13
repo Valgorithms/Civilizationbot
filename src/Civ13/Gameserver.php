@@ -11,6 +11,7 @@ namespace Civ13;
 
 use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\MissingSystemPermissionException;
+use Civ13\Exceptions\PartException;
 use Civ13\Exceptions\UserInputException;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
@@ -509,6 +510,7 @@ class GameServer
     public function playercountTimer(): TimerInterface
     {
         if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(60, function () { // Update playercount channel every 10 minutes
+            $this->playercount_ticker++;
             if ($this->playercount_ticker % 10 !== 0) return false;
             $this->playercountChannelUpdate(count($this->players));
         });
@@ -519,23 +521,26 @@ class GameServer
      * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts
      * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
      * It is called on ready and every 5 minutes
+     * 
+     * @param int $count The player count to update the channel with.
+     * @return PromiseInterface<?Channel> A promise that resolves to the updated channel, or null if the channel didn't need to be updated.
      */
-    public function playercountChannelUpdate(int $count = 0): bool
+    public function playercountChannelUpdate(int $count = 0): PromiseInterface
     {
         if (! $channel = $this->discord->getChannel($this->playercount)) {
-            $this->logger->warning("Channel {$this->playercount} doesn't exist!");
-            return false;
+            $this->logger->warning($err = "Channel {$this->playercount} doesn't exist!");
+            return reject(new PartException($err));
         }
         if (! $channel->created) {
-            $this->logger->warning("Channel {$channel->name} hasn't been created!");
-            return false;
+            $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
+            return reject(new PartException($err));
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
         if ((int)$existingCount !== $count) {
             $channel->name = "{$channelPrefix}-{$count}";
-            $channel->guild->channels->save($channel);
+            return $channel->guild->channels->save($channel);
         }
-        return true;
+        return resolve();
     }
 
     /**
