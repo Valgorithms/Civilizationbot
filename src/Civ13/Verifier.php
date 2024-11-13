@@ -624,7 +624,7 @@ class Verifier
         $this->logger->debug('Refreshing verified list...');
         ['json' => $json, 'http_status' => $http_status] = $this->fetchVerifiedData();
         
-        $this->civ13->verifier_online = ($json !== false && $http_status === 200);
+        $this->civ13->verifier_online = ($http_status === 200);
         $this->logger->debug('Verifier status: ' . ($this->civ13->verifier_online ? 'Online' : 'Offline'));
         $this->verifierStatusChannelUpdate($this->civ13->verifier_online);
         //if ($json) $this->logger->debug('Verifier JSON response: ' . $json);
