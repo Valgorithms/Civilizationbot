@@ -9,6 +9,7 @@
 namespace Civ13;
 
 use Byond\Byond;
+use Civ13\Exceptions\MissingSystemPermissionException;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use React\Promise\PromiseInterface;
@@ -21,6 +22,8 @@ use Discord\Parts\Permissions\RolePermission;
 use Discord\Repository\Guild\GuildCommandRepository;
 use Discord\Repository\Interaction\GlobalCommandRepository;
 use Monolog\Logger;
+
+use function React\Async\await;
 
 class Slash
 {
@@ -739,9 +742,12 @@ class Slash
             if (! isset($interaction->data->options['server']) || ! $server = $interaction->data->options['server']->value) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No server specified"), true);
             if (! $gameserver = $this->civ13->enabled_gameservers[$server]) return $interaction->respondWithMessage(MessageBuilder::new()->setContent("No enabled server found for `{$server}`"), true);
             return $interaction->acknowledge()->then(fn(): PromiseInterface => // wait until the bot says "Is thinking..."
-                ($ranking = $gameserver->getRanking())
-                    ? $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true)
-                    : $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("Ranking for the `{$gameserver->name}` server are not currently available."), true)
+                $gameserver->recalculateRanking()->then(
+                    fn() =>$gameserver->getRanking()->then(
+                        fn(string $ranking) => $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($ranking), true),
+                        fn(MissingSystemPermissionException $e) => $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent(/*"Ranking for the `{$gameserver->name}` server are not currently available." . */$e->getMessage()), true)
+                    ), fn(MissingSystemPermissionException $e) => $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent(/*"Ranking for the `{$gameserver->name}` server are not currently available." . */$e->getMessage()), true)
+                )
             );
         });
 

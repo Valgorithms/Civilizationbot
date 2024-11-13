@@ -9,6 +9,7 @@
 namespace Civ13;
 
 use Byond\Byond;
+use Civ13\Exceptions\VerifierException;
 use Discord\Discord;
 use Discord\Helpers\Collection;
 use Discord\Parts\User\Member;
@@ -585,7 +586,7 @@ class Verifier
         if (! $ckey || ! $discord_id) return reject(new \InvalidArgumentException('Invalid format! Please use the format `provision <byond username>; <discord id>`.'));
         if (! $ckey = Civ13::sanitizeInput($ckey)) return reject(new \InvalidArgumentException('Byond username was not passed. Please use the format `provision <byond username>; <discord id>`.'));
         if (! is_numeric($discord_id = Civ13::sanitizeInput($discord_id))) return reject(new \InvalidArgumentException("Discord id `$discord_id` must be numeric."));
-        if ($this->isVerified($ckey, $discord_id)) return reject(new \Exception("Either Byond account `$ckey` or <@$discord_id> has already been verified."));
+        if ($this->isVerified($ckey, $discord_id)) return reject(new VerifierException("Either Byond account `$ckey` or <@$discord_id> has already been verified."));
         if (! $this->provisional->get('ss13', $ckey)) {
             $this->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
             $this->civ13->VarSave('provisional.json', $this->provisional->toArray());

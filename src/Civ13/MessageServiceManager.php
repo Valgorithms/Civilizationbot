@@ -9,6 +9,7 @@ namespace Civ13;
 
 use Byond\Byond;
 use Civ13\Exceptions\FileNotFoundException;
+use Civ13\Exceptions\MissingSystemPermissionException;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
@@ -1034,12 +1035,20 @@ class MessageServiceManager
             }
             $this->messageHandler
                 ->offsetSet("{$gameserver->key}ranking",
-                    function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
-                    {
-                        if (! $gameserver->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                        if (! $msg = $gameserver->getRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking!');
-                        return $this->civ13->reply($message, $msg, 'ranking.txt');
-                    },
+                    fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $gameserver->recalculateRanking()->then(
+                            fn () => $gameserver->getRanking()->then(
+                                fn (string $ranking) => $this->civ13->reply($message, $ranking, 'ranking.txt'),
+                                function (MissingSystemPermissionException $error) use ($message) {
+                                    $this->logger->error($err = $error->getMessage());
+                                    $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
+                                }
+                            ),
+                            function (MissingSystemPermissionException $error) use ($message) {
+                                $this->logger->error($err = $error->getMessage());
+                                $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
+                            }
+                        ),
                     ['Verified'])
                 ->offsetSet("{$gameserver->key}rank",
                     function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface

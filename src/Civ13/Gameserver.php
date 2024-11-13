@@ -10,6 +10,7 @@
 namespace Civ13;
 
 use Civ13\Exceptions\FileNotFoundException;
+use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\Exceptions\UserInputException;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
@@ -1134,17 +1135,17 @@ class GameServer
     /**
      * Retrieves the ranking from a file and returns it as a formatted string.
      *
-     * @return false|string Returns the top 10 ranks as a string if found, or false if the file does not exist or cannot be opened.
-     */
-    
-     public function getRanking(): false|string
-     {
-        if (! @touch($path = $this->basedir . Civ13::ranking_path) || ! $search = @fopen($path, 'r')) return false;
+     * @return PromiseInterface<string> Returns the top 10 ranks as a string if found, or false if the file does not exist or cannot be opened.
+     * @throws MissingSystemPermissionException If the file cannot be accessed or read.
+     */    
+    public function getRanking(): PromiseInterface
+    {
+        if (! @touch($path = $this->basedir . Civ13::ranking_path) || ! $search = @fopen($path, 'r')) return reject(new MissingSystemPermissionException("Unable to open `$path`"));
         
         $line_array = array();
         while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
         fclose($search);
-    
+
         $topsum = 0;
         /*$msg = '';
         foreach ($line_array as $line) {
@@ -1152,20 +1153,31 @@ class GameServer
             $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
             if (($topsum += 1) > 10) break;
         }*/
-        return implode(PHP_EOL, array_map(function ($line) use (&$topsum) {
+        return resolve(implode(PHP_EOL, array_map(function ($line) use (&$topsum) {
             $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
             return '('.++$topsum."): **{$sline[1]}** with **{$sline[0]}** points.";
-        }, array_slice($line_array, 0, 10))); // Limit the array to only 10 values
-     }
-    /*
-     * This function calculates the player's ranking based on their medals
-     * Returns true if the required files are successfully read, false otherwise
+        }, array_slice($line_array, 0, 10)))); // Limit the array to only 10 values
+    }
+    /**
+     * Recalculates the ranking based on the awards data.
+     *
+     * @return PromiseInterface A promise that resolves when the ranking has been successfully recalculated, or rejects with a MissingSystemPermissionException if there is an error accessing or writing to the necessary files.
+     *
+     * @throws MissingSystemPermissionException If the awards or ranking files cannot be accessed or written to.
+     *
+     * The function performs the following steps:
+     * 1. Attempts to touch the awards and ranking files to ensure they are accessible.
+     * 2. Reads the awards file line by line, skipping empty lines.
+     * 3. Parses each line to extract user data and their corresponding medals.
+     * 4. Calculates the score for each user based on their medals using predefined medal scores.
+     * 5. Sorts the users by their scores in descending order.
+     * 6. Writes the sorted ranking to the ranking file.
      */
-    public function recalculateRanking(): bool
+    public function recalculateRanking(): PromiseInterface
     {
-        if ( ! @touch($awards = $this->basedir . Civ13::awards)) return false;
-        if ( ! @touch($ranking_path = $this->basedir . Civ13::ranking_path)) return false;
-        if (! $lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return false;
+        if ( ! @touch($awards = $this->basedir . Civ13::awards)) return reject(new MissingSystemPermissionException("Unable to access `{$awards}`"));
+        if ( ! @touch($ranking_path = $this->basedir . Civ13::ranking_path)) return reject(new MissingSystemPermissionException("Unable to access `{$ranking_path}`"));
+        if (! $lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return reject(new MissingSystemPermissionException("Unable to read `$awards`"));
         $result = array();
         foreach ($lines as $line) {
             $medal_s = 0;
@@ -1189,7 +1201,8 @@ class GameServer
         arsort($result);
         if (file_put_contents($ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
             return "$score;$ckey";
-        }, array_keys($result), $result))) === false) return false;
+        }, array_keys($result), $result))) === false) return reject(new MissingSystemPermissionException("Unable to write to `$ranking_path`"));
+        return resolve();
     }
     /**
      * Reads the content of the sports teams file and returns it as a promise.
@@ -1205,7 +1218,7 @@ class GameServer
         }
         if (! $content = file_get_contents($fp)) {
             $this->logger->warning($err = "Unable to read `$fp`");
-            return reject(new FileNotFoundException($err));
+            return reject(new MissingSystemPermissionException($err));
         }
         return resolve($content);
     }
