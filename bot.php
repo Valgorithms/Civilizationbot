@@ -385,11 +385,9 @@ $hidden_options = [
 ];
 $options = array_merge($options, $hidden_options);
 
-
-
-
 $civ13 = null;
 $global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use (&$civ13, &$logger, &$testing) {
+    /** @var ?Civ13 $civ13 */
     if (
         $civ13 && // If the bot is running
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
@@ -411,13 +409,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         //&& ! str_contains($errstr, 'Undefined array key')
     )
     {
-        $msg = "[$errno] Fatal error on `$errfile:$errline`: $errstr" . PHP_EOL;
-        $msg .= "Backtrace:" . PHP_EOL;
-        $msg .= "```" . PHP_EOL;
-        foreach (debug_backtrace() as $trace) {
-            $msg .= $trace['file'] . ':' . $trace['line'] . ' ' . $trace['function'] . PHP_EOL;
-        }
-        $msg .= "```";
+        $msg = sprintf("[%d] Fatal error on `%s:%d`: %s\nBacktrace:\n```\n%s\n```", $errno, $errfile, $errline, $errstr, implode("\n", array_map(fn($trace) => "{$trace['file']}:{$trace['line']} {$trace['function']}", debug_backtrace())));
         $logger->error($msg);
         if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
         if (! $testing) $civ13->sendMessage($channel, $msg);
@@ -438,6 +430,7 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?? 55
  */
 $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (&$civ13): Response
 {
+    /** @var ?Civ13 $civ13 */
     if (! $civ13 || ! $civ13 instanceof Civ13 || ! $civ13->httpServiceManager instanceof HttpServiceManager) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     if (! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Not Yet Ready');
     return $civ13->httpServiceManager->handle($request);
@@ -466,6 +459,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
     if ($request) $logger->error('[WEBAPI] Request: ' .  preg_replace('/(?<=key=)[^&]+/', '********', $request->getRequestTarget()));
     if (str_starts_with($e->getMessage(), 'The response callback')) {
         $logger->info('[WEBAPI] ERROR - RESTART');
+        /** @var ?Civ13 $civ13 */
         if (! $civ13) return;
         if (! getenv('testing') && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
             $builder = MessageBuilder::new()
