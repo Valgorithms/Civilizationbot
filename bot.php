@@ -132,7 +132,10 @@ $ic_badwords = $ooc_badwords = [
 
     ['word' => 'discord.gg',  'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
     ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
-    //['word' => 'RU', 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'cyrillic', 'warnings' => 2],
+    
+    ['word' => 'RU',          'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'russian',  'warnings' => 2],
+    ['word' => 'CN',          'duration' => '999 years', 'reason' => '仅英语.',             'category' => 'language', 'method' => 'chinese',  'warnings' => 2],
+    ['word' => 'KR',          'duration' => '999 years', 'reason' => '영어로만 제공.',       'category' => 'language', 'method' => 'korean',   'warnings' => 2],
 ];
 $options = array(
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
@@ -205,11 +208,13 @@ $options = array(
     ),
 );
 $options['welcome_message'] = "Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `{$options['command_symbol']} approveme` chat command or the `/approveme` slash command. Failure to verify in a timely manner will result in an automatic removal from the server.";
+/*
 foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я', 'і', 'ї', 'є'] as $char) { // // Ban use of Cyrillic characters
     $arr = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
     $options['ooc_badwords'][] = $arr;
     $options['ic_badwords'][] = $arr;
 }
+*/
 
 /*$exact_netspeak = [ // Words that are not necessarily bad, but are used in a way that is disruptive to the server
     'omg',

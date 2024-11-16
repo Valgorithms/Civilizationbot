@@ -15,21 +15,44 @@ use React\Promise\PromiseInterface;
 use function React\Promise\resolve;
 use function React\Promise\reject;
 
+/**
+ * This enum defines various methods for moderating text content.
+ * 
+ * @method static self EXACT() Matches the exact word.
+ * @method static self RUSSIAN() Matches any Russian Cyrillic characters.
+ * @method static self CHINESE() Matches any Chinese Han characters.
+ * @method static self KOREAN() Matches any Korean Hangul characters.
+ * @method static self STR_STARTS_WITH() Matches if the text starts with the specified word.
+ * @method static self STR_ENDS_WITH() Matches if the text ends with the specified word.
+ * @method static self STR_CONTAINS() Matches if the text contains the specified word.
+ * 
+ * @see https://www.regular-expressions.info/unicode.html for more information on Unicode regular expressions.
+ * 
+ * @method static bool matches(string $lower, array $badwords) Checks if the given text matches any of the bad words based on the specified moderation method.
+ */
 enum ModerationMethod: string {
     case EXACT = 'exact';
-    case CYRILLIC = 'cyrillic';
+    case RUSSIAN = 'russian';
+    case CHINESE = 'chinese';
+    case KOREAN = 'korean';
+    //case UNICODE = 'unicode';
     case STR_STARTS_WITH = 'str_starts_with';
     case STR_ENDS_WITH = 'str_ends_with';
     case STR_CONTAINS = 'str_contains';
 
     public static function matches(string $lower, array $badwords): bool {
-        return match (self::from($badwords['method'] ?? 'str_contains')) {
+        $method = $badwords['method'] ?? self::STR_CONTAINS;
+        try { $moderationMethod = self::from($method);
+        } catch (\UnhandledMatchError $e) { $moderationMethod = self::STR_CONTAINS; }
+        return match ($moderationMethod) {
             self::EXACT => preg_match('/\b' . preg_quote($badwords['word'], '/') . '\b/i', $lower),
-            self::CYRILLIC => preg_match('/[\p{Cyrillic}]/u', $lower),
+            self::RUSSIAN => preg_match('/\p{Cyrillic}/u', $lower),
+            self::CHINESE => preg_match('/\p{Han}/u', $lower),
+            self::KOREAN => preg_match('/\p{Hangul}/u', $lower),
             self::STR_STARTS_WITH => str_starts_with($lower, $badwords['word']),
             self::STR_ENDS_WITH => str_ends_with($lower, $badwords['word']),
             self::STR_CONTAINS => str_contains($lower, $badwords['word']),
-            default => str_contains($lower, $badwords['word']),
+            // default => str_contains($lower, $badwords['word']), // Redundant
         };
     }
 }
@@ -122,6 +145,7 @@ class Moderator
     public function moderate(Gameserver $gameserver, string $ckey, string $string, array $badwords_array, array &$badword_warnings): bool
     {
         $lower = strtolower($string);
+        //$this->logger->debug("[MODERATE] ckey = `$ckey`, string = `$string`, lower = `$lower`");
         $seenCategories = [];
         $infractions = array_filter($badwords_array, function($badwords) use ($lower, &$seenCategories) {
             if ($badwords['category'] && ! isset($seenCategories[$badwords['category']]) && ModerationMethod::matches($lower, $badwords)) {
@@ -130,8 +154,9 @@ class Moderator
             }
             return false;
         });
-        foreach ($infractions as $badwords_array) $this->__relayViolation($gameserver, $ckey, $badwords_array, $badword_warnings);
-        return ($seenCategories ? true : false);
+        //$this->logger->debug(empty($seenCategories) ? 'No infractions' : 'Infractions found');
+        foreach ($infractions as $badwords_arr) $this->__relayViolation($gameserver, $ckey, $badwords_arr, $badword_warnings);
+        return ! empty($seenCategories);
     }
     /**
      * This function is called from the game's chat hook if a player says something that contains a blacklisted word.
@@ -142,7 +167,6 @@ class Moderator
      * @param array &$badword_warnings A reference to an array that stores the number of warnings for each player.
      * @return string|false The warning message or false if the player should not be warned or banned.
      */
-    // This function is called from the game's chat hook if a player says something that contains a blacklisted word
     private function __relayViolation(Gameserver $gameserver, string $ckey, array $badwords_array, array &$badword_warnings): string|false
     {
         if (Civ13::sanitizeInput($ckey) === Civ13::sanitizeInput($this->discord->username)) return false; // Don't ban the bot

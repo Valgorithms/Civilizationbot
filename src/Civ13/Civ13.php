@@ -379,6 +379,8 @@ class Civ13
                         { $this->onFulfilledDefault = $options['onFulfilledDefault']; $onFulfilledDefaultValid = true; }
         }
         if (! $onFulfilledDefaultValid) $this->onFulfilledDefault = function ($result) {
+            return $result;
+            // This will be useful for debugging promises that are not resolving as expected.
             $output = 'Promise resolved with type of: `' . gettype($result) . '`';
             if (is_object($result)) {
                 $output .= ' and class of: `' . get_class($result) . '`';
