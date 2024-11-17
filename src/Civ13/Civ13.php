@@ -9,6 +9,7 @@
 namespace Civ13;
 
 use Byond\Byond;
+use Civ13\Exceptions\PartException;
 use Civ13\Slash;
 use Civ13\Moderator;
 use Discord\Discord;
@@ -723,12 +724,12 @@ class Civ13
      * @param bool $prevent_mentions Whether to prevent mentions in the message. Default is false.
      * @return PromiseInterface<Message>|null A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
      */
-    public function sendMessage(Channel|Thread|string $channel, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): ?PromiseInterface
+    public function sendMessage(Channel|Thread|string $channel, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
-            $this->logger->error("Channel not found for sendMessage");
-            return null;
+            $this->logger->error($err = "Channel not found for sendMessage");
+            return reject(new PartException($err));
         }
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
