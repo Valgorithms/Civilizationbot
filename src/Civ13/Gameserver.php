@@ -327,10 +327,10 @@ class GameServer
      * @param bool|null $ooc Whether the message is out-of-character or not. Defaults to true.
      * @return PromiseInterface
      */
-    public function gameChatWebhookRelay(string $ckey, string $message, string $channel_id, ?bool $ooc = true): PromiseInterface
+    public function gameChatWebhookRelay(string $message, string $channel_id, ?string $ckey = null, ?bool $ooc = true, ?bool $moderate = true): PromiseInterface
     {
         if ($this->legacy_relay) return reject(new \LogicException('gameChatWebhookRelay() is not available for legacy relays.'));
-        if (! $ckey || ! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
+        if (! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
             $this->logger->warning($err = 'gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
             return reject(new \InvalidArgumentException($err));
         }
@@ -338,9 +338,13 @@ class GameServer
             $this->logger->warning($err = "gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
             return reject(new PartException($err));
         }
-        $this->ready && $this->civ13->ready
-            ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc)
-            : $this->civ13->deferUntilReady(fn() => $this->gameChatWebhookRelay($ckey, $message, $channel_id, $ooc), 'gameChatWebhookRelay');
+        (! $ckey)
+            ? ($this->ready && $this->civ13->ready
+                ? $this->civ13->sendMessage($channel_id, $message) // Send the message as is if no ckey is provided
+                : $this->civ13->deferUntilReady(fn() => $this->civ13->sendMessage($channel_id, $message), 'gameChatWebhookRelay'))
+            : ($this->ready && $this->civ13->ready
+                ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc, $moderate)
+                : $this->civ13->deferUntilReady(fn() => $this->gameChatWebhookRelay($message, $channel_id, $ckey, $ooc, $moderate), 'gameChatWebhookRelay'));
         return resolve();
     }
     /**
