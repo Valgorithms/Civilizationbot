@@ -653,13 +653,13 @@ class GameServer
 
     public function Host(?Message $message = null): void
     {
-        \execInBackground("python3 {$this->basedir}" . Civ13::updateserverabspaths);
-        if (file_exists($this->basedir . Civ13::serverdata)) \execInBackground("rm -f {$this->basedir}" . Civ13::serverdata);
-        \execInBackground("python3 $this->basedir}" . Civ13::killsudos);
+        OSFunctions::execInBackground("python3 {$this->basedir}" . Civ13::updateserverabspaths);
+        if (file_exists($this->basedir . Civ13::serverdata)) OSFunctions::execInBackground("rm -f {$this->basedir}" . Civ13::serverdata);
+        OSFunctions::execInBackground("python3 $this->basedir}" . Civ13::killsudos);
 
         if (! isset($this->civ13->timers["{$this->key}host"])) {
             $this->civ13->timers["{$this->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($message) {
-                \execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself &");
+                OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself &");
                 unset($this->civ13->timers["{$this->key}host"]);
                 if ($message) $message->react('👍');
             });
@@ -673,7 +673,7 @@ class GameServer
         }
         $this->civ13->loop->addTimer(10, function () use ($message): void
         {
-            \execInBackground("python3 {$this->basedir}" . Civ13::killciv13);
+            OSFunctions::execInBackground("python3 {$this->basedir}" . Civ13::killciv13);
             if ($message) $message->react("👍");
         });
     }
@@ -714,7 +714,7 @@ class GameServer
             if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, {$this->name} $msg";
             $channel->sendMessage($msg);
         }
-        $this->loop->addTimer(10, fn() => \execInBackground("python3 {$this->basedir}" . Civ13::mapswap . " $mapto"));
+        $this->loop->addTimer(10, fn() => OSFunctions::execInBackground("python3 {$this->basedir}" . Civ13::mapswap . " $mapto"));
         return resolve($msg);
     }
 

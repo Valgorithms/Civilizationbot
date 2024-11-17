@@ -86,7 +86,6 @@ $discord = new Discord([
 $stats = Stats::new($discord);
 $browser = new Browser($loop);
 $filesystem = FilesystemFactory::create($loop);
-include 'functions.php'; // execInBackground(), portIsAvailable()
 include 'variable_functions.php';
 
 // TODO: Add a timer and a callable function to update these IP addresses every 12 hours

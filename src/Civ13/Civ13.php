@@ -621,7 +621,7 @@ class Civ13
     public function restart()
     {
         $this->stop();
-        \restart();
+        OSFunctions::restart();
     }
 
     public function CPU(): string

@@ -460,7 +460,7 @@ class Slash
         $this->discord->listenCommand('update', function (Interaction $interaction): PromiseInterface
         {
             $this->logger->info('[COMPOSER UPDATE]');
-            \execInBackground('composer update');
+            OSFunctions::execInBackground('composer update');
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating dependencies...'));
         });
         $this->discord->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface
