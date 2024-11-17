@@ -533,9 +533,10 @@ class Civ13
         };
         return $promise->then($onFulfilled ?? $this->onFulfilledDefault, $onRejected ?? $onRejectedDefault ?? $this->onRejectedDefault);
     }
-    public function deferUntilReady(callable $callback, string $event): void
+    public function deferUntilReady(callable $callback, ?string $function = null): void
     {
-        if ($event) $this->logger->info("Deferring callback until ready for event: $event");
+        if ($function) $this->logger->info("Deferring callback until ready for function: $function");
+        else $this->logger->info("Deferring callback until ready for function: " . debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2)[1]['function'] ?? 'unknown');
         $this->ready
             ? $callback()
             : $this->discord->once('init', $callback);
