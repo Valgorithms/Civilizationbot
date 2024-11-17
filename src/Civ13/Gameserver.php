@@ -338,13 +338,15 @@ class GameServer
             $this->logger->warning($err = "gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
             return reject(new PartException($err));
         }
-        (! $ckey)
-            ? ($this->ready && $this->civ13->ready
-                ? $this->civ13->sendMessage($channel_id, $message) // Send the message as is if no ckey is provided
-                : $this->civ13->deferUntilReady(fn() => $this->civ13->sendMessage($channel_id, $message), 'gameChatWebhookRelay'))
-            : ($this->ready && $this->civ13->ready
-                ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc, $moderate)
-                : $this->civ13->deferUntilReady(fn() => $this->gameChatWebhookRelay($message, $channel_id, $ckey, $ooc, $moderate), 'gameChatWebhookRelay'));
+        
+        if (! $this->ready || ! $this->civ13->ready) {
+            $this->civ13->deferUntilReady(fn() => $this->gameChatWebhookRelay($message, $channel_id, $ckey, $ooc, $moderate), 'gameChatWebhookRelay');
+            return resolve();
+        }
+        
+        ($ckey)
+            ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc, $moderate)    
+            : $this->civ13->sendMessage($channel_id, $message); // Send the message as is if no ckey is provided
         return resolve();
     }
     /**
