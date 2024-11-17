@@ -368,7 +368,7 @@ class GameServer
             $this->logger->warning($err = '__gameChatRelay() was called with an empty array or invalid content.');
             return reject(new \InvalidArgumentException($err));
         }
-        if (isset($this->civ13->moderator) && $this->moderate && $moderate)
+        if (isset($this->civ13->moderator) && $this->moderate && $moderate) {
             $badwords = $ooc ? $this->civ13->ooc_badwords : $this->civ13->ic_badwords;
             $badword_warnings = $ooc ? $this->civ13->ooc_badwords_warnings : $this->civ13->ic_badwords_warnings;
             $this->civ13->moderator->moderate(
@@ -378,6 +378,7 @@ class GameServer
                 $badwords,
                 $badword_warnings
             );
+        }
         if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) {
             return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
         }
