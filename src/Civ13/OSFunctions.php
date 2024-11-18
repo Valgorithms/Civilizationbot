@@ -30,7 +30,7 @@ class OSFunctions
      * to log the process's stdout data, end, error, and close events, as well as the exit event.
      *
      * @param string $cmd The command to be executed in the child process.
-     * @return PromiseInterface<?Process> The created Process object, or null if running on Windows.
+     * @return PromiseInterface<Process> The created Process object, or null if running on Windows.
      */
     public static function spawnChildProcess(string $cmd): PromiseInterface
     {
@@ -69,7 +69,7 @@ class OSFunctions
         if (! $proc = proc_open($output = "sudo nohup $cmd > /dev/null &", $descriptorspec, $pipes)) return reject(new MissingSystemPermissionException('proc_open() failed'));
         if (! $proc_details = proc_get_status($proc)) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
         if (! isset($proc_details['pid']) || ! $pid = $proc_details['pid']) return reject(new MissingSystemPermissionException('proc_get_status() did not return a PID'));
-        echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
+        error_log("Executing external shell command `$output` with PID $pid");
         return resolve($proc);
     }
 
@@ -96,7 +96,7 @@ class OSFunctions
         ];
         if (($proc = proc_open($output = 'sudo nohup php bot.php > botlog.txt &', $descriptorspec, $pipes)) === false) return reject(new MissingSystemPermissionException('proc_open() failed'));
         if (! $pid = proc_get_status($proc)['pid']) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
-        echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
+        error_log("Executing external shell command `$output` with PID $pid");
         return resolve($proc);
     }
 
