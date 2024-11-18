@@ -284,7 +284,7 @@ class HttpServiceManager
             ->offsetSet('/reset',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
                 {
-                    execInBackground('git reset --hard origin/main');
+                    OSFunctions::execInBackground('git reset --hard origin/main');
                     $message = 'Forcefully moving the HEAD back to origin/main...';
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
                     return HttpResponse::plaintext($message);
@@ -307,12 +307,12 @@ class HttpServiceManager
                         //if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'GitHub push event webhook received');
                     if (! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                     $promise = $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/3)');
-                    execInBackground('git pull');
+                    OSFunctions::execInBackground('git pull');
                     $this->civ13->loop->addTimer(5, function () use ($promise, $channel) {
                         $promise = $promise->then(function (Message $message) use ($channel) {
                             $promise = $message->edit(MessageBuilder::new()->setContent('Forcefully moving the HEAD back to origin/main... (2/3)'));
                             $promise->then(fn(Message $message) => $this->civ13->restart_message = $message);
-                            execInBackground('git reset --hard origin/main');
+                            OSFunctions::execInBackground('git reset --hard origin/main');
                             if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
                             $this->civ13->timers['restart_pending'] = $this->civ13->loop->addTimer(300, function () use ($channel) {
                                 if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Restarting... (3/3)'))->then(fn() => $this->civ13->restart());
@@ -335,7 +335,7 @@ class HttpServiceManager
             ->offsetSet('/pull',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
                 {
-                    execInBackground('git pull');
+                    OSFunctions::execInBackground('git pull');
                     $message = 'Updating code from GitHub...';
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
                     return HttpResponse::plaintext($message);
@@ -343,7 +343,7 @@ class HttpServiceManager
             ->offsetSet('/update',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
                 {
-                    execInBackground('composer update');
+                    OSFunctions::execInBackground('composer update');
                     $message = 'Updating dependencies...';
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message);
                     return HttpResponse::plaintext($message);

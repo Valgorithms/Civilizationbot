@@ -445,14 +445,14 @@ class Slash
         $this->discord->listenCommand('pull', function (Interaction $interaction): PromiseInterface
         {
             $this->logger->info('[GIT PULL]');
-            execInBackground('git pull');
+            OSFunctions::execInBackground('git pull');
             $this->civ13->loop->addTimer(5, function () {
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
-                execInBackground('git reset --hard origin/main');
+                OSFunctions::execInBackground('git reset --hard origin/main');
             });
             $this->civ13->loop->addTimer(10, function () {
                 if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
-                execInBackground('git pull');
+                OSFunctions::execInBackground('git pull');
             });
             return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Updating code from GitHub...'));
         });
