@@ -16,12 +16,8 @@ use function React\Promise\reject;
 use function React\Promise\resolve;
 
 /**
- * Class OSFunctions
- *
  * Provides various operating system related functions such as spawning child processes,
  * executing commands in the background, restarting the application, and checking port availability.
- *
- * @package Civ13
  */
 class OSFunctions
 {
@@ -34,21 +30,18 @@ class OSFunctions
      * to log the process's stdout data, end, error, and close events, as well as the exit event.
      *
      * @param string $cmd The command to be executed in the child process.
-     * @return ?Process The created Process object, or null if running on Windows.
+     * @return PromiseInterface<?Process> The created Process object, or null if running on Windows.
      */
-    public static function spawnChildProcess(string $cmd): ?Process
+    public static function spawnChildProcess(string $cmd): PromiseInterface
     {
-        if (PHP_OS_FAMILY == 'Windows') {
-            return null; // Windows's POSIX compatibility layer is not good enough to support this
-        } else {
-            $process = new Process("sudo nohup $cmd");
-            $process->stdout->on('data', fn($chunk) => error_log($chunk . PHP_EOL));
-            $process->stdout->on('end', fn() => error_log('ended' . PHP_EOL));
-            $process->stdout->on('error', fn(\Exception $e) => error_log('error: ' . $e->getMessage() . PHP_EOL));
-            $process->stdout->on('close', fn() => error_log('closed' . PHP_EOL));
-            $process->on('exit', fn($exitCode, $termSignal) => error_log(($termSignal === null) ? "Process exited with code $exitCode" . PHP_EOL : "Process terminated with signal $termSignal" . PHP_EOL));
-            return $process;
-        }
+        if (PHP_OS_FAMILY == 'Windows') return reject(new \Exception('Windows does not support POSIX compatibility layer'));
+        $process = new Process("sudo nohup $cmd");
+        $process->stdout->on('data', fn($chunk) => error_log($chunk . PHP_EOL));
+        $process->stdout->on('end', fn() => error_log('ended' . PHP_EOL));
+        $process->stdout->on('error', fn(\Exception $e) => error_log('error: ' . $e->getMessage() . PHP_EOL));
+        $process->stdout->on('close', fn() => error_log('closed' . PHP_EOL));
+        $process->on('exit', fn($exitCode, $termSignal) => error_log(($termSignal === null) ? "Process exited with code $exitCode" . PHP_EOL : "Process terminated with signal $termSignal" . PHP_EOL));
+        return resolve($process);
     }
 
     /**
@@ -67,18 +60,17 @@ class OSFunctions
         if (PHP_OS_FAMILY == 'Windows') {
             if (($p = popen("start {$cmd}", "r")) === false) return reject(new MissingSystemPermissionException('popen() failed'));
             return resolve($p);
-        } else {
-            $descriptorspec = [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w']
-            ];
-            if (! $proc = proc_open($output = "sudo nohup $cmd > /dev/null &", $descriptorspec, $pipes)) return reject(new MissingSystemPermissionException('proc_open() failed'));
-            if (! $proc_details = proc_get_status($proc)) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
-            if (! isset($proc_details['pid']) || ! $pid = $proc_details['pid']) return reject(new MissingSystemPermissionException('proc_get_status() did not return a PID'));
-            echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
-            return resolve($proc);
         }
+        $descriptorspec = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w']
+        ];
+        if (! $proc = proc_open($output = "sudo nohup $cmd > /dev/null &", $descriptorspec, $pipes)) return reject(new MissingSystemPermissionException('proc_open() failed'));
+        if (! $proc_details = proc_get_status($proc)) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
+        if (! isset($proc_details['pid']) || ! $pid = $proc_details['pid']) return reject(new MissingSystemPermissionException('proc_get_status() did not return a PID'));
+        echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
+        return resolve($proc);
     }
 
     /**
@@ -96,17 +88,16 @@ class OSFunctions
         if (PHP_OS_FAMILY == 'Windows') {
             if (($p = popen('cmd /c "' . getcwd() . '\run.bat"', "r")) === false) return reject(new MissingSystemPermissionException('popen() failed'));
             return resolve($p);
-        } else {
-            $descriptorspec = [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w']
-            ];
-            if (($proc = proc_open($output = 'sudo nohup php bot.php > botlog.txt &', $descriptorspec, $pipes)) === false) return reject(new MissingSystemPermissionException('proc_open() failed'));
-            if (! $pid = proc_get_status($proc)['pid']) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
-            echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
-            return resolve($proc);
         }
+        $descriptorspec = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w']
+        ];
+        if (($proc = proc_open($output = 'sudo nohup php bot.php > botlog.txt &', $descriptorspec, $pipes)) === false) return reject(new MissingSystemPermissionException('proc_open() failed'));
+        if (! $pid = proc_get_status($proc)['pid']) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
+        echo "Executing external shell command `$output` with PID $pid" . PHP_EOL;
+        return resolve($proc);
     }
 
     /**
