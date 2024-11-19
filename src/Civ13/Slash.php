@@ -488,16 +488,9 @@ class Slash
             $interaction->respondWithMessage(MessageBuilder::new()->setContent($this->discord->application->getInviteURLAttribute('8')), true)
         );
 
-        $this->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
-        {
-            $builder = MessageBuilder::new();
-            $content = '';
-            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                $content .= "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}" . PHP_EOL;
-                if ($embed = $gameserver->generateServerstatusEmbed()) $builder->addEmbed($embed);
-            }
-            return $interaction->respondWithMessage($builder->setContent($content));
-        });
+        $this->discord->listenCommand('players', fn (Interaction $interaction): PromiseInterface =>
+            $interaction->respondWithMessage(array_reduce($this->civ13->enabled_gameservers, fn($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()), MessageBuilder::new())->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers))))
+        );
 
         $this->discord->listenCommand('ckey', fn(Interaction $interaction): PromiseInterface =>
             ($item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) 
