@@ -165,8 +165,8 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     /**
      * Executes the HTTP handler.
      *
-     * @param ServerRequestInterface $request The HTTP request object.
      * @param callable $callback The callback function to be executed.
+     * @param ServerRequestInterface $request The HTTP request object.
      * @param string $endpoint The endpoint being accessed.
      * @return HttpResponse The HTTP response object.
      */
@@ -406,7 +406,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
      * @param string|null $description (optional) The description for the offset. Default is an empty string.
      * @return HttpHandler Returns the updated HttpHandler instance.
      */
-    public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
+    public function offsetSet(int|string $offset, callable $callback, ?bool $whitelisted = false, ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
         $this->attributes['handlers'][$offset] = $this->validate($callback);
         $this->attributes['whitelisted'][$offset] = $whitelisted;
@@ -416,7 +416,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         return $this;
     }
 
-    public function offsetSets(array $offsets, callable $callback, ?bool $whitelisted = false,  ?string $method = 'exact', ?string $description = ''): HttpHandler
+    public function offsetSets(array $offsets, callable $callback, ?bool $whitelisted = false, ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
         foreach ($offsets as $offset) {
             $this->attributes['handlers'][$offset] = $this->validate($callback); // @throws InvalidArgumentException
