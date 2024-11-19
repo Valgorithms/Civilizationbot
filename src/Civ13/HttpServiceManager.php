@@ -836,7 +836,7 @@ class HttpServiceManager
                         //if ($params['method']) $this->logger->info("[METHOD] `{$params['method']}`");
                         if ($method = $this->httpHandler->offsetGet($endpoint.'/'.($params['method'] ?? ''), 'handlers')) return $method($request, $endpoint, $whitelisted);
                         if ($params['method'] ?? '') $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
-                        return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
+                        return HttpResponse::plaintext("Method not found for `{$endpoint}/{$params['method']}`")->withStatus(HttpResponse::STATUS_NOT_FOUND);
                     }, true)
                 ->offsetSet($server_endpoint.'/ahelpmessage',
                     function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
