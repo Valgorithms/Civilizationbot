@@ -834,12 +834,8 @@ class HttpServiceManager
                     {
                         $params = $request->getQueryParams();
                         //if ($params['method']) $this->logger->info("[METHOD] `{$params['method']}`");
-                        if ($method = $this->httpHandler->offsetGet($endpoint.'/'.($params['method'] ?? ''), 'handlers') ?? []) return $method($request, $endpoint, $whitelisted);
-                        else {
-                            if ($params['method'] ?? '') $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
-                            return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
-                        }
-                        $this->logger->warning("[UNROUTED ENDPOINT] `$endpoint`");
+                        if ($method = $this->httpHandler->offsetGet($endpoint.'/'.($params['method'] ?? ''), 'handlers')) return $method($request, $endpoint, $whitelisted);
+                        if ($params['method'] ?? '') $this->logger->warning("[NO FUNCTION FOUND FOR METHOD] `{$params['method']}`");
                         return HttpResponse::plaintext('Method not found')->withStatus(HttpResponse::STATUS_NOT_FOUND);
                     }, true)
                 ->offsetSet($server_endpoint.'/ahelpmessage',
@@ -1173,7 +1169,7 @@ class HttpServiceManager
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->adminlog)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        if (! $$this->discord->getChannel($channel_id = $gameserver->adminlog)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                        if (! $this->discord->getChannel($channel_id = $gameserver->adminlog)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = [];
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
@@ -1192,7 +1188,7 @@ class HttpServiceManager
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! $gameserver->log_attacks) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); // Disabled on TDM, use manual checking of log files instead
                         if (! isset($gameserver->attack)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        if (! $$this->discord->getChannel($channel_id = $gameserver->attack)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                        if (! $this->discord->getChannel($channel_id = $gameserver->attack)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = [];
                         if ($params = $request->getQueryParams()) if (isset($params['data'])) $data = @json_decode(urldecode($params['data']), true);
