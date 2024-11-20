@@ -9,9 +9,8 @@
     ],
     "require": {
         "php": "^8.0.0",
-        "team-reflex/discord-php": "dev-master",
+        "team-reflex/discord-php": "dev-promise-v3",
         "clue/redis-react": "^2.6",
-        "wyrihaximus/react-cache-redis": "^4.2.0",
         "react/filesystem": "^0.2@dev",
         "react/async": "4.x-dev",
         "react/child-process": "0.6.5",

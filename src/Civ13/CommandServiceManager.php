@@ -89,7 +89,7 @@ class CommandServiceManager
         $this->setup = true;
         $this->logger->info('CommandServiceManager setup complete');
         $this->logger->info($this->httpServiceManager->httpHandler->generateHelp());
-        return resolve();
+        return resolve(null);
     }
 
     /**

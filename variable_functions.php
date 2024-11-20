@@ -33,7 +33,7 @@ $status_changer_random = function (Civ13 $civ13): PromiseInterface
         'type' => (int) $type, // 0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
     ]);
     $civ13->statusChanger($activity, $state);
-    return resolve();
+    return resolve(null);
 };
 $status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
 { // on ready

@@ -83,7 +83,7 @@ class Moderator
         $this->civ13->moderator =& $this;
         $this->logger->info("Added Moderator");
         $this->ready = true;
-        return resolve();
+        return resolve(null);
     }
 
     /**

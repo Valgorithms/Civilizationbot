@@ -65,7 +65,7 @@ class Slash
         $this->__updateCommands();
         $this->__updateGuildCommands();
         $this->setup = true;
-        return resolve();
+        return resolve(null);
     }
     /**
      * Saves a command to the specified repository.

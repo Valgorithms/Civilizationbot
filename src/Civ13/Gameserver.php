@@ -341,13 +341,13 @@ class GameServer
         
         if (! $this->ready || ! $this->civ13->ready) {
             $this->civ13->deferUntilReady(fn() => $this->gameChatWebhookRelay($message, $channel_id, $ckey, $ooc, $moderate), 'gameChatWebhookRelay');
-            return resolve();
+            return resolve(null);
         }
         
         ($ckey)
             ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc, $moderate)    
             : $this->civ13->sendMessage($channel_id, $message); // Send the message as is if no ckey is provided
-        return resolve();
+        return resolve(null);
     }
     /**
      * Relays game chat messages to a Discord channel.
@@ -549,7 +549,7 @@ class GameServer
             $channel->name = "{$channelPrefix}-{$count}";
             return $channel->guild->channels->save($channel);
         }
-        return resolve();
+        return resolve(null);
     }
 
     /**
@@ -994,7 +994,7 @@ class GameServer
         }
         fwrite($file, $admin . ":::$ckey");
         fclose($file);
-        return resolve();
+        return resolve(null);
     }
     private function sqlUnban($array, ?string $admin = null): string
     {
@@ -1070,7 +1070,7 @@ class GameServer
                 return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, null, true) . " ($banReason)");
             }
         }
-        return resolve();
+        return resolve(null);
     }
     /**
      * Logs the logout of a player.
@@ -1219,7 +1219,7 @@ class GameServer
         if (file_put_contents($ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
             return "$score;$ckey";
         }, array_keys($result), $result))) === false) return reject(new MissingSystemPermissionException("Unable to write to `$ranking_path`"));
-        return resolve();
+        return resolve(null);
     }
     /**
      * Reads the content of the sports teams file and returns it as a promise.
@@ -1262,7 +1262,7 @@ class GameServer
         if ($file_contents) foreach ($file_paths as $fp) if (@touch($fp))
             if (file_put_contents($fp, $file_contents) === false) // Attempt to write to the file
                 $this->logger->error("Failed to write to file `$fp`"); // Log an error if the write failed
-        return resolve();
+        return resolve(null);
     }
     /**
      * Updates the whitelist based on the member roles.
@@ -1334,7 +1334,7 @@ class GameServer
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! @touch($this->admins)) {
             $this->logger->warning($err = "Unable to open `{$this->admins}`");
-            return reject();
+            return reject($err);
         }
         $file_paths[] = $this->admins;
 
@@ -1349,7 +1349,7 @@ class GameServer
             return $string;
         };
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
-        return resolve();
+        return resolve(null);
     }
 
     public function parseRoundTime(string $time)
