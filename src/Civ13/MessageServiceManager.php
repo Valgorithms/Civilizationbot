@@ -630,13 +630,16 @@ class MessageServiceManager
                             usort($members, function ($a, $b) {
                                 return $b->joined_at->getTimestamp() - $a->joined_at->getTimestamp();
                             });
-                            return \React\Promise\map($members, function (Member $member) {
-                                return [
-                                    'username' => $member->user->username,
-                                    'id' => $member->id,
-                                    'join_date' => $member->joined_at->format('Y-m-d H:i:s')
-                                ];
-                            });
+                            $promises = array_map(function (Member $member) {
+                                return new \React\Promise\Promise(function ($resolve) use ($member) {
+                                    $resolve([
+                                        'username' => $member->user->username,
+                                        'id' => $member->id,
+                                        'join_date' => $member->joined_at->format('Y-m-d H:i:s')
+                                    ]);
+                                });
+                            }, $members);
+                            return \React\Promise\all($promises);
                         })
                         ->then(function ($sortedMembers) use ($message) {
                             $memberCount = 10; // Number of members to display
