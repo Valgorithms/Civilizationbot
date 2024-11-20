@@ -447,9 +447,18 @@ class GameServer
      */
     private function updateCurrentRoundEmbedMessageBuilder(?MessageBuilder $builder = null): PromiseInterface
     {
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $this->logger->error("Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
-        if (! $channel = $guild->channels->get('id', $this->playercount)) return $this->logger->error("Could not find Channel with ID `{$this->playercount}`");
-        if (! $builder = $this->createCurrentRoundEmbedMessageBuilder()) return $this->logger->error("Could not create a MessageBuilder for {$this->key}");
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            $this->logger->error($err = "Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
+            return reject(new PartException($err));
+        }
+        if (! $channel = $guild->channels->get('id', $this->playercount)) {
+            $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
+            return reject(new PartException($err));
+        }
+        if (! $builder = $this->createCurrentRoundEmbedMessageBuilder()) {
+            $this->logger->error($err = "Could not create a MessageBuilder for {$this->key}");
+            return reject(new PartException($err));
+        }
 
         $fulfilledEdit   = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
         $fulfilledSend   = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
@@ -1044,7 +1053,7 @@ class GameServer
     public function logPlayerLogin(string $ckey, string $time, string $ip = '', string $cid = ''): PromiseInterface
     {
         if (! $this->enabled) return reject(new \LogicException("Game server is not enabled."));
-        if ($ckey === '(NULL)') return reject (new \InvalidArgumentException("Invalid ckey provided."));
+        if ($ckey === '(NULL)') return reject(new \InvalidArgumentException("Invalid ckey provided."));
         if (! in_array($ckey, $this->players)) $this->players[] = $ckey;
         if (! $this->current_round) {
             $this->logger->warning($err = "No current round found for {$this->key} logPlayerLogin.");
@@ -1334,7 +1343,7 @@ class GameServer
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
         if (! @touch($this->admins)) {
             $this->logger->warning($err = "Unable to open `{$this->admins}`");
-            return reject($err);
+            return reject(new MissingSystemPermissionException($err));
         }
         $file_paths[] = $this->admins;
 
