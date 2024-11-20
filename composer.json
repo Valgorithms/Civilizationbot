@@ -16,7 +16,8 @@
         "react/child-process": "0.6.5",
         "vzgcoders/twitchphp": "dev-main",
         "valzargaming/byond": "dev-main",
-        "valzargaming/handler": "dev-main"
+        "valzargaming/handler": "dev-main",
+        "wyrihaximus/react-cache-redis": "^4.5"
     },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",

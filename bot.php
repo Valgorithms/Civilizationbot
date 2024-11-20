@@ -10,20 +10,20 @@ namespace Civ13;
 
 use \Exception;
 use Civ13\Civ13;
+use Clue\React\Redis\Factory as Redis;
 use Discord\Discord;
 use Discord\Stats;
 use Discord\Builders\MessageBuilder;
+use Discord\Helpers\CacheConfig;
 use Discord\WebSockets\Intents;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
-//use \Discord\Helpers\CacheConfig;
 use React\EventLoop\Loop;
-//use \WyriHaximus\React\Cache\Redis as RedisCache;
-//use \Clue\React\Redis\Factory as Redis;
 use React\Filesystem\Factory as FilesystemFactory;
 use React\Http\Browser;
+use WyriHaximus\React\Cache\Redis as RedisCache;
 
 define('CIVILIZATIONBOT_START', microtime(true));
 ini_set('display_errors', 1);
@@ -54,17 +54,16 @@ function loadEnv(string $filePath = __DIR__ . '/.env'): void
 }
 loadEnv(getcwd() . '/.env');
 
-$streamHandler = new StreamHandler('php://stdout', Level::Info);
+$streamHandler = new StreamHandler('php://stdout', Level::Debug);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$streamHandler]);
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
-$logger->pushHandler(new StreamHandler('output.log', Level::Info));
+$logger->pushHandler(new StreamHandler('output.log', Level::Debug));
 $logger->info('Loading configurations for the bot...');
 
 $discord = new Discord([
     'loop' => $loop = Loop::get(),
     'logger' => $logger,
-    /* // Disabled for debugging
     'cache' => new CacheConfig(
         $interface = new RedisCache(
             (new Redis($loop))->createLazyClient('127.0.0.1:6379'),
@@ -72,8 +71,7 @@ $discord = new Discord([
         '),
         $compress = true, // Enable compression if desired
         $sweep = false // Disable automatic cache sweeping if desired
-    ), 
-    */
+    ),
     'socket_options' => [
         'dns' => '8.8.8.8', // can change dns
     ],

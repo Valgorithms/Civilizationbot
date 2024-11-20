@@ -1110,6 +1110,14 @@ class Civ13
                 unset($this->timers['bancheck_timer']);
                 return;
             }
+            $cache_type = $this->discord->getCacheConfig()->interface;
+            $this->logger->info('Cache type: ' . get_class($cache_type));
+            if ($cache_type instanceof \React\Cache\CacheInterface) { // It's too expensive to check bans
+                $this->logger->info('Redis cache is being used, cancelling periodic banchecks.');
+                $this->loop->cancelTimer($this->timers['bancheck_timer']);
+                unset($this->timers['bancheck_timer']);
+                return;
+            }
             $this->logger->debug('Running periodic bancheck...');
             foreach ($this->enabled_gameservers as &$gameserver) $gameserver->cleanupLogs();
             if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
