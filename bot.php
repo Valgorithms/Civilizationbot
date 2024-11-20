@@ -64,6 +64,7 @@ $logger->info('Loading configurations for the bot...');
 $discord = new Discord([
     'loop' => $loop = Loop::get(),
     'logger' => $logger,
+    /*
     'cache' => new CacheConfig(
         $interface = new RedisCache(
             (new Redis($loop))->createLazyClient('127.0.0.1:6379'),
@@ -72,6 +73,7 @@ $discord = new Discord([
         $compress = true, // Enable compression if desired
         $sweep = false // Disable automatic cache sweeping if desired
     ),
+    */
     'socket_options' => [
         'dns' => '8.8.8.8', // can change dns
     ],
