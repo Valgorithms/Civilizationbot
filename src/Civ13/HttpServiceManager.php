@@ -825,6 +825,13 @@ class HttpServiceManager
                         if (! $return = @file_get_contents($playerlogs)) return HttpResponse::plaintext("Unable to read `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         return HttpResponse::plaintext($return);
                     }, true)
+                ->offsetSet($server_endpoint.'/ooclog',
+                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
+                    {
+                        if (! file_exists($ooclogs = $gameserver->basedir . Civ13::ooc_path)) return HttpResponse::plaintext("Unable to access `$ooclogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                        if (! $return = @file_get_contents($ooclogs)) return HttpResponse::plaintext("Unable to read `$ooclogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                        return HttpResponse::plaintext($return);
+                    }, true)
             ;
             // Webhooks received from the game server
             $server_endpoint = '/webhook/' . $gameserver->key; // If no parameters are passed to a server_endpoint, try to find it using the query parameters
