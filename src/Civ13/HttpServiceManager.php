@@ -763,7 +763,7 @@ class HttpServiceManager
                 ->offsetSet($server_endpoint.'/bans',
                     function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
-                        if (! file_exists($bans = $gameserver->basedir . Civ13::bans)) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                        if (! file_exists($bans = $gameserver->basedir . Civ13::bans)) return HttpResponse::plaintext("Unable to access `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         if (! $content = @file_get_contents($bans)) return HttpResponse::plaintext("Unable to read `$bans`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         // Current format: type;job;uid;reason;admin;date;timestamp;expires;ckey;cid;ip|||
                         $rows = explode('|||', trim($content));
@@ -821,7 +821,7 @@ class HttpServiceManager
                 ->offsetSet($server_endpoint.'/playerlogs',
                     function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
-                        if (! file_exists($playerlogs = $gameserver->basedir . Civ13::playerlogs)) return HttpResponse::plaintext("Unable to access `$playerlogs`")->withStatus(HttpResponse::STATUS_BAD_REQUEST);
+                        if (! file_exists($playerlogs = $gameserver->basedir . Civ13::playerlogs)) return HttpResponse::plaintext("Unable to access `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         if (! $return = @file_get_contents($playerlogs)) return HttpResponse::plaintext("Unable to read `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         return HttpResponse::plaintext($return);
                     }, true)
