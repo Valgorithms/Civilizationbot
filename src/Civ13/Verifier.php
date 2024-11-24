@@ -162,23 +162,14 @@ class Verifier
     {
         if (! $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['verifier-status'])) return null;
         [$verifier_name, $reported_status] = explode('-', $channel->name);
-        $status = $this->civ13->verifier_online
-            ? 'online'
-            : 'offline';
-        if ($reported_status != $status) {
-            //if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been not
-            if ($channel->name === "{$verifier_name}-{$status}") return null;
-            $channel->name = "{$verifier_name}-{$status}";
-            $success = function ($result) use ($channel, $status) {
-                //$this->civ13->loop->addTimer(2, function () use ($channel, $status): void
-                //{
-                    $channel_new = $this->civ13->discord->getChannel($channel->id);
-                    $this->civ13->sendMessage($channel_new, "Verifier is now **{$status}**.");
-                //});
-            };
-            return $this->civ13->then($channel->guild->channels->save($channel), $success);
-        }
-        return null;
+        if ($reported_status === ($status = $this->civ13->verifier_online ? 'online' : 'offline')) return null;
+        if ($channel->name === "{$verifier_name}-{$status}") return null;
+        //if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified";
+        $channel->name = "{$verifier_name}-{$status}";
+        return $this->civ13->then(
+            $channel->guild->channels->save($channel),
+            fn() => $this->civ13->sendMessage($this->civ13->discord->getChannel($channel->id), "Verifier is now **{$status}**.")
+        );
     }
 
     /**
