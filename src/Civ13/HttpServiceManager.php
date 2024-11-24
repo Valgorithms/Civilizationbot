@@ -825,7 +825,7 @@ class HttpServiceManager
                         if (! $return = @file_get_contents($playerlogs)) return HttpResponse::plaintext("Unable to read `$playerlogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         return HttpResponse::plaintext($return);
                     }, true)
-                ->offsetSet($server_endpoint.'/ooclog',
+                ->offsetSet($server_endpoint.'/ooclogs',
                     function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
                         if (! file_exists($ooclogs = $gameserver->basedir . Civ13::ooc_path)) return HttpResponse::plaintext("Unable to access `$ooclogs`")->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -873,10 +873,7 @@ class HttpServiceManager
                             if (! $admin) {
                                 if ($playerlist = $gameserver->players)
                                     if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
-                                        foreach ($admins as $member)
-                                            if ($item = $this->civ13->verifier->get('discord', $member->id))
-                                                if (in_array($item['ss13'], $playerlist))
-                                                    { $urgent = false; break; }
+                                        $urgent = empty($admins->filter(fn($member) => $item = $this->civ13->verifier->get('discord', $member->id) && in_array($item['ss13'], $playerlist)));
                             }
                             $member = null;
                             if ($item = $this->civ13->verifier->get('ss13', $ckey)) $member = $guild->members->get('id', $item['discord']);
