@@ -875,11 +875,14 @@ class HttpServiceManager
                                     if ($admins = $guild->members->filter(function (Member $member) { return $member->roles->has($this->civ13->role_ids['Admin']); }))
                                         $urgent = empty($admins->filter(fn($member) => $item = $this->civ13->verifier->get('discord', $member->id) && in_array($item['ss13'], $playerlist)));
                             }
-                            $member = null;
-                            if ($item = $this->civ13->verifier->get('ss13', $ckey)) $member = $guild->members->get('id', $item['discord']);
-                            if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, a request for help " . ($ckey ? "from `$ckey` " : '') . ($member ? "(<@{$member->id}>) " : '') . "has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: $message");
+                            if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot']))
+                                $this->civ13->sendMessage($channel,
+                                    "<@&{$this->civ13->role_ids['Admin']}>, a request for help "
+                                    . ($ckey ? "from `$ckey` " : '')
+                                    . (($member = ($item = $this->civ13->verifier->get('ss13', $ckey)) ? $guild->members->get('id', $item['discord']) : null) ? "$member " : '')
+                                    . " has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: $message"
+                                );
                         }
-
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/asaymessage',
