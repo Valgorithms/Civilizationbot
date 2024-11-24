@@ -307,7 +307,7 @@ class HttpServiceManager
                         return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
                     }
                     // Secret isn't working right now, so we're not using it
-                    //$hash = "sha1=".hash_hmac('sha1', file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
+                    //$hash = "sha1=".hash_hmac('sha1', @file_get_contents("php://input"), getenv('github_secret')); // GitHub Webhook Secret is the same as the 'Secret' field on the Webhooks / Manage webhook page of the respostory
                     //if (strcmp($signature, $hash) == 0) {
                         //if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, 'GitHub push event webhook received');
                     if (! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -1216,7 +1216,7 @@ class HttpServiceManager
         }
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . /*<?xml-stylesheet type="text/xsl" href="sitemap.xsl"?> .*/ '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         foreach ($files as &$file) {
-            if (! $fileContent = file_get_contents(substr(self::HTMLDIR, 1) . $file)) {
+            if (! $fileContent = @file_get_contents(substr(self::HTMLDIR, 1) . $file)) {
                 $this->logger->error("Failed to read file: `$file`");
                 unset($file);
                 continue;

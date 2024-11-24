@@ -739,7 +739,7 @@ class GameServer
             $this->logger->warning("Unable to open `$path`");
             return false;
         }
-        if (($original_file_contents = file_get_contents($path)) === false) {
+        if (($original_file_contents = @file_get_contents($path)) === false) {
             $this->logger->warning("Unable to read `$path`");
             return false;
         }
@@ -824,7 +824,7 @@ class GameServer
                 $this->logger->debug("Unable to open `$path`");
                 return false;
             }
-            if (($file_contents = file_get_contents($path)) === false) {
+            if (($file_contents = @file_get_contents($path)) === false) {
                 $this->logger->debug("Unable to read `$path`");
                 return false;
             }
@@ -863,10 +863,15 @@ class GameServer
             $this->logger->warning($err = "Unable to open `$fp`");
             return reject(new FileNotFoundException($err));
         }
+        if (! $playerlog && ! $playerlog = @file_get_contents($fp = $this->basedir . Civ13::playerlogs)) {
+            $this->logger->warning("Unable to read `$fp`");
+            return reject(new FileNotFoundException("Unable to read `$fp`"));
+        }
+        if (! $banlog = @file_get_contents($fp = $this->basedir . Civ13::bans)) {
+            $this->logger->warning("Unable to read `$fp`");
+            return reject(new FileNotFoundException("Unable to read `$fp`"));
+        }
         $this->logger->debug("Updating ban log for {$this->name}. " . ($ckey ? "ckey: $ckey" : "All bans") . '.');
-
-        if (! $playerlog) $playerlog = file_get_contents($this->basedir . Civ13::playerlogs);
-        $banlog = file_get_contents($fp = $this->basedir . Civ13::bans);
         $temp = [];
         $oldlist = [];
         foreach (explode('|||', $banlog) as $bsplit) {
@@ -895,20 +900,15 @@ class GameServer
                 }
             });
         }, $logs);
-
-        $updated = [];
-        foreach ($temp as $ban) {
-            if (is_array($ban)) $updated = array_merge($updated, $ban);
-            else $updated[] = $ban;
-        }
         
         /**
          * This function updates the bans list by merging the old list with the updated list.
          * If the updated list is empty, it returns the old list with line breaks replaced by '|||' and appended with a line break.
          * If the updated list is not empty, it merges the old list with the updated list, replaces line breaks with '|||', trims the result, and appends a line break.
          */
-        if (empty($updated)) $final = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, trim(implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
-        else $final = trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL;
+        $final = ($updated = array_merge([], ...array_map(fn($ban) => is_array($ban) ? $ban : [$ban], $temp)))
+            ? trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL
+            : trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
         $ckey ? file_put_contents($fp, $final, FILE_APPEND) : file_put_contents($fp, $final);
         return resolve($final);
     }
@@ -918,7 +918,7 @@ class GameServer
             $this->logger->warning("Unable to open `$fp`");
             return false;
         }
-        if (! $banlog = file_get_contents($fp)) {
+        if (! $banlog = @file_get_contents($fp)) {
             $this->logger->warning("Unable to read `$fp`");
             return false;
         }
@@ -1242,7 +1242,7 @@ class GameServer
             $this->logger->warning($err = "Unable to find `$fp`");
             return reject(new FileNotFoundException($err));
         }
-        if (! $content = file_get_contents($fp)) {
+        if (! $content = @file_get_contents($fp)) {
             $this->logger->warning($err = "Unable to read `$fp`");
             return reject(new MissingSystemPermissionException($err));
         }
