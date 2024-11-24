@@ -897,7 +897,6 @@ class HttpServiceManager
                         if (! $channel = $this->discord->getChannel($channel_id = $gameserver->asay)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         
                         $data = self::decodeParamData($request);
-
                         $time = '['.date('H:i:s', time()).']';
                         isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
@@ -939,7 +938,6 @@ class HttpServiceManager
                         if (! $this->discord->getChannel($channel_id = $gameserver->asay)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
-                        
                         $time = '['.date('H:i:s', time()).']';
                         isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         $message = "<@{$this->civ13->role_ids['Admin']}>, ";
@@ -960,7 +958,6 @@ class HttpServiceManager
                         if (! $this->discord->getChannel($channel_id = $gameserver->lobby)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
-                        
                         $time = '['.date('H:i:s', time()).']';
                         isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
@@ -978,7 +975,6 @@ class HttpServiceManager
                         if (! $this->discord->getChannel($channel_id = $gameserver->ooc)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
-                        
                         //$time = '['.date('H:i:s', time()).']';
                         isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
@@ -996,7 +992,6 @@ class HttpServiceManager
                         if (! $this->discord->getChannel($channel_id = $gameserver->ic)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
-                        
                         //$time = '['.date('H:i:s', time()).']';
                         isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
@@ -1014,7 +1009,6 @@ class HttpServiceManager
                         if (! $this->discord->getChannel($channel_id = $gameserver->ic)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
-                        
                         $time = '['.date('H:i:s', time()).']';
                         isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
@@ -1032,7 +1026,6 @@ class HttpServiceManager
                         if (! $this->discord->getChannel($channel_id = $gameserver->adminlog)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
-                        
                         $time = '['.date('H:i:s', time()).']';
                         isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
@@ -1050,7 +1043,6 @@ class HttpServiceManager
                         if (! $channel = $this->discord->getChannel($gameserver->discussion)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
-                        
                         $time = '['.date('H:i:s', time()).']';
                         $message = '';
                         if (isset($this->civ13->role_ids['round_start'])) $message .= "<@&{$this->civ13->role_ids['round_start']}>, ";
@@ -1125,13 +1117,12 @@ class HttpServiceManager
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->transit)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        if (! $channel = $this->discord->getChannel($gameserver->transit)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                        if (! $this->discord->getChannel($gameserver->transit)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         if (! isset($this->civ13->channel_ids['parole_notif'])) return HttpResponse::plaintext('Parole Notification Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         if (! $parole_notif_channel = $this->discord->getChannel($this->civ13->channel_ids['parole_notif'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
                         isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        
                         $time = '['.date('H:i:s', time()).']';
                         $message = "$ckey disconnected from the server.";
                         $gameserver->logPlayerLogout($ckey, $time);
@@ -1151,7 +1142,7 @@ class HttpServiceManager
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->runtime)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        if (! $channel = $this->discord->getChannel($gameserver->runtime)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                        if (! $this->discord->getChannel($gameserver->runtime)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
                         $data = self::decodeParamData($request);
                         
