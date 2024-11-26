@@ -542,11 +542,9 @@ class Civ13
             : $this->discord->once('init', $callback);
     }
 
-    private function startsWithCommandPrefix(string $content): ?string {
-        foreach (CommandPrefix::cases() as $prefix)
-            if (str_starts_with($content, $call = CommandPrefix::getPrefix($prefix, $this->discord->id, $this->command_symbol)))
-                return $call;
-        return null;
+    private function startsWithCommandPrefix(string $content): ?string
+    {
+        return array_reduce(CommandPrefix::cases(), fn($carry, $prefix) => $carry ?? (str_starts_with($content, $call = CommandPrefix::getPrefix($prefix, $this->discord->id, $this->command_symbol)) ? $call : null), null);
     }
 
     /**
