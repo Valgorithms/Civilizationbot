@@ -900,13 +900,19 @@ class GameServer
                 }
             });
         }, $logs);
+
+        $updated = [];
+        foreach ($temp as $ban) {
+            if (is_array($ban)) $updated = array_merge($updated, $ban);
+            else $updated[] = $ban;
+        }
         
         /**
          * This function updates the bans list by merging the old list with the updated list.
          * If the updated list is empty, it returns the old list with line breaks replaced by '|||' and appended with a line break.
          * If the updated list is not empty, it merges the old list with the updated list, replaces line breaks with '|||', trims the result, and appends a line break.
          */
-        $final = ($updated = array_merge([], ...array_map(fn($ban) => is_array($ban) ? $ban : [$ban], $temp)))
+        $final = $updated
             ? trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL
             : trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
         $ckey ? file_put_contents($fp, $final, FILE_APPEND) : file_put_contents($fp, $final);
