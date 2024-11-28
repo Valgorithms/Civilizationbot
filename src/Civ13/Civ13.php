@@ -1064,7 +1064,7 @@ class Civ13
     public function listbans(Message $message, ?string $key = null): PromiseInterface 
     {
         $servers = $key ? [$this->enabled_gameservers[$key] ?? null] : $this->enabled_gameservers;
-        return ($banlists = array_reduce(array_filter($servers), fn($carry, $gameserver) => self::__listbans($gameserver, $carry), []))
+        return ($banlists = array_reduce(array_filter($servers), fn($carry, $gameserver) => $gameserver->merge_banlist($carry), []))
             ? $message->reply(
                 array_reduce(
                     array_keys($banlists),
@@ -1073,12 +1073,6 @@ class Civ13
                 )->setContent('Ban lists for: ' . implode(', ', array_keys($banlists)))
               )
             : $message->react("🔥")->then(fn() => $this->logger->warning("Unable to list bans for servers: " . implode(', ', array_keys($banlists))));
-    }
-    public static function __listbans(Gameserver &$gameserver, array $banlists): array
-    {
-        return ($banlist = $gameserver->listbans())
-            ? array_merge($banlists, [$gameserver->name => $banlist])
-            : $banlists;
     }
     /**
      * Every 12 hours, this function checks if a user is banned and removes the banished role from them if they are not.

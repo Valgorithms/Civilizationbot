@@ -929,6 +929,12 @@ class GameServer
         }
         return $banlog;
     }
+    public function merge_banlist(array $banlists): array
+    {
+        return ($banlist = $this->listbans())
+            ? array_merge($banlists, [$this->name => $banlist])
+            : $banlists;
+    }
 
     /*
      * These functions determine which of the above methods should be used to process a ban or unban
