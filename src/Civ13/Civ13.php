@@ -1058,29 +1058,27 @@ class Civ13
      * Sends a message containing the list of bans for all servers.
      *
      * @param Message $message The message object.
-     * @param string $message_content_lower The message content in lowercase.
+     * @param ?string $key The key of the gameserver to list bans for.
      * @return PromiseInterface
      */
-    public function listbans(Message $message, ?string $key = ''): PromiseInterface 
+    public function listbans(Message $message, ?string $key = null): PromiseInterface 
     {
-        $banlists = [];
-        if ($key && isset($this->enabled_gameservers[$key])) {
-            if (! $banlist = $this->enabled_gameservers[$key]->listbans()) {
-                $this->logger->warning('Unable to list bans for ' . $this->enabled_gameservers[$key]->key);
-                return $message->react('🔥');
-            }
-            $banlists[$this->enabled_gameservers[$key]->name] = $banlist; 
-        } else foreach ($this->enabled_gameservers as &$gameserver) {
-            if (! $banlist = $gameserver->listbans()) {
-                $this->logger->warning('Unable to list bans for ' . $gameserver->key);
-                continue;
-            }
-            $banlists[$gameserver->name] = $banlist;
-        }
-
-        $builder = MessageBuilder::new();
-        foreach ($banlists as $key => $banlist) $builder->addFileFromContent("{$key}_bans.txt", $banlist);
-        return $message->reply($builder->setContent('Ban lists for: ' . implode(', ', array_keys($banlists))));
+        $servers = $key ? [$this->enabled_gameservers[$key] ?? null] : $this->enabled_gameservers;
+        return ($banlists = array_reduce(array_filter($servers), fn($carry, $gameserver) => self::__listbans($gameserver, $carry), []))
+            ? $message->reply(
+                array_reduce(
+                    array_keys($banlists),
+                    fn($builder, $key) => $builder->addFileFromContent("{$key}_bans.txt", $banlists[$key]),
+                    MessageBuilder::new()
+                )->setContent('Ban lists for: ' . implode(', ', array_keys($banlists)))
+              )
+            : $message->react("🔥")->then(fn() => $this->logger->warning("Unable to list bans for servers: " . implode(', ', array_keys($banlists))));
+    }
+    public static function __listbans(Gameserver &$gameserver, array $banlists): array
+    {
+        return ($banlist = $gameserver->listbans())
+            ? array_merge($banlists, [$gameserver->name => $banlist])
+            : $banlists;
     }
     /**
      * Every 12 hours, this function checks if a user is banned and removes the banished role from them if they are not.
