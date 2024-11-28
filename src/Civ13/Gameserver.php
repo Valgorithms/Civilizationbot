@@ -671,7 +671,7 @@ class GameServer
             $this->civ13->timers["{$this->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($message) {
                 OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself &");
                 unset($this->civ13->timers["{$this->key}host"]);
-                if ($message) $message->react('👍');
+                if ($message) $message->react("👍");
             });
         } else $this->logger->info("Server host timer already exists for {$this->key}.");
     }
@@ -902,10 +902,9 @@ class GameServer
         }, $logs);
 
         $updated = [];
-        foreach ($temp as $ban) {
-            if (is_array($ban)) $updated = array_merge($updated, $ban);
-            else $updated[] = $ban;
-        }
+        foreach ($temp as $ban) $updated = is_array($ban)
+            ? array_merge($updated, $ban)
+            : $updated[] = $ban;
         
         /**
          * This function updates the bans list by merging the old list with the updated list.

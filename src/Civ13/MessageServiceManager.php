@@ -657,11 +657,11 @@ class MessageServiceManager
                             return $membersData;
                         })
                         ->then(function ($membersData) use ($message) {
-                            $message->react('👍');
+                            $message->react("👍");
                             return $message->reply(MessageBuilder::new()->addFileFromContent('new_members.json', json_encode($membersData, JSON_PRETTY_PRINT)));
                         });
 
-                    $message->react('⏱️');
+                    $message->react("⏱️");
                     return $promise;
                 }, ['Ambassador'])
             ->offsetSet('fullaltcheck',
@@ -783,7 +783,7 @@ class MessageServiceManager
                     if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
                     $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
                     return $this->civ13->verifier->provision($split_message[0] ?? null, $split_message[1] ?? null)->then(
-                        fn($result) => $message->react('👍')->then($this->civ13->reply($message, $result)),
+                        fn($result) => $message->react("👍")->then($this->civ13->reply($message, $result)),
                         fn(\Throwable $error) => $message->react(($error instanceof \InvalidArgumentException) ? "❌" : "👎")->then($this->civ13->reply($message, $error->getMessage()))
                     );
                 }, ['Chief Technical Officer'])
