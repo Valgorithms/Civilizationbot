@@ -743,7 +743,7 @@ class GameServer
             $this->logger->warning("Unable to read `$path`");
             return false;
         }
-        // Remove duplicate lines
+        $original_file_contents = str_replace('||||||', '|||', $original_file_contents);
         $new_file_contents = explode(PHP_EOL, $original_file_contents);
         $new_file_contents = array_unique($new_file_contents);
         $new_file_contents = implode(PHP_EOL, $new_file_contents);
@@ -751,7 +751,7 @@ class GameServer
         if ($original_file_contents === $new_file_contents) return true; // No changes were made
 
         // Write the results back to the file
-        if (file_put_contents($path, $original_file_contents) === false) {
+        if (file_put_contents($path, $new_file_contents) === false) {
             $this->logger->warning("Unable to write to `$path`");
             return false;
         }
@@ -902,7 +902,7 @@ class GameServer
         }, $logs);
 
         $updated = [];
-        foreach ($temp as $ban) $updated = is_array($ban)
+        foreach ($temp as $ban) is_array($ban)
             ? array_merge($updated, $ban)
             : $updated[] = $ban;
         

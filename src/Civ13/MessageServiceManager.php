@@ -594,6 +594,10 @@ class MessageServiceManager
                         ? $message->react("👍")
                         : $message->react("🔥"),
                 ['Ambassador'])
+            ->offsetSet('cleanuplogs',
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
+                    $message->react(array_reduce($this->civ13->enabled_gameservers, fn($carry, $gameserver) => $carry && $gameserver->cleanupLogs(), true) ? "👍" : "👎"),
+                ['Ambassador'])
             ->offsetSet('fixroles',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface 
                 {
