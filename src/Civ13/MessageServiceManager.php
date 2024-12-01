@@ -981,16 +981,15 @@ class MessageServiceManager
                     if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
                     $brmedals = function (string $ckey) use ($fp): string
                     {
-                        $result = '';
                         if (! $search = @fopen($fp, 'r')) return "Error opening $fp.";
-                        $found = false;
+                        $result = '';
                         while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
-                            $found = true;
                             $duser = explode(';', $line);
                             if ($duser[0] === $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
                         }
-                        if (! $found) return 'No medals found for this ckey.';
-                        return $result;
+                        return $result
+                            ? $result
+                            : 'No medals found for this ckey.';
                     };
                     if (! $msg = $brmedals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
                     return $this->civ13->reply($message, $msg, 'brmedals.txt');
