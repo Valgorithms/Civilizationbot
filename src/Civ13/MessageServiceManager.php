@@ -622,11 +622,9 @@ class MessageServiceManager
                 },
                 ['Ambassador'])
             ->offsetSet('newmembers',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $newMembers = $message->guild->members->toArray(); // Check all members without filtering by date (it's too slow and not necessary because we're only displaying the 10 most recent members anyway)
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     // usort MIGHT be too slow if there are thousands of members. It currently resolves in less than a second with 669 members, but this is a future-proofed method.
-                    $promise = resolve($newMembers)
+                    resolve($message->guild->members->toArray()) // Check all members without filtering by date (it's too slow and not necessary because we're only displaying the 10 most recent members anyway)
                         ->then(function ($members) {
                             return \React\Promise\all($members);
                         })
@@ -663,11 +661,8 @@ class MessageServiceManager
                         ->then(function ($membersData) use ($message) {
                             $message->react("👍");
                             return $message->reply(MessageBuilder::new()->addFileFromContent('new_members.json', json_encode($membersData, JSON_PRETTY_PRINT)));
-                        });
-
-                    $message->react("⏱️");
-                    return $promise;
-                }, ['Ambassador'])
+                        }),
+                ['Ambassador'])
             ->offsetSet('fullaltcheck',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
