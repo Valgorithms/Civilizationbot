@@ -26,7 +26,7 @@ use Carbon\Carbon;
  *   7 => Expires
  *   8 => Ckey
  *   9 => CID
- *   10 => ip
+ *   10 => IP
  * Example log: // Server;nil;123456789;advertising;valithor;Tue Jul 28 23.28.32 2020;38028869632;Expires in 100 years;ckey;000000001;123.45.67.890|||
  */
 class Ban
@@ -47,9 +47,11 @@ class Ban
     {
         $array = explode(';', $ban);
         if (count($array) !== 11) throw new \Exception('Invalid ban log format');
-        foreach (array_keys(get_class_vars(self::class)) as $index => $field) {
-            $this->$field = $array[$index] === 'nil' ? (new \ReflectionProperty($this, $field))->getDefaultValue() : $array[$index];
-        }
+        /** @var ?string $field */
+        foreach (array_keys(get_class_vars(self::class)) as $index => $field)
+            $this->$field = $array[$index] === 'nil'
+                ? (new \ReflectionProperty($this, $field))->getDefaultValue()
+                : $array[$index];
     }
 
     public function uid()
