@@ -905,8 +905,9 @@ class Civ13
     public function getRole(string $input): ?Role
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) return null;
-        if (is_numeric($input = self::sanitizeInput($input))) return $guild->roles->get('id', $input);
-        return $guild->roles->get('name', $input);
+        return is_numeric($input = self::sanitizeInput($input))
+            ? $guild->roles->get('id', $input)
+            : $guild->roles->get('name', $input);
     }
 
     private function declareListeners(): void
@@ -971,7 +972,6 @@ class Civ13
             $this->logger->warning('Unable to save data to file: Filename is empty');
             return false;
         }
-        
         if (file_put_contents($filePath = $this->filecache_path . $filename, json_encode($assoc_array)) === false) {
             $this->logger->warning("Unable to save data to file: $filePath");
             return false;
@@ -990,17 +990,14 @@ class Civ13
             $this->logger->warning('Unable to load data from file: Filename is empty');
             return null;
         }
-        
         if (! file_exists($filePath = $this->filecache_path . $filename)) {
             $this->logger->debug("File does not exist: $filePath");
             return null;
         }
-        
         if (($jsonData = @file_get_contents($filePath)) === false) {
             $this->logger->warning("Unable to load data from file: $filePath");
             return null;
         }
-        
         if (($assoc_array = @json_decode($jsonData, true)) === null) {
             $this->logger->warning("Unable to decode JSON data from file: $filePath");
             return null;
@@ -1040,7 +1037,7 @@ class Civ13
         if ($age = Byond::getJoined($ckey)) {
             $this->ages[$ckey] = $age;
             $this->VarSave('ages.json', $this->ages);
-            return $this->ages[$ckey];
+            return $age;
         }
         return false;
     }
@@ -1093,43 +1090,43 @@ class Civ13
             }
             return true;
         }, false)) return false;
-
-        $bancheckTimer = function () {
-            if (! isset($this->verifier)) {
+        $this->bancheckTimer();
+        if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
+        return true;
+    }
+    private function __bancheckTimer(): void
+    {
+        if (! isset($this->verifier)) {
+            $this->loop->cancelTimer($this->timers['bancheck_timer']);
+            unset($this->timers['bancheck_timer']);
+            return;
+        }
+        if ($cacheconfig = $this->discord->getCacheConfig()) {
+            $interface = $cacheconfig->interface;
+            $this->logger->info('Cache type: ' . get_class($interface));
+            if ($interface instanceof \React\Cache\CacheInterface) { // It's too expensive to check bans
+                $this->logger->info('Redis cache is being used, cancelling periodic banchecks.');
                 $this->loop->cancelTimer($this->timers['bancheck_timer']);
                 unset($this->timers['bancheck_timer']);
                 return;
             }
-            if ($cacheconfig = $this->discord->getCacheConfig()) {
-                $interface = $cacheconfig->interface;
-                $this->logger->info('Cache type: ' . get_class($interface));
-                if ($interface instanceof \React\Cache\CacheInterface) { // It's too expensive to check bans
-                    $this->logger->info('Redis cache is being used, cancelling periodic banchecks.');
-                    $this->loop->cancelTimer($this->timers['bancheck_timer']);
-                    unset($this->timers['bancheck_timer']);
-                    return;
-                }
+        }
+        $this->logger->debug('Running periodic bancheck...');
+        array_walk($this->enabled_gameservers, fn($gameserver) => $gameserver->cleanupLogs());
+        if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
+            if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
+            if (! isset($item['ss13'])) continue;
+            //$this->logger->debug("Checking bans for {$item['ss13']}...");
+            if (($banned = $this->bancheck($item['ss13'], true, true)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
+                $member->addRole($this->role_ids['Banished'], 'bancheck timer');
+                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
+            } elseif (! $banned && ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
+                $member->removeRole($this->role_ids['Banished'], 'bancheck timer');
+                $member->removeRole($this->role_ids['Permabanished'], 'bancheck timer');
+                if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
             }
-            $this->logger->debug('Running periodic bancheck...');
-            foreach ($this->enabled_gameservers as &$gameserver) $gameserver->cleanupLogs();
-            if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
-                if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
-                if (! isset($item['ss13'])) continue;
-                //$this->logger->debug("Checking bans for {$item['ss13']}...");
-                if (($banned = $this->bancheck($item['ss13'], true, true)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
-                    $member->addRole($this->role_ids['Banished'], 'bancheck timer');
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
-                } elseif (! $banned && ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
-                    $member->removeRole($this->role_ids['Banished'], 'bancheck timer');
-                    $member->removeRole($this->role_ids['Permabanished'], 'bancheck timer');
-                    if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Removed the banished role from $member.");
-                }
-            }
-            $this->logger->debug('Periodic bancheck complete.');
-        };
-        $bancheckTimer();
-        if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $bancheckTimer());
-        return true;
+        }
+        $this->logger->debug('Periodic bancheck complete.');
     }
     /**
      * Determines whether a ckey is currently banned from the server.
