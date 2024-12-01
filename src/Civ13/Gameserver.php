@@ -962,11 +962,9 @@ class GameServer
 
         if (! isset($this->timers["ban_cleanup_timer"])) $this->civ13->timers["ban_cleanup_timer"] = $this->civ13->discord->getLoop()->addTimer(300, fn() => $this->cleanupLogs());
 
-        if ($this->legacy) {
-            if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn() => array_walk($this->civ13->enabled_gameservers, fn(GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)))); // Attempts to fill in any missing data for the ban
-            return $this->legacyBan($array, $admin);
-        }
-        return $this->sqlBan($array, $admin);
+        return $this->legacy
+            ? $this->legacyBan($array, $admin)
+            : $this->sqlBan($array, $admin);
     }
     private function legacyBan(array $array, ?string $admin = null): string
     {
@@ -978,6 +976,7 @@ class GameServer
         }
         fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
         fclose($file);
+        if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn() => array_walk($this->civ13->enabled_gameservers, fn(GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)))); // Attempts to fill in any missing data for the ban
         return "**$admin** banned **{$array['ckey']}** from **{$this->name}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
     }
     private function sqlBan(array $array, ?string $admin = null): string
