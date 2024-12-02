@@ -1172,8 +1172,7 @@ class Civ13
     public function permabancheck(string $ckey, bool $bypass = false): bool
     {
         if (! $ckey = self::sanitizeInput($ckey)) return false;
-        $permabanned = false;
-        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->permabancheck($ckey)) $permabanned = true;
+        $permabanned = array_reduce($this->enabled_gameservers, fn($carry, $gameserver) => $carry || $gameserver->permabancheck($ckey), false);
         if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey)))
             if ($permabanned && ! $member->roles->has($this->role_ids['Permabanished'])) {
                 if (! $member->roles->has($this->role_ids['Admin'])) $member->setRoles([$this->role_ids['Banished'], $this->role_ids['Permabanished']], "permabancheck ($ckey)");
