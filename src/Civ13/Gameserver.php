@@ -1395,10 +1395,7 @@ class GameServer
             return null;
         }
         $embed = $this->civ13->createEmbed();
-        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) {
-            $embed->addFieldValues($this->name, 'Offline');
-            return $embed;
-        }
+        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) return $embed->addFieldValues($this->name, 'Offline');
         fclose($socket);
         $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
         /*
