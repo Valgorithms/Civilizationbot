@@ -775,8 +775,9 @@ class GameServer
     public function permabancheck(string $id, bool $bypass = false): bool
     {
         if (! $id = Civ13::sanitizeInput($id)) return false;
-        $permabanned = ($this->legacy ? $this->legacyPermabancheck($id) : $this->sqlPermabancheck($id));
-        return $permabanned;
+        return $this->legacy
+            ? $this->legacyPermabancheck($id)
+            : $this->sqlPermabancheck($id);
     }
     /**
      * Checks if a player with the given ckey is permabanned based on legacy settings.
@@ -1331,11 +1332,11 @@ class GameServer
 
         $callback = function (Member $member, array $item, array $required_roles): string
         {
-            $string = '';
-            foreach ($required_roles as $role)
-                if ($member->roles->has($this->civ13->role_ids[$role]))
-                    $string .= "{$item['ss13']};{$role}" . PHP_EOL;
-            return $string;
+            return array_reduce($required_roles, function ($carry, $role) use ($member, $item) {
+                return $member->roles->has($this->civ13->role_ids[$role])
+                    ? $carry . "{$item['ss13']};{$role}" . PHP_EOL
+                    : $carry;
+            }, '');
         };
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
         return true;
