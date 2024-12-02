@@ -1090,7 +1090,7 @@ class Civ13
             }
             return true;
         }, false)) return false;
-        $this->bancheckTimer();
+        $this->__bancheckTimer();
         if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
         return true;
     }
@@ -1141,15 +1141,7 @@ class Civ13
     public function bancheck(string $ckey, bool $bypass = false, bool $use_cache = false): bool
     {
         if (! $ckey = self::sanitizeInput($ckey)) return false;
-        $banned = false;
-        foreach ($this->enabled_gameservers as &$gameserver) {
-            //$this->logger->debug("Checking for bans on {$gameserver->key}...");
-            if ($gameserver->bancheck($ckey, false, $use_cache)) {
-                $this->logger->debug("{$gameserver->key} bancheck: $ckey is banned");
-                $banned = true;
-                break;
-            }
-        }
+        $banned = array_reduce($this->enabled_gameservers, fn($carry, $gameserver) => $carry || $gameserver->bancheck($ckey, false, $use_cache), false);
         if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey))) {
             //$this->logger->debug("Checking for roles on $ckey...");
             $hasBanishedRole = $member->roles->has($this->role_ids['Banished']);
@@ -1474,7 +1466,6 @@ class Civ13
                 }
             }
         }
-
         return $log_collection;
     }
 
@@ -1495,10 +1486,8 @@ class Civ13
      */
     public function banArrayToAssoc(array $item): ?array
     {
-        // Invalid item format
         if (count($item) !== 11) return null;
 
-        // Create a new ban record
         $ban = [];
         $ban['type'] = $item[0];
         $ban['job'] = $item[1];
@@ -1512,7 +1501,6 @@ class Civ13
         $ban['cid'] = $item[9];
         $ban['ip'] = $item[10];
 
-        // Add the ban record to the collection
         return $ban;
     }
     /*
@@ -1526,10 +1514,8 @@ class Civ13
      */
     public function playerlogArrayToAssoc(array $item): ?array
     {
-        // Invalid item format
         if (count($item) !== 5) return null;
 
-        // Create a new ban record
         $playerlog = [];
         $playerlog['ckey'] = $item[0];
         $playerlog['ip'] = $item[1];
@@ -1537,7 +1523,6 @@ class Civ13
         $playerlog['uid'] = $item[3];
         $playerlog['date'] = $item[4];
 
-        // Add the ban record to the collection
         return $playerlog;
     }
     public function getCkeyLogCollections(string $ckey): ?array
@@ -1552,13 +1537,14 @@ class Civ13
     {
         if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) return null;
         [$webserver_name, $reported_status] = explode('-', $channel->name);
-        if ($reported_status != ($status = $status ? 'online' : 'offline')) {
-            //if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
-            $channel->name = "{$webserver_name}-{$status}";
-            $success = fn($result) => $this->loop->addTimer(2, fn() => $this->sendMessage($this->discord->getChannel($channel->id), "Webserver is now **{$status}**."));
-            return $this->then($channel->guild->channels->save($channel), $success);
-        }
-        return null;
+        if ($reported_status === ($status = $status ? 'online' : 'offline')) return null;        
+        //if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
+        $channel->name = "{$webserver_name}-{$status}";
+        return $this->then(
+            $channel->guild->channels->save($channel),
+            fn() => $this->loop->addTimer(2, fn() => $this->sendMessage($this->discord->getChannel($channel->id), "Webserver is now **{$status}**."))
+        );
+        
     }
     /**
      * Fetches server information from the specified URL.
@@ -1567,14 +1553,11 @@ class Civ13
      */
     public function serverinfoFetch(): array
     {
-        $context = stream_context_create(['http' => ['connect_timeout' => 5]]);
-        if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, $context),  true)) {
-            $this->logger->debug("Unable to retrieve serverinfo from `{$this->serverinfo_url}`");
+        if (! $data_json = @json_decode(@file_get_contents($this->serverinfo_url, false, stream_context_create(['http' => ['connect_timeout' => 5]])),  true)) {
             $this->statusChannelUpdate($this->channel_ids['webserver-status'], $this->webserver_online = false);
             return [];
         }
         $this->statusChannelUpdate($this->channel_ids['webserver-status'], $this->webserver_online = true);
-        $this->logger->debug("Successfully retrieved serverinfo from `{$this->serverinfo_url}`");
         return $this->serverinfo = $data_json;
     }
     /**
@@ -1585,9 +1568,7 @@ class Civ13
      */
     public function whitelistUpdate(?array $required_roles = ['Verified']): bool
     {
-        $return = false;
-        foreach ($this->enabled_gameservers as &$gameserver) if ($gameserver->whitelistUpdate($required_roles)) $return = true;
-        return $return;
+        return array_reduce($this->enabled_gameservers, fn($carry, $gameserver) => $gameserver->whitelistUpdate($required_roles) || $carry, false);
     }
     /**
      * Updates the faction list based on the required roles.
