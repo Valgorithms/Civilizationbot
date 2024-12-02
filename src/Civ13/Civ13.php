@@ -535,8 +535,10 @@ class Civ13
     }
     public function deferUntilReady(callable $callback, ?string $function = null): void
     {
-        if ($function) $this->logger->info("Deferring callback until ready for function: $function");
-        else $this->logger->info("Deferring callback until ready for function: " . debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2)[1]['function'] ?? 'unknown');
+        $this->logger->info($function
+            ? "Deferring callback until ready for event: $function"
+            : "Deferring callback until ready for function: " . debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2)[1]['function'] ?? 'unknown'
+        );
         $this->ready
             ? $callback()
             : $this->discord->once('init', $callback);
@@ -555,7 +557,7 @@ class Civ13
      */
     public function filterMessage(Message $message): array
     {
-        if (! $message->guild || $message->guild->owner_id != $this->owner_id) return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
+        if (! $message->guild || $message->guild->owner_id !== $this->owner_id) return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
         
         $call = $this->startsWithCommandPrefix($message->content);
         $message_content = $call ? trim(substr($message->content, strlen($call))) : $message->content;
@@ -616,10 +618,16 @@ class Civ13
         if (isset($this->discord)) $this->discord->close(false);
         if ($closeLoop) $this->loop->stop();
     }
-    public function restart()
+    /**
+     * Restarts the application by first stopping it and then calling the OS restart function.
+     *
+     * @return PromiseInterface<resource> A promise that resolves with the process resource on success, or rejects with a MissingSystemPermissionException on failure.
+     * @throws MissingSystemPermissionException If the system does not have the required permissions to restart the bot.
+     */
+    public function restart(): PromiseInterface
     {
         $this->stop();
-        OSFunctions::restart();
+        return OSFunctions::restart();
     }
 
     public function CPU(): string
@@ -644,8 +652,7 @@ class Civ13
      */
     public function removeRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
-        foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
-        if (! $role_ids) return resolve($member);
+        if (! $role_ids = array_filter(self::__rolesToIdArray($roles), fn($role_id) => $member->roles->has($role_id))) return resolve($member);
         return $patch
             ? ((($new_roles = $member->roles->filter(fn(Role $role) => ! in_array($role->id, $role_ids))->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : resolve($member))
             : all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
@@ -661,14 +668,11 @@ class Civ13
      */
     public function addRoles(Member $member, Collection|array|Role|string|int $roles, bool $patch = true): PromiseInterface
     {
-        foreach (($role_ids = $this->__rolesToIdArray($roles)) as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
-        if (! $role_ids) return resolve($member);
+        if (! $role_ids = array_filter(self::__rolesToIdArray($roles), fn($role_id) => $member->roles->has($role_id))) return resolve($member);
         return $patch
             ? $member->setRoles(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $role_ids))
             : all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
-                ->then(function() use ($member) {
-                    return $member->guild->members->get('id', $member->id);
-                });
+                ->then(fn() => $member->guild->members->get('id', $member->id));
     }
     /**
      * Updates specifiec roles for a member.
@@ -680,7 +684,7 @@ class Civ13
      */
     public function setRoles(Member $member, Collection|array|Role|string|int $add_roles = [], Collection|array|Role|string|int $remove_roles = []): PromiseInterface
     {
-        if (! ($add_roles = $this->__rolesToIdArray($add_roles)) && ! ($remove_roles = $this->__rolesToIdArray($remove_roles))) return resolve($member);
+        if (! ($add_roles = self::__rolesToIdArray($add_roles)) && ! ($remove_roles = self::__rolesToIdArray($remove_roles))) return resolve($member);
         foreach ($add_roles as &$role_id) if ($member->roles->has($role_id)) unset($role_id);
         foreach ($remove_roles as &$role_id) if (! $member->roles->has($role_id)) unset($role_id);
         if (! $updated_roles = array_diff(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $add_roles), $remove_roles)) return resolve($member);
@@ -692,27 +696,14 @@ class Civ13
      * @param Collection<Role>|array<Role|string|int>|Role|string|int $roles The roles to convert.
      * @return array<string>|array<null> The array of role IDs, or an empty array if the conversion fails.
      */
-    private function __rolesToIdArray(Collection|array|Role|string|int $roles): array
+    private static function __rolesToIdArray(Collection|array|Role|string|int $roles): array
     {
-        $role_ids = [];
-        switch (true) {
-            case ($roles instanceof Collection && $roles->first() instanceof Role):
-                $role_ids = $roles->map(fn($role) => $role->id)->toArray();
-                break;
-            case (! $roles instanceof Collection && is_array($roles) && $roles[0] instanceof Role):
-                $role_ids = array_map(fn($role) => $role->id, $roles);
-                break;
-            case (is_array($roles)):
-                $role_ids = array_map('strval', $roles);
-                break;
-            case ($roles instanceof Role):
-                $role_ids[] = $roles->id;
-                break;
-            case (is_string($roles) || is_int($roles)):
-                $role_ids[] = "$roles";
-                break;
-        }
-        return $role_ids;
+        if ($roles instanceof Collection && $roles->first() instanceof Role) return $roles->map(fn($role) => $role->id)->toArray();
+        if (! $roles instanceof Collection && is_array($roles) && $roles[0] instanceof Role) return array_map(fn($role) => $role->id, $roles);
+        if (is_array($roles)) return array_map('strval', $roles);
+        if ($roles instanceof Role) return [$roles->id];
+        if (is_string($roles) || is_int($roles)) return ["$roles"];
+        throw new \InvalidArgumentException('Invalid roles array'); // This should never happen
     }
     /**
      * Sends a message to the specified channel.
@@ -721,7 +712,8 @@ class Civ13
      * @param string $content The content of the message.
      * @param string $file_name The name of the file to attach to the message. Default is 'message.txt'.
      * @param bool $prevent_mentions Whether to prevent mentions in the message. Default is false.
-     * @return PromiseInterface<Message>|null A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
+     * @return PromiseInterface<Message> A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
+     * @throws PartException If the channel is not found.
      */
     public function sendMessage(Channel|Thread|string $channel, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface
     {
@@ -771,24 +763,16 @@ class Civ13
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
-        if (is_string($channel)) $channel = $this->discord->getChannel($channel);
-        if (! $channel) {
-            $this->logger->error("Channel not found: {$channel}");
-            return null;
-        }
-        $builder->setContent($content);
-        $builder->addEmbed($embed->setFooter($this->embed_footer));
-        return $channel->sendMessage($builder);
+        return $channel->sendMessage($builder->setContent($content)->addEmbed($embed->setFooter($this->embed_footer)));
     }
     public function createEmbed(?bool $footer = true, int $color = 0xE1452D): Embed
     {
         $embed = new Embed($this->discord);
         if ($footer) $embed->setFooter($this->embed_footer);
-        $embed
+        return $embed
             ->setColor($color)
             ->setTimestamp()
             ->setURL('');
-        return $embed;
     }
     /**
      * Sends an out-of-character (OOC) message.
@@ -800,11 +784,7 @@ class Civ13
      */
     public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
-        if (is_null($server_key)) {
-            $sent = false;
-            foreach ($this->enabled_gameservers as $server) if ($server->OOCMessage($message, $sender)) $sent = true;
-            return $sent;
-        }
+        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $carry || $server->OOCMessage($message, $sender), false);
         if (! isset($this->enabled_gameservers[$server_key])) return false;
         return $this->enabled_gameservers[$server_key]->OOCMessage($message, $sender);
     }
@@ -818,11 +798,7 @@ class Civ13
      */
     public function AdminMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
-        if (is_null($server_key)) {
-            $sent = false;
-            foreach ($this->enabled_gameservers as $server) if ($server->AdminMessage($message, $sender)) $sent = true;
-            return $sent;
-        }
+        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $carry || $server->AdminMessage($message, $sender), false);
         if (! isset($this->enabled_gameservers[$server_key])) return false;
         return $this->enabled_gameservers[$server_key]->AdminMessage($message, $sender);
     }
@@ -837,11 +813,7 @@ class Civ13
      */
     public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): bool
     {
-        if (is_null($server_key)) {
-            $sent = false;
-            foreach ($this->enabled_gameservers as $server) if ($server->DirectMessage($message, $sender, $recipient)) $sent = true;
-            return $sent;
-        }
+        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $carry || $server->DirectMessage($message, $sender, $recipient), false);
         if (! isset($this->enabled_gameservers[$server_key])) return false;
         return $this->enabled_gameservers[$server_key]->DirectMessage($message, $sender, $recipient);
     }
@@ -1077,9 +1049,9 @@ class Civ13
      * If they are not been banned, it removes the banished role from them.
      * If the staff_bot channel exists, it sends a message to the channel indicating that the banished role has been removed from the member.
      *
-     * @return bool Returns true if the function executes successfully, false otherwise.
+     * @return bool Returns TimerInterface if the function executes successfully, false otherwise.
      */
-    public function bancheckTimer(): bool
+    public function bancheckTimer(): TimerInterface|false
     {
         // We don't want the persistence server to do this function
         if (! $this->enabled_gameservers) return false; // This function should only run if there are servers to check
@@ -1091,8 +1063,7 @@ class Civ13
             return true;
         }, false)) return false;
         $this->__bancheckTimer();
-        if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
-        return true;
+        if (! isset($this->timers['bancheck_timer'])) return $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
     }
     private function __bancheckTimer(): void
     {
