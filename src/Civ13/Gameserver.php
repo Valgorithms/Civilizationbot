@@ -10,6 +10,7 @@
 namespace Civ13;
 
 use Civ13\Exceptions\FileNotFoundException;
+use Civ13\Exceptions\InvalidConfigException;
 use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\Exceptions\PartException;
 use Civ13\Exceptions\UserInputException;
@@ -1349,9 +1350,12 @@ class GameServer
      */
     public function adminlistUpdate(?array $required_roles = null): PromiseInterface
     {
-        if (! $this->enabled) return false;
+        if (! $this->enabled) return reject(new \LogicException("Game server is not enabled."));
         if (! $required_roles) $required_roles = self::ADMIN_PERMISSIONS;
-        if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) return false;
+        if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) {
+            $this->logger->warning($err = "Missing required roles for adminlist update.");
+            return reject(new InvalidConfigException($err));
+        }
         if (! @touch($this->admins)) {
             $this->logger->warning($err = "Unable to open `{$this->admins}`");
             return reject(new MissingSystemPermissionException($err));
@@ -1368,8 +1372,7 @@ class GameServer
             }
             return $string;
         };
-        $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
-        return resolve(null);
+        return $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
     }
 
     public function parseRoundTime(string $time)
