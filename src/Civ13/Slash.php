@@ -72,7 +72,7 @@ class Slash
      *
      * @param GlobalCommandRepository|GuildCommandRepository $commands The repository to save the command to.
      * @param Command $command The command to save.
-     * @return PromiseInterface A promise that resolves when the command is saved.
+     * @return PromiseInterface<Command> A promise that resolves when the command is saved.
      */
     private function save(GlobalCommandRepository|GuildCommandRepository $commands, Command $command): PromiseInterface
     {

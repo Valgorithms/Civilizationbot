@@ -326,7 +326,7 @@ class GameServer
      * @param string $channel_id The ID of the Discord channel to relay the message to.
      * @param bool|null $moderate Whether to moderate the message or not. Defaults to true.
      * @param bool|null $ooc Whether the message is out-of-character or not. Defaults to true.
-     * @return PromiseInterface
+     * @return PromiseInterface<Message> A promise that resolves with the message sent to the channel.
      */
     public function gameChatWebhookRelay(string $message, string $channel_id, ?string $ckey = null, ?bool $ooc = true, ?bool $moderate = true): PromiseInterface
     {
@@ -444,7 +444,7 @@ class GameServer
      * Updates the current round embed message builder.
      *
      * @param MessageBuilder|null $builder The message builder to used to perform the update the message. Defaults to null.
-     * @return PromiseInterface A promise that resolves when the update is complete.
+     * @return PromiseInterface<Message> A promise that resolves when the update is complete.
      */
     private function updateCurrentRoundEmbedMessageBuilder(?MessageBuilder $builder = null): PromiseInterface
     {

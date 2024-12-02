@@ -175,7 +175,7 @@ class MessageServiceManager
              * @param Message $message The message object.
              * @param array $message_filtered The filtered message content.
              * @param string $command The command used to trigger this method.
-             * @return PromiseInterface
+             * @return PromiseInterface<Message> The message response.
              */
             
             ->offsetSet('getround',

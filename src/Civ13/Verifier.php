@@ -571,7 +571,7 @@ class Verifier
      *
      * @param string|null $ckey The Byond ckey to provision.
      * @param string|null $discord_id The Discord ID to provision.
-     * @return PromiseInterface A promise that resolves with a success message or rejects with an error message.
+     * @return PromiseInterface<string> A promise that resolves with a success message or rejects with an error message.
      */
     public function provision(?string $ckey = '', ?string $discord_id = ''): PromiseInterface
     {
