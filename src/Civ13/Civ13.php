@@ -1142,12 +1142,9 @@ class Civ13
     {
         if (! $ckey = self::sanitizeInput($ckey)) return false;
         $banned = array_reduce($this->enabled_gameservers, fn($carry, $gameserver) => $carry || $gameserver->bancheck($ckey, false, $use_cache), false);
-        if (! $bypass && (isset($this->verifier) && $member = $this->verifier->getVerifiedMember($ckey))) {
-            //$this->logger->debug("Checking for roles on $ckey...");
-            $hasBanishedRole = $member->roles->has($this->role_ids['Banished']);
-            if ($banned && ! $hasBanishedRole) $member->addRole($this->role_ids['Banished'], "bancheck ($ckey)");
-            elseif (! $banned && $hasBanishedRole) $member->removeRole($this->role_ids['Banished'], "bancheck ($ckey)");
-        }
+        if ($bypass || ! isset($this->verifier) || ! $member = $this->verifier->getVerifiedMember($ckey)) return $banned;
+        if ($banned && ! $member->roles->has($this->role_ids['Banished']) && ! $member->roles->has($this->role_ids['Admin'])) $member->addRole($this->role_ids['Banished'], "bancheck ($ckey)");
+        elseif (! $banned &&  $member->roles->has($this->role_ids['Banished'])) $member->removeRole($this->role_ids['Banished'], "bancheck ($ckey)");
         return $banned;
     }
     /**
