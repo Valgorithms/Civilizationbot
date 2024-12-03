@@ -84,7 +84,7 @@ class OSFunctions
      *
      * @throws MissingSystemPermissionException If `popen()` or `proc_open()` fails, or if the process ID cannot be retrieved.
      */
-    public static function restart(): PromiseInterface
+    public static function restart($file = 'bot.php'): PromiseInterface
     {
         if (PHP_OS_FAMILY == 'Windows') {
             if (($p = popen('cmd /c "' . getcwd() . '\run.bat"', "r")) === false) return reject(new MissingSystemPermissionException('popen() failed'));
@@ -95,7 +95,7 @@ class OSFunctions
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w']
         ];
-        if (($proc = proc_open($output = 'sudo nohup php8.3 bot.php > botlog.txt &', $descriptorspec, $pipes)) === false) return reject(new MissingSystemPermissionException('proc_open() failed'));
+        if (($proc = proc_open($output = "sudo nohup php8.3 $file > botlog.txt &", $descriptorspec, $pipes)) === false) return reject(new MissingSystemPermissionException('proc_open() failed'));
         if (! $pid = proc_get_status($proc)['pid']) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
         error_log("Executing external shell command `$output` with PID $pid");
         return resolve($proc);

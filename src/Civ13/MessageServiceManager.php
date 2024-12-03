@@ -782,8 +782,8 @@ class MessageServiceManager
                     if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
                     $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
                     return $this->civ13->verifier->provision($split_message[0] ?? null, $split_message[1] ?? null)->then(
-                        fn($result) => $message->react("👍")->then($this->civ13->reply($message, $result)),
-                        fn(\Throwable $error) => $message->react(($error instanceof \InvalidArgumentException) ? "❌" : "👎")->then($this->civ13->reply($message, $error->getMessage()))
+                        fn($result) => $message->react("👍")->then(fn () => $this->civ13->reply($message, $result)),
+                        fn(\Throwable $error) => $message->react(($error instanceof \InvalidArgumentException) ? "❌" : "👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
                     );
                 }, ['Chief Technical Officer'])
             ->offsetSet('unverify',
@@ -1125,8 +1125,8 @@ class MessageServiceManager
                         $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
                         if (! isset($split_message[1])) return $message->react("❌")->then(fn () => $this->civ13->reply($message, 'You need to include the name of the map.'));
                         return $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username)->then(
-                            fn ($result) => $message->react("👍")->then($this->civ13->reply($message, $result)),
-                            fn (\Throwable $error) => $message->react(($error instanceof FileNotFoundException) ? "🔥" : "👎")->then($this->civ13->reply($message, $error->getMessage()))
+                            fn ($result) => $message->react("👍")->then(fn() => $this->civ13->reply($message, $result)),
+                            fn (\Throwable $error) => $message->react(($error instanceof FileNotFoundException) ? "🔥" : "👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
                         );
                     }, ['Ambassador'])
                 ->offsetSet("{$gameserver->key}sportsteam",
