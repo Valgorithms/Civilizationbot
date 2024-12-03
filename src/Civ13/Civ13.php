@@ -238,6 +238,8 @@ class Civ13
 
     public Message $restart_message;
 
+    private string $constructed_file;
+
     /**
      * Creates a Civ13 client instance.
      * 
@@ -252,6 +254,9 @@ class Civ13
 
         // x86 need gmp extension for big integer operation
         if (PHP_INT_SIZE === 4 && ! BigInt::init()) trigger_error('ext-gmp is not loaded. Permissions will NOT work correctly!', E_USER_WARNING);
+
+        // Set the file that the object was constructed in
+        $this->constructed_file = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'];
 
         $this->logger =  $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
         $options = $this->resolveOptions($options);
@@ -624,10 +629,10 @@ class Civ13
      * @return PromiseInterface<resource> A promise that resolves with the process resource on success, or rejects with a MissingSystemPermissionException on failure.
      * @throws MissingSystemPermissionException If the system does not have the required permissions to restart the bot.
      */
-    public function restart(): PromiseInterface
+    public function restart(?string $file = null): PromiseInterface
     {
         $this->stop();
-        return OSFunctions::restart();
+        return OSFunctions::restart($file ?? $this->constructed_file);
     }
 
     public function CPU(): string
