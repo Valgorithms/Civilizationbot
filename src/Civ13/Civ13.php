@@ -12,6 +12,7 @@ use Byond\Byond;
 use Civ13\Exceptions\PartException;
 use Civ13\Slash;
 use Civ13\Moderator;
+use Civ13\PromiseMiddleware;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
@@ -240,6 +241,8 @@ class Civ13
 
     private string $constructed_file;
 
+    private PromiseMiddleware $then;
+
     /**
      * Creates a Civ13 client instance.
      * 
@@ -412,6 +415,8 @@ class Civ13
             $this->logger->error("Promise rejected with reason: `$reason`");
         };
 
+        $this->then = new PromiseMiddleware($this->onFulfilledDefault, $this->onRejectedDefault);
+
         if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! is_dir($value) || ! @mkdir($value, 0664, true)) {
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
@@ -522,6 +527,8 @@ class Civ13
      */
     public function then(PromiseInterface $promise, ?callable $onFulfilled = null, ?callable $onRejected = null): PromiseInterface
     {
+        return $this->then($promise, $onFulfilled, $onRejected);
+        /*
         if (! $onRejected) $onRejectedDefault = function (\Throwable $reason) use ($promise, $onFulfilled): void
         { // TODO: Add a check for Discord disconnects and refire the promise
             $this->logger->error("Promise rejected with reason: `$reason`");
@@ -537,6 +544,7 @@ class Civ13
             }
         };
         return $promise->then($onFulfilled ?? $this->onFulfilledDefault, $onRejected ?? $onRejectedDefault ?? $this->onRejectedDefault);
+        */
     }
     public function deferUntilReady(callable $callback, ?string $function = null): void
     {
