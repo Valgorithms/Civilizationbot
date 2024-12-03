@@ -725,8 +725,8 @@ class Civ13
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
-        if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
-        return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)));
+        if (strlen($content)<=4096) return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)));
+        return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
     }
     /**
      * Sends a message as a reply to another message.
@@ -735,9 +735,9 @@ class Civ13
      * @param string $content The content of the reply message.
      * @param string $file_name The name of the file to attach to the reply message (default: 'message.txt').
      * @param bool $prevent_mentions Whether to prevent mentions in the reply message (default: false).
-     * @return PromiseInterface<Message>|null A promise that resolves to the sent reply message, or null if the reply message could not be sent.
+     * @return PromiseInterface<Message> A promise that resolves to the sent reply message, or null if the reply message could not be sent.
      */
-    public function reply(Message $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): ?PromiseInterface
+    public function reply(Message|Thread $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface
     {
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
