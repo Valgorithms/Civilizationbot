@@ -11,6 +11,7 @@ namespace Civ13;
 use Civ13\Exceptions\MissingSystemPermissionException;
 use React\ChildProcess\Process;
 use React\Promise\PromiseInterface;
+use Psr\Log\LoggerInterface;
 
 use function React\Promise\reject;
 use function React\Promise\resolve;
@@ -113,5 +114,73 @@ class OSFunctions
         if (socket_bind($s, '127.0.0.1', $port) === false) return reject(new \Exception(socket_last_error($s)));
         socket_close($s);
         return resolve($s);
+    }
+
+    /**
+     * Saves an associative array to a file in JSON format.
+     *
+     * @param string $filename The name of the file to save to.
+     * @param array $assoc_array The associative array to be saved.
+     * @param LoggerInterface|null $logger An optional logger object to log messages to.
+     * @return bool Returns true if the data was successfully saved, false otherwise.
+     */
+    public static function VarSave(string $filecache_path, string $filename, array $assoc_array = [], ?LoggerInterface $logger = null): bool
+    {
+        if ($filename === '') {
+            $logger
+                ? $logger->warning('Unable to load data from file: Filename is empty')
+                : error_log('Unable to save data to file: Filename is empty');
+            return false;
+        }
+        if (file_put_contents($filePath = $filecache_path . $filename, json_encode($assoc_array)) === false) {
+            $logger
+                ? $logger->warning("Unable to save data to file: $filePath")
+                : error_log("Unable to save data to file: $filePath");
+            return false;
+        }
+        return true;
+    }
+    /**
+     * Loads an associative array from a file that was saved in JSON format.
+     *
+     * @param string $filecache_path The path to the directory where the file is located.
+     * @param string $filename The name of the file to load from.
+     * @param LoggerInterface|null $logger An optional logger object to log messages to.
+     * @return array|null Returns the associative array that was loaded, or null if the file does not exist or could not be loaded.
+     */
+    public static function VarLoad(string $filecache_path, string $filename = '', ?LoggerInterface $logger = null): ?array
+    {
+        if (! is_dir($filecache_path)) {
+            $logger
+                ? $logger->error("Directory does not exist: $filecache_path")
+                : error_log("Directory does not exist: $filecache_path");
+            throw new \Exception("Directory does not exist: $filecache_path");
+            return null;
+        }
+        if ($filename === '') {
+            $logger
+                ? $logger->warning('Unable to load data from file: Filename is empty')
+                : error_log('Unable to load data from file: Filename is empty');
+            return null;
+        }
+        if (! file_exists($filePath = $filecache_path . $filename)) {
+            $logger
+                ? $logger->warning("File does not exist: $filePath")
+                : error_log("File does not exist: $filePath");
+            return null;
+        }
+        if (($jsonData = @file_get_contents($filePath)) === false) {
+            $logger
+                ? $logger->warning("Unable to load data from file: $filePath")
+                : error_log("Unable to load data from file: $filePath");
+            return null;
+        }
+        if (($assoc_array = @json_decode($jsonData, true)) === null) {
+            $logger
+                ? $logger->warning("Unable to decode JSON data from file: $filePath")
+                : error_log("Unable to decode JSON data from file: $filePath");
+            return null;
+        }
+        return $assoc_array;
     }
 }

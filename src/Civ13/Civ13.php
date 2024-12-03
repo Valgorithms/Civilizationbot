@@ -757,8 +757,8 @@ class Civ13
     public function sendEmbed(Channel|Thread|string $channel, Embed $embed, string $content, bool $prevent_mentions = false): ?PromiseInterface
     {
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
-            $this->logger->error("Channel not found for sendEmbed");
-            return null;
+            $this->logger->error($err = "Channel not found for sendEmbed");
+            return reject(new PartException($err));
         }
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
@@ -940,15 +940,7 @@ class Civ13
      */
     public function VarSave(string $filename, array $assoc_array = []): bool
     {
-        if ($filename === '') {
-            $this->logger->warning('Unable to save data to file: Filename is empty');
-            return false;
-        }
-        if (file_put_contents($filePath = $this->filecache_path . $filename, json_encode($assoc_array)) === false) {
-            $this->logger->warning("Unable to save data to file: $filePath");
-            return false;
-        }
-        return true;
+        return OSFunctions::VarSave($this->filecache_path, $filename, $assoc_array, $this->logger);
     }
     /**
      * Loads an associative array from a file that was saved in JSON format.
@@ -958,23 +950,7 @@ class Civ13
      */
     public function VarLoad(string $filename = ''): ?array
     {
-        if ($filename === '') {
-            $this->logger->warning('Unable to load data from file: Filename is empty');
-            return null;
-        }
-        if (! file_exists($filePath = $this->filecache_path . $filename)) {
-            $this->logger->debug("File does not exist: $filePath");
-            return null;
-        }
-        if (($jsonData = @file_get_contents($filePath)) === false) {
-            $this->logger->warning("Unable to load data from file: $filePath");
-            return null;
-        }
-        if (($assoc_array = @json_decode($jsonData, true)) === null) {
-            $this->logger->warning("Unable to decode JSON data from file: $filePath");
-            return null;
-        }
-        return $assoc_array;
+        return OSFunctions::VarLoad($this->filecache_path, $filename, $this->logger);
     }
     /**
      * This function is used to navigate a file tree and find a file
