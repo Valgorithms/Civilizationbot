@@ -370,11 +370,11 @@ $hidden_options = [
 
     'webapi' => &$webapi,
     'socket' => &$socket,
-    'web_address' => getenv('web_address') ?? 'www.civ13.com',
-    'http_port' => getenv('http_port') ?? 55555, // 25565 for testing on Windows
-    'http_key' => getenv('WEBAPI_TOKEN') ?? 'CHANGEME',
+    'web_address' => getenv('web_address') ?: 'www.civ13.com',
+    'http_port' => intval(getenv('http_port')) ?: 55555, // 25565 for testing on Windows
+    'http_key' => getenv('WEBAPI_TOKEN') ?: 'CHANGEME',
     'http_whitelist' => $http_whitelist,
-    'civ_token' => getenv('CIV_TOKEN') ?? 'CHANGEME',
+    'civ_token' => getenv('CIV_TOKEN') ?: 'CHANGEME',
     'server_settings' => $server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
     'functions' => array(
         'init' => [
@@ -425,7 +425,7 @@ use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use Psr\Http\Message\ServerRequestInterface;
-$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?? 55555), [], $loop);
+$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55555), [], $loop);
 /**
  * Handles the HTTP request using the HttpServiceManager.
  *
