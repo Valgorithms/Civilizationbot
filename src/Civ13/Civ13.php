@@ -10,9 +10,9 @@ namespace Civ13;
 
 use Byond\Byond;
 use Civ13\Exceptions\PartException;
-use Civ13\Slash;
 use Civ13\Moderator;
 use Civ13\PromiseMiddleware;
+use Civ13\Slash;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
@@ -28,19 +28,22 @@ use Discord\Parts\User\Member;
 //use Discord\Repository\EntitlementRepository;
 //use Discord\Repository\SKUsRepository;
 use Discord\Stats;
-use Monolog\Logger;
 use Monolog\Level;
+use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
-use React\Promise\PromiseInterface;
-use React\Http\Browser;
 use React\Filesystem\AdapterInterface;
 use React\Filesystem\Factory as FilesystemFactory;
+use React\Promise\PromiseInterface;
+use React\Http\Browser;
+use React\Http\HttpServer;
+use React\Socket\SocketServer;
 use ReflectionFunction;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 use function React\Promise\reject;
 use function React\Promise\resolve;
@@ -370,70 +373,201 @@ class Civ13
      */
     private function resolveOptions(array &$options = []): array
     {
-        if (! isset($options['welcome_message']) || ! is_string($options['welcome_message'])) {
-            $options['welcome_message'] = '';
-        }
+        $resolver = new OptionsResolver();
+
+        $resolver
+            ->setDefined([
+                'welcome_message',
+                'logger',
+                'onFulfilledDefault',
+                'onRejectedDefault',
+                'folders',
+                'files',
+                'channel_ids',
+                'role_ids',
+                'functions',
+                'loop',
+                'browser',
+                'filesystem',
+                'civ13_guild_id',
+                'civ_token',
+                'command_symbol',
+                'discord',
+                'discord_formatted',
+                'discord_invite',
+                'gitdir',
+                'github',
+                'http_key',
+                'http_port',
+                'http_whitelist',
+                'ic_badwords',
+                'legacy',
+                'moderate',
+                'ooc_badwords',
+                'owner_id',
+                'rules',
+                'server_settings',
+                'socket',
+                'stats',
+                'technician_id',
+                'verify_url',
+                'web_address',
+                'webapi',
+                'webserver_url',
+            ])
+            ->setDefaults([
+                'welcome_message' => '',
+                'logger' => null,
+                'onFulfilledDefault' => null,
+                'onRejectedDefault' => null,
+                'folders' => [],
+                'files' => [],
+                'channel_ids' => [],
+                'role_ids' => [],
+                'functions' => [],
+                'loop' => Loop::get(),
+                'browser' => null,
+                'filesystem' => null,
+                'civ13_guild_id' => '',
+                'civ_token' => '',
+                'command_symbol' => '@Civilizationbot',
+                'discord' => null,
+                'discord_formatted' => 'civ13.com slash discord',
+                'discord_invite' => 'https://civ13.com/discord',
+                'gitdir' => '',
+                'github' => 'https://github.com/VZGCoders/Civilizationbot',
+                'http_key' => '',
+                'http_port' => 0,
+                'http_whitelist' => [],
+                'ic_badwords' => [],
+                'legacy' => true,
+                'moderate' => true,
+                'ooc_badwords' => [],
+                'owner_id' => '196253985072611328',
+                'rules' => 'civ13.com slash rules',
+                'server_settings' => [],
+                'socket' => null,
+                'stats' => null,
+                'technician_id' => '116927250145869826',
+                'verify_url' => 'http://valzargaming.com:8080/verified/',
+                'web_address' => '',
+                'webapi' => null,
+                'webserver_url' => 'www.valzargaming.com',
+            ])
+            ->setAllowedTypes('welcome_message', 'string')
+            ->setAllowedTypes('logger', ['null', Logger::class])
+            ->setAllowedTypes('onFulfilledDefault', ['null', 'callable'])
+            ->setAllowedTypes('onRejectedDefault', ['null', 'callable'])
+            ->setAllowedTypes('folders', 'array')
+            ->setAllowedTypes('files', 'array')
+            ->setAllowedTypes('channel_ids', 'array')
+            ->setAllowedTypes('role_ids', 'array')
+            ->setAllowedTypes('functions', 'array')
+            ->setAllowedTypes('loop', LoopInterface::class)
+            ->setAllowedTypes('browser', ['null', Browser::class])
+            ->setAllowedTypes('filesystem', ['null', AdapterInterface::class])
+            ->setAllowedTypes('civ13_guild_id', 'string')
+            ->setAllowedTypes('civ_token', 'string')
+            ->setAllowedTypes('command_symbol', 'string')
+            ->setAllowedTypes('discord', ['null', Discord::class])
+            ->setAllowedTypes('discord_formatted', 'string')
+            ->setAllowedTypes('discord_invite', 'string')
+            ->setAllowedTypes('gitdir', 'string')
+            ->setAllowedTypes('github', 'string')
+            ->setAllowedTypes('http_key', 'string')
+            ->setAllowedTypes('http_port', 'int')
+            ->setAllowedTypes('http_whitelist', 'array')
+            ->setAllowedTypes('ic_badwords', 'array')
+            ->setAllowedTypes('legacy', 'bool')
+            ->setAllowedTypes('moderate', 'bool')
+            ->setAllowedTypes('ooc_badwords', 'array')
+            ->setAllowedTypes('owner_id', 'string')
+            ->setAllowedTypes('rules', 'string')
+            ->setAllowedTypes('server_settings', 'array')
+            ->setAllowedTypes('socket', ['null', 'resource', SocketServer::class])
+            ->setAllowedTypes('stats', ['null', Stats::class])
+            ->setAllowedTypes('technician_id', 'string')
+            ->setAllowedTypes('verify_url', 'string')
+            ->setAllowedTypes('web_address', 'string')
+            ->setAllowedTypes('webapi', ['null', 'resource', HttpServer::class])
+            ->setAllowedTypes('webserver_url', 'string');
+
+        $options = $resolver->resolve($options);
+
         $this->welcome_message = $options['welcome_message'];
-        
-        if (! isset($options['logger']) || ! ($options['logger'] instanceof Logger)) {
+
+        if (! $options['logger']) {
             $streamHandler = new StreamHandler('php://stdout', Level::Info);
             $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
             $options['logger'] = new Logger(self::class, [$streamHandler]);
         }
+        $this->logger = $options['logger'];
+
         $onFulfilledDefaultValid = false;
-        if (isset($options['onFulfilledDefault']) && is_callable($options['onFulfilledDefault'])) {
-            if ($reflection = new ReflectionFunction($options['onFulfilledDefault']))
-                if ($returnType = $reflection->getReturnType())
-                    if ($returnType->getName() !== 'void')
-                        { $this->onFulfilledDefault = $options['onFulfilledDefault']; $onFulfilledDefaultValid = true; }
-        }
-        if (! $onFulfilledDefaultValid) $this->onFulfilledDefault = function ($result) {
-            return $result;
-            // This will be useful for debugging promises that are not resolving as expected.
-            $output = 'Promise resolved with type of: `' . gettype($result) . '`';
-            if (is_object($result)) {
-                $output .= ' and class of: `' . get_class($result) . '`';
-                $output .= ' with properties: `' . implode('`, `', array_keys(get_object_vars($result))) . '`';
-                if (isset($result->scriptData)) $output .= " and scriptData of: `{$result->scriptData}`";
-                $output .= PHP_EOL;
-                ob_start();
-                var_dump($result);
-                $output .= ob_get_clean();
+        if ($options['onFulfilledDefault']) {
+            if ($reflection = new ReflectionFunction($options['onFulfilledDefault'])) {
+                if ($returnType = $reflection->getReturnType()) {
+                    if ($returnType->getName() !== 'void') {
+                        $this->onFulfilledDefault = $options['onFulfilledDefault'];
+                        $onFulfilledDefaultValid = true;
+                    }
+                }
             }
-            $this->logger->debug($output);
-            return $result;
-        };
+        }
+        if (! $onFulfilledDefaultValid) {
+            $this->onFulfilledDefault = function ($result) {
+                return $result;
+                // This will be useful for debugging promises that are not resolving as expected.
+                $output = 'Promise resolved with type of: `' . gettype($result) . '`';
+                if (is_object($result)) {
+                    $output .= ' and class of: `' . get_class($result) . '`';
+                    $output .= ' with properties: `' . implode('`, `', array_keys(get_object_vars($result))) . '`';
+                    if (isset($result->scriptData)) $output .= " and scriptData of: `{$result->scriptData}`";
+                    $output .= PHP_EOL;
+                    ob_start();
+                    var_dump($result);
+                    $output .= ob_get_clean();
+                }
+                $this->logger->debug($output);
+                return $result;
+            };
+        }
+
         $onRejectedDefaultValid = false;
-        if (isset($options['onRejectedDefault']) && is_callable($options['onRejectedDefault'])) {
+        if ($options['onRejectedDefault'])
             if ($reflection = new ReflectionFunction($options['onRejectedDefault']))
                 if ($returnType = $reflection->getReturnType())
-                    if ($returnType->getName() === 'void')
-                        { $this->onRejectedDefault = $options['onRejectedDefault']; $onRejectedDefaultValid = true; }
-        }
-        if (! $onRejectedDefaultValid) $this->onRejectedDefault = function(\Throwable $reason): void
-        {
+                    if ($returnType->getName() === 'void') {
+                        $this->onRejectedDefault = $options['onRejectedDefault'];
+                        $onRejectedDefaultValid = true;
+                    }
+        if (! $onRejectedDefaultValid) $this->onRejectedDefault = function(\Throwable $reason): void {
             $this->logger->error("Promise rejected with reason: `$reason`");
         };
 
         $this->then = new PromiseMiddleware($this->onFulfilledDefault, $this->onRejectedDefault);
 
-        if (isset($options['folders'])) foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! is_dir($value) || ! @mkdir($value, 0664, true)) {
+        foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! is_dir($value) || ! @mkdir($value, 0664, true)) {
             $this->logger->warning("`$value` is not a valid folder path!");
             unset($options['folders'][$key]);
         }
-        if (isset($options['files'])) foreach ($options['files'] as $key => $value) if (! is_string($value) || ! @touch($value)) {
+
+        foreach ($options['files'] as $key => $value) if (! is_string($value) || ! @touch($value)) {
             $this->logger->warning("`$value` is not a valid file path!");
             unset($options['files'][$key]);
         }
-        if (isset($options['channel_ids'])) foreach ($options['channel_ids'] as $key => $value) if (! is_numeric($value)) {
+
+        foreach ($options['channel_ids'] as $key => $value) if (! is_numeric($value)) {
             $this->logger->warning("`$value` is not a valid channel id!");
             unset($options['channel_ids'][$key]);
         }
-        if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $value) if (! is_numeric($value)) {
+
+        foreach ($options['role_ids'] as $key => $value)  if (! is_numeric($value)) {
             $this->logger->warning("`$value` is not a valid role id!");
             unset($options['role_ids'][$key]);
         }
-        if (isset($options['functions'])) foreach ($options['functions'] as $key => $array) {
+
+        foreach ($options['functions'] as $key => $array) {
             if (! is_array($array)) {
                 $this->logger->warning("`$key` is not a valid function array!");
                 unset($options['functions'][$key]);
@@ -444,8 +578,7 @@ class Civ13
                 unset($options['functions'][$key]);
             }
         }
-        
-        if (! isset($options['loop']) || ! ($options['loop'] instanceof LoopInterface)) $options['loop'] = Loop::get();
+
         $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
 
