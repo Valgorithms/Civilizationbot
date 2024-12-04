@@ -1052,7 +1052,7 @@ class Civ13
             return true;
         }, false)) return false;
         $this->__bancheckTimer();
-        if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
+        if (! isset($this->timers['bancheck_timer']) || ! isset($this->timers['bancheck_timer']) instanceof TimerInterface) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
         return $this->timers['bancheck_timer'];
     }
     private function __bancheckTimer(): void
@@ -1460,6 +1460,11 @@ class Civ13
         $ban['ip'] = $item[10];
 
         return $ban;
+    }
+    public function banArrayToObj(array $ban): ?Ban
+    {
+        if (count($ban) !== 11) return null;
+        return new Ban(implode(';', $ban));
     }
     /*
      * Creates a Collection from the playerlogs file

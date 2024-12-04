@@ -43,15 +43,15 @@ class Ban
     public ?string $cid = '0';
     public ?string $ip = '0';
 
-    public function __construct(string $ban)
+    public function __construct(array|string $ban)
     {
-        $array = explode(';', $ban);
-        if (count($array) !== 11) throw new \Exception('Invalid ban log format');
+        if (is_string($ban)) $ban = explode(';', $ban);
+        if (count($ban) !== 11) throw new \Exception('Invalid ban log format');
         /** @var ?string $field */
         foreach (array_keys(get_class_vars(self::class)) as $index => $field)
-            $this->$field = $array[$index] === 'nil'
+            $this->$field = $ban[$index] === 'nil'
                 ? (new \ReflectionProperty($this, $field))->getDefaultValue()
-                : $array[$index];
+                : $ban[$index];
     }
 
     public function uid()
