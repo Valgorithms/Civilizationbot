@@ -70,17 +70,17 @@ class Ban
 
     public function uid()
     {
-        return $this->uid ?? self::num2text(rand(1, 1000*1000*1000), 20);
+        return $this->uid ?? $this->uid = self::num2text(rand(1, 1000*1000*1000), 20);
     }
     
     public function date(): Carbon
     { // Sun Oct 13 10.05.32 2024
-        return $this->date ?? Carbon::createFromFormat('D M d H.i.s Y', date('D M d H.i.s Y'));
+        return $this->date ?? $this->date = Carbon::createFromFormat('D M d H.i.s Y', date('D M d H.i.s Y'));
     }
 
     public function timestamp(): string
     {
-        return $this->timestamp ?? strval(Byond::convertToByondFromUnix(time()));
+        return $this->timestamp ?? $this->timestamp = strval(Byond::convertToByondFromUnix(time()));
     }
 
     /**
@@ -117,13 +117,10 @@ class Ban
                 }
                 return $result;
             }
-        }
-        else {
-            if ($SigFig !== null) {
+        } elseif ($SigFig !== null) {
                 $format = sprintf('%%.%df', $SigFig - 1);
                 $result = sprintf($format, $N);
                 return rtrim(rtrim($result, '0'), '.');
-            }
         }
 
         return strval($N);
@@ -134,15 +131,15 @@ class Ban
         return [
             'type' => $this->type,
             'job' => $this->job,
-            'uid' => $this->uid,
+            'uid' => $this->uid ?? self::uid(),
             'reason' => $this->reason,
             'admin' => $this->admin,
             'date' => $this->date ?? self::date(),
             'timestamp' => $this->timestamp ?? self::timestamp(),
             'expires' => $this->expires,
             'ckey' => $this->ckey,
-            'cid' => $this->cid ?? '0',
-            'ip' => $this->ip ?? '0'
+            'cid' => $this->cid,
+            'ip' => $this->ip
         ];
     }
 
@@ -151,7 +148,7 @@ class Ban
         return
             $this->type . ';' .
             $this->job . ';' .
-            $this->uid . ';' .
+            $this->uid ?? self::uid() . ';'  .
             $this->reason . ';' .
             $this->admin . ';' .
             $this->date ?? self::date() . ';' .
@@ -174,5 +171,5 @@ class Ban
     }
 }
 
-$ban = new Ban('nil;nil;nil;advertising;valithor;nil;nil;Expires in 100 years;ckey;000000001;123.45.67.890|||');
-var_dump($ban);
+//$ban = new Ban('nil;nil;nil;advertising;valithor;nil;nil;Expires in 100 years;ckey;000000001;123.45.67.890|||');
+//var_dump($ban);
