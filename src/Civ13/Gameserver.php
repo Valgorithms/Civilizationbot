@@ -244,7 +244,6 @@ class GameServer
                 trigger_error("Gameserver missing optional property: $property", E_USER_WARNING);
     }
     
-    
     /**
      * Returns an array of the player count for each locally hosted server in the configuration file.
      *
