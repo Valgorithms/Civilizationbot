@@ -97,18 +97,16 @@ class HttpServiceManager
 
     private function __populateWhitelist()
     {
-        if ($this->httpHandler && $this->civ13->civ13_guild_id && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) { // Whitelist the IPs of all Ambassador
-            $members = $guild->members->filter(function ($member) {
+        if ($this->httpHandler && $this->civ13->civ13_guild_id && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) // Whitelist the IPs of all Ambassador            $members = $guild->members->filter(function ($member) {
+            foreach ($guild->members->filter(function ($member) {
                 return $member->roles->has($this->civ13->role_ids['Ambassador']);
-            });
-            foreach ($members as $member)
+            }) as $member)
                 if ($item = $this->civ13->verifier->getVerifiedItem($member))
                     if (isset($item['ss13']) && $ckey = $item['ss13'])
                         if ($playerlogs = $this->civ13->getCkeyLogCollections($ckey)['playerlogs'])
                             foreach ($playerlogs as $log)
                                 if (isset($log['ip']))
                                     $this->httpHandler->whitelist($log['ip']);
-        }
     }
 
     private function __generateEndpoints()
@@ -261,9 +259,7 @@ class HttpServiceManager
             ->offsetSets(['/', '/index.html', '/index.php'],
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
                 {
-                    if ($whitelisted)
-                        if ($method = $this->httpHandler->offsetGet('/botlog', 'handlers'))
-                            return $method($request, $endpoint, $whitelisted);
+                    if ($whitelisted && $method = $this->httpHandler->offsetGet('/botlog', 'handlers')) return $method($request, $endpoint, $whitelisted);
                     if ($method = $this->httpHandler->offsetGet('/home.html', 'handlers')) return $method($request, $endpoint, $whitelisted);
                     return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
                 })
@@ -749,18 +745,7 @@ class HttpServiceManager
     }
 
     private function __generateServerEndpoints()
-    {
-        $relay = function($message, $channel, $ckey = null): ?PromiseInterface
-        {
-            if (! $ckey || ! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput(explode('/', $ckey)[0]))) return $this->civ13->sendMessage($channel, $message);
-            if ($item['discord'] && ! $user = $this->discord->users->get('id', $item['discord'])) {
-                $this->logger->warning("{$item['ss13']}'s Discord ID was not found not in the primary Discord server!");
-                $this->discord->users->fetch($item['discord']);
-                return $this->civ13->sendMessage($channel, $message);
-            } 
-            return $channel->sendMessage(MessageBuilder::new()->addEmbed($this->civ13->createEmbed(false, 0xFFD700)->setAuthor("{$user->username} ({$user->id})", $user->avatar)->setDescription($message)));
-        };
-        
+    {        
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             // General usage server endpoints
             $server_endpoint = '/' . $gameserver->key;
@@ -863,7 +848,6 @@ class HttpServiceManager
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} AHELP__ $ckey:** " . $message;
 
-                        //$relay($message, $channel, $ckey); //Bypass moderator
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true);
                         
                         // Check if there are any Discord admins on the server, notify staff in Discord if there are not
@@ -890,7 +874,7 @@ class HttpServiceManager
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/asaymessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver, $relay): HttpResponse
+                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->asay)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -904,8 +888,7 @@ class HttpServiceManager
                         $message = "**__{$time}__** $message";
 
                         
-                        /*if ($moderate = str_contains($data['message'], $this->discord->username))*/ $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, str_contains($data['message'], $this->discord->username)); // Message was probably meant for the bot
-                        //else $relay($message, $channel, $ckey); //Bypass moderator
+                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, str_contains($data['message'], $this->discord->username)); // Message was probably meant for the bot
 
                         // Check if there are any Discord admins on the server, notify staff in Discord if there are not
                         if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
@@ -931,7 +914,7 @@ class HttpServiceManager
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/urgentasaymessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver, $relay): HttpResponse
+                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->asay)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -945,7 +928,6 @@ class HttpServiceManager
                         //$message = "**__{$time} ASAY__ $ckey:** $message";
                         $message = "**__{$time}__** $message";
 
-                        //$relay($message, $channel, $ckey);
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, false);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
@@ -963,7 +945,6 @@ class HttpServiceManager
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} LOBBY__ $ckey:** $message";
 
-                        //$relay($message, $channel, $ckey);
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
@@ -980,7 +961,6 @@ class HttpServiceManager
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         //$message = "**__{$time} OOC__ $ckey:** $message";
 
-                        //$relay($message, $channel, $ckey);
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
@@ -997,7 +977,6 @@ class HttpServiceManager
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         //$message = "**__{$time} OOC__ $ckey:** $message";
 
-                        //$relay($message, $channel, $ckey);
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, false);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
@@ -1014,7 +993,6 @@ class HttpServiceManager
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} EMOTE__ $ckey:** $message";
 
-                        //$relay($message, $channel, $ckey);
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, false);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
@@ -1031,7 +1009,6 @@ class HttpServiceManager
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} GARBAGE__ $ckey:** $message";
 
-                        //$relay($message, $channel, $ckey);
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
@@ -1079,7 +1056,7 @@ class HttpServiceManager
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/login',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver, $relay): HttpResponse
+                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->transit)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -1107,13 +1084,12 @@ class HttpServiceManager
                             $this->civ13->sendMessage($parole_notif_channel, $message2);
                         }
 
-                        //$relay($message, $channel, $ckey);
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, false);
                         if ($ckey && $ckey !== '(NULL)') $this->civ13->moderator->scrutinizeCkey($ckey);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/logout',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver, $relay): HttpResponse
+                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->transit)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -1134,11 +1110,10 @@ class HttpServiceManager
                             $this->civ13->sendMessage($parole_notif_channel, $message2);
                         }
 
-                        //$relay($message, $channel, $ckey);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/runtimemessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver, $relay): HttpResponse
+                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->runtime)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -1151,11 +1126,10 @@ class HttpServiceManager
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} RUNTIME__:** $message";
 
-                        //$relay($message, $channel);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/alogmessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver, $relay): HttpResponse
+                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->adminlog)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
@@ -1167,12 +1141,11 @@ class HttpServiceManager
                         isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
                         $message = "**__{$time} ADMIN LOG__:** " . $message;
 
-                        //$relay($message, $channel);
                         $gameserver->gameChatWebhookRelay($message, $channel_id);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/attacklogmessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver, $relay): HttpResponse
+                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! $gameserver->log_attacks) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); // Disabled on TDM, use manual checking of log files instead
@@ -1188,7 +1161,6 @@ class HttpServiceManager
                         $message = "**__{$time} ATTACK LOG__:** " . $message;
                         if ($ckey && $ckey2) if ($ckey === $ckey2) $message .= " (Self-Attack)";
                         
-                        //$relay($message, $channel);
                         $gameserver->gameChatWebhookRelay($message, $channel_id);
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
@@ -1196,7 +1168,7 @@ class HttpServiceManager
                     fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => new HttpResponse(HttpResponse::STATUS_OK)
                     , true)
                 /*
-                ->offsetSet($server_endpoint.'/', (function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($key, $server, $relay): HttpResponse
+                ->offsetSet($server_endpoint.'/', (function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($key, $server): HttpResponse
                 {
                     return new HttpResponse(HttpResponse::STATUS_OK);
                 }), true);
