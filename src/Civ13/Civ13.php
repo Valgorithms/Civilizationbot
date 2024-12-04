@@ -527,7 +527,7 @@ class Civ13
      */
     public function then(PromiseInterface $promise, ?callable $onFulfilled = null, ?callable $onRejected = null): PromiseInterface
     {
-        return $this->then($promise, $onFulfilled, $onRejected);
+        return ($this->then)($promise, $onFulfilled, $onRejected);
         /*
         if (! $onRejected) $onRejectedDefault = function (\Throwable $reason) use ($promise, $onFulfilled): void
         { // TODO: Add a check for Discord disconnects and refire the promise
