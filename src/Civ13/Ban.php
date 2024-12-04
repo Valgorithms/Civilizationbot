@@ -31,27 +31,41 @@ use Carbon\Carbon;
  */
 class Ban
 {
-    public ?string $type = 'Server';
-    public ?string $job = 'nil';
-    private ?string $uid = null;
+    public string $type;
+    public string $job;
+    private ?string $uid;
     public ?string $reason;
     public ?string $admin;
-    private ?string $date = null;
-    private ?string $timestamp = null;
-    public ?string $expires = 'Expires in 999 years';
+    private ?string $date;
+    private ?string $timestamp;
+    public string $expires;
     public ?string $ckey;
-    public ?string $cid = '0';
-    public ?string $ip = '0';
+    public string $cid;
+    public string $ip;
 
     public function __construct(array|string $ban)
     {
         if (is_string($ban)) $ban = explode(';', $ban);
         if (count($ban) !== 11) throw new \Exception('Invalid ban log format');
         /** @var ?string $field */
-        foreach (array_keys(get_class_vars(self::class)) as $index => $field)
-            $this->$field = $ban[$index] === 'nil'
-                ? (new \ReflectionProperty($this, $field))->getDefaultValue()
-                : $ban[$index];
+        $resolver = new \Symfony\Component\OptionsResolver\OptionsResolver();
+        $resolver->setDefaults([
+            'type' => 'Server',
+            'job' => 'nil',
+            'uid' => null,
+            'reason' => null,
+            'admin' => null,
+            'date' => null,
+            'timestamp' => null,
+            'expires' => 'Expires in 999 years',
+            'ckey' => null,
+            'cid' => '0',
+            'ip' => '0',
+        ]);
+
+        $ban = $resolver->resolve(array_combine(array_keys(get_class_vars(self::class)), $ban));
+
+        array_walk($ban, fn($value, $field) => $this->$field = "$value");
     }
 
     public function uid()
@@ -118,8 +132,8 @@ class Ban
     public function __toArray()
     {
         return [
-            'type' => $this->type ?? 'Server',
-            'job' => $this->job ?? 'nil',
+            'type' => $this->type,
+            'job' => $this->job,
             'uid' => $this->uid,
             'reason' => $this->reason,
             'admin' => $this->admin,
@@ -135,17 +149,17 @@ class Ban
     public function __toString(): string
     {
         return
-            $this->type ?? 'Server' . ';'.
-            $this->job ?? 'nil' . ';'.
-            $this->uid . ';'.
-            $this->reason . ';'.
-            $this->admin . ';'.
-            $this->date ?? self::date() . ';'.
-            $this->timestamp ?? self::timestamp() . ';'.
+            $this->type . ';' .
+            $this->job . ';' .
+            $this->uid . ';' .
+            $this->reason . ';' .
+            $this->admin . ';' .
+            $this->date ?? self::date() . ';' .
+            $this->timestamp ?? self::timestamp() . ';' .
             $this->expires . ';' .
             $this->ckey . ';' .
-            $this->cid ?? '0' . ';' .
-            $this->ip ?? '0' . '|||';
+            $this->cid . ';' .
+            $this->ip . '|||';
     }
 
     public function __get($name)
