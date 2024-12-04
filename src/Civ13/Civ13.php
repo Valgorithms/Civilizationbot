@@ -1052,7 +1052,8 @@ class Civ13
             return true;
         }, false)) return false;
         $this->__bancheckTimer();
-        if (! isset($this->timers['bancheck_timer'])) return $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
+        if (! isset($this->timers['bancheck_timer'])) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
+        return $this->timers['bancheck_timer'];
     }
     private function __bancheckTimer(): void
     {
