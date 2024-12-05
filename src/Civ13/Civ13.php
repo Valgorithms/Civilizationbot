@@ -1364,7 +1364,7 @@ class Civ13
      * @param string $ckey The ckey to retrieve information for.
      * @return array An array containing the ckeys, ips, cids, banned status, altbanned status, verification status, and associated discords. (array[array, array, array, bool, bool, bool])
      */
-    public function ckeyinfo(string $ckey, int $max_iterations = 10): array
+    public function ckeyinfo(string $ckey, int $max_iterations = 100): array
     {
         if (! $ckey = self::sanitizeInput($ckey)) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
