@@ -1403,17 +1403,23 @@ class Civ13
     private function __processLogs($logs, &$found_ckeys, &$found_ips, &$found_cids, $ckeys, $ips, $cids): bool
     {
         $found = false;
-        foreach ($logs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-            if (! in_array($log['ckey'], $ckeys)) {
+        $ckeys_set = array_flip($ckeys);
+        $ips_set = array_flip($ips);
+        $cids_set = array_flip($cids);
+        foreach ($logs as $log) if (isset($ckeys_set[$log['ckey']]) || isset($ips_set[$log['ip']]) || isset($cids_set[$log['cid']])) {
+            if (! isset($ckeys_set[$log['ckey']])) {
                 $found_ckeys[] = $log['ckey'];
+                $ckeys_set[$log['ckey']] = true;
                 $found = true;
             }
-            if (! in_array($log['ip'], $ips)) {
+            if (! isset($ips_set[$log['ip']])) {
                 $found_ips[] = $log['ip'];
+                $ips_set[$log['ip']] = true;
                 $found = true;
             }
-            if (! in_array($log['cid'], $cids)) {
+            if (! isset($cids_set[$log['cid']])) {
                 $found_cids[] = $log['cid'];
+                $cids_set[$log['cid']] = true;
                 $found = true;
             }
         }
