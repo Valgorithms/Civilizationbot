@@ -1369,70 +1369,55 @@ class Civ13
         if (! $ckey = self::sanitizeInput($ckey)) return [null, null, null, false, false];
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) return [null, null, null, false, false];
         if ($item = $this->verifier->getVerifiedItem($ckey)) $ckey = $item['ss13'];
+         // Get the ckey's primary identifiers
         $ckeys = [$ckey];
-        $ips = [];
-        $cids = [];
-        foreach ($collectionsArray['playerlogs'] as $log) { // Get the ckey's primary identifiers
-            if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
+        $ips   = [];
+        $cids  = [];
+        foreach (['playerlogs', 'bans'] as $type) foreach ($collectionsArray[$type] as $log) {
+            if (isset($log['ip'])  && ! in_array($log['ip'],  $ips))  $ips[]  = $log['ip'];
             if (isset($log['cid']) && ! in_array($log['cid'], $cids)) $cids[] = $log['cid'];
         }
-        foreach ($collectionsArray['bans'] as $log) { // Get the ckey's primary identifiers
-            if (isset($log['ip']) && ! in_array($log['ip'], $ips)) $ips[] = $log['ip'];
-            if (isset($log['cid']) && ! in_array($log['cid'], $ips)) $cids[] = $log['cid'];
-        }
-        // Iterate through the playerlogs ban logs to find all known ckeys, ips, and cids
-        for ($i = 0; $i < 10; $i++) {
-            $found = false;
+        for ($i = 0; $i < 10; $i++) { // Iterate through the player logs and ban logs to find all known ckeys, ips, and cids
             $found_ckeys = [];
-            $found_ips = [];
-            $found_cids = [];
-            foreach ($this->playerlogsToCollection() as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                if (! in_array($log['ckey'], $ckeys)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-            }
-            if (! $found) break;
+            $found_ips   = [];
+            $found_cids  = [];
+            if ( // If no new values are found, break the loop early
+                   ! $this->__processLogs($this->playerlogsToCollection(), $found_ckeys, $found_ips, $found_cids, $ckeys, $ips, $cids)
+                && ! $this->__processLogs($this->bansToCollection(),       $found_ckeys, $found_ips, $found_cids, $ckeys, $ips, $cids)
+            ) break;
             $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
-            $ips = array_unique(array_merge($ips, $found_ips));
-            $cids = array_unique(array_merge($cids, $found_cids));
-        }
-
-        for ($i = 0; $i < 10; $i++) {
-            $found = false;
-            $found_ckeys = [];
-            $found_ips = [];
-            $found_cids = [];
-            foreach ($this->bansToCollection() as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
-                if (! in_array($log['ckey'], $ips)) { $found_ckeys[] = $log['ckey']; $found = true; }
-                if (! in_array($log['ip'], $ips)) { $found_ips[] = $log['ip']; $found = true; }
-                if (! in_array($log['cid'], $cids)) { $found_cids[] = $log['cid']; $found = true; }
-            }
-            if (! $found) break;
-            $ckeys = array_unique(array_merge($ckeys, $found_ckeys));
-            $ips = array_unique(array_merge($ips, $found_ips));
-            $cids = array_unique(array_merge($cids, $found_cids));
-        }
-
-        $verified = false;
-        $altbanned = false;
-        $discords = [];
-        foreach ($ckeys as $key) {
-            if (isset($this->verifier) && $item = $this->verifier->get('ss13', $key)) {
-                $discords[] = $item['discord'];
-                $verified = true;
-            }
-            if ($key != $ckey && $this->bancheck($key)) $altbanned = true;
+            $ips   = array_unique(array_merge($ips,   $found_ips  ));
+            $cids  = array_unique(array_merge($cids,  $found_cids ));
         }
 
         return [
-            'ckeys' => $ckeys,
-            'discords' => $discords,
-            'ips' => $ips,
-            'cids' => $cids,
-            'banned' => $this->bancheck($ckey),
-            'altbanned' => $altbanned,
-            'verified' => $verified
+            'ckeys'     => $ckeys,
+            'ips'       => $ips,
+            'cids'      => $cids,
+            'banned'    => $this->bancheck($ckey),
+            'altbanned' => array_reduce($ckeys, fn($carry, $key) => $carry || ($key !== $ckey && $this->bancheck($key)), false),
+            'discords'  => array_filter(array_map(fn($key) => $this->verifier->get('ss13', $key)['discord'] ?? null, $ckeys)),
+            'verified'  => ! empty($discords)
         ];
+    }
+    private function __processLogs($logs, &$found_ckeys, &$found_ips, &$found_cids, $ckeys, $ips, $cids): bool
+    {
+        $found = false;
+        foreach ($logs as $log) if (in_array($log['ckey'], $ckeys) || in_array($log['ip'], $ips) || in_array($log['cid'], $cids)) {
+            if (! in_array($log['ckey'], $ckeys)) {
+                $found_ckeys[] = $log['ckey'];
+                $found = true;
+            }
+            if (! in_array($log['ip'], $ips)) {
+                $found_ips[] = $log['ip'];
+                $found = true;
+            }
+            if (! in_array($log['cid'], $cids)) {
+                $found_cids[] = $log['cid'];
+                $found = true;
+            }
+        }
+        return $found;
     }
     /**
      * Updates the provided arrays of ckeys, ips, cids, and dates with new values found in the logs.
