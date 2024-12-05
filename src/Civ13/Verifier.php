@@ -711,23 +711,12 @@ class Verifier
     {
         if (! $input) return null;
         if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
-
-        // Get Discord ID
-        $id = null;
-        switch (true) {
-            case ($input instanceof Member || $input instanceof User):
-                $id = $input->id;
-                break;
-            case is_string($input):
-                if (is_numeric($input = Civ13::sanitizeInput($input))) $id = $input;
-                elseif ($item = $this->get('ss13', $input)) $id = $item['discord'];
-                break;
-            case is_array($input):
-                if (isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord']))) $id = $discord_id;
-                elseif (isset($input['ss13']) && ($item = $this->get('ss13', Civ13::sanitizeInput($input['ss13'])))) $id = $item['discord'];
-                break;
-        }
-        if (! $id || ! $this->isVerified($id)) return null;
+        if (! ($id = match (true) {
+            $input instanceof Member, $input instanceof User => $input->id,
+            is_string($input) => is_numeric($input = Civ13::sanitizeInput($input)) ? $input : ($this->get('ss13', $input)['discord'] ?? null),
+            is_array($input) => isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord'])) ? $discord_id : ($this->get('ss13', Civ13::sanitizeInput($input['ss13']))['discord'] ?? null),
+            default => null,
+        }) || ! $this->isVerified($id)) return null;
         return $guild->members->get('id', $id);
     }
     public function getVerifiedUser(Member|User|array|string|null $input): ?User
@@ -736,24 +725,12 @@ class Verifier
         if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
 
         // Get Discord ID
-        $id = null;
-        switch (true) {
-            case ($input instanceof Member || $input instanceof User):
-                $id = $input->id;
-                break;
-            case is_string($input):
-                if (is_numeric($input = Civ13::sanitizeInput($input))) {
-                    $id = $input;
-                } elseif ($item = $this->get('ss13', $input)) {
-                    $id = $item['discord'];
-                }
-                break;
-            case is_array($input):
-                if (isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord']))) $id = $discord_id;
-                elseif (isset($input['ss13']) && ($item = $this->get('ss13', Civ13::sanitizeInput($input['ss13'])))) $id = $item['discord'];
-                break;
-        }
-        if (! $id || ! $this->isVerified($id)) return null;
+        if (! ($id = match (true) {
+            $input instanceof Member, $input instanceof User => $input->id,
+            is_string($input) => is_numeric($input = Civ13::sanitizeInput($input)) ? $input : ($this->get('ss13', $input)['discord'] ?? null),
+            is_array($input) => isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord'])) ? $discord_id : ($this->get('ss13', Civ13::sanitizeInput($input['ss13']))['discord'] ?? null),
+            default => null,
+        }) || ! $this->isVerified($id)) return null;
         if ($user = $this->discord->users->get('id', $id)); return $user;
         $this->logger->warning("Unable to find user with ID `$id`.");
         try { if ($user = await($this->discord->users->fetch('id', $id))) return $user;
