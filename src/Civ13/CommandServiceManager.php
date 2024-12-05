@@ -98,44 +98,48 @@ class CommandServiceManager
      * @param array $command The command to validate.
      * @return bool Returns true if the command callback is valid, false otherwise.
      */
-    public function validateCommand($command): bool
+    public function validateCommand(array $command): bool
     {
-        if (! is_array($command)) {
-            $this->logger->warning('Command must be an array');
+        $resolver = new \Symfony\Component\OptionsResolver\OptionsResolver();
+        $resolver->setRequired(['name']);
+        $resolver->setDefaults([
+            'message_handler' => null,
+            'http_handler' => null,
+            'interaction_handler' => null,
+            'interaction_definer' => []
+        ]);
+        $resolver->setAllowedTypes('name', 'string');
+        $resolver->setAllowedTypes('message_handler', ['null', MessageHandlerCallback::class]);
+        $resolver->setAllowedTypes('http_handler', ['null', HttpHandlerCallback::class]);
+        $resolver->setAllowedTypes('interaction_handler', ['null', 'callable']);
+        $resolver->setAllowedTypes('interaction_definer', 'array');
+
+        try {
+            $command = $resolver->resolve($command);
+        } catch (\Exception $e) {
+            $this->logger->warning('Invalid command configuration: ' . $e->getMessage());
             return false;
         }
-        if (! isset($command['name']) || ! $command['name']) {
-            $this->logger->warning('Invalid command name');
-            return false;
-        }
-        if (isset($command['message_handler']) && (! is_callable($command['message_handler']) || ! $command['message_handler'] instanceof MessageHandlerCallback)) {
+
+        if ($command['message_handler'] && !is_callable($command['message_handler'])) {
             $this->logger->warning("Invalid Message handler for `{$command['name']}`");
             return false;
         }
-        if (isset($command['http_handler']) && (! is_callable($command['http_handler']) || ! $command['http_handler'] instanceof HttpHandlerCallback)) {
+
+        if ($command['http_handler'] && !is_callable($command['http_handler'])) {
             $this->logger->warning("Invalid HTTP handler for `{$command['name']}`");
             return false;
         }
-        
-        if (isset($command['interaction_handler'])) {
+
+        if ($command['interaction_handler']) {
             $command['interaction_definer']['name'] = $command['name'];
-            if (! isset($command['interaction_definer']) || ! is_array($command['interaction_definer'])) {
-                $this->logger->warning("Invalid interaction definitions for `{$command['name']}`");
-                return false;
-            }
-            if (! is_callable($command['interaction_handler'])) {
+            if (!is_callable($command['interaction_handler'])) {
                 $this->logger->warning("Invalid interaction handler for `{$command['name']}`");
                 return false;
             }
-            if (! $reflection = new ReflectionFunction($command['interaction_handler'])) {
-                $this->logger->warning("Invalid reflection for `{$command['name']}`");
-                return false;
-            }
-            if (! $returnType = $reflection->getReturnType()) {
-                $this->logger->warning("Invalid return type for `{$command['name']}`");
-                return false;
-            }
-            if ($returnType->getName() !== 'React\Promise\PromiseInterface') {
+            $reflection = new ReflectionFunction($command['interaction_handler']);
+            $returnType = $reflection->getReturnType();
+            if (!$returnType || $returnType->getName() !== 'React\Promise\PromiseInterface') {
                 $this->logger->warning("Invalid return type for `{$command['name']}`, found {$returnType->getName()} instead of PromiseInterface");
                 return false;
             }
