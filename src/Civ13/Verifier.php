@@ -80,7 +80,7 @@ class Verifier
                     $member_future->roles->has($this->civ13->role_ids['Verified']) ||
                     $member_future->roles->has($this->civ13->role_ids['Banished']) ||
                     $member_future->roles->has($this->civ13->role_ids['Permabanished'])
-                ) return null; // Don't kick if they have an verified or banned role
+                ) return null; // Don't kick if they have a verified or banned role
                 return $guild->members->kick($member_future, 'Not verified');
             });
         });
