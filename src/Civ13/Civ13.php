@@ -514,25 +514,22 @@ class Civ13
                 }
             }
         }
-        if (! $onFulfilledDefaultValid) {
-            $this->onFulfilledDefault = function ($result) {
-                return $result;
-                // This will be useful for debugging promises that are not resolving as expected.
-                $output = 'Promise resolved with type of: `' . gettype($result) . '`';
-                if (is_object($result)) {
-                    $output .= ' and class of: `' . get_class($result) . '`';
-                    $output .= ' with properties: `' . implode('`, `', array_keys(get_object_vars($result))) . '`';
-                    if (isset($result->scriptData)) $output .= " and scriptData of: `{$result->scriptData}`";
-                    $output .= PHP_EOL;
-                    ob_start();
-                    var_dump($result);
-                    $output .= ob_get_clean();
-                }
-                $this->logger->debug($output);
-                return $result;
-            };
-        }
-
+        if (! $onFulfilledDefaultValid) $this->onFulfilledDefault = function ($result) {
+            return $result;
+            // This will be useful for debugging promises that are not resolving as expected.
+            $output = 'Promise resolved with type of: `' . gettype($result) . '`';
+            if (is_object($result)) {
+                $output .= ' and class of: `' . get_class($result) . '`';
+                $output .= ' with properties: `' . implode('`, `', array_keys(get_object_vars($result))) . '`';
+                if (isset($result->scriptData)) $output .= " and scriptData of: `{$result->scriptData}`";
+                $output .= PHP_EOL;
+                ob_start();
+                var_dump($result);
+                $output .= ob_get_clean();
+            }
+            $this->logger->debug($output);
+            return $result;
+        };
         $onRejectedDefaultValid = false;
         if ($options['onRejectedDefault'])
             if ($reflection = new ReflectionFunction($options['onRejectedDefault']))
@@ -544,7 +541,6 @@ class Civ13
         if (! $onRejectedDefaultValid) $this->onRejectedDefault = function(\Throwable $reason): void {
             $this->logger->error("Promise rejected with reason: `$reason`");
         };
-
         $this->then = new PromiseMiddleware($this->onFulfilledDefault, $this->onRejectedDefault);
 
         foreach ($options['folders'] as $key => $value) if (! is_string($value) || ! is_dir($value) || ! @mkdir($value, 0664, true)) {
