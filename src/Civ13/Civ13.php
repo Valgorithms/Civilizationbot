@@ -1471,14 +1471,14 @@ class Civ13
         if (! $ckeyinfo) $ckeyinfo = $this->ckeyinfo($ckey);
         $embed = $this->createEmbed()->setTitle($ckey);
         if (isset($this->verifier) && $user = $this->verifier->getVerifiedUser($ckey)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
-        if (! empty($ckeyinfo['ckeys'])) $embed->addFieldValues('Ckeys', implode(', ', array_map(fn($ckey) => isset($this->ages[$ckey]) ? "$ckey ({$this->ages[$ckey]})" : $ckey, $ckeyinfo['ckeys'])));
+        if (! empty($ckeyinfo['ckeys']))    $embed->addFieldValues('Ckeys',   implode(', ', array_map(fn($ckey) => isset($this->ages[$ckey]) ? "$ckey ({$this->ages[$ckey]})" : $ckey, $ckeyinfo['ckeys'])));
         if (! empty($ckeyinfo['discords'])) $embed->addfieldValues('Discord', implode(', ', array_map(fn($id) => $id ? "<@{$id}>" : $id, $ckeyinfo['discords'])), true);
-        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('IPs', implode(', ', $ckeyinfo['ips']), true);
-        if (! empty($ckeyinfo['cids'])) $embed->addFieldValues('CIDs', implode(', ', $ckeyinfo['cids']), true);
-        if (! empty($ckeyinfo['ips'])) $embed->addFieldValues('Regions', implode(', ', array_unique(array_map(fn($ip) => $this->getIpData($ip)['countryCode'] ?? 'unknown', $ckeyinfo['ips']))), true);
-        $embed->addfieldValues('verified', $ckeyinfo['verified'] ? 'Yes' : 'No');
-        $embed->addfieldValues('Currently Banned', $ckeyinfo['banned'] ? 'Yes' : 'No', true);
-        $embed->addfieldValues('Alt Banned', $ckeyinfo['altbanned'] ? 'Yes' : 'No', true);
+        if (! empty($ckeyinfo['ips']))      $embed->addFieldValues('IPs',     implode(', ', $ckeyinfo['ips']), true);
+        if (! empty($ckeyinfo['cids']))     $embed->addFieldValues('CIDs',    implode(', ', $ckeyinfo['cids']), true);
+        if (! empty($ckeyinfo['ips']))      $embed->addFieldValues('Regions', implode(', ', array_unique(array_map(fn($ip) => $this->getIpData($ip)['countryCode'] ?? 'unknown', $ckeyinfo['ips']))), true);
+        $embed->addfieldValues('Verified',         $ckeyinfo['verified']  ? 'Yes' : 'No');
+        $embed->addfieldValues('Currently Banned', $ckeyinfo['banned']    ? 'Yes' : 'No', true);
+        $embed->addfieldValues('Alt Banned',       $ckeyinfo['altbanned'] ? 'Yes' : 'No', true);
         $embed->addfieldValues('Ignoring banned alts or new account age', isset($this->permitted[$ckey]) ? 'Yes' : 'No', true);
         return $embed;
     }
