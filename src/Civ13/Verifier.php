@@ -267,11 +267,13 @@ class Verifier
         if ($this->get('ckey', $ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
             // Check if the player's account has played on the server before
-            $file_contents = '';
-            foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                if (file_exists($fp = $gameserver->basedir . Civ13::playerlogs) && $fc = @file_get_contents($fp)) $file_contents .= $fc;
-                else $this->logger->warning("Unable to open `$fp`");
-            }
+            $file_contents = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
+                if (! file_exists($fp = $gameserver->basedir . Civ13::playerlogs) || ! $fc = @file_get_contents($fp)) {
+                    $this->logger->warning("Unable to open `$fp`");
+                    return $carry;
+                }
+                return $carry . $fc;
+            }, '');
             if (! array_reduce(explode('|', $file_contents), fn($carry, $line) => $carry || explode(';', trim($line))[0] === $ckey, false)) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
             // Check if the player's account is old enough
             if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
