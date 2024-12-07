@@ -209,9 +209,11 @@ class Verifier
     public function generateToken(string $ckey, string $discord_id, string $charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', int $length = 50): string
     {
         if ($item = $this->pending->get('ss13', $ckey)) return $item['token'];
-        $token = '';
-        for ($i = 0; $i < $length; $i++) $token .= $charset[random_int(0, strlen($charset) - 1)];
-        $this->pending->pushItem(['discord' => $discord_id, 'ss13' => $ckey, 'token' => $token]);
+        $this->pending->pushItem(
+            ['discord' => $discord_id,
+            'ss13' => $ckey,
+            'token' => $token = implode('', array_map(fn() => $charset[random_int(0, strlen($charset) - 1)], range(1, $length)))
+        ]);
         return $token;
     }
     /**
@@ -249,7 +251,7 @@ class Verifier
      */
     public function process(string $ckey, string $discord_id, ?Member $m = null): string
     {
-        $ckey = Civ13::sanitizeInput($ckey);
+        if (! $ckey = Civ13::sanitizeInput($ckey)) return 'Invalid ckey!';
         if (! isset($this->civ13->permitted[$ckey]) && $this->civ13->permabancheck($ckey)) {
             if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
             return 'This account needs to appeal an existing ban first.';
@@ -265,14 +267,12 @@ class Verifier
         if ($this->get('ckey', $ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
         if (! $this->pending->get('discord', $discord_id)) {
             // Check if the player's account has played on the server before
-            $found = false;
             $file_contents = '';
             foreach ($this->civ13->enabled_gameservers as &$gameserver) {
                 if (file_exists($fp = $gameserver->basedir . Civ13::playerlogs) && $fc = @file_get_contents($fp)) $file_contents .= $fc;
                 else $this->logger->warning("Unable to open `$fp`");
             }
-            foreach (explode('|', $file_contents) as $line) if (explode(';', trim($line))[0] === $ckey) { $found = true; break; }
-            if (! $found) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
+            if (! array_reduce(explode('|', $file_contents), fn($carry, $line) => $carry || explode(';', trim($line))[0] === $ckey, false)) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
             // Check if the player's account is old enough
             if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
             if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
