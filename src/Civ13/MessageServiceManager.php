@@ -500,29 +500,18 @@ class MessageServiceManager
                         : $message->react("🔥"),
                 ['Admin'])
             ->offsetSet('adminlist',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {            
-                    $builder = MessageBuilder::new();
-                    if (! $found = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) use ($builder) {
-                        if (! file_exists($path = $gameserver->basedir . Civ13::admins) || ! $file_contents = @file_get_contents($path)) {
-                            $this->logger->debug("`$path` is not a valid file path!");
-                            return $carry;
-                        }
-                        $builder->addFileFromContent($path, $file_contents);
-                        return true;
-                    }, false)) return $message->react("🔥");
-                    return $message->reply($builder);
-                }, ['Admin'])
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $message->reply(array_reduce($this->civ13->enabled_gameservers, function ($builder, $gameserver) {
+                        if (file_exists($path = $gameserver->basedir . Civ13::admins)) $builder->addFile($path, $gameserver->key . '_adminlist.txt');
+                        return $builder;
+                    }, MessageBuilder::new()->setContent('Admin Lists'))),
+                ['Admin'])
             ->offsetSet('factionlist',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {            
-                    $builder = MessageBuilder::new()->setContent('Faction Lists');
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver)
-                        file_exists($path = $gameserver->basedir . Civ13::factionlist)
-                            ? $builder->addfile($path, $gameserver->key . '_factionlist.txt')
-                            : $this->logger->warning("`$path is not a valid file path!");
-                    return $message->reply($builder);
-                },
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $message->reply(array_reduce($this->civ13->enabled_gameservers, function ($builder, $gameserver) {
+                        if (file_exists($path = $gameserver->basedir . Civ13::factionlist)) $builder->addfile($path, $gameserver->key . '_factionlist.txt');
+                        return $builder;
+                    }, MessageBuilder::new()->setContent('Faction Lists'))),
                 ['Admin'])
             ->offsetSet('getrounds',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
