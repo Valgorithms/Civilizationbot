@@ -419,7 +419,8 @@ class MessageServiceManager
             ->offsetSet('permit',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $this->civ13->permitCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
+                    if (! Byond::isValidCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "Byond username `$ckey` does not exist.");
+                    $this->civ13->permitCkey($ckey, strlen($command));
                     return $this->civ13->reply($message, "Byond username `$ckey` is now permitted to bypass the Byond account restrictions.");
                 }, ['Admin'])
             ->offsetSets(['unpermit', 'revoke'],
