@@ -420,13 +420,13 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     $this->civ13->permitCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
-                    return $this->civ13->reply($message, "BYOND username `$ckey` is now permitted to bypass the Byond account restrictions.");
+                    return $this->civ13->reply($message, "Byond username `$ckey` is now permitted to bypass the Byond account restrictions.");
                 }, ['Admin'])
             ->offsetSets(['unpermit', 'revoke'],
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     $this->civ13->permitCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
-                    return $this->civ13->reply($message, "BYOND username `$ckey` is no longer permitted to bypass the Byond account restrictions.");
+                    return $this->civ13->reply($message, "Byond username `$ckey` is no longer permitted to bypass the Byond account restrictions.");
                 }, ['Admin'])
             ->offsetSet('permitted',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
@@ -485,7 +485,8 @@ class MessageServiceManager
                 {
                     if (is_numeric($ckey = Civ13::sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], trim(strlen($command))))))
                         if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
-                        else $ckey = $item['ss13'];
+                            else $ckey = $item['ss13'];
+                    if (isset($this->civ13->verifier) && ! $message->member->roles->has($this->civ13->role_ids['Ambassador']) && ! $this->civ13->verifier->isVerified($ckey)) return $this->civ13->reply($message, "No verified data found for ID `$ckey`. Byond user must verify with `approveme` first.");
                     $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
                     return $this->civ13->reply($message, "**$admin** unbanned **$ckey**");
                 }, ['Admin'])
