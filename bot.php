@@ -170,6 +170,7 @@ $options = array(
         'parole_logs' => '985606778916048966', // #parole-logs (for tracking)
         'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
         'email' => '1225600172336353430', // #email
+        'ban_appeals' => '1019718839749062687' #ban-appeals
     ),
     'role_ids' => array( // The keys in this array must directly correspond to the expected role names and as defined in Gameserver.php. Do not alter these keys unless you know what you are doing.
         /* Discord Staff Roles */

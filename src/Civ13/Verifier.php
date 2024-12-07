@@ -11,7 +11,10 @@ namespace Civ13;
 use Byond\Byond;
 use Civ13\Exceptions\VerifierException;
 use Discord\Discord;
+use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
+use Discord\Parts\Channel\Message;
+use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Member;
 use Discord\Parts\User\User;
 use Monolog\Logger;
@@ -137,6 +140,38 @@ class Verifier
             foreach ($roles as $role_name) 
                 if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name]))
                     { $this->civ13->adminlistUpdate(); break;}
+        });
+        $this->civ13->discord->on('THREAD_CREATE', function (Thread $thread): ?PromiseInterface
+        {
+            if ($thread->members->has($this->civ13->discord->id)) return null;
+            if ($thread->guild_id !== $this->civ13->civ13_guild_id) return null;
+            if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
+            if (! $member = $guild->members->get('id', $thread->owner_id)) return null;
+            if ($last_message = $thread->messages->get('id', $thread->last_message_id))
+                if ($last_message->member && $last_message->member->id === $this->civ13->discord->id) // This event also gets fired when the bot joins the thread
+                    return null;
+            return $thread->join()->then(function() use ($thread, $member, $last_message): PromiseInterface
+            {
+                if (! $item = $this->getVerifiedItem($member)) $content = "Your Discord account has not yet been linked to a Byond account. Please verify your account by following the instructions in <#{$this->civ13->channel_ids['get-approved']}>. If you were directed here automatically during the verification process please wait for a staff member to assist you. ";
+                else {
+                    if ($this->civ13->bancheck($item['ss13'], true)) $content = "Byond account `{$item['ss13']}` is currently banned. Please wait for a staff member to assist you. ";
+                    else $content = "Byond account `{$item['ss13']}` is not currently banned. If you still need assistance please wait for a staff member to assist you. ";
+                }
+                return $this->civ13->then(
+                    $thread->sendMessage(MessageBuilder::new()->setContent(
+                        ! $item = $this->getVerifiedItem($member)
+                            ? "Your Discord account has not yet been linked to a Byond account. If you were directed here automatically during the verification process please wait for a staff member to assist you. Be aware that you must complete the verification process before your ban appeal can be considered. "
+                            : ($this->civ13->bancheck($item['ss13'], true)
+                                ? "Byond account `{$item['ss13']}` is currently banned. Please wait for a staff member to assist you. "
+                                : "Byond account `{$item['ss13']}` is not currently banned. If you still need assistance please wait for a staff member to assist you. "
+                            )
+                    )),
+                    fn(Message $message): ?PromiseInterface => 
+                        ($staff_bot = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']))
+                            ? $this->civ13->sendMessage($staff_bot, "<@&{$this->civ13->role_ids['Admin']}>, a new ban appeal has been created by <@{$thread->owner_id}> in $thread. Please review the appeal and respond accordingly.")
+                            : null
+                );
+            });
         });
         $this->civ13->discord->once('init', function () {
             $this->verified = $this->getVerified();
