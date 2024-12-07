@@ -489,6 +489,7 @@ class MessageServiceManager
                         if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
                             else $ckey = $item['ss13'];
                     if (isset($this->civ13->verifier) && ! $message->member->roles->has($this->civ13->role_ids['Ambassador']) && ! $this->civ13->verifier->isVerified($ckey)) return $this->civ13->reply($message, "No verified data found for ID `$ckey`. Byond user must verify with `approveme` first.");
+                    if (! isset($this->civ13->ages[$ckey]) && ! Byond::isValidCkey($ckey)) return $this->civ13->reply($message, "Byond username `$ckey` does not exist.");
                     $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
                     return $this->civ13->reply($message, "**$admin** unbanned **$ckey**");
                 }, ['Admin'])
