@@ -415,24 +415,6 @@ class Verifier
         }
         return ['success' => $success, 'error' => $error];
     }
-    private function __verify(string $ckey, string $discord_id): array
-    {
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $this->verify_url,
-            CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USERAGENT => 'Civ13',
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ13->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]),
-            CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
-            CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
-        ]);
-        return [
-            'response' => $response = curl_exec($ch),
-            'http_status' => ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE) // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
-        ];
-    }
     /**
      * Removes a ckey from the verified list and sends a DELETE request to a website.
      *
@@ -505,8 +487,24 @@ class Verifier
         if ($message) $this->logger->info($message);
         return ['success' => true, 'message' => $message];
     }
+    private function __verify(string $ckey, string $discord_id): array
+    {
+        return $this->__verifyRequest([
+            'ckey' => $ckey,
+            'discord' => $discord_id,
+        ]);
+    }
     private function __unverify(string $id): array
     {
+        return $this->__verifyRequest([
+            'method' => 'DELETE',
+            'ckey' => $id,
+            'discord' => $id,
+        ]);
+    }
+    private function __verifyRequest(array $postFields): array
+    {
+        $postfields['token'] = $this->civ13->civ_token;
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $this->verify_url,
@@ -514,7 +512,7 @@ class Verifier
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_USERAGENT => 'Civ13',
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query(['method' => 'DELETE', 'token' => $this->civ13->civ_token, 'ckey' => $id, 'discord' => $id]),
+            CURLOPT_POSTFIELDS => http_build_query($postFields),
             CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
             CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
         ]);
