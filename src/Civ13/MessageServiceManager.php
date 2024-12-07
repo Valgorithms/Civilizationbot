@@ -420,13 +420,13 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     $this->civ13->permitCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
-                    return $this->civ13->reply($message, "$ckey is now permitted to bypass the Byond account restrictions.");
+                    return $this->civ13->reply($message, "BYOND username `$ckey` is now permitted to bypass the Byond account restrictions.");
                 }, ['Admin'])
             ->offsetSets(['unpermit', 'revoke'],
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     $this->civ13->permitCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
-                    return $this->civ13->reply($message, "$ckey is no longer permitted to bypass the Byond account restrictions.");
+                    return $this->civ13->reply($message, "BYOND username `$ckey` is no longer permitted to bypass the Byond account restrictions.");
                 }, ['Admin'])
             ->offsetSet('permitted',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
