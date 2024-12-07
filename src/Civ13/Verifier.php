@@ -349,20 +349,7 @@ class Verifier
             return ['success' => $success, 'error' => $error];
         }
        
-        $http_status = 0; // Don't try to curl if the webserver is down
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $this->verify_url,
-            CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USERAGENT => 'Civ13',
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ13->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]),
-            CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
-            CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
-        ]);
-        $result = curl_exec($ch);
-        $http_status = ($result === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+        ['response' => $response, 'http_status' => $http_status] = $this->__verify($ckey, $discord_id);
         switch ($http_status) {
             case 200: // Verified
                 $success = true;
@@ -423,10 +410,28 @@ class Verifier
                 }
                 break;
             default:
-                $error = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = "There was an error attempting to process the request: [$http_status] $response" . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
         }
         return ['success' => $success, 'error' => $error];
+    }
+    private function __verify(string $ckey, string $discord_id): array
+    {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $this->verify_url,
+            CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERAGENT => 'Civ13',
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query(['token' => $this->civ13->civ_token, 'ckey' => $ckey, 'discord' => $discord_id]),
+            CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
+            CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
+        ]);
+        return [
+            'response' => $response = curl_exec($ch),
+            'http_status' => ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE) // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+        ];
     }
     /**
      * Removes a ckey from the verified list and sends a DELETE request to a website.
@@ -458,20 +463,7 @@ class Verifier
          // Send $_POST information to the website.
         $message = '';
         if (isset($this->verify_url) && $this->verify_url) { // Bypass webserver deregistration if not configured
-            $http_status = 0; // Don't try to curl if the webserver is down
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->verify_url,
-                CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_USERAGENT => 'Civ13',
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => http_build_query(['method' => 'DELETE', 'token' => $this->civ13->civ_token, 'ckey' => $id, 'discord' => $id]),
-                CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
-                CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
-            ]);
-            $result = curl_exec($ch);
-            $http_status = ($result === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+            ['response' => $response, 'http_status' => $http_status] = $this->__unverify($id);
             switch ($http_status) {
                 case 200: // Verified
                     if (! $member = $this->getVerifiedMember($id)) $message = "`$id` was unverified but the member couldn't be found in the server.";
@@ -487,7 +479,7 @@ class Verifier
                     $message = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
                 case 405: // Method not allowed
-                    $message = "The method used to access the website is not allowed. Please check the configuration of the website." . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>. Reason: $result";
+                    $message = "The method used to access the website is not allowed. Please check the configuration of the website." . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>. Reason: $response";
                     break;
                 case 502: // NGINX's PHP-CGI workers are unavailable
                     $message = "The website's PHP-CGI workers are currently unavailable. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
@@ -503,7 +495,7 @@ class Verifier
                     $message = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
                 default:
-                    $message = "There was an error attempting to process the request: [$http_status] $result" . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                    $message = "There was an error attempting to process the request: [$http_status] $response" . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
             }
         }
@@ -512,6 +504,24 @@ class Verifier
         if ($removed_items) $message .= PHP_EOL . 'Removed from the verified list: ```json' . PHP_EOL . $removed_items . PHP_EOL . '```' . PHP_EOL . $message;
         if ($message) $this->logger->info($message);
         return ['success' => true, 'message' => $message];
+    }
+    private function __unverify(string $id): array
+    {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $this->verify_url,
+            CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERAGENT => 'Civ13',
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query(['method' => 'DELETE', 'token' => $this->civ13->civ_token, 'ckey' => $id, 'discord' => $id]),
+            CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
+            CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
+        ]);
+        return [
+            'response' => $response = curl_exec($ch),
+            'http_status' => ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE) // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+        ];
     }
 
     /**
