@@ -321,7 +321,7 @@ class MessageServiceManager
                             elseif (strlen($matched_cids_string) > 1024) $builder->addFileFromContent('matched_cids.txt', $cids_string);
                         }
                     } else $builder->setContent('IPs and CIDs have been hidden for privacy reasons.');
-                    if ($ips && $regions_string = implode(', ', array_unique(array_map(fn($ip) => $this->civ13->getIpData($ip)['region'] ?? 'unknown', $ips)))) {
+                    if ($ips && $regions_string = implode(', ', array_unique(array_map(fn($ip) => $this->civ13->getIpData($ip)['countryCode'] ?? 'unknown', $ips)))) {
                         if (strlen($regions_string) > 1 && strlen($regions_string) <= 1024) $embed->addFieldValues('Regions', $regions_string, true);
                         elseif (strlen($regions_string) > 1024) $builder->addFileFromContent('regions.txt', $regions_string);
                     }
