@@ -95,7 +95,7 @@ class OSFunctions
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w']
         ];
-        if (($proc = proc_open($output = "sudo nohup php8.3 \"$file\" > botlog.txt &", $descriptorspec, $pipes)) === false) return reject(new MissingSystemPermissionException('proc_open() failed'));
+        if (($proc = proc_open($output = "sudo nohup php \"$file\" > botlog.txt &", $descriptorspec, $pipes)) === false) return reject(new MissingSystemPermissionException('proc_open() failed'));
         if (! $pid = proc_get_status($proc)['pid']) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
         error_log("Executing external shell command `$output` with PID $pid");
         return resolve($proc);
