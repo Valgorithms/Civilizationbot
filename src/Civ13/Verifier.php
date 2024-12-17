@@ -159,7 +159,7 @@ class Verifier
                 }
                 return $this->civ13->then(
                     $thread->sendMessage(MessageBuilder::new()->setContent(
-                        ! $item = $this->getVerifiedItem($member)
+                        ! ($item = $this->getVerifiedItem($member))
                             ? "Your Discord account has not yet been linked to a Byond account. If you were directed here automatically during the verification process please wait for a staff member to assist you. Be aware that you must complete the verification process before your ban appeal can be considered. "
                             : ($this->civ13->bancheck($item['ss13'], true)
                                 ? "Byond account `{$item['ss13']}` is currently banned. Please wait for a staff member to assist you. "
