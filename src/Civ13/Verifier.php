@@ -145,6 +145,7 @@ class Verifier
         {
             if ($thread->members->has($this->civ13->discord->id)) return null;
             if ($thread->guild_id !== $this->civ13->civ13_guild_id) return null;
+            if ($thread->parent_id !== $this->civ13->channel_ids['ban_appeals']) return null;
             if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
             if (! $member = $guild->members->get('id', $thread->owner_id)) return null;
             if ($last_message = $thread->messages->get('id', $thread->last_message_id))
