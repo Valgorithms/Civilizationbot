@@ -407,6 +407,9 @@ class Verifier
                     if ($channel) $this->civ13->sendMessage($channel, "Verified $member. ($ckey" . ((isset($this->civ13->ages[$ckey])) ? " - {$this->civ13->ages[$ckey]})" : ')'));
                 }
                 break;
+            case 401:
+                $error = 'I do not currently have the necessary authorization from the website to complete your request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                break;
             case 403: // Already registered
                 $error = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; // This should have been caught above. Need to run getVerified() again?
                 $this->getVerified(false);
