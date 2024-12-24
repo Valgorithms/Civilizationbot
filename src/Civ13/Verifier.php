@@ -541,7 +541,7 @@ class Verifier
             'discord' => $id,
         ]);
     }
-    private function __verifyRequest(array $postFields): array
+    private function __verifyRequest(array $postfields): array
     {
         $postfields['token'] = $this->civ13->civ_token;
         $ch = curl_init();
@@ -551,7 +551,7 @@ class Verifier
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_USERAGENT => 'Civ13',
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query($postFields),
+            CURLOPT_POSTFIELDS => http_build_query($postfields),
             CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
             CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
         ]);
