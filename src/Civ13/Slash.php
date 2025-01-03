@@ -755,14 +755,21 @@ class Slash
         {
             if (! isset($interaction->data->options['server']) || ! $server = $interaction->data->options['server']->value) return $this->respondWithMessage($interaction, MessageBuilder::new()->setContent("No server specified"), true);
             if (! $gameserver = $this->civ13->enabled_gameservers[$server]) return $this->respondWithMessage($interaction, MessageBuilder::new()->setContent("No enabled server found for `{$server}`"), true);
-            return $interaction->acknowledge()->then(fn(): PromiseInterface => // wait until the bot says "Is thinking..."
-                $gameserver->recalculateRanking()->then(
-                    fn() => $gameserver->getRanking()->then(
-                        fn(string $ranking) => $this->sendFollowUpMessage($interaction, MessageBuilder::new()->setContent($ranking), true),
-                        fn(MissingSystemPermissionException $e) => $this->sendFollowUpMessage($interaction, MessageBuilder::new()->setContent(/*"Ranking for the `{$gameserver->name}` server are not currently available." . */$e->getMessage()), true)
-                    ), fn(MissingSystemPermissionException $e) => $this->sendFollowUpMessage($interaction, MessageBuilder::new()->setContent(/*"Ranking for the `{$gameserver->name}` server are not currently available." . */$e->getMessage()), true)
-                )
+            
+            $promise = $interaction->acknowledge(); // wait until the bot says "Is thinking..."
+            $promise = $promise->then(
+                fn(): PromiseInterface => $gameserver->recalculateRanking(),
+                fn($e) => $this->logger->error($e->getMessage())
             );
+            $promise = $promise->then(
+                fn(): PromiseInterface => $gameserver->getRanking(),
+                fn(MissingSystemPermissionException $e): PromiseInterface => $this->sendFollowUpMessage($interaction, MessageBuilder::new()->setContent($e->getMessage()), true)
+            );
+            $promise = $promise->then(
+                fn(string $ranking): PromiseInterface => $this->sendFollowUpMessage($interaction, MessageBuilder::new()->setContent($ranking), true),
+                fn(MissingSystemPermissionException $e): PromiseInterface => $this->sendFollowUpMessage($interaction, MessageBuilder::new()->setContent($e->getMessage()), true)
+            );
+            return $promise;
         });
 
         /**
