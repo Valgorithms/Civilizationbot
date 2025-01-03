@@ -1625,9 +1625,8 @@ class Civ13
         $channel->name = "{$webserver_name}-{$status}";
         return $this->then(
             $channel->guild->channels->save($channel),
-            fn() => $this->loop->addTimer(2, fn() => $this->sendMessage($this->discord->getChannel($channel->id), "Webserver is now **{$status}**."))
+            fn(Channel $channel) => $this->sendMessage($this->discord->getChannel($channel->id), "Webserver is now **{$status}**.")
         );
-        
     }
     /**
      * Fetches server information from the specified URL.
