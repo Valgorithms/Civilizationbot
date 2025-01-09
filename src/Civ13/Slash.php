@@ -759,7 +759,7 @@ class Slash
             $promise = $interaction->acknowledge(); // wait until the bot says "Is thinking..."
             $promise = $promise->then(
                 fn(): PromiseInterface => $gameserver->recalculateRanking(),
-                fn($e) => $this->logger->error($e->getMessage())
+                fn(\LogicException $e) => $this->logger->error($e->getMessage())
             );
             $promise = $promise->then(
                 fn(): PromiseInterface => $gameserver->getRanking(),
