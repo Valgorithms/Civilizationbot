@@ -1,79 +1,111 @@
-CivilizationBot
-====
-[![Civilization 13 Discord](https://discord.com/api/guilds/468979034571931648/widget.png?style=banner1)](https://civ13.com/discord)
+# Civilizationbot
 
-The official [Civ13](https://civ13.com) Discord bot built on DiscordPHP with documentation [available here](http://discord-php.github.io/DiscordPHP), albeit limited at the moment, as well as a class reference. Feel free to ask questions in the Discord server above.
+Civilizationbot is [Civ13](https://civ13.com)'s official Discord bot designed to manage and interact with the Civ13 game servers. It provides various functionalities, including server management, player verification, chat moderation, and more.
 
-## Before you start
+## Features
 
-Before you start using this Library, you **need** to know how PHP works, you need to know the language and you need to know how Event Loops and Promises work. This is a fundamental requirement before you start. Without this knowledge, you will only suffer.
+- Server management and monitoring
+- Player verification and role assignment
+- Chat moderation and relay
+- Interaction commands and slash commands
+- Automated status updates
 
-## FAQ
+## Installation
 
-1. Can I run CivilizationBot on a webserver (e.g. Apache, nginx)?
-    - No, CivilizationBot will only run in CLI. If you want to have an interface for your bot you can integrate [react/http](https://github.com/ReactPHP/http) with your bot and run it through CLI.
+To install Civilizationbot, follow these steps:
 
-## Getting Started
+1. Clone the repository:
+    ```
+    sh git clone https://github.com/VZGCoders/Civilizationbot.git
+    ```
+2. Navigate to the project directory:
+    ```sh
+    cd Civilizationbot
+    ```
+3. Install dependencies using Composer:
+    ```sh
+    composer install
+    ```
+4. Configure the bot by editing the `bot.php` and creating a `.env` file with your Discord bot token, server details, and other settings.
 
-### Requirements
+## Usage
 
-- PHP 8.3 (or greater)
-    - x86 (32-bit) PHP requires [`ext-gmp` extension](https://www.php.net/manual/en/book.gmp.php) enabled for handling Permissions.
-- Composer
-- `ext-json`
-- `ext-zlib`
-
-### Windows and SSL
-
-Unfortunately PHP on Windows does not have access to the Windows Certificate Store. This is an issue because TLS gets used and as such certificate verification gets applied (turning this off is **not** an option).
-
-You will notice this issue by your script exiting immediately after one loop turn without any errors. Unfortunately there is for some reason no error or exception.
-
-As such users of this library need to download a [Certificate Authority extract](https://curl.haxx.se/docs/caextract.html) from the cURL website.<br>
-The path to the caextract must be set in the [`php.ini`](https://secure.php.net/manual/en/openssl.configuration.php) for `openssl.cafile`.
-
-#### Recommended Extensions
-
-- The latest PHP version.
-- One of `ext-uv` (recommended), `ext-libev` or `ext-event` for a faster, and more performant event loop.
-- `ext-mbstring` if handling non-english characters.
-- `ext-gmp` if using 32-bit PHP.
-
-#### Voice Requirements
-
-- 64-bit Linux or Darwin based OS.
-    - If you are running on Windows, you must be using PHP 8.3.
-- `ext-sodium`
-- FFmpeg
-
-### Basic Configuration
-The Civ13 class intends to streamline the development process when using the DiscordPHP and other libraries while simultaneously avoiding bloating the main bot.php file with a bunch of function definitions. It accomplishes this by defining functions as variables and passing them into the construction method at runtime via the declaration of an $options array. Functions are to be declared either according to the DiscordPHP event they should execute and in the order they should be executed or as a miscellaneous function that can simply be stored and referenced later.
-
-```php
-$options = array();
-$options['functions'] = [
-    'ready' => [ // Called automatically at start-up (Discord 'ready' event)
-        'on_ready' => $on_ready,
-        'status_changer_timer' => $status_changer_timer,
-        'status_changer_random' => $status_changer_random, // $status_changer_random = $civ13->functions->['ready']['status_changer_random']
-    ],
-    'message' => [ // Called automatically whenever the bot sees a new message (Discord 'message' event)
-        'on_message' => $on_message,
-        'on_message2' => $on_message2,
-    ],
-    'misc' => [ // Custom functions, can be called by other functions or externally
-        'timer_function' => $timer_function,
-        'status_changer' => $status_changer, // $status_changer = $civ13->functions->['misc']['status_changer']
-    ],
-];
+To run the bot, use the following command:
+```sh
+php bot.php
 ```
 
-See [variable_functions.php](variable_functions.php) for function examples.
+## Status Changer
+
+The bot includes a feature to automatically change its status on Discord. This is handled by the `$status_changer_random` function.
+
+## `$status_changer_random` Function
+
+The `$status_changer_random` function is responsible for updating the bot's status with a random message from a predefined list. It reads the status messages from a file and sets the bot's status accordingly.
+
+## Usage
+
+The function is defined in `variable_functions.php` and is used as follows:
+
+```php
+<?php
+$status_changer_random = function (Civ13 $civ13): PromiseInterface
+{
+    if (! $civ13::status) {
+        unset($civ13->timers['status_changer_timer']);
+        $civ13->logger->warning($err = 'status is not defined');
+        return reject(new \LogicException($err));
+    }
+    if (! $status_array = file($civ13::status, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
+        unset($civ13->timers['status_changer_timer']);
+        $civ13->logger->warning($err = 'unable to open file `' . $civ13::status . '`');
+        return reject(new FileNotFoundException($err));
+    }
+    list($status, $type, $state) = explode('; ', $status_array[array_rand($status_array)]);
+    if (! $status) return reject(new \Exception('status must not be empty'));
+    $activity = new Activity($civ13->discord, [ // Discord status            
+        'name' => $status,
+        'type' => (int) $type, // 0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
+    ]);
+    $civ13->statusChanger($activity, $state);
+    return resolve(null);
+};
+```
+
+To configure the status changer, ensure that the `status` file is correctly set in the configuration and contains the status messages in the following format:
+
+```
+Playing Civ13; 0; online
+Streaming Civ13; 1; online
+Listening to Civ13; 2; online
+Watching Civ13; 3; online
+Custom Status; 4; online
+```
+
+Each line represents a status message with the format: `status; type; state`.
+
+## Timer
+
+The status changer is periodically triggered by a timer. The timer is set up as follows:
+
+```php
+<?php
+$status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
+{
+    if (! isset($civ13->timers['status_changer_timer'])) $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, fn() => $status_changer_random($civ13));
+};
+```
+
+This sets up a timer to change the bot's status every 120 seconds.
 
 ## Contributing
 
-We are open to contributions, just open a pull request and we will review it.
+Contributions are welcome! Please open an issue or submit a pull request on GitHub.
 
 ## License
 
-MIT License, &copy; Valithor Obsidion and other contributers 2022-present.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Contact
+
+For support or inquiries, please contact Valithor Obsidion at valithor@valzargaming.com.
