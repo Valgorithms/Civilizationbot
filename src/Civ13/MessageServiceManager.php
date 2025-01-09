@@ -1128,7 +1128,11 @@ class MessageServiceManager
                             fn($content) => $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content)),
                             fn(\Throwable $error) => $message->react("🔥")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
                         ),
-                    ['Ambassador', 'Admin']);
+                    ['Ambassador', 'Admin'])
+                ->offsetSet("{$gameserver->key}panic",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $this->civ13->reply($message, "Panic bunker is now " . (($gameserver->panic_bunker = ! $gameserver->panic_bunker) ? 'enabled' : 'disabled')),
+                    ['Ambassador']);
         }
         
         $this->__declareListener();
