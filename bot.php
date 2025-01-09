@@ -92,7 +92,7 @@ include 'variable_functions.php';
 $civ13_ip = gethostbyname('www.civ13.com');
 $vzg_ip = gethostbyname('www.valzargaming.com');
 $val_ip = gethostbyname('www.valgorithms.com');
-$http_whitelist = [$civ13_ip, $vzg_ip, $val_ip, '50.25.47.184'];
+$http_whitelist = [$civ13_ip, $vzg_ip, $val_ip, '50.25.53.244'];
 
 $webapi = null;
 $socket = null;
