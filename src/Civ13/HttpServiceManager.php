@@ -1085,7 +1085,10 @@ class HttpServiceManager
                         }
 
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, false);
-                        if ($ckey && $ckey !== '(NULL)') $this->civ13->moderator->scrutinizeCkey($ckey);
+                        if ($ckey && $ckey !== '(NULL)') {
+                            $this->civ13->moderator->scrutinizeCkey($ckey);
+                            $gameserver->panicCheck($ckey); 
+                        }
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/logout',

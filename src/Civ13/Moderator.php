@@ -122,10 +122,6 @@ class Moderator
             }
         }
         if ($this->civ13->verifier->get('ss13', $ckey)) return; // Verified users are exempt from further checks
-        if ($this->civ13->panic_bunker || (isset($this->civ13->serverinfo[1]['admins']) && $this->civ13->serverinfo[1]['admins'] == 0 && isset($this->civ13->serverinfo[1]['vote']) && $this->civ13->serverinfo[1]['vote'] == 0)) {
-            $this->civ13->__panicBan($ckey); // Require verification for Persistence rounds
-            return;
-        }
         if (! isset($this->civ13->permitted[$ckey]) && ! isset($this->civ13->ages[$ckey]) && ! $this->civ13->checkByondAge($age = $this->civ13->getByondAge($ckey))) { // Force new accounts to register in Discord
             $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` must register and be approved to play. ($age) Verify at {$this->civ13->discord_formatted}"];
             if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $this->civ13->ban($ban, null, null, true));

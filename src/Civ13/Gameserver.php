@@ -30,7 +30,6 @@ use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
-use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
@@ -261,21 +260,7 @@ class GameServer
             $this->logger->warning("Unable to open `{$this->serverdata}`");
             return 0;
         }
-        $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
-        /*
-        0 => <b>Server Status</b> {Online/Offline}
-        1 => <b>Address</b> byond://{ip_address}
-        2 => <b>Map</b>: {map}
-        3 => <b>Gamemode</b>: {gamemode}
-        4 => <b>Players</b>: {playercount}
-        5 => realtime={realtime}
-        6 => world.address={ip}
-        7 => round_timer={00:00}
-        8 => map={map}
-        9 => epoch={epoch}
-        10 => season={season}
-        11 => ckey_list={ckey&ckey}
-        */
+        $data = self::explodeServerdata($data);
         if (isset($data[11])) $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
         if (isset($data[4])) $playercount = $data[4]; // Player count
         $this->players = $players;
@@ -481,7 +466,7 @@ class GameServer
         if (! $round = $this->getRound($this->current_round)) return null;
         $round_embed_builder = function () use ($round): MessageBuilder
         {
-            if (file_exists($this->serverdata) && $data = @file_get_contents($this->serverdata)) $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
+            if (file_exists($this->serverdata) && $data = @file_get_contents($this->serverdata)) $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=',  'allow_vote_restart=', '</b>', '<b>'], '', $data));
             $embed = $this->civ13->createEmbed()
                     ->setTitle($this->name)
                     //->addFieldValues('Game ID', $game_id);
@@ -937,6 +922,34 @@ class GameServer
             : $banlists;
     }
 
+    public function panicCheck(string $ckey): void
+    {
+        if (! $ban_reason = $this->__panicCheck($ckey)) return;
+        if (! isset($this->civ13->channel_ids['staff_bot']) || ! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return;
+        $this->civ13->sendMessage($channel, $ban_reason);
+    }
+    private function __panicCheck(string $ckey): string|false
+    {
+        if (! $this->panic_bunker) return false;
+        if (! isset($this->civ13->verifier)) return false;
+        if ($this->civ13->verifier->getVerifiedItem($ckey)) return false; // Whether the ckey is verified
+        if (! @file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
+            $this->logger->warning("Unable to open `{$this->serverdata}`");
+            return false;
+        }
+        if (self::explodeServerdata($data)[12] ?? true) return false; // Whether restart vote is allowed
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return false;
+        if (! $admins = $guild->members->filter(fn(Member $member) => $member->roles->has($this->civ13->role_ids['Admin']))) return false; // Get a list of admins from the Discord server
+        if (array_reduce($admins->toArray(), function ($carry, $member) { // Check if any of the admins are online
+            /** @var bool $carry */
+            if ($carry) return $carry;
+            /** @var Member $member */
+            if (! $item = $this->civ13->verifier->get('discord', $member->id)) return $carry;
+            return in_array($item['ss13'], $this->players);
+        }, false)) return false;
+        return $this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` must register and be approved to play. Verify at {$this->civ13->discord_formatted}"]);
+    }
+
     /*
      * These functions determine which of the above methods should be used to process a ban or unban
      * Ban functions will return a string containing the results of the ban
@@ -1085,9 +1098,9 @@ class GameServer
                 'Proxy' => isset($ip_data['proxy']) && $ip_data['proxy'],
                 'Hosting' => isset($ip_data['hosting']) && $ip_data['hosting'],
             ];
-            $banReason = array_reduce(array_keys($conditions), fn($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
-            if ($banReason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, null, true) . " ($banReason)");
+            $ban_reason = array_reduce(array_keys($conditions), fn($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
+            if ($ban_reason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, null, true) . " ($ban_reason)");
             }
         }
         return resolve(null);
@@ -1396,21 +1409,7 @@ class GameServer
         $embed = $this->civ13->createEmbed();
         if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) return $embed->addFieldValues($this->name, 'Offline');
         fclose($socket);
-        $data = explode(';', str_replace(['<b>Address</b>: ', '<b>Map</b>: ', '<b>Gamemode</b>: ', '<b>Players</b>: ', 'round_timer=', 'map=', 'epoch=', 'season=', 'ckey_list=', '</b>', '<b>'], '', $data));
-        /*
-        0 => <b>Server Status</b> {Online/Offline}
-        1 => <b>Address</b> byond://{ip_address}
-        2 => <b>Map</b>: {map}
-        3 => <b>Gamemode</b>: {gamemode}
-        4 => <b>Players</b>: {playercount}
-        5 => realtime={realtime}
-        6 => world.address={ip}
-        7 => round_timer={00:00}
-        8 => map={map}
-        9 => epoch={epoch}
-        10 => season={season}
-        11 => ckey_list={ckey&ckey}
-        */
+        $data = self::explodeServerdata($data);
         if (isset($data[1])) $embed->addFieldValues($this->name, '<'.$data[1].'>');
         $embed->addFieldValues('Host', $this->host, true);
         if (isset($data[7])) $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
@@ -1428,6 +1427,45 @@ class GameServer
         //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
         //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
         return $embed;
+    }
+    /**
+     * Explodes the server data string into an array by removing specific substrings and splitting by semicolon.
+     *
+     * The input string is expected to contain the following information in the given format:
+     * 0 => Server Status {Online/Offline}
+     * 1 => Address byond://{ip_address}
+     * 2 => Map: {map}
+     * 3 => Gamemode: {gamemode}
+     * 4 => Players: {playercount}
+     * 5 => realtime={realtime}
+     * 6 => world.address={ip}
+     * 7 => round_timer={00:00}
+     * 8 => map={map}
+     * 9 => epoch={epoch}
+     * 10 => season={season}
+     * 11 => ckey_list={ckey&ckey}
+     * 12 => allow_vote_restart={1/0}
+     *
+     * @param string $data The server data string to be exploded.
+     * @return array The exploded server data as an array.
+     */
+    public static function explodeServerdata(string $data): array
+    {
+        return explode(';', str_replace([
+            '<b>Address</b>: ',
+            '<b>Map</b>: ',
+            '<b>Gamemode</b>: ',
+            '<b>Players</b>: ',
+            'round_timer=',
+            'map=',
+            'epoch=',
+            'season=',
+            'ckey_list=',
+            'allow_vote_restart=',
+            '</b>',
+            '<b>'
+        ], '', $data));
+        
     }
     public function toEmbed(): Embed
     {
