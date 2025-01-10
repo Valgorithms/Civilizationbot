@@ -1096,7 +1096,7 @@ class HttpServiceManager
                     {
                         if ($gameserver->legacy_relay) return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
                         if (! isset($gameserver->transit)) return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        if (! $this->discord->getChannel($gameserver->transit)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+                        if (! $this->discord->getChannel($channel_id = $gameserver->transit)) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         if (! isset($this->civ13->channel_ids['parole_notif'])) return HttpResponse::plaintext('Parole Notification Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         if (! $parole_notif_channel = $this->discord->getChannel($this->civ13->channel_ids['parole_notif'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
 
@@ -1106,13 +1106,13 @@ class HttpServiceManager
                         $message = "$ckey disconnected from the server.";
                         $gameserver->logPlayerLogout($ckey, $time);
 
+                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, false);
                         if (isset($this->civ13->paroled[$ckey])) {
                             $message2 = '';
                             if (isset($this->civ13->role_ids['Parolemin'])) $message2 .= "<@&{$this->civ13->role_ids['Parolemin']}>, ";
                             $message2 .= "`$ckey` has log out of `{$gameserver->name}`";
                             $this->civ13->sendMessage($parole_notif_channel, $message2);
                         }
-
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     }, true)
                 ->offsetSet($server_endpoint.'/runtimemessage',
