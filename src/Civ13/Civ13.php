@@ -1632,6 +1632,7 @@ class Civ13
      * Fetches server information from the specified URL.
      *
      * @return array The server information as an associative array.
+     * @deprecated Use Gameserver properties and functions instead.
      */
     public function serverinfoFetch(): array
     {
