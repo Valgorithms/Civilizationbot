@@ -13,7 +13,7 @@
         "clue/redis-react": "^2.6",
         "react/filesystem": "^0.2@dev",
         "react/async": "4.x-dev",
-        "react/child-process": "0.6.5",
+        "react/child-process": "0.6.6",
         "vzgcoders/twitchphp": "dev-main",
         "valzargaming/byond": "dev-main",
         "valzargaming/handler": "dev-main",
