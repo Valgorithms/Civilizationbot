@@ -860,7 +860,7 @@ class MessageServiceManager
                     ->offsetSet('release',
                         function (Message $message, string $command, array $message_filtered): PromiseInterface
                         {
-                            if (! $item = $this->civ13->verifier->getVerifiedItem($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
+                            if (! $item = $this->civ13->verifier->getVerifiedItem($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "<`$id` is not currently verified with a byond username or it does not exist in the cache yet");
                             $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, false);
                             $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
                             if ($member = $this->civ13->verifier->getVerifiedMember($item))
