@@ -1451,7 +1451,9 @@ class GameServer
      */
     public static function explodeServerdata(string $data): array
     {
-        return explode(';', str_replace([
+        if (! $data) return [];
+
+        $data = explode(';', str_replace([
             '<b>Address</b>: ',
             '<b>Map</b>: ',
             '<b>Gamemode</b>: ',
@@ -1465,6 +1467,22 @@ class GameServer
             '</b>',
             '<b>'
         ], '', $data));
+
+        $return = [];
+        $return[0] = $return['status'] = $data[0] ?? 'N/A';
+        $return[1] = $return['ip'] = $data[1] ?? 'N/A';
+        $return[2] = $return['map'] = $data[2] ?? 'N/A';
+        $return[3] = $return['gamemode'] = $data[3] ?? 'N/A';
+        $return[4] = $return['playercount'] = $data[4] ?? 'N/A';
+        $return[5] = $return['realtime'] = $data[5] ?? 'N/A';
+        $return[6] = $return['world_address'] = $data[6] ?? 'N/A';
+        $return[7] = $return['round_timer'] = $data[7] ?? 'N/A';
+        $return[8] = $return['map_name'] = $data[8] ?? 'N/A';
+        $return[9] = $return['epoch'] = $data[9] ?? 'N/A';
+        $return[10] = $return['season'] = $data[10] ?? 'N/A';
+        $return[11] = $return['ckey_list'] = $data[11] ?? 'N/A';
+        $return[12] = $return['allow_vote_restart'] = $data[12] ?? 1;
+        return $return;
         
     }
     public function toEmbed(): Embed
