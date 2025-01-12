@@ -254,8 +254,8 @@ foreach ($exact_netspeak as $word) $options['ic_badwords'][] = [
 
 // Write editable configurations to a single JSON file
 
-$json = json_encode($options, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-file_put_contents("config.json", $json);
+//$json = json_encode($options, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+//file_put_contents("config.json", $json);
 
 
 // Load configurations from the JSON file
