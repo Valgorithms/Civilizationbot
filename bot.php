@@ -216,42 +216,6 @@ foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к'
 }
 */
 
-/*$exact_netspeak = [ // Words that are not necessarily bad, but are used in a way that is disruptive to the server
-    'omg',
-    'brb',
-    'g2g',
-    'lol',
-    'rofl',
-    'lmao',
-    'lmfao',
-    'kek',
-    'tldr',
-    'idk',
-
-    'skibidi',
-    'gyatt',
-    'rizz',
-    'ligma',
-    'rekt',
-    'cope and seethe',
-    'sussy',
-    'sigma',
-    'gooning',
-    'pog',
-    'poggers',
-    'cringe',
-    'uwu'
-];
-
-foreach ($exact_netspeak as $word) $options['ic_badwords'][] = [
-    'word' => $word,
-    'duration' => '1 week',
-    'reason' => "You must speak with the proper lingo/vocabulary of the current epoch and setting you're playing.",
-    'category' => 'netspeak',
-    'method' => 'exact',
-    'warnings' => 3
-];*/
-
 // Write editable configurations to a single JSON file
 
 //$json = json_encode($options, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
