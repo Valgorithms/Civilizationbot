@@ -48,7 +48,7 @@ class MessageServiceManager
     public function handle(Message $message): ?PromiseInterface
     {
         $message_array = $this->civ13->filterMessage($message);
-        if (! $message_array['called']) return null; // Not a command
+        if (! $message_array['called']) return null; // Bot was not called
         if ($return = $this->messageHandler->handle($message)) return $return;
         if (! $message_array['message_content_lower']) { // No command given
             $random_responses = ['You can see a full list of commands by using the `help` command.'];
@@ -104,7 +104,7 @@ class MessageServiceManager
                     $this->civ13->reply($message, 'Pong!'))
             ->offsetSets(['help', 'commands'],
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->reply($message, $this->generateHelp($message->member->roles), 'help.txt', true))
+                    $this->civ13->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true))
             ->offsetSet('stats',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()->setFooter($this->civ13->embed_footer))),
@@ -595,14 +595,17 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface 
                 {
                     if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $message->react("🔥");
-                    if (! $members = $guild->members->filter(function (Member $member) {
+                    if ($unverified_members = $guild->members->filter(function (Member $member) {
                         return ! $member->roles->has($this->civ13->role_ids['Verified'])
                             && ! $member->roles->has($this->civ13->role_ids['Banished'])
                             && ! $member->roles->has($this->civ13->role_ids['Permabanished']);
-                    })) return $message->react("👎");
-                    foreach ($members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['Verified'], 'fixroles');
+                    })) foreach ($unverified_members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['Verified'], 'fixroles');
+                    if (
+                        $verified_members = $guild->members->filter(fn (Member $member) => $member->roles->has($this->civ13->role_ids['Verified']))
+                    ) foreach ($verified_members as $member) if (! $this->civ13->verifier->getVerifiedItem($member)) $member->removeRole($this->civ13->role_ids['Verified'], 'fixroles');
                     return $message->react("👍");
                 }, ['Ambassador'])
+            
             ->offsetSet('panic_bunker',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, 'Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')),
@@ -622,9 +625,7 @@ class MessageServiceManager
                             return \React\Promise\all($members);
                         })
                         ->then(function ($members) {
-                            usort($members, function ($a, $b) {
-                                return $b->joined_at->getTimestamp() - $a->joined_at->getTimestamp();
-                            });
+                            usort($members, fn($a, $b) => $b->joined_at->getTimestamp() - $a->joined_at->getTimestamp());
                             $promises = array_map(function (Member $member) {
                                 return new \React\Promise\Promise(function ($resolve) use ($member) {
                                     $resolve([
@@ -792,7 +793,7 @@ class MessageServiceManager
                     if (! $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
                     if (! $id = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Please use the format `register <byond username>; <discord id>`.');
                     return $this->civ13->reply($message, $this->civ13->verifier->unverify($id)['message']);
-                }, ['Chief Technical Officer'])   
+                }, ['Chief Technical Officer'])
             ->offsetSet('dumpappcommands',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply('Application commands: `' . implode('`, `', array_map(fn($command) => $command->getName(), $this->civ13->discord->__get('application_commands'))) . '`'),
@@ -937,7 +938,7 @@ class MessageServiceManager
      */
     private function __generateServerMessageCommands(): void
     {
-        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards))
+        if (isset($this->civ13->enabled_gameservers['eternal'], $this->civ13->enabled_gameservers['eternal']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['eternal']->basedir . Civ13::awards))
             $this->messageHandler->offsetSet('medals',
                 function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
                 {
@@ -973,7 +974,7 @@ class MessageServiceManager
                     if (! $msg = $medals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
                     return $this->civ13->reply($message, $msg, 'medals.txt');
                 }, ['Verified']);
-        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br))
+        if (isset($this->civ13->enabled_gameservers['eternal'], $this->civ13->enabled_gameservers['eternal']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['eternal']->basedir . Civ13::awards_br))
             $this->messageHandler->offsetSet('brmedals',
                 function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
                 {
@@ -1138,7 +1139,21 @@ class MessageServiceManager
                 ->offsetSet("{$gameserver->key}panic",
                     fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                         $this->civ13->reply($message, "Panic bunker is now " . (($gameserver->panic_bunker = ! $gameserver->panic_bunker) ? 'enabled' : 'disabled')),
-                    ['Ambassador']);
+                    ['Ambassador'])
+                ->offsetSet("{$gameserver->key}fixembedtimer",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $message->react("⏱️")->then(fn() => $gameserver->currentRoundEmbedTimer($message))->then(
+                            fn() => $message->react("👍"),
+                            fn(\Throwable $error) => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
+                        ),
+                    ['Owner', 'Chief Technical Officer'])
+                ->offsetSet("{$gameserver->key}updatecurrentroundembedmessagebuilder",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $message->react("⏱️")->then(fn() => $gameserver->updateCurrentRoundEmbedMessageBuilder())->then(
+                            fn() => $message->react("👍"),
+                            fn(\Throwable $error) => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
+                        ),
+                    ['Owner', 'Chief Technical Officer']);
         }
         
         $this->__declareListener();

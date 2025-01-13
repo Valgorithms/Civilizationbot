@@ -152,8 +152,14 @@ class GameServer
         $this->runtime = $options['runtime'];
         $this->attack = $options['attack'];
         if ($this->enabled) { // Don't load variables from files if the server is disabled
-            $this->rounds = $this->civ13->VarLoad("{$this->key}_rounds.json") ?? [];
-            $current_round = $this->civ13->VarLoad("{$this->key}_current_round.json") ?? [];
+            if (! $this->rounds = $this->civ13->VarLoad("{$this->key}_rounds.json") ?? []) {
+                $this->rounds = [];
+                $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+            }
+            if (! $current_round = $this->civ13->VarLoad("{$this->key}_current_round.json") ?? []) {
+                $current_round = [];
+                $this->civ13->VarSave("{$this->key}_current_round.json", $current_round);
+            }
             if ($current_round = array_shift($current_round)) {
                 $this->rounds[$this->current_round = $current_round]['interrupted'] = true;
                 $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
@@ -173,15 +179,18 @@ class GameServer
         $this->setup();
 
         if (! $this->enabled) return; // Don't start timers for disabled servers
-        $this->discord->once('init', function () {
+        $fn = function () {
             $this->logger->info("Getting player count for Gameserver {$this->name}");
             $this->__updateDiscordVariables();
             $this->localServerPlayerCount(); // Populates $this->players
             $this->playercountTimer(); // Update playercount channel every 10 minutes
             $this->serverinfoTimer(); // Hard check playercount and  ckeys to scrutinizeCkey() every 3 minutes
             $this->relayTimer(); // File chat relay
-            $this->currentRoundEmbedTimer();
-        });
+            $this->currentRoundEmbedTimer(); // The bot has to see a round id first
+        };
+        $this->civ13->ready
+            ? $fn()
+            : $this->discord->once('init', fn() => $fn());
     }
     /**
      * This method is responsible for setting up the game server by performing the following tasks:
@@ -430,7 +439,7 @@ class GameServer
      * @param MessageBuilder|null $builder The message builder to used to perform the update the message. Defaults to null.
      * @return PromiseInterface<Message> A promise that resolves when the update is complete.
      */
-    private function updateCurrentRoundEmbedMessageBuilder(?MessageBuilder $builder = null): PromiseInterface
+    public function updateCurrentRoundEmbedMessageBuilder(?MessageBuilder $builder = null): PromiseInterface
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             $this->logger->error($err = "Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
@@ -497,7 +506,6 @@ class GameServer
             $results = $this->civ13->FileNav($this->basedir . Civ13::log_basedir, $tokens);
             if (! $results[0]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('No logs found.'), true);
             return $interaction->sendFollowUpMessage(MessageBuilder::new()->addFile($results[1], 'log.txt'), true);
-            
         };
         if ($log = str_replace('/', ';', "logs {$this->key}{$round['log']}")) $builder->addComponent(
             ActionRow::new()->addComponent(
@@ -1262,7 +1270,7 @@ class GameServer
      */
     public function sportsteam(): PromiseInterface
     {
-        if (! file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::sportsteams)) {
+        if (! file_exists($fp = $this->civ13->enabled_gameservers['eternal']->basedir . Civ13::sportsteams)) {
             $this->logger->warning($err = "Unable to find `$fp`");
             return reject(new FileNotFoundException($err));
         }
@@ -1410,7 +1418,7 @@ class GameServer
         if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) return $embed->addFieldValues($this->name, 'Offline');
         fclose($socket);
         $data = self::explodeServerdata($data);
-        if (isset($data[1])) $embed->addFieldValues($this->name, '<'.$data[1].'>');
+        if (isset($data[0])) $embed->addFieldValues($this->name, '<'.$data[0].'>');
         $embed->addFieldValues('Host', $this->host, true);
         if (isset($data[7])) $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
         if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data

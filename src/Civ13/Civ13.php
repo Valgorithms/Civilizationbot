@@ -49,22 +49,6 @@ use function React\Promise\reject;
 use function React\Promise\resolve;
 use function React\Promise\all;
 
-enum CommandPrefix: string
-{
-    case COMMAND_SYMBOL = 'command_symbol';
-    case MENTION_WITH_EXCLAMATION = 'mention_with_exclamation';
-    case MENTION = 'mention';
-    
-    public static function getPrefix(self $prefix, string $discordId, string $commandSymbol): ?string {
-        return match ($prefix) {
-            self::COMMAND_SYMBOL => $commandSymbol,
-            self::MENTION_WITH_EXCLAMATION => "<@!{$discordId}>",
-            self::MENTION => "<@{$discordId}>",
-            default => null,
-        };
-    }
-}
-
 enum CPUUsage: string
 {
     case Windows = 'Windows';
@@ -334,35 +318,16 @@ class Civ13
         $this->byond = new Byond();
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
-        if (isset($this->discord)) $this->discord->once('init', function () {
+        $this->discord->on('init', function () {
             $this->ready = true;
             $this->logger->info("Logged in as {$this->discord->username} {$this->discord->user}");
-            /*$this->discord->users->fetch($this->discord->id)->then(function ($user) {
-                $this->logger->info('User:' . json_encode($user));
-            });*/
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__UpdateDiscordVariables();
-            //else $this->logger->debug('No ready functions found!');
             $this->loop->addTimer(5, fn() => $this->slash = new Slash($this));
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
             foreach ($this->functions['init'] as $func) $func($this);
-            //$this->discord->emojis->freshen()->then(fn() => $this->logger->info('Emojis fetched: ' . json_encode($this->discord->emojis)));
-            //if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) $guild->emojis->freshen()->then(fn() => $this->logger->info('Guild Emojis fetched: ' . json_encode($guild->emojis)));
-            //$this->discord->sounds->freshen();
-            //if ($guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) $guild->sounds->freshen();
-            //$this->logger->info('.....');
-
-            //$this->logger->info(json_encode(array_keys($this->discord->guilds->toArray())));
-            //$this->discord->requestSoundboardSounds(array_keys($this->discord->guilds->toArray()));
-
-            //$this->discord->skus->freshen()->then(fn(SKUsRepository $skus) => $this->logger->info('SKUs fetched: ' . json_encode($skus)));
-            //if (! isset($this->discord->entitlements)) {
-                //$this->logger->info('Entitlements Not Set');
-                //$this->logger->info('Entitlements Set: ' . json_encode($this->discord->entitlements));
-            //}
-            //$this->discord->skus->freshen()->then(fn(SKUsRepository $skus) => $this->logger->info('SKUs fetched: ' . json_encode($skus)));
         });
     }
     /**
@@ -588,7 +553,10 @@ class Civ13
      */
     private function __loadOrInitializeVariables(): void
     {
-        if (! $tests = $this->VarLoad('tests.json')) $tests = [];
+        if (! $tests = $this->VarLoad('tests.json')) {
+            $tests = [];
+            $this->VarSave('tests.json', $tests);
+        }
         $this->tests = $tests;
         if (! $paroled = $this->VarLoad('paroled.json')) {
             $paroled = [];
@@ -686,9 +654,13 @@ class Civ13
             : $this->discord->once('init', $callback);
     }
 
-    private function startsWithCommandPrefix(string $content): ?string
+    private function getCommandPrefix(string $content): ?string
     {
-        return array_reduce(CommandPrefix::cases(), fn($carry, $prefix) => $carry ?? (str_starts_with($content, $call = CommandPrefix::getPrefix($prefix, $this->discord->id, $this->command_symbol)) ? $call : null), null);
+        foreach ([
+            "<@{$this->discord->id}>",
+            "<@!{$this->discord->id}>",
+            $this->command_symbol
+        ] as $string) return str_starts_with($content, $string) ? $string : null;
     }
 
     /**
@@ -701,7 +673,7 @@ class Civ13
     {
         if (! $message->guild || $message->guild->owner_id !== $this->owner_id) return ['message_content' => '', 'message_content_lower' => '', 'called' => false]; // Only process commands from a guild that Taislin owns
         
-        $call = $this->startsWithCommandPrefix($message->content);
+        $call = $this->getCommandPrefix($message->content);
         $message_content = $call ? trim(substr($message->content, strlen($call))) : $message->content;
 
         return [
@@ -716,7 +688,7 @@ class Civ13
      * @param string $input The input string to be sanitized.
      * @return string The sanitized input string.
      */
-    public static function sanitizeInput(string $input): string
+    public static function sanitizeInput(string $input = ''): string
     {
         return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', '+', ' '], '', strtolower($input)));
     }
@@ -869,6 +841,27 @@ class Civ13
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
         if (strlen($content)<=4096) return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)));
         return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
+    }
+
+    /**
+     * Starts a forum thread in the specified channel.
+     *
+     * @param Channel|string $channel The channel object or channel ID where the thread will be started.
+     * @param string $title The title of the forum thread.
+     * @param string $message The initial message of the forum thread.
+     * @return PromiseInterface<Thread> A promise that resolves when the thread is successfully started.
+     * @throws PartException If the channel is not found.
+     */
+    public function startForumThread(Channel|string $channel, string $title, string $message): PromiseInterface
+    {
+        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
+            $this->logger->error($err = "Channel not found for startForumThread");
+            return reject(new PartException($err));
+        }
+        return $channel->startThread([
+            'name' => $title,
+            'message' => $message
+        ]);
     }
     /**
      * Sends a message as a reply to another message.
@@ -1186,8 +1179,8 @@ class Civ13
     }
     private function __bancheckTimer(): void
     {
-        if (! isset($this->verifier)) {
-            $this->loop->cancelTimer($this->timers['bancheck_timer']);
+        if (! isset($this->verifier) && isset($this->timers['bancheck_timer'])) {
+            ! $this->timers['bancheck_timer'] instanceof TimerInterface ?: $this->loop->cancelTimer($this->timers['bancheck_timer']);
             unset($this->timers['bancheck_timer']);
             return;
         }
@@ -1203,7 +1196,7 @@ class Civ13
         }
         $this->logger->debug('Running periodic bancheck...');
         array_walk($this->enabled_gameservers, fn($gameserver) => $gameserver->cleanupLogs());
-        if (isset($this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
+        if (isset($this->verifier, $this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) foreach ($guild->members as $member) {
             if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
             if (! isset($item['ss13'])) continue;
             //$this->logger->debug("Checking bans for {$item['ss13']}...");
