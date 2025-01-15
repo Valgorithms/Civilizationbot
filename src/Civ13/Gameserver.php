@@ -116,7 +116,6 @@ class GameServer
     public ?string $current_round_message_id = null;
     /** @var array<array> */
     public array $rounds = [];
-    private int $playercount_ticker = 0;
 
     public string $bancheck_cache = '';
 
@@ -184,7 +183,7 @@ class GameServer
             $this->__updateDiscordVariables();
             $this->localServerPlayerCount(); // Populates $this->players
             $this->playercountTimer(); // Update playercount channel every 10 minutes
-            $this->serverinfoTimer(); // Hard check playercount and  ckeys to scrutinizeCkey() every 3 minutes
+            $this->serverinfoTimer(); // Hard check playercount and ckeys to scrutinizeCkey() every 3 minutes
             $this->relayTimer(); // File chat relay
             $this->currentRoundEmbedTimer(); // The bot has to see a round id first
         };
@@ -394,7 +393,6 @@ class GameServer
     {
         if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(180, function () {
             if (! /*$playercount =*/ $this->localServerPlayerCount()) return; // No data available
-            //$this->playercountChannelUpdate($playercount); // This needs to be updated to pass $this instead of "{$server}-""
             foreach ($this->players as $ckey) {
                 if (is_null($ckey)) continue;
                 if (isset($this->civ13->moderator)) $this->civ13->moderator->scrutinizeCkey($ckey);
@@ -456,7 +454,7 @@ class GameServer
 
         $fulfilledEdit   = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
         $fulfilledSend   = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
-        $fulfilledReject = fn(\Throwable $error) => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
+        $fulfilledReject = fn(\Throwable $error): PromiseInterface => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
         
         if ($this->current_round_message_id) return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
         if (! $this->current_round_message_id) // Attempt to load the current round message ID from the file cache
@@ -520,11 +518,8 @@ class GameServer
 
     public function playercountTimer(): TimerInterface
     {
-        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(60, function () { // Update playercount channel every 10 minutes
-            $this->playercount_ticker++;
-            if ($this->playercount_ticker % 10 !== 0) return false;
-            $this->playercountChannelUpdate(count($this->players));
-        });
+        // Update playercount channel every 10 minutes
+        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate(count($this->players)));
         return $this->timers['playercount_timer'];
     }
 
@@ -1108,7 +1103,7 @@ class GameServer
             ];
             $ban_reason = array_reduce(array_keys($conditions), fn($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
             if ($ban_reason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Account under investigation. Appeal at {$this->civ13->discord_formatted}"], null, null, true) . " ($ban_reason)");
+                return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '2 minutes', 'reason' => "You cannot use a VPN or VPS hosting provider to play. Please disable it before reconnecting."], null, null, true) . " ($ban_reason)");
             }
         }
         return resolve(null);
@@ -1398,8 +1393,8 @@ class GameServer
     public function parseRoundTime(string $time)
     {
         [$hours, $minutes] = array_map('intval', explode(':', $time) + [0, 0]);
-        $hours = $hours % 24;
         $days = floor($hours / 24);
+        $hours = $hours % 24;
         return ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
     }
     /**
@@ -1462,6 +1457,7 @@ class GameServer
         if (! $data) return [];
 
         $data = explode(';', str_replace([
+            '<Server Status: ',
             '<b>Address</b>: ',
             '<b>Map</b>: ',
             '<b>Gamemode</b>: ',
@@ -1473,7 +1469,8 @@ class GameServer
             'ckey_list=',
             'allow_vote_restart=',
             '</b>',
-            '<b>'
+            '<b>',
+            '>'
         ], '', $data));
 
         $return = [];

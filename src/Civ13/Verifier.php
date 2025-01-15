@@ -207,8 +207,8 @@ class Verifier
         //if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified";
         $channel->name = "{$verifier_name}-{$status}";
         return $this->civ13->then(
-            $channel->guild->channels->save($channel),
-            fn() => $this->civ13->sendMessage($this->civ13->discord->getChannel($channel->id), "Verifier is now **{$status}**.")
+            $this->civ13->sendMessage($this->civ13->discord->getChannel($channel->id), "Verifier is now **{$status}**."),
+            fn(Message $message) => $channel->guild->channels->save($channel)
         );
     }
 
@@ -252,7 +252,7 @@ class Verifier
         $this->pending->pushItem(
             ['discord' => $discord_id,
             'ss13' => $ckey,
-            'token' => $token = implode('', array_map(fn() => $charset[random_int(0, strlen($charset) - 1)], range(1, $length)))
+            'token' => $token = implode('', array_map(static fn() => $charset[random_int(0, strlen($charset) - 1)], range(1, $length)))
         ]);
         return $token;
     }
@@ -424,6 +424,10 @@ class Verifier
                     if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
                     if ($channel) $this->civ13->sendMessage($channel, "Verified $member. ($ckey" . ((isset($this->civ13->ages[$ckey])) ? " - {$this->civ13->ages[$ckey]})" : ')'));
                 }
+                break;
+            case 400: //DB rejects processing (likely duplicate entry) or ckey/discord weren't passed properly (highly unlikely)
+                $this->getVerified(false);
+                $error = 'The database rejected the request due to a bad request. This issue is usually temporary and resolves itself immediately with a second attempt.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
             case 401:
                 $error = 'I do not currently have the necessary authorization from the website to complete your request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";

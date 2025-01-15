@@ -770,7 +770,7 @@ class Civ13
         return $patch
             ? ((($new_roles = $member->roles->filter(fn(Role $role) => ! in_array($role->id, $role_ids))->toArray()) !== $member->roles) ? $member->setRoles($new_roles) : resolve($member))
             : all(array_map(fn($role) => $member->removeRole($role->id), $role_ids))
-                ->then(fn() => $member->guild->members->get('id', $member->id));
+                ->then(static fn() => $member->guild->members->get('id', $member->id));
     }
     /**
      * Adds specified roles to a member.
@@ -786,7 +786,7 @@ class Civ13
         return $patch
             ? $member->setRoles(array_merge(array_values($member->roles->map(fn($role) => $role->id)->toArray()), $role_ids))
             : all(array_map(fn($role) => $member->addRole($role->id), $role_ids))
-                ->then(fn() => $member->guild->members->get('id', $member->id));
+                ->then(static fn() => $member->guild->members->get('id', $member->id));
     }
     /**
      * Updates specifiec roles for a member.
@@ -823,19 +823,21 @@ class Civ13
      * Sends a message to the specified channel.
      *
      * @param Channel|Thread|string $channel The channel to send the message to. Can be a channel ID or a Channel object.
-     * @param string $content The content of the message.
+     * @param MessageBuilder|string $content The content of the message.
      * @param string $file_name The name of the file to attach to the message. Default is 'message.txt'.
      * @param bool $prevent_mentions Whether to prevent mentions in the message. Default is false.
      * @return PromiseInterface<Message> A PromiseInterface representing the asynchronous operation, or null if the channel is not found.
      * @throws PartException If the channel is not found.
      */
-    public function sendMessage(Channel|Thread|string $channel, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface
+    public function sendMessage(Channel|Thread|string $channel, MessageBuilder|string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface
     {
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
             $this->logger->error($err = "Channel not found for sendMessage");
             return reject(new PartException($err));
         }
+        if ($content instanceof MessageBuilder) return $channel->sendMessage($content->setAllowedMentions(['parse'=>[]]));
+
         $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
@@ -1617,8 +1619,8 @@ class Civ13
         //if ($status === 'offline') $msg .= PHP_EOL . "Webserver technician <@{$this->technician_id}> has been notified.";
         $channel->name = "{$webserver_name}-{$status}";
         return $this->then(
-            $channel->guild->channels->save($channel),
-            fn(Channel $channel) => $this->sendMessage($this->discord->getChannel($channel->id), "Webserver is now **{$status}**.")
+            $this->sendMessage($this->discord->getChannel($channel->id), "Webserver is now **{$status}**."),
+            fn(Message $message) => $channel->guild->channels->save($channel)
         );
     }
     /**
