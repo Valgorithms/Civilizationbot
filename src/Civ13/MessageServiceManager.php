@@ -637,14 +637,18 @@ class MessageServiceManager
             ->offsetSet('newmembers',
                 function(Message $message, string $command, array $message_filtered): PromiseInterface // usort MIGHT be too slow if there are thousands of members. It currently resolves in less than a second with 669 members, but this is a future-proofed method.
                 {
-                    $members = $message->guild->members
-                        ->sort(static fn($a, $b) => $b->joined_at->getTimestamp() - $a->joined_at->getTimestamp())
-                        ->slice(0, 10)
-                        ->map(static fn(Member $member) => [
+                    $members = $message->guild->members;
+                    $this->logger->info('Sort');
+                    $members->sort(static fn($a, $b) => $b->joined_at->getTimestamp() - $a->joined_at->getTimestamp());
+                    $this->logger->info('Slice');
+                    $members->slice(0, 10);
+                    $this->logger->info('Map');
+                    $members->map(static fn(Member $member) => [
                             'username' => $member->user->username,
                             'id' => $member->id,
                             'join_date' => $member->joined_at->format('Y-m-d H:i:s')
-                        ]);
+                    ]);
+                    $this->logger->info('Reply');
                     return $message->reply(MessageBuilder::new()->addFileFromContent('new_members.json', json_encode($members->toArray(), JSON_PRETTY_PRINT)));
                 },
                 ['Ambassador'])
