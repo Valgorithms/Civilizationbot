@@ -647,7 +647,7 @@ class MessageServiceManager
                         ->then(static fn(Collection $members) => 
                             $message->react("👍")
                                 //->then(static fn() => new Collection($data, 'user_id', Member::class))
-                                ->then(static fn(/*Collection $members*/) => $message->reply(MessageBuilder::new()->addFileFromContent('new_members.json', json_encode($members, JSON_PRETTY_PRINT))))),
+                                ->then(static fn(/*Collection $members*/) => $message->reply(MessageBuilder::new()->addFileFromContent('new_members.json', json_encode($members->toArray(), JSON_PRETTY_PRINT))))),
                 ['Ambassador'])
             ->offsetSet('fullaltcheck',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
