@@ -639,11 +639,7 @@ class MessageServiceManager
                 {
                     $members = $message->guild->members;
                     $this->logger->info('Sort');
-                    try{
-                        $members->sort(static fn(Member $a, Member $b) => $b->joined_at->getTimestamp() - $a->joined_at->getTimestamp());
-                    } catch (\Exception $e) {
-                        return reject(new \Exception($e->getMessage()));
-                    }
+                    $members->sort(static fn(Member $a, Member $b) => $b->joined_at->getTimestamp() <=> $a->joined_at->getTimestamp());
                     $this->logger->info('Slice');
                     $members->slice(0, 10);
                     $this->logger->info('Map');
