@@ -68,7 +68,7 @@ class Polls
     public static function getPoll(Discord $discord, string $type): PromiseInterface
     {
         $type = strtoupper($type);
-        if (! defined('self::' . $type . '_QUESTION')) return reject(new \Exception("Invalid poll type `$type`"));
+        if (! isset(self::listPolls()[$type])) return reject(new \Exception("Invalid poll type `$type`. Available polls: " . implode(', ', array_keys(self::listPolls()))));
         return resolve(
             (new Poll($discord))
                 ->setQuestion(         constant('self::' . $type . '_QUESTION')         ) // The question of the poll. Only text is supported
@@ -76,5 +76,20 @@ class Polls
                 ->setAllowMultiselect( constant('self::' . $type . '_ALLOW_MULTISELECT')) // Whether a user can select multiple answers
                 ->setDuration(         constant('self::' . $type . '_DURATION')         ) // Number of hours the poll should be open for, up to 32 days. Defaults to 24
         );
+    }
+
+    /**
+     * Lists all poll questions by extracting the constant names that end with '_QUESTION'.
+     *
+     * This method uses reflection to get all constants defined in the class,
+     * filters them to include only those whose names end with '_QUESTION',
+     * and then maps these names to remove the '_QUESTION' suffix.
+     * The resulting array is then flipped, making the original names the values.
+     *
+     * @return array An associative array where the keys are the poll names without the '_QUESTION' suffix.
+     */
+    public static function listPolls(): array
+    {        
+        return array_flip(array_map(fn($name) => substr($name, 0, -9), array_filter(array_keys((new \ReflectionClass(__CLASS__))->getConstants()), fn($name) => str_ends_with($name, '_QUESTION'))));
     }
 }
