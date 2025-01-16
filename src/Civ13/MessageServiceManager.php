@@ -637,7 +637,7 @@ class MessageServiceManager
             ->offsetSet('newmembers',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply(MessageBuilder::new()->addFileFromContent('new_members.json', $message->guild->members
-                        ->sort(fn($a, $b) => $b->joined_at->getTimestamp() <=> $a->joined_at->getTimestamp())
+                        ->sort(static fn(Member $a, Member $b) => $b->joined_at->getTimestamp() <=> $a->joined_at->getTimestamp())
                         ->slice(0, 10)
                         ->map(static fn(Member $member) => [
                             'username' => $member->user->username,
