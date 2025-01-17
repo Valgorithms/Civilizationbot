@@ -688,7 +688,7 @@ class MessageServiceManager
                         return $carry;
                     }, []))
                         ? $this->civ13->reply($message, "Rounds: " . json_encode($rounds))
-                        :  $this->civ13->reply($message, 'No data found.'),
+                        : $this->civ13->reply($message, 'No data found.'),
                 ['Ambassador'])
             ->offsetSet('playerlist',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface => // This function is only authorized to be used by the database administrator
