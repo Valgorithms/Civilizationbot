@@ -723,15 +723,11 @@ class MessageServiceManager
                         $member->roles->has($this->civ13->role_ids['veteran']) &&
                         ! $member->roles->has($this->civ13->role_ids['Verified'])
                     )) return $message->react("👎");
-                    
-                    $message->react("⏱️");
-                    if (! $members_array = $members->toArray()) return $message->react("❌"); // No members to process
-                    $promise = array_shift($members_array)->addRole($this->civ13->role_ids['Verified']);
-                    if (! $members_array) return $promise->then(static fn() => $message->react("👍")); // There was only one member to process
-                    $promise = array_reduce($members_array, fn(PromiseInterface $carry_promise, Member $member) =>
-                        $carry_promise->then(fn() => $member->addRole($this->civ13->role_ids['Verified'])),
-                    $promise);
-                    return $promise->then(static fn() => $message->react("👍"));
+                    return $message->react("⏱️")
+                        ->then(static fn() => $members->reduce(fn(PromiseInterface $carry_promise, Member $member): PromiseInterface =>
+                            $carry_promise->then(fn() => $member->addRole($this->civ13->role_ids['Verified'])),
+                            $members->shift()->addRole($this->civ13->role_ids['Verified'])))
+                        ->then(static fn() => $message->react("👍"));
                 }, ['Chief Technical Officer'])
             ->offsetSet('retryregister',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface { // This function is only authorized to be used by the database administrator
