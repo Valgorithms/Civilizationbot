@@ -17,7 +17,8 @@
         "vzgcoders/twitchphp": "dev-main",
         "valzargaming/byond": "dev-main",
         "valzargaming/handler": "dev-main",
-        "wyrihaximus/react-cache-redis": "^4.5"
+        "wyrihaximus/react-cache-redis": "^4.5",
+        "valgorithms/discord-php-eventlogger": "dev-master"
     },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
