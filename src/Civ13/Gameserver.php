@@ -20,6 +20,7 @@ use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
+use Discord\Helpers\CollectionInterface;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
@@ -339,7 +340,7 @@ class GameServer
         
         ($ckey)
             ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc, $moderate)    
-            : $this->civ13->sendMessage($channel_id, $message); // Send the message as is if no ckey is provided
+            : $this->civ13->sendMessage($channel_id, $message, 'message.txt', true); // Send the message as is if no ckey is provided
         return resolve(null);
     }
     /**
@@ -372,13 +373,11 @@ class GameServer
                 $badword_warnings
             );
         }
-        if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) {
-            return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, false);
-        }
+        if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, true);
         $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
-        return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
+        return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed)->setAllowedMentions(['parse'=>[]]));
     }
     public function relayTimer(): ?TimerInterface
     {
@@ -473,23 +472,33 @@ class GameServer
         if (! $round = $this->getRound($this->current_round)) return null;
         $round_embed_builder = function () use ($round): MessageBuilder
         {
-            if (file_exists($this->serverdata) && $data = @file_get_contents($this->serverdata)) $data = self::explodeServerdata($data);
+            if (! file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) return null;
+            $data = self::explodeServerdata($data);
             $embed = $this->civ13->createEmbed()
                     ->setTitle($this->name)
                     //->addFieldValues('Game ID', $game_id);
                     ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
                     ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
-            if (isset($data[7])) $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
-            if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true);
-            if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
+            if (isset($data[7]))  $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
+            if (isset($data[8]))  $embed->addFieldValues('Map', $data[8], true);
+            if (isset($data[9]))  $embed->addFieldValues('Epoch', $data[9], true);
             if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
-            if ($this->players) $embed->addFieldValues('Online Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
-            if (($players = implode(', ', array_keys($round['players']))) && strlen($players) <= 1024) $embed->addFieldValues('Participating Players (' . count($round['players']) . ')', $players);
-            else $embed->addFieldValues('Participating Players (' . count($round['players']) . ')', 'Either none or too many to list!');
-            if ($discord_ids = array_filter(array_map(fn($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, array_keys($round['players'])))) {
-                if (strlen($verified_players = implode(', ', $discord_ids)) <= 1024) $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', $verified_players);
-                else $embed->addFieldValues('Verified Players (' . count($discord_ids) . ')', 'Too many to list!');
-            }
+            if ($this->players)   $embed->addFieldValues('Online Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
+            $embed->addFieldValues(
+                'Participating Players (' . count($players = array_keys($round['players'])) . ')',
+                $players
+                    ? (strlen($participating_players = implode(', ', $players)) <= 1024
+                        ? $participating_players
+                        : substr($participating_players, 0, 1021) . '...')
+                    : 'None'
+            );
+            if ($discord_ids = array_filter(array_map(fn($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, $players)))
+                $embed->addFieldValues(
+                    'Verified Players (' . count($discord_ids) . ')',
+                    strlen($verified_players = implode(', ', $discord_ids)) <= 1024
+                        ? $verified_players
+                        : substr($verified_players, 0, 1021) . '...'
+                );
             return MessageBuilder::new()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
         };
         $builder = $round_embed_builder();
@@ -943,7 +952,7 @@ class GameServer
         if (self::explodeServerdata($data)[12] ?? true) return false; // Whether restart vote is allowed
         if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return false;
         if (! $admins = $guild->members->filter(fn(Member $member) => $member->roles->has($this->civ13->role_ids['Admin']))) return false; // Get a list of admins from the Discord server
-        if (array_reduce($admins->toArray(), function ($carry, $member) { // Check if any of the admins are online
+        if (! $admins->reduce(function ($carry, $member) {
             /** @var bool $carry */
             if ($carry) return $carry;
             /** @var Member $member */
@@ -994,7 +1003,7 @@ class GameServer
         fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
         fclose($file);
         if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn() => array_walk($this->civ13->enabled_gameservers, fn(GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)))); // Attempts to fill in any missing data for the ban
-        return "**$admin** banned **{$array['ckey']}** from **{$this->name}** for **{$array['duration']}** with the reason **{$array['reason']}**" . PHP_EOL;
+        return "`$admin` `Server` banned `{$array['ckey']}` from `{$this->name}` for `{$array['duration']}` with the reason `{$array['reason']}`" . PHP_EOL;
     }
     private function sqlBan(array $array, ?string $admin = null): string
     {
@@ -1042,7 +1051,7 @@ class GameServer
      *
      * @return array An array of collections, where each collection represents a server and its rounds.
      */
-    public function getRoundsCollection(): Collection // [string $server, collection $rounds]
+    public function getRoundsCollection(): CollectionInterface // [string $server, collection $rounds]
     {
         return new Collection(array_filter(array_map(fn($game_id, $round) => array_merge($round, ['game_id' => $game_id]), array_keys($this->rounds), $this->rounds)), 'game_id');
     }
@@ -1179,7 +1188,7 @@ class GameServer
             $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
             if ($sline[1] == $ckey) {
                 $found = true;
-                $result .= "**{$sline[1]}** has a total rank of **{$sline[0]}**";
+                $result .= "`{$sline[1]}` has a total rank of `{$sline[0]}`";
             };
         }
         if (! $found) return "No medals found for ckey `$ckey`.";
@@ -1200,15 +1209,9 @@ class GameServer
         fclose($search);
 
         $topsum = 0;
-        /*$msg = '';
-        foreach ($line_array as $line) {
-            $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-            $msg .= "($topsum): **{$sline[1]}** with **{$sline[0]}** points." . PHP_EOL;
-            if (($topsum += 1) > 10) break;
-        }*/
         return resolve(implode(PHP_EOL, array_map(function ($line) use (&$topsum) {
             $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
-            return '('.++$topsum."): **{$sline[1]}** with **{$sline[0]}** points.";
+            return '('.++$topsum."): `{$sline[1]}` with `{$sline[0]}` points.";
         }, array_slice($line_array, 0, 10)))); // Limit the array to only 10 values
     }
     /**

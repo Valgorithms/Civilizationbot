@@ -315,7 +315,7 @@ class HttpServiceManager
                         : $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/2)');
                     $promise->then(fn(Message $message) => OSFunctions::execInBackground('git pull'));
                     $this->civ13->loop->addTimer(5, fn(): PromiseInterface => $promise
-                        ->then(fn(Message $message): PromiseInterface => $message->edit(MessageBuilder::new()->setContent('Forcefully moving the HEAD back to origin/main... (2/2)')))
+                        ->then(static fn(Message $message): PromiseInterface => $message->edit(MessageBuilder::new()->setContent('Forcefully moving the HEAD back to origin/main... (2/2)')))
                         ->then(fn(Message $message) => $this->civ13->restart_message = $message)
                         ->then(static fn() => OSFunctions::execInBackground('git reset --hard origin/main'))
                         /*if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->civ13->loop->cancelTimer($this->civ13->timers['restart_pending']);
@@ -363,6 +363,20 @@ class HttpServiceManager
                         return HttpResponse::plaintext($message);
                     }
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message)->then(fn() => $this->civ13->restart());
+                    return HttpResponse::plaintext($message);
+                }, true)
+            ->offsetSet('/kill',
+                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+                {
+                    $message = 'Shutting down...';
+                    $this->discord->getLoop()->addTimer(3, $this->civ13->restart());
+                    return HttpResponse::plaintext($message);
+                }, true)
+            ->offsetSet('/clearenv',
+                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
+                {
+                    $message = 'Clearing .env...';
+                    if (file_exists($env = getcwd() . '/.env')) file_put_contents($env, '');
                     return HttpResponse::plaintext($message);
                 }, true)
             ->offsetSet('/updateadmins',
@@ -804,7 +818,7 @@ class HttpServiceManager
                             $json[] = [
                                 'id' => $id,
                                 'banType' => $ban_type,
-                                'cKey' => $ban[8],
+                                'ckey' => $ban[8],
                                 'bannedOn' => $banned_on,
                                 'bannedBy' => $ban[4],
                                 'reason' => $ban[3],
