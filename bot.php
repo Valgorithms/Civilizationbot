@@ -108,33 +108,33 @@ $socket = null;
 $ic_badwords = $ooc_badwords = [
     //['word' => 'badwordtestmessage', 'duration' => '1 minute', 'reason' => 'Violated server rule.', 'category' => 'test', 'method' => 'str_contains', 'warnings' => 1], // Used to test the system
 
-    ['word' => 'beaner',      'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-    ['word' => 'chink',       'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-    ['word' => 'coon',        'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'exact', 'warnings' => 1],
-    ['word' => 'fag',         'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-    ['word' => 'gook',        'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-    ['word' => 'kike',        'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-    ['word' => 'nigg',        'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-    ['word' => 'nlgg',        'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-    ['word' => 'niqq',        'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
-    ['word' => 'tranny',      'duration' => '999 years',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'beaner',      'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'chink',       'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'coon',        'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'exact', 'warnings' => 1],
+    ['word' => 'fag',         'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'gook',        'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'kike',        'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'nigg',        'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'nlgg',        'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'niqq',        'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
+    ['word' => 'tranny',      'duration' => '1 month',  'reason' => 'Racism and Discrimination.', 'category' => 'racism/discrimination', 'method' => 'str_contains', 'warnings' => 1],
 
     ['word' => 'cunt',        'duration' => '1 minute',  'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
     ['word' => 'retard',      'duration' => '1 minute',  'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
     ['word' => 'stfu',        'duration' => '1 minute',  'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 5],
     ['word' => 'kys',         'duration' => '1 week',    'reason' => 'You must not be toxic or too agitated in any OOC communication channels.', 'category' => 'toxic', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
 
-    ['word' => 'penis',       'duration' => '999 years',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'str_contains', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
-    ['word' => 'vagina',      'duration' => '999 years',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'str_contains', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
-    ['word' => 'sex',         'duration' => '999 years',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
-    ['word' => 'cum',         'duration' => '999 years',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
+    ['word' => 'penis',       'duration' => '1 month',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'str_contains', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
+    ['word' => 'vagina',      'duration' => '1 month',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'str_contains', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
+    ['word' => 'sex',         'duration' => '1 month',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
+    ['word' => 'cum',         'duration' => '1 month',  'reason' => 'There is a zero tolerance policy towards any type of lewdness.', 'category' => 'erp', 'method' => 'exact', 'warnings' => 1], // This is more severe than the others, so ban after only one warning
 
-    ['word' => 'discord.gg',  'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
-    ['word' => 'discord.com', 'duration' => '999 years', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
+    ['word' => 'discord.gg',  'duration' => '1 month', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
+    ['word' => 'discord.com', 'duration' => '1 month', 'reason' => 'You must not post unauthorized Discord invitation links in any OOC communication channels.', 'category' => 'advertisement', 'method' => 'str_contains', 'warnings' => 2],
     
-    ['word' => 'RU',          'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'russian',  'warnings' => 2],
-    ['word' => 'CN',          'duration' => '999 years', 'reason' => '仅英语.',             'category' => 'language', 'method' => 'chinese',  'warnings' => 2],
-    ['word' => 'KR',          'duration' => '999 years', 'reason' => '영어로만 제공.',       'category' => 'language', 'method' => 'korean',   'warnings' => 2],
+    ['word' => 'RU',          'duration' => '2 minutes', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'russian',  'warnings' => 2],
+    ['word' => 'CN',          'duration' => '2 minutes', 'reason' => '仅英语.',             'category' => 'language', 'method' => 'chinese',  'warnings' => 2],
+    ['word' => 'KR',          'duration' => '2 minutes', 'reason' => '영어로만 제공.',       'category' => 'language', 'method' => 'korean',   'warnings' => 2],
 ];
 $options = array(
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
@@ -440,6 +440,9 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
         if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = $civ13->discord->getLoop()->addTimer(5, fn() => $civ13->restart());
     }
 });
+
+//$events = ['MESSAGE_UPDATE'];
+//$eventLogger = new \EventLogger\EventLogger($discord, $events);
 
 $civ13 = new Civ13($options, $server_settings);
 $civ13->run();
