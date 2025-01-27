@@ -470,7 +470,7 @@ class GameServer
     public function createCurrentRoundEmbedMessageBuilder(): ?MessageBuilder
     {
         if (! $round = $this->getRound($this->current_round)) return null;
-        $round_embed_builder = function () use ($round): MessageBuilder
+        $round_embed_builder = function (array $round): MessageBuilder
         {
             if (! file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) return null;
             $data = self::explodeServerdata($data);
@@ -501,7 +501,7 @@ class GameServer
                 );
             return MessageBuilder::new()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
         };
-        $builder = $round_embed_builder();
+        $builder = $round_embed_builder($round);
 
         $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
         {
