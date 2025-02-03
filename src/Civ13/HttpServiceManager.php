@@ -665,8 +665,11 @@ class HttpServiceManager
                 }, true)
             ->offsetSet('/verified',
                 fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
-                    HttpResponse::json($this->civ13->verifier->verified->toArray()),
-                true)
+                    HttpResponse::json($this->civ13->verifier->verified
+                        ->filter(fn($item) => $item['ss13'] && $item['discord'])
+                        ->toArray()
+                    ),
+                false)
             ->offsetSet($endpoint = '/contact',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
                 {
