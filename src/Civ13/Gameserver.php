@@ -260,7 +260,7 @@ class GameServer
     public function localServerPlayerCount(array $players = []): int
     {    
         if (! $this->enabled) return 0;
-        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return 0; // Don't try and access files if the server is not local
+        if (isset($this->civ13->httpServiceManager) && $this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return 0; // Don't try and access files if the server is not local
         $socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1);
         if (! is_resource($socket)) return 0;
         fclose($socket);
@@ -470,7 +470,7 @@ class GameServer
     public function createCurrentRoundEmbedMessageBuilder(): ?MessageBuilder
     {
         if (! $round = $this->getRound($this->current_round)) return null;
-        $round_embed_builder = function (array $round): MessageBuilder
+        $round_embed_builder = function (array $round): ?MessageBuilder
         {
             if (! file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) return null;
             $data = self::explodeServerdata($data);
@@ -501,13 +501,16 @@ class GameServer
                 );
             return MessageBuilder::new()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
         };
-        $builder = $round_embed_builder($round);
+        if (! $builder = $round_embed_builder($round)) return null;
 
         $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
         {
             if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'), true);
             $tokens = explode(';', substr($command, strlen('logs ')));
-            if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) return $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
+            if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) {
+                $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
+                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($error), true);
+            }
 
             unset($tokens[0]);
             $results = $this->civ13->FileNav($this->basedir . Civ13::log_basedir, $tokens);

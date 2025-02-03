@@ -26,8 +26,6 @@ use Discord\Parts\Guild\Role;
 use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Activity;
 use Discord\Parts\User\Member;
-//use Discord\Repository\EntitlementRepository;
-//use Discord\Repository\SKUsRepository;
 use Discord\Stats;
 use Monolog\Level;
 use Monolog\Logger;
@@ -48,7 +46,6 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 use function React\Promise\reject;
 use function React\Promise\resolve;
-use function React\Promise\all;
 
 enum CPUUsage: string
 {
@@ -662,7 +659,8 @@ class Civ13
             "<@{$this->discord->id}>",
             "<@!{$this->discord->id}>",
             $this->command_symbol
-        ] as $string) return str_starts_with($content, $string) ? $string : null;
+        ] as $string) if (str_starts_with($content, $string)) return $string;
+        return null;
     }
 
     /**
@@ -797,7 +795,7 @@ class Civ13
         bool                             $patch = true
     ): PromiseInterface
     {
-        if (! $role_ids = array_filter(self::__rolesToIdArray($roles), fn($role_id) => $member->roles->has($role_id))) return resolve($member);
+        if (! $role_ids = array_filter(self::__rolesToIdArray($roles), fn($role_id) => ! $member->roles->has($role_id))) return resolve($member);
         return $patch
             ? $member->setRoles(
                 array_merge($member->roles

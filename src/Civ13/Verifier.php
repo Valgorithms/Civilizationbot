@@ -180,10 +180,11 @@ class Verifier
             $this->verified = $this->getVerified();
             $this->logger->info('[Provisional Array]', $this->provisional->toArray());
             foreach ($this->provisional as $item) $this->provisionalRegistration($item['ss13'], $item['discord']); // Attempt to register all provisional user 
-            if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id))
-                foreach ($guild->members as $member)
-                    if (count($member->roles) === 0) // If the member only has the @everyone role
-                        $this->joinRoles($member);
+            if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) foreach ($guild->members as $member) {
+                /** @var Member $member */
+                if (! $member->user->bot && ! $member->roles->has($this->civ13->role_ids['Verified']))
+                    $this->joinRoles($member);
+            }
             $this->verifierStatusTimer();
             $this->setup();
         };

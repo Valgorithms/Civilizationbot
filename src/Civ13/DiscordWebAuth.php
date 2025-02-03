@@ -25,7 +25,7 @@ Class DiscordWebAuth
     protected $default_redirect;
 
     protected $access_token = false;
-    protected $state = false;
+    protected string $state = '';
     public $user;
     public $connections;
     
@@ -123,7 +123,7 @@ Class DiscordWebAuth
 
     public function getToken(string $state = '', string $redirect_uri = ''): Response
     {
-        if ($state == $this->state)
+        if ($state === $this->state)
         {
             $params = [
                 'client_id'        => $this->CLIENT_ID,
@@ -134,13 +134,13 @@ Class DiscordWebAuth
             ];
 
             $token = $this->apiRequest($this->baseURL.'/oauth2/token' , $params);
-            if (! isset($token->error))
-                $this->sessions[$this->requesting_ip]['discord_access_token'] = $token->access_token;
+            if (! isset($token->error)) $this->sessions[$this->requesting_ip]['discord_access_token'] = $token->access_token;
             return new Response(
                 Response::STATUS_FOUND,
                 ['Location' => ($redirect_home ?? $this->default_redirect)]
             );
         }
+       return new Response(Response::STATUS_BAD_REQUEST);
     }
 
     public function removeToken(): Response
@@ -154,8 +154,8 @@ Class DiscordWebAuth
             ];
 
             $res = $this->apiRequest($this->baseURL.'/oauth2/token/remove' , $params);
-            return $this->logout();
         }
+        return $this->logout();
     }
 
     public function getUser()

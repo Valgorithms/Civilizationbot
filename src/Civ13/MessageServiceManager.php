@@ -10,7 +10,6 @@ namespace Civ13;
 use Byond\Byond;
 use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\MissingSystemPermissionException;
-use Discord\Helpers\Collection;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
@@ -22,10 +21,7 @@ use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\Promise\PromiseInterface;
 
-use function React\Promise\all;
 use function React\Async\await;
-use function React\Promise\resolve;
-use function React\Promise\reject;
 
 class MessageServiceManager
 {
@@ -969,7 +965,8 @@ class MessageServiceManager
                             }
                         }
                         if ($result != '') return $result;
-                        if (! $found && ($result === '')) return 'No medals found for this ckey.';
+                        if (! $found && $result === '') return 'No medals found for this ckey.';
+                        return false;
                     };
                     if (! $msg = $medals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
                     return $this->civ13->reply($message, $msg, 'medals.txt');

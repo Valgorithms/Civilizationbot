@@ -46,7 +46,7 @@ class IPToCountryResolver
      *}
      *
      * @param string $ip The IP address to resolve.
-     * @return string The country code, region, and city of the IP address in the format 'CC->REGION->CITY'.
+     * @return array An array containing the country code, region, and city of the IP address.
      */
     public static function Online(string $ip): array
     {
