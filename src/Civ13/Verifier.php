@@ -418,13 +418,13 @@ class Verifier
                     $this->civ13->__panicUnban($ckey);
                     $error .= ' and the panic bunker ban removed.';
                     if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
-                    if ($channel) $this->civ13->sendMessage($channel, "Verified and removed the panic bunker ban from $member ($ckey - {$this->civ13->ages[$ckey]}).");
+                    if ($channel) $this->civ13->sendMessage($channel, "Verified and removed the panic bunker ban from $member (`$ckey` - {$this->civ13->ages[$ckey]}).");
                 } elseif ($this->civ13->bancheck($ckey, true)) {
                     if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished']], "approveme verified ($ckey)");
-                    if ($channel) $this->civ13->sendMessage($channel, "Added the banished role to $member ($ckey - {$this->civ13->ages[$ckey]}).");
+                    if ($channel) $this->civ13->sendMessage($channel, "Added the banished role to $member (`$ckey` - {$this->civ13->ages[$ckey]}).");
                 } else {
                     if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
-                    if ($channel) $this->civ13->sendMessage($channel, "Verified $member. ($ckey" . ((isset($this->civ13->ages[$ckey])) ? " - {$this->civ13->ages[$ckey]})" : ')'));
+                    if ($channel) $this->civ13->sendMessage($channel, "Verified $member. (`$ckey`" . ((isset($this->civ13->ages[$ckey])) ? " - {$this->civ13->ages[$ckey]})" : ')'));
                 }
                 break;
             case 400: //DB rejects processing (likely duplicate entry) or ckey/discord weren't passed properly (highly unlikely)

@@ -577,7 +577,6 @@ class GameServer
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        //if (($this->legacy_relay) && $this->ooc && $channel = $this->discord->getChannel($this->ooc)) if ($promise = $this->relayPlayerMessage($channel, $message, $sender)) return $promise;
         return true;
     }
     /**
@@ -596,7 +595,6 @@ class GameServer
         }
         fwrite($file, "$sender:::$message" . PHP_EOL);
         fclose($file);
-        //if (($this->legacy_relay) && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->relayPlayerMessage($channel, $message, $sender, null, $urgent)) return $promise;
         return true;
     }
     /**
@@ -616,7 +614,6 @@ class GameServer
         }
         fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
         fclose($file);
-        //if (($this->legacy_relay) && $this->asay && $channel = $this->discord->getChannel($this->asay)) if ($promise = $this->relayPlayerMessage($channel, $message, $sender, $recipient)) return $promise;
         return true;
     }
     /**
@@ -631,35 +628,6 @@ class GameServer
      * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
      * @return PromiseInterface<Message>|null A promise that resolves to the sent message, or null if the message couldn't be sent.
      */
-    /*public function relayPlayerMessage(Channel|Thread|string $channel, string $content, string $sender, ?string $recipient = '', ?bool $urgent = false, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface|false
-    {
-        if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
-            $this->logger->error("Channel not found for relayPlayerMessage");
-            return false;
-        }
-        $then = function (Message $message) { $this->logger->debug("Urgent message sent to {$message->channel->name} ({$message->channel->id}): {$message->content} with message link {$message->url}"); };
-
-        // Sender is the ckey or Discord username
-        $ckey = null;
-        $user = null;
-        $verified = false;
-        if (isset($this->civ13->verifier) && $item = $this->civ13->verifier->getVerifiedItem($sender)) {
-            $ckey = $item['ss13'];
-            $verified = true;
-            $user = $this->civ13->verifier->getVerifiedUser($ckey);
-        }
-        $content = '**__['.date('H:i:s', time()).']__ ' . ($ckey ?? $sender) . ": **$content";
-
-        $builder = MessageBuilder::new();
-        if ($urgent) $builder->setContent("<@&{$this->civ13->role_ids['Admin']}>, an urgent message has been sent!");
-        if (! $urgent && $prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
-        if (! $verified && strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($then, null);
-        if (strlen($content)>4096) return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($then, null);
-        $embed = $this->civ13->createEmbed(false)->setDescription($content);
-        if ($recipient) $embed->setTitle(($ckey ?? $sender) . " => $recipient");
-        if ($user) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
-        return $channel->sendMessage($builder->addEmbed($embed))->then($then, null);
-    }*/
 
     public function Host(?Message $message = null): void
     {

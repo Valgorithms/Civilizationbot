@@ -953,9 +953,10 @@ class Civ13
      */
     public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
-        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $carry || $server->OOCMessage($message, $sender), false);
-        if (! isset($this->enabled_gameservers[$server_key])) return false;
-        return $this->enabled_gameservers[$server_key]->OOCMessage($message, $sender);
+        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $server->OOCMessage($message, $sender), false);
+        return isset($this->enabled_gameservers[$server_key]) 
+            ? $this->enabled_gameservers[$server_key]->OOCMessage($message, $sender)
+            : false;
     }
     /**
      * Sends an admin message to the server.
@@ -967,9 +968,10 @@ class Civ13
      */
     public function AdminMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
-        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $carry || $server->AdminMessage($message, $sender), false);
-        if (! isset($this->enabled_gameservers[$server_key])) return false;
-        return $this->enabled_gameservers[$server_key]->AdminMessage($message, $sender);
+        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $server->AdminMessage($message, $sender), false);
+        return isset($this->enabled_gameservers[$server_key])
+            ? $this->enabled_gameservers[$server_key]->AdminMessage($message, $sender)
+            : false;
     }
     /**
      * Sends a direct message to a recipient using the specified sender and message.
@@ -982,9 +984,10 @@ class Civ13
      */
     public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): bool
     {
-        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $carry || $server->DirectMessage($message, $sender, $recipient), false);
-        if (! isset($this->enabled_gameservers[$server_key])) return false;
-        return $this->enabled_gameservers[$server_key]->DirectMessage($message, $sender, $recipient);
+        if (is_null($server_key)) return array_reduce($this->enabled_gameservers, fn($carry, $server) => $server->DirectMessage($message, $sender, $recipient), false);
+        return isset($this->enabled_gameservers[$server_key]) 
+            ? $this->enabled_gameservers[$server_key]->DirectMessage($message, $sender, $recipient)
+            : false;
     }
     
     /**
