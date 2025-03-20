@@ -186,6 +186,7 @@ $options = array(
         //'Mentor' => '469297467918254085', // Deprecated
         'Parolemin' => '743971427929030748', // Parole Admin
         /* Discord Player Roles */
+        'SS14 Verified' => '1352299214326992937', // SS14 Verified
         'Verified' => '468982790772228127', // Verified
         'Banished' => '710328377210306641', // Banned in-game
         'Permabanished' => '1126137099209425017', // Permanently banned in-game
