@@ -77,6 +77,7 @@ class Verifier
             $this->civ13->timers["add_{$member->id}"] = $this->civ13->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
             { // Kick member if they have not verified
                 $this->getVerified();
+                /* Disabled for now
                 if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
                 if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
                 if ($this->getVerifiedItem($member)) return null; // Don't kick if they have been verified
@@ -86,6 +87,8 @@ class Verifier
                     $member_future->roles->has($this->civ13->role_ids['Permabanished'])
                 ) return null; // Don't kick if they have a verified or banned role
                 return $guild->members->kick($member_future, 'Not verified');
+                */
+               return null;
             });
         });
         $this->civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
