@@ -186,7 +186,7 @@ class Verifier
             if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) foreach ($guild->members as $member) {
                 /** @var Member $member */
                 if (! $member->user->bot && ! $member->roles->has($this->civ13->role_ids['Verified']))
-                    $this->joinRoles($member);
+                    $this->joinRoles($member, false);
             }
             $this->verifierStatusTimer();
             $this->setup();
@@ -222,10 +222,12 @@ class Verifier
      * If they have, it will assign them the appropriate roles
      * If they have not, it will send them a message indicating that they need to verify if the 'welcome_message' is set
      *
-     * @param Member $member The member to check and assign roles to
-     * @return PromiseInterface|null Returns null if the member is softbanned, otherwise returns a PromiseInterface
+     * @param Member                 $member               The member to check and assign roles to
+     * @param bool                   $send_welcome_message Whether to send the welcome message or not
+     * 
+     * @return PromiseInterface|null
      */
-    public function joinRoles(Member $member): ?PromiseInterface
+    public function joinRoles(Member $member, bool $send_welcome_message = true): ?PromiseInterface
     {
         if ($member->guild_id === $this->civ13->civ13_guild_id && $item = $this->get('discord', $member->id)) {
             if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
@@ -239,9 +241,10 @@ class Verifier
                 return $member->setroles([$this->civ13->role_ids['Verified']], "verified join {$item['ss13']}");
             }
         }
-        if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['bot-stuff']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
-            if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['bot-stuff']))
-                return $this->civ13->sendMessage($channel, "<@{$member->id}>, {$this->civ13->welcome_message}");
+        if ($send_welcome_message)
+            if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['bot-stuff']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
+                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['bot-stuff']))
+                    return $this->civ13->sendMessage($channel, "<@{$member->id}>, {$this->civ13->welcome_message}");
         return null;
     }
 
