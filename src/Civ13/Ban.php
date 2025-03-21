@@ -1,6 +1,5 @@
 <?php
 
-
 /*
  * This file is a part of the Civ13 project.
  *
