@@ -158,7 +158,7 @@ class Verifier
                     return null;
             return $thread->join()->then(function() use ($thread, $member, $last_message): PromiseInterface
             {
-                if (! $item = $this->getVerifiedItem($member)) $content = "Your Discord account has not yet been linked to a Byond account. Please verify your account by following the instructions in <#{$this->civ13->channel_ids['get-approved']}>. If you were directed here automatically during the verification process please wait for a staff member to assist you. ";
+                if (! $item = $this->getVerifiedItem($member)) $content = "Your Discord account has not yet been linked to a Byond account. Please verify your account by following the instructions in <#{$this->civ13->channel_ids['bot-stuff']}>. If you were directed here automatically during the verification process please wait for a staff member to assist you. ";
                 else {
                     if ($this->civ13->bancheck($item['ss13'], true)) $content = "Byond account `{$item['ss13']}` is currently banned. Please wait for a staff member to assist you. ";
                     else $content = "Byond account `{$item['ss13']}` is not currently banned. If you still need assistance please wait for a staff member to assist you. ";
@@ -239,8 +239,8 @@ class Verifier
                 return $member->setroles([$this->civ13->role_ids['Verified']], "verified join {$item['ss13']}");
             }
         }
-        if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['get-approved']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
-            if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['get-approved']))
+        if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['bot-stuff']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
+            if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['bot-stuff']))
                 return $this->civ13->sendMessage($channel, "<@{$member->id}>, {$this->civ13->welcome_message}");
         return null;
     }
