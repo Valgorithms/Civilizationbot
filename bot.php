@@ -165,6 +165,7 @@ $options = array(
     'channel_ids' => array(
         //'get-approved' => '690025163634376738', #get-approved (Deprecated)
         'bot-stuff' => '932431238894092309', #bot-stuff
+        'information' => '857295113071362069', #information
         'webserver-status' => '1106967195092783104', #webserver-{status}
         'verifier-status' => '1231988255470125117', #verifier-{status}
         'staff_bot' => '712685552155230278', // #staff-bot

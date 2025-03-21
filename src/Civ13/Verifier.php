@@ -158,7 +158,7 @@ class Verifier
                     return null;
             return $thread->join()->then(function() use ($thread, $member, $last_message): PromiseInterface
             {
-                if (! $item = $this->getVerifiedItem($member)) $content = "Your Discord account has not yet been linked to a Byond account. Please verify your account by following the instructions in <#{$this->civ13->channel_ids['bot-stuff']}>. If you were directed here automatically during the verification process please wait for a staff member to assist you. ";
+                if (! $item = $this->getVerifiedItem($member)) $content = "Your Discord account has not yet been linked to a Byond account. Please verify your account by following the instructions in <#{$this->civ13->channel_ids['information']}>. If you were directed here automatically during the verification process please wait for a staff member to assist you. ";
                 else {
                     if ($this->civ13->bancheck($item['ss13'], true)) $content = "Byond account `{$item['ss13']}` is currently banned. Please wait for a staff member to assist you. ";
                     else $content = "Byond account `{$item['ss13']}` is not currently banned. If you still need assistance please wait for a staff member to assist you. ";
