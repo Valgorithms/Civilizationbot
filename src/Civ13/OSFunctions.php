@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /*
  * This file is a part of the Civ13 project.
@@ -124,8 +124,8 @@ class OSFunctions
      */
     public static function portIsAvailable(int $port = 1714): PromiseInterface
     {
-        if (($s = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) return reject(new \Exception(socket_last_error()));
-        if (socket_bind($s, '127.0.0.1', $port) === false) return reject(new \Exception(socket_last_error($s)));
+        if (($s = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) return reject(new \Exception(strval(socket_last_error())));
+        if (socket_bind($s, '127.0.0.1', $port) === false) return reject(new \Exception(strval(socket_last_error($s))));
         socket_close($s);
         return resolve($s);
     }

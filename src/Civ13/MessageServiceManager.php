@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
  * This file is a part of the Civ13 project.
  *
@@ -364,7 +364,7 @@ class MessageServiceManager
                 ->offsetSet('ooc',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
+                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], strlen(trim($command))));
                     foreach ($this->civ13->enabled_gameservers as &$gameserver) switch (strtolower($message->channel->name)) {
                         case "ooc-{$gameserver->key}":                    
                             if ($gameserver->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
@@ -375,7 +375,7 @@ class MessageServiceManager
             ->offsetSet('asay',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], trim(strlen($command))));
+                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], strlen(trim($command))));
                     foreach ($this->civ13->enabled_gameservers as $server) {
                         switch (strtolower($message->channel->name)) {
                             case "asay-{$server->key}":
@@ -405,13 +405,13 @@ class MessageServiceManager
                 }, ['Admin'])
             ->offsetSet('globalooc',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->OOCMessage(trim(substr($message_filtered['message_content'], trim(strlen($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
+                    $this->civ13->OOCMessage(trim(substr($message_filtered['message_content'], strlen(trim($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
                         ? $message->react("📧")
                         : $message->react("🔥"),
                 ['Admin'])
             ->offsetSet('globalasay',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->AdminMessage(trim(substr($message_filtered['message_content'], trim(strlen($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
+                    $this->civ13->AdminMessage(trim(substr($message_filtered['message_content'], strlen(trim($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
                         ? $message->react("📧")
                         : $message->react("🔥"),
                 ['Admin'])
@@ -419,7 +419,7 @@ class MessageServiceManager
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     if (! Byond::isValidCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "Byond username `$ckey` does not exist.");
-                    $this->civ13->permitCkey($ckey, strlen($command));
+                    $this->civ13->permitCkey($ckey, boolval(strlen($command)));
                     return $this->civ13->reply($message, "Byond username `$ckey` is now permitted to bypass the Byond account restrictions.");
                 }, ['Admin'])
             ->offsetSets(['unpermit', 'revoke'],
@@ -472,7 +472,7 @@ class MessageServiceManager
             ->offsetSet('ban',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    $message_filtered['message_content'] = substr($message_filtered['message_content'], trim(strlen($command)));
+                    $message_filtered['message_content'] = substr($message_filtered['message_content'], strlen(trim($command)));
                     $split_message = explode('; ', $message_filtered['message_content']);
                     if (! $split_message[0] = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
                     if (! isset($this->civ13->ages[$split_message[0]]) && ! Byond::isValidCkey($split_message[0])) return $this->civ13->reply($message, "Byond username `{$split_message[0]}` does not exist.");
@@ -484,7 +484,7 @@ class MessageServiceManager
             ->offsetSet('unban',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    if (is_numeric($ckey = Civ13::sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], trim(strlen($command))))))
+                    if (is_numeric($ckey = Civ13::sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], strlen(trim($command))))))
                         if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
                             else $ckey = $item['ss13'];
                     if (isset($this->civ13->verifier) && ! $message->member->roles->has($this->civ13->role_ids['Ambassador']) && ! $this->civ13->verifier->isVerified($ckey)) return $this->civ13->reply($message, "No verified data found for ID `$ckey`. Byond user must verify with `approveme` first.");
@@ -526,7 +526,7 @@ class MessageServiceManager
                     if (! $rounds) return $this->civ13->reply($message, 'No data found for that ckey.');
                     $builder = MessageBuilder::new();
                     foreach ($rounds as $server_name => $rounds) {
-                        $embed = $this->civ13->createEmbed()->setTitle($server_name)->addFieldValues('Rounds', count($rounds));
+                        $embed = $this->civ13->createEmbed()->setTitle($server_name)->addFieldValues('Rounds', strval(count($rounds)));
                         if ($user = $this->civ13->verifier->getVerifiedUser($item)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
                         $builder->addEmbed($embed);
                     }
@@ -569,7 +569,7 @@ class MessageServiceManager
                             if (count($this->civ13->tests[$test_key]) < $tokens[2]) return $this->civ13->reply($message, "Can't return more questions than exist in a test!");
                             $test = $this->civ13->tests[$test_key]; // Copy the array, don't reference it
                             shuffle($test);
-                            return $this->civ13->reply($message, implode(PHP_EOL, array_slice($test, 0, $tokens[2])));
+                            return $this->civ13->reply($message, implode(PHP_EOL, array_slice($test, 0, intval($tokens[2]))));
                         default:
                             return $this->civ13->reply($message, 'Invalid format! Available commands: `list {test_key}`, `add {test_key} {question}`, `post {test_key} {question #}`, `remove {test_key} {question #}` `delete {test_key}`');
                     }
@@ -1074,7 +1074,7 @@ class MessageServiceManager
                         $maxlen = 150 - strlen(" Appeal at {$this->civ13->discord_formatted}");
                         if (strlen($split_message[2]) > $maxlen) return $this->civ13->reply($message, "Ban reason is too long! Please limit it to `$maxlen` characters.");
                         $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
-                        $result = $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $gameserver);
+                        $result = $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], strval($gameserver));
                         if ($member = $this->civ13->verifier->getVerifiedMember('id', $split_message[0]))
                             if (! $member->roles->has($this->civ13->role_ids['Banished']))
                                 $member->addRole($this->civ13->role_ids['Banished'], $result);
@@ -1090,7 +1090,7 @@ class MessageServiceManager
                             $ckey = $item['ckey'];
                         }
                         
-                        $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $gameserver);
+                        $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], strval($gameserver));
                         $result = "`$admin` unbanned `$ckey` from `{$gameserver->name}`";
                         if ($member = $this->civ13->verifier->getVerifiedMember('id', $ckey))
                             if ($member->roles->has($this->civ13->role_ids['Banished']))

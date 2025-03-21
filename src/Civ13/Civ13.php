@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /*
  * This file is a part of the Civ13 project.
@@ -74,7 +74,7 @@ enum CPUUsage: string
 
     private static function getWindowsUsage(): string
     {
-        return 'CPU Usage: ' . round(trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"')), 2) . '%';
+        return 'CPU Usage: ' . round(floatval(trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"')), 2)) . '%';
     }
 
     private static function getLinuxUsage(): string

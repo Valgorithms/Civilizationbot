@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /*
  * This file is a part of the Civ13 project.
@@ -98,7 +98,7 @@ class Ban
         if (! is_numeric($N)) throw new \Exception('Invalid number');
 
         if ($Radix !== 10) {
-            $result = base_convert(intval($N), 10, $Radix);
+            $result = base_convert($N, 10, $Radix);
             if ($Digits !== null) {
                 $result = str_pad($result, $Digits, '0', STR_PAD_LEFT);
             }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /*
  * This file is a part of the Civ13 project.
@@ -305,7 +305,7 @@ class HttpServiceManager
                         if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "Unauthorized Request Headers on `$endpoint` endpoint: " . json_encode($headers));
                         return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
                     }
-                    if ($signature !== $hash = 'sha1=' . hash_hmac('sha1', $request->getBody(), getenv('github_secret'))) {
+                    if ($signature !== $hash = 'sha1=' . hash_hmac('sha1', strval($request->getBody()), getenv('github_secret'))) {
                         $this->logger->warning("Unauthorized Request Signature on `$endpoint` endpoint: `$signature` != `$hash`");
                         return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
                     }
