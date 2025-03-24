@@ -807,8 +807,9 @@ class HttpServiceManager
                 {
                     $ip = $request->getServerParams()['REMOTE_ADDR'];
                     $this->startSession($ip);
-
                     $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
+
+                    $params = $request->getQueryParams();
                     if (isset($params['code']) && isset($params['state'])) {
                         $this->logger->info("[DWA] Code: {$params['code']}, State: {$params['state']}");
                         return $DiscordWebAuth->getToken($params['state']);
