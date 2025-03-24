@@ -809,28 +809,36 @@ class HttpServiceManager
                     $this->startSession($ip);
 
                     $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
-                    if (isset($params['code']) && isset($params['state']))
+                    if (isset($params['code']) && isset($params['state'])) {
+                        $this->logger->info("[DWA] Code: {$params['code']}, State: {$params['state']}");
                         return $DiscordWebAuth->getToken($params['state']);
-                    if (isset($params['login']))
+                    }
+                    if (isset($params['login'])) {
+                        $this->logger->info("[DWA] Login requested");
                         return $DiscordWebAuth->login();
-                    if (isset($params['logout']))
+                    }
+                    if (isset($params['logout'])) {
+                        $this->logger->info("[DWA] Logout requested");
                         return $DiscordWebAuth->logout();
-                    if ($DiscordWebAuth->isAuthed() && isset($params['remove']))
+                    }
+                    if ($DiscordWebAuth->isAuthed() && isset($params['remove'])) {
+                        $this->logger->info("[DWA] Remove token requested");
                         return $DiscordWebAuth->removeToken();
+                    }
                     
                     $tech_ping = '';
                     if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
                     if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
                         $this->dwa_discord_ids[$ip] = $DiscordWebAuth->user->id;
                         if (! $this->civ13->verifier->get('discord', $DiscordWebAuth->user->id)) {
+                            $this->logger->info("[DWA] Unauthorized Discord ID: {$DiscordWebAuth->user->id}");
                             if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $tech_ping . "<@&$DiscordWebAuth->user->id> tried to log in with Discord but does not have permission to! Please check the logs.");
                             return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
                         }
-                        if ($this->httpHandler->whitelist($ip))
-                            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot']))
-                                $this->civ13->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
-                        if ($this->httpHandler->offsetGet('/botlog', 'handlers'))
-                            return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
+                        if ($this->httpHandler->whitelist($ip) && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                            $this->logger->info("[DWA] Authorized Discord ID: {$DiscordWebAuth->user->id}");
+                            $this->civ13->sendMessage($channel, $tech_ping . "<@{$DiscordWebAuth->user->id}> has logged in with Discord.");
+                        }
                     }
 
                     return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => "http://{$this->httpHandler->external_ip}:{$this->http_port}/botlog"]);
