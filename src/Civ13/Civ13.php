@@ -43,6 +43,7 @@ use React\Http\HttpServer;
 use React\Socket\SocketServer;
 use ReflectionFunction;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use VerifierServer\Server as VerifierServer;
 
 use function React\Promise\reject;
 use function React\Promise\resolve;
@@ -237,7 +238,11 @@ class Civ13
      * @throws E_USER_ERROR If the code is not running in a CLI environment.
      * @throws E_USER_WARNING If the ext-gmp extension is not loaded.
      */
-    public function __construct(array $options = [], array $server_settings = [])
+    public function __construct(
+        array $options = [],
+        array $server_settings = [],
+        public VerifierServer $verifier_server,
+    )
     {
         if (php_sapi_name() !== 'cli') trigger_error('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.', E_USER_ERROR);
 
@@ -716,6 +721,10 @@ class Civ13
      */
     public function run(): void
     {
+        if (isset($this->verifier_server)) {
+            $this->logger->info('Starting verifier server');
+            $this->verifier_server->start();
+        }
         $this->logger->info('Starting Discord loop');
         if (!(isset($this->discord))) $this->logger->warning('Discord not set!');
         else $this->discord->run();
