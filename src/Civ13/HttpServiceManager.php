@@ -807,6 +807,8 @@ class HttpServiceManager
                 {
                     $ip = $request->getServerParams()['REMOTE_ADDR'];
                     $this->startSession($ip);
+                    if (isset($this->dwa_sessions[$ip]['oauth_steam_url'])) $this->logger->info("[DWA] Steam URL for `$ip`: {$this->dwa_sessions[$ip]['oauth_steam_url']}");
+
                     $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, gethostbyname('www.civ13.com'), $request);
 
                     $params = $request->getQueryParams();

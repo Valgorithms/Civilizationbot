@@ -67,7 +67,7 @@ Class DiscordWebAuth
         }
     }
 
-    private function apiRequest(string $url = '', object|array|null $post = null)
+    private function apiRequest(string $url = '', object|array|null $post = null, ?bool $associative = null)
     {
         $ch = curl_init($url);
 
@@ -85,7 +85,7 @@ Class DiscordWebAuth
         }
 
         $response = curl_exec($ch);
-        return @json_decode($response);
+        return @json_decode($response, $associative);
     }
 
     public function login(?string $redirect_uri = null, ?string $scope = 'identify guilds connections'): Response
@@ -192,9 +192,7 @@ Class DiscordWebAuth
             if (isset($connection->type)){
                 $this->sessions[$this->requesting_ip]['oauth_' . $connection->type . '_id'] = $connection->id;
                 $this->sessions[$this->requesting_ip]['oauth_' . $connection->type . '_name'] = $connection->name;
-                if ($connection->type == 'steam') {
-                    $this->sessions[$this->requesting_ip]['oauth_steam_url'] = 'https://steamcommunity.com/profiles/'.$connection->id.'/';
-                }
+                if ($connection->type == 'steam') $this->sessions[$this->requesting_ip]['oauth_steam_url'] = "https://steamcommunity.com/profiles/{$connection->id}/";
             }
         }
         return $connections;
