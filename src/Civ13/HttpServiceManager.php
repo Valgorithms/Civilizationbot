@@ -409,8 +409,8 @@ class HttpServiceManager
                         /*if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->discord->getLoop()->cancelTimer($this->civ13->timers['restart_pending']);
                         $this->civ13->timers['restart_pending'] = $this->discord->getLoop()->addTimer(300, fn() => 
                             (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message)
-                                ? $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Restarting... (3/3)'))->then(fn() => $this->civ13->restart())
-                                : $this->civ13->sendMessage($channel, 'Restarting... (3/3)')->then(fn() => $this->civ13->restart())
+                                ? $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Restarting...'))->then(fn() => $this->civ13->restart())
+                                : $this->civ13->sendMessage($channel, 'Restarting...')->then(fn() => $this->civ13->restart())
                         );*/
                     );
                     return new HttpResponse(HttpResponse::STATUS_OK);
@@ -447,7 +447,7 @@ class HttpServiceManager
                 {
                     $message = 'Manually Restarting...';
                     if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) {
-                        $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting... (3/3)'))->then(fn() => $this->civ13->restart());
+                        $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting...'))->then(fn() => $this->civ13->restart());
                         return HttpResponse::plaintext($message);
                     }
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message)->then(fn() => $this->civ13->restart());
@@ -807,7 +807,7 @@ class HttpServiceManager
                 {
                     $ip = $request->getServerParams()['REMOTE_ADDR'];
                     $this->startSession($ip);
-                    $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, $request);
+                    $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, gethostbyname('www.civ13.com'), $request);
 
                     $params = $request->getQueryParams();
                     if (isset($params['code']) && isset($params['state'])) {

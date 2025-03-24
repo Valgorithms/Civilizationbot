@@ -35,7 +35,7 @@ Class DiscordWebAuth
     protected $originating_url = null;
     protected $allowed_uri = []; //Exact URL as added in https://discord.com/developers/applications/###/oauth2
 
-    function __construct(Civ13 &$civ13, array &$sessions, string $client_id, string $client_secret, string $web_address, int $http_port, ServerRequestInterface $request) {
+    function __construct(Civ13 &$civ13, array &$sessions, string $client_id, string $client_secret, string $web_address, int $http_port, string $resolved_ip, ServerRequestInterface $request) {
         $this->civ13 =& $civ13;
         $this->sessions =& $sessions;
         $this->CLIENT_ID = $client_id;
@@ -45,7 +45,7 @@ Class DiscordWebAuth
 
         $this->web_address = "$web_address:$http_port";
         $this->redirect_home = "http://{$this->web_address}/";
-        $this->allowed_uri []= "{$this->redirect_home}dwa";
+        $this->allowed_uri []= "http://{$resolved_ip}:$http_port/dwa";
 
         $this->default_redirect = $request->getUri()->getScheme().'://'.$request->getUri()->getHost().':'.$http_port.explode('?', $request->getUri()->getPath())[0];
         $this->originating_url = $request->getHeaderLine('referer') ?? $request->getUri()->getScheme().'://'.$request->getUri()->getHost();
