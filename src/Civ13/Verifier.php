@@ -22,6 +22,7 @@ use Monolog\Logger;
 use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
 use Traversable;
+use VerifierServer\Endpoints\VerifiedEndpoint;
 
 use function React\Async\await;
 use function React\Promise\reject;
@@ -573,6 +574,21 @@ class Verifier
     }
     private function __verifyRequest(array $postfields): array
     {
+        if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) { // Mock
+            $method = $postfields['method'] ?? 'POST';
+            
+            $endpoint = new VerifiedEndpoint($this->civ13->verifier_server->getState());
+            $request = '';
+            $http_status = 200;
+            $content_type = [];
+            $body = '';
+            $endpoint->handleRequest($method, $request, $http_status, $content_type, $body);
+            return [
+                'response' => $body,
+                'http_status' => $http_status
+            ];
+        }
+
         $postfields['token'] = $this->civ13->civ_token;
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -727,6 +743,11 @@ class Verifier
      */
     public function fetchVerifiedData(): array
     {
+        if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) return [
+            'json' => json_encode($this->civ13->verifier_server->getState()->getVerifyList()),
+            'http_status' => 200
+        ];
+        
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->verify_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -817,7 +838,6 @@ class Verifier
         $this->logger->warning("Unable to find user with ID `$id`.");
         return null;
     }
-
 
     public function verifierStatusTimer(): TimerInterface
     {

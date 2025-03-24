@@ -241,7 +241,7 @@ class Civ13
     public function __construct(
         array $options = [],
         array $server_settings = [],
-        public VerifierServer $verifier_server,
+        public ?VerifierServer $verifier_server = null,
     )
     {
         if (php_sapi_name() !== 'cli') trigger_error('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.', E_USER_ERROR);
@@ -721,7 +721,7 @@ class Civ13
      */
     public function run(): void
     {
-        if (isset($this->verifier_server)) {
+        if (isset($this->verifier_server) && $this->verifier_server !== null) {
             $this->logger->info('Starting verifier server');
             $this->verifier_server->start();
         }
