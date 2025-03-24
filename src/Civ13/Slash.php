@@ -264,9 +264,7 @@ class Slash
             ]));
 
             // if ($command = $commands->get('name', 'assign_faction')) $commands->delete($command);
-            $choices = array_map(function($faction) {
-                return ['name' => $faction, 'value' => $faction];
-            }, Civ13::faction_teams);
+            $choices = array_map(fn($faction) => ['name' => $faction, 'value' => $faction], Civ13::faction_teams);
             $choices[] = ['name' => 'Random', 'value' => 'random'];
             $choices[] = ['name' => 'None', 'value' => 'none'];
             if (! $commands->get('name', 'assign_faction')) $this->save($commands, new Command($this->discord, [
