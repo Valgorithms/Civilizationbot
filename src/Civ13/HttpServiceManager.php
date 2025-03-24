@@ -791,7 +791,7 @@ class HttpServiceManager
                     return HttpResponse::html("<!doctype html><html><body>Hello wörld!</body></html>");
                     return new HttpResponse(
                         HttpResponse::STATUS_OK,
-                        ['Content-Type' => 'text/json'],
+                        ['Content-Type' => 'application/json'],
                         json_encode($json ?? '')
                     );
                 })
@@ -925,7 +925,7 @@ class HttpServiceManager
                             ];
                             $id++;
                         }
-                        $response = new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'text/json'], json_encode($json ?? ''));
+                        $response = new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'application/json'], json_encode($json ?? ''));
                         $response = $response->withHeader('Cache-Control', 'public, max-age=3600');
                         return $response;
                     })
