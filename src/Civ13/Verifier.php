@@ -574,22 +574,25 @@ class Verifier
     }
     private function __verifyRequest(array $postfields): array
     {
+        $postfields['token'] = $this->civ13->civ_token;
+        
         if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) { // Mock
             $method = $postfields['method'] ?? 'POST';
+            $request = implode(PHP_EOL, array_map(fn($key, $value) => "$key: $value", array_keys($postfields), $postfields));
             
-            $endpoint = new VerifiedEndpoint($this->civ13->verifier_server->getState());
-            $request = '';
             $http_status = 200;
             $content_type = [];
             $body = '';
+
+            $endpoint = new VerifiedEndpoint($this->civ13->verifier_server->getState());
             $endpoint->handleRequest($method, $request, $http_status, $content_type, $body);
+
             return [
                 'response' => $body,
                 'http_status' => $http_status
             ];
         }
-
-        $postfields['token'] = $this->civ13->civ_token;
+        
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $this->verify_url,
