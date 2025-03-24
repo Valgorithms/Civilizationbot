@@ -45,6 +45,7 @@ Class DiscordWebAuth
 
         $this->web_address = "$web_address:$http_port";
         $this->redirect_home = "http://{$this->web_address}/";
+        $this->allowed_uri []= "{$this->redirect_home}dwa";
         $this->allowed_uri []= "http://{$resolved_ip}:$http_port/dwa";
 
         $this->default_redirect = $request->getUri()->getScheme().'://'.$request->getUri()->getHost().':'.$http_port.explode('?', $request->getUri()->getPath())[0];
