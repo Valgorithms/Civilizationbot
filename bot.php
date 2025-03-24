@@ -153,7 +153,8 @@ $options = array(
     // The website must return valid json when no parameters are passed to it and MUST allow POST requests including 'token', 'ckey', and 'discord'
     // Reach out to Valithor if you need help setting up your website
     'webserver_url' => 'www.valzargaming.com',
-    'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
+    //'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
+    'verify_url' => getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT') . '/verified/', // Local/Integrated Verifier Server
     // 'serverinfo_url' => '', // URL of the serverinfo.json file, defaults to the webserver if left blank
     'ooc_badwords' => $ooc_badwords,
     'ic_badwords' => $ic_badwords,
@@ -448,5 +449,24 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
 //$events = ['MESSAGE_UPDATE'];
 //$eventLogger = new \EventLogger\EventLogger($discord, $events);
 
-$civ13 = new Civ13($options, $server_settings);
+use VerifierServer\PersistentState;
+use VerifierServer\Server as VerifierServer;
+
+$verifier_server = new VerifierServer(
+    new PersistentState(
+        getenv('CIV_TOKEN'),
+        PersistentState::loadVerifyFile(getenv('VERIFIER_JSON_PATH') ?? 'json\verified.json'),
+        getenv('VERIFIER_STORAGE_TYPE') ?? 'filesystem',
+        getenv('VERIFIER_JSON_PATH') ?? 'json\verified.json',
+    ),
+    getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT')
+);
+$verifier_server->init($loop);
+$verifier_server->setLogger($logger);
+
+$civ13 = new Civ13(
+    $options,
+    $server_settings,
+    $verifier_server
+);
 $civ13->run();
