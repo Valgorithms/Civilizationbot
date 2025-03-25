@@ -17,7 +17,7 @@
         "vzgcoders/twitchphp": "dev-main",
         "valzargaming/byond": "dev-main",
         "valzargaming/handler": "dev-main",
-        "vzgcoders/verifier-server": "^2",
+        "vzgcoders/verifier-server": "dev-main",
         "wyrihaximus/react-cache-redis": "^4.5",
         "valgorithms/discord-php-eventlogger": "dev-master"
     },
