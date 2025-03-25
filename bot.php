@@ -160,6 +160,7 @@ $options = array(
     'ic_badwords' => $ic_badwords,
     'folders' => array(
         // 'typespess_path' => '/home/civ13/civ13-typespess',
+        'ss14_basedir' => '/home/civ13/civ14'
     ),
     'files' => array( // Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',

@@ -911,6 +911,23 @@ class MessageServiceManager
                         OSFunctions::execInBackground('killall index.js');
                         return $this->civ13->reply($message, '**TypeSpess Civ13** test server down.');
                     }, ['Owner']);
+            if (isset($this->civ13->folders['ss14_basedir']))
+                $this->messageHandler->offsetSet('ss14',
+                    function (Message $message, string $command, array $message_filtered): PromiseInterface
+                    {
+                        if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `ss14 on` or `ss14 off`.');
+                        if (! in_array($state, ['on', 'off'])) return $this->civ13->reply($message, 'Wrong format. Please try `ss14 on` or `ss14 off`.');
+                        if ($state === 'on') {
+                            OSFunctions::execInBackground("cd {$this->civ13->folders['ss14_basedir']}");
+                            OSFunctions::execInBackground('git pull');
+                            OSFunctions::execInBackground("dotnet run --project Content.Packaging server --hybrid-acz --platform linux-x64");
+                            OSFunctions::execInBackground("dotnet run --project Content.Server --config-file server_config.toml");
+                            return $this->civ13->reply($message, 'Put **Civ14** test server on: `TODO: URL`');
+                        }
+                        //OSFunctions::execInBackground('killall index.js');
+                        //return $this->civ13->reply($message, '**Civ14** test server down.');
+                        return $this->civ13->reply($message, 'This feature is not yet implemented.');
+                    }, ['Owner']);
 
             $this->__generateServerMessageCommands();
     }
