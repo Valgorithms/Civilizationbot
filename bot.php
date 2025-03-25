@@ -456,7 +456,7 @@ $verifier_server = new VerifierServer(
     new PersistentState(
         getenv('CIV_TOKEN'),
         getenv('VERIFIER_STORAGE_TYPE') ?? 'filesystem',
-        getenv('VERIFIER_JSON_PATH') ?? 'json/verified.json',
+        getenv('VERIFIER_JSON_PATH') ?? '/json/verified.json',
     ),
     getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT')
 );
