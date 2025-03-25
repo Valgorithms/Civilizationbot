@@ -455,9 +455,8 @@ use VerifierServer\Server as VerifierServer;
 $verifier_server = new VerifierServer(
     new PersistentState(
         getenv('CIV_TOKEN'),
-        PersistentState::loadVerifyFile(getenv('VERIFIER_JSON_PATH') ?? '/json.verified.json'),
         getenv('VERIFIER_STORAGE_TYPE') ?? 'filesystem',
-        getenv('VERIFIER_JSON_PATH') ?? '/json.verified.json',
+        getenv('VERIFIER_JSON_PATH') ?? 'json/verified.json',
     ),
     getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT')
 );
