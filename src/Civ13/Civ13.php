@@ -179,9 +179,9 @@ class Civ13
     public array $seen_players = []; // Collected automatically by serverinfo_timer
     public int $playercount_ticker = 0;
 
-    /** @var Gameserver[] */
+    /** @var GameServer[] */
     public array $gameservers = [];
-    /** @var Gameserver[] */
+    /** @var GameServer[] */
     public array $enabled_gameservers = [];
     public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list
     public array $ooc_badwords = [];
@@ -319,7 +319,7 @@ class Civ13
         $this->__loadOrInitializeVariables();
         new Moderator($this);
         new Verifier($this, $options);
-        foreach ($server_settings as $gameserver_settings) new Gameserver($this, $gameserver_settings);
+        foreach ($server_settings as $gameserver_settings) new GameServer($this, $gameserver_settings);
         $this->byond = new Byond();
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
@@ -1679,7 +1679,7 @@ class Civ13
      * Fetches server information from the specified URL.
      *
      * @return array The server information as an associative array.
-     * @deprecated Use Gameserver properties and functions instead.
+     * @deprecated Use GameServer properties and functions instead.
      */
     public function serverinfoFetch(): array
     {
@@ -1713,7 +1713,7 @@ class Civ13
     /**
      * Updates admin lists with required roles and permissions.
      *
-     * @param array $required_roles An array of required roles and their corresponding permissions. (Defined in Gameserver.php)
+     * @param array $required_roles An array of required roles and their corresponding permissions. (Defined in GameServer.php)
      * @return bool Returns true if the update was successful, false otherwise.
      */
     public function adminlistUpdate(?array $required_roles = null): bool

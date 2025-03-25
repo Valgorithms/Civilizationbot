@@ -148,7 +148,7 @@ class Moderator
      * @param string $server The server where the chat message is being sent.
      * @return string The original chat message string.
      */
-    public function moderate(Gameserver $gameserver, string $ckey, string $string, array $badwords_array, array &$badword_warnings): bool
+    public function moderate(GameServer $gameserver, string $ckey, string $string, array $badwords_array, array &$badword_warnings): bool
     {
         $lower = strtolower($string);
         //$this->logger->debug("[MODERATE] ckey = `$ckey`, string = `$string`, lower = `$lower`");
@@ -173,7 +173,7 @@ class Moderator
      * @param array &$badword_warnings A reference to an array that stores the number of warnings for each player.
      * @return string|false The warning message or false if the player should not be warned or banned.
      */
-    private function __relayViolation(Gameserver $gameserver, string $ckey, array $badwords_array, array &$badword_warnings): string|false
+    private function __relayViolation(GameServer $gameserver, string $ckey, array $badwords_array, array &$badword_warnings): string|false
     {
         if (Civ13::sanitizeInput($ckey) === Civ13::sanitizeInput($this->discord->username)) return false; // Don't ban or alert staff for the bot
 

@@ -177,7 +177,7 @@ $options = array(
         'email' => '1225600172336353430', // #email
         'ban_appeals' => '1019718839749062687' #ban-appeals
     ),
-    'role_ids' => array( // The keys in this array must directly correspond to the expected role names and as defined in Gameserver.php. Do not alter these keys unless you know what you are doing.
+    'role_ids' => array( // The keys in this array must directly correspond to the expected role names and as defined in GameServer.php. Do not alter these keys unless you know what you are doing.
         /* Discord Staff Roles */
         'Owner' => '468980650914086913', // Discord Server Owner
         'Chief Technical Officer' => '791450326455681034', // Debug Host / Database admin

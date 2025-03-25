@@ -181,7 +181,7 @@ class GameServer
 
         if (! $this->enabled) return; // Don't start timers for disabled servers
         $fn = function () {
-            $this->logger->info("Getting player count for Gameserver {$this->name}");
+            $this->logger->info("Getting player count for GameServer {$this->name}");
             $this->__updateDiscordVariables();
             $this->localServerPlayerCount(); // Populates $this->players
             $this->playercountTimer(); // Update playercount channel every 10 minutes
@@ -216,7 +216,7 @@ class GameServer
     {
         if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             if (! $this->role = $guild->roles->get('name', $this->name)) {
-                $this->logger->error("Role not found for Gameserver {$this->key}.");
+                $this->logger->error("Role not found for GameServer {$this->key}.");
                 return;
             }
         }
@@ -233,7 +233,7 @@ class GameServer
         ];
         foreach ($requiredProperties as $property)
             if (! isset($options[$property]))
-                throw new \RuntimeException("Gameserver missing required property: $property");
+                throw new \RuntimeException("GameServer missing required property: $property");
         $optionalProperties = [
             'discussion',
             'playercount',
@@ -250,7 +250,7 @@ class GameServer
         ];
         foreach ($optionalProperties as $property)
             if (! isset($options[$property]))
-                trigger_error("Gameserver missing optional property: $property", E_USER_WARNING);
+                trigger_error("GameServer missing optional property: $property", E_USER_WARNING);
     }
     
     /**
