@@ -739,7 +739,7 @@ class Civ13
     {
         $this->logger->info('Shutting down');
         if (isset($this->httpServiceManager->socket)) $this->httpServiceManager->socket->close();
-        if (isset($this->verifier_server)) $this->verifier_server->stop();
+        if (isset($this->verifier_server)) $this->verifier_server->close();
         if (isset($this->discord)) $this->discord->close(false);
         if ($closeLoop) $this->loop->stop();
     }
