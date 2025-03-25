@@ -23,7 +23,7 @@ use Monolog\Logger;
 use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
 use Traversable;
-use VerifierServer\Endpoints\VerifiedEndpoint;
+use VerifierServer\Server as VerifierServer;
 
 use function React\Async\await;
 use function React\Promise\reject;
@@ -578,15 +578,20 @@ class Verifier
         $postfields['token'] = $this->civ13->civ_token;
         
         if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) { // Mock
+            $uri = '/verified';
             $method = $postfields['method'] ?? 'POST';
-            $request = implode(PHP_EOL, array_map(fn($key, $value) => "$key: $value", array_keys($postfields), $postfields));
-            
             $http_status = 200;
             $content_type = [];
             $body = '';
 
-            $endpoint = new VerifiedEndpoint($this->civ13->verifier_server->getState());
-            $endpoint->handle($method, $request, $http_status, $content_type, $body);
+            $this->civ13->verifier_server->handleEndpoint(
+                $uri,
+                $method,
+                VerifierServer::arrayToRequestString($postfields),
+                $http_status,
+                $content_type,
+                $body
+            );
 
             return [
                 'response' => $body,
