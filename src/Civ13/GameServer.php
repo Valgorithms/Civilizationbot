@@ -21,6 +21,7 @@ use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
 use Discord\Helpers\CollectionInterface;
+use Discord\Helpers\ExCollectionInterface;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;

@@ -18,6 +18,7 @@ use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
 use Discord\Helpers\Collection;
 use Discord\Helpers\CollectionInterface;
+use Discord\Helpers\ExCollectionInterface;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
@@ -1029,11 +1030,11 @@ class Civ13
     /**
      * Returns the highest role from a collection of roles.
      *
-     * @param  Collection<Role> $roles The collection of roles.
+     * @param ExCollectionInterface<Role> $roles The collection of roles.
      * 
      * @return ?Role
      */
-    function getHighestRole(Collection $roles): ?Role
+    function getHighestRole(ExCollectionInterface $roles): ?Role
     {
         return $roles->reduce(fn($prev, $role) =>
             ($prev === null
