@@ -906,10 +906,10 @@ class MessageServiceManager
                             OSFunctions::execInBackground("cd {$this->civ13->folders['typespess_path']}");
                             OSFunctions::execInBackground('git pull');
                             OSFunctions::execInBackground("sh {$this->civ13->files['typespess_launch_server_path']}&");
-                            return $this->civ13->reply($message, 'Put **TypeSpess Civ13** test server on: http://civ13.com/ts');
+                            return $this->civ13->reply($message, 'Put **TypeSpess Civ13** test server is now **on**: http://civ13.com/ts');
                         }
                         OSFunctions::execInBackground('killall index.js');
-                        return $this->civ13->reply($message, '**TypeSpess Civ13** test server down.');
+                        return $this->civ13->reply($message, '**TypeSpess Civ13** test server is now **offline**.');
                     }, ['Owner', 'Chief Technical Officer']);
             $this->messageHandler->offsetSet('ss14',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -921,11 +921,10 @@ class MessageServiceManager
                         OSFunctions::execInBackground('git pull');
                         OSFunctions::execInBackground("dotnet run --project Content.Packaging server --hybrid-acz --platform linux-x64");
                         OSFunctions::execInBackground("dotnet run --project Content.Server --config-file server_config.toml");
-                        return $this->civ13->reply($message, 'Put **Civ14** test server on: `TODO: URL`');
+                        return $this->civ13->reply($message, 'Put **Civ14** test server is now **online**: `URL placeholder`');
                     }
-                    //OSFunctions::execInBackground('killall index.js');
-                    //return $this->civ13->reply($message, '**Civ14** test server down.');
-                    return $this->civ13->reply($message, 'This feature is not yet implemented.');
+                    OSFunctions::execInBackground('killall dotnet');
+                    return $this->civ13->reply($message, '**Civ14** test server is now **offline**.');
                 }, ['Owner', 'Chief Technical Officer']);
 
             $this->__generateServerMessageCommands();
