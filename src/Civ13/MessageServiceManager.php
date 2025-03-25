@@ -910,7 +910,7 @@ class MessageServiceManager
                         }
                         OSFunctions::execInBackground('killall index.js');
                         return $this->civ13->reply($message, '**TypeSpess Civ13** test server down.');
-                    }, ['Owner']);
+                    }, ['Owner', 'Chief Technical Officer']);
             if (isset($this->civ13->folders['ss14_basedir']))
                 $this->messageHandler->offsetSet('ss14',
                     function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -927,7 +927,7 @@ class MessageServiceManager
                         //OSFunctions::execInBackground('killall index.js');
                         //return $this->civ13->reply($message, '**Civ14** test server down.');
                         return $this->civ13->reply($message, 'This feature is not yet implemented.');
-                    }, ['Owner']);
+                    }, ['Owner', 'Chief Technical Officer']);
 
             $this->__generateServerMessageCommands();
     }
