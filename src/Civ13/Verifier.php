@@ -182,7 +182,7 @@ class Verifier
             });
         });
         $fn = function () {
-            $this->verified = $this->getVerified();
+            $this->getVerified();
             $this->logger->info('[Provisional Array]', $this->provisional->toArray());
             foreach ($this->provisional as $item) $this->provisionalRegistration($item['ss13'], $item['discord']); // Attempt to register all provisional user 
             if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) foreach ($guild->members as $member) {
@@ -736,7 +736,7 @@ class Verifier
             if (! $verified_array = $this->civ13->VarLoad('verified.json') ?? []) $this->civ13->VarSave('verified.json', $verified_array);
             return $this->verified = new Collection($verified_array, 'discord');
         }
-        return $this->verified ?? new Collection($verified_array ?? [], 'discord'); 
+        return $this->verified ?? $this->verified = new Collection($verified_array ?? [], 'discord'); 
     }
 
     /**
