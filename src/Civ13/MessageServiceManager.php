@@ -875,17 +875,30 @@ class MessageServiceManager
                         ['Admin'])
                 ;
             if (isset($this->civ13->verifier, $this->civ13->role_ids['Verified']))
-                $this->messageHandler->offsetSets(['approveme', 'aproveme', 'approvme'],
-                    function (Message $message, string $command, array $message_filtered): PromiseInterface
-                    {
-                        if (isset($this->civ13->role_ids['Verified']) && $message->member->roles->has($this->civ13->role_ids['Verified'])) return $this->civ13->reply($message, 'You already have the verification role!');
-                        if ($item = $this->civ13->verifier->getVerifiedItem($message->author)) {
-                            $message->member->setRoles([$this->civ13->role_ids['Verified']], "approveme {$item['ss13']}");
+                $this->messageHandler
+                    ->offsetSets(['approveme', 'aproveme', 'approvme'],
+                        function (Message $message, string $command, array $message_filtered): PromiseInterface
+                        {
+                            if (isset($this->civ13->role_ids['Verified']) && $message->member->roles->has($this->civ13->role_ids['Verified']))
+                                return $this->civ13->reply($message, 'You already have the verification role!');
+                            if ($item = $this->civ13->verifier->getVerifiedItem($message->author))
+                                return $message->member->setRoles([$this->civ13->role_ids['Verified']], "approveme {$item['ss13']}")
+                                    ->then(static fn() => $message->react("👍"));
+                            if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))
+                                return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
+                            return $this->civ13->reply($message, $this->civ13->verifier->process($ckey, $message->user_id, $message->member));
+                        })
+                    ->offsetSet('joinroles',
+                        function (Message $message, string $command, array $message_filtered): PromiseInterface
+                        {
+                            $this->civ13->verifier->getVerified();
+                            foreach ($this->civ13->verifier->provisional as $item) $this->provisionalRegistration($item['ss13'], $item['discord']); // Attempt to register all provisional user 
+                            if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) foreach ($guild->members as $member)
+                                /** @var Member $member */
+                                if (! $member->user->bot && ! $member->roles->has($this->civ13->role_ids['Verified']))
+                                    $this->civ13->verifier->joinRoles($member, false);
                             return $message->react("👍");
-                        }
-                        if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
-                        return $this->civ13->reply($message, $this->civ13->verifier->process($ckey, $message->user_id, $message->member));
-                    });
+                        }, ['Chief Technical Officer']);
 
             if (file_exists(Civ13::insults_path))
                 $this->messageHandler->offsetSet('insult',
