@@ -348,15 +348,18 @@ class HttpServiceManager
                 }, true)
             // HttpHandler website endpoints
             ->offsetSets(['/', '/index.html', '/index.php'],
-                function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
-                {
-                    if ($whitelisted && $method = $this->httpHandler->offsetGet('/botlog', 'handlers')) return $method($request, $endpoint, $whitelisted);
-                    if ($method = $this->httpHandler->offsetGet('/home.html', 'handlers')) return $method($request, $endpoint, $whitelisted);
-                    return new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']);
-                })
-            ->offsetSet('/robots.txt',
                 fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    ($whitelisted && $method = $this->httpHandler->offsetGet('/botlog', 'handlers'))
+                        ? ($method($request, $endpoint, $whitelisted))
+                        : (($method = $this->httpHandler->offsetGet('/home.html', 'handlers'))
+                            ? ($method($request, $endpoint, $whitelisted))
+                            : (new HttpResponse(HttpResponse::STATUS_FOUND, ['Location' => 'https://www.valzargaming.com/?login']))))
+            ->offsetSet('/robots.txt',
+                static fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
                     HttpResponse::plaintext('User-agent: *' . PHP_EOL . 'Disallow: /'))
+            ->offsetSet('/github',
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    new HttpResponse(HttpResponse::STATUS_MOVED_PERMANENTLY, ['Location' => $this->civ13->github]))
             ->offsetSet($endpoint = '/.well-known/security.txt',
                 fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
                     HttpResponse::plaintext(//'Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
@@ -367,11 +370,13 @@ class HttpServiceManager
                     'Policy: http://valzargaming.com/legal'))
                 ->setRateLimit($endpoint, 1, 10) // 1 request per 10 seconds
             ->offsetSet('/ping',
-                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                static fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
                     HttpResponse::plaintext("Hello wörld!"))
             ->offsetSet('/favicon.ico',
-                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
-                    ($favicon = @file_get_contents('favicon.ico')) ? new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon', 'Cache-Control' => 'public, max-age=2592000'], $favicon) : new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`"))
+                static fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    ($favicon = @file_get_contents('favicon.ico'))
+                        ? new HttpResponse(HttpResponse::STATUS_OK, ['Content-Type' => 'image/x-icon', 'Cache-Control' => 'public, max-age=2592000'], $favicon)
+                        : new HttpResponse(HttpResponse::STATUS_NOT_FOUND, ['Content-Type' => 'text/plain'], "Unable to access `favicon.ico`"))
             // HttpHandler management endpoints
             ->offsetSet('/reset',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
