@@ -453,16 +453,14 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
 use VerifierServer\PersistentState;
 use VerifierServer\Server as VerifierServer;
 
-$verifier_server = new VerifierServer(
-    getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT'),
-    new PersistentState(
-        getenv('CIV_TOKEN'),
-        getenv('VERIFIER_STORAGE_TYPE') ?? 'filesystem',
-        getenv('VERIFIER_JSON_PATH') ?? '/json/verified.json',
-    ),
-);
+$verifier_server = new VerifierServer(getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT'));
 $verifier_server->init($loop);
 $verifier_server->setLogger($logger);
+$verifier_server->setState([
+    getenv('CIV_TOKEN'),
+    getenv('VERIFIER_STORAGE_TYPE') ?? 'filesystem',
+    getenv('VERIFIER_JSON_PATH') ?? '/json/verified.json',
+]);
 
 $civ13 = new Civ13(
     $options,
