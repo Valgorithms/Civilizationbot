@@ -41,7 +41,11 @@
     "autoload": {
         "psr-4": {
             "Civ13\\": "src/Civ13/",
+            "Civ14\\": "src/Civ14/",
             "Discord\\": "src/Discord/"
         }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "9.6"
     }
 }
