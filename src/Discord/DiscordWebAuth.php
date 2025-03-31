@@ -149,9 +149,9 @@ Class DiscordWebAuth
         if ($this->access_token)
         {
             $params = [
-                'client_id'        => $this->CLIENT_ID,
-                'client_secret'    => $this->CLIENT_SECRET,
-                'access_token' => $this->access_token
+                'client_id'     => $this->CLIENT_ID,
+                'client_secret' => $this->CLIENT_SECRET,
+                'access_token'  => $this->access_token
             ];
 
             $res = $this->apiRequest($this->baseURL.'/oauth2/token/remove' , $params);

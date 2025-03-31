@@ -1,6 +1,5 @@
 <?php declare(strict_types=1);
 
-
 /*
  * This file is a part of the Civ13 project.
  *
@@ -168,7 +167,7 @@ class GameServer
         }
         $this->afterConstruct();
     }
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $this->serverdata = $this->basedir . Civ13::serverdata;
         $this->discord2unban = $this->basedir . Civ13::discord2unban;
@@ -180,18 +179,19 @@ class GameServer
         $this->setup();
 
         if (! $this->enabled) return; // Don't start timers for disabled servers
-        $fn = function () {
-            $this->logger->info("Getting player count for GameServer {$this->name}");
-            $this->__updateDiscordVariables();
-            $this->localServerPlayerCount(); // Populates $this->players
-            $this->playercountTimer(); // Update playercount channel every 10 minutes
-            $this->serverinfoTimer(); // Hard check playercount and ckeys to scrutinizeCkey() every 3 minutes
-            $this->relayTimer(); // File chat relay
-            $this->currentRoundEmbedTimer(); // The bot has to see a round id first
-        };
-        $this->civ13->ready
-            ? $fn()
-            : $this->discord->once('init', fn() => $fn());
+        $this->civ13->deferUntilReady(
+            function () {
+                $this->logger->info("Getting player count for GameServer {$this->name}");
+                $this->__updateDiscordVariables();
+                $this->localServerPlayerCount(); // Populates $this->players
+                $this->playercountTimer(); // Update playercount channel every 10 minutes
+                $this->serverinfoTimer(); // Hard check playercount and ckeys to scrutinizeCkey() every 3 minutes
+                $this->relayTimer(); // File chat relay
+                $this->currentRoundEmbedTimer(); // The bot has to see a round id first
+            },
+            $this->key
+        );
+
     }
     /**
      * This method is responsible for setting up the game server by performing the following tasks:
@@ -217,7 +217,6 @@ class GameServer
         if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             if (! $this->role = $guild->roles->get('name', $this->name)) {
                 $this->logger->error("Role not found for GameServer {$this->key}.");
-                return;
             }
         }
     }
@@ -272,7 +271,7 @@ class GameServer
         }
         $data = self::explodeServerdata($data);
         if (isset($data[11])) $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
-        if (isset($data[4])) $playercount = $data[4]; // Player count
+        if (isset($data[4])) $playercount = (int) $data[4]; // Player count
         $this->players = $players;
         return $playercount;
     }
@@ -378,7 +377,7 @@ class GameServer
         $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
-        return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed)->setAllowedMentions(['parse'=>[]]));
+        return $channel->sendMessage(Civ13::createBuilder(true)->addEmbed($embed));
     }
     public function relayTimer(): ?TimerInterface
     {
@@ -500,23 +499,23 @@ class GameServer
                         ? $verified_players
                         : substr($verified_players, 0, 1021) . '...'
                 );
-            return MessageBuilder::new()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
+            return Civ13::createBuilder()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
         };
         if (! $builder = $round_embed_builder($round)) return null;
 
         $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
         {
-            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'), true);
+            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
             $tokens = explode(';', substr($command, strlen('logs ')));
             if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) {
                 $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
-                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($error), true);
+                return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($error), true);
             }
 
             unset($tokens[0]);
             $results = $this->civ13->FileNav($this->basedir . Civ13::log_basedir, $tokens);
-            if (! $results[0]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('No logs found.'), true);
-            return $interaction->sendFollowUpMessage(MessageBuilder::new()->addFile($results[1], 'log.txt'), true);
+            if (! $results[0]) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('No logs found.'), true);
+            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($results[1], 'log.txt'), true);
         };
         if ($log = str_replace('/', ';', "logs {$this->key}{$round['log']}")) $builder->addComponent(
             ActionRow::new()->addComponent(
@@ -555,7 +554,7 @@ class GameServer
             return reject(new PartException($err));
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
-        if ((int)$existingCount !== $count) {
+        if ((int) $existingCount !== $count) {
             $channel->name = "{$channelPrefix}-{$count}";
             return $channel->guild->channels->save($channel);
         }
@@ -638,8 +637,8 @@ class GameServer
 
         if (! isset($this->civ13->timers["{$this->key}host"])) {
             $this->civ13->timers["{$this->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($message) {
-                OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself &");
                 unset($this->civ13->timers["{$this->key}host"]);
+                $proc = OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself > /dev/null 2>&1 & disown");
                 if ($message) $message->react("👍");
             });
         } else $this->logger->info("Server host timer already exists for {$this->key}.");
@@ -789,21 +788,24 @@ class GameServer
      */
     public function legacyBancheck(string $ckey, bool $use_cache = false): bool
     {
-        if (! $use_cache || ! $this->bancheck_cache) {
-            if (! @file_exists($path = $this->basedir . Civ13::bans)) {
-                $this->logger->debug("Unable to open `$path`");
-                return false;
-            }
-            if (($file_contents = @file_get_contents($path)) === false) {
-                $this->logger->debug("Unable to read `$path`");
-                return false;
-            }
-            $this->bancheck_cache = $file_contents;
-        }
+        if (! $use_cache || ! $this->bancheck_cache) $this->updateBanCache();
         foreach (explode(PHP_EOL, $this->bancheck_cache) as $line)
             if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey))
                 return true; // $split_ckey[0] is the ckey
         return false;
+    }
+
+    public function updateBanCache(): ?string
+    {
+        if (! @file_exists($path = $this->basedir . Civ13::bans)) {
+            $this->logger->debug("Unable to open `$path`");
+            return null;
+        }
+        if (($file_contents = @file_get_contents($path)) === false) {
+            $this->logger->debug("Unable to read `$path`");
+            return null;
+        }
+        return $this->bancheck_cache = $file_contents;
     }
     /**
      * Checks if a player with the given ckey is banned.
@@ -1001,6 +1003,9 @@ class GameServer
                 });
             }
         }
+        foreach (explode(PHP_EOL, $this->bancheck_cache) as $line)
+            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey))
+                $this->bancheck_cache = str_replace($line, '', $this->bancheck_cache);
     }
     private function legacyUnban(string $ckey, ?string $admin = null): PromiseInterface
     {
@@ -1401,7 +1406,6 @@ class GameServer
             $embed->addFieldValues('Players (' . count($players) . ')', $players_list, true);
         }
         if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
-        $embed->setFooter($this->civ13->embed_footer);
         //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
         //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
         return $embed;

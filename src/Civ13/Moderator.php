@@ -81,7 +81,7 @@ class Moderator
         $this->logger =& $civ13->logger;
         $this->afterConstruct();
     }
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $this->civ13->ready
             ? $this->setup()

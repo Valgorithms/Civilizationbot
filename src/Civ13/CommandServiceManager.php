@@ -60,7 +60,7 @@ class CommandServiceManager
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $fn = function() {
             $this->logger->info('Setting up CommandServiceManager...');
@@ -204,7 +204,7 @@ class CommandServiceManager
             ],
             'interaction_handler' => function (Interaction $interaction): PromiseInterface
             {
-                return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'), true);
+                return $interaction->respondWithMessage(Civ13::createBuilder()->setContent('Pong!'), true);
             },
         ];
         return $array;

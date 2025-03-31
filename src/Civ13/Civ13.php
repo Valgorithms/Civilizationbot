@@ -13,6 +13,8 @@ use Civ13\Exceptions\PartException;
 use Civ13\Moderator;
 use Civ13\PromiseMiddleware;
 use Civ13\Slash;
+use Civ14\GameServer as SS14GameServer;
+use Civ14\Verifier as SS14Verifier;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
@@ -32,6 +34,8 @@ use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
+use Psr\Log\LoggerInterface;
+use React\Cache\CacheInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
@@ -135,6 +139,7 @@ class Civ13
     public Byond $byond;
     public Moderator $moderator;
     public Verifier $verifier;
+    public SS14Verifier $ss14verifier;
 
     public string $welcome_message = '';
     
@@ -150,11 +155,11 @@ class Civ13
     
     public string $webserver_url = 'www.valzargaming.com'; // The URL of the webserver that the bot pulls server information from
 
-    public StreamSelectLoop $loop;
+    public LoopInterface $loop;
     public Discord $discord;
     public Browser $browser;
     public AdapterInterface $filesystem;
-    public Logger $logger;
+    public LoggerInterface $logger;
     public Stats $stats;
 
     public string $filecache_path = '';
@@ -183,6 +188,10 @@ class Civ13
     public array $gameservers = [];
     /** @var GameServer[] */
     public array $enabled_gameservers = [];
+    /** @var SS14GameServer[] */
+    public array $civ14_gameservers = [];
+    /** @var SS14GameServer[] */
+    public array $civ14_enabled_gameservers = []; 
     public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list
     public array $ooc_badwords = [];
     public array $ooc_badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
@@ -235,13 +244,14 @@ class Civ13
      * Creates a Civ13 client instance.
      * 
      * @param array $options An array of options for configuring the client.
-     * @param array $server_settings An array of configurations for the game servers.
+     * @param array $civ13_server_settings An array of configurations for the game servers.
      * @throws E_USER_ERROR If the code is not running in a CLI environment.
      * @throws E_USER_WARNING If the ext-gmp extension is not loaded.
      */
     public function __construct(
         array $options = [],
-        array $server_settings = [],
+        array $civ13_server_settings = [],
+        array $civ14_server_settings = [],
         public ?VerifierServer $verifier_server = null,
     )
     {
@@ -253,14 +263,14 @@ class Civ13
         // Set the file that the object was constructed in
         $this->constructed_file = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'];
 
-        $this->logger =  $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
+        $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
         $options = $this->resolveOptions($options);
         $this->options =& $options;
         if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord =& $options['discord'];
         elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
         else $this->logger->error('No Discord instance or options passed in options!');
-        $this->loop = $options['loop'] ?? $this->discord->getLoop();
-
+        
+        $this->loop = $options['loop'];
         $this->browser = $options['browser'];
         $this->filesystem = $options['filesystem'];
         $this->stats = $options['stats'];
@@ -304,22 +314,29 @@ class Civ13
         if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
         else $this->logger->warning('No role_ids passed in options!');
 
-        $this->afterConstruct($options, $server_settings);
+        $this->afterConstruct($options, $civ13_server_settings, $civ14_server_settings);
     }
     /**
      * This method is called after the object is constructed.
      * It initializes various properties, starts timers, and starts handling events.
      *
      * @param array $options An array of options.
-     * @param array $server_options An array of server options.
+     * @param array $civ13_server_options An array of server options for Civ13.
+     * @param array $civ14_server_options An array of server options for Civ14.
      * @return void
      */
-    private function afterConstruct(array $options = [], array $server_settings = []): void
+    private function afterConstruct(
+        array $options = [],
+        array $civ13_server_settings = [],
+        array $civ14_server_settings = []
+    ): void
     {
         $this->__loadOrInitializeVariables();
         new Moderator($this);
         new Verifier($this, $options);
-        foreach ($server_settings as $gameserver_settings) new GameServer($this, $gameserver_settings);
+        new SS14Verifier($this);
+        foreach ($civ13_server_settings as $gameserver_options) new GameServer($this, $gameserver_options);
+        foreach ($civ14_server_settings as $gameserver_options) new SS14GameServer($this, $gameserver_options);
         $this->byond = new Byond();
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
@@ -376,7 +393,7 @@ class Civ13
                 'ooc_badwords',
                 'owner_id',
                 'rules',
-                'server_settings',
+                'civ13_server_settings',
                 'socket',
                 'stats',
                 'technician_id',
@@ -415,7 +432,7 @@ class Civ13
                 'ooc_badwords' => [],
                 'owner_id' => '196253985072611328',
                 'rules' => 'civ13.com slash rules',
-                'server_settings' => [],
+                'civ13_server_settings' => [],
                 'socket' => null,
                 'stats' => null,
                 'technician_id' => '116927250145869826',
@@ -453,7 +470,7 @@ class Civ13
             ->setAllowedTypes('ooc_badwords', 'array')
             ->setAllowedTypes('owner_id', 'string')
             ->setAllowedTypes('rules', 'string')
-            ->setAllowedTypes('server_settings', 'array')
+            ->setAllowedTypes('civ13_server_settings', 'array')
             ->setAllowedTypes('socket', ['null', 'resource', SocketServer::class])
             ->setAllowedTypes('stats', ['null', Stats::class])
             ->setAllowedTypes('technician_id', 'string')
@@ -545,6 +562,7 @@ class Civ13
             }
         }
 
+        $options['loop'] = $options['loop'] ?? Loop::get();
         $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
 
@@ -879,10 +897,12 @@ class Civ13
             $this->logger->error($err = "Channel not found for sendMessage");
             return reject(new PartException($err));
         }
-        if ($content instanceof MessageBuilder) return $channel->sendMessage($content->setAllowedMentions(['parse'=>[]]));
+        if ($content instanceof MessageBuilder) {
+            if ($prevent_mentions) $content->setAllowedMentions(['parse'=>[]]);
+            return $channel->sendMessage($content);
+        }
 
-        $builder = MessageBuilder::new();
-        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        $builder = self::createBuilder($prevent_mentions);
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
         if (strlen($content)<=4096) return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)));
         return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
@@ -919,8 +939,7 @@ class Civ13
      */
     public function reply(Message|Thread $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface
     {
-        $builder = MessageBuilder::new();
-        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        $builder = self::createBuilder($prevent_mentions);
         if (strlen($content)<=2000) return $message->reply($builder->setContent($content));
         if (strlen($content)<=4096) return $message->reply($builder->addEmbed($this->createEmbed()->setDescription($content)));
         return $message->reply($builder->addFileFromContent($file_name, $content));
@@ -940,8 +959,7 @@ class Civ13
             $this->logger->error($err = "Channel not found for sendEmbed");
             return reject(new PartException($err));
         }
-        $builder = MessageBuilder::new();
-        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        $builder = Civ13::createBuilder($prevent_mentions);
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         return $channel->sendMessage($builder->setContent($content)->addEmbed($embed->setFooter($this->embed_footer)));
     }
@@ -953,6 +971,43 @@ class Civ13
             ->setColor($color)
             ->setTimestamp()
             ->setURL('');
+    }
+    public static function createBuilder(bool $prevent_mentions = false): MessageBuilder
+    {
+        $builder = MessageBuilder::new();
+        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        return $builder;
+    }
+    public function createServerstatusEmbed(): MessageBuilder
+    {
+        $builder = array_reduce(
+            $this->enabled_gameservers,
+            fn ($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()),
+            Civ13::createBuilder()
+        );
+        $builder = array_reduce(
+            $this->civ14_enabled_gameservers,
+            fn ($builder, $gameserver) => $builder->addEmbed($gameserver->toEmbed()),
+            $builder
+        );
+
+        $server_list = implode(
+            PHP_EOL,
+            array_map(
+                fn ($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}",
+                $this->enabled_gameservers
+            )
+        );
+        $server_list .= PHP_EOL . implode(
+            PHP_EOL,
+            array_map(
+                fn ($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}",
+                $this->civ14_enabled_gameservers
+            )
+        );
+        $builder->setContent($server_list);
+
+        return $builder;
     }
     /**
      * Sends an out-of-character (OOC) message.
@@ -1204,7 +1259,7 @@ class Civ13
                 array_reduce(
                     array_keys($banlists),
                     fn($builder, $key) => $builder->addFileFromContent("{$key}_bans.txt", $banlists[$key]),
-                    MessageBuilder::new()
+                    Civ13::createBuilder()
                 )->setContent('Ban lists for: ' . implode(', ', array_keys($banlists)))
               )
             : $message->react("🔥")->then(fn() => $this->logger->warning("Unable to list bans for servers: " . implode(', ', array_keys($banlists))));
@@ -1229,20 +1284,22 @@ class Civ13
             return true;
         }, false)) return false;
         $this->__bancheckTimer();
-        if (! isset($this->timers['bancheck_timer']) || ! isset($this->timers['bancheck_timer']) instanceof TimerInterface) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
+        if (! isset($this->timers['bancheck_timer']) || ! $this->timers['bancheck_timer'] instanceof TimerInterface) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
         return $this->timers['bancheck_timer'];
     }
     private function __bancheckTimer(): void
     {
-        if (! isset($this->verifier) && isset($this->timers['bancheck_timer'])) {
-            ! $this->timers['bancheck_timer'] instanceof TimerInterface ?: $this->loop->cancelTimer($this->timers['bancheck_timer']);
-            unset($this->timers['bancheck_timer']);
+        if (! isset($this->verifier)) {
+            if (isset($this->timers['bancheck_timer']) && $this->timers['bancheck_timer'] instanceof TimerInterface) {
+                $this->loop->cancelTimer($this->timers['bancheck_timer']);
+                unset($this->timers['bancheck_timer']);
+            }
             return;
         }
         if ($cacheconfig = $this->discord->getCacheConfig()) {
             $interface = $cacheconfig->interface;
             $this->logger->info('Cache type: ' . get_class($interface));
-            if ($interface instanceof \React\Cache\CacheInterface) { // It's too expensive to check bans
+            if ($interface instanceof CacheInterface) { // It's too expensive to check bans
                 $this->logger->info('Redis cache is being used, cancelling periodic banchecks.');
                 $this->loop->cancelTimer($this->timers['bancheck_timer']);
                 unset($this->timers['bancheck_timer']);
@@ -1255,7 +1312,7 @@ class Civ13
             if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
             if (! isset($item['ss13'])) continue;
             //$this->logger->debug("Checking bans for {$item['ss13']}...");
-            if (($banned = $this->bancheck($item['ss13'], true, true)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
+            if (($banned = $this->bancheck($item['ss13'], true, false)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
                 $member->addRole($this->role_ids['Banished'], 'bancheck timer');
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
             } elseif (! $banned && ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {

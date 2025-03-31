@@ -80,7 +80,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $this->attributes['descriptions'] = $descriptions;
         $this->afterConstruct();
     }
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $this->__setDefaultRatelimits();
     }
@@ -446,7 +446,6 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return ['civ13' => isset($this->civ13) ? $this->civ13 instanceof Civ13 : false, 'handlers' => array_keys($this->attributes['handlers'])];
     }
 
-    // Don't forget to use ->setAllowedMentions(['parse'=>[]]) on the MessageBuilder object to prevent all roles being pinged
     public function generateHelp(?Collection $roles = null): string
     {
         $ranks = array_keys($this->civ13->role_ids);
@@ -471,7 +470,6 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $string;
     }
 
-    // Don't forget to use ->setAllowedMentions(['parse'=>[]]) on the MessageBuilder object to prevent all roles being pinged
     public function __toString(): string
     {
         return $this->generateHelp();

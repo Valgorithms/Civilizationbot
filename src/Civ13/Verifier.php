@@ -11,7 +11,6 @@ namespace Civ13;
 use Byond\Byond;
 use Civ13\Exceptions\VerifierException;
 use Discord\Discord;
-use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
 use Discord\Helpers\CollectionInterface;
 use Discord\Helpers\ExCollectionInterface;
@@ -166,7 +165,7 @@ class Verifier
                     else $content = "Byond account `{$item['ss13']}` is not currently banned. If you still need assistance please wait for a staff member to assist you. ";
                 }
                 return $this->civ13->then(
-                    $thread->sendMessage(MessageBuilder::new()->setContent(
+                    $thread->sendMessage(Civ13::createBuilder()->setContent(
                         ! ($item = $this->getVerifiedItem($member))
                             ? "Your Discord account has not yet been linked to a Byond account. If you were directed here automatically during the verification process please wait for a staff member to assist you. Be aware that you must complete the verification process before your ban appeal can be considered. "
                             : ($this->civ13->bancheck($item['ss13'], true)
@@ -227,14 +226,14 @@ class Verifier
      * @param Member                 $member               The member to check and assign roles to
      * @param bool                   $send_welcome_message Whether to send the welcome message or not
      * 
-     * @return PromiseInterface|null
+     * @return PromiseInterface<Member>|null
      */
     public function joinRoles(Member $member, bool $send_welcome_message = true): ?PromiseInterface
     {
         if ($member->guild_id === $this->civ13->civ13_guild_id && $item = $this->get('discord', $member->id)) {
             if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
             else {
-                if (($item['ss13'] && isset($this->civ13->softbanned[$item['ss13']])) || isset($this->civ13->softbanned[$member->id])) return null;
+                if (isset($this->civ13->softbanned[$member->id]) || ($item['ss13'] && isset($this->civ13->softbanned[$item['ss13']]))) return null;
                 $banned = $this->civ13->bancheck($item['ss13'], true);
                 $paroled = isset($this->civ13->paroled[$item['ss13']]);
                 if ($banned && $paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished'], $this->civ13->role_ids['Paroled']], "bancheck join {$item['ss13']}");

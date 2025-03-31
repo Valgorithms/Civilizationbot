@@ -25,6 +25,8 @@ use React\Filesystem\Factory as FilesystemFactory;
 use React\Http\Browser;
 use WyriHaximus\React\Cache\Redis as RedisCache;
 
+use function React\Promise\set_rejection_handler;
+
 define('CIVILIZATIONBOT_START', microtime(true));
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -54,12 +56,13 @@ function loadEnv(string $filePath = __DIR__ . '/.env'): void
 }
 loadEnv(getcwd() . '/.env');
 
-$streamHandler = new StreamHandler('php://stdout', Level::Debug);
+$streamHandler = new StreamHandler('php://stdout', Level::Info);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$streamHandler]);
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
-$logger->pushHandler(new StreamHandler('output.log', Level::Debug));
+$logger->pushHandler(new StreamHandler('output.log', Level::Info));
 $logger->info('Loading configurations for the bot...');
+set_rejection_handler(fn(\Throwable $e) => $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('\n', PHP_EOL, $e->getTraceAsString())));
 
 $discord = new Discord([
     'loop' => $loop = Loop::get(),
@@ -162,7 +165,7 @@ $options = array(
         // 'typespess_path' => '/home/civ13/civ13-typespess',
         'ss14_basedir' => '/home/civ13/civ14'
     ),
-    'files' => array( // Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
+    'files' => array( // Server-specific file paths MUST start with the server name as defined in civ13_server_settings unless otherwise specified
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
     ),
     'channel_ids' => array(
@@ -237,7 +240,7 @@ foreach ($loadedData as $key => $value) $options[$key] = $value;
 */
 
 //TODO: Move this to a separate file, like .env
-$server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
+$civ13_server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
     'tdm' => [
         'supported' => true,
         'enabled' => true,
@@ -272,7 +275,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'supported' => true, // Whether the server is supported by the remote webserver
         'enabled' => true, // Whether the server should have commands handled by the bot
         'name' => 'Nomads', // Name of the server and the prefix of the playercount channel (e.g. nomads-999)
-        //'key' => 'nomads', // This must match the top-level key in the server_settings array
+        //'key' => 'nomads', // This must match the top-level key in the civ13_server_settings array
         'ip' => $civ13_ip, // IP of the server
         'port' => '1715', // Port of the server
         'host' => 'Taislin', // Host of the server
@@ -329,7 +332,28 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'attack' => '1139614643954921593',
     ],
 ];
-foreach ($server_settings as $key => $value) $server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
+foreach ($civ13_server_settings as $key => $value) $civ13_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
+
+$civ14_server_settings = [
+    'civ14' => [
+        //'supported' => true,
+        'enabled' => true,
+        'name' => 'Civilization 14',
+        'protocol' => 'http',
+        //'key' => 'civ14',
+        'ip' => $civ13_ip,
+        'port' => '1212',
+        'host' => 'Taislin',
+        //'panic_bunker' => true,
+        //'log_attacks' => true,
+        //'legacy' => true,
+        //'moderate' => true,
+        //'legacy_relay' => false,
+        //'basedir' => '/home/civ13/civ14',
+        'playercount' => '1354164249487737013',
+    ],
+];
+foreach ($civ14_server_settings as $key => $value) $civ14_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
 $hidden_options = [
     'loop' => $loop,
@@ -346,7 +370,7 @@ $hidden_options = [
     'http_key' => getenv('WEBAPI_TOKEN') ?: 'CHANGEME',
     'http_whitelist' => $http_whitelist,
     'civ_token' => getenv('CIV_TOKEN') ?: 'CHANGEME',
-    'server_settings' => $server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
+    'civ13_server_settings' => $civ13_server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
     'functions' => array(
         'init' => [
             // 'on_ready' => $on_ready,
@@ -373,6 +397,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         && ! str_contains($errstr, '(Connection refused)') // Usually happens in localServerPlayerCount
         //&& ! str_ends_with($errstr, 'Network is unreachable')
         //&& ! str_ends_with($errstr, '(Network is unreachable)')
+        && ! str_ends_with($errstr, '(A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond)')
 
         // Connectivity issues
         && ! str_ends_with($errstr, 'No route to host') // Usually happens if the verifier server is down
@@ -437,7 +462,7 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
         /** @var ?Civ13 $civ13 */
         if (! $civ13) return;
         if (! getenv('testing') && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
-            $builder = MessageBuilder::new()
+            $builder = Civ13::createBuilder()
                 ->setContent('Restarting due to error in HttpServer API...')
                 ->addFileFromContent('httpserver_error.txt', preg_replace('/(?<=key=)[^&]+/', '********', $error));
             $channel->sendMessage($builder);
@@ -450,21 +475,38 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
 //$events = ['MESSAGE_UPDATE'];
 //$eventLogger = new \EventLogger\EventLogger($discord, $events);
 
-use VerifierServer\PersistentState;
 use VerifierServer\Server as VerifierServer;
 
-$verifier_server = new VerifierServer(getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT'));
+$verifier_server = new VerifierServer(
+    getenv('VERIFIER_HOST_ADDR'),
+    getenv('VERIFIER_HOST_PORT')
+);
 $verifier_server->init($loop);
 $verifier_server->setLogger($logger);
 $verifier_server->setState([
     getenv('CIV_TOKEN'),
     getenv('VERIFIER_STORAGE_TYPE') ?? 'filesystem',
-    getenv('VERIFIER_JSON_PATH') ?? '/json/verified.json',
+    getenv('VERIFIER_JSON_PATH') ?? 'json/verified.json',
 ]);
+$verifier_server->setSS14State([
+    getenv('CIV_TOKEN'),
+    getenv('SS14_VERIFIER_STORAGE_TYPE') ?? 'filesystem',
+    getenv('SS14_VERIFIER_JSON_PATH') ?? 'json/ss14verified.json',
+]);
+$verifier_server->setSS14OAuth2Endpoint(
+    getenv('SS14_OAUTH2_CLIENT_ID'),
+    getenv('SS14_OAUTH2_CLIENT_SECRET')
+);
+$verifier_server->setDiscordOAuth2Endpoint(
+    getenv('dwa_client_id'),
+    getenv('dwa_client_secret')
+);
+
 
 $civ13 = new Civ13(
     $options,
-    $server_settings,
+    $civ13_server_settings,
+    $civ14_server_settings,
     $verifier_server
 );
 $civ13->run();

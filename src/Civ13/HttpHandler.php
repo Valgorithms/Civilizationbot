@@ -86,7 +86,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         $this->key = $key;
         $this->afterConstruct();
     }
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $this->__setDefaultRatelimits();
     }
