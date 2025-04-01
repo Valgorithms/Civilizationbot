@@ -178,11 +178,9 @@ class ServerAPI
     }
     public function isPortFree(): bool
     {
-            if ($connection = @fsockopen('127.0.0.1', $this->port, $errno, $errstr, 1)) {
-                fclose($connection);
-                return false;
-            }
-            return true;
+            if (! $connection = @fsockopen('127.0.0.1', $this->port, $errno, $errstr, 1)) return true;
+            fclose($connection);
+            return false;
     }
 
     public function setWatchdogToken(string $token): void
