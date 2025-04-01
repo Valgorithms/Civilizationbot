@@ -22,11 +22,12 @@ use React\Http\Browser;
 class GameServer
 {
     protected string $PARENT_CLASS_PROPERTY = 'civ13';
+
+    protected string $ip;
+    protected int|string $port;
     
     public function __construct(
-        public Civ13 &$civ13,
-        protected readonly string $ip,
-        protected readonly string $port
+        public Civ13 &$civ13
     ) {}
     
     public function getBrowserProperty(): ?Browser
@@ -60,7 +61,7 @@ class GameServer
         return $this->ip ?? gethostbyname('www.civ13.com');
     }
 
-    public function getPort(): string
+    public function getPort(): int|string
     {
         return $this->port ?? 1212;
     }
@@ -72,12 +73,12 @@ class GameServer
     
     public function setIP(string $ip): void
     {
-        if (!isset($this->ip)) $this->ip = $ip;
+        $this->ip = $ip;
     }
 
-    public function setPort(string $port): void
+    public function setPort(int|string $port): void
     {
-        if (!isset($this->port)) $this->port = $port;
+        $this->port = $port;
     }
 
     use DynamicPropertyAccessorTrait;
