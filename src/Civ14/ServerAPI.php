@@ -36,7 +36,7 @@ class ServerAPI
      */
     public function getStatus(): PromiseInterface
     {
-        return $this->httpClient->get($this->protocol . '://' . $this->ip . ':' . $this->port . '/status')
+        return $this->httpClient->get($this->baseURL() . '/status')
             ->then(fn($response) => json_decode((string) $response->getBody(), true));
     }
 
@@ -47,7 +47,7 @@ class ServerAPI
      */
     public function getInfo(): PromiseInterface
     {
-        return $this->httpClient->get($this->protocol . '://' . $this->ip . ':' . $this->port . '/info')
+        return $this->httpClient->get($this->baseURL() . '/info')
             ->then(fn($response) => json_decode((string) $response->getBody(), true));
     }
 
@@ -58,7 +58,7 @@ class ServerAPI
      */
     public function shutdown(): PromiseInterface
     {
-        return $this->httpClient->post($this->protocol . '://' . $this->ip . ':' . $this->port . '/shutdown', [
+        return $this->httpClient->post($this->baseURL() . '/shutdown', [
             'headers' => $this->getAuthHeaders(),
         ])->then(fn($response) => $response->getStatusCode() === 200);
     }
@@ -70,7 +70,7 @@ class ServerAPI
      */
     public function update(): PromiseInterface
     {
-        return $this->httpClient->post($this->protocol . '://' . $this->ip . ':' . $this->port . '/update', [
+        return $this->httpClient->post($this->baseURL() . '/update', [
             'headers' => $this->getAuthHeaders(),
         ])->then(fn($response) => $response->getStatusCode() === 200);
     }
@@ -99,5 +99,10 @@ class ServerAPI
     public function setPort(int|string $port = 1212): void
     {
         $this->port = $port;
+    }
+
+    protected function baseUrl(): string
+    {
+        return $this->protocol . '://' . $this->ip . ':' . $this->port;
     }
 }
