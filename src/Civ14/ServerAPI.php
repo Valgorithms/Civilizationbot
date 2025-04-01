@@ -6,6 +6,10 @@ use Psr\Http\Message\ResponseInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
 
+use function React\Promise\resolve;
+use function React\Promise\reject;
+use function React\Async\await;
+
 /**
  * property GameServer $gameServer
  */
@@ -38,7 +42,7 @@ class ServerAPI
      */
     public function getStatus(): PromiseInterface
     {
-        return $this->get($this->baseURL() . '/status')
+        return $this->sendGetRequest('/status')
             ->then(fn(ResponseInterface $response) => self::parseResponse($response));
     }
 
@@ -49,8 +53,20 @@ class ServerAPI
      */
     public function getInfo(): PromiseInterface
     {
-        return $this->get($this->baseURL() . '/info')
+        return $this->sendGetRequest('/info')
             ->then(fn(ResponseInterface $response) => self::parseResponse($response));
+    }
+
+    /**
+     * Notify the server of an available update (requires authorization).
+     *
+     * @return PromiseInterface Resolves to a boolean indicating success.
+     */
+    public function update(): PromiseInterface
+    {
+        return $this->sendPostRequest('/update', [
+            'headers' => $this->authHeaders(),
+        ])->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
     }
 
     /**
@@ -60,7 +76,7 @@ class ServerAPI
      */
     public function shutdown(): PromiseInterface
     {
-        return $this->httpClient->post($this->baseURL() . '/shutdown', [
+        return $this->sendPostRequest('/shutdown', [
             'headers' => $this->authHeaders(),
         ])->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
     }
@@ -68,38 +84,30 @@ class ServerAPI
     /**
      * Sends a GET request to the specified URL with optional headers.
      *
-     * @param string $url The URL to send the GET request to.
+     * @param string $endpoint The endpoint to send the GET request to.
      * @param array $headers An optional array of headers to include in the request.
      * @return PromiseInterface A promise representing the asynchronous HTTP response.
      */
-    public function get($url, array $headers = array()): PromiseInterface
+    public function sendGetRequest(string $endpoint, array $headers = array()): PromiseInterface
     {
-        return $this->httpClient->get($url, $headers);
+        return ($this->isLocal() && $this->isPortFree())
+            ? reject(new \RuntimeException('Port is not listening'))
+            : $this->httpClient->get($this->baseURL() . $endpoint, $headers);
     }
 
     /**
      * Sends a POST request to the specified URL with the given headers and body.
      *
-     * @param string $url The URL to send the POST request to.
+     * @param string $endpoint The endpoint to send the POST request to.
      * @param array $headers An associative array of headers to include in the request.
      * @param string $body The body content to include in the POST request. Defaults to an empty string.
      * @return PromiseInterface A promise representing the asynchronous HTTP response.
      */
-    public function post($url, array $headers = array(), $body = ''): PromiseInterface
+    public function sendPostRequest(string $endpoint, array $headers = array(), $body = ''): PromiseInterface
     {
-        return $this->httpClient->post($url, $headers, $body);
-    }
-    
-    /**
-     * Notify the server of an available update (requires authorization).
-     *
-     * @return PromiseInterface Resolves to a boolean indicating success.
-     */
-    public function update(): PromiseInterface
-    {
-        return $this->httpClient->post($this->baseURL() . '/update', [
-            'headers' => $this->authHeaders(),
-        ])->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
+        return ($this->isLocal() && $this->isPortFree())
+            ? reject(new \RuntimeException('Port is not listening'))
+            : $this->httpClient->post($this->baseURL() . $endpoint, $headers, $body);
     }
 
     /**
@@ -162,6 +170,19 @@ class ServerAPI
     public function setPort(int|string $port = 1212): void
     {
         $this->port = $port;
+    }
+
+    public function isLocal()
+    {
+        return !filter_var($this->ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+    }
+    public function isPortFree(): bool
+    {
+            if ($connection = @fsockopen('127.0.0.1', $this->port, $errno, $errstr, 1)) {
+                fclose($connection);
+                return false;
+            }
+            return true;
     }
 
     public function setWatchdogToken(string $token): void

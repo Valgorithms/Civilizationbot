@@ -35,7 +35,9 @@ class ServerAPITest extends TestCase
         $this->api = new ServerAPI($gameServerMock);
         $this->api->setProtocol('http');
         $this->api->setIP(gethostbyname('www.civ13.com'));
+        //$this->api->setIP('127.0.0.1');
         $this->api->setPort(1212);
+        $this->api->setWatchdogToken(getenv('SS14_WATCHDOG_TOKEN') ?? 'you should choose a better token');
     }
 
     public function testGetStatus(): void
