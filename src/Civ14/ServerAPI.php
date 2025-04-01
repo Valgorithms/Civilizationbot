@@ -123,6 +123,56 @@ class ServerAPI
     }
 
     /**
+     * Checks if the server is online.
+     *
+     * This method determines the online status of the server by checking
+     * if it is local and whether the port is free. If the port is not
+     * listening, it rejects with a RuntimeException. Otherwise, it retrieves
+     * the server's status.
+     *
+     * @return PromiseInterface Resolves with the server status if online,
+     *                          or rejects with an exception if the port is not listening.
+     */
+    public function isOnline(): PromiseInterface
+    {
+        return ($this->isLocal() && $this->isPortFree())
+            ? reject(new \RuntimeException('Port is not listening'))
+            : $this->getStatus();
+    }
+
+    /**
+     * Determines if the IP address is a local (private or reserved) address.
+     *
+     * This method checks whether the IP address stored in the `$this->ip` property
+     * is within a private or reserved range. It uses PHP's `filter_var` function
+     * with the `FILTER_VALIDATE_IP` filter and the flags `FILTER_FLAG_NO_PRIV_RANGE`
+     * and `FILTER_FLAG_NO_RES_RANGE` to exclude private and reserved IP ranges.
+     *
+     * @return bool Returns true if the IP address is local (private or reserved),
+     *              otherwise false.
+     */
+    public function isLocal(): bool
+    {
+        return !filter_var($this->ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+    }
+
+    /**
+     * Checks if the specified port is free to use.
+     *
+     * This method attempts to open a socket connection to the specified port
+     * on the local machine (127.0.0.1). If the connection cannot be established,
+     * it assumes the port is free. Otherwise, it determines the port is in use.
+     *
+     * @return bool Returns true if the port is free, false if it is in use.
+     */
+    public function isPortFree(): bool
+    {
+            if (! $connection = @fsockopen('127.0.0.1', $this->port, $errno, $errstr, 1)) return true;
+            fclose($connection);
+            return false;
+    }
+
+    /**
      * Determines if the given HTTP response is successful.
      *
      * This method checks if the status code of the provided response
@@ -156,6 +206,7 @@ class ServerAPI
         $watchdogToken = $this->watchdogToken ?? null;
         return $watchdogToken ? ['WatchdogToken' => $watchdogToken] : [];
     }
+    
 
     public function setProtocol(string $protocol = 'http'): void
     {
@@ -170,17 +221,6 @@ class ServerAPI
     public function setPort(int|string $port = 1212): void
     {
         $this->port = $port;
-    }
-
-    public function isLocal()
-    {
-        return !filter_var($this->ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
-    }
-    public function isPortFree(): bool
-    {
-            if (! $connection = @fsockopen('127.0.0.1', $this->port, $errno, $errstr, 1)) return true;
-            fclose($connection);
-            return false;
     }
 
     public function setWatchdogToken(string $token): void
