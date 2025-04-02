@@ -18,19 +18,13 @@ use React\Promise\PromiseInterface;
 use function React\Promise\reject;
 
 /**
-  * * Class GameServer
-  * 
-  * 
-  * @property-read  Browser               $browser
-  * @property-read  Discord|null          $discord
-  * @property-read  LoggerInterface|null  $logger
+  * @property-read  Browser          $browser
+  * @property-read  Discord          $discord
+  * @property-read  LoggerInterface  $logger
   */
   
 class GameServer
 {
-    protected string $PARENT_CLASS_PROPERTY = 'civ13';
-
-    /** @var Civ13 $civ13 */
     protected Civ13 $civ13;
     //protected Browser $browser;
     
