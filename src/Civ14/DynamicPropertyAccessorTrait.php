@@ -56,7 +56,7 @@ trait DynamicPropertyAccessorTrait
 
         return isset($this->{$this->PARENT_CLASS_PROPERTY ?? 'civ13'}->$key)
             ? $this->{$this->PARENT_CLASS_PROPERTY ?? 'civ13'}->$key
-            : null;
+            : new \Exception("Error: Call to null property `$key` on {$this->PARENT_CLASS_PROPERTY}.");
     }
 
     /**
