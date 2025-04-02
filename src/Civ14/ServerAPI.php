@@ -6,13 +6,8 @@ use Psr\Http\Message\ResponseInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
 
-use function React\Promise\resolve;
 use function React\Promise\reject;
-use function React\Async\await;
 
-/**
- * property GameServer $gameServer
- */
 class ServerAPI
 {
     /**
@@ -21,15 +16,14 @@ class ServerAPI
     //protected GameServer $gameServer;
     private Browser $httpClient;
 
-    private string $protocol = 'http';
-    private string $ip;
-    private int|string $port = 1212;
-    private string $watchdogToken;
+    private string      $protocol = 'http';
+    private string      $ip = '127.0.0.1';
+    private int         $port = 1212;
+    private string|null $watchdogToken = null;
 
     public function __construct(
         protected $gameServer
     ) {
-
         if (! $this->httpClient = $this->gameServer->browser ?? new Browser()) {
             throw new \RuntimeException('Browser instance is not available.');
         }
@@ -64,9 +58,8 @@ class ServerAPI
      */
     public function update(): PromiseInterface
     {
-        return $this->sendPostRequest('/update', [
-            'headers' => $this->authHeaders(),
-        ])->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
+        return $this->sendPostRequest('/update')
+            ->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
     }
 
     /**
@@ -76,9 +69,8 @@ class ServerAPI
      */
     public function shutdown(): PromiseInterface
     {
-        return $this->sendPostRequest('/shutdown', [
-            'headers' => $this->authHeaders(),
-        ])->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
+        return $this->sendPostRequest('/shutdown')
+            ->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
     }
 
     /**
@@ -107,7 +99,11 @@ class ServerAPI
     {
         return ($this->isLocal() && $this->isPortFree())
             ? reject(new \RuntimeException('Port is not listening'))
-            : $this->httpClient->post($this->baseURL() . $endpoint, $headers, $body);
+            : $this->httpClient->post(
+                $this->baseURL() . $endpoint,
+                array_merge($headers, $this->authHeaders()),
+                $body
+            );
     }
 
     /**
@@ -167,9 +163,9 @@ class ServerAPI
      */
     public function isPortFree(): bool
     {
-            if (! $connection = @fsockopen('127.0.0.1', $this->port, $errno, $errstr, 1)) return true;
-            fclose($connection);
-            return false;
+        if (! $connection = @fsockopen('127.0.0.1', $this->port, $errno, $errstr, 1)) return true;
+        fclose($connection);
+        return false;
     }
 
     /**
@@ -203,27 +199,106 @@ class ServerAPI
      */
     public function authHeaders(): array
     {
-        $watchdogToken = $this->watchdogToken ?? null;
-        return $watchdogToken ? ['WatchdogToken' => $watchdogToken] : [];
+        return isset($this->watchdogToken)
+            ? ['WatchdogToken' => $this->watchdogToken]
+            : [];
     }
     
+    /**
+     * Retrieves the protocol used by the server.
+     *
+     * @return string The protocol string.
+     */
+    public function getProtocol(): string
+    {
+        return $this->protocol;
+    }
 
+    /**
+     * Retrieves the IP address associated with the server.
+     *
+     * @return string The IP address as a string.
+     */
+    public function getIP(): String
+    {
+        return $this->ip;
+    }
+
+    /**
+     * Retrieves the port number used by the server.
+     *
+     * @return int The port number.
+     */
+    public function getPort(): int
+    {
+        return $this->port;
+    }
+
+    /**
+     * Retrieves the watchdog token.
+     *
+     * @return string|null The watchdog token if set, or null if not set.
+     */
+    public function getWatchdogToken(): ?string
+    {
+        return $this->watchdogToken;
+    }
+
+    /**
+     * Sets the protocol to be used by the server.
+     *
+     * @param string $protocol The protocol to set (default is 'http').
+     *
+     * @return void
+     */
     public function setProtocol(string $protocol = 'http'): void
     {
         $this->protocol = $protocol;
     }
     
+    /**
+     * Sets the IP address for the server.
+     *
+     * @param string $ip The IP address to set. Defaults to '127.0.0.1'.
+     *                    Must be a valid IPv4 or IPv6 address.
+     * 
+     * @throws \InvalidArgumentException If the provided IP address is invalid.
+     * 
+     * @return void
+     */
     public function setIP(string $ip = '127.0.0.1'): void
     {
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            throw new \InvalidArgumentException('Invalid IP address provided.');
+        }
         $this->ip = $ip;
     }
 
+    /**
+     * Sets the port for the server.
+     *
+     * @param int|string $port The port number to set. Defaults to 1212. 
+     *                         Must be numeric, otherwise an exception is thrown.
+     * 
+     * @throws \InvalidArgumentException If the provided port is not numeric.
+     * 
+     * @return void
+     */
     public function setPort(int|string $port = 1212): void
     {
-        $this->port = $port;
+        if (!is_numeric($port)) {
+            throw new \InvalidArgumentException('Port must be a number.');
+        }
+        $this->port = (int)$port;
     }
 
-    public function setWatchdogToken(string $token): void
+    /**
+     * Sets the watchdog token.
+     *
+     * @param string|null $token The token to set, or null to clear the token.
+     * @return void
+     */
+    public function setWatchdogToken(?string $token = null): void
     {
         $this->watchdogToken = $token;
     }
