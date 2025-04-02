@@ -73,9 +73,7 @@ trait DynamicPropertyAccessorTrait
             return;
         }
 
-        if (in_array($key, $this->fillable)) {
-            $this->attributes[$key] = $value;
-        }
+        $this->{$this->PARENT_CLASS_PROPERTY ?? 'civ13'}->$key = $value;
     }
 
     /**

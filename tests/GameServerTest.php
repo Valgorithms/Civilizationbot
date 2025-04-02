@@ -9,7 +9,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use PHPUnit\Framework\TestCase;
-use Civ14\ServerAPI;
+use Civ13\Civ13;
 use Civ14\GameServer;
 use React\Http\Browser;
 use Psr\Http\Message\ResponseInterface;
@@ -17,25 +17,23 @@ use Psr\Http\Message\ResponseInterface;
 use function React\Async\await;
 use function React\Promise\resolve;
 
-class ServerAPITest extends TestCase
+class GameServerTest extends TestCase
 {
-    private ServerAPI $api;
+    private GameServer $api;
     private $browserMock;
 
     protected function setUp(): void
     {
+        // Mock the Civ13 instance
+        $civ13Mock = $this->createMock(Civ13::class);
+        
         // Create a real Browser instance or mock it
         $this->browserMock = $this->createMock(Browser::class);
 
-        // Mock the GameServer instance
-        $gameServerMock = $this->createMock(GameServer::class);
-        $gameServerMock->method('getBrowserProperty')->willReturn($this->browserMock);
-
-        // Create the ServerAPI instance
-        $this->api = new ServerAPI($gameServerMock);
+        // Create the GameServer instance
+        $this->api = new GameServer($civ13Mock);
         $this->api->setProtocol('http');
-        $this->api->setIP(gethostbyname('www.civ13.com'));
-        //$this->api->setIP('127.0.0.1');
+        $this->api->setIP(gethostbyname('www.civ13.com')); //$this->api->setIP('127.0.0.1');
         $this->api->setPort(1212);
         $this->api->setWatchdogToken(getenv('SS14_WATCHDOG_TOKEN') ?? 'you should choose a better token');
     }

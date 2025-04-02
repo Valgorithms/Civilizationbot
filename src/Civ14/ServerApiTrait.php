@@ -3,31 +3,16 @@
 namespace Civ14;
 
 use Psr\Http\Message\ResponseInterface;
-use React\Http\Browser;
 use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
 
-class ServerAPI
+trait ServerApiTrait
 {
-    /**
-     * @var GameServer $gameServer
-     */
-    //protected GameServer $gameServer;
-    private Browser $httpClient;
-
-    private string      $protocol = 'http';
-    private string      $ip = '127.0.0.1';
-    private int         $port = 1212;
-    private string|null $watchdogToken = null;
-
-    public function __construct(
-        protected $gameServer
-    ) {
-        if (! $this->httpClient = $this->gameServer->browser ?? new Browser()) {
-            throw new \RuntimeException('Browser instance is not available.');
-        }
-    }
+    protected string      $protocol      = 'http';
+    protected string      $ip            = '127.0.0.1';
+    protected int         $port          = 1212;
+    protected string|null $watchdogToken = null;
 
     /**
      * Fetch basic server status.
@@ -71,39 +56,6 @@ class ServerAPI
     {
         return $this->sendPostRequest('/shutdown')
             ->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
-    }
-
-    /**
-     * Sends a GET request to the specified URL with optional headers.
-     *
-     * @param string $endpoint The endpoint to send the GET request to.
-     * @param array $headers An optional array of headers to include in the request.
-     * @return PromiseInterface A promise representing the asynchronous HTTP response.
-     */
-    public function sendGetRequest(string $endpoint, array $headers = array()): PromiseInterface
-    {
-        return ($this->isLocal() && $this->isPortFree())
-            ? reject(new \RuntimeException('Port is not listening'))
-            : $this->httpClient->get($this->baseURL() . $endpoint, $headers);
-    }
-
-    /**
-     * Sends a POST request to the specified URL with the given headers and body.
-     *
-     * @param string $endpoint The endpoint to send the POST request to.
-     * @param array $headers An associative array of headers to include in the request.
-     * @param string $body The body content to include in the POST request. Defaults to an empty string.
-     * @return PromiseInterface A promise representing the asynchronous HTTP response.
-     */
-    public function sendPostRequest(string $endpoint, array $headers = array(), $body = ''): PromiseInterface
-    {
-        return ($this->isLocal() && $this->isPortFree())
-            ? reject(new \RuntimeException('Port is not listening'))
-            : $this->httpClient->post(
-                $this->baseURL() . $endpoint,
-                array_merge($headers, $this->authHeaders()),
-                $body
-            );
     }
 
     /**
@@ -177,7 +129,7 @@ class ServerAPI
      * @param ResponseInterface $response The HTTP response to evaluate.
      * @return bool True if the response status code is 200, otherwise false.
      */
-    public static function isResponseSuccessful(ResponseInterface $response)
+    public static function isResponseSuccessful(ResponseInterface $response): bool
     {
         return $response->getStatusCode() === 200;
     }
@@ -203,7 +155,7 @@ class ServerAPI
             ? ['WatchdogToken' => $this->watchdogToken]
             : [];
     }
-    
+
     /**
      * Retrieves the protocol used by the server.
      *
