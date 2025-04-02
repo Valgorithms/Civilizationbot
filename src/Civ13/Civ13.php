@@ -259,8 +259,8 @@ class Civ13
         if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord =& $options['discord'];
         elseif (isset($options['discord_options']) && is_array($options['discord_options'])) $this->discord = new Discord($options['discord_options']);
         else $this->logger->error('No Discord instance or options passed in options!');
-        $this->loop = $options['loop'] ?? $this->discord->getLoop();
-
+        
+        $this->loop = $options['loop'];
         $this->browser = $options['browser'];
         $this->filesystem = $options['filesystem'];
         $this->stats = $options['stats'];
@@ -545,6 +545,7 @@ class Civ13
             }
         }
 
+        $options['loop'] = $options['loop'] ?? Loop::get();
         $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
 
