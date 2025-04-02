@@ -24,8 +24,11 @@ use function React\Promise\reject;
   */
 class GameServer
 {
+    use ServerApiTrait;
+    use DynamicPropertyAccessorTrait;
+
     protected Civ13 $civ13;
-    
+
     // Normally would just promote the property, but currently causes an issue in PHPUnit tests
     public function __construct(
         &$civ13
@@ -102,7 +105,4 @@ class GameServer
     {
         return $this->civ13->logger;
     }
-
-    use ServerApiTrait;
-    use DynamicPropertyAccessorTrait;
 }
