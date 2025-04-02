@@ -22,12 +22,11 @@ use function React\Promise\reject;
   * @property-read  Discord          $discord
   * @property-read  LoggerInterface  $logger
   */
-  
 class GameServer
 {
     protected Civ13 $civ13;
-    //protected Browser $browser;
     
+    // Normally would just promote the property, but currently causes an issue in PHPUnit tests
     public function __construct(
         &$civ13
     ) {
@@ -73,24 +72,33 @@ class GameServer
      * This method checks if the `browser` property is already set in the `$civ13` object.
      * If it exists, it assigns it to the local `browser` property by reference and returns it.
      * If it does not exist, it initializes a new `Browser` instance using the event loop
-     * from `$civ13->loop` or a default loop from `Loop::get()`. The new `Browser` instance
-     * is then assigned to both `$civ13->browser` and the local `browser` property by reference.
+     * from `$civ13->loop` or a default loop from `Loop::get()`.
      *
-     * @return Browser|null Returns the `Browser` instance or null if not set.
+     * @return Browser
      */
-    public function getBrowserProperty(): Browser
-    { // The below is a workaround for the fact that the civ13->browser property is not set in PHPUnit tests.
+    protected function getBrowserProperty(): Browser
+    { 
         return isset($this->civ13->browser)
             ? $this->civ13->browser
-            : new Browser($this->civ13->loop ?? Loop::get());
+            : new Browser($this->civ13->loop ?? Loop::get()); // Workaround for civ13->browser property not set in PHPUnit tests
     }
     
-    public function getDiscordProperty(): Discord
+    /**
+     * Retrieves the Discord property from the Civ13 instance.
+     *
+     * @return Discord
+     */
+    protected function getDiscordProperty(): Discord
     {
         return $this->civ13->discord;
     }
 
-    public function getLoggerProperty(): LoggerInterface
+    /**
+     * Retrieves the logger instance associated with the Civ13 object.
+     *
+     * @return LoggerInterface
+     */
+    protected function getLoggerProperty(): LoggerInterface
     {
         return $this->civ13->logger;
     }

@@ -53,10 +53,6 @@ trait DynamicPropertyAccessorTrait
         if ($str = $this->checkForGetMutator($key)) {
             return $this->{$str}();
         }
-
-        return isset($this->{$this->PARENT_CLASS_PROPERTY ?? 'civ13'}->$key)
-            ? $this->{$this->PARENT_CLASS_PROPERTY ?? 'civ13'}->$key
-            : new \Exception("Error: Call to null property `$key` on {$this->PARENT_CLASS_PROPERTY}.");
     }
 
     /**
@@ -69,11 +65,7 @@ trait DynamicPropertyAccessorTrait
     {
         if ($str = $this->checkForSetMutator($key)) {
             $this->{$str}($value);
-
-            return;
         }
-
-        $this->{$this->PARENT_CLASS_PROPERTY ?? 'civ13'}->$key = $value;
     }
 
     /**
