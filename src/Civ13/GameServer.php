@@ -273,7 +273,7 @@ class GameServer
         if (isset($data[11])) $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
         if (isset($data[4])) $playercount = $data[4]; // Player count
         $this->players = $players;
-        return $playercount;
+        return (int)$playercount;
     }
     
     /**
@@ -637,8 +637,8 @@ class GameServer
 
         if (! isset($this->civ13->timers["{$this->key}host"])) {
             $this->civ13->timers["{$this->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($message) {
-                OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself &");
                 unset($this->civ13->timers["{$this->key}host"]);
+                $proc = OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself > /dev/null 2>&1 & disown");
                 if ($message) $message->react("👍");
             });
         } else $this->logger->info("Server host timer already exists for {$this->key}.");
