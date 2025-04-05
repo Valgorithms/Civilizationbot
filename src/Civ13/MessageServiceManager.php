@@ -628,8 +628,9 @@ class MessageServiceManager
             ->offsetSet('serverstatus',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
-                    return $message->reply('Command disabled.');
-                    return $message->reply(MessageBuilder::new()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
+                    return $message->reply($this->civ13->createServerstatusEmbed());
+                    //return $message->reply('Command disabled.');
+                    //return $message->reply(MessageBuilder::new()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
                 },
                 ['Ambassador'])
             ->offsetSet('newmembers',
