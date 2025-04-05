@@ -235,13 +235,13 @@ class Civ13
      * Creates a Civ13 client instance.
      * 
      * @param array $options An array of options for configuring the client.
-     * @param array $server_settings An array of configurations for the game servers.
+     * @param array $civ13_server_settings An array of configurations for the game servers.
      * @throws E_USER_ERROR If the code is not running in a CLI environment.
      * @throws E_USER_WARNING If the ext-gmp extension is not loaded.
      */
     public function __construct(
         array $options = [],
-        array $server_settings = [],
+        array $civ13_server_settings = [],
         public ?VerifierServer $verifier_server = null,
     )
     {
@@ -304,7 +304,7 @@ class Civ13
         if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
         else $this->logger->warning('No role_ids passed in options!');
 
-        $this->afterConstruct($options, $server_settings);
+        $this->afterConstruct($options, $civ13_server_settings);
     }
     /**
      * This method is called after the object is constructed.
@@ -314,12 +314,12 @@ class Civ13
      * @param array $server_options An array of server options.
      * @return void
      */
-    private function afterConstruct(array $options = [], array $server_settings = []): void
+    private function afterConstruct(array $options = [], array $civ13_server_settings = []): void
     {
         $this->__loadOrInitializeVariables();
         new Moderator($this);
         new Verifier($this, $options);
-        foreach ($server_settings as $gameserver_settings) new GameServer($this, $gameserver_settings);
+        foreach ($civ13_server_settings as $gameserver_settings) new GameServer($this, $gameserver_settings);
         $this->byond = new Byond();
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
@@ -376,7 +376,7 @@ class Civ13
                 'ooc_badwords',
                 'owner_id',
                 'rules',
-                'server_settings',
+                'civ13_server_settings',
                 'socket',
                 'stats',
                 'technician_id',
@@ -415,7 +415,7 @@ class Civ13
                 'ooc_badwords' => [],
                 'owner_id' => '196253985072611328',
                 'rules' => 'civ13.com slash rules',
-                'server_settings' => [],
+                'civ13_server_settings' => [],
                 'socket' => null,
                 'stats' => null,
                 'technician_id' => '116927250145869826',
@@ -453,7 +453,7 @@ class Civ13
             ->setAllowedTypes('ooc_badwords', 'array')
             ->setAllowedTypes('owner_id', 'string')
             ->setAllowedTypes('rules', 'string')
-            ->setAllowedTypes('server_settings', 'array')
+            ->setAllowedTypes('civ13_server_settings', 'array')
             ->setAllowedTypes('socket', ['null', 'resource', SocketServer::class])
             ->setAllowedTypes('stats', ['null', Stats::class])
             ->setAllowedTypes('technician_id', 'string')

@@ -162,7 +162,7 @@ $options = array(
         // 'typespess_path' => '/home/civ13/civ13-typespess',
         'ss14_basedir' => '/home/civ13/civ14'
     ),
-    'files' => array( // Server-specific file paths MUST start with the server name as defined in server_settings unless otherwise specified
+    'files' => array( // Server-specific file paths MUST start with the server name as defined in civ13_server_settings unless otherwise specified
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
     ),
     'channel_ids' => array(
@@ -237,7 +237,7 @@ foreach ($loadedData as $key => $value) $options[$key] = $value;
 */
 
 //TODO: Move this to a separate file, like .env
-$server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
+$civ13_server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
     'tdm' => [
         'supported' => true,
         'enabled' => true,
@@ -272,7 +272,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'supported' => true, // Whether the server is supported by the remote webserver
         'enabled' => true, // Whether the server should have commands handled by the bot
         'name' => 'Nomads', // Name of the server and the prefix of the playercount channel (e.g. nomads-999)
-        //'key' => 'nomads', // This must match the top-level key in the server_settings array
+        //'key' => 'nomads', // This must match the top-level key in the civ13_server_settings array
         'ip' => $civ13_ip, // IP of the server
         'port' => '1715', // Port of the server
         'host' => 'Taislin', // Host of the server
@@ -329,7 +329,7 @@ $server_settings = [ // Server specific settings, listed in the order in which t
         'attack' => '1139614643954921593',
     ],
 ];
-foreach ($server_settings as $key => $value) $server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
+foreach ($civ13_server_settings as $key => $value) $civ13_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
 $hidden_options = [
     'loop' => $loop,
@@ -346,7 +346,7 @@ $hidden_options = [
     'http_key' => getenv('WEBAPI_TOKEN') ?: 'CHANGEME',
     'http_whitelist' => $http_whitelist,
     'civ_token' => getenv('CIV_TOKEN') ?: 'CHANGEME',
-    'server_settings' => $server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
+    'civ13_server_settings' => $civ13_server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
     'functions' => array(
         'init' => [
             // 'on_ready' => $on_ready,
@@ -464,7 +464,7 @@ $verifier_server->setState([
 
 $civ13 = new Civ13(
     $options,
-    $server_settings,
+    $civ13_server_settings,
     $verifier_server
 );
 $civ13->run();
