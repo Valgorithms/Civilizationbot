@@ -331,6 +331,8 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
 ];
 foreach ($civ13_server_settings as $key => $value) $civ13_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
+$civ14_server_settings = [];
+
 $hidden_options = [
     'loop' => $loop,
     'discord' => $discord,
@@ -450,7 +452,6 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
 //$events = ['MESSAGE_UPDATE'];
 //$eventLogger = new \EventLogger\EventLogger($discord, $events);
 
-use VerifierServer\PersistentState;
 use VerifierServer\Server as VerifierServer;
 
 $verifier_server = new VerifierServer(getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT'));
@@ -465,6 +466,7 @@ $verifier_server->setState([
 $civ13 = new Civ13(
     $options,
     $civ13_server_settings,
+    $civ14_server_settings,
     $verifier_server
 );
 $civ13->run();

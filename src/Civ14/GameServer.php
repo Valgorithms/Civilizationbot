@@ -31,9 +31,14 @@ class GameServer
 
     // Normally would just promote the property, but currently causes an issue in PHPUnit tests
     public function __construct(
-        &$civ13
+        &$civ13,
+        array &$options = []
     ) {
-        $this->civ13 = &$civ13;
+        $this->civ13         = &$civ13;
+        $this->protocol      = $options['protocol']      ?? 'http';
+        $this->ip            = $options['ip']            ?? '127.0.0.1';
+        $this->port          = $options['port']          ?? 1212;
+        $this->watchdogToken = $options['watchdogToken'] ?? null;
     }
 
     /**

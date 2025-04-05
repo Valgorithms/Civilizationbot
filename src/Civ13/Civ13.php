@@ -13,6 +13,7 @@ use Civ13\Exceptions\PartException;
 use Civ13\Moderator;
 use Civ13\PromiseMiddleware;
 use Civ13\Slash;
+use Civ14\GameServer as SS14GameServer;
 use Discord\Discord;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\BigInt;
@@ -242,6 +243,7 @@ class Civ13
     public function __construct(
         array $options = [],
         array $civ13_server_settings = [],
+        array $civ14_server_settings = [],
         public ?VerifierServer $verifier_server = null,
     )
     {
@@ -304,22 +306,28 @@ class Civ13
         if (isset($options['role_ids'])) foreach ($options['role_ids'] as $key => $id) $this->role_ids[$key] = $id;
         else $this->logger->warning('No role_ids passed in options!');
 
-        $this->afterConstruct($options, $civ13_server_settings);
+        $this->afterConstruct($options, $civ13_server_settings, $civ14_server_settings);
     }
     /**
      * This method is called after the object is constructed.
      * It initializes various properties, starts timers, and starts handling events.
      *
      * @param array $options An array of options.
-     * @param array $server_options An array of server options.
+     * @param array $civ13_server_options An array of server options for Civ13.
+     * @param array $civ14_server_options An array of server options for Civ14.
      * @return void
      */
-    private function afterConstruct(array $options = [], array $civ13_server_settings = []): void
+    private function afterConstruct(
+        array $options = [],
+        array $civ13_server_settings = [],
+        array $civ14_server_settings = []
+    ): void
     {
         $this->__loadOrInitializeVariables();
         new Moderator($this);
         new Verifier($this, $options);
         foreach ($civ13_server_settings as $gameserver_settings) new GameServer($this, $gameserver_settings);
+        foreach ($civ14_server_settings as $gameserver_settings) new SS14GameServer($this, $gameserver_settings);
         $this->byond = new Byond();
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
