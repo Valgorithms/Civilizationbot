@@ -93,7 +93,7 @@ class MessageServiceManager
             ->offsetSet('restart',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>                
                     $message->react("👍")->then(function () {
-                        if (isset($this->civ13->restart_message)) return $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting...'))->then(fn() => $this->civ13->restart());
+                        if (isset($this->civ13->restart_message)) return $this->civ13->restart_message->edit(Civ13::createBuilder()->setContent('Manually Restarting...'))->then(fn() => $this->civ13->restart());
                         elseif (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return $this->civ13->sendMessage($channel, 'Manually Restarting...')->then(fn() => $this->civ13->restart());
                         return $this->civ13->restart();
                     }),
@@ -105,7 +105,7 @@ class MessageServiceManager
                     $this->civ13->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true))
             ->offsetSet('stats',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply(MessageBuilder::new()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()->setFooter($this->civ13->embed_footer))),
+                    $message->reply(Civ13::createBuilder()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()->setFooter($this->civ13->embed_footer))),
                 ['Owner', 'Chief Technical Officer'])
             ->offsetSet('httphelp',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
@@ -191,7 +191,7 @@ class MessageServiceManager
                     $ckey = isset($input[1]) ? Civ13::sanitizeInput($input[1]) : null;
                     $high_staff = $this->civ13->hasRank($message->member, ['Owner', 'Chief Technical Officer', 'Ambassador']);
                     $staff = $this->civ13->hasRank($message->member, ['Admin']);
-                    $builder = MessageBuilder::new()->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
+                    $builder = Civ13::createBuilder(true)->setContent("Round data for game_id `$game_id`" . ($ckey ? " (ckey: `$ckey`)" : ''));
                     foreach ($rounds as $server => $r) {
                         if ($log = $r['log'] ?? '') $log = str_replace('/', ';', "logs {$r['server_key']}$log");
                         $embed = $this->civ13->createEmbed()
@@ -219,7 +219,7 @@ class MessageServiceManager
                         
                         $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
                         {
-                            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'), true);
+                            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
                             $tokens = explode(';', substr($command, strlen('logs ')));
                             $keys = [];
                             foreach ($this->civ13->enabled_gameservers as &$gameserver) {
@@ -227,17 +227,17 @@ class MessageServiceManager
                                 if (trim($tokens[0]) !== $gameserver->key) continue; // Check if server is valid
                                 if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::log_basedir)) {
                                     $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
-                                    return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($error));
+                                    return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($error));
                                 }
 
                                 unset($tokens[0]);
                                 $results = $this->civ13->FileNav($gameserver->basedir . Civ13::log_basedir, $tokens);
-                                if ($results[0]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->addFile($results[1], 'log.txt'), true);
+                                if ($results[0]) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($results[1], 'log.txt'), true);
                                 if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-                                if (! isset($results[2]) || ! $results[2]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`'));
-                                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`'));
+                                if (! isset($results[2]) || ! $results[2]) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`'));
+                                return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent("{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`'));
                             }
-                            return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`'));
+                            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`'));
                         };
                         if ($staff) $builder->addComponent(
                             ActionRow::new()->addComponent(
@@ -248,7 +248,7 @@ class MessageServiceManager
                             )
                         );
                     }
-                    return $message->reply($builder->addEmbed($embed)->setAllowedMentions(['parse' => []]));
+                    return $message->reply($builder->addEmbed($embed));
                 }, ['Verified'])
             ->offsetSet('discord2ckey',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
@@ -277,7 +277,7 @@ class MessageServiceManager
                         if (isset($log['date']) && ! isset($dates[$log['date']])) $dates[$log['date']] = $log['date'];
                     }
 
-                    $builder = MessageBuilder::new();
+                    $builder = Civ13::createBuilder();
                     $embed = $this->civ13->createEmbed()->setTitle($ckey);
                     if ($ckeys) {
                         foreach ($ckeys as $c) ($age = $this->civ13->getByondAge($c)) ? $ckey_age[$c] = $age : $ckey_age[$c] = "N/A";
@@ -495,7 +495,7 @@ class MessageServiceManager
             ->offsetSet('maplist',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     (file_exists($fp = $this->civ13->gitdir . Civ13::maps) && $file_contents = @file_get_contents($fp))
-                        ? $message->reply(MessageBuilder::new()->addFileFromContent('maps.txt', $file_contents))
+                        ? $message->reply(Civ13::createBuilder()->addFileFromContent('maps.txt', $file_contents))
                         : $message->react("🔥"),
                 ['Admin'])
             ->offsetSet('adminlist',
@@ -505,7 +505,7 @@ class MessageServiceManager
                             file_exists($path = $gameserver->basedir . Civ13::admins)
                                 ? $builder->addFile($path, $gameserver->key . '_adminlist.txt')
                                 : $builder,
-                            MessageBuilder::new()->setContent('Admin Lists'))),
+                            Civ13::createBuilder()->setContent('Admin Lists'))),
                 ['Admin'])
             ->offsetSet('factionlist',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
@@ -514,7 +514,7 @@ class MessageServiceManager
                             file_exists($path = $gameserver->basedir . Civ13::factionlist)
                                 ? $builder->addfile($path, $gameserver->key . '_factionlist.txt')
                                 : $builder,
-                        MessageBuilder::new()->setContent('Faction Lists'))),
+                        Civ13::createBuilder()->setContent('Faction Lists'))),
                 ['Admin'])
             ->offsetSet('getrounds',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
@@ -524,7 +524,7 @@ class MessageServiceManager
                     $rounds = [];
                     foreach ($this->civ13->enabled_gameservers as $gameserver) if ($r = $gameserver->getRounds([$item['ss13']])) $rounds[$gameserver->name] = $r;
                     if (! $rounds) return $this->civ13->reply($message, 'No data found for that ckey.');
-                    $builder = MessageBuilder::new();
+                    $builder = Civ13::createBuilder();
                     foreach ($rounds as $server_name => $rounds) {
                         $embed = $this->civ13->createEmbed()->setTitle($server_name)->addFieldValues('Rounds', strval(count($rounds)));
                         if ($user = $this->civ13->verifier->getVerifiedUser($item)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
@@ -546,7 +546,7 @@ class MessageServiceManager
                     if (! isset($this->civ13->tests[$test_key = strtolower($tokens[1])]) && $tokens[0] !== 'add') return $this->civ13->reply($message, "Test `$test_key` hasn't been created yet! Please add a question first.");
                     switch ($tokens[0]) {
                         case 'list':
-                            return $message->reply(MessageBuilder::new()->addFileFromContent("$test_key.txt", var_export($this->civ13->tests[$test_key], true))->setContent('Number of questions: ' . count(array_keys($this->civ13->tests[$test_key]))));
+                            return $message->reply(Civ13::createBuilder()->addFileFromContent("$test_key.txt", var_export($this->civ13->tests[$test_key], true))->setContent('Number of questions: ' . count(array_keys($this->civ13->tests[$test_key]))));
                         case 'delete':
                             if (isset($tokens[2])) return $this->civ13->reply($message, "Invalid format! Please use the format `tests delete {test_key}`"); // Prevents accidental deletion of tests
                             unset($this->civ13->tests[$test_key]);
@@ -577,13 +577,13 @@ class MessageServiceManager
             ->offsetSet('poll',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     Polls::getPoll($this->civ13->discord, trim(substr($message_filtered['message_content'], strlen($command))))->then(
-                        static fn(Poll $poll): PromiseInterface => $message->reply(MessageBuilder::new()->setPoll($poll)),
+                        static fn(Poll $poll): PromiseInterface => $message->reply(Civ13::createBuilder()->setPoll($poll)),
                         static fn(\Throwable $error): PromiseInterface => $message->react('👎')->then(static fn() => $message->reply($error->getMessage()))
                     ),
                 ['Admin'])
             ->offsetSet('listpolls',
                 static fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply(MessageBuilder::new()->setContent("Available polls: `" . implode('`, `', Polls::listPolls()) . "`")),
+                    $message->reply(Civ13::createBuilder()->setContent("Available polls: `" . implode('`, `', Polls::listPolls()) . "`")),
                 ['Admin'])
             ->offsetSet('fullbancheck',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
@@ -630,12 +630,12 @@ class MessageServiceManager
                 {
                     return $message->reply($this->civ13->createServerstatusEmbed());
                     //return $message->reply('Command disabled.');
-                    //return $message->reply(MessageBuilder::new()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
+                    //return $message->reply(Civ13::createBuilder()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
                 },
                 ['Ambassador'])
             ->offsetSet('newmembers',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply(MessageBuilder::new()->addFileFromContent('new_members.json', $message->guild->members
+                    $message->reply(Civ13::createBuilder()->addFileFromContent('new_members.json', $message->guild->members
                         ->sort(static fn(Member $a, Member $b) =>
                             $b->joined_at->getTimestamp() <=> $a->joined_at->getTimestamp())
                         ->slice(0, 10)
@@ -657,7 +657,7 @@ class MessageServiceManager
                         if (count($ckeyinfo['ckeys']) > 1) $ckeys = array_unique(array_merge($ckeys, $ckeyinfo['ckeys']));
                     }
                     if ($ckeys) {
-                        $builder = MessageBuilder::new();
+                        $builder = Civ13::createBuilder();
                         $builder->addFileFromContent('alts.txt', '`'.implode('`' . PHP_EOL . '`', $ckeys));
                         $builder->setContent('The following ckeys are alt accounts of unbanned verified players.');
                         return $message->reply($builder);
@@ -812,7 +812,7 @@ class MessageServiceManager
             
                             unset($tokens[0]);
                             $results = $this->civ13->FileNav($gameserver->basedir . Civ13::log_basedir, $tokens);
-                            if ($results[0]) return $message->reply(MessageBuilder::new()->addFile($results[1], 'log.txt'));
+                            if ($results[0]) return $message->reply(Civ13::createBuilder()->addFile($results[1], 'log.txt'));
                             if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
                             if (! isset($results[2]) || ! $results[2]) return $this->civ13->reply($message, 'Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
                             return $this->civ13->reply($message, "{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
@@ -831,14 +831,14 @@ class MessageServiceManager
                         $keys[] = $gameserver->key;
                         if (trim($tokens[0]) !== $gameserver->key) continue;
                         if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::playerlogs) || ! $file_contents = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) return $message->react("🔥");
-                        return $message->reply(MessageBuilder::new()->addFileFromContent('playerlogs.txt', $file_contents));
+                        return $message->reply(Civ13::createBuilder()->addFileFromContent('playerlogs.txt', $file_contents));
                     }
                     return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
                 },
                 ['Admin'])
             ->offsetSet('botlog',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply(MessageBuilder::new()->addFile('botlog.txt')),
+                    $message->reply(Civ13::createBuilder()->addFile('botlog.txt')),
                 ['Owner', 'Chief Technical Officer'])
             ->offsetSet('ip_data',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
@@ -907,7 +907,7 @@ class MessageServiceManager
                     {
                         if (! $insults_array = file(Civ13::insults_path, FILE_IGNORE_NEW_LINES)) return $this->civ13->reply($message, 'No insults found!');
                         if (! ($split_message = explode(' ', $message_filtered['message_content'])) || count($split_message) <= 1 || strlen($split_message[1]) === 0) $split_message[1] = "<@{$message->user_id}>"; // $split_target[1] is the target of the insult
-                        return $message->channel->sendMessage(MessageBuilder::new()->setContent($split_message[1] . ', ' . $insults_array[array_rand($insults_array)])->setAllowedMentions(['parse' => []]));
+                        return $message->channel->sendMessage(Civ13::createBuilder(true)->setContent($split_message[1] . ', ' . $insults_array[array_rand($insults_array)]));
                     }, ['Verified']);
             
             if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path']))
@@ -1158,7 +1158,7 @@ class MessageServiceManager
                 ->offsetSet("{$gameserver->key}sportsteam",
                     fn(Message $message, string $command, array $message_filtered): PromiseInterface => // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.
                         $gameserver->sportsteam()->then(
-                            fn($content) => $message->reply(MessageBuilder::new()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content)),
+                            fn($content) => $message->reply(Civ13::createBuilder()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content)),
                             fn(\Throwable $error): PromiseInterface => $message->react("🔥")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
                         ),
                     ['Ambassador', 'Admin'])

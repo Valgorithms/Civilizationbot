@@ -329,7 +329,7 @@ class HttpServiceManager
                     isset($params['message']) ? $content = $params['message'] : $content = '';
                     if (! $content) return HttpResponse::json(['error' => "Message not found"]);
 
-                    $builder = MessageBuilder::new();
+                    $builder = Civ13::createBuilder();
                     if (isset($this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']]) && $user = $this->discord->users->get('id', $this->dwa_discord_ids[$request->getServerParams()['REMOTE_ADDR']])) { // This will not work if the user didn't login with oauth2 during this runtime session (i.e. the bot was restarted)
                         $builder->addEmbed($this->civ13->createEmbed()
                             ->setAuthor("{$user->username} ({$user->id})", $user->avatar)
@@ -404,17 +404,17 @@ class HttpServiceManager
                     }
                     if (! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                     $promise = isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message
-                        ? $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Updating code from GitHub... (1/2)'))
+                        ? $this->civ13->restart_message->edit(Civ13::createBuilder()->setContent('Updating code from GitHub... (1/2)'))
                         : $this->civ13->sendMessage($channel, 'Updating code from GitHub... (1/2)');
                     $promise->then(fn(Message $message) => OSFunctions::execInBackground('git pull'));
                     $this->discord->getLoop()->addTimer(5, fn(): PromiseInterface => $promise
-                        ->then(static fn(Message $message): PromiseInterface => $message->edit(MessageBuilder::new()->setContent('Forcefully moving the HEAD back to origin/main... (2/2)')))
+                        ->then(static fn(Message $message): PromiseInterface => $message->edit(Civ13::createBuilder()->setContent('Forcefully moving the HEAD back to origin/main... (2/2)')))
                         ->then(fn(Message $message) => $this->civ13->restart_message = $message)
                         ->then(static fn() => OSFunctions::execInBackground('git reset --hard origin/main'))
                         /*if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) $this->discord->getLoop()->cancelTimer($this->civ13->timers['restart_pending']);
                         $this->civ13->timers['restart_pending'] = $this->discord->getLoop()->addTimer(300, fn() => 
                             (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message)
-                                ? $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Restarting...'))->then(fn() => $this->civ13->restart())
+                                ? $this->civ13->restart_message->edit(Civ13::createBuilder()->setContent('Restarting...'))->then(fn() => $this->civ13->restart())
                                 : $this->civ13->sendMessage($channel, 'Restarting...')->then(fn() => $this->civ13->restart())
                         );*/
                     );
@@ -426,7 +426,7 @@ class HttpServiceManager
                     if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) {
                         $this->discord->getLoop()->cancelTimer($this->civ13->timers['restart_pending']);
                         unset($this->civ13->timers['restart_pending']);
-                        if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Restart cancelled.'));
+                        if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) $this->civ13->restart_message->edit(Civ13::createBuilder()->setContent('Restart cancelled.'));
                         return HttpResponse::plaintext('Restart cancelled.');
                     }
                     return HttpResponse::plaintext('No restart pending.');
@@ -452,7 +452,7 @@ class HttpServiceManager
                 {
                     $message = 'Manually Restarting...';
                     if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) {
-                        $this->civ13->restart_message->edit(MessageBuilder::new()->setContent('Manually Restarting...'))->then(fn() => $this->civ13->restart());
+                        $this->civ13->restart_message->edit(Civ13::createBuilder()->setContent('Manually Restarting...'))->then(fn() => $this->civ13->restart());
                         return HttpResponse::plaintext($message);
                     }
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, $message)->then(fn() => $this->civ13->restart());
@@ -782,7 +782,7 @@ class HttpServiceManager
                         if (isset($item['discord']) && $user = $this->discord->users->get('id', $item['discord']))
                             $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar ?? $this->discord->avatar);
                     $this->logger->info("[CONTACT FORM] IP: $ip, Byond Username: $ckey, Email: $email, Message: $messageContent");
-                    if (isset($this->civ13->channel_ids['email']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['email'])) $channel->sendMessage(MessageBuilder::new()->addEmbed($embed));
+                    if (isset($this->civ13->channel_ids['email']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['email'])) $channel->sendMessage(Civ13::createBuilder()->addEmbed($embed));
                     return HttpResponse::plaintext('Form submitted successfully');
                 })
                 ->setRateLimit($endpoint, 1, 43200) // 1 form every 12 hours

@@ -204,7 +204,7 @@ class CommandServiceManager
             ],
             'interaction_handler' => function (Interaction $interaction): PromiseInterface
             {
-                return $interaction->respondWithMessage(MessageBuilder::new()->setContent('Pong!'), true);
+                return $interaction->respondWithMessage(Civ13::createBuilder()->setContent('Pong!'), true);
             },
         ];
         return $array;

@@ -894,8 +894,7 @@ class Civ13
         }
         if ($content instanceof MessageBuilder) return $channel->sendMessage($content->setAllowedMentions(['parse'=>[]]));
 
-        $builder = MessageBuilder::new();
-        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        $builder = self::createBuilder($prevent_mentions);
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
         if (strlen($content)<=4096) return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)));
         return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
@@ -932,8 +931,7 @@ class Civ13
      */
     public function reply(Message|Thread $message, string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface
     {
-        $builder = MessageBuilder::new();
-        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        $builder = self::createBuilder($prevent_mentions);
         if (strlen($content)<=2000) return $message->reply($builder->setContent($content));
         if (strlen($content)<=4096) return $message->reply($builder->addEmbed($this->createEmbed()->setDescription($content)));
         return $message->reply($builder->addFileFromContent($file_name, $content));
@@ -953,8 +951,7 @@ class Civ13
             $this->logger->error($err = "Channel not found for sendEmbed");
             return reject(new PartException($err));
         }
-        $builder = MessageBuilder::new();
-        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        $builder = Civ13::createBuilder($prevent_mentions);
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         return $channel->sendMessage($builder->setContent($content)->addEmbed($embed->setFooter($this->embed_footer)));
     }
@@ -967,12 +964,18 @@ class Civ13
             ->setTimestamp()
             ->setURL('');
     }
+    public static function createBuilder(bool $prevent_mentions = false): MessageBuilder
+    {
+        $builder = Civ13::createBuilder();
+        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        return $builder;
+    }
     public function createServerstatusEmbed(): MessageBuilder
     {
         $builder = array_reduce(
             $this->enabled_gameservers,
             fn ($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()),
-            MessageBuilder::new()
+            Civ13::createBuilder()
         );
         $builder = array_reduce(
             $this->civ14_enabled_gameservers,
@@ -1248,7 +1251,7 @@ class Civ13
                 array_reduce(
                     array_keys($banlists),
                     fn($builder, $key) => $builder->addFileFromContent("{$key}_bans.txt", $banlists[$key]),
-                    MessageBuilder::new()
+                    Civ13::createBuilder()
                 )->setContent('Ban lists for: ' . implode(', ', array_keys($banlists)))
               )
             : $message->react("🔥")->then(fn() => $this->logger->warning("Unable to list bans for servers: " . implode(', ', array_keys($banlists))));

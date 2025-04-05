@@ -377,7 +377,7 @@ class GameServer
         $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
-        return $channel->sendMessage(MessageBuilder::new()->addEmbed($embed)->setAllowedMentions(['parse'=>[]]));
+        return $channel->sendMessage(Civ13::createBuilder(true)->addEmbed($embed));
     }
     public function relayTimer(): ?TimerInterface
     {
@@ -499,23 +499,23 @@ class GameServer
                         ? $verified_players
                         : substr($verified_players, 0, 1021) . '...'
                 );
-            return MessageBuilder::new()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
+            return Civ13::createBuilder()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
         };
         if (! $builder = $round_embed_builder($round)) return null;
 
         $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
         {
-            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('You do not have permission to use this command.'), true);
+            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
             $tokens = explode(';', substr($command, strlen('logs ')));
             if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) {
                 $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
-                return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent($error), true);
+                return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($error), true);
             }
 
             unset($tokens[0]);
             $results = $this->civ13->FileNav($this->basedir . Civ13::log_basedir, $tokens);
-            if (! $results[0]) return $interaction->sendFollowUpMessage(MessageBuilder::new()->setContent('No logs found.'), true);
-            return $interaction->sendFollowUpMessage(MessageBuilder::new()->addFile($results[1], 'log.txt'), true);
+            if (! $results[0]) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('No logs found.'), true);
+            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($results[1], 'log.txt'), true);
         };
         if ($log = str_replace('/', ';', "logs {$this->key}{$round['log']}")) $builder->addComponent(
             ActionRow::new()->addComponent(
