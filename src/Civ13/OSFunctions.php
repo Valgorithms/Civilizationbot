@@ -107,8 +107,7 @@ class OSFunctions
             if (($p = popen('cmd /c "' . getcwd() . '\run.bat"', "r")) === false) return reject(new MissingSystemPermissionException('popen() failed'));
             return resolve($p);
         }
-        $output = "sudo nohup php \"$file\" > botlog.txt &";
-        if (! $proc = proc_open($output, self::DEFAULT_PIPES, $pipes)) return reject(new MissingSystemPermissionException('proc_open() failed')); // old method was "sudo nohup $cmd > /dev/null &"
+        if (! $proc = proc_open($output = "sudo nohup php \"$file\" &", self::DEFAULT_PIPES, $pipes)) return reject(new MissingSystemPermissionException('proc_open() failed')); // old method was "sudo nohup $cmd > /dev/null &"
         self::setNonblock($pipes);
         //self::readPipes($pipes);
         if (! $proc_details = proc_get_status($proc)) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
