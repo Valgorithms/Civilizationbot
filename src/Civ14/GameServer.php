@@ -9,13 +9,18 @@
 namespace Civ14;
 
 use Civ13\Civ13;
+use Civ13\Exceptions\PartException;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
+use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\Loop;
+use React\EventLoop\TimerInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
 
+
+use function React\Promise\resolve;
 use function React\Promise\reject;
 
 use function React\Async\await;
@@ -36,7 +41,12 @@ class GameServer
     public string $key     = 'civ14';
     public string $name    = 'Civilization 14';
     public string $host    = 'Taislin';
+    public string $playercount = ''; // Channel ID for player count
+    
     public array  $players = []; // Cannot be retrieved via the hub or server API
+    public int    $playing = 0;
+    /** @var Timerinterface[] */
+    public array  $timers  = [];
 
     // Normally would just promote the property, but currently causes an issue in PHPUnit tests
     public function __construct(
@@ -44,18 +54,27 @@ class GameServer
         array &$options = []
     ) {
         $this->civ13         = &$civ13;
-        $this->enabled       = (bool)$options['enabled'] ?? true;
+        $this->enabled       = (bool) $options['enabled'] ?? true;
         $this->name          = $options['name']          ?? 'Civilization 14';
         $this->protocol      = $options['protocol']      ?? 'http';
         $this->ip            = $options['ip']            ?? '127.0.0.1';
-        $this->port          = (int)$options['port']     ?? 1212;
+        $this->port          = (int) $options['port']     ?? 1212;
         $this->host          = $options['host']          ?? 'Taislin';
+        $this->playercount   = $options['playercount']   ?? '';
         $this->watchdogToken = $options['watchdogToken'] ?? null;
         $this->afterConstruct();
     }
     protected function afterConstruct(): void
     {
         $this->setup();
+        $this->civ13->deferUntilReady(
+            function () {
+                $this->logger->info("Getting player count for SS14 GameServer {$this->name}");
+                $this->playercountTimer(); // Update playercount channel every 10 minutes
+            },
+            $this->key
+        );
+
     }
     protected function setup(): void
     {
@@ -64,20 +83,54 @@ class GameServer
         $this->logger->info('Added ' . ($this->enabled ? 'enabled' : 'disabled') . " SS14 game server: {$this->name} ({$this->key})");
     }
 
+    public function playercountTimer(): TimerInterface
+    {
+        $this->fetchPlayingCount();
+        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate($this->playing));
+        return $this->timers['playercount_timer'];
+    }
+    
+    public function playercountChannelUpdate(int $count = 0): PromiseInterface
+    {
+        if (! $channel = $this->discord->getChannel($this->playercount)) {
+            $this->logger->warning($err = "Channel {$this->playercount} doesn't exist!");
+            return reject(new PartException($err));
+        }
+        if (! $channel->created) {
+            $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
+            return reject(new PartException($err));
+        }
+        [$channelPrefix, $existingCount] = explode('-', $channel->name);
+        if ((int) $existingCount !== $count) {
+            $channel->name = "{$channelPrefix}-{$count}";
+            return $channel->guild->channels->save($channel);
+        }
+        return resolve(null);
+    }
+
+    public function fetchPlayingCount(): PromiseInterface
+    {
+        return $this->getStatus()->then(function (array $status) {
+            return $this->playing = (isset($status['players']))
+                ? (int) $status['players']
+                : 0;
+        });
+    }
+
     public function toEmbed(): Embed
     {
         $embed = $this->civ13->createEmbed();
         if (! is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1))) return $embed->addFieldValues($this->name, 'Offline');
         fclose($socket);
         /** @var array $info */
-        $status = await($this->getStatus());
+        await($this->fetchPlayingCount());
         return $embed
             ->setTitle($this->name)
             ->addFieldValues("Server URL", "ss14://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
             ->addFieldValues(
-                isset($status['players'])
-                    ? 'Players (' . (int)$status['players'] . ')'
+                $this->playing
+                    ? "Players ({$this->playing})"
                     : 'Players',
                 'N/A',
                 true

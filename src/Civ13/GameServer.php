@@ -179,18 +179,19 @@ class GameServer
         $this->setup();
 
         if (! $this->enabled) return; // Don't start timers for disabled servers
-        $fn = function () {
-            $this->logger->info("Getting player count for GameServer {$this->name}");
-            $this->__updateDiscordVariables();
-            $this->localServerPlayerCount(); // Populates $this->players
-            $this->playercountTimer(); // Update playercount channel every 10 minutes
-            $this->serverinfoTimer(); // Hard check playercount and ckeys to scrutinizeCkey() every 3 minutes
-            $this->relayTimer(); // File chat relay
-            $this->currentRoundEmbedTimer(); // The bot has to see a round id first
-        };
-        $this->civ13->ready
-            ? $fn()
-            : $this->discord->once('init', fn() => $fn());
+        $this->civ13->deferUntilReady(
+            function () {
+                $this->logger->info("Getting player count for GameServer {$this->name}");
+                $this->__updateDiscordVariables();
+                $this->localServerPlayerCount(); // Populates $this->players
+                $this->playercountTimer(); // Update playercount channel every 10 minutes
+                $this->serverinfoTimer(); // Hard check playercount and ckeys to scrutinizeCkey() every 3 minutes
+                $this->relayTimer(); // File chat relay
+                $this->currentRoundEmbedTimer(); // The bot has to see a round id first
+            },
+            $this->key
+        );
+
     }
     /**
      * This method is responsible for setting up the game server by performing the following tasks:
@@ -270,7 +271,7 @@ class GameServer
         }
         $data = self::explodeServerdata($data);
         if (isset($data[11])) $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
-        if (isset($data[4])) $playercount = (int)$data[4]; // Player count
+        if (isset($data[4])) $playercount = (int) $data[4]; // Player count
         $this->players = $players;
         return $playercount;
     }
@@ -553,7 +554,7 @@ class GameServer
             return reject(new PartException($err));
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
-        if ((int)$existingCount !== $count) {
+        if ((int) $existingCount !== $count) {
             $channel->name = "{$channelPrefix}-{$count}";
             return $channel->guild->channels->save($channel);
         }

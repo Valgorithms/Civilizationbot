@@ -254,7 +254,7 @@ trait ServerApiTrait
         if (!is_numeric($port)) {
             throw new \InvalidArgumentException('Port must be a number.');
         }
-        $this->port = (int)$port;
+        $this->port = (int) $port;
     }
 
     /**

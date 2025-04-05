@@ -347,6 +347,7 @@ $civ14_server_settings = [
         //'moderate' => true,
         //'legacy_relay' => false,
         //'basedir' => '/home/civ13/civ14',
+        'playercount' => '1354164249487737013',
     ],
 ];
 foreach ($civ14_server_settings as $key => $value) $civ14_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
