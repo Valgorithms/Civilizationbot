@@ -216,7 +216,6 @@ class GameServer
         if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             if (! $this->role = $guild->roles->get('name', $this->name)) {
                 $this->logger->error("Role not found for GameServer {$this->key}.");
-                return;
             }
         }
     }
@@ -271,9 +270,9 @@ class GameServer
         }
         $data = self::explodeServerdata($data);
         if (isset($data[11])) $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
-        if (isset($data[4])) $playercount = $data[4]; // Player count
+        if (isset($data[4])) $playercount = (int)$data[4]; // Player count
         $this->players = $players;
-        return (int)$playercount;
+        return $playercount;
     }
     
     /**
