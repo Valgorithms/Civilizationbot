@@ -10,6 +10,7 @@ namespace Civ14;
 
 use Civ13\Civ13;
 use Discord\Discord;
+use Discord\Parts\Embed\Embed;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\Loop;
 use React\Http\Browser;
@@ -29,16 +30,33 @@ class GameServer
 
     protected Civ13 $civ13;
 
+    public string $name    = 'Civilization 14';
+    public string $host    = 'Taislin';
+    public array  $players = [];
+
     // Normally would just promote the property, but currently causes an issue in PHPUnit tests
     public function __construct(
         &$civ13,
         array &$options = []
     ) {
         $this->civ13         = &$civ13;
+        $this->name          = $options['name']          ?? 'Civilization 14';
         $this->protocol      = $options['protocol']      ?? 'http';
         $this->ip            = $options['ip']            ?? '127.0.0.1';
         $this->port          = $options['port']          ?? 1212;
         $this->watchdogToken = $options['watchdogToken'] ?? null;
+    }
+
+    public function toEmbed(): Embed
+    {
+        return $this->civ13->createEmbed()
+            ->setTitle($this->name)
+            ->addFieldValues("Server URL", "byond://{$this->ip}:{$this->port}", false)
+            ->addFieldValues('Host', $this->host, true)
+            ->addFieldValues(
+                'Players' . (!count($this->players) ?: ' (' . count($this->players) . ')'),
+                empty($this->players)? 'N/A' : implode(', ', $this->players), true
+            );
     }
 
     /**
