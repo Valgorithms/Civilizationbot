@@ -18,6 +18,8 @@ use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
 
+use function React\Async\await;
+
 /**
   * @property-read  Browser          $browser
   * @property-read  Discord          $discord
@@ -34,7 +36,7 @@ class GameServer
     public string $key     = 'civ14';
     public string $name    = 'Civilization 14';
     public string $host    = 'Taislin';
-    public array  $players = [];
+    public array  $players = []; // Cannot be retrieved via the hub or server API
 
     // Normally would just promote the property, but currently causes an issue in PHPUnit tests
     public function __construct(
@@ -67,17 +69,17 @@ class GameServer
         $embed = $this->civ13->createEmbed();
         if (! is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1))) return $embed->addFieldValues($this->name, 'Offline');
         fclose($socket);
+        /** @var array $info */
+        $status = await($this->getStatus());
         return $embed
             ->setTitle($this->name)
             ->addFieldValues("Server URL", "ss14://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
             ->addFieldValues(
-                empty($this->players)
-                    ? 'Players'
-                    : 'Players (' . count($this->players) . ')',
-                empty($this->players)
-                    ? 'N/A'
-                    : implode(', ', $this->players),
+                isset($status['players'])
+                    ? 'Players (' . (int)$status['players'] . ')'
+                    : 'Players',
+                'N/A',
                 true
             );
     }
