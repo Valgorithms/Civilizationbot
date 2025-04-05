@@ -21,9 +21,6 @@
         "wyrihaximus/react-cache-redis": "^4.5",
         "valgorithms/discord-php-eventlogger": "dev-master"
     },
-    "require-dev": {
-        "phpunit/phpunit": "^9.5"
-    },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
         "ext-libev": "For a faster, and more performant loop",
