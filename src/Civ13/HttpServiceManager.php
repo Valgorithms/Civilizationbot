@@ -803,7 +803,6 @@ class HttpServiceManager
             */
         ;
         // HttpHandler whitelisting with DiscordWebAuth
-        if (include('dwa_secrets.php'))
         if ($dwa_client_id = getenv('dwa_client_id'))
         if ($dwa_client_secret = getenv('dwa_client_secret'))
         $this->httpHandler
@@ -829,7 +828,7 @@ class HttpServiceManager
                         $this->logger->info("[DWA] Logout requested");
                         return $DiscordWebAuth->logout();
                     }
-                    if ($DiscordWebAuth->isAuthed() && isset($params['remove'])) {
+                    if (isset($params['remove']) && $DiscordWebAuth->isAuthed()) {
                         $this->logger->info("[DWA] Remove token requested");
                         return $DiscordWebAuth->removeToken();
                     }
