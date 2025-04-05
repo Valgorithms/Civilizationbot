@@ -129,6 +129,7 @@ class OSFunctions
     public static function disown($proc): void
     {
         $proc_details = proc_get_status($proc);
+        error_log("Disowning process {$proc_details['pid']}...");
         if (isset($proc_details['pid']) && $proc_details['running']) {
             posix_setpgid($proc_details['pid'], $proc_details['pid']); // Disown the process
         }
