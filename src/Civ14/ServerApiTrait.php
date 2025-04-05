@@ -17,7 +17,20 @@ trait ServerApiTrait
     /**
      * Fetch basic server status.
      *
-     * @return PromiseInterface Resolves to an array of server status.
+     * The returned array contains the following keys:
+     * - `name` (string): The name of the server.
+     * - `players` (int): The current number of players on the server.
+     * - `tags` (array<string>): A list of tags associated with the server.
+     *   - Example: "region:eu_w", "rp:med".
+     * - `map` (string): The name of the map currently in use.
+     * - `round_id` (int): The unique identifier for the current round.
+     * - `soft_max_players` (int): The soft maximum number of players allowed.
+     * - `panic_bunker` (bool): Indicates whether the panic bunker mode is active.
+     * - `run_level` (int): The current run level of the server.
+     * - `preset` (string): The preset configuration in use.
+     * - `round_start_time` (string): The ISO 8601 timestamp of when the round started.
+     *
+     * @return PromiseInterface<array> Resolves to an array of server status.
      */
     public function getStatus(): PromiseInterface
     {
@@ -28,7 +41,7 @@ trait ServerApiTrait
     /**
      * Fetch detailed server information.
      *
-     * @return PromiseInterface Resolves to an array of server information.
+     * @return PromiseInterface<array> Resolves to an array of server information.
      */
     public function getInfo(): PromiseInterface
     {
