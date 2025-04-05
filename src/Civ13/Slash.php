@@ -10,6 +10,7 @@ namespace Civ13;
 
 use Byond\Byond;
 use Civ13\Exceptions\MissingSystemPermissionException;
+use Civ14\GameServer as SS14GameServer;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use React\Promise\PromiseInterface;
@@ -44,7 +45,7 @@ class Slash
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $this->__declareListeners();
         $fn = function() {
@@ -506,9 +507,11 @@ class Slash
             $this->respondWithMessage($interaction, MessageBuilder::new()->setContent($this->discord->application->getInviteURLAttribute('8')), true)
         );
 
-        $this->discord->listenCommand('players', fn (Interaction $interaction): PromiseInterface =>
-            $this->respondWithMessage($interaction, array_reduce($this->civ13->enabled_gameservers, fn($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()), MessageBuilder::new())->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers))))
-        );
+        $this->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
+        {
+            //$this->respondWithMessage($interaction, array_reduce($this->civ13->enabled_gameservers, fn($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()), MessageBuilder::new())->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers))))
+            return $this->respondWithMessage($interaction, $this->civ13->createServerstatusEmbed());
+        });
 
         $this->discord->listenCommand('ckey', fn(Interaction $interaction): PromiseInterface =>
             ($item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) 

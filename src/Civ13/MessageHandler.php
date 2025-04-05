@@ -80,7 +80,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $this->attributes['descriptions'] = $descriptions;
         $this->afterConstruct();
     }
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $this->__setDefaultRatelimits();
     }

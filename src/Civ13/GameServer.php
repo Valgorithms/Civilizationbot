@@ -167,7 +167,7 @@ class GameServer
         }
         $this->afterConstruct();
     }
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $this->serverdata = $this->basedir . Civ13::serverdata;
         $this->discord2unban = $this->basedir . Civ13::discord2unban;

@@ -60,7 +60,7 @@ class CommandServiceManager
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
-    private function afterConstruct(): void
+    protected function afterConstruct(): void
     {
         $fn = function() {
             $this->logger->info('Setting up CommandServiceManager...');

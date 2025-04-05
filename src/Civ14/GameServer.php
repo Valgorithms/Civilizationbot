@@ -30,6 +30,8 @@ class GameServer
 
     protected Civ13 $civ13;
 
+    public bool   $enabled = true;
+    public string $key     = 'civ14';
     public string $name    = 'Civilization 14';
     public string $host    = 'Taislin';
     public array  $players = [];
@@ -40,18 +42,34 @@ class GameServer
         array &$options = []
     ) {
         $this->civ13         = &$civ13;
+        $this->enabled       = (bool)$options['enabled'] ?? true;
         $this->name          = $options['name']          ?? 'Civilization 14';
         $this->protocol      = $options['protocol']      ?? 'http';
         $this->ip            = $options['ip']            ?? '127.0.0.1';
-        $this->port          = $options['port']          ?? 1212;
+        $this->port          = (int)$options['port']     ?? 1212;
+        $this->host          = $options['host']          ?? 'Taislin';
         $this->watchdogToken = $options['watchdogToken'] ?? null;
+        $this->afterConstruct();
+    }
+    protected function afterConstruct(): void
+    {
+        $this->setup();
+    }
+    protected function setup(): void
+    {
+        $this->civ13->civ14_gameservers[$this->key] =& $this;
+        if ($this->enabled) $this->civ13->civ14_enabled_gameservers[$this->key] =& $this;
+        $this->logger->info('Added ' . ($this->enabled ? 'enabled' : 'disabled') . " SS14 game server: {$this->name} ({$this->key})");
     }
 
     public function toEmbed(): Embed
     {
-        return $this->civ13->createEmbed()
+        $embed = $this->civ13->createEmbed();
+        if (! is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1))) return $embed->addFieldValues($this->name, 'Offline');
+        fclose($socket);
+        return $embed
             ->setTitle($this->name)
-            ->addFieldValues("Server URL", "byond://{$this->ip}:{$this->port}", false)
+            ->addFieldValues("Server URL", "ss14://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
             ->addFieldValues(
                 'Players' . (!count($this->players) ?: ' (' . count($this->players) . ')'),

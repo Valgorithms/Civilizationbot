@@ -331,7 +331,25 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
 ];
 foreach ($civ13_server_settings as $key => $value) $civ13_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
-$civ14_server_settings = [];
+$civ14_server_settings = [
+    'civ14' => [
+        //'supported' => true,
+        'enabled' => true,
+        'name' => 'Civilization 14',
+        'protocol' => 'http',
+        //'key' => 'civ14',
+        'ip' => $civ13_ip,
+        'port' => '1212',
+        'host' => 'Taislin',
+        //'panic_bunker' => true,
+        //'log_attacks' => true,
+        //'legacy' => true,
+        //'moderate' => true,
+        //'legacy_relay' => false,
+        //'basedir' => '/home/civ13/civ14',
+    ],
+];
+foreach ($civ14_server_settings as $key => $value) $civ14_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
 $hidden_options = [
     'loop' => $loop,
@@ -375,6 +393,7 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         && ! str_contains($errstr, '(Connection refused)') // Usually happens in localServerPlayerCount
         //&& ! str_ends_with($errstr, 'Network is unreachable')
         //&& ! str_ends_with($errstr, '(Network is unreachable)')
+        && ! str_ends_with($errstr, '(A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond)')
 
         // Connectivity issues
         && ! str_ends_with($errstr, 'No route to host') // Usually happens if the verifier server is down

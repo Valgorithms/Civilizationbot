@@ -184,6 +184,10 @@ class Civ13
     public array $gameservers = [];
     /** @var GameServer[] */
     public array $enabled_gameservers = [];
+    /** @var SS14GameServer[] */
+    public array $civ14_gameservers = [];
+    /** @var SS14GameServer[] */
+    public array $civ14_enabled_gameservers = []; 
     public bool $moderate = true; // Whether or not to moderate the servers using the ooc_badwords list
     public array $ooc_badwords = [];
     public array $ooc_badwords_warnings = []; // Array of [$ckey]['category'] => integer] for how many times a user has recently infringed for a specific category
@@ -962,6 +966,37 @@ class Civ13
             ->setColor($color)
             ->setTimestamp()
             ->setURL('');
+    }
+    public function createServerstatusEmbed(): MessageBuilder
+    {
+        $builder = array_reduce(
+            $this->enabled_gameservers,
+            fn ($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()),
+            MessageBuilder::new()
+        );
+        $builder = array_reduce(
+            $this->civ14_enabled_gameservers,
+            fn ($builder, $gameserver) => $builder->addEmbed($gameserver->toEmbed()),
+            $builder
+        );
+
+        $server_list = implode(
+            PHP_EOL,
+            array_map(
+                fn ($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}",
+                $this->enabled_gameservers
+            )
+        );
+        $server_list .= PHP_EOL . implode(
+            PHP_EOL,
+            array_map(
+                fn ($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}",
+                $this->civ14_enabled_gameservers
+            )
+        );
+        $builder->setContent($server_list);
+
+        return $builder;
     }
     /**
      * Sends an out-of-character (OOC) message.

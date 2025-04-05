@@ -10,8 +10,8 @@ use function React\Promise\reject;
 trait ServerApiTrait
 {
     protected string      $protocol      = 'http';
-    protected string      $ip            = '127.0.0.1';
-    protected int         $port          = 1212;
+    public string         $ip            = '127.0.0.1';
+    public int            $port          = 1212;
     protected string|null $watchdogToken = null;
 
     /**
