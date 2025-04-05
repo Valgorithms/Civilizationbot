@@ -72,8 +72,13 @@ class GameServer
             ->addFieldValues("Server URL", "ss14://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
             ->addFieldValues(
-                'Players' . (!count($this->players) ?: ' (' . count($this->players) . ')'),
-                empty($this->players)? 'N/A' : implode(', ', $this->players), true
+                empty($this->players)
+                    ? 'Players'
+                    : 'Players (' . count($this->players) . ')',
+                empty($this->players)
+                    ? 'N/A'
+                    : implode(', ', $this->players),
+                true
             );
     }
 
