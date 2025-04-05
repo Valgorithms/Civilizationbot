@@ -892,7 +892,10 @@ class Civ13
             $this->logger->error($err = "Channel not found for sendMessage");
             return reject(new PartException($err));
         }
-        if ($content instanceof MessageBuilder) return $channel->sendMessage($content->setAllowedMentions(['parse'=>[]]));
+        if ($content instanceof MessageBuilder) {
+            if ($prevent_mentions) $content->setAllowedMentions(['parse'=>[]]);
+            return $channel->sendMessage($content);
+        }
 
         $builder = self::createBuilder($prevent_mentions);
         if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
