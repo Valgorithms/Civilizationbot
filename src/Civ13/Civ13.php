@@ -969,7 +969,7 @@ class Civ13
     }
     public static function createBuilder(bool $prevent_mentions = false): MessageBuilder
     {
-        $builder = Civ13::createBuilder();
+        $builder = MessageBuilder::new();
         if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
         return $builder;
     }
