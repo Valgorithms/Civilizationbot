@@ -33,6 +33,7 @@ use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
+use React\Cache\CacheInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\StreamSelectLoop;
@@ -1279,20 +1280,20 @@ class Civ13
             return true;
         }, false)) return false;
         $this->__bancheckTimer();
-        if (! isset($this->timers['bancheck_timer']) || ! isset($this->timers['bancheck_timer']) instanceof TimerInterface) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
+        if (! isset($this->timers['bancheck_timer']) || ! $this->timers['bancheck_timer'] instanceof TimerInterface) $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn() => $this->bancheckTimer());
         return $this->timers['bancheck_timer'];
     }
     private function __bancheckTimer(): void
     {
-        if (! isset($this->verifier) && isset($this->timers['bancheck_timer'])) {
-            ! $this->timers['bancheck_timer'] instanceof TimerInterface ?: $this->loop->cancelTimer($this->timers['bancheck_timer']);
+        if (! isset($this->verifier) && isset($this->timers['bancheck_timer']) && $this->timers['bancheck_timer'] instanceof TimerInterface) {
+            $this->loop->cancelTimer($this->timers['bancheck_timer']);
             unset($this->timers['bancheck_timer']);
             return;
         }
         if ($cacheconfig = $this->discord->getCacheConfig()) {
             $interface = $cacheconfig->interface;
             $this->logger->info('Cache type: ' . get_class($interface));
-            if ($interface instanceof \React\Cache\CacheInterface) { // It's too expensive to check bans
+            if ($interface instanceof CacheInterface) { // It's too expensive to check bans
                 $this->logger->info('Redis cache is being used, cancelling periodic banchecks.');
                 $this->loop->cancelTimer($this->timers['bancheck_timer']);
                 unset($this->timers['bancheck_timer']);
