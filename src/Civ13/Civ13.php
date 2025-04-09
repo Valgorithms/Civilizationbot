@@ -1285,9 +1285,11 @@ class Civ13
     }
     private function __bancheckTimer(): void
     {
-        if (! isset($this->verifier) && isset($this->timers['bancheck_timer']) && $this->timers['bancheck_timer'] instanceof TimerInterface) {
-            $this->loop->cancelTimer($this->timers['bancheck_timer']);
-            unset($this->timers['bancheck_timer']);
+        if (! isset($this->verifier)) {
+            if (isset($this->timers['bancheck_timer']) && $this->timers['bancheck_timer'] instanceof TimerInterface) {
+                $this->loop->cancelTimer($this->timers['bancheck_timer']);
+                unset($this->timers['bancheck_timer']);
+            }
             return;
         }
         if ($cacheconfig = $this->discord->getCacheConfig()) {
