@@ -12,9 +12,9 @@ use Civ13\Civ13;
 use Civ13\Exceptions\PartException;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
-use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\Loop;
+use React\EventLoop\LoopInterface;
 use React\EventLoop\TimerInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
@@ -35,7 +35,8 @@ class GameServer
     use ServerApiTrait;
     use DynamicPropertyAccessorTrait;
 
-    protected Civ13 $civ13;
+    /** @var Civ13 $civ13 */
+    protected $civ13;
 
     public bool   $enabled = true;
     public string $key     = 'civ14';
@@ -184,7 +185,7 @@ class GameServer
     { 
         return isset($this->civ13->browser)
             ? $this->civ13->browser
-            : new Browser($this->civ13->loop ?? Loop::get()); // Workaround for civ13->browser property not set in PHPUnit tests
+            : new Browser($this->loop ?? Loop::get()); // Workaround for civ13->browser property not set in PHPUnit tests
     }
     
     /**
@@ -205,5 +206,21 @@ class GameServer
     protected function getLoggerProperty(): LoggerInterface
     {
         return $this->civ13->logger;
+    }
+
+    /**
+     * Retrieves the event loop instance associated with the Civ13 object.
+     *
+     * This method checks if the `civ13->loop` property is set and returns it.
+     * If the property is not set (e.g., during PHPUnit tests), it falls back
+     * to using the default loop instance provided by `Loop::get()`.
+     *
+     * @return LoopInterface
+     */
+    protected function getLoopProperty(): LoopInterface
+    { 
+        return isset($this->civ13->loop)
+            ? $this->civ13->loop
+            : Loop::get(); // Workaround for civ13->loop property not set in PHPUnit tests
     }
 }

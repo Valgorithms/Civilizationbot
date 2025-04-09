@@ -152,7 +152,7 @@ class Civ13
     
     public string $webserver_url = 'www.valzargaming.com'; // The URL of the webserver that the bot pulls server information from
 
-    public StreamSelectLoop $loop;
+    public LoopInterface $loop;
     public Discord $discord;
     public Browser $browser;
     public AdapterInterface $filesystem;
