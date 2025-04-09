@@ -354,6 +354,7 @@ class MessageServiceManager
                     }
                     if (is_numeric($ckey)) {
                         if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`$ckey` is not registered to any ckey");
+                        if (! isset($item['ss13'])) return $this->civ13->reply($message, "ss13 key is not set! " . PHP_EOL . '`' . json_encode($item) . '`');
                         if (! $age = $this->civ13->getByondAge($item['ss13'])) return $this->civ13->reply($message, "`{$item['ss13']}` does not exist");
                         return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
                     }
