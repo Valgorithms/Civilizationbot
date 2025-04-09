@@ -1000,6 +1000,9 @@ class GameServer
                 });
             }
         }
+        foreach (explode(PHP_EOL, $this->bancheck_cache) as $line)
+            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey))
+                $this->bancheck_cache = str_replace($line, '', $this->bancheck_cache);
     }
     private function legacyUnban(string $ckey, ?string $admin = null): PromiseInterface
     {
