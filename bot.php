@@ -62,7 +62,7 @@ $logger = new Logger('Civ13', [$streamHandler]);
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
 $logger->pushHandler(new StreamHandler('output.log', Level::Info));
 $logger->info('Loading configurations for the bot...');
-set_rejection_handler(fn(\Throwable $e) => $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('#', PHP_EOL . '#', str_replace('\n', PHP_EOL, $e->getTraceAsString()))));
+set_rejection_handler(fn(\Throwable $e) => $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('\n', PHP_EOL, $e->getTraceAsString())));
 
 $discord = new Discord([
     'loop' => $loop = Loop::get(),
