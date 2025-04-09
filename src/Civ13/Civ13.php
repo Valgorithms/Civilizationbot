@@ -1308,7 +1308,7 @@ class Civ13
             if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) continue;
             if (! isset($item['ss13'])) continue;
             //$this->logger->debug("Checking bans for {$item['ss13']}...");
-            if (($banned = $this->bancheck($item['ss13'], true, true)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
+            if (($banned = $this->bancheck($item['ss13'], true, false)) && ! ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
                 $member->addRole($this->role_ids['Banished'], 'bancheck timer');
                 if (isset($this->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->channel_ids['staff_bot'])) $this->sendMessage($channel, "Added the banished role to $member.");
             } elseif (! $banned && ($member->roles->has($this->role_ids['Banished']) || $member->roles->has($this->role_ids['Permabanished']))) {
