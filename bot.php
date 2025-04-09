@@ -25,6 +25,8 @@ use React\Filesystem\Factory as FilesystemFactory;
 use React\Http\Browser;
 use WyriHaximus\React\Cache\Redis as RedisCache;
 
+use function React\Promise\set_rejection_handler;
+
 define('CIVILIZATIONBOT_START', microtime(true));
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -60,6 +62,7 @@ $logger = new Logger('Civ13', [$streamHandler]);
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
 $logger->pushHandler(new StreamHandler('output.log', Level::Info));
 $logger->info('Loading configurations for the bot...');
+set_rejection_handler(fn(\Throwable $e) => $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('\n', PHP_EOL, $e->getTraceAsString())));
 
 $discord = new Discord([
     'loop' => $loop = Loop::get(),
