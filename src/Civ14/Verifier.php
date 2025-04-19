@@ -91,7 +91,6 @@ class Verifier
         $requesting_ip = null;
         $discord_id = null;
         foreach ($sessions['dwa'] as $ip => $array) {
-            var_dump($array);
             if (!isset($array['user']->id)) continue;
             if ($array['user']->id == $discord) {
                 $requesting_ip = $ip;
