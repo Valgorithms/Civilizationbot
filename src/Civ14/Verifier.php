@@ -9,6 +9,8 @@
 namespace Civ14;
 
 use Civ13\Civ13;
+use Discord\Helpers\Collection;
+use Discord\Helpers\ExCollectionInterface;
 use Discord\Parts\User\Member;
 use Psr\Log\LoggerInterface;
 use React\Promise\PromiseInterface;
@@ -180,6 +182,12 @@ class Verifier
         return $this->civ13->logger;
     }
 
+    public function toCollection(): ExCollectionInterface
+    {
+        return new Collection($this->endpoint->getState()->getVerifyList(), 'discord');
+    }
+
+    
     public function toArray(): array
     {
         return $this->endpoint->getState()->getVerifyList();
