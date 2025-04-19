@@ -69,7 +69,8 @@ class Verifier
     {
         return $this->getIPFromDiscord($discord)
             ->then(fn(string $requesting_ip) => $this->getSS14FromIP($requesting_ip))
-            ->then(fn(string $ss14)          => $this->verify($discord, $ss14));
+            ->then(fn(string $ss14)          => $this->verify($discord, $ss14))
+            ->then(fn(string $ss14)          => $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])->sendMessage("<@$discord> has been SS14 verified as `$ss14`."));
     }
     
     /**
@@ -127,7 +128,7 @@ class Verifier
     
     /** 
      * @throws RuntimeException User is already verified
-     * @return PromiseInterface<null>
+     * @return PromiseInterface<string>
      */
     public function verify(string $discord, string $ss14): PromiseInterface
     {
@@ -137,7 +138,7 @@ class Verifier
         }
         $this->endpoint->add($discord, $ss14);
         $this->logger->info("Discord ID `$discord` has been SS14 verified as `$ss14`.");
-        return resolve(null);
+        return resolve($ss14);
     }
 
     /** 
