@@ -936,21 +936,19 @@ class MessageServiceManager
                         OSFunctions::execInBackground('killall index.js');
                         return $this->civ13->reply($message, '**TypeSpess Civ13** test server is now **offline**.');
                     }, ['Owner', 'Chief Technical Officer']);
-            $this->messageHandler->offsetSet('ss14',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `ss14 on` or `ss14 off`.');
-                    if (! in_array($state, ['on', 'off'])) return $this->civ13->reply($message, 'Wrong format. Please try `ss14 on` or `ss14 off`.');
-                    if ($state === 'on') {
-                        OSFunctions::execInBackground("cd '/home/civ13/civ14'");
-                        OSFunctions::execInBackground('git pull');
-                        OSFunctions::execInBackground("dotnet run --project Content.Packaging server --hybrid-acz --platform linux-x64");
-                        OSFunctions::execInBackground("dotnet run --project Content.Server --config-file server_config.toml");
-                        return $this->civ13->reply($message, '**Civ14** test server is now **online**: ss14://civ13.com');
-                    }
-                    OSFunctions::execInBackground('killall dotnet');
-                    return $this->civ13->reply($message, '**Civ14** test server is now **offline**.');
-                }, ['Owner', 'Chief Technical Officer']);
+            if (isset($this->civ13->folders['ss14_basedir']))
+                $this->messageHandler->offsetSet('ss14',
+                    function (Message $message, string $command, array $message_filtered): PromiseInterface
+                    {
+                        if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `ss14 on` or `ss14 off`.');
+                        if (! in_array($state, ['on', 'off'])) return $this->civ13->reply($message, 'Wrong format. Please try `ss14 on` or `ss14 off`.');
+                        if ($state === 'on') {                        
+                            OSFunctions::execInBackground("{$this->civ13->folders['ss14_basedir']}/bin/Content.Server/Content.Server --config-file {$this->civ13->folders['ss14_basedir']}/server_config.toml");
+                            return $this->civ13->reply($message, '**Civ14** test server is now **online**: ss14://civ13.com');
+                        }
+                        OSFunctions::execInBackground('killall dotnet');
+                        return $this->civ13->reply($message, '**Civ14** test server is now **offline**.');
+                    }, ['Owner', 'Chief Technical Officer']);
 
             $this->__generateServerMessageCommands();
     }
