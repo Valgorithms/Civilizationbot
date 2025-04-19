@@ -946,7 +946,7 @@ class MessageServiceManager
                         OSFunctions::execInBackground('git pull');
                         OSFunctions::execInBackground("dotnet run --project Content.Packaging server --hybrid-acz --platform linux-x64");
                         OSFunctions::execInBackground("dotnet run --project Content.Server --config-file server_config.toml");
-                        return $this->civ13->reply($message, '**Civ14** test server is now **online**: `URL placeholder`');
+                        return $this->civ13->reply($message, '**Civ14** test server is now **online**: ss14://civ13.com');
                     }
                     OSFunctions::execInBackground('killall dotnet');
                     return $this->civ13->reply($message, '**Civ14** test server is now **offline**.');
