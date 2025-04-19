@@ -415,7 +415,7 @@ class Verifier
         switch ($http_status) {
             case 200: // Verified
                 $success = true;
-                $error = "`$ckey` " . ((isset($this->civ13->ages[$ckey])) ? "- ({$this->civ13->ages[$ckey]})" : '') . " has been verified and registered to <@$discord_id>";
+                $error = "`$ckey` " . ((isset($this->civ13->ages[$ckey])) ? "- ({$this->civ13->ages[$ckey]})" : '') . " has been verified and registered to <@$discord_id> (Civ13)";
                 $this->pending->offsetUnset($discord_id);
                 $this->getVerified(false);
                 if (! isset($this->civ13->ages[$ckey])) $this->civ13->ages[$ckey] = $this->civ13->getByondAge($ckey) ?: null;
