@@ -174,7 +174,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         }
     }
 
-    public function pull(int|string $index, ?callable $defaultCallables = null, array $default_required_permissions = null, array $default_match_methods = null, array $default_descriptions = null): array
+    public function pull(int|string $index, ?callable $defaultCallables = null, ?array $default_required_permissions = null, ?array $default_match_methods = null, ?array $default_descriptions = null): array
     {
         $return = [
             'handlers' => $this->attributes['handlers'][$index] ?? null,
