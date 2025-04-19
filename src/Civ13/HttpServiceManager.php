@@ -763,6 +763,10 @@ class HttpServiceManager
                         ->toArray()
                     ),
                 false)
+            ->offsetSet('/ss14verified',
+                fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    HttpResponse::json($this->civ13->ss14verifier->toArray()),
+                false)
             ->offsetSet($endpoint = '/contact',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse
                 {
