@@ -71,7 +71,7 @@ class Verifier
     {
         return $this->getIPFromDiscord($discord)
             ->then(fn(string $requesting_ip) => $this->getSS14FromIP($requesting_ip))
-            ->then(fn(string $ss14)          => $this->verify($discord, $ss14))
+            ->then(fn(string $ss14) => $this->verify($discord, $ss14))
             ->then(function(string $ss14) use ($discord) {
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
                     $channel->sendMessage("`$ss14` has been verified and registered to <@$discord> (Civ14)");
