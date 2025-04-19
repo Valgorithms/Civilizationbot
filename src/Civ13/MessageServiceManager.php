@@ -946,7 +946,7 @@ class MessageServiceManager
                             OSFunctions::execInBackground("{$this->civ13->folders['ss14_basedir']}/bin/Content.Server/Content.Server --config-file {$this->civ13->folders['ss14_basedir']}/server_config.toml");
                             return $this->civ13->reply($message, '**Civ14** test server is now **online**: ss14://civ13.com');
                         }
-                        OSFunctions::execInBackground('killall dotnet');
+                        OSFunctions::execInBackground('killall Content.Server');
                         return $this->civ13->reply($message, '**Civ14** test server is now **offline**.');
                     }, ['Owner', 'Chief Technical Officer']);
 
