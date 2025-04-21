@@ -60,7 +60,7 @@ class OSFunctions
         $process->stdout->on('end',   static fn()              => error_log('ended'                      . PHP_EOL));
         $process->stdout->on('close', static fn()              => error_log('closed'                     . PHP_EOL));
         $process->stdout->on('data',  static fn($chunk)        => error_log($chunk                       . PHP_EOL));
-        $process->stdout->on('error', static fn(\Exception $e) => error_log('error: ' . $e->getMessage() . PHP_EOL));
+        $process->stdout->on('error', static fn(\Throwable $e) => error_log('error: ' . $e->getMessage() . PHP_EOL));
         $process->on('exit', fn($exitCode, $termSignal)        => error_log(($termSignal === null) ? "Process exited with code $exitCode" . PHP_EOL : "Process terminated with signal $termSignal" . PHP_EOL));
         return resolve($process);
     }

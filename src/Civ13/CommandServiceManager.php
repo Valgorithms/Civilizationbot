@@ -119,7 +119,7 @@ class CommandServiceManager
 
         try {
             $command = $resolver->resolve($command);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logger->warning('Invalid command configuration: ' . $e->getMessage());
             return false;
         }
