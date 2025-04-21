@@ -87,8 +87,10 @@ class GameServer
 
     public function playercountTimer(): TimerInterface
     {
-        if (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1))) $this->getStatus();
-        else $this->playing = 0;
+        if (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1))) {
+            $this->getStatus();
+            fclose($socket);
+        } else $this->playing = 0;
         if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate($this->playing));
         return $this->timers['playercount_timer'];
     }
