@@ -485,13 +485,13 @@ $verifier_server->init($loop);
 $verifier_server->setLogger($logger);
 $verifier_server->setState([
     getenv('CIV_TOKEN'),
-    getenv('VERIFIER_STORAGE_TYPE') ?? 'filesystem',
-    getenv('VERIFIER_JSON_PATH') ?? 'json/verified.json',
+    getenv('VERIFIER_STORAGE_TYPE') ?: 'filesystem',
+    getenv('VERIFIER_JSON_PATH') ?: 'json/verified.json',
 ]);
 $verifier_server->setSS14State([
     getenv('CIV_TOKEN'),
-    getenv('SS14_VERIFIER_STORAGE_TYPE') ?? 'filesystem',
-    getenv('SS14_VERIFIER_JSON_PATH') ?? 'json/ss14verified.json',
+    getenv('SS14_VERIFIER_STORAGE_TYPE') ?: 'filesystem',
+    getenv('SS14_VERIFIER_JSON_PATH') ?: 'json/ss14verified.json',
 ]);
 $verifier_server->setSS14OAuth2Endpoint(
     getenv('SS14_OAUTH2_CLIENT_ID'),
