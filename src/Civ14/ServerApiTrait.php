@@ -167,7 +167,7 @@ trait ServerApiTrait
      */
     public function isPortFree(): bool
     {
-        if (! $connection = @fsockopen('127.0.0.1', $this->port, $errno, $errstr, 1)) return true;
+        if (! $connection = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) return true;
         fclose($connection);
         return false;
     }

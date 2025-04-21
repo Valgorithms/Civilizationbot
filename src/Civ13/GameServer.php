@@ -261,8 +261,7 @@ class GameServer
     {    
         if (! $this->enabled) return 0;
         if (isset($this->civ13->httpServiceManager) && $this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return 0; // Don't try and access files if the server is not local
-        $socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1);
-        if (! is_resource($socket)) return 0;
+        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) return 0;
         fclose($socket);
         $playercount = 0;
         if (! @file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
