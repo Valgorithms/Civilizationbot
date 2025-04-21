@@ -70,7 +70,7 @@ class GameServer
         $this->civ13->deferUntilReady(
             function (): void
             {
-                $this->getStatus();
+                $this->civ13->then($this->getStatus(), null, fn($e) => null); // Ignore errors, just return offline status
                 $this->logger->info("Getting player count for SS14 GameServer {$this->name}");
                 $this->playercountTimer(); // Update playercount channel every 10 minutes
             },
@@ -116,8 +116,8 @@ class GameServer
         $embed = $this->civ13->createEmbed();
         try {
             /** @var array $info */
-            await($this->getStatus());
-        } catch (\Exception $e) { // Ignore errors, just return offline status
+            await($this->civ13->then($this->getStatus()));
+        } catch (\Throwable $e) { // Ignore errors, just return offline status
             return $embed->addFieldValues($this->name, 'Offline');
         }
         if (empty($this->__status)) return $embed->addFieldValues($this->name, 'Offline');
@@ -141,39 +141,6 @@ class GameServer
             $interval->i > 0 ? $interval->i . ' minutes' : null,
             $interval->s > 0 ? $interval->s . ' seconds' : null,
         ]));
-    }
-
-    /**
-     * Sends a GET request to the specified URL with optional headers.
-     *
-     * @param string $endpoint The endpoint to send the GET request to.
-     * @param array $headers An optional array of headers to include in the request.
-     * @return PromiseInterface A promise representing the asynchronous HTTP response.
-     */
-    public function sendGetRequest(string $endpoint, array $headers = array()): PromiseInterface
-    {
-        return ($this->isLocal() && $this->isPortFree())
-            ? reject(new \RuntimeException('Port is not listening'))
-            : $this->browser->get($this->baseURL() . $endpoint, $headers);
-    }
-
-    /**
-     * Sends a POST request to the specified URL with the given headers and body.
-     *
-     * @param string $endpoint The endpoint to send the POST request to.
-     * @param array $headers An associative array of headers to include in the request.
-     * @param string $body The body content to include in the POST request. Defaults to an empty string.
-     * @return PromiseInterface A promise representing the asynchronous HTTP response.
-     */
-    public function sendPostRequest(string $endpoint, array $headers = array(), $body = ''): PromiseInterface
-    {
-        return ($this->isLocal() && $this->isPortFree())
-            ? reject(new \RuntimeException('Port is not listening'))
-            : $this->browser->post(
-                $this->baseURL() . $endpoint,
-                array_merge($headers, $this->authHeaders()),
-                $body
-            );
     }
     
     /**

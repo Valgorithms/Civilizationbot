@@ -2,11 +2,13 @@
 
 namespace Civ14;
 
+use Civ13\Civ13;
 use Psr\Http\Message\ResponseInterface;
 use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
 
+/** @property Civ13 $civ13 Defined in GameServer.php*/
 trait ServerApiTrait
 {
     protected string      $protocol      = 'http';
@@ -27,6 +29,39 @@ trait ServerApiTrait
     public ?string $round_start_time = null;
 
     /**
+     * Sends a GET request to the specified URL with optional headers.
+     *
+     * @param string $endpoint The endpoint to send the GET request to.
+     * @param array $headers An optional array of headers to include in the request.
+     * @return PromiseInterface A promise representing the asynchronous HTTP response.
+     */
+    public function sendGetRequest(string $endpoint, array $headers = array()): PromiseInterface
+    {
+        return ($this->isLocal() && $this->isPortFree())
+            ? reject(new \RuntimeException('Port is not listening'))
+            : $this->browser->get($this->baseURL() . $endpoint, $headers);
+    }
+
+    /**
+     * Sends a POST request to the specified URL with the given headers and body.
+     *
+     * @param string $endpoint The endpoint to send the POST request to.
+     * @param array $headers An associative array of headers to include in the request.
+     * @param string $body The body content to include in the POST request. Defaults to an empty string.
+     * @return PromiseInterface A promise representing the asynchronous HTTP response.
+     */
+    public function sendPostRequest(string $endpoint, array $headers = array(), $body = ''): PromiseInterface
+    {
+        return ($this->isLocal() && $this->isPortFree())
+            ? reject(new \RuntimeException('Port is not listening'))
+            : $this->browser->post(
+                $this->baseURL() . $endpoint,
+                array_merge($headers, $this->authHeaders()),
+                $body
+            );
+    }
+
+    /**
      * Fetch basic server status.
      *
      * The returned array contains the following keys:
@@ -44,7 +79,7 @@ trait ServerApiTrait
      *
      * @return PromiseInterface<array> Resolves to an array of server status.
      */
-    public function getStatus(): PromiseInterface
+    public function getStatus(bool $use_default_handlers = false): PromiseInterface
     {
         $promise = $this->sendGetRequest('/status')->then(function(ResponseInterface $response): ResponseInterface
         {
@@ -74,7 +109,9 @@ trait ServerApiTrait
             }
             return $response;
         });
-        return $promise->then(fn(ResponseInterface $response) => self::parseResponse($response));
+        return $use_default_handlers
+            ? $this->civ13->then($promise, fn(ResponseInterface $response) => self::parseResponse($response), null, fn(\Throwable $e) => null) // Catch but ignore errors
+            : $promise->then(fn(ResponseInterface $response) => self::parseResponse($response));
     }
 
     /**
@@ -82,10 +119,13 @@ trait ServerApiTrait
      *
      * @return PromiseInterface<array> Resolves to an array of server information.
      */
-    public function getInfo(): PromiseInterface
+    public function getInfo(bool $use_default_handlers = false): PromiseInterface
     {
-        return $this->sendGetRequest('/info')
+        $promise = $this->sendGetRequest('/info')
             ->then(fn(ResponseInterface $response) => self::parseResponse($response));
+        return $use_default_handlers
+            ? $this->civ13->then($promise, null, fn(\Throwable $e) => null) // Catch but ignore errors
+            : $promise;
     }
 
     /**
@@ -93,10 +133,13 @@ trait ServerApiTrait
      *
      * @return PromiseInterface Resolves to a boolean indicating success.
      */
-    public function update(): PromiseInterface
+    public function update(bool $use_default_handlers = false): PromiseInterface
     {
-        return $this->sendPostRequest('/update')
+        $promise = $this->sendPostRequest('/update')
             ->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
+        return $use_default_handlers
+            ? $this->civ13->then($promise, null, fn(\Throwable $e) => null) // Catch but ignore errors
+            : $promise;
     }
 
     /**
@@ -104,10 +147,13 @@ trait ServerApiTrait
      *
      * @return PromiseInterface Resolves to a boolean indicating success.
      */
-    public function shutdown(): PromiseInterface
+    public function shutdown(bool $use_default_handlers = false): PromiseInterface
     {
-        return $this->sendPostRequest('/shutdown')
+        $promise = $this->sendPostRequest('/shutdown')
             ->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
+        return $use_default_handlers
+            ? $this->civ13->then($promise, null, fn(\Throwable $e) => null) // Catch but ignore errors
+            : $promise;
     }
 
     /**
@@ -137,7 +183,7 @@ trait ServerApiTrait
     {
         return ($this->isLocal() && $this->isPortFree())
             ? reject(new \RuntimeException('Port is not listening'))
-            : $this->getStatus();
+            : $this->getStatus(true);
     }
 
     /**
