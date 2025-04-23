@@ -14,22 +14,23 @@ use function React\Promise\reject;
 */
 trait ServerApiTrait
 {
+    // Server
     protected string      $protocol      = 'http';
-    public string         $ip            = '127.0.0.1';
-    public int            $port          = 1212;
+    public    string      $ip            = '127.0.0.1';
+    public    int         $port          = 1212;
     protected string|null $watchdogToken = null;
-
-    public array   $__status         = [];
-    public string  $name             = '[EN] Civilization 14';
-    public int     $playing          = 0;
-    public array   $tags             = [];
-    public string  $map              = 'Unknown';
-    public int     $round_id         = 0;
-    public int     $soft_max_players = 0;
-    public bool    $panic_bunker     = false;
-    public int     $run_level        = 0;
-    public ?string $preset           = null;
-    public ?string $round_start_time = null;
+    // Status endpoint response
+    public    array       $__status         = [];
+    public    string      $name             = '[EN] Civilization 14';
+    public    int         $playing          = 0;
+    public    array       $tags             = [];
+    public    string      $map              = 'Unknown';
+    public    int         $round_id         = 0;
+    public    int         $soft_max_players = 0;
+    public    bool        $panic_bunker     = false;
+    public    int         $run_level        = 0;
+    public    ?string     $preset           = null;
+    public    ?string     $round_start_time = null;
 
     /**
      * Sends a GET request to the specified URL with optional headers.
