@@ -4,11 +4,14 @@ namespace Civ14;
 
 use Civ13\Civ13;
 use Psr\Http\Message\ResponseInterface;
+use React\Http\Browser;
 use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
-
-/** @property Civ13 $civ13 Defined in GameServer.php*/
+/**
+ * @property Civ13 $civ13 Defined in GameServer.php
+ * @property Browser $browser Defined in GameServer.php
+*/
 trait ServerApiTrait
 {
     protected string      $protocol      = 'http';
