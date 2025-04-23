@@ -187,7 +187,7 @@ class GameServer
                 $this->playercountTimer(); // Update playercount channel every 10 minutes
                 $this->serverinfoTimer(); // Hard check playercount and ckeys to scrutinizeCkey() every 3 minutes
                 $this->relayTimer(); // File chat relay
-                $this->currentRoundEmbedTimer(); // The bot has to see a round id first
+                $this->currentRoundEmbedTimer(); // The bot has to set a round id first
             },
             $this->key
         );
@@ -455,10 +455,10 @@ class GameServer
         $fulfilledReject = fn(\Throwable $error): PromiseInterface => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
         
         if ($this->current_round_message_id) return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
-        if (! $this->current_round_message_id) // Attempt to load the current round message ID from the file cache
-            if ($serialized_array = $this->civ13->VarLoad("{$this->key}_current_round_message_id.json"))
-                if ($this->current_round_message_id = array_shift($serialized_array))
-                    return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
+        // Attempt to load the current round message ID from the file cache
+        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_current_round_message_id.json"))
+            if ($this->current_round_message_id = array_shift($serialized_array))
+                return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
         return $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
     }
     /**
@@ -474,10 +474,10 @@ class GameServer
             if (! file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) return null;
             $data = self::explodeServerdata($data);
             $embed = $this->civ13->createEmbed()
-                    ->setTitle($this->name)
-                    //->addFieldValues('Game ID', $game_id);
-                    ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
-                    ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
+                ->setTitle($this->name)
+                //->addFieldValues('Game ID', $game_id);
+                ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
+                ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
             if (isset($data[7]))  $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
             if (isset($data[8]))  $embed->addFieldValues('Map', $data[8], true);
             if (isset($data[9]))  $embed->addFieldValues('Epoch', $data[9], true);
@@ -530,7 +530,7 @@ class GameServer
     public function playercountTimer(): TimerInterface
     {
         // Update playercount channel every 10 minutes
-        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate(count($this->players)));
+        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
         return $this->timers['playercount_timer'];
     }
 
@@ -542,8 +542,9 @@ class GameServer
      * @param int $count The player count to update the channel with.
      * @return PromiseInterface<?Channel> A promise that resolves to the updated channel, or null if the channel didn't need to be updated.
      */
-    public function playercountChannelUpdate(int $count = 0): PromiseInterface
+    public function playercountChannelUpdate(): PromiseInterface
     {
+        $count = count($this->players);
         if (! $channel = $this->discord->getChannel($this->playercount)) {
             $this->logger->warning($err = "Channel {$this->playercount} doesn't exist!");
             return reject(new PartException($err));

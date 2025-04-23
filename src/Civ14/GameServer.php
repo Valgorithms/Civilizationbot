@@ -10,7 +10,9 @@ namespace Civ14;
 
 use Civ13\Civ13;
 use Civ13\Exceptions\PartException;
+use Discord\Builders\MessageBuilder;
 use Discord\Discord;
+use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\Loop;
@@ -38,10 +40,11 @@ class GameServer
     /** @var Civ13 $civ13 */
     protected $civ13;
 
-    public bool   $enabled;
-    public string $key;
-    public string $host;
-    public string $playercount; // Channel ID for player count
+    public bool    $enabled;
+    public string  $key;
+    public string  $host;
+    public string  $playercount; // Channel ID for player count
+    public ?string $round_message_id;
     
     public array  $players = []; // Cannot be retrieved via the hub or server API
     /** @var Timerinterface[] */
@@ -73,6 +76,7 @@ class GameServer
                 $this->civ13->then($this->getStatus(), null, fn($e) => null); // Ignore errors, just return offline status
                 $this->logger->info("Getting player count for SS14 GameServer {$this->name}");
                 $this->playercountTimer(); // Update playercount channel every 10 minutes
+                $this->currentRoundEmbedTimer(); // The bot has to set a round id first
             },
             $this->key
         );
@@ -87,13 +91,23 @@ class GameServer
 
     public function playercountTimer(): TimerInterface
     {
-        (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) && fclose($socket) && $this->getStatus())
+        (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) && fclose($socket) && await($this->getStatus()))
             ?: $this->playing = 0;
-        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate($this->playing));
-        return $this->timers['playercount_timer'];
+        return (isset($this->timers['playercount_timer]']))
+            ? $this->timers['playercount_timer']
+            : $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
     }
-    
-    public function playercountChannelUpdate(int $count = 0): PromiseInterface
+
+    public function currentRoundEmbedTimer(): TimerInterface
+    {
+        if (! isset($this->timers['current_round_embed'])) {
+            $this->updateCurrentRoundEmbedMessageBuilder();
+            $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, fn() => $this->updateCurrentRoundEmbedMessageBuilder());
+        }
+        return $this->timers['current_round_embed'];
+    }
+
+    public function playercountChannelUpdate(): PromiseInterface
     {
         if (! $channel = $this->discord->getChannel($this->playercount)) {
             $this->logger->debug($err = "Channel {$this->playercount} doesn't exist!");
@@ -104,11 +118,41 @@ class GameServer
             return reject(new PartException($err));
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
-        if ((int) $existingCount !== $count) {
-            $channel->name = "{$channelPrefix}-{$count}";
+        if ((int) $existingCount !== $this->playing) {
+            $channel->name = "{$channelPrefix}-{$this->playing}";
             return $channel->guild->channels->save($channel);
         }
         return resolve(null);
+    }
+
+    /**
+     * Updates the current round embed message builder.
+     *
+     * @param MessageBuilder|null $builder The message builder to used to perform the update the message. Defaults to null.
+     * @return PromiseInterface<Message> A promise that resolves when the update is complete.
+     */
+    public function updateCurrentRoundEmbedMessageBuilder(): PromiseInterface
+    {
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            $this->logger->error($err = "Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
+            return reject(new PartException($err));
+        }
+        if (! $channel = $guild->channels->get('id', $this->playercount)) {
+            $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
+            return reject(new PartException($err));
+        }
+        $builder = Civ13::createBuilder()->addEmbed($this->toEmbed());
+
+        $fulfilledEdit   = fn(?Message $message = null): ?PromiseInterface => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
+        $fulfilledSend   = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_round_message_id.json", [$this->round_message_id = $message->id]);
+        $fulfilledReject = fn(\Throwable $error): PromiseInterface         => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
+        
+        if (isset($this->round_message_id)) return $channel->messages->fetch($this->round_message_id)->then($fulfilledEdit, $fulfilledReject);
+        // Attempt to load the current round message ID from the file cache
+        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_round_message_id.json"))
+            if ($this->round_message_id = array_shift($serialized_array))
+                return $channel->messages->fetch($this->round_message_id)->then($fulfilledEdit, $fulfilledReject);
+        return $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
     }
 
     public function toEmbed(): Embed
