@@ -20,7 +20,7 @@ trait ServerApiTrait
     protected string|null $watchdogToken = null;
 
     public array   $__status         = [];
-    public string  $name             = 'Civilization 14';
+    public string  $name             = '[EN] Civilization 14';
     public int     $playing          = 0;
     public array   $tags             = [];
     public string  $map              = 'Unknown';
