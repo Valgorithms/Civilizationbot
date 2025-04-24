@@ -45,7 +45,7 @@ class GameServer
     public string  $host;
     public string  $playercount; // Channel ID for player count
     public string  $discussion; // Channel ID for discussions
-    public ?string $round_message_id;
+    public ?string $round_message_id; // Message ID for the round embed message
     
     public array  $players = []; // Cannot be retrieved via the hub or server API
     /** @var Timerinterface[] */
