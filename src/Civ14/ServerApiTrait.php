@@ -9,9 +9,14 @@ use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
 /**
- * @property Civ13 $civ13 Defined in GameServer.php
- * @property Browser $browser Defined in GameServer.php
-*/
+ * @see Civ14\GameServer
+ * @property Civ13 $civ13
+ * @property Browser $browser
+ * @property string $discussion
+ * 
+ * @see Civ14\GameServer::announceNewRound()
+ * @method PromiseInterface announceNewRound()
+ */
 trait ServerApiTrait
 {
     // Server
@@ -25,7 +30,7 @@ trait ServerApiTrait
     public    int         $playing          = 0;
     public    array       $tags             = [];
     public    string      $map              = 'Unknown';
-    public    int         $round_id         = 0;
+    public    int         $round_id         = -1;
     public    int         $soft_max_players = 0;
     public    bool        $panic_bunker     = false;
     public    int         $run_level        = 0;
@@ -88,6 +93,13 @@ trait ServerApiTrait
         $promise = $this->sendGetRequest('/status')->then(function(ResponseInterface $response): ResponseInterface
         {
             if ($json = json_decode($response->getBody()->getContents(), true)) {
+                if (
+                    isset($this->discussion) &&
+                    isset($json['round_id']) &&
+                    is_numeric($json['round_id']) &&
+                    $this->round_id !== -1 && // Only announce if we have a previous round_id
+                    $json['round_id'] != $this->round_id
+                ) $this->announceNewRound();
                 $this->__status = $json;
                 $this->name = $json['name'];
                 $this->playing = (int)$json['players'];
