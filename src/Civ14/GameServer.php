@@ -92,6 +92,24 @@ class GameServer
         $this->logger->info('Added ' . ($this->enabled ? 'enabled' : 'disabled') . " SS14 game server: {$this->name} ({$this->key})");
     }
 
+    public function announceNewRound(): PromiseInterface
+    {
+        if (! $this->enabled) return resolve(null);
+        if (! $channel = $this->discord->getChannel($this->discussion)) {
+            $this->logger->debug($err = "Channel {$this->discussion} doesn't exist!");
+            return reject(new PartException($err));
+        }
+        if (! $channel->created) {
+            $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
+            return reject(new PartException($err));
+        }
+        return $this->civ13->sendMessage(
+            $channel,
+            (isset($this->civ13->role_ids['round_start']) ? "<@&{$this->civ13->role_ids['round_start']}>, " : "")
+                . "New round `{$this->round_id}` has started!"
+        );
+    }
+
     public function playercountTimer(): TimerInterface
     {
         (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) && fclose($socket) && await($this->getStatus()))
