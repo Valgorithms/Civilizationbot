@@ -160,7 +160,7 @@ class GameServer
     {
         $embed = $this->civ13->createEmbed();
         try {
-            /** @var array $info */
+            /** @var array */
             await($this->civ13->then($this->getStatus()));
         } catch (\Throwable $e) { // Ignore errors, just return offline status
             return $embed->addFieldValues($this->name, 'Offline');

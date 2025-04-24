@@ -350,6 +350,8 @@ $civ14_server_settings = [
         //'moderate' => true,
         //'legacy_relay' => false,
         //'basedir' => '/home/civ13/civ14',
+        // Primary channels
+        'discussion' => '1364992147664932896',
         'playercount' => '1354164249487737013',
     ],
 ];
