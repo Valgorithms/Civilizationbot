@@ -36,6 +36,7 @@ trait ServerApiTrait
     public    int         $run_level        = 0;
     public    ?string     $preset           = null;
     public    ?string     $round_start_time = null;
+    public    array       $players          = [];
 
     /**
      * Sends a GET request to the specified URL with optional headers.
@@ -111,6 +112,7 @@ trait ServerApiTrait
                 $this->run_level = (int)$json['run_level'];
                 $this->preset = $json['preset'] ?? null;
                 $this->round_start_time = $json['round_start_time'] ?? null;
+                $this->players = $json['playerlist'] ?? [];
             } else {
                 $this->__status = [];
                 $this->playing = 0;
