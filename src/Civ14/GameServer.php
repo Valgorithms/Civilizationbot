@@ -78,7 +78,7 @@ class GameServer
                 $this->playercountTimer(); // Update playercount channel every 10 minutes
                 $this->currentRoundEmbedTimer(); // The bot has to set a round id first
             },
-            $this->key
+            __METHOD__ . " ({$this->key})"
         );
 
     }

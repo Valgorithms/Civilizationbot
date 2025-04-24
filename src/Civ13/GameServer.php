@@ -189,7 +189,7 @@ class GameServer
                 $this->relayTimer(); // File chat relay
                 $this->currentRoundEmbedTimer(); // The bot has to set a round id first
             },
-            $this->key
+            __METHOD__ . " ({$this->key})"
         );
 
     }
@@ -333,7 +333,10 @@ class GameServer
         }
         
         if (! $this->ready || ! $this->civ13->ready) {
-            $this->civ13->deferUntilReady(fn() => $this->gameChatWebhookRelay($message, $channel_id, $ckey, $ooc, $moderate), 'gameChatWebhookRelay');
+            $this->civ13->deferUntilReady(
+                fn() => $this->gameChatWebhookRelay($message, $channel_id, $ckey, $ooc, $moderate),
+                __METHOD__ . " ({$this->key})"
+            );
             return resolve(null);
         }
         
