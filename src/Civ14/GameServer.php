@@ -44,6 +44,7 @@ class GameServer
     public string  $key;
     public string  $host;
     public string  $playercount; // Channel ID for player count
+    public string  $discussion; // Channel ID for discussions
     public ?string $round_message_id;
     
     public array  $players = []; // Cannot be retrieved via the hub or server API
@@ -64,6 +65,7 @@ class GameServer
         $this->port          = (int) $options['port']     ?? 1212;
         $this->host          = $options['host']           ?? 'Taislin';
         $this->playercount   = $options['playercount']    ?? '';
+        $this->discussion    = $options['discussion']     ?? '';
         $this->watchdogToken = $options['watchdogToken']  ?? null;
         $this->afterConstruct();
     }
