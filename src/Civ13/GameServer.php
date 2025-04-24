@@ -165,10 +165,6 @@ class GameServer
                 $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
             } else $this->logger->warning("No current round found for {$this->key}.");
         }
-        $this->afterConstruct();
-    }
-    protected function afterConstruct(): void
-    {
         $this->serverdata = $this->basedir . Civ13::serverdata;
         $this->discord2unban = $this->basedir . Civ13::discord2unban;
         $this->discord2ban = $this->basedir . Civ13::discord2ban;
@@ -176,8 +172,11 @@ class GameServer
         $this->whitelist = $this->basedir . Civ13::whitelist;
         $this->factionlist = $this->basedir . Civ13::factionlist;
         $this->ranking_path = $this->basedir . Civ13::ranking_path;
+        $this->afterConstruct();
+    }
+    protected function afterConstruct(): void
+    {
         $this->setup();
-
         if (! $this->enabled) return; // Don't start timers for disabled servers
         $this->civ13->deferUntilReady(
             function () {

@@ -70,6 +70,7 @@ class GameServer
     protected function afterConstruct(): void
     {
         $this->setup();
+        if (! $this->enabled) return; // Don't start timers for disabled servers
         $this->civ13->deferUntilReady(
             function (): void
             {
