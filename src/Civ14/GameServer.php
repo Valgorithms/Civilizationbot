@@ -186,7 +186,8 @@ class GameServer
             return $embed->addFieldValues($this->name, 'Offline');
         }
         if (empty($this->__status)) return $embed->addFieldValues($this->name, 'Offline');
-
+        
+        if (! empty($this->players)) $embed->addFieldValues('Playing', implode(', ', $this->players));
         return $embed
             ->setTitle($this->name)
             ->addFieldValues('Server URL', "ss14://{$this->ip}:{$this->port}", false)
