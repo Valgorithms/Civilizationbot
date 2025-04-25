@@ -1007,9 +1007,7 @@ class Civ13
                 $this->civ14_enabled_gameservers
             )
         );
-        $builder->setContent($server_list);
-
-        return $builder;
+        return $builder->setContent($server_list);
     }
     /**
      * Sends an out-of-character (OOC) message.
