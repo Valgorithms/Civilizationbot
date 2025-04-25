@@ -209,8 +209,7 @@ class GameServer
     {
         if (isset($this->round_message_id)) return $this->round_message_id;
         if ($serialized_array = $this->civ13->VarLoad("{$this->key}_round_message_id.json"))
-            if ($this->round_message_id = array_shift($serialized_array))
-                return $this->round_message_id;
+            return $this->round_message_id = array_shift($serialized_array);
         return null;
     }
     
