@@ -31,6 +31,7 @@ use function React\Async\await;
   * @property-read  Browser          $browser
   * @property-read  Discord          $discord
   * @property-read  LoggerInterface  $logger
+  * @property-read  LoopInterface    $loop
   */
 class GameServer
 {
@@ -46,10 +47,9 @@ class GameServer
     public string  $playercount; // Channel ID for player count
     public string  $discussion; // Channel ID for discussions
     public ?string $round_message_id; // Message ID for the round embed message
-    
-    public array  $players = []; // Cannot be retrieved via the hub or server API
-    /** @var Timerinterface[] */
-    public array  $timers  = [];
+
+    protected TimerInterface $playercount_timer;
+    protected TimerInterface $current_round_embed_timer;
 
     // Normally would just promote the property, but currently causes an issue in PHPUnit tests
     public function __construct(
@@ -114,18 +114,18 @@ class GameServer
     {
         (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) && fclose($socket) && await($this->getStatus()))
             ?: $this->playing = 0;
-        return (isset($this->timers['playercount_timer]']))
-            ? $this->timers['playercount_timer']
-            : $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
+        return (isset($this->playercount_timer))
+            ? $this->playercount_timer
+            : $this->playercount_timer = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
     }
 
     public function currentRoundEmbedTimer(): TimerInterface
     {
-        if (! isset($this->timers['current_round_embed'])) {
+        if (! isset($this->current_round_embed_timer)) {
             $this->updateCurrentRoundEmbedMessageBuilder();
-            $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, fn() => $this->updateCurrentRoundEmbedMessageBuilder());
+            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, fn() => $this->updateCurrentRoundEmbedMessageBuilder());
         }
-        return $this->timers['current_round_embed'];
+        return $this->current_round_embed_timer;
     }
 
     public function playercountChannelUpdate(): PromiseInterface
