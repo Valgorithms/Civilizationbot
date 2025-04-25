@@ -46,8 +46,8 @@ class GameServer
     public string  $host;
     public string  $playercount; // Channel ID for player count
     public string  $discussion; // Channel ID for discussions
-    public ?string $round_message_id; // Message ID for the round embed message
 
+    protected ?string $round_message_id; // Message ID for the round embed message
     protected TimerInterface $playercount_timer;
     protected TimerInterface $current_round_embed_timer;
 
@@ -164,16 +164,13 @@ class GameServer
         }
         $builder = Civ13::createBuilder()->addEmbed($this->toEmbed(true));
 
-        $fulfilledEdit   = fn(?Message $message = null): ?PromiseInterface => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
-        $fulfilledSend   = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_round_message_id.json", [$this->round_message_id = $message->id]);
-        $fulfilledReject = fn(\Throwable $error): PromiseInterface         => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
+        $send_onFulfilled   = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_round_message_id.json", [$this->round_message_id = $message->id]);
+        $edit_onFulfilled   = fn(?Message $message = null): ?PromiseInterface  => $message ? $this->civ13->then($message->edit($builder), $this->civ13->onFulfilledDefault) : null;
+        $edit_onRejected    = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send_onFulfilled);
         
-        if (isset($this->round_message_id)) return $channel->messages->fetch($this->round_message_id)->then($fulfilledEdit, $fulfilledReject);
-        // Attempt to load the current round message ID from the file cache
-        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_round_message_id.json"))
-            if ($this->round_message_id = array_shift($serialized_array))
-                return $channel->messages->fetch($this->round_message_id)->then($fulfilledEdit, $fulfilledReject);
-        return $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
+        return ($round_message_id = $this->getRoundMessageIdProperty())
+            ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit_onFulfilled, $edit_onRejected)
+            : $this->civ13->then($channel->sendMessage($builder), $send_onFulfilled, null);
     }
 
     public function toEmbed(bool $fetch = false): Embed
@@ -206,6 +203,15 @@ class GameServer
             $interval->i > 0 ? $interval->i . ' minutes' : null,
             $interval->s > 0 ? $interval->s . ' seconds' : null,
         ]));
+    }
+
+    public function getRoundMessageIdProperty(): ?string
+    {
+        if (isset($this->round_message_id)) return $this->round_message_id;
+        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_round_message_id.json"))
+            if ($this->round_message_id = array_shift($serialized_array))
+                return $this->round_message_id;
+        return null;
     }
     
     /**
