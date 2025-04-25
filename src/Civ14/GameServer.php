@@ -76,7 +76,7 @@ class GameServer
         $this->civ13->deferUntilReady(
             function (): void
             {
-                $this->civ13->then($this->getStatus(), null, fn($e) => null); // Ignore errors, just return offline status
+                $this->getStatus(true); // Ignore errors, just return offline status
                 $this->logger->info("Getting player count for SS14 GameServer {$this->name}");
                 $this->playercountTimer(); // Update playercount channel every 10 minutes
                 $this->currentRoundEmbedTimer(); // The bot has to set a round id first
@@ -112,7 +112,7 @@ class GameServer
 
     public function playercountTimer(): TimerInterface
     {
-        (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) && fclose($socket) && await($this->getStatus()))
+        (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) && fclose($socket) && await($this->getStatus(true)))
             ?: $this->playing = 0;
         return (isset($this->playercount_timer))
             ? $this->playercount_timer
@@ -162,7 +162,7 @@ class GameServer
             $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
             return reject(new PartException($err));
         }
-        $builder = Civ13::createBuilder()->addEmbed($this->toEmbed());
+        $builder = Civ13::createBuilder()->addEmbed($this->toEmbed(true));
 
         $fulfilledEdit   = fn(?Message $message = null): ?PromiseInterface => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
         $fulfilledSend   = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_round_message_id.json", [$this->round_message_id = $message->id]);
@@ -176,17 +176,16 @@ class GameServer
         return $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
     }
 
-    public function toEmbed(): Embed
+    public function toEmbed(bool $fetch = false): Embed
     {
         $embed = $this->civ13->createEmbed();
-        try {
+        if ($fetch) try {
             /** @var array */
-            await($this->civ13->then($this->getStatus()));
+            await($this->civ13->then($this->getStatus(true)));
         } catch (\Throwable $e) { // Ignore errors, just return offline status
             return $embed->addFieldValues($this->name, 'Offline');
         }
         if (empty($this->__status)) return $embed->addFieldValues($this->name, 'Offline');
-        
         if (! empty($this->players)) $embed->addFieldValues('Playing', implode(', ', $this->players));
         return $embed
             ->setTitle($this->name)
