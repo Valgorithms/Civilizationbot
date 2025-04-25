@@ -111,8 +111,8 @@ trait ServerApiTrait
             return $response;
         });
         return $use_default_handlers
-            ? $this->civ13->then($promise, fn(ResponseInterface $response) => self::parseResponse($response), fn(\Throwable $e) => null) // Catch but ignore errors
-            : $promise->then(fn(ResponseInterface $response) => self::parseResponse($response));
+            ? $this->civ13->then($promise, fn(ResponseInterface $response) => self::parseResponse($response))
+            : $promise->then(fn(ResponseInterface $response) => self::parseResponse($response), fn(\Throwable $e) => null); // Catch but ignore errors
     }
 
     protected function updateServerPropertiesFromStatusArray(array $status): void
