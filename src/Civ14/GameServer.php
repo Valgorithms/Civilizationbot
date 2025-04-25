@@ -92,6 +92,15 @@ class GameServer
         $this->logger->info('Added ' . ($this->enabled ? 'enabled' : 'disabled') . " SS14 game server: {$this->name} ({$this->key})");
     }
 
+    /**
+     * Announces the start of a new round in the Discord discussion channel.
+     *
+     * This method checks if the game server is enabled and if the discussion channel exists and has been created.
+     * If all checks pass, it sends a message to the channel announcing the new round, optionally mentioning a specific role.
+     * If any check fails, it logs the error and returns a rejected promise.
+     *
+     * @return PromiseInterface Resolves when the announcement message is sent, or rejects with a PartException on failure.
+     */
     public function announceNewRound(): PromiseInterface
     {
         if (! $this->enabled) return resolve(null);
@@ -110,6 +119,17 @@ class GameServer
         );
     }
 
+    /**
+     * Starts or retrieves a periodic timer that updates the player count channel.
+     *
+     * This method attempts to open a socket connection to the game server on the specified port.
+     * If the connection is successful, it asynchronously retrieves the server status.
+     * If the connection fails, it sets the playing status to 0.
+     * The method then returns an existing periodic timer for updating the player count channel,
+     * or creates a new one if it does not exist. The timer triggers every 600 seconds.
+     *
+     * @return TimerInterface The periodic timer responsible for updating the player count channel.
+     */
     public function playercountTimer(): TimerInterface
     {
         (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) && fclose($socket) && await($this->getStatus(true)))
@@ -119,6 +139,15 @@ class GameServer
             : $this->playercount_timer = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
     }
 
+    /**
+     * Returns the timer responsible for periodically updating the current round embed message.
+     *
+     * If the timer does not already exist, it initializes the timer to call
+     * updateCurrentRoundEmbedMessageBuilder() every 60 seconds. The timer is stored
+     * in $this->current_round_embed_timer to ensure only one instance is active.
+     *
+     * @return TimerInterface The periodic timer for updating the current round embed message.
+     */
     public function currentRoundEmbedTimer(): TimerInterface
     {
         if (! isset($this->current_round_embed_timer)) {
@@ -128,6 +157,17 @@ class GameServer
         return $this->current_round_embed_timer;
     }
 
+    /**
+     * Updates the name of the player count channel to reflect the current number of players.
+     *
+     * This method checks if the specified player count channel exists and has been created.
+     * If the channel exists and its name does not match the current player count, it updates
+     * the channel's name accordingly. Returns a resolved promise if no update is needed,
+     * or a rejected promise if the channel does not exist or has not been created.
+     *
+     * @return PromiseInterface Resolves when the channel name is updated or no update is needed,
+     *                          rejects if the channel does not exist or is not created.
+     */
     public function playercountChannelUpdate(): PromiseInterface
     {
         if (! $channel = $this->discord->getChannel($this->playercount)) {
@@ -173,6 +213,16 @@ class GameServer
             : $this->civ13->then($channel->sendMessage($builder), $send_onFulfilled, null);
     }
 
+    /**
+     * Generates a Discord embed representing the current state of the game server.
+     *
+     * If $fetch is true, attempts to update the server status before generating the embed.
+     * If the server is offline or an error occurs during status fetch, the embed will indicate the server is offline.
+     * Otherwise, the embed will include details such as server URL, host, player count, map, round ID, and elapsed time.
+     *
+     * @param bool $fetch Whether to fetch the latest server status before generating the embed.
+     * @return Embed The generated embed containing server information.
+     */
     public function toEmbed(bool $fetch = false): Embed
     {
         $embed = $this->civ13->createEmbed();
@@ -194,6 +244,14 @@ class GameServer
             ->addFieldValues('Elapsed Time', ($this->round_start_time && $elapsed = $this->parseElapsedTime()) ? $elapsed : 'N/A', true);
     }
 
+    /**
+     * Calculates and returns the elapsed time since the round started as a human-readable string.
+     *
+     * The elapsed time is computed as the difference between the current UTC time and the round start time.
+     * The result is formatted to include days, hours, minutes, and seconds, omitting any zero-value units.
+     *
+     * @return string Human-readable elapsed time (e.g., "1 days, 2 hours, 3 minutes, 4 seconds").
+     */
     protected function parseElapsedTime(): string
     {
         $interval = (new \DateTime($this->round_start_time))->diff(new \DateTime("now", new \DateTimeZone("UTC")));
@@ -205,6 +263,18 @@ class GameServer
         ]));
     }
 
+    /**
+     * Retrieves the round message ID.
+     *
+     * This method attempts to return the round message ID for the current instance.
+     * - If the property `$round_message_id` is already set, it returns its value.
+     * - Otherwise, it tries to load the value from a serialized array stored in a JSON file
+     *   using the `VarLoad` method of the `$civ13` object, with a filename based on the instance's key.
+     *   If successful, it sets and returns the first element of the loaded array as `$round_message_id`.
+     * - If neither is available, it returns null.
+     *
+     * @return string|null The round message ID if available, or null if not set or not found.
+     */
     public function getRoundMessageId(): ?string
     {
         if (isset($this->round_message_id)) return $this->round_message_id;
