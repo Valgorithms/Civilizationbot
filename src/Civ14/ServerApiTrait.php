@@ -9,14 +9,16 @@ use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
 /**
- * @see Civ14\GameServer
- * @property Civ13 $civ13
- * @property Browser $browser
- * @property string $discussion
- * 
- * @see Civ14\GameServer::announceNewRound()
- * @method PromiseInterface announceNewRound()
- */
+  * @see Civ14\GameServer
+  * @property Civ13 $civ13
+  * @property Browser $browser
+  * @property string $discussion
+  * 
+  * @see Civ14\GameServer::announceNewRound()
+  * @method PromiseInterface announceNewRound()
+  * @see Civ14\GameServer::announceOnline()
+  * @method PromiseInterface announceOnline(bool $status)
+  */
 trait ServerApiTrait
 {
     // Server
@@ -93,43 +95,40 @@ trait ServerApiTrait
     {
         $promise = $this->sendGetRequest('/status')->then(function(ResponseInterface $response): ResponseInterface
         {
-            if ($json = json_decode($response->getBody()->getContents(), true)) {
+            if ($status = json_decode($response->getBody()->getContents(), true) ?: []) {
+                if (empty($this->__status) && !empty($status)) $this->announceOnline(true);
+                if (!empty($this->__status) && empty($status)) $this->announceOnline(false);
+                $previous_round_id = $this->round_id;
+                $this->updateServerPropertiesFromStatusArray($status);
                 if (
                     isset($this->discussion) &&
-                    isset($json['round_id']) &&
-                    is_numeric($json['round_id']) &&
+                    isset($this->__status['round_id']) &&
+                    is_numeric($this->__status['round_id']) &&
                     $this->round_id !== -1 && // Only announce if we have a previous round_id
-                    $json['round_id'] != $this->round_id
+                    $this->__status['round_id'] != $previous_round_id
                 ) $this->announceNewRound();
-                $this->__status = $json;
-                $this->name = $json['name'];
-                $this->playing = (int)$json['players'];
-                $this->tags = $json['tags'] ?? [];
-                $this->map = $json['map'] ?? 'Unknown';
-                $this->round_id = $json['round_id'];
-                $this->soft_max_players = $json['soft_max_players'];
-                $this->panic_bunker = $json['panic_bunker'];
-                $this->run_level = (int)$json['run_level'];
-                $this->preset = $json['preset'] ?? null;
-                $this->round_start_time = $json['round_start_time'] ?? null;
-                $this->players = $json['playerlist'] ?? [];
-            } else {
-                $this->__status = [];
-                $this->playing = 0;
-                $this->tags = [];
-                $this->map = 'Unknown';
-                $this->round_id = 0;
-                $this->soft_max_players = 0;
-                $this->panic_bunker = false;
-                $this->run_level = 0;
-                $this->preset = null;
-                $this->round_start_time = null;
             }
             return $response;
         });
         return $use_default_handlers
-            ? $this->civ13->then($promise, fn(ResponseInterface $response) => self::parseResponse($response), null, fn(\Throwable $e) => null) // Catch but ignore errors
+            ? $this->civ13->then($promise, fn(ResponseInterface $response) => self::parseResponse($response), fn(\Throwable $e) => null) // Catch but ignore errors
             : $promise->then(fn(ResponseInterface $response) => self::parseResponse($response));
+    }
+
+    protected function updateServerPropertiesFromStatusArray(array $status): void
+    {
+        $this->__status         = $status;
+        $this->name             = $this->__status['name']             ?? $this->name;
+        $this->playing          = (int)$this->__status['players']     ?? $this->playing;
+        $this->tags             = $this->__status['tags']             ?? $this->tags;
+        $this->map              = $this->__status['map']              ?? $this->map;
+        $this->round_id         = $this->__status['round_id']         ?? $this->round_id;
+        $this->soft_max_players = $this->__status['soft_max_players'] ?? $this->soft_max_players;
+        $this->panic_bunker     = $this->__status['panic_bunker']     ?? $this->panic_bunker;
+        $this->run_level        = (int)$this->__status['run_level']   ?? $this->run_level;
+        $this->preset           = $this->__status['preset']           ?? $this->preset;
+        $this->round_start_time = $this->__status['round_start_time'] ?? $this->round_start_time;
+        $this->players          = $this->__status['playerlist']       ?? $this->players;
     }
 
     /**

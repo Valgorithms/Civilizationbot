@@ -120,6 +120,32 @@ class GameServer
     }
 
     /**
+     * Announces the online or offline status of the server in the designated Discord channel.
+     *
+     * This method checks if the announcement feature is enabled and if the specified discussion channel exists and is created.
+     * If all checks pass, it sends an online or offline message to the channel.
+     *
+     * @param bool $status Indicates whether to announce as online (true) or offline (false). Defaults to true (online).
+     * @return PromiseInterface Resolves when the message is sent, or rejects with a PartException if the channel is invalid.
+     */
+    public function announceOnline(bool $status = true)
+    {
+        if (! $this->enabled) return resolve(null);
+        if (! $channel = $this->discord->getChannel($this->discussion)) {
+            $this->logger->debug($err = "Channel {$this->discussion} doesn't exist!");
+            return reject(new PartException($err));
+        }
+        if (! $channel->created) {
+            $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
+            return reject(new PartException($err));
+        }
+        return $this->civ13->sendMessage(
+            $channel,
+            ($status ? '**Online**' : '**Offline**')
+        );
+    }
+
+    /**
      * Starts or retrieves a periodic timer that updates the player count channel.
      *
      * This method attempts to open a socket connection to the game server on the specified port.
@@ -132,8 +158,7 @@ class GameServer
      */
     public function playercountTimer(): TimerInterface
     {
-        (is_resource($socket = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) && fclose($socket) && await($this->getStatus(true)))
-            ?: $this->playing = 0;
+        await($this->getStatus(true));
         return (isset($this->playercount_timer))
             ? $this->playercount_timer
             : $this->playercount_timer = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
@@ -151,7 +176,7 @@ class GameServer
     public function currentRoundEmbedTimer(): TimerInterface
     {
         if (! isset($this->current_round_embed_timer)) {
-            $this->updateCurrentRoundEmbedMessageBuilder();
+            $this->updateCurrentRoundEmbedMessageBuilder(); // Call the function on the first access attempt
             $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, fn() => $this->updateCurrentRoundEmbedMessageBuilder());
         }
         return $this->current_round_embed_timer;
@@ -178,9 +203,12 @@ class GameServer
             $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
             return reject(new PartException($err));
         }
-        [$channelPrefix, $existingCount] = explode('-', $channel->name);
-        if ((int) $existingCount !== $this->playing) {
-            $channel->name = "{$channelPrefix}-{$this->playing}";
+        [$channel_prefix, $existing_count] = explode('-', $channel->name);
+        $playing_count = empty($this->__status)
+            ? 0
+            : $this->playing;
+        if ((int) $existing_count !== $playing_count) {
+            $channel->name = "{$channel_prefix}-{$playing_count}";
             return $channel->guild->channels->save($channel);
         }
         return resolve(null);
