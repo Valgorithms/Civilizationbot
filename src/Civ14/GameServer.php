@@ -168,7 +168,7 @@ class GameServer
         $edit_onFulfilled   = fn(?Message $message = null): ?PromiseInterface  => $message ? $this->civ13->then($message->edit($builder), $this->civ13->onFulfilledDefault) : null;
         $edit_onRejected    = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send_onFulfilled);
         
-        return ($round_message_id = $this->getRoundMessageIdProperty())
+        return ($round_message_id = $this->getRoundMessageId())
             ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit_onFulfilled, $edit_onRejected)
             : $this->civ13->then($channel->sendMessage($builder), $send_onFulfilled, null);
     }
@@ -205,7 +205,7 @@ class GameServer
         ]));
     }
 
-    public function getRoundMessageIdProperty(): ?string
+    public function getRoundMessageId(): ?string
     {
         if (isset($this->round_message_id)) return $this->round_message_id;
         if ($serialized_array = $this->civ13->VarLoad("{$this->key}_round_message_id.json"))
