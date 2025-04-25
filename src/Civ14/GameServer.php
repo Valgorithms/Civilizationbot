@@ -208,8 +208,7 @@ class GameServer
     public function getRoundMessageId(): ?string
     {
         if (isset($this->round_message_id)) return $this->round_message_id;
-        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_round_message_id.json"))
-            return $this->round_message_id = array_shift($serialized_array);
+        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_round_message_id.json")) return $this->round_message_id = array_shift($serialized_array);
         return null;
     }
     
