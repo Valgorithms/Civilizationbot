@@ -25,6 +25,7 @@ use React\Filesystem\Factory as FilesystemFactory;
 use React\Http\Browser;
 use WyriHaximus\React\Cache\Redis as RedisCache;
 
+use function React\Async\async;
 use function React\Promise\set_rejection_handler;
 
 define('CIVILIZATIONBOT_START', microtime(true));
@@ -67,12 +68,12 @@ set_rejection_handler(function(\Throwable $e) use ($logger) {
 });
 
 $discord = new Discord([
-    'loop' => $loop = Loop::get(),
+    'loop' => Loop::get(),
     'logger' => $logger,
     /*
     'cache' => new CacheConfig(
         $interface = new RedisCache(
-            (new Redis($loop))->createLazyClient('127.0.0.1:6379'),
+            (new Redis(Loop::get()))->createLazyClient('127.0.0.1:6379'),
             'dphp:cache:
         '),
         $compress = true, // Enable compression if desired
@@ -89,8 +90,8 @@ $discord = new Discord([
 ]);
 
 $stats = Stats::new($discord);
-$browser = new Browser($loop);
-$filesystem = FilesystemFactory::create($loop);
+$browser = new Browser(Loop::get());
+$filesystem = FilesystemFactory::create(Loop::get());
 include 'variable_functions.php';
 
 $http_whitelist = [
@@ -360,7 +361,7 @@ $civ14_server_settings = [
 foreach ($civ14_server_settings as $key => $value) $civ14_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
 $hidden_options = [
-    'loop' => $loop,
+    'loop' => Loop::get(),
     'discord' => $discord,
     'browser' => $browser,
     'filesystem' => $filesystem,
@@ -389,7 +390,7 @@ $hidden_options = [
 $options = array_merge($options, $hidden_options);
 
 $civ13 = null;
-$global_error_handler = function (int $errno, string $errstr, ?string $errfile, ?int $errline) use (&$civ13, &$logger, &$testing) {
+$global_error_handler = async(function (int $errno, string $errstr, ?string $errfile, ?int $errline) use (&$civ13, &$logger, &$testing) {
     /** @var ?Civ13 $civ13 */
     if (
         $civ13 && // If the bot is running
@@ -418,27 +419,27 @@ $global_error_handler = function (int $errno, string $errstr, ?string $errfile, 
         if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
         if (! $testing) $civ13->sendMessage($channel, $msg);
     }
-};
+});
 set_error_handler($global_error_handler);
 
 use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use Psr\Http\Message\ServerRequestInterface;
-$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55555), [], $loop);
+$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55555), [], Loop::get());
 /**
  * Handles the HTTP request using the HttpServiceManager.
  *
  * @param ServerRequestInterface $request The HTTP request object.
  * @return Response The HTTP response object.
  */
-$webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (&$civ13): Response
+$webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $request) use (&$civ13): Response
 {
     /** @var ?Civ13 $civ13 */
     if (! $civ13 || ! $civ13 instanceof Civ13 || ! $civ13->httpServiceManager instanceof HttpServiceManager) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     if (! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Not Yet Ready');
     return $civ13->httpServiceManager->handle($request);
-});
+}));
 /**
  * This code snippet handles the error event of the web API.
  * It logs the error message, file, line, and trace, and handles specific error cases.
@@ -454,7 +455,7 @@ $webapi = new HttpServer($loop, function (ServerRequestInterface $request) use (
  * @param bool $testing Flag indicating if the script is running in testing mode.
  * @return void
  */
-$webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use (&$civ13, &$logger, &$socket) {
+$webapi->on('error', async(function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use (&$civ13, &$logger, &$socket) {
     if (
         str_starts_with($e->getMessage(), 'Received request with invalid protocol version')
     ) return; // Ignore this error, it's not important
@@ -472,45 +473,46 @@ $webapi->on('error', function (Exception $e, ?\Psr\Http\Message\RequestInterface
             $channel->sendMessage($builder);
         }
         $socket->close();
-        if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = $civ13->discord->getLoop()->addTimer(5, fn() => $civ13->restart());
+        if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = Loop::addTimer(5, fn() => $civ13->restart());
     }
-});
+}));
 
 //$events = ['MESSAGE_UPDATE'];
 //$eventLogger = new \EventLogger\EventLogger($discord, $events);
 
 use VerifierServer\Server as VerifierServer;
 
-$verifier_server = new VerifierServer(
-    getenv('VERIFIER_HOST_ADDR'),
-    getenv('VERIFIER_HOST_PORT')
-);
-$verifier_server->init($loop);
-$verifier_server->setLogger($logger);
-$verifier_server->setState([
-    getenv('CIV_TOKEN'),
-    getenv('VERIFIER_STORAGE_TYPE') ?: 'filesystem',
-    getenv('VERIFIER_JSON_PATH') ?: 'json/verified.json',
-]);
-$verifier_server->setSS14State([
-    getenv('CIV_TOKEN'),
-    getenv('SS14_VERIFIER_STORAGE_TYPE') ?: 'filesystem',
-    getenv('SS14_VERIFIER_JSON_PATH') ?: 'json/ss14verified.json',
-]);
-$verifier_server->setSS14OAuth2Endpoint(
-    getenv('SS14_OAUTH2_CLIENT_ID'),
-    getenv('SS14_OAUTH2_CLIENT_SECRET')
-);
-$verifier_server->setDiscordOAuth2Endpoint(
-    getenv('dwa_client_id'),
-    getenv('dwa_client_secret')
-);
-
-
-$civ13 = new Civ13(
-    $options,
-    $civ13_server_settings,
-    $civ14_server_settings,
-    $verifier_server
-);
-$civ13->run();
+Loop::futureTick(async(static function () use ($logger, $options, $civ13_server_settings, $civ14_server_settings) {
+    $verifier_server = new VerifierServer(
+        getenv('VERIFIER_HOST_ADDR'),
+        getenv('VERIFIER_HOST_PORT')
+    );
+    $verifier_server->init(Loop::get());
+    $verifier_server->setLogger($logger);
+    $verifier_server->setState([
+        getenv('CIV_TOKEN'),
+        getenv('VERIFIER_STORAGE_TYPE') ?: 'filesystem',
+        getenv('VERIFIER_JSON_PATH') ?: 'json/verified.json',
+    ]);
+    $verifier_server->setSS14State([
+        getenv('CIV_TOKEN'),
+        getenv('SS14_VERIFIER_STORAGE_TYPE') ?: 'filesystem',
+        getenv('SS14_VERIFIER_JSON_PATH') ?: 'json/ss14verified.json',
+    ]);
+    $verifier_server->setSS14OAuth2Endpoint(
+        getenv('SS14_OAUTH2_CLIENT_ID'),
+        getenv('SS14_OAUTH2_CLIENT_SECRET')
+    );
+    $verifier_server->setDiscordOAuth2Endpoint(
+        getenv('dwa_client_id'),
+        getenv('dwa_client_secret')
+    );
+    
+    $civ13 = new Civ13(
+        $options,
+        $civ13_server_settings,
+        $civ14_server_settings,
+        $verifier_server
+    );
+    $civ13->run();
+}));
