@@ -76,7 +76,7 @@ class GameServer
         $this->civ13->deferUntilReady(
             function (): void
             {
-                $this->getStatus(true); // Ignore errors, just return offline status
+                $this->getStatus(); // Ignore errors, just return offline status
                 $this->logger->info("Getting player count for SS14 GameServer {$this->name}");
                 $this->playercountTimer(); // Update playercount channel every 10 minutes
                 $this->currentRoundEmbedTimer(); // The bot has to set a round id first
@@ -158,7 +158,7 @@ class GameServer
      */
     public function playercountTimer(): TimerInterface
     {
-        await($this->getStatus(true));
+        await($this->civ13->then($this->getStatus(), null, fn(\Throwable $e) => null));
         return (isset($this->playercount_timer))
             ? $this->playercount_timer
             : $this->playercount_timer = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
@@ -256,7 +256,7 @@ class GameServer
         $embed = $this->civ13->createEmbed();
         if ($fetch) try {
             /** @var array */
-            await($this->civ13->then($this->getStatus(true)));
+            await($this->civ13->then($this->getStatus(), null, fn(\Throwable $e) => null));
         } catch (\Throwable $e) { // Ignore errors, just return offline status
             return $embed->addFieldValues($this->name, 'Offline');
         }

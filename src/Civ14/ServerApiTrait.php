@@ -91,7 +91,7 @@ trait ServerApiTrait
      *
      * @return PromiseInterface<array> Resolves to an array of server status.
      */
-    public function getStatus(bool $use_default_handlers = false): PromiseInterface
+    public function getStatus(): PromiseInterface
     {
         $promise = $this->sendGetRequest('/status')->then(function(ResponseInterface $response): ResponseInterface
         {
@@ -109,10 +109,12 @@ trait ServerApiTrait
                 ) $this->announceNewRound();
             }
             return $response;
-        });
-        return $use_default_handlers
-            ? $this->civ13->then($promise, fn(ResponseInterface $response) => self::parseResponse($response))
-            : $promise->then(fn(ResponseInterface $response) => self::parseResponse($response), fn(\Throwable $e) => null); // Catch but ignore errors
+        }, fn(\Throwable $e) => null);
+        return $promise->then(fn(?ResponseInterface $response) =>
+            ($response instanceof ResponseInterface)
+                ? self::parseResponse($response)
+                : [],
+        fn(\Throwable $e) => null);
     }
 
     protected function updateServerPropertiesFromStatusArray(array $status): void
@@ -200,7 +202,7 @@ trait ServerApiTrait
     {
         return ($this->isLocal() && $this->isPortFree())
             ? reject(new \RuntimeException('Port is not listening'))
-            : $this->getStatus(true);
+            : $this->getStatus();
     }
 
     /**
