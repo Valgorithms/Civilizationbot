@@ -109,7 +109,13 @@ trait ServerApiTrait
                 ) $this->announceNewRound();
             }
             return $response;
-        }, fn(\Throwable $e) => null);
+        }, function(\Throwable $e) {
+            if (!empty($this->__status)) {
+                $this->__status = [];
+                $this->announceOnline(false);
+            }
+            return null;
+        });
         return $promise->then(fn(?ResponseInterface $response) =>
             ($response instanceof ResponseInterface)
                 ? self::parseResponse($response)
