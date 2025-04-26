@@ -748,7 +748,7 @@ class Civ13
         }
         $this->logger->info('Starting Discord loop');
         if (!(isset($this->discord))) $this->logger->warning('Discord not set!');
-        else $this->discord->run();
+//        else $this->discord->run();
     }
     /**
      * Stops the bot and logs the shutdown message.
