@@ -433,10 +433,17 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55
  * @param ServerRequestInterface $request The HTTP request object.
  * @return Response The HTTP response object.
  */
-$webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $request) use (&$civ13): Response
+$webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $request) use (&$civ13, &$logger): Response
 {
     /** @var ?Civ13 $civ13 */
-    if (! $civ13 || ! $civ13 instanceof Civ13 || ! isset($civ13->httpServiceManager)) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
+    if (! $civ13 || ! $civ13 instanceof Civ13) {
+        $this->logger->warning('Civ13 instance not found. Please check the server settings.');
+        return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
+    }
+    if (! isset($civ13->httpServiceManager)) {
+        $this->logger->warning('HttpServiceManager not found. Please check the server settings.');
+        return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
+    }
     if (! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Not Yet Ready');
     return $civ13->httpServiceManager->handle($request);
 }));

@@ -98,6 +98,7 @@ class HttpServiceManager
             if ($response->getStatusCode() === HttpResponse::STATUS_INTERNAL_SERVER_ERROR) $this->logger->warning('Internal Server Error on ' .  $request->getUri()->getPath());
             return $response;
         }
+        $this->logger->warning('Civ13 service is not ready.');
         return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     }
 
