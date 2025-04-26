@@ -13,6 +13,7 @@ use function React\Promise\reject;
   * @property Civ13 $civ13
   * @property Browser $browser
   * @property string $discussion
+  * @property string $key
   * 
   * @see Civ14\GameServer::announceNewRound()
   * @method PromiseInterface announceNewRound()
@@ -125,6 +126,7 @@ trait ServerApiTrait
 
     protected function updateServerPropertiesFromStatusArray(array $status): void
     {
+        $this->civ13->VarSave("{$this->key}_status.json", $status);
         $this->__status         = $status;
         $this->name             = $this->__status['name']             ?? $this->name;
         $this->playing          = (int)$this->__status['players']     ?? $this->playing;
