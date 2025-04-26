@@ -57,11 +57,11 @@ function loadEnv(string $filePath = __DIR__ . '/.env'): void
 }
 loadEnv(getcwd() . '/.env');
 
-$streamHandler = new StreamHandler('php://stdout', Level::Info);
+$streamHandler = new StreamHandler('php://stdout', Level::Debug);
 $streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$streamHandler]);
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
-$logger->pushHandler(new StreamHandler('output.log', Level::Info));
+$logger->pushHandler(new StreamHandler('output.log', Level::Debug));
 $logger->info('Loading configurations for the bot...');
 set_rejection_handler(function(\Throwable $e) use ($logger) {
     if ($e->getMessage() !== 'Cannot resume a fiber that is not suspended') $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('#', '\n#', $e->getTraceAsString()));
@@ -436,7 +436,7 @@ $socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55
 $webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $request) use (&$civ13): Response
 {
     /** @var ?Civ13 $civ13 */
-    if (! $civ13 || ! $civ13 instanceof Civ13 || ! $civ13->httpServiceManager instanceof HttpServiceManager) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
+    if (! $civ13 || ! $civ13 instanceof Civ13 || ! isset($civ13->httpServiceManager)) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     if (! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Not Yet Ready');
     return $civ13->httpServiceManager->handle($request);
 }));
