@@ -489,7 +489,7 @@ $webapi->on('error', async(function (Exception $e, ?\Psr\Http\Message\RequestInt
 
 use VerifierServer\Server as VerifierServer;
 
-Loop::futureTick(async(static function () use ($logger, $options, $civ13_server_settings, $civ14_server_settings) {
+Loop::futureTick(async(static function () use (&$civ13, &$logger, $options, $civ13_server_settings, $civ14_server_settings) {
     $verifier_server = new VerifierServer(
         getenv('VERIFIER_HOST_ADDR'),
         getenv('VERIFIER_HOST_PORT')
