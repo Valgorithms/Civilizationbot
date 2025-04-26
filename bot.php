@@ -62,7 +62,9 @@ $logger = new Logger('Civ13', [$streamHandler]);
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
 $logger->pushHandler(new StreamHandler('output.log', Level::Info));
 $logger->info('Loading configurations for the bot...');
-set_rejection_handler(fn(\Throwable $e) => $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('\n', PHP_EOL, $e->getTraceAsString())));
+set_rejection_handler(function(\Throwable $e) use ($logger) {
+    if ($e->getMessage() !== 'Cannot resume a fiber that is not suspended') $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('#', '\n#', $e->getTraceAsString()));
+});
 
 $discord = new Discord([
     'loop' => $loop = Loop::get(),
