@@ -124,9 +124,9 @@ trait ServerApiTrait
         fn(\Throwable $e) => null);
     }
 
-    protected function updateServerPropertiesFromStatusArray(array $status): void
+    protected function updateServerPropertiesFromStatusArray(array $status, bool $save = true): void
     {
-        $this->civ13->VarSave("{$this->key}_status.json", $status);
+        if ($save) $this->civ13->VarSave("{$this->key}_status.json", $status);
         $this->__status         = $status;
         $this->name             = $this->__status['name']             ?? $this->name;
         $this->playing          = (int)$this->__status['players']     ?? $this->playing;

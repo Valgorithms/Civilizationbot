@@ -67,7 +67,7 @@ class GameServer
         $this->playercount   = $options['playercount']    ?? '';
         $this->discussion    = $options['discussion']     ?? '';
         $this->watchdogToken = $options['watchdogToken']  ?? null;
-        $this->__status = $this->civ13->VarLoad("{$this->key}_status.json") ?? [];
+        if ($status = $this->civ13->VarLoad("{$this->key}_status.json") ?? []) $this->updateServerPropertiesFromStatusArray($status, false);
         $this->afterConstruct();
     }
     protected function afterConstruct(): void
