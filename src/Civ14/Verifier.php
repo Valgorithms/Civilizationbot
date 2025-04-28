@@ -187,9 +187,9 @@ class Verifier
         return $this->civ13->logger;
     }
 
-    public function toCollection(): ExCollectionInterface
+    public function toCollection(string $discrim = 'ss14'): ExCollectionInterface
     {
-        return new Collection($this->endpoint->getState()->getVerifyList(), 'discord');
+        return new Collection($this->endpoint->getState()->getVerifyList(), $discrim);
     }
 
     

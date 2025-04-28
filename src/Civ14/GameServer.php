@@ -262,7 +262,15 @@ class GameServer
             return $embed->addFieldValues($this->name, 'Offline');
         }
         if (empty($this->__status)) return $embed->addFieldValues($this->name, 'Offline');
-        if (! empty($this->players)) $embed->addFieldValues('Playing', implode(', ', $this->players));
+        if (! empty($this->players)) $embed->addFieldValues(
+            'Playing',
+            ($collection = $this->civ13->ss14verifier->toCollection($discrim = 'ss14'))
+                ? implode(',', array_map(
+                    fn($player) => ($item = $collection->get($discrim, $player)) ? "<@{$item['discord']}>" : $player,
+                    $this->players
+                ))
+                : implode(',', $this->players)
+        );
         return $embed
             ->setTitle($this->name)
             ->addFieldValues('Server URL', "ss14://{$this->ip}:{$this->port}", false)
