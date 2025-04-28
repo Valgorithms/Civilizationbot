@@ -10,7 +10,6 @@ namespace Civ14;
 
 trait DynamicPropertyAccessorTrait
 {
-    //protected string $PARENT_CLASS_PROPERTY = 'civ13';
 
     /**
      * Checks if there is a get mutator present.
