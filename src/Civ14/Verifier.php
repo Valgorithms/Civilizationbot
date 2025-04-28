@@ -79,6 +79,11 @@ class Verifier
                 return $ss14;
             });
     }
+
+    public function getEndpoint(): SS14VerifiedEndpoint
+    {
+        return $this->endpoint;
+    }
     
     /**
      * @throws RuntimeException
