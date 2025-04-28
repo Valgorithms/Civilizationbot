@@ -671,8 +671,8 @@ class Civ13
     public function deferUntilReady(callable $callback, ?string $function = null): void
     {
         $this->logger->info($function
-            ? "Deferring callback until ready for event: $function"
-            : "Deferring callback until ready for function: " . debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2)[1]['function'] ?? 'unknown'
+            ? "Deferring callback until ready. Event: $function"
+            : "Deferring callback until ready. Function: " . debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2)[1]['function'] ?? 'unknown'
         );
         $this->ready
             ? $callback()
