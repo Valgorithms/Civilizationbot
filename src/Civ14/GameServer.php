@@ -266,7 +266,7 @@ class GameServer
         if (empty($this->__status)) return $embed->addFieldValues($this->name, 'Offline');
         if (! empty($this->players)) $embed->addFieldValues(
             'Playing',
-            implode(', ', $this->playersCollection(false)->toArray())
+            implode(', ', $this->playersCollection(true)->toArray())
         );
         return $embed
             ->setTitle($this->name)
@@ -278,7 +278,7 @@ class GameServer
             ->addFieldValues('Elapsed Time', ($this->round_start_time && $elapsed = $this->parseElapsedTime()) ? $elapsed : 'N/A', true);
     }
 
-    public function playersCollection(bool $unsafe = true): ExCollectionInterface
+    public function playersCollection(bool $desc_safe = false): ExCollectionInterface
     {
         if (! $collection = $this->civ13->ss14verifier->toCollection($discrim = 'ss14')) return new Collection($this->players);
 
@@ -287,7 +287,7 @@ class GameServer
             $this->players
         );
 
-        if ($unsafe) return new Collection($players);
+        if (! $desc_safe) return new Collection($players);
 
         // Ensure the combined length of the imploded $players does not exceed 1024 characters
         $max_length = 1024;
