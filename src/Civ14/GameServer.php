@@ -12,6 +12,8 @@ use Civ13\Civ13;
 use Civ13\Exceptions\PartException;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
+use Discord\Helpers\Collection;
+use Discord\Helpers\ExCollectionInterface;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Psr\Log\LoggerInterface;
@@ -264,12 +266,7 @@ class GameServer
         if (empty($this->__status)) return $embed->addFieldValues($this->name, 'Offline');
         if (! empty($this->players)) $embed->addFieldValues(
             'Playing',
-            ($collection = $this->civ13->ss14verifier->toCollection($discrim = 'ss14'))
-                ? implode(',', array_map(
-                    fn($player) => ($item = $collection->get($discrim, $player)) ? "<@{$item['discord']}>" : $player,
-                    $this->players
-                ))
-                : implode(',', $this->players)
+            implode(', ', $this->playersCollection(false)->toArray())
         );
         return $embed
             ->setTitle($this->name)
@@ -279,6 +276,33 @@ class GameServer
             ->addFieldValues('Map', $this->map, true)
             ->addFieldValues('Round ID', (string)$this->round_id, true)
             ->addFieldValues('Elapsed Time', ($this->round_start_time && $elapsed = $this->parseElapsedTime()) ? $elapsed : 'N/A', true);
+    }
+
+    public function playersCollection(bool $unsafe = true): ExCollectionInterface
+    {
+        if (! $collection = $this->civ13->ss14verifier->toCollection($discrim = 'ss14')) return new Collection($this->players);
+
+        $players = array_map(
+            fn($player) => ($item = $collection->get($discrim, $player)) ? "<@{$item['discord']}>" : $player,
+            $this->players
+        );
+
+        if ($unsafe) return new Collection($players);
+
+        // Ensure the combined length of the imploded $players does not exceed 1024 characters
+        $max_length = 1024;
+        $separator = ', ';
+        $current_length = 0;
+        $result = [];
+
+        foreach ($players as $player) {
+            $add_length = strlen($player) + ($result ? strlen($separator) : 0);
+            if ($current_length + $add_length > $max_length) break;
+            $result[] = $player;
+            $current_length += $add_length;
+        }
+
+        return new Collection($result);
     }
 
     /**
