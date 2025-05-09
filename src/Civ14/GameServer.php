@@ -179,8 +179,8 @@ class GameServer
     public function currentRoundEmbedTimer(): TimerInterface
     {
         if (! isset($this->current_round_embed_timer)) {
-            $this->updateCurrentRoundEmbedMessageBuilder(); // Call the function on the first access attempt
-            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, fn() => $this->updateCurrentRoundEmbedMessageBuilder());
+            $this->civ13->then($this->updateCurrentRoundEmbedMessageBuilder()); // Call the function on the first access attempt
+            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, fn() => $this->civ13->then($this->updateCurrentRoundEmbedMessageBuilder()));
         }
         return $this->current_round_embed_timer;
     }
