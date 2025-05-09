@@ -452,7 +452,7 @@ class GameServer
             return reject(new PartException($err));
         }
 
-        $fulfilledEdit   = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault) : null;
+        $fulfilledEdit   = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, fn(\Throwable $error) => $message->delete()) : null;
         $fulfilledSend   = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
         $fulfilledReject = fn(\Throwable $error): PromiseInterface => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
         
