@@ -152,6 +152,36 @@ class OSFunctions
     }
 
     /**
+     * Terminates any process currently using the specified port.
+     *
+     * @param int $port The port number to check for active processes.
+     * @throws RuntimeException If the command execution fails or no processes are found.
+     *
+     * Notes:
+     * - On Windows, it uses `netstat` to find processes and `taskkill` to terminate them.
+     * - On Unix-based systems, it uses `lsof` to find processes and `kill` to terminate them.
+     * - Requires appropriate permissions to execute system commands.
+     * - Logs the termination of each process using `error_log`.
+     */
+    public static function killProcessOnPort(int $port): void
+    {
+        if (PHP_OS_FAMILY == 'Windows') {
+            exec("netstat -ano | findstr :$port", $output);
+            foreach ($output as $line) if (preg_match('/\s+(\d+)$/', $line, $matches)) {
+                $pid = $matches[1];
+                exec("taskkill /F /PID $pid");
+                error_log("Terminated process with PID $pid on port $port");
+            }
+            return;
+        }
+        exec("lsof -i :$port -t", $output);
+        foreach ($output as $pid) {
+            exec("kill -9 $pid");
+            error_log("Terminated process with PID $pid on port $port");
+        }
+    }
+
+    /**
      * Saves an associative array to a file in JSON format.
      *
      * @param string $filename The name of the file to save to.
