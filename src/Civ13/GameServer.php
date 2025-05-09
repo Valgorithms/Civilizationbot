@@ -1395,19 +1395,19 @@ class GameServer
         if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) return $embed->addFieldValues($this->name, 'Offline');
         fclose($socket);
         $data = self::explodeServerdata($data);
-        if (isset($data[0])) $embed->addFieldValues($this->name, '<'.$data[0].'>');
+        if (isset($data['status'])) $embed->addFieldValues($this->name, $data['status']);
         $embed->addFieldValues('Host', $this->host, true);
-        if (isset($data[7])) $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
-        if (isset($data[8])) $embed->addFieldValues('Map', $data[8], true); // Appears twice in the data
+        if (isset($data['round_timer'])) $embed->addFieldValues('Round Time', $this->parseRoundTime($data['round_timer']), true);
+        if (isset($data['map_name'])) $embed->addFieldValues('Map', $data['map_name'], true); // Appears twice in the data
         //if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3], true);
-        if (isset($data[9])) $embed->addFieldValues('Epoch', $data[9], true);
-        if (isset($data[11])) { // Player list
-            $players = explode('&', $data[11]);
+        if (isset($data['epoch'])) $embed->addFieldValues('Epoch', $data['epoch'], true);
+        if (isset($data['ckey_list'])) { // Player list
+            $players = explode('&', $data['ckey_list']);
             $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), $players));
             if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
             $embed->addFieldValues('Players (' . count($players) . ')', $players_list, true);
         }
-        if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
+        if (isset($data['season'])) $embed->addFieldValues('Season', $data['season'], true);
         //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
         //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
         return $embed;
