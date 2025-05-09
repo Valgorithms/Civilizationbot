@@ -452,16 +452,16 @@ class GameServer
             return reject(new PartException($err));
         }
 
-        $fulfilledEdit   = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, fn(\Throwable $error) => $message->delete()) : null;
-        $fulfilledSend   = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
-        $fulfilledReject = fn(\Throwable $error): PromiseInterface => $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
+        $on_edit   = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, fn(\Throwable $error) => $message->delete()) : null;
+        $on_send   = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
+        $on_reject = fn(\Throwable $error): PromiseInterface => $channel->sendMessage($builder)->then($on_send, $this->civ13->onRejectedDefault);
         
-        if ($this->current_round_message_id) return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
+        if ($this->current_round_message_id) return $channel->messages->fetch($this->current_round_message_id)->then($on_edit, $on_reject);
         // Attempt to load the current round message ID from the file cache
         if ($serialized_array = $this->civ13->VarLoad("{$this->key}_current_round_message_id.json"))
             if ($this->current_round_message_id = array_shift($serialized_array))
-                return $channel->messages->fetch($this->current_round_message_id)->then($fulfilledEdit, $fulfilledReject);
-        return $channel->sendMessage($builder)->then($fulfilledSend, $this->civ13->onRejectedDefault);
+                return $channel->messages->fetch($this->current_round_message_id)->then($on_edit, $on_reject);
+        return $channel->sendMessage($builder)->then($on_send, $this->civ13->onRejectedDefault);
     }
     /**
      * Creates the current round embed message builder.
