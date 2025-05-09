@@ -426,7 +426,15 @@ use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use Psr\Http\Message\ServerRequestInterface;
-$socket = new SocketServer(sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55555), [], Loop::get());
+$socket = new SocketServer(
+    sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55555),
+    [
+        'tcp' => [
+            'so_reuseport' => true
+        ]
+    ],
+    Loop::get()
+);
 /**
  * Handles the HTTP request using the HttpServiceManager.
  *
