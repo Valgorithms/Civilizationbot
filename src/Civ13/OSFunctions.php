@@ -27,13 +27,6 @@ class OSFunctions
         1 => ['pipe', 'w'],
         2 => ['pipe', 'w']
     ];
-
-    private static function setNonblock(array &$pipes)
-    {
-        stream_set_blocking($pipes[0], false);
-        stream_set_blocking($pipes[1], false);
-        stream_set_blocking($pipes[2], false);
-    }
     
     private static function readPipes(array &$pipes)
     {
@@ -83,11 +76,15 @@ class OSFunctions
             return resolve($p);
         }
         if (! $proc = proc_open($cmd, self::DEFAULT_PIPES, $pipes)) return reject(new MissingSystemPermissionException('proc_open() failed')); // old method was "sudo nohup $cmd > /dev/null &"
-        self::setNonblock($pipes);
+        foreach ($pipes as $pipe) if (is_resource($pipe)) stream_set_blocking($pipe, false);
         //self::readPipes($pipes);
         if (! $proc_details = proc_get_status($proc)) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
         if (! isset($proc_details['pid']) || ! $pid = $proc_details['pid']) return reject(new MissingSystemPermissionException('proc_get_status() did not return a PID'));
         error_log("Executing external shell command `$cmd` with PID $pid");
+        foreach ($pipes as $pipe) {
+            /** @var resource $pipe */
+            fclose($pipe);
+        }
         return resolve($proc);
     }
 
@@ -108,12 +105,16 @@ class OSFunctions
             return resolve($p);
         }
         if (! $proc = proc_open($output = "sudo nohup php \"$file\" &", self::DEFAULT_PIPES, $pipes)) return reject(new MissingSystemPermissionException('proc_open() failed')); // old method was "sudo nohup $cmd > /dev/null &"
-        self::setNonblock($pipes);
+        foreach ($pipes as $pipe) if (is_resource($pipe)) stream_set_blocking($pipe, false);
         //self::readPipes($pipes);
         if (! $proc_details = proc_get_status($proc)) return reject(new MissingSystemPermissionException('proc_get_status() failed'));
         if (! isset($proc_details['pid']) || ! $pid = $proc_details['pid']) return reject(new MissingSystemPermissionException('proc_get_status() did not return a PID'));
         error_log("Executing external shell command `$output` with PID $pid");
         self::disown($proc);
+        foreach ($pipes as $pipe) {
+            /** @var resource $pipe */
+            fclose($pipe);
+        }
         return resolve($proc);
     }
 
