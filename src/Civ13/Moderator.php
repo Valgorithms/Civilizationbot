@@ -42,7 +42,8 @@ enum ModerationMethod: string {
     case STR_ENDS_WITH = 'str_ends_with';
     case STR_CONTAINS = 'str_contains';
 
-    public static function matches(string $lower, array $badwords): bool {
+    public static function matches(string $lower, array $badwords): int|bool
+    {
         $method = $badwords['method'] ?? self::STR_CONTAINS;
         try { $moderationMethod = self::from($method);
         } catch (\UnhandledMatchError $e) { $moderationMethod = self::STR_CONTAINS; }
