@@ -1222,10 +1222,6 @@ class Civ13
     public function getByondAge(string $ckey): string|false
     {
         if (isset($this->ages[$ckey])) return $this->ages[$ckey];
-        if (! isset($this->byond)) {
-            $this->logger->warning('BYOND object not set!');
-            return false;
-        }
         if ($age = Byond::getJoined($ckey)) {
             $this->ages[$ckey] = $age;
             $this->VarSave('ages.json', $this->ages);
