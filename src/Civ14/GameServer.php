@@ -23,7 +23,7 @@ use React\EventLoop\TimerInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
 
-
+use function React\Async\async;
 use function React\Promise\resolve;
 use function React\Promise\reject;
 
@@ -180,7 +180,7 @@ class GameServer
     {
         if (! isset($this->current_round_embed_timer)) {
             $this->civ13->then($this->updateCurrentRoundEmbedMessageBuilder()); // Call the function on the first access attempt
-            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, fn() => $this->civ13->then($this->updateCurrentRoundEmbedMessageBuilder()));
+            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, async(fn() => $this->civ13->then($this->updateCurrentRoundEmbedMessageBuilder())));
         }
         return $this->current_round_embed_timer;
     }
