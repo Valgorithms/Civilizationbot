@@ -262,6 +262,12 @@ class MessageServiceManager
                         ? $this->civ13->reply($message, "`$id` is registered to `{$item['ss13']}`")
                         : $this->civ13->reply($message, "`$id` is not registered to any byond username"),
                 ['Verified'])
+             ->offsetSet('ages',
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    ($ages = $this->civ13->ages)
+                        ? $this->civ13->reply($message, json_encode($ages), 'ages.json')
+                        : $this->civ13->reply($message, "Unable to locate Byond account ages"),
+                ['Ambassador'])
             ->offsetSet('byondage',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     ($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) && ($age = $this->civ13->getByondAge($ckey))
