@@ -33,6 +33,7 @@ use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
 use React\Promise\PromiseInterface;
 
+use function React\Async\async;
 use function React\Promise\reject;
 use function React\Promise\resolve;
 
@@ -427,7 +428,7 @@ class GameServer
     {
         if (! isset($this->timers['current_round_embed'])) {
             $this->updateCurrentRoundEmbedMessageBuilder();
-            $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, fn() => $this->updateCurrentRoundEmbedMessageBuilder());
+            $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, async(fn() => $this->updateCurrentRoundEmbedMessageBuilder()));
         }
         return $this->timers['current_round_embed'];
     }
