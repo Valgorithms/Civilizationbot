@@ -235,13 +235,13 @@ class GameServer
         }
         $builder = Civ13::createBuilder()->addEmbed($this->toEmbed(true));
 
-        $send_onFulfilled   = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_round_message_id.json", [$this->round_message_id = $message->id]);
-        $edit_onFulfilled   = fn(?Message $message = null): ?PromiseInterface  => $message ? $this->civ13->then($message->edit($builder), $this->civ13->onFulfilledDefault) : null;
-        $edit_onRejected    = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send_onFulfilled);
+        $send   = fn(Message $message): bool                       => $this->civ13->VarSave("{$this->key}_round_message_id.json", [$this->round_message_id = $message->id]);
+        $edit   = fn(?Message $message = null): ?PromiseInterface  => $message ? $this->civ13->then($message->edit($builder), fn(\Throwable $error) => $message->delete()) : null;
+        $reject = fn(\Throwable $error): PromiseInterface          => $this->civ13->then($channel->sendMessage($builder), $send);
         
         return ($round_message_id = $this->getRoundMessageId())
-            ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit_onFulfilled, $edit_onRejected)
-            : $this->civ13->then($channel->sendMessage($builder), $send_onFulfilled, null);
+            ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit, $reject)
+            : $this->civ13->then($channel->sendMessage($builder), $send, null);
     }
 
     /**

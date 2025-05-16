@@ -453,16 +453,13 @@ class GameServer
             return reject(new PartException($err));
         }
 
-        $on_edit   = fn(?Message $message = null) => $message ? $message->edit($builder)->then($this->civ13->onFulfilledDefault, fn(\Throwable $error) => $message->delete()) : null;
-        $on_send   = fn(Message $message) => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
-        $on_reject = fn(\Throwable $error): PromiseInterface => $channel->sendMessage($builder)->then($on_send, $this->civ13->onRejectedDefault);
-        
-        if ($this->current_round_message_id) return $channel->messages->fetch($this->current_round_message_id)->then($on_edit, $on_reject);
-        // Attempt to load the current round message ID from the file cache
-        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_current_round_message_id.json"))
-            if ($this->current_round_message_id = array_shift($serialized_array))
-                return $channel->messages->fetch($this->current_round_message_id)->then($on_edit, $on_reject);
-        return $channel->sendMessage($builder)->then($on_send, $this->civ13->onRejectedDefault);
+        $send   = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
+        $edit   = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), fn(\Throwable $error) => $message->delete()) : null;
+        $reject = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
+
+        return ($round_message_id = $this->getRoundMessageId())
+            ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit, $reject)
+            : $this->civ13->then($channel->sendMessage($builder), $send, null);
     }
     /**
      * Creates the current round embed message builder.
@@ -1024,6 +1021,13 @@ class GameServer
     private function sqlUnban($array, ?string $admin = null): string
     {
         return "SQL methods are not yet implemented!" . PHP_EOL;
+    }
+
+    public function getRoundMessageId(): ?string
+    {
+        if (isset($this->current_round_message_id)) return $this->current_round_message_id;
+        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_current_round_message_id.json")) return $this->current_round_message_id = array_shift($serialized_array);
+        return null;
     }
 
     /**
