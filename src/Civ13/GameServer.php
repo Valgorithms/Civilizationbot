@@ -456,23 +456,16 @@ class GameServer
             return reject(new PartException($err));
         }
 
-        $send   = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
-        $reject = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
-        $edit   = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then(
-            $message->edit($builder),
-            null,
-            function (\Throwable $error) use ($message, $reject) {
-                $promise = reject($err = new PartException("Failed to edit message current round message in {$this->key} ({$this->name})"));
-                if ($message) {
-                    $message->delete();
-                    return $reject($err);
-                }
-                return $promise;
-            }
-        ) : null;
+       $resend = function (?Message $message, callable $new) {
+            if ($message) $message->delete();
+            return $new(new PartException("Failed to edit message current round message in {$this->key} ({$this->name})"));
+        };
+        $send = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
+        $new  = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
+        $edit = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn (\Throwable $error) => $resend($message, $new)) : null;
 
         return ($round_message_id = $this->getRoundMessageId())
-            ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit, $reject)
+            ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit, $new)
             : $this->civ13->then($channel->sendMessage($builder), $send, null);
     }
     /**
