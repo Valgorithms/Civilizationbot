@@ -134,7 +134,10 @@ class GameServer
         $this->port = $options['port'];
         $this->host = $options['host'];
         $this->supported = $options['supported'] ?? false;
-        $this->enabled = $options['enabled'] ?? false;
+        if ($options['enabled'] && $this->basedir && !is_dir($this->basedir)) { // Will cause issues
+            $this->logger->error("GameServer {$this->key} has an invalid basedir: {$this->basedir}, disabling server.");
+            $this->enabled = false;
+        } else $this->enabled = $options['enabled'] ?? false;
         $this->legacy = $options['legacy'] ?? true;
         $this->moderate = $options['moderate'] ?? true;
         $this->panic_bunker = $options['panic_bunker']  ?? false;
