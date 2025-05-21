@@ -122,24 +122,13 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, @file_get_contents('http://ipecho.net/plain', false, stream_context_create(['http' => ['connect_timeout' => 5]]))),
                 ['Verified'])
-            ->offsetSet('bancheck_centcom',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
-                    if (is_numeric($ckey)) {
-                        if (! $item = $this->civ13->verifier->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
-                        $ckey = $item['ss13'];
-                    }
-                    if (! $json = Byond::bansearch_centcom($ckey)) return $this->civ13->reply($message, "Unable to locate bans for `$ckey` on centcom.melonmesa.com.");
-                    if ($json === '[]') return $this->civ13->reply($message, "No bans were found for `ckey` on centcom.melonmesa.com.");
-                    return $this->civ13->reply($message, $json, $ckey.'_bans.json', true);
-                }, ['Verified'])
-            ->offsetSet('bancheck',     new Commands\BanCheck($this->civ13),      ['Verified'])
-            ->offsetSet('getround',     new Commands\GetRound($this->civ13),      ['Verified'])
-            ->offsetSet('discord2ckey', new Commands\DiscordToCkey($this->civ13), ['Verified'])
-            ->offsetSet('ages',         new Commands\Ages($this->civ13),          ['Ambassador'])
-            ->offsetSet('byondage',     new Commands\ByondAge($this->civ13),      ['Ambassador'])
-            ->offsetSet('ckeyinfo',     new Commands\CkeyInfo($this->civ13),      ['Admin'])
+            ->offsetSet('bancheck_centcom', new Commands\BanCheckCentcom($this->civ13),     ['Verified'])
+            ->offsetSet('bancheck',         new Commands\BanCheck($this->civ13),            ['Verified'])
+            ->offsetSet('getround',         new Commands\GetRound($this->civ13),            ['Verified'])
+            ->offsetSet('discord2ckey',     new Commands\DiscordToCkey($this->civ13),       ['Verified'])
+            ->offsetSet('ages',             new Commands\Ages($this->civ13),                ['Ambassador'])
+            ->offsetSet('byondage',         new Commands\ByondAge($this->civ13),            ['Ambassador'])
+            ->offsetSet('ckeyinfo',         new Commands\CkeyInfo($this->civ13),            ['Admin'])
             ->offsetSet('ckey2discord',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     ($item = $this->civ13->verifier->get('ss13', $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
