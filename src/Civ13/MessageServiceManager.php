@@ -125,25 +125,8 @@ class MessageServiceManager
                         ? $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>")
                         : $this->civ13->reply($message, "`$ckey` is not registered to any discord id"),
                 ['Verified'])
-            ->offsetSet('ckey',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
-                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey = $message->user_id)) return $this->civ13->reply($message, "You are not registered to any byond username");
-                        return $this->civ13->reply($message, "You are registered to `{$item['ss13']}`");
-                    }
-                    if (is_numeric($ckey)) {
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`$ckey` is not registered to any ckey");
-                        if (! isset($item['ss13'])) return $this->civ13->reply($message, "ss13 key is not set! " . PHP_EOL . '`' . json_encode($item) . '`');
-                        if (! $age = $this->civ13->getByondAge($item['ss13'])) return $this->civ13->reply($message, "`{$item['ss13']}` does not exist");
-                        return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
-                    }
-                    if (! $age = $this->civ13->getByondAge($ckey)) return $this->civ13->reply($message, "`$ckey` does not exist");
-                    if ($item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "`{$item['ss13']}` is registered to <@{$item['discord']}> ($age)");
-                    return $this->civ13->reply($message, "`$ckey` is not registered to any discord id ($age)");
-                }, ['Verified'])
-                ->offsetSet('ooc',
+            ->offsetSet('ckey', new Commands\Ckey($this->civ13), ['Verified'])
+            ->offsetSet('ooc',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
                     $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], strlen(trim($command))));
