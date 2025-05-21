@@ -27,7 +27,9 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
      */
     public function __construct(callable $callback)
     {
-        $reflection = new \ReflectionFunction($callback);
+        $reflection = is_object($callback)
+            ? new \ReflectionMethod($callback, '__invoke')
+            : new \ReflectionFunction($callback);
         $parameters = $reflection->getParameters();
         if (count($parameters) !== $count = count(self::PARAMETER_TYPES)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', self::PARAMETER_TYPES));
 
@@ -38,7 +40,9 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
             if ($type !== self::PARAMETER_TYPES[$index]) throw new \InvalidArgumentException("Parameter $index must be of type " . self::PARAMETER_TYPES[$index] . '.');
         }
 
-        $this->callback = $callback;
+        $this->callback = is_object($callback)
+            ? \Closure::fromCallable([$callback, '__invoke'])
+            : \Closure::fromCallable($callback);
     }
 
     /**

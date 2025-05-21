@@ -10,10 +10,10 @@ namespace Civ13;
 use Byond\Byond;
 use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\MissingSystemPermissionException;
+use Civ13\MessageCommand\Commands;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
-use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Channel\Poll\Poll;
 use Discord\Parts\Interactions\Interaction;
@@ -268,12 +268,7 @@ class MessageServiceManager
                         ? $this->civ13->reply($message, json_encode($ages), 'ages.json')
                         : $this->civ13->reply($message, "Unable to locate Byond account ages"),
                 ['Ambassador'])
-            ->offsetSet('byondage',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    ($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) && ($age = $this->civ13->getByondAge($ckey))
-                        ? $this->civ13->reply($message, "`$ckey` (`$age`)")
-                        : $this->civ13->reply($message, "Unable to locate `$ckey`"),
-                ['Ambassador'])
+            ->offsetSet('byondage', new Commands\ByondAge($this->civ13), ['Ambassador'])
             ->offsetSet('ckeyinfo',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
