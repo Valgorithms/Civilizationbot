@@ -134,42 +134,7 @@ class MessageServiceManager
                     if ($json === '[]') return $this->civ13->reply($message, "No bans were found for `ckey` on centcom.melonmesa.com.");
                     return $this->civ13->reply($message, $json, $ckey.'_bans.json', true);
                 }, ['Verified'])
-            ->offsetSet('bancheck',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
-                    if (is_numeric($ckey)) {
-                        if (! $item = $this->civ13->verifier->get('discord', $ckey)) return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
-                        $ckey = $item['ss13'];
-                    }
-                    $reason = 'unknown';
-                    $found = false;
-                    $content = '';
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                        if (! touch ($gameserver->basedir . Civ13::bans) || ! $file = @fopen($gameserver->basedir . Civ13::bans, 'r')) {
-                            $this->logger->warning('Could not open `' . $gameserver->basedir . Civ13::bans . "` for reading.");
-                            return $message->react("🔥");
-                        }
-                        while (($fp = fgets($file, 4096)) !== false) {
-                            $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-                            if ((count($linesplit)>=8) && ($linesplit[8] === strtolower($ckey))) {
-                                $found = true;
-                                $type = $linesplit[0];
-                                $reason = $linesplit[3];
-                                $admin = $linesplit[4];
-                                $date = $linesplit[5];
-                                $duration = $linesplit[7];
-                                $content .= "`$date`: `$admin` `$type` banned `$ckey` from `{$gameserver->name}` for `{$duration}` with the reason `$reason`" . PHP_EOL;
-                            }
-                        }
-                        fclose($file);
-                    }
-                    if (! $found) $content .= "No bans were found for `$ckey`." . PHP_EOL;
-                    elseif (isset($this->civ13->role_ids['Banished']) && $member = $this->civ13->verifier->getVerifiedMember($ckey))
-                        if (! $member->roles->has($this->civ13->role_ids['Banished']))
-                            $member->addRole($this->civ13->role_ids['Banished']);
-                    return $this->civ13->reply($message, $content, 'bancheck.txt');
-                }, ['Verified'])            
+            ->offsetSet('bancheck',     new Commands\BanCheck($this->civ13),      ['Verified'])
             ->offsetSet('getround',     new Commands\GetRound($this->civ13),      ['Verified'])
             ->offsetSet('discord2ckey', new Commands\DiscordToCkey($this->civ13), ['Verified'])
             ->offsetSet('ages',         new Commands\Ages($this->civ13),          ['Ambassador'])
