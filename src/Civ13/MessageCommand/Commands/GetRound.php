@@ -19,12 +19,10 @@ use Discord\Parts\User\Member;
 use React\Promise\PromiseInterface;
 
 /**
- * Class GetRound
- *
- * Handles the "getround" command for retrieving round data from enabled gameservers.
+ * Handles the "getround" command.
  * 
- * Allows users to fetch information about a specific game round, including player lists,
- * round start/end times, and, for staff, additional logging details.
+ * Allows users to fetch information about a specific game round from enabled gameservers.
+ * Includes player lists, round start/end times, and, for staff, additional logging details.
  */
 class GetRound extends Civ13MessageCommand
 {

@@ -12,10 +12,9 @@ use Discord\Parts\Channel\Message;
 use React\Promise\PromiseInterface;
 
 /**
- * Handles the "ages" command for the Civ13 bot.
+ * Handles the "ages" command.
  *
- * When invoked, this method checks if the Civ13 instance has an "ages" property.
- * If available, it replies to the given message with the JSON-encoded ages data as an attachment named 'ages.json'.
+ * If available, it replies with the JSON-encoded ages data as an attachment named 'ages.json'.
  * If not available, it replies with an error message indicating that Byond account ages could not be located.
  */
 class Ages extends Civ13MessageCommand
