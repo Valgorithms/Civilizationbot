@@ -14,7 +14,6 @@ use React\Promise\PromiseInterface;
 
 /**
  * Handles the "ckeyinfo" command.
- * 
  *             
  * This method retrieves information about a ckey, including primary identifiers, IPs, CIDs, and dates.
  * It also iterates through playerlogs ban logs to find all known ckeys, IPs, and CIDs.

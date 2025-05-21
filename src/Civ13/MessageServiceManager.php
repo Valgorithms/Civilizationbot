@@ -118,10 +118,7 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message,$this->civ13->CPU()),
                 ['Verified'])
-            ->offsetSet('checkip',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->reply($message, @file_get_contents('http://ipecho.net/plain', false, stream_context_create(['http' => ['connect_timeout' => 5]]))),
-                ['Verified'])
+            ->offsetSet('checkip',          new Commands\CheckIP($this->civ13),             ['Verified'])
             ->offsetSet('bancheck_centcom', new Commands\BanCheckCentcom($this->civ13),     ['Verified'])
             ->offsetSet('bancheck',         new Commands\BanCheck($this->civ13),            ['Verified'])
             ->offsetSet('getround',         new Commands\GetRound($this->civ13),            ['Verified'])
