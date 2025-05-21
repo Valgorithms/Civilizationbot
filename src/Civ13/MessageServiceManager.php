@@ -114,10 +114,7 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, json_encode($this->civ13->verifier_server->getSessions()), 'ip_sessions.txt', true),
                 ['Owner', 'Chief Technical Officer'])
-            ->offsetSet('cpu',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->reply($message,$this->civ13->CPU()),
-                ['Verified'])
+            ->offsetSet('cpu',              new Commands\CPU($this->civ13),                 ['Verified'])
             ->offsetSet('checkip',          new Commands\CheckIP($this->civ13),             ['Verified'])
             ->offsetSet('bancheck_centcom', new Commands\BanCheckCentcom($this->civ13),     ['Verified'])
             ->offsetSet('bancheck',         new Commands\BanCheck($this->civ13),            ['Verified'])
