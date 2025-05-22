@@ -119,14 +119,9 @@ class MessageServiceManager
             ->offsetSet('ages',             new Commands\Ages($this->civ13),                ['Ambassador'])
             ->offsetSet('byondage',         new Commands\ByondAge($this->civ13),            ['Ambassador'])
             ->offsetSet('ckeyinfo',         new Commands\CkeyInfo($this->civ13),            ['Admin'])
-            ->offsetSet('ckey2discord',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    ($item = $this->civ13->verifier->get('ss13', $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
-                        ? $this->civ13->reply($message, "`$ckey` is registered to <@{$item['discord']}>")
-                        : $this->civ13->reply($message, "`$ckey` is not registered to any discord id"),
-                ['Verified'])
-            ->offsetSet('ckey', new Commands\Ckey($this->civ13), ['Verified'])
-            ->offsetSet('ooc',  new Commands\OOC($this->civ13), ['Verified'])
+            ->offsetSet('ckey2discord',     new Commands\CkeyToDiscord($this->civ13),       ['Verified'])
+            ->offsetSet('ckey',             new Commands\Ckey($this->civ13),                ['Verified'])
+            ->offsetSet('ooc',              new Commands\OOC($this->civ13),                 ['Verified'])
             ->offsetSet('asay',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
