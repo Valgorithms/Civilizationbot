@@ -28,7 +28,7 @@ class GetRound extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        if (! $input = trim(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: getround `game_id`');
+        if (! $input = self::messageWithoutCommand($command, $message_filtered)) return $this->civ13->reply($message, 'Invalid format! Please use the format: getround `game_id`');
         $input = explode(' ', $input);
         if (! $rounds = $this->getRounds($game_id = $input[0])) return $this->civ13->reply($message, "No data found for round `$game_id`.");
         return $message->reply($this->createBuilder(

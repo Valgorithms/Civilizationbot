@@ -126,17 +126,7 @@ class MessageServiceManager
                         : $this->civ13->reply($message, "`$ckey` is not registered to any discord id"),
                 ['Verified'])
             ->offsetSet('ckey', new Commands\Ckey($this->civ13), ['Verified'])
-            ->offsetSet('ooc',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], strlen(trim($command))));
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) switch (strtolower($message->channel->name)) {
-                        case "ooc-{$gameserver->key}":                    
-                            if ($gameserver->OOCMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)) return $message->react("📧");
-                            return $message->react("🔥");
-                    }
-                    return $this->civ13->reply($message, 'You need to be in any of the #ooc channels to use this command.');
-                }, ['Verified'])
+            ->offsetSet('ooc',  new Commands\OOC($this->civ13), ['Verified'])
             ->offsetSet('asay',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {

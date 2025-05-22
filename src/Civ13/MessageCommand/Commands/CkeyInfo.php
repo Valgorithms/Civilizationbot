@@ -23,7 +23,7 @@ class CkeyInfo extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        if (! $id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
+        if (! $id = Civ13::sanitizeInput(self::messageWithoutCommand($command, $message_filtered))) return $this->civ13->reply($message, 'Invalid format! Please use the format: ckeyinfo `ckey`');
         if (! ($item = $this->civ13->verifier->getVerifiedItem($id) ?? []) && is_numeric($id)) return $this->civ13->reply($message, "No data found for Discord ID `$id`.");
         if (! $ckey = $item['ss13'] ?? $id) return $this->civ13->reply($message, "Invalid ckey `$ckey`.");
         if (! $collectionsArray = $this->civ13->getCkeyLogCollections($ckey)) return $this->civ13->reply($message, "No data found for ckey `$ckey`.");

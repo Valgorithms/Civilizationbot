@@ -24,7 +24,7 @@ class DiscordToCkey extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return ($item = $this->civ13->verifier->get('discord', $id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))))
+        return ($item = $this->civ13->verifier->get('discord', $id = Civ13::sanitizeInput(self::messageWithoutCommand($command, $message_filtered))))
             ? $this->civ13->reply($message, "`$id` is registered to `{$item['ss13']}`")
             : $this->civ13->reply($message, "`$id` is not registered to any byond username");
     }
