@@ -460,7 +460,7 @@ class GameServer
             if ($message) $message->delete();
             return $new(new PartException("Failed to edit message current round message in {$this->key} ({$this->name})"));
         };
-        $send = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
+        $send = fn(Message $message): bool                      => $this->civ13->VarSave($this->getRoundMessageIdFileName(), [$this->current_round_message_id = $message->id]);
         $new  = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
         $edit = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn (\Throwable $error) => $resend($message, $new)) : null;
 
@@ -1030,11 +1030,34 @@ class GameServer
         return "SQL methods are not yet implemented!" . PHP_EOL;
     }
 
+    /**
+     * Retrieves the round message ID.
+     *
+     * This method attempts to return the round message ID for the current instance.
+     * - If the property `$round_message_id` is already set, it returns its value.
+     * - Otherwise, it tries to load the value from a serialized array stored in a JSON file
+     *   using the `VarLoad` method of the `$civ13` object, with a filename based on the instance's key.
+     *   If successful, it sets and returns the first element of the loaded array as `$round_message_id`.
+     * - If neither is available, it returns null.
+     *
+     * @return string|null The round message ID if available, or null if not set or not found.
+     */
     public function getRoundMessageId(): ?string
     {
         if (isset($this->current_round_message_id)) return $this->current_round_message_id;
-        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_current_round_message_id.json")) return $this->current_round_message_id = array_shift($serialized_array);
+        if ($serialized_array = $this->civ13->VarLoad($this->getRoundMessageIdFileName())) return $this->current_round_message_id = array_shift($serialized_array);
         return null;
+    }
+    
+    
+    /**
+     * Generates the filename for storing the round message ID associated with this game server instance.
+     *
+     * @return string
+     */
+    public function getRoundMessageIdFileName(): string
+    {
+        return "{$this->key}_current_round_message_id.json";
     }
 
     /**

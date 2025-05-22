@@ -239,7 +239,7 @@ class GameServer
             if ($message) $message->delete();
             return $new(new PartException("Failed to edit message current round message in {$this->key} ({$this->name})"));
         };
-        $send = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_round_message_id.json", [$this->round_message_id = $message->id]);
+        $send = fn(Message $message): bool                      => $this->civ13->VarSave($this->getRoundMessageIdFileName(), [$this->round_message_id = $message->id]);
         $new  = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
         $edit = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn (\Throwable $error) => $resend($message, $new)) : null;
         
@@ -338,13 +338,23 @@ class GameServer
      *   If successful, it sets and returns the first element of the loaded array as `$round_message_id`.
      * - If neither is available, it returns null.
      *
-     * @return string|null The round message ID if available, or null if not set or not found.
+     * @return string|null
      */
     public function getRoundMessageId(): ?string
     {
         if (isset($this->round_message_id)) return $this->round_message_id;
-        if ($serialized_array = $this->civ13->VarLoad("{$this->key}_round_message_id.json")) return $this->round_message_id = array_shift($serialized_array);
+        if ($serialized_array = $this->civ13->VarLoad($this->getRoundMessageIdFileName())) return $this->round_message_id = array_shift($serialized_array);
         return null;
+    }
+
+    /**
+     * Generates the filename for storing the round message ID associated with this game server instance.
+     *
+     * @return string
+     */
+    public function getRoundMessageIdFileName(): string
+    {
+        return "{$this->key}_round_message_id.json";
     }
     
     /**
