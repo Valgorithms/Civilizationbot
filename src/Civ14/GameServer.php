@@ -239,7 +239,7 @@ class GameServer
             if ($message) $message->delete();
             return $new(new PartException("Failed to edit message current round message in {$this->key} ({$this->name})"));
         };
-        $send = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_current_round_message_id.json", [$this->current_round_message_id = $message->id]);
+        $send = fn(Message $message): bool                      => $this->civ13->VarSave("{$this->key}_round_message_id.json", [$this->round_message_id = $message->id]);
         $new  = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
         $edit = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn (\Throwable $error) => $resend($message, $new)) : null;
         
