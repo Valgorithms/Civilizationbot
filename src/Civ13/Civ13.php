@@ -23,6 +23,7 @@ use Discord\Helpers\CollectionInterface;
 use Discord\Helpers\ExCollectionInterface;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
+use Discord\Parts\Channel\Message\AllowedMentions;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Guild\Role;
@@ -899,7 +900,7 @@ class Civ13
             return reject(new PartException($err));
         }
         if ($content instanceof MessageBuilder) {
-            if ($prevent_mentions) $content->setAllowedMentions(['parse'=>[]]);
+            if ($prevent_mentions) $content->setAllowedMentions(AllowedMentions::new()->disallowAllMentions());
             return $channel->sendMessage($content);
         }
 
@@ -976,7 +977,7 @@ class Civ13
     public static function createBuilder(bool $prevent_mentions = false): MessageBuilder
     {
         $builder = MessageBuilder::new();
-        if ($prevent_mentions) $builder->setAllowedMentions(['parse'=>[]]);
+        if ($prevent_mentions) $builder->setAllowedMentions(AllowedMentions::new()->disallowAllMentions());
         return $builder;
     }
     public function createServerstatusEmbed(): MessageBuilder
