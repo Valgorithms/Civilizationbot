@@ -900,7 +900,7 @@ class Civ13
             return reject(new PartException($err));
         }
         if ($content instanceof MessageBuilder) {
-            if ($prevent_mentions) $content->setAllowedMentions(AllowedMentions::new()->disallowAllMentions());
+            if ($prevent_mentions) $content->setAllowedMentions(AllowedMentions::none());
             return $channel->sendMessage($content);
         }
 
@@ -977,7 +977,7 @@ class Civ13
     public static function createBuilder(bool $prevent_mentions = false): MessageBuilder
     {
         $builder = MessageBuilder::new();
-        if ($prevent_mentions) $builder->setAllowedMentions(AllowedMentions::new()->disallowAllMentions());
+        if ($prevent_mentions) $builder->setAllowedMentions(AllowedMentions::none());
         return $builder;
     }
     public function createServerstatusEmbed(): MessageBuilder
