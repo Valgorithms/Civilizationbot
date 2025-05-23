@@ -605,15 +605,7 @@ class MessageServiceManager
                                     $this->civ13->verifier->joinRoles($member, false);
                             return $message->react("👍");
                         }, ['Chief Technical Officer']);
-            if (file_exists(Civ13::insults_path))
-                $this->messageHandler->offsetSet('insult',
-                    function (Message $message, string $command, array $message_filtered): PromiseInterface
-                    {
-                        if (! $insults_array = file(Civ13::insults_path, FILE_IGNORE_NEW_LINES)) return $this->civ13->reply($message, 'No insults found!');
-                        if (! ($split_message = explode(' ', $message_filtered['message_content'])) || count($split_message) <= 1 || strlen($split_message[1]) === 0) $split_message[1] = "<@{$message->user_id}>"; // $split_target[1] is the target of the insult
-                        return $message->channel->sendMessage(Civ13::createBuilder(true)->setContent($split_message[1] . ', ' . $insults_array[array_rand($insults_array)]));
-                    }, ['Verified']);
-            
+            if (file_exists(Civ13::insults_path)) $this->messageHandler->offsetSet('insult', new Commands\Insult($this->civ13), ['Verified']);
             if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path'])) $this->messageHandler->offsetSet('ts', New TypeSpess($this->civ13), ['Owner', 'Chief Technical Officer']);
             if (isset($this->civ13->folders['ss14_basedir'])) $this->messageHandler->offsetSet('ss14', new Commands\SS14($this->civ13), ['Owner', 'Chief Technical Officer']);
 
