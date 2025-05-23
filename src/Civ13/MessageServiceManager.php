@@ -87,8 +87,9 @@ class MessageServiceManager
     private function __generateGlobalMessageCommands(): void
     {
         $this->messageHandler
-            ->offsetSet('ping', new Commands\Ping())
-            ->offsetSet('stop', new Commands\Stop($this->civ13), ['Owner', 'Chief Technical Officer'])    
+            ->offsetSet('ping',                 new Commands\Ping())
+            ->offsetSets(['botstats', 'stats'], new Commands\BotStats($this->civ13), ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('stop',                 new Commands\Stop($this->civ13), ['Owner', 'Chief Technical Officer'])    
             ->offsetSet('restart',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>                
                     $message->react("👍")->then(function () {
@@ -97,7 +98,6 @@ class MessageServiceManager
                         return $this->civ13->restart();
                     }),
                 ['Owner', 'Chief Technical Officer'])
-            ->offsetSets(['botstats', 'stats'], new Commands\BotStats($this->civ13), ['Owner', 'Chief Technical Officer'])
             ->offsetSets(['help', 'commands'],
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true))
