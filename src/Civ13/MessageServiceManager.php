@@ -243,12 +243,7 @@ class MessageServiceManager
                     $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
                     return $this->civ13->reply($message, "`$admin` unbanned `$ckey`");
                 }, ['Admin'])
-            ->offsetSet('maplist',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    (file_exists($fp = $this->civ13->gitdir . Civ13::maps) && $file_contents = @file_get_contents($fp))
-                        ? $message->reply(Civ13::createBuilder()->addFileFromContent('maps.txt', $file_contents))
-                        : $message->react("🔥"),
-                ['Admin'])
+            ->offsetSet('maplist',     new Commands\MapList($this->civ13),     ['Admin'])
             ->offsetSet('adminlist',   new Commands\AdminList($this->civ13),   ['Admin'])
             ->offsetSet('factionlist', new Commands\FactionList($this->civ13), ['Admin'])
             ->offsetSet('getrounds',
