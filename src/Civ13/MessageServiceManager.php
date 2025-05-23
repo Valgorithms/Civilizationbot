@@ -116,6 +116,12 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
                     $message->react(array_reduce($this->civ13->enabled_gameservers, fn($carry, $gameserver) => $carry && $gameserver->cleanupLogs(), true) ? "👍" : "👎"),
                 ['Ambassador'])
+            ->offsetSet('playerlist',
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // This function is only authorized to be used by the database administrator
+                    (($message->user_id === $this->civ13->technician_id) && $playerlist = array_unique(array_merge(...array_map(fn($gameserver) => $gameserver->players, $this->civ13->enabled_gameservers))))
+                        ? $this->civ13->reply($message, implode(', ', $playerlist))
+                        : $message->react("❌"),
+                ['Chief Technical Officer'])
             /*->offsetSet('restart',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>                
                     $message->react("👍")->then(function () {
@@ -167,12 +173,6 @@ class MessageServiceManager
             ->offsetSet('fullaltcheck',          new Commands\FullAltCheck($this->civ13),        ['Ambassador'])
             ->offsetSet('togglerelaymethod',     new Commands\RelayMethodToggle($this->civ13),   ['Ambassador'])
             ->offsetSet('listrounds',            new Commands\ListRounds($this->civ13),          ['Ambassador'])
-            ->offsetSet('playerlist',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // This function is only authorized to be used by the database administrator
-                    (($message->user_id === $this->civ13->technician_id) && $playerlist = array_unique(array_merge(...array_map(fn($gameserver) => $gameserver->players, $this->civ13->enabled_gameservers))))
-                        ? $this->civ13->reply($message, implode(', ', $playerlist))
-                        : $message->react("❌"),
-                ['Chief Technical Officer'])
             ->offsetSet('updateadmins',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     ($this->civ13->adminlistUpdate())
