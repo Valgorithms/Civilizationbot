@@ -11,6 +11,7 @@ use Byond\Byond;
 use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\MessageCommand\Commands;
+use Civ13\MessageCommand\Commands\TypeSpess;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Channel\Poll\Poll;
@@ -613,21 +614,7 @@ class MessageServiceManager
                         return $message->channel->sendMessage(Civ13::createBuilder(true)->setContent($split_message[1] . ', ' . $insults_array[array_rand($insults_array)]));
                     }, ['Verified']);
             
-            if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path']))
-                $this->messageHandler->offsetSet('ts',
-                    function (Message $message, string $command, array $message_filtered): PromiseInterface
-                    {
-                        if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
-                        if (! in_array($state, ['on', 'off'])) return $this->civ13->reply($message, 'Wrong format. Please try `ts on` or `ts off`.');
-                        if ($state === 'on') {
-                            OSFunctions::execInBackground("cd {$this->civ13->folders['typespess_path']}");
-                            OSFunctions::execInBackground('git pull');
-                            OSFunctions::execInBackground("sh {$this->civ13->files['typespess_launch_server_path']}&");
-                            return $this->civ13->reply($message, '**TypeSpess Civ13** test server is now **on**: http://civ13.com/ts');
-                        }
-                        OSFunctions::execInBackground('killall index.js');
-                        return $this->civ13->reply($message, '**TypeSpess Civ13** test server is now **offline**.');
-                    }, ['Owner', 'Chief Technical Officer']);
+            if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path'])) $this->messageHandler->offsetSet('ts', New TypeSpess($this->civ13), ['Owner', 'Chief Technical Officer']);
             if (isset($this->civ13->folders['ss14_basedir'])) $this->messageHandler->offsetSet('ss14', new Commands\SS14($this->civ13), ['Owner', 'Chief Technical Officer']);
 
             $this->__generateServerMessageCommands();
