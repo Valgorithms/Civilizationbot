@@ -375,15 +375,8 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, 'Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')),
                 ['Ambassador'])
-            ->offsetSet('serverstatus',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    return $message->reply($this->civ13->createServerstatusEmbed());
-                    //return $message->reply('Command disabled.');
-                    //return $message->reply(Civ13::createBuilder()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
-                },
-                ['Ambassador'])
-            ->offsetSet('newmembers', new Commands\NewMembers($this->civ13), ['Ambassador'])
+            ->offsetSet('serverstatus', new Commands\ServerStatus($this->civ13), ['Ambassador'])
+            ->offsetSet('newmembers',   new Commands\NewMembers($this->civ13), ['Ambassador'])
             ->offsetSet('fullaltcheck', new Commands\FullAltCheck($this->civ13), ['Ambassador'])
             /**
              * Changes the relay method between 'file' and 'webhook' and sends a message to confirm the change.
