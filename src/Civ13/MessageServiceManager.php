@@ -232,17 +232,7 @@ class MessageServiceManager
                     $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
                     return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13']));
                 }, ['Admin'])
-            ->offsetSet('unban',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (is_numeric($ckey = Civ13::sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], strlen(trim($command))))))
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
-                            else $ckey = $item['ss13'];
-                    if (isset($this->civ13->verifier) && ! $message->member->roles->has($this->civ13->role_ids['Ambassador']) && ! $this->civ13->verifier->isVerified($ckey)) return $this->civ13->reply($message, "No verified data found for ID `$ckey`. Byond user must verify with `approveme` first.");
-                    if (! isset($this->civ13->ages[$ckey]) && ! Byond::isValidCkey($ckey)) return $this->civ13->reply($message, "Byond username `$ckey` does not exist.");
-                    $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
-                    return $this->civ13->reply($message, "`$admin` unbanned `$ckey`");
-                }, ['Admin'])
+            ->offsetSet('unban', new Commands\Unban($this->civ13), ['Admin'])
             ->offsetSet('maplist',     new Commands\MapList($this->civ13),     ['Admin'])
             ->offsetSet('adminlist',   new Commands\AdminList($this->civ13),   ['Admin'])
             ->offsetSet('factionlist', new Commands\FactionList($this->civ13), ['Admin'])
