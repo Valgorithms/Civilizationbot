@@ -220,19 +220,8 @@ class MessageServiceManager
                     $this->civ13->softban($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
                     return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
                 }, ['Admin'])
-            ->offsetSet('ban',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = substr($message_filtered['message_content'], strlen(trim($command)));
-                    $split_message = explode('; ', $message_filtered['message_content']);
-                    if (! $split_message[0] = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
-                    if (! isset($this->civ13->ages[$split_message[0]]) && ! Byond::isValidCkey($split_message[0])) return $this->civ13->reply($message, "Byond username `{$split_message[0]}` does not exist.");
-                    if (! isset($split_message[1]) || ! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
-                    if (! isset($split_message[2]) || ! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
-                    $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
-                    return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13']));
-                }, ['Admin'])
-            ->offsetSet('unban', new Commands\Unban($this->civ13), ['Admin'])
+            ->offsetSet('ban',         new Commands\Ban($this->civ13),         ['Admin'])
+            ->offsetSet('unban',       new Commands\Unban($this->civ13),       ['Admin'])
             ->offsetSet('maplist',     new Commands\MapList($this->civ13),     ['Admin'])
             ->offsetSet('adminlist',   new Commands\AdminList($this->civ13),   ['Admin'])
             ->offsetSet('factionlist', new Commands\FactionList($this->civ13), ['Admin'])
