@@ -87,6 +87,7 @@ class MessageServiceManager
     private function __generateGlobalMessageCommands(): void
     {
         $this->messageHandler
+            ->offsetSet('ping', new Commands\Ping())
             ->offsetSet('stop', new Commands\Stop($this->civ13), ['Owner', 'Chief Technical Officer'])    
             ->offsetSet('restart',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>                
@@ -96,14 +97,10 @@ class MessageServiceManager
                         return $this->civ13->restart();
                     }),
                 ['Owner', 'Chief Technical Officer'])
-            ->offsetSet('ping', new Commands\Ping())
+            ->offsetSets(['botstats', 'stats'], new Commands\BotStats($this->civ13), ['Owner', 'Chief Technical Officer'])
             ->offsetSets(['help', 'commands'],
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true))
-            ->offsetSet('stats',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply(Civ13::createBuilder()->setContent('Civ13 Stats')->addEmbed($this->civ13->stats->handle()->setFooter($this->civ13->embed_footer))),
-                ['Owner', 'Chief Technical Officer'])
             ->offsetSet('httphelp',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, $this->civ13->httpServiceManager->httpHandler->generateHelp(), 'httphelp.txt', true),
