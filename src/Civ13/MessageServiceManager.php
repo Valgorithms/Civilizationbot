@@ -155,22 +155,7 @@ class MessageServiceManager
             ->offsetSet('maplist',     new Commands\MapList($this->civ13),     ['Admin'])
             ->offsetSet('adminlist',   new Commands\AdminList($this->civ13),   ['Admin'])
             ->offsetSet('factionlist', new Commands\FactionList($this->civ13), ['Admin'])
-            ->offsetSet('getrounds',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! $id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format: getrounds `ckey`');
-                    if (! $item = $this->civ13->verifier->getVerifiedItem($id)) return $this->civ13->reply($message, "No verified data found for ID `$id`.");
-                    $rounds = [];
-                    foreach ($this->civ13->enabled_gameservers as $gameserver) if ($r = $gameserver->getRounds([$item['ss13']])) $rounds[$gameserver->name] = $r;
-                    if (! $rounds) return $this->civ13->reply($message, 'No data found for that ckey.');
-                    $builder = Civ13::createBuilder();
-                    foreach ($rounds as $server_name => $rounds) {
-                        $embed = $this->civ13->createEmbed()->setTitle($server_name)->addFieldValues('Rounds', strval(count($rounds)));
-                        if ($user = $this->civ13->verifier->getVerifiedUser($item)) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
-                        $builder->addEmbed($embed);
-                    }
-                    return $message->reply($builder);
-                }, ['Admin'])
+            ->offsetSet('getrounds',   new Commands\GetRounds($this->civ13),   ['Admin'])
             ->offsetSet('tests',       new Commands\Tests($this->civ13), ['Ambassador'])
             ->offsetSet('poll',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
