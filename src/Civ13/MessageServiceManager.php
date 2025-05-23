@@ -161,21 +161,7 @@ class MessageServiceManager
             ->offsetSet('listpolls',             new Commands\PollList($this->civ13),            ['Admin'])
             ->offsetSet('fullbancheck',          new Commands\BanCheckFull($this->civ13),        ['Ambassador'])
             ->offsetSet('updatebans',            new Commands\BansUpdate($this->civ13),          ['Ambassador'])
-            ->offsetSet('fixroles',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface 
-                {
-                    if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $message->react("🔥");
-                    if ($unverified_members = $guild->members->filter(function (Member $member) {
-                        return ! $member->roles->has($this->civ13->role_ids['Verified'])
-                            && ! $member->roles->has($this->civ13->role_ids['Banished'])
-                            && ! $member->roles->has($this->civ13->role_ids['Permabanished']);
-                    })) foreach ($unverified_members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['Verified'], 'fixroles');
-                    if (
-                        $verified_members = $guild->members->filter(fn (Member $member) => $member->roles->has($this->civ13->role_ids['Verified']))
-                    ) foreach ($verified_members as $member) if (! $this->civ13->verifier->getVerifiedItem($member)) $member->removeRole($this->civ13->role_ids['Verified'], 'fixroles');
-                    return $message->react("👍");
-                }, ['Ambassador'])
-            
+            ->offsetSet('fixroles',              new Commands\FixRoles($this->civ13),            ['Ambassador'])
             ->offsetSet('panic_bunker',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, 'Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')),
