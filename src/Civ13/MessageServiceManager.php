@@ -128,13 +128,7 @@ class MessageServiceManager
             ->offsetSets(['dm', 'pm'],      new Commands\DM($this->civ13),                  ['Admin'])
             ->offsetSet('globalooc',        new Commands\GlobalOOC($this->civ13),           ['Admin'])
             ->offsetSet('globalasay',       new Commands\GlobalASay($this->civ13),          ['Admin'])
-            ->offsetSet('permit',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! Byond::isValidCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) return $this->civ13->reply($message, "Byond username `$ckey` does not exist.");
-                    $this->civ13->permitCkey($ckey, boolval(strlen($command)));
-                    return $this->civ13->reply($message, "Byond username `$ckey` is now permitted to bypass the Byond account restrictions.");
-                }, ['Admin'])
+            ->offsetSet('permit',           new Commands\Permit($this->civ13),              ['Admin'])
             ->offsetSets(['unpermit', 'revoke'],
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
