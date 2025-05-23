@@ -147,23 +147,17 @@ class MessageServiceManager
             ->offsetSet('permit',                new Commands\Permit($this->civ13),              ['Admin'])
             ->offsetSets(['unpermit', 'revoke'], new Commands\UnPermit($this->civ13),            ['Admin'])
             ->offsetSet('permitted',             new Commands\PermitList($this->civ13),          ['Admin'], 'exact')
-            ->offsetSet('listbans',    new Commands\ListBans($this->civ13),    ['Admin'])
-            ->offsetSet('softban',     new Commands\SoftBan($this->civ13),     ['Admin'])
-            ->offsetSet('unsoftban',   new Commands\UnSoftBan($this->civ13),   ['Admin'])
-            ->offsetSet('ban',         new Commands\Ban($this->civ13),         ['Admin'])
-            ->offsetSet('unban',       new Commands\UnBan($this->civ13),       ['Admin'])
-            ->offsetSet('maplist',     new Commands\MapList($this->civ13),     ['Admin'])
-            ->offsetSet('adminlist',   new Commands\AdminList($this->civ13),   ['Admin'])
-            ->offsetSet('factionlist', new Commands\FactionList($this->civ13), ['Admin'])
-            ->offsetSet('getrounds',   new Commands\GetRounds($this->civ13),   ['Admin'])
-            ->offsetSet('tests',       new Commands\Tests($this->civ13), ['Ambassador'])
-            ->offsetSet('poll',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    Polls::getPoll($this->civ13->discord, trim(substr($message_filtered['message_content'], strlen($command))))->then(
-                        static fn(Poll $poll): PromiseInterface => $message->reply(Civ13::createBuilder()->setPoll($poll)),
-                        static fn(\Throwable $error): PromiseInterface => $message->react('👎')->then(static fn() => $message->reply($error->getMessage()))
-                    ),
-                ['Admin'])
+            ->offsetSet('listbans',              new Commands\ListBans($this->civ13),            ['Admin'])
+            ->offsetSet('softban',               new Commands\SoftBan($this->civ13),             ['Admin'])
+            ->offsetSet('unsoftban',             new Commands\UnSoftBan($this->civ13),           ['Admin'])
+            ->offsetSet('ban',                   new Commands\Ban($this->civ13),                 ['Admin'])
+            ->offsetSet('unban',                 new Commands\UnBan($this->civ13),               ['Admin'])
+            ->offsetSet('maplist',               new Commands\MapList($this->civ13),             ['Admin'])
+            ->offsetSet('adminlist',             new Commands\AdminList($this->civ13),           ['Admin'])
+            ->offsetSet('factionlist',           new Commands\FactionList($this->civ13),         ['Admin'])
+            ->offsetSet('getrounds',             new Commands\GetRounds($this->civ13),           ['Admin'])
+            ->offsetSet('tests',                 new Commands\Tests($this->civ13),               ['Ambassador'])
+            ->offsetSet('poll',                  new Commands\Poll($this->civ13),                ['Admin'])
             ->offsetSet('listpolls',
                 static fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply(Civ13::createBuilder()->setContent("Available polls: `" . implode('`, `', Polls::listPolls()) . "`")),
