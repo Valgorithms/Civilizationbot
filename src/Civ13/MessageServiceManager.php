@@ -462,21 +462,6 @@ class MessageServiceManager
                         ? $message->react("👍")
                         : $message->react("🔥"),
                 ['Ambassador'])
-            ->offsetSet('unvet',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                { // Adds the infantry role to all veterans
-                    if (! isset($this->civ13->role_ids['veteran']) || ! isset($this->civ13->role_ids['Verified'])) return $message->react("❌");
-                    if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-                    if (! $members = $message->guild->members->filter(fn($member) =>
-                        $member->roles->has($this->civ13->role_ids['veteran']) &&
-                        ! $member->roles->has($this->civ13->role_ids['Verified'])
-                    )) return $message->react("👎");
-                    return $message->react("⏱️")
-                        ->then(static fn() => $members->reduce(fn(PromiseInterface $carry_promise, Member $member): PromiseInterface =>
-                            $carry_promise->then(fn() => $member->addRole($this->civ13->role_ids['Verified'])),
-                            $members->shift()->addRole($this->civ13->role_ids['Verified'])))
-                        ->then(static fn() => $message->react("👍"));
-                }, ['Chief Technical Officer'])
             ->offsetSet('retryregister',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface { // This function is only authorized to be used by the database administrator
                     if ($message->user_id !== $this->civ13->technician_id) return $message->react("❌");
