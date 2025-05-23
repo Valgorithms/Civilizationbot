@@ -112,29 +112,24 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, json_encode($this->civ13->verifier_server->getSessions()), 'ip_sessions.txt', true),
                 ['Owner', 'Chief Technical Officer'])
-            ->offsetSet('cpu',              new Commands\CPU($this->civ13),                 ['Verified'])
-            ->offsetSet('checkip',          new Commands\CheckIP($this->civ13),             ['Verified'])
-            ->offsetSet('bancheck_centcom', new Commands\BanCheckCentcom($this->civ13),     ['Verified'])
-            ->offsetSet('bancheck',         new Commands\BanCheck($this->civ13),            ['Verified'])
-            ->offsetSet('getround',         new Commands\GetRound($this->civ13),            ['Verified'])
-            ->offsetSet('discord2ckey',     new Commands\DiscordToCkey($this->civ13),       ['Verified'])
-            ->offsetSet('ages',             new Commands\Ages($this->civ13),                ['Ambassador'])
-            ->offsetSet('byondage',         new Commands\ByondAge($this->civ13),            ['Ambassador'])
-            ->offsetSet('ckeyinfo',         new Commands\CkeyInfo($this->civ13),            ['Admin'])
-            ->offsetSet('ckey2discord',     new Commands\CkeyToDiscord($this->civ13),       ['Verified'])
-            ->offsetSet('ckey',             new Commands\Ckey($this->civ13),                ['Verified'])
-            ->offsetSet('ooc',              new Commands\OOC($this->civ13),                 ['Verified'])
-            ->offsetSet('asay',             new Commands\ASay($this->civ13),                ['Verified'])
-            ->offsetSets(['dm', 'pm'],      new Commands\DM($this->civ13),                  ['Admin'])
-            ->offsetSet('globalooc',        new Commands\GlobalOOC($this->civ13),           ['Admin'])
-            ->offsetSet('globalasay',       new Commands\GlobalASay($this->civ13),          ['Admin'])
-            ->offsetSet('permit',           new Commands\Permit($this->civ13),              ['Admin'])
-            ->offsetSets(['unpermit', 'revoke'],
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $this->civ13->permitCkey($ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
-                    return $this->civ13->reply($message, "Byond username `$ckey` is no longer permitted to bypass the Byond account restrictions.");
-                }, ['Admin'])
+            ->offsetSet('cpu',                   new Commands\CPU($this->civ13),                 ['Verified'])
+            ->offsetSet('checkip',               new Commands\CheckIP($this->civ13),             ['Verified'])
+            ->offsetSet('bancheck_centcom',      new Commands\BanCheckCentcom($this->civ13),     ['Verified'])
+            ->offsetSet('bancheck',              new Commands\BanCheck($this->civ13),            ['Verified'])
+            ->offsetSet('getround',              new Commands\GetRound($this->civ13),            ['Verified'])
+            ->offsetSet('discord2ckey',          new Commands\DiscordToCkey($this->civ13),       ['Verified'])
+            ->offsetSet('ages',                  new Commands\Ages($this->civ13),                ['Ambassador'])
+            ->offsetSet('byondage',              new Commands\ByondAge($this->civ13),            ['Ambassador'])
+            ->offsetSet('ckeyinfo',              new Commands\CkeyInfo($this->civ13),            ['Admin'])
+            ->offsetSet('ckey2discord',          new Commands\CkeyToDiscord($this->civ13),       ['Verified'])
+            ->offsetSet('ckey',                  new Commands\Ckey($this->civ13),                ['Verified'])
+            ->offsetSet('ooc',                   new Commands\OOC($this->civ13),                 ['Verified'])
+            ->offsetSet('asay',                  new Commands\ASay($this->civ13),                ['Verified'])
+            ->offsetSets(['dm', 'pm'],           new Commands\DM($this->civ13),                  ['Admin'])
+            ->offsetSet('globalooc',             new Commands\GlobalOOC($this->civ13),           ['Admin'])
+            ->offsetSet('globalasay',            new Commands\GlobalASay($this->civ13),          ['Admin'])
+            ->offsetSet('permit',                new Commands\Permit($this->civ13),              ['Admin'])
+            ->offsetSets(['unpermit', 'revoke'], new Commands\UnPermit($this->civ13), ['Admin'])
             ->offsetSet('permitted',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     empty($this->civ13->permitted)
