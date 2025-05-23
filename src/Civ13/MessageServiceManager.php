@@ -132,11 +132,11 @@ class MessageServiceManager
                     }),
                 ['Owner', 'Chief Technical Officer'])*/
             ->offsetSet('ping',                  new Commands\Ping())
+            ->offsetSet('cpu',                   new Commands\CPU($this->civ13),                 ['Verified'])
             ->offsetSets(['botstats', 'stats'],  new Commands\BotStats($this->civ13),            ['Owner', 'Chief Technical Officer'])
             ->offsetSet('updatedeps',            new Commands\UpdateDependencies($this->civ13),  ['Owner', 'Chief Technical Officer'])
-            ->offsetSet('pullrepo',              new Commands\PullCivRepository($this->civ13),      ['Ambassador'])
             ->offsetSet('stop',                  new Commands\Stop($this->civ13),                ['Owner', 'Chief Technical Officer'])    
-            ->offsetSet('cpu',                   new Commands\CPU($this->civ13),                 ['Verified'])
+            ->offsetSet('pullrepo',              new Commands\PullCivRepository($this->civ13),   ['Ambassador'])
             ->offsetSet('checkip',               new Commands\CheckIP($this->civ13),             ['Verified'])
             ->offsetSet('bancheck_centcom',      new Commands\BanCheckCentcom($this->civ13),     ['Verified'])
             ->offsetSet('bancheck',              new Commands\BanCheck($this->civ13),            ['Verified'])
