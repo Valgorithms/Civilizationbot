@@ -20,7 +20,7 @@ class Ban extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        $split_message = explode('; ', self::messageWithoutCommand($command, $message_filtered));
+        $split_message = explode('; ', self::messageWithoutCommand($command, $message_filtered, true));
         if (! $split_message[0] = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         if (! isset($this->civ13->ages[$split_message[0]]) && ! Byond::isValidCkey($split_message[0])) return $this->civ13->reply($message, "Byond username `{$split_message[0]}` does not exist.");
         if (! isset($split_message[1]) || ! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');

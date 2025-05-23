@@ -27,8 +27,8 @@ class MessageCommand implements MessageCommandInterface
         return reject(new \Exception("Command not implemented"));
     }
 
-    public static function messageWithoutCommand(string $command, array $message_filtered): string
+    public static function messageWithoutCommand(string $command, array $message_filtered, bool $lower = false): string
     {
-        return trim(substr($message_filtered['message_content'], strlen($command)));
+        return trim(substr($lower ? $message_filtered['message_content_lower'] : $message_filtered['message_content'], strlen($command)));
     }
 }
