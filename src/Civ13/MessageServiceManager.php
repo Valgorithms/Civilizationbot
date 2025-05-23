@@ -166,15 +166,7 @@ class MessageServiceManager
             ->offsetSet('newmembers',            new Commands\NewMembers($this->civ13),          ['Ambassador'])
             ->offsetSet('fullaltcheck',          new Commands\FullAltCheck($this->civ13),        ['Ambassador'])
             ->offsetSet('togglerelaymethod',     new Commands\RelayMethodToggle($this->civ13),   ['Ambassador'])
-            ->offsetSet('listrounds',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    ($rounds = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
-                        if ($r = $gameserver->getRounds()) $carry[$gameserver->name] = $r;
-                        return $carry;
-                    }, []))
-                        ? $this->civ13->reply($message, "Rounds: " . json_encode($rounds))
-                        : $this->civ13->reply($message, 'No data found.'),
-                ['Ambassador'])
+            ->offsetSet('listrounds',            new Commands\ListRounds($this->civ13),          ['Ambassador'])
             ->offsetSet('playerlist',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface => // This function is only authorized to be used by the database administrator
                     (($message->user_id === $this->civ13->technician_id) && $playerlist = array_unique(array_merge(...array_map(fn($gameserver) => $gameserver->players, $this->civ13->enabled_gameservers))))
