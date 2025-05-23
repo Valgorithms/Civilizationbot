@@ -24,7 +24,7 @@ class ApproveMe extends Civ13MessageCommand
         if ($item = $this->civ13->verifier->getVerifiedItem($message->author))
             return $message->member->setRoles([$this->civ13->role_ids['Verified']], "approveme {$item['ss13']}")
                 ->then(static fn() => $message->react("👍"));
-        if (! $ckey = Civ13::sanitizeInput(self::messageWithoutCommand($command, $message_filtered)))
+        if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true))
             return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
         return $this->civ13->reply($message, $this->civ13->verifier->process($ckey, $message->user_id, $message->member));
     }

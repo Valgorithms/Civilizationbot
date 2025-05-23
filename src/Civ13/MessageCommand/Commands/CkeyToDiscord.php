@@ -21,7 +21,7 @@ class CkeyToDiscord extends Civ13MessageCommand
     {
         return $this->civ13->reply(
             $message,
-            ($item = $this->civ13->verifier->get('ss13', $ckey = Civ13::sanitizeInput(self::messageWithoutCommand($command, $message_filtered))))
+            ($item = $this->civ13->verifier->get('ss13', $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)))
                 ? "`$ckey` is registered to <@{$item['discord']}>"
                 : "`$ckey` is not registered to any discord id"
         );

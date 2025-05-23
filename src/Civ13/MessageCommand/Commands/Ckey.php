@@ -20,7 +20,7 @@ class Ckey extends Civ13MessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         //if (str_starts_with($message_filtered['message_content_lower'], 'ckeyinfo')) return null; // This shouldn't happen, but just in case...
-        if (! $ckey = Civ13::sanitizeInput(self::messageWithoutCommand($command, $message_filtered))) {
+        if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {
             if (! $item = $this->civ13->verifier->getVerifiedItem($ckey = $message->user_id)) return $this->civ13->reply($message, "You are not registered to any byond username");
             return $this->civ13->reply($message, "You are registered to `{$item['ss13']}`");
         }

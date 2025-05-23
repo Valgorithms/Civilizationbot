@@ -7,6 +7,7 @@
 
 namespace Civ13\MessageCommand;
 
+use Civ13\Civ13;
 use Discord\Parts\Channel\Message;
 use React\Promise\PromiseInterface;
 
@@ -27,8 +28,10 @@ class MessageCommand implements MessageCommandInterface
         return reject(new \Exception("Command not implemented"));
     }
 
-    public static function messageWithoutCommand(string $command, array $message_filtered, bool $lower = false): string
+    public static function messageWithoutCommand(string $command, array $message_filtered, bool $lower = false, bool $sanitize = false): string
     {
-        return trim(substr($lower ? $message_filtered['message_content_lower'] : $message_filtered['message_content'], strlen($command)));
+        return $sanitize
+            ? Civ13::sanitizeInput(trim(substr($lower ? $message_filtered['message_content_lower'] : $message_filtered['message_content'], strlen($command))))
+            : trim(substr($lower ? $message_filtered['message_content_lower'] : $message_filtered['message_content'], strlen($command)));
     }
 }

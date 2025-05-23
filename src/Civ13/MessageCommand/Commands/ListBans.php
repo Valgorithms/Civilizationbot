@@ -18,6 +18,6 @@ class ListBans extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $this->civ13->listbans($message, self::messageWithoutCommand($command, $message_filtered));
+        return $this->civ13->listbans($message, self::messageWithoutCommand($command, $message_filtered, true));
     }
 }

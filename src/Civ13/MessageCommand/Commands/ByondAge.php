@@ -22,7 +22,7 @@ class ByondAge extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return ($ckey = Civ13::sanitizeInput(self::messageWithoutCommand($command, $message_filtered))) && ($age = $this->civ13->getByondAge($ckey))
+        return ($ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) && ($age = $this->civ13->getByondAge($ckey))
             ? $this->civ13->reply($message, "`$ckey` (`$age`)")
             : $this->civ13->reply($message, "Unable to locate `$ckey`");
     }
