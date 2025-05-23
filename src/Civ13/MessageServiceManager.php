@@ -155,13 +155,7 @@ class MessageServiceManager
             ->offsetSet('tests',                 new Commands\Tests($this->civ13),               ['Ambassador'])
             ->offsetSet('poll',                  new Commands\Poll($this->civ13),                ['Admin'])
             ->offsetSet('listpolls',             new Commands\PollList($this->civ13),            ['Admin'])
-            ->offsetSet('fullbancheck',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->guild->members->map(fn(Member $member) =>
-                        ($item = $this->civ13->verifier->getVerifiedItem($member)) ? $this->civ13->bancheck($item['ss13']) : null)
-                            ? $message->react("👍")
-                            : $message->react("👎"),
-                ['Ambassador'])
+            ->offsetSet('fullbancheck',          new Commands\BanCheckFull($this->civ13),        ['Ambassador'])
             ->offsetSet('updatebans',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
                     array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
