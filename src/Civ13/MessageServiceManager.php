@@ -156,16 +156,7 @@ class MessageServiceManager
             ->offsetSet('poll',                  new Commands\Poll($this->civ13),                ['Admin'])
             ->offsetSet('listpolls',             new Commands\PollList($this->civ13),            ['Admin'])
             ->offsetSet('fullbancheck',          new Commands\BanCheckFull($this->civ13),        ['Ambassador'])
-            ->offsetSet('updatebans',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
-                    array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
-                        return $carry || array_reduce($this->civ13->enabled_gameservers, function ($carry2, $gameserver2) use ($gameserver) {
-                            return $carry2 || (! await($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs))) instanceof \Throwable);
-                        }, false);
-                    }, false)
-                        ? $message->react("👍")
-                        : $message->react("🔥"),
-                ['Ambassador'])
+            ->offsetSet('updatebans',            new Commands\BansUpdate($this->civ13),          ['Ambassador'])
             ->offsetSet('cleanuplogs',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
                     $message->react(array_reduce($this->civ13->enabled_gameservers, fn($carry, $gameserver) => $carry && $gameserver->cleanupLogs(), true) ? "👍" : "👎"),
