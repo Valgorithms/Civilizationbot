@@ -22,12 +22,12 @@ class BansUpdate extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
-            return $carry || array_reduce($this->civ13->enabled_gameservers, function ($carry2, $gameserver2) use ($gameserver) {
-                return $carry2 || (! await($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs))) instanceof \Throwable);
-            }, false);
-        }, false)
-            ? $message->react("👍")
-            : $message->react("🔥");
+        return $message->react(array_reduce($this->civ13->enabled_gameservers, fn($carry, $gameserver) => 
+            $carry || array_reduce($this->civ13->enabled_gameservers, fn($carry2, $gameserver2) =>
+                $carry2 || (! await($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs))) instanceof \Throwable),
+                false),
+            false)
+            ? "👍"
+            : "🔥");
     }
 }
