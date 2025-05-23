@@ -249,15 +249,7 @@ class MessageServiceManager
                         ? $message->reply(Civ13::createBuilder()->addFileFromContent('maps.txt', $file_contents))
                         : $message->react("🔥"),
                 ['Admin'])
-            ->offsetSet('adminlist',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply(
-                        array_reduce($this->civ13->enabled_gameservers, static fn($builder, $gameserver) =>
-                            file_exists($path = $gameserver->basedir . Civ13::admins)
-                                ? $builder->addFile($path, $gameserver->key . '_adminlist.txt')
-                                : $builder,
-                            Civ13::createBuilder()->setContent('Admin Lists'))),
-                ['Admin'])
+            ->offsetSet('adminlist', new Commands\AdminList($this->civ13), ['Admin'])
             ->offsetSet('factionlist',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply(
