@@ -582,18 +582,7 @@ class MessageServiceManager
                             fn(Throwable $e) => $this->civ13->reply($message, $e->getMessage())->then(fn() => $message->react("👎"))));*/
             if (isset($this->civ13->verifier, $this->civ13->role_ids['Verified']))
                 $this->messageHandler
-                    ->offsetSets(['approveme', 'aproveme', 'approvme'],
-                        function (Message $message, string $command, array $message_filtered): PromiseInterface
-                        {
-                            if (isset($this->civ13->role_ids['Verified']) && $message->member->roles->has($this->civ13->role_ids['Verified']))
-                                return $this->civ13->reply($message, 'You already have the verification role!');
-                            if ($item = $this->civ13->verifier->getVerifiedItem($message->author))
-                                return $message->member->setRoles([$this->civ13->role_ids['Verified']], "approveme {$item['ss13']}")
-                                    ->then(static fn() => $message->react("👍"));
-                            if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))
-                                return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
-                            return $this->civ13->reply($message, $this->civ13->verifier->process($ckey, $message->user_id, $message->member));
-                        })
+                    ->offsetSets(['approveme', 'aproveme', 'approvme'], new Commands\ApproveMe($this->civ13))
                     ->offsetSet('joinroles',
                         function (Message $message, string $command, array $message_filtered): PromiseInterface
                         {
