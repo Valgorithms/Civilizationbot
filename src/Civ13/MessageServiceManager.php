@@ -10,6 +10,7 @@ namespace Civ13;
 use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\MessageCommand\Commands;
+use Civ13\MessageCommand\Commands\AdminListUpdates;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use Monolog\Logger;
@@ -173,12 +174,7 @@ class MessageServiceManager
             ->offsetSet('fullaltcheck',          new Commands\FullAltCheck($this->civ13),        ['Ambassador'])
             ->offsetSet('togglerelaymethod',     new Commands\RelayMethodToggle($this->civ13),   ['Ambassador'])
             ->offsetSet('listrounds',            new Commands\ListRounds($this->civ13),          ['Ambassador'])
-            ->offsetSet('updateadmins',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    ($this->civ13->adminlistUpdate())
-                        ? $message->react("👍")
-                        : $message->react("🔥"),
-                ['Ambassador'])
+            ->offsetSet('updateadmins',          new Commands\AdminListUpdate($this->civ13),     ['Ambassador'])
             ->offsetSet('pullrepo',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     (is_dir($fp = $this->civ13->gitdir) && OSFunctions::execInBackground("git -C {$fp} pull"))
