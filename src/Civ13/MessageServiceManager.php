@@ -137,31 +137,9 @@ class MessageServiceManager
                     }
                     return $this->civ13->reply($message, 'You need to be in any of the #asay channels to use this command.');
                 }, ['Verified'])
-            ->offsetSets(['dm', 'pm'],
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! str_contains($message_filtered['message_content'], ';')) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.');
-                    $explode = explode(';', $message_filtered['message_content']);
-                    $recipient = Civ13::sanitizeInput(substr(array_shift($explode), strlen($command)));
-                    $msg = implode(' ', $explode);
-                    foreach ($this->civ13->enabled_gameservers as $server) {
-                        switch (strtolower($message->channel->name)) {
-                            case "asay-{$server->key}":
-                            case "ic-{$server->key}":
-                            case "ooc-{$server->key}":
-                                if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $recipient, $server->key)) return $message->react("📧");
-                                return $message->react("🔥");
-                        }
-                    }
-                    return $this->civ13->reply($message, 'You need to be in any of the #ic, #asay, or #ooc channels to use this command.');
-                }, ['Admin'])
-            ->offsetSet('globalooc', new GlobalOOC($this->civ13), ['Admin'])
-            ->offsetSet('globalasay',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->AdminMessage(trim(substr($message_filtered['message_content'], strlen(trim($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
-                        ? $message->react("📧")
-                        : $message->react("🔥"),
-                ['Admin'])
+            ->offsetSets(['dm', 'pm'], new Commands\DM($this->civ13),         ['Admin'])
+            ->offsetSet('globalooc',   new Commands\GlobalOOC($this->civ13),  ['Admin'])
+            ->offsetSet('globalasay',  new Commands\GlobalASay($this->civ13), ['Admin'])
             ->offsetSet('permit',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
