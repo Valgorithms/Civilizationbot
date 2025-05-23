@@ -204,10 +204,7 @@ class MessageServiceManager
                     }
                     return $this->civ13->reply($message, $string);
                 }, ['Admin'])
-            ->offsetSet('listbans',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->listbans($message, trim(substr($message_filtered['message_content_lower'], strlen($command)))),
-                ['Admin'])
+            ->offsetSet('listbans',    new Commands\ListBans($this->civ13),    ['Admin'])
             ->offsetSet('softban',     new Commands\SoftBan($this->civ13),     ['Admin'])
             ->offsetSet('unsoftban',   new Commands\UnSoftBan($this->civ13),   ['Admin'])
             ->offsetSet('ban',         new Commands\Ban($this->civ13),         ['Admin'])
