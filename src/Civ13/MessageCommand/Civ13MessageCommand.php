@@ -27,6 +27,13 @@ class Civ13MessageCommand extends MessageCommand
 
     public function __construct(protected Civ13 &$civ13){}
 
+    public function new(\Closure|callable|null $callback = null): static
+    {
+        $new = new static($this->civ13);
+        $new->setCallback($callback);
+        return $new;
+    }
+
     protected function getBrowserProperty(): Browser
     { 
         return isset($this->civ13->browser)
@@ -49,5 +56,13 @@ class Civ13MessageCommand extends MessageCommand
         return isset($this->civ13->loop)
             ? $this->civ13->loop
             : Loop::get(); // Workaround for PHPUnit tests
+    }
+
+    public function __debugInfo(): array
+    {
+        return [
+            'class' => get_class($this),
+            'methods' => get_class_methods($this),
+        ];
     }
 }

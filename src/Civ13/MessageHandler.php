@@ -22,27 +22,74 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
     private \Closure $callback;
 
     /**
-     * @param callable $callback The callback function to be executed.
-     * @throws \InvalidArgumentException If the callback does not have the expected number of parameters, if any parameter does not have a type hint, or a type hint is of the wrong type.
+     * @param \Closure|callable $callback The callback function to be executed
+     * @throws \InvalidArgumentException  If the callback does not have the expected number of parameters, if any parameter does not have a type hint, or a type hint is of the wrong type.
      */
-    public function __construct(callable $callback)
+    public function __construct(\Closure|callable $callback)
+    {
+        $this->setCallback($callback);
+    }
+
+    /**
+     * Validates that the given callback matches the expected parameter types defined in self::PARAMETER_TYPES.
+     *
+     * This method uses reflection to inspect the callback's parameters and ensures:
+     * - The callback has exactly the same number of parameters as defined in self::PARAMETER_TYPES.
+     * - Each parameter has a type hint.
+     * - Each parameter's type matches the corresponding type in self::PARAMETER_TYPES.
+     *
+     * @param callable $callback The callback to validate.
+     * 
+     * @throws \InvalidArgumentException If the callback does not have the correct number of parameters,
+     *                                   if any parameter is missing a type hint,
+     *                                   or if any parameter's type does not match the expected type.
+     */
+    public static function validate(callable $callback, bool $fatal = false): bool
     {
         $reflection = is_object($callback)
             ? new \ReflectionMethod($callback, '__invoke')
             : new \ReflectionFunction($callback);
         $parameters = $reflection->getParameters();
-        if (count($parameters) !== $count = count(self::PARAMETER_TYPES)) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', self::PARAMETER_TYPES));
-
-        foreach ($parameters as $index => $parameter) {
-            if (! $parameter->hasType()) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
-            $type = $parameter->getType();
-            if ($type instanceof \ReflectionNamedType) $type = $type->getName();
-            if ($type !== self::PARAMETER_TYPES[$index]) throw new \InvalidArgumentException("Parameter $index must be of type " . self::PARAMETER_TYPES[$index] . '.');
+        if (count($parameters) !== $count = count(self::PARAMETER_TYPES)) {
+            if ($fatal) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', self::PARAMETER_TYPES));
+            return false;
         }
 
-        $this->callback = is_object($callback)
-            ? \Closure::fromCallable([$callback, '__invoke'])
-            : \Closure::fromCallable($callback);
+        foreach ($parameters as $index => $parameter) {
+            if (! $parameter->hasType()) {
+                if ($fatal) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
+                return false;
+            }
+            $type = $parameter->getType();
+            if ($type instanceof \ReflectionNamedType) $type = $type->getName();
+            if ($type !== self::PARAMETER_TYPES[$index]) {
+                if ($fatal) throw new \InvalidArgumentException("Parameter $index must be of type " . self::PARAMETER_TYPES[$index] . '.');
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Sets the callback to be used by the message handler.
+     *
+     * Validates the provided closure or callable using MessageHandlerCallback::validate().
+     * If the closure is an object, it wraps it using Closure::fromCallable with the '__invoke' method.
+     * Otherwise, it wraps the callable directly.
+     * If the provided argument is not callable, it assigns it as-is to the callback property.
+     *
+     * @param \Closure|callable $closure The closure or callable to set as the callback.
+     * @return void
+     */
+    public function setCallback(\Closure|callable $closure): void
+    {
+        if (is_callable($closure)) {
+            MessageHandlerCallback::validate($closure, true);
+            $this->callback = is_object($closure)
+                ? \Closure::fromCallable([$closure, '__invoke'])
+                : \Closure::fromCallable($closure);
+        } else $this->callback = $closure;
     }
 
     /**
