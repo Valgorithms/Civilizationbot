@@ -18,7 +18,8 @@ class GlobalOOC extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $message->react($this->civ13->OOCMessage(trim(substr($message_filtered['message_content'], strlen(trim($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
+        if (! $msg = self::messageWithoutCommand($command, $message_filtered)) return $this->civ13->reply($message, 'Invalid format! Please use the format `globalooc [message]`.');
+        return $message->react($this->civ13->OOCMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
             ? "📧"
             : "🔥"
         );

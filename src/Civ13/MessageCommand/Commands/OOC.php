@@ -15,10 +15,11 @@ class OOC extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
+        if (! $msg = self::messageWithoutCommand($command, $message_filtered)) return $this->civ13->reply($message, 'Invalid format! Please use the format `ooc [message]`.');
         foreach ($this->civ13->enabled_gameservers as &$gameserver) switch (strtolower($message->channel->name)) {
             case "ooc-{$gameserver->key}":                    
                 if ($gameserver->OOCMessage(
-                    self::messageWithoutCommand($command, $message_filtered),
+                    $msg,
                     $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username
                 )) return $message->react("📧");
                 return $message->react("🔥");

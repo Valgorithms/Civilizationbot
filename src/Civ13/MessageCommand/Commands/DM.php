@@ -20,9 +20,9 @@ class DM extends Civ13MessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! str_contains($message_filtered['message_content'], ';')) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.');
-        $explode = explode(';', $message_filtered['message_content']);
-        $recipient = Civ13::sanitizeInput(substr(trim(array_shift($explode)), strlen($command)));
-        $msg = implode(' ', $explode);
+        if (! $explode = explode(';', $message_filtered['message_content'])) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.');
+        if (! $recipient = Civ13::sanitizeInput(substr(trim(array_shift($explode)), strlen($command)))) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.'); 
+        if (! $msg = implode(' ', $explode)) return $this->civ13->reply($message, 'Invalid format! Please use the format `dm [ckey]; [message]`.');
         foreach ($this->civ13->enabled_gameservers as $server) {
             switch (strtolower($message->channel->name)) {
                 case "asay-{$server->key}":
