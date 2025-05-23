@@ -396,24 +396,7 @@ class MessageServiceManager
                         ])
                         ->serialize(JSON_PRETTY_PRINT))),
                 ['Ambassador'])
-            ->offsetSet('fullaltcheck',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $ckeys = [];
-                    $members = $message->guild->members->filter(function (Member $member) { return ! $member->roles->has($this->civ13->role_ids['Banished']); });
-                    foreach ($members as $member) if ($item = $this->civ13->verifier->getVerifiedItem($member->id)) {
-                        if (!isset($item['ss13'])) continue;
-                        $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
-                        if (count($ckeyinfo['ckeys']) > 1) $ckeys = array_unique(array_merge($ckeys, $ckeyinfo['ckeys']));
-                    }
-                    if ($ckeys) {
-                        $builder = Civ13::createBuilder();
-                        $builder->addFileFromContent('alts.txt', '`'.implode('`' . PHP_EOL . '`', $ckeys));
-                        $builder->setContent('The following ckeys are alt accounts of unbanned verified players.');
-                        return $message->reply($builder);
-                    }
-                    return $this->civ13->reply($message, 'No alts found.');
-                }, ['Ambassador'])
+            ->offsetSet('fullaltcheck', new Commands\FullAltCheck($this->civ13), ['Ambassador'])
             /**
              * Changes the relay method between 'file' and 'webhook' and sends a message to confirm the change.
              *
