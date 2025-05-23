@@ -124,22 +124,10 @@ class MessageServiceManager
             ->offsetSet('ckey2discord',     new Commands\CkeyToDiscord($this->civ13),       ['Verified'])
             ->offsetSet('ckey',             new Commands\Ckey($this->civ13),                ['Verified'])
             ->offsetSet('ooc',              new Commands\OOC($this->civ13),                 ['Verified'])
-            ->offsetSet('asay',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $message_filtered['message_content'] = trim(substr($message_filtered['message_content'], strlen(trim($command))));
-                    foreach ($this->civ13->enabled_gameservers as $server) {
-                        switch (strtolower($message->channel->name)) {
-                            case "asay-{$server->key}":
-                                if ($this->civ13->AdminMessage($message_filtered['message_content'], $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $server->key)) return $message->react("📧");
-                                return $message->react("🔥");
-                        }
-                    }
-                    return $this->civ13->reply($message, 'You need to be in any of the #asay channels to use this command.');
-                }, ['Verified'])
-            ->offsetSets(['dm', 'pm'], new Commands\DM($this->civ13),         ['Admin'])
-            ->offsetSet('globalooc',   new Commands\GlobalOOC($this->civ13),  ['Admin'])
-            ->offsetSet('globalasay',  new Commands\GlobalASay($this->civ13), ['Admin'])
+            ->offsetSet('asay',             new Commands\ASay($this->civ13),                ['Verified'])
+            ->offsetSets(['dm', 'pm'],      new Commands\DM($this->civ13),                  ['Admin'])
+            ->offsetSet('globalooc',        new Commands\GlobalOOC($this->civ13),           ['Admin'])
+            ->offsetSet('globalasay',       new Commands\GlobalASay($this->civ13),          ['Admin'])
             ->offsetSet('permit',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
