@@ -11,6 +11,7 @@ use Byond\Byond;
 use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\MessageCommand\Commands;
+use Civ13\MessageCommand\Commands\GlobalOOC;
 use Civ13\MessageCommand\Commands\TypeSpess;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
@@ -154,12 +155,7 @@ class MessageServiceManager
                     }
                     return $this->civ13->reply($message, 'You need to be in any of the #ic, #asay, or #ooc channels to use this command.');
                 }, ['Admin'])
-            ->offsetSet('globalooc',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->OOCMessage(trim(substr($message_filtered['message_content'], strlen(trim($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
-                        ? $message->react("📧")
-                        : $message->react("🔥"),
-                ['Admin'])
+            ->offsetSet('globalooc', new GlobalOOC($this->civ13), ['Admin'])
             ->offsetSet('globalasay',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->AdminMessage(trim(substr($message_filtered['message_content'], strlen(trim($command)))), $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
