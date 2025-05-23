@@ -16,7 +16,7 @@ use React\Promise\PromiseInterface;
 /**
  * Handles the "Unban" command.
  */
-class Unban extends Civ13MessageCommand
+class UnBan extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {

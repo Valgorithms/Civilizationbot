@@ -221,7 +221,7 @@ class MessageServiceManager
                     return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
                 }, ['Admin'])
             ->offsetSet('ban',         new Commands\Ban($this->civ13),         ['Admin'])
-            ->offsetSet('unban',       new Commands\Unban($this->civ13),       ['Admin'])
+            ->offsetSet('unban',       new Commands\UnBan($this->civ13),       ['Admin'])
             ->offsetSet('maplist',     new Commands\MapList($this->civ13),     ['Admin'])
             ->offsetSet('adminlist',   new Commands\AdminList($this->civ13),   ['Admin'])
             ->offsetSet('factionlist', new Commands\FactionList($this->civ13), ['Admin'])
