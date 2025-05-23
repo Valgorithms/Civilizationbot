@@ -383,19 +383,7 @@ class MessageServiceManager
                     //return $message->reply(Civ13::createBuilder()->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers)))->addEmbed(array_map(fn($gameserver) => $gameserver->generateServerstatusEmbed(), $this->civ13->enabled_gameservers)));
                 },
                 ['Ambassador'])
-            ->offsetSet('newmembers',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply(Civ13::createBuilder()->addFileFromContent('new_members.json', $message->guild->members
-                        ->sort(static fn(Member $a, Member $b) =>
-                            $b->joined_at->getTimestamp() <=> $a->joined_at->getTimestamp())
-                        ->slice(0, 10)
-                        ->map(static fn(Member $member) => [
-                            'username' => $member->user->username,
-                            'id' => $member->id,
-                            'join_date' => $member->joined_at->format('Y-m-d H:i:s')
-                        ])
-                        ->serialize(JSON_PRETTY_PRINT))),
-                ['Ambassador'])
+            ->offsetSet('newmembers', new Commands\NewMembers($this->civ13), ['Ambassador'])
             ->offsetSet('fullaltcheck', new Commands\FullAltCheck($this->civ13), ['Ambassador'])
             /**
              * Changes the relay method between 'file' and 'webhook' and sends a message to confirm the change.
