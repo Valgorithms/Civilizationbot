@@ -162,13 +162,10 @@ class MessageServiceManager
             ->offsetSet('fullbancheck',          new Commands\BanCheckFull($this->civ13),        ['Ambassador'])
             ->offsetSet('updatebans',            new Commands\BansUpdate($this->civ13),          ['Ambassador'])
             ->offsetSet('fixroles',              new Commands\FixRoles($this->civ13),            ['Ambassador'])
-            ->offsetSet('panic_bunker',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->reply($message, 'Panic bunker is now ' . (($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.')),
-                ['Ambassador'])
-            ->offsetSet('serverstatus', new Commands\ServerStatus($this->civ13), ['Ambassador'])
-            ->offsetSet('newmembers',   new Commands\NewMembers($this->civ13), ['Ambassador'])
-            ->offsetSet('fullaltcheck', new Commands\FullAltCheck($this->civ13), ['Ambassador'])
+            ->offsetSet('panic_bunker',          new Commands\PanicBunkerToggle($this->civ13),   ['Ambassador'])
+            ->offsetSet('serverstatus',          new Commands\ServerStatus($this->civ13),        ['Ambassador'])
+            ->offsetSet('newmembers',            new Commands\NewMembers($this->civ13),          ['Ambassador'])
+            ->offsetSet('fullaltcheck',           new Commands\FullAltCheck($this->civ13),       ['Ambassador'])
             /**
              * Changes the relay method between 'file' and 'webhook' and sends a message to confirm the change.
              *
