@@ -113,6 +113,10 @@ class MessageServiceManager
                     }
                     return $this->civ13->reply($message, $string);
                 }, ['Admin'])
+            ->offsetSet('cleanuplogs',
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
+                    $message->react(array_reduce($this->civ13->enabled_gameservers, fn($carry, $gameserver) => $carry && $gameserver->cleanupLogs(), true) ? "👍" : "👎"),
+                ['Ambassador'])
             /*->offsetSet('restart',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>                
                     $message->react("👍")->then(function () {
@@ -157,10 +161,6 @@ class MessageServiceManager
             ->offsetSet('listpolls',             new Commands\PollList($this->civ13),            ['Admin'])
             ->offsetSet('fullbancheck',          new Commands\BanCheckFull($this->civ13),        ['Ambassador'])
             ->offsetSet('updatebans',            new Commands\BansUpdate($this->civ13),          ['Ambassador'])
-            ->offsetSet('cleanuplogs',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
-                    $message->react(array_reduce($this->civ13->enabled_gameservers, fn($carry, $gameserver) => $carry && $gameserver->cleanupLogs(), true) ? "👍" : "👎"),
-                ['Ambassador'])
             ->offsetSet('fixroles',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface 
                 {
