@@ -7,15 +7,11 @@
 
 namespace Civ13;
 
-use Byond\Byond;
 use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\MessageCommand\Commands;
-use Civ13\MessageCommand\Commands\GlobalOOC;
-use Civ13\MessageCommand\Commands\TypeSpess;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
-use Discord\Parts\Channel\Poll\Poll;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\Promise\PromiseInterface;
@@ -158,10 +154,7 @@ class MessageServiceManager
             ->offsetSet('getrounds',             new Commands\GetRounds($this->civ13),           ['Admin'])
             ->offsetSet('tests',                 new Commands\Tests($this->civ13),               ['Ambassador'])
             ->offsetSet('poll',                  new Commands\Poll($this->civ13),                ['Admin'])
-            ->offsetSet('listpolls',
-                static fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply(Civ13::createBuilder()->setContent("Available polls: `" . implode('`, `', Polls::listPolls()) . "`")),
-                ['Admin'])
+            ->offsetSet('listpolls',             new Commands\PollList($this->civ13),            ['Admin'])
             ->offsetSet('fullbancheck',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->guild->members->map(fn(Member $member) =>
@@ -411,7 +404,7 @@ class MessageServiceManager
                     ->offsetSets(['approveme', 'aproveme', 'approvme'], new Commands\ApproveMe($this->civ13))
                     ->offsetSet('joinroles', new Commands\JoinRoles($this->civ13), ['Chief Technical Officer']);
             if (file_exists(Civ13::insults_path)) $this->messageHandler->offsetSet('insult', new Commands\Insult($this->civ13), ['Verified']);
-            if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path'])) $this->messageHandler->offsetSet('ts', New TypeSpess($this->civ13), ['Owner', 'Chief Technical Officer']);
+            if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path'])) $this->messageHandler->offsetSet('ts', New Commands\TypeSpess($this->civ13), ['Owner', 'Chief Technical Officer']);
             if (isset($this->civ13->folders['ss14_basedir'])) $this->messageHandler->offsetSet('ss14', new Commands\SS14($this->civ13), ['Owner', 'Chief Technical Officer']);
 
             $this->__generateServerMessageCommands();
