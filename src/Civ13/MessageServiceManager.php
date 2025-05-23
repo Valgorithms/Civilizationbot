@@ -12,7 +12,6 @@ use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\MessageCommand\Commands;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
-use Discord\Parts\User\Member;
 use Monolog\Logger;
 use React\Promise\PromiseInterface;
 
@@ -165,22 +164,8 @@ class MessageServiceManager
             ->offsetSet('panic_bunker',          new Commands\PanicBunkerToggle($this->civ13),   ['Ambassador'])
             ->offsetSet('serverstatus',          new Commands\ServerStatus($this->civ13),        ['Ambassador'])
             ->offsetSet('newmembers',            new Commands\NewMembers($this->civ13),          ['Ambassador'])
-            ->offsetSet('fullaltcheck',           new Commands\FullAltCheck($this->civ13),       ['Ambassador'])
-            /**
-             * Changes the relay method between 'file' and 'webhook' and sends a message to confirm the change.
-             *
-             * @param Message $message The message object received from the user.
-             * @param array $message_filtered An array of filtered message content.
-             * @param string $command The command string.
-             *
-             * @return PromiseInterface
-             */
-            ->offsetSet('togglerelaymethod',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! ($key = trim(substr($message_filtered['message_content'], strlen($command)))) || ! isset($this->civ13->enabled_gameservers[$key]) || ! $gameserver = $this->civ13->enabled_gameservers[$key]) return $this->civ13->reply($message, 'Invalid format! Please use the format `togglerelaymethod ['.implode('`, `', array_keys($this->civ13->enabled_gameservers)).']`.');
-                    return $this->civ13->reply($message, 'Relay method changed to `' . (($gameserver->legacy_relay = ! $gameserver->legacy_relay) ? 'file' : 'webhook') . '`.');
-                }, ['Ambassador'])
+            ->offsetSet('fullaltcheck',          new Commands\FullAltCheck($this->civ13),        ['Ambassador'])
+            ->offsetSet('togglerelaymethod',     new Commands\RelayMethodToggle($this->civ13),   ['Ambassador'])
             ->offsetSet('listrounds',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     ($rounds = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
