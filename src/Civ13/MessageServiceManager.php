@@ -129,13 +129,8 @@ class MessageServiceManager
             ->offsetSet('globalooc',             new Commands\GlobalOOC($this->civ13),           ['Admin'])
             ->offsetSet('globalasay',            new Commands\GlobalASay($this->civ13),          ['Admin'])
             ->offsetSet('permit',                new Commands\Permit($this->civ13),              ['Admin'])
-            ->offsetSets(['unpermit', 'revoke'], new Commands\UnPermit($this->civ13), ['Admin'])
-            ->offsetSet('permitted',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    empty($this->civ13->permitted)
-                        ? $this->civ13->reply($message, 'No users have been permitted to bypass the Byond account restrictions.')
-                        : $this->civ13->reply($message, 'The following ckeys are now permitted to bypass the Byond account limit and restrictions: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', array_keys($this->civ13->permitted)) . '`'),
-                ['Admin'], 'exact')
+            ->offsetSets(['unpermit', 'revoke'], new Commands\UnPermit($this->civ13),            ['Admin'])
+            ->offsetSet('permitted',             new Commands\PermitList($this->civ13),          ['Admin'], 'exact')
             ->offsetSet('refresh',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->verifier->getVerified(false) ? $message->react("👍") : $message->react("👎"),
