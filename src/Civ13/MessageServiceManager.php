@@ -208,18 +208,8 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->listbans($message, trim(substr($message_filtered['message_content_lower'], strlen($command)))),
                 ['Admin'])
-            ->offsetSet('softban',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $this->civ13->softban($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
-                    return $this->civ13->reply($message, "`$id` is no longer allowed to get verified.");
-                }, ['Admin'])
-            ->offsetSet('unsoftban',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $this->civ13->softban($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))), false);
-                    return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
-                }, ['Admin'])
+            ->offsetSet('softban',     new Commands\SoftBan($this->civ13),     ['Admin'])
+            ->offsetSet('unsoftban',   new Commands\UnSoftBan($this->civ13),   ['Admin'])
             ->offsetSet('ban',         new Commands\Ban($this->civ13),         ['Admin'])
             ->offsetSet('unban',       new Commands\UnBan($this->civ13),       ['Admin'])
             ->offsetSet('maplist',     new Commands\MapList($this->civ13),     ['Admin'])
