@@ -133,6 +133,8 @@ class MessageServiceManager
                 ['Owner', 'Chief Technical Officer'])*/
             ->offsetSet('ping',                  new Commands\Ping())
             ->offsetSets(['botstats', 'stats'],  new Commands\BotStats($this->civ13),            ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('updatedeps',            new Commands\UpdateDependencies($this->civ13),  ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('pullrepo',              new Commands\PullCivRepository($this->civ13),      ['Ambassador'])
             ->offsetSet('stop',                  new Commands\Stop($this->civ13),                ['Owner', 'Chief Technical Officer'])    
             ->offsetSet('cpu',                   new Commands\CPU($this->civ13),                 ['Verified'])
             ->offsetSet('checkip',               new Commands\CheckIP($this->civ13),             ['Verified'])
@@ -175,18 +177,6 @@ class MessageServiceManager
             ->offsetSet('togglerelaymethod',     new Commands\RelayMethodToggle($this->civ13),   ['Ambassador'])
             ->offsetSet('listrounds',            new Commands\ListRounds($this->civ13),          ['Ambassador'])
             ->offsetSet('updateadmins',          new Commands\AdminListUpdate($this->civ13),     ['Ambassador'])
-            ->offsetSet('pullrepo',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    (is_dir($fp = $this->civ13->gitdir) && OSFunctions::execInBackground("git -C {$fp} pull"))
-                        ? $message->react("👍")
-                        : $message->react("🔥"),
-                ['Ambassador'])
-            ->offsetSet('updatedeps',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    OSFunctions::execInBackground('composer update')
-                        ? $message->react("👍")
-                        : $message->react("🔥"),
-                ['Ambassador'])
             ->offsetSet('retryregister',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface { // This function is only authorized to be used by the database administrator
                     if ($message->user_id !== $this->civ13->technician_id) return $message->react("❌");
