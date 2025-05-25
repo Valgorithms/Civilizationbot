@@ -64,18 +64,20 @@ class Verifier
     }
 
     /**
-     * @throws RuntimeException
-     * @return PromiseInterface<string>
+     * @throws RuntimeException User is already verified
+     * @return PromiseInterface<string> The SS14 name associated with the provided Discord ID.
      */
     public function process(string $discord): PromiseInterface
     {
+        if ($item = $this->getEndpoint()->fetch('discord', $discord)) return resolve($item['ss14']);
         return $this->getIPFromDiscord($discord)
             ->then(fn(string $requesting_ip) => $this->getSS14FromIP($requesting_ip))
             ->then(fn(string $ss14) => $this->verify($discord, $ss14))
             ->then(function(string $ss14) use ($discord) {
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                    $channel->sendMessage("`$ss14` has been verified and registered to <@$discord> (Civ14)");
-                }
+                if (
+                    isset($this->civ13->channel_ids['staff_bot'])
+                    && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])
+                ) $channel->sendMessage("`$ss14` has been verified and registered to <@$discord> (Civ14)");
                 return $ss14;
             });
     }
@@ -144,7 +146,7 @@ class Verifier
     public function verify(string $discord, string $ss14): PromiseInterface
     {
         if ($this->endpoint->getIndex($discord, $ss14) !== false) {
-            $this->logger->warning($err = "Discord ID `{$discord}` or SS14 name `{$ss14}` is already verified.");
+            $this->logger->warning($err = "Discord ID `$discord` or SS14 name `$ss14` is already verified.");
             return reject(new RuntimeException($err));
         }
         $this->endpoint->add($discord, $ss14);
