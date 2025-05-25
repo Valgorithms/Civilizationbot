@@ -9,10 +9,9 @@ namespace Civ13\MessageCommand;
 
 use Civ13\Civ13;
 use Civ13\MessageHandlerCallback;
+use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
 use React\Promise\PromiseInterface;
-
-use function React\Promise\reject;
 
 class MessageCommand implements MessageCommandInterface
 {
@@ -45,7 +44,7 @@ class MessageCommand implements MessageCommandInterface
     {
         return isset($this->closure)
             ? call_user_func($this->closure, $message, $command, $message_filtered)
-            : reject(new \Exception("Command not implemented"));
+            : $message->reply('This command is not implemented yet.');
     }
 
     public static function messageWithoutCommand(string $command, array $message_filtered, bool $lower = false, bool $sanitize = false): string
