@@ -16,7 +16,6 @@ use Discord\Builders\Components\Separator;
 use Discord\Builders\Components\TextDisplay;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
-use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\Member;
 use React\Promise\PromiseInterface;
 
@@ -27,18 +26,20 @@ use function React\Async\await;
  */
 class SS14Verify extends Civ13MessageCommand
 {
-    const string COMMAND_TITLE        = 'SS14 Verification';
-    const string STRING_DESCRIPTION   = 'Completing this process will grant you the SS14 Verified role.';
-    const string STRING_STEP_ONE_TODO = '1. Link your Discord account.';
-    const string STRING_STEP_ONE_DONE = '1. Your Discord account is linked.';
-    const string STRING_STEP_TWO_TODO = '2. Link your SS14 account.';
-    const string STRING_STEP_TWO_DONE = '2. Your SS14 account is linked.';
-    const string STRING_INSTRUCTIONS  = 'Please use the `verifyme` command again to complete the process.';
+    const string COMMAND_TITLE = 'SS14 Verification';
+    const string DESCRIPTION   = 'Completing this process will grant you the `@SS14 Verified` role.';
+    const string STEP_ONE_TODO = '1. Link your Discord account.';
+    const string STEP_ONE_DONE = '1. Your Discord account is linked.';
+    const string STEP_TWO_TODO = '2. Link your SS14 account.';
+    const string STEP_TWO_DONE = '2. Your SS14 account is linked.';
+    const string RESULT        = 'Please use the `verifyme` command again to complete the process.';
 
-    const string STRING_ROLE_ADDED    = 'You have been granted the SS14 Verified role.';
+    const string ROLE_ADDED    = 'You have been granted the `@SS14 Verified` role.';
 
-    const string STRING_ROLE_EXISTS   = 'You already have the SS14 Verified role.';
-    const string STRING_UNAVAILABLE   = 'SS14 verification is not available at this time.';
+    const string ROLE_EXISTS   = 'You already have the `@SS14 Verified` role.';
+    const string UNAVAILABLE   = 'SS14 verification is not available at this time.';
+
+    const string ACCENT_COLOR  = '1f8b4c';
 
     protected string $dwa_oauth_url  = 'http://www.civ13.com:16260/dwa?login';
     protected string $ss14_oauth_url = 'http://www.civ13.com:16260/ss14wa?login';
@@ -55,34 +56,36 @@ class SS14Verify extends Civ13MessageCommand
 
     public function createContainer(Member $member): Container
     {
-        $container = Container::new();
+        $container = Container::new()->setAccentColor(self::ACCENT_COLOR);
         $ip = $this->getIPFromDiscord($member->id);
         $ss14 = $ip ? $this->getSS14FromIP($ip) : false;
         
         $container->addComponents([
             TextDisplay::new('# ' . self::COMMAND_TITLE),
             Separator::new(),
-            TextDisplay::new(self::STRING_DESCRIPTION),
+            TextDisplay::new('## Description'),
+            TextDisplay::new(self::DESCRIPTION),
             Separator::new(),
         ]);
 
         if (!isset(
             $this->civ13->ss14verifier,
             $this->civ13->role_ids['SS14 Verified']
-        )) return $container->addComponent(TextDisplay::new(self::STRING_UNAVAILABLE));
+        )) return $container->addComponent(TextDisplay::new('### ' . self::UNAVAILABLE));
 
         if ($member->roles->has(
             $this->civ13->role_ids['SS14 Verified']
-        )) return $container->addComponent(TextDisplay::new(self::STRING_ROLE_EXISTS));
+        )) return $container->addComponent(TextDisplay::new('### ' . self::ROLE_EXISTS));
 
         if (($this->civ13->ss14verifier->getEndpoint()->getIndex($member->id)) !== false) {
             $this->addRole($member);
-            return $container->addComponent(TextDisplay::new(self::STRING_ROLE_ADDED));
+            return $container->addComponent(TextDisplay::new('### ' . self::ROLE_ADDED));
         }
 
+        $container->addComponent(TextDisplay::new('## Usage'));
         $container->addComponent(TextDisplay::new(($ip)
-            ? "✅ " . self::STRING_STEP_ONE_DONE
-            : "❌ " . self::STRING_STEP_ONE_TODO
+            ? "✅ " . self::STEP_ONE_DONE
+            : "❌ " . self::STEP_ONE_TODO
         ));
         if (!$ip) $container->addComponent(ActionRow::new()->addComponent(Button::new(Button::STYLE_LINK)
             ->setEmoji('🔗')
@@ -91,8 +94,8 @@ class SS14Verify extends Civ13MessageCommand
         ));
 
         $container->addComponent(TextDisplay::new(($ss14)
-            ? "✅ " . self::STRING_STEP_TWO_DONE
-            : "❌ " . self::STRING_STEP_TWO_TODO
+            ? "✅ " . self::STEP_TWO_DONE
+            : "❌ " . self::STEP_TWO_TODO
         ));
         if (!$ss14) $container->addComponent(ActionRow::new()->addComponent(Button::new(Button::STYLE_LINK)
             ->setEmoji('🔗')
@@ -101,11 +104,13 @@ class SS14Verify extends Civ13MessageCommand
         ));
 
         return $container
-            ->addComponent(Separator::new())
-            ->addComponent(($ip && $ss14)
-                ? TextDisplay::new($this->process($member, null))
-                : TextDisplay::new(self::STRING_INSTRUCTIONS)
-            );
+            ->addComponents([
+                Separator::new(),
+                ($ip && $ss14)
+                    ? TextDisplay::new('### ' . $this->process($member, null))
+                    : TextDisplay::new('### ' . self::RESULT)
+            ]);
+            
     }
 
     /**
@@ -116,12 +121,12 @@ class SS14Verify extends Civ13MessageCommand
      */
     public function process(Member $member): string
     {
-        if (!isset($this->civ13->ss14verifier)) return self::STRING_UNAVAILABLE; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
+        if (!isset($this->civ13->ss14verifier)) return self::UNAVAILABLE; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
         return await($this->civ13->ss14verifier->process($member->id)->then(
             function() use ($member) {
-                if ($member->roles->has($this->civ13->role_ids['SS14 Verified'])) return self::STRING_ROLE_EXISTS; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
+                if ($member->roles->has($this->civ13->role_ids['SS14 Verified'])) return self::ROLE_EXISTS; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
                 $this->addRole($member);
-                return self::STRING_ROLE_ADDED;
+                return self::ROLE_ADDED;
             },
             fn(\Throwable $e) => $e->getMessage()
         ));
