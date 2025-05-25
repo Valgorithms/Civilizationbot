@@ -81,17 +81,14 @@ class Verifier
                 return $ss14;
             });
     }
-
-    public function getEndpoint(): SS14VerifiedEndpoint
-    {
-        return $this->endpoint;
-    }
     
     /**
      * @throws RuntimeException
      * @return PromiseInterface
+     *
+     * @see Civ13\MessageCommand\Commands\SS14Verify::getIPFromDiscord()
      */
-    public function getIPFromDiscord(string $discord): PromiseInterface
+    protected function getIPFromDiscord(string $discord): PromiseInterface
     {
         $sessions = $this->civ13->verifier_server->getSessions();
         if (!isset($sessions['dwa'])) {
@@ -122,17 +119,19 @@ class Verifier
 
     /**
      * @throws RuntimeException
-     * @return PromiseInterface<User>
+     * @return PromiseInterface<string>
+     * 
+     * @see Civ13\MessageCommand\Commands\SS14Verify::getSS14FromIP()
      */
-    public function getSS14FromIP(string $requesting_ip): PromiseInterface
+    protected function getSS14FromIP(string $ip): PromiseInterface
     {
         $sessions = $this->civ13->verifier_server->getSessions();
         if (!isset($sessions['ss14wa'])) {
             $this->logger->warning($err = "No SS14 sessions found.");
             return reject(new RuntimeException($err));
         }
-        if (!isset($sessions['ss14wa'][$requesting_ip]['user'], $sessions['ss14wa'][$requesting_ip]['user']->name) || !$ss14 = $sessions['ss14wa'][$requesting_ip]['user']->name) {
-            $this->logger->warning(($err = "No SS14 sessions found for IP.") . " IP: `$requesting_ip`.");
+        if (!isset($sessions['ss14wa'][$ip]['user'], $sessions['ss14wa'][$ip]['user']->name) || !$ss14 = $sessions['ss14wa'][$ip]['user']->name) {
+            $this->logger->warning(($err = "No SS14 sessions found for IP.") . " IP: `$ip`.");
             return reject(new RuntimeException($err));
         }
         /** @var string $ss14 */
@@ -184,25 +183,29 @@ class Verifier
         return $this->civ13;
     }
 
+    public function getEndpoint(): SS14VerifiedEndpoint
+    {
+        return $this->endpoint;
+    }
+
     public function getLoggerProperty(): LoggerInterface
     {
         return $this->civ13->logger;
     }
 
-    public function toCollection(string $discrim = 'ss14'): ExCollectionInterface
+    public function getIterator(): Traversable
     {
-        return new Collection($this->endpoint->getState()->getVerifyList(), $discrim);
+        return new \ArrayIterator($this->toArray());
     }
 
-    
     public function toArray(): array
     {
         return $this->endpoint->getState()->getVerifyList();
     }
 
-    public function getIterator(): Traversable
+    public function toCollection(string $discrim = 'ss14'): ExCollectionInterface
     {
-        return new \ArrayIterator($this->toArray());
+        return new Collection($this->endpoint->getState()->getVerifyList(), $discrim);
     }
 
     public function jsonSerialize(): array

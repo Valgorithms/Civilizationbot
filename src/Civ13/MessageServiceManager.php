@@ -324,12 +324,6 @@ class MessageServiceManager
                             return $message->react("👍");
                         },
                         ['Admin']);
-            /*if (isset($this->civ13->ss14verifier, $this->civ13->role_ids['SS14 Verified']))
-                $this->messageHandler->offsetSet('verifyme',
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $this->civ13->ss14verifier->process($message->user_id)->then(
-                            fn() => $this->civ13->addRoles($message->member, $this->civ13->role_ids['SS14 Verified'])->then(fn() => $message->react("👍")),
-                            fn(Throwable $e) => $this->civ13->reply($message, $e->getMessage())->then(fn() => $message->react("👎"))));*/
             if (isset($this->civ13->ss14verifier, $this->civ13->role_ids['SS14 Verified'])) $this->messageHandler->offsetSet('verifyme', new Commands\SS14Verify($this->civ13));
             if (isset($this->civ13->verifier, $this->civ13->role_ids['Verified']))
                 $this->messageHandler
