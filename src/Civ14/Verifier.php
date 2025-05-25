@@ -65,7 +65,7 @@ class Verifier
 
     /**
      * @throws RuntimeException
-     * @return PromiseInterface<User>
+     * @return PromiseInterface<string>
      */
     public function process(string $discord): PromiseInterface
     {

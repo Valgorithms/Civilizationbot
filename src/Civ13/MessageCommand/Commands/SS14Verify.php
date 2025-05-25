@@ -28,19 +28,24 @@ use function React\Async\await;
 class SS14Verify extends Civ13MessageCommand
 {
     const string COMMAND_TITLE        = 'SS14 Verification';
-    const string STRING_DESCRIPTION   = 'Completing this process will grant you the `SS14 Verified` role.';
+    const string STRING_DESCRIPTION   = 'Completing this process will grant you the SS14 Verified role.';
     const string STRING_STEP_ONE_TODO = '1. Link your Discord account.';
     const string STRING_STEP_ONE_DONE = '1. Your Discord account is linked.';
     const string STRING_STEP_TWO_TODO = '2. Link your SS14 account.';
     const string STRING_STEP_TWO_DONE = '2. Your SS14 account is linked.';
     const string STRING_INSTRUCTIONS  = 'Please use the `verifyme` command again to complete the process.';
 
+    const string STRING_ROLE_ADDED    = 'You have been granted the SS14 Verified role.';
+
+    const string STRING_ROLE_EXISTS   = 'You already have the SS14 Verified role.';
+    const string STRING_UNAVAILABLE   = 'SS14 verification is not available at this time.';
+
     protected string $dwa_oauth_url  = 'http://www.civ13.com:16260/dwa?login';
     protected string $ss14_oauth_url = 'http://www.civ13.com:16260/ss14wa?login';
 
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $message->reply($builder = $this->createBuilder($message->member));
+        return $message->reply($this->createBuilder($message->member));
     }
 
     public function createBuilder(Member $member): MessageBuilder
@@ -52,7 +57,7 @@ class SS14Verify extends Civ13MessageCommand
     {
         $container = Container::new();
         $ip = $this->getIPFromDiscord($member->id);
-        $ss14 = $ip ? $this->checkSessionForSS14($ip) : false;
+        $ss14 = $ip ? $this->getSS14FromIP($ip) : false;
         
         $container->addComponents([
             TextDisplay::new('# ' . self::COMMAND_TITLE),
@@ -60,7 +65,21 @@ class SS14Verify extends Civ13MessageCommand
             TextDisplay::new(self::STRING_DESCRIPTION),
             Separator::new(),
         ]);
-        
+
+        if (!isset(
+            $this->civ13->ss14verifier,
+            $this->civ13->role_ids['SS14 Verified']
+        )) return $container->addComponent(TextDisplay::new(self::STRING_UNAVAILABLE));
+
+        if ($member->roles->has(
+            $this->civ13->role_ids['SS14 Verified']
+        )) return $container->addComponent(TextDisplay::new(self::STRING_ROLE_EXISTS));
+
+        if (($this->civ13->ss14verifier->getEndpoint()->getIndex($member->id)) !== false) {
+            $this->addRole($member);
+            return $container->addComponent(TextDisplay::new(self::STRING_ROLE_ADDED));
+        }
+
         $container->addComponent(TextDisplay::new(($ip)
             ? "✅ " . self::STRING_STEP_ONE_DONE
             : "❌ " . self::STRING_STEP_ONE_TODO
@@ -89,68 +108,70 @@ class SS14Verify extends Civ13MessageCommand
             );
     }
 
-    protected function getIPFromDiscord(string $discord_id): ?string
+    /**
+     * Processes the verification of a member using the SS14 verifier.
+     *
+     * @param Member $member
+     * @return string Success message if the role is added, or an error message if verification fails.
+     */
+    public function process(Member $member): string
     {
-        $sessions = $this->civ13->verifier_server->getSessions();
-        if (!isset($sessions['dwa'])) return null;
-        foreach ($sessions['dwa'] as $ip => $array) {
-            if (!isset($array['user']->id)) continue;
-            if ($array['user']->id == $discord_id) return $ip;
-        }
-        return null;
-    }
-
-    public function checkSessionForSS14(string $requesting_ip): ?string
-    {
-        $sessions = $this->civ13->verifier_server->getSessions();
-        if (!isset($sessions['ss14wa'])) return null;
-        if (
-            !isset(
-                $sessions['ss14wa'][$requesting_ip]['user'],
-                $sessions['ss14wa'][$requesting_ip]['user']->name
-            ) || ! $ss14 = $sessions['ss14wa'][$requesting_ip]['user']->name
-        ) return null;
-        return $ss14;
-    }
-
-    protected function process(Member $member): string
-    {
-        if (isset($this->civ13->ss14verifier, $this->civ13->role_ids['SS14 Verified'])) return await($this->civ13->ss14verifier->process($member->id)->then(
+        if (!isset($this->civ13->ss14verifier)) return self::STRING_UNAVAILABLE; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
+        return await($this->civ13->ss14verifier->process($member->id)->then(
             function() use ($member) {
                 $this->addRole($member);
-                return "The SS14 Verified role has been added.";
+                return self::STRING_ROLE_ADDED;
             },
-            fn(\Throwable $e) => $this->errorResponse($e)
+            fn(\Throwable $e) => $e->getMessage()
         ));
-        return $this->verifierUnavailableResponse();
     }
 
-    protected function getSession()
-    {
-        return $this->civ13->verifier_server->getSessions();
-    }
-
+    /**
+     * Assigns the "SS14 Verified" role to the specified Discord member.
+     *
+     * @param Member $member
+     * @return PromiseInterface<Member>
+     */
     protected function addRole(Member $member): PromiseInterface
     {
         return $this->civ13->addRoles($member, $this->civ13->role_ids['SS14 Verified']);
     }
 
-    public function verifierUnavailableResponse(): string
+    /**
+     * Retrieves the IP address associated with a given Discord user ID from the current sessions.
+     *
+     * @param string $discord_id
+     * @return string|null
+     */
+    protected function getIPFromDiscord(string $discord_id): ?string
     {
-        return 'SS14 verification is not available at this time.';
+        $sessions = $this->civ13->verifier_server->getSessions();
+        if (!isset($sessions['dwa'])) return null;
+        foreach ($sessions['dwa'] as $ip => $array) if (
+            isset(
+                $array['user'],
+                $array['user']->id
+            ) && ($array['user']->id == $discord_id)
+        ) return $ip;
+        return null;
     }
 
-    public function errorResponse(\Throwable $e): string
+    /**
+     * Retrieves the SS14 name associated with an IP address from session data.
+     *
+     * @param string $ip
+     * @return string|null
+     */
+    public function getSS14FromIP(string $ip): ?string
     {
-        return $e->getMessage();
-    }
-
-    public function respondWithMessage(Interaction $interaction, MessageBuilder|string $content, bool $ephemeral = false, string $file_name = 'message.txt') : PromiseInterface
-    {
-        if ($content instanceof MessageBuilder) return $interaction->respondWithMessage($content, $ephemeral);
-        $builder = Civ13::createBuilder();
-        if (strlen($content)<=2000) return $interaction->respondWithMessage($builder->setContent($content), $ephemeral);
-        if (strlen($content)<=4096) return $interaction->respondWithMessage($builder->addEmbed($this->civ13->createEmbed()->setDescription($content)), $ephemeral);
-        return $interaction->respondWithMessage($builder->addFileFromContent($file_name, $content), $ephemeral);
+        $sessions = $this->civ13->verifier_server->getSessions();
+        if (!isset($sessions['ss14wa'])) return null;
+        if (
+            isset(
+                $sessions['ss14wa'][$ip]['user'],
+                $sessions['ss14wa'][$ip]['user']->name
+            ) && $sessions['ss14wa'][$ip]['user']->name
+        ) return $sessions['ss14wa'][$ip]['user']->name;
+        return null;
     }
 }
