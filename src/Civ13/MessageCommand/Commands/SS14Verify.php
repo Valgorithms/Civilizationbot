@@ -26,21 +26,28 @@ use function React\Async\await;
  */
 class SS14Verify extends Civ13MessageCommand
 {
+    // Header section
     const string COMMAND_TITLE = 'SS14 Verification';
+
+    // Description section
     const string DESCRIPTION   = 'Completing this process will grant you the `@SS14 Verified` role.';
+
+    // Steps section
     const string STEP_ONE_TODO = '1. Link your Discord account.';
     const string STEP_ONE_DONE = '1. Your Discord account is linked.';
     const string STEP_TWO_TODO = '2. Link your SS14 account.';
     const string STEP_TWO_DONE = '2. Your SS14 account is linked.';
-    const string RESULT        = 'Please use the `verifyme` command again to complete the process.';
-
+    
+    // Output section
+    const string INITIAL       = 'Please use the `verifyme` command again to complete the process.';
     const string ROLE_ADDED    = 'You have been granted the `@SS14 Verified` role.';
-
     const string ROLE_EXISTS   = 'You already have the `@SS14 Verified` role.';
     const string UNAVAILABLE   = 'SS14 verification is not available at this time.';
 
+    // Container defaults
     const string ACCENT_COLOR  = '1f8b4c';
 
+    // @TODO: Use the bot's configurations
     protected string $dwa_oauth_url  = 'http://www.civ13.com:16260/dwa?login';
     protected string $ss14_oauth_url = 'http://www.civ13.com:16260/ss14wa?login';
 
@@ -108,7 +115,7 @@ class SS14Verify extends Civ13MessageCommand
                 Separator::new(),
                 ($ip && $ss14)
                     ? TextDisplay::new('### ' . $this->process($member, null))
-                    : TextDisplay::new('### ' . self::RESULT)
+                    : TextDisplay::new('### ' . self::INITIAL)
             ]);
             
     }
