@@ -119,6 +119,7 @@ class SS14Verify extends Civ13MessageCommand
         if (!isset($this->civ13->ss14verifier)) return self::STRING_UNAVAILABLE; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
         return await($this->civ13->ss14verifier->process($member->id)->then(
             function() use ($member) {
+                if ($member->roles->has($this->civ13->role_ids['SS14 Verified'])) return self::STRING_ROLE_EXISTS; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
                 $this->addRole($member);
                 return self::STRING_ROLE_ADDED;
             },
