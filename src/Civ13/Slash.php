@@ -10,6 +10,7 @@ namespace Civ13;
 
 use Byond\Byond;
 use Civ13\Exceptions\MissingSystemPermissionException;
+use Civ13\MessageCommand\Commands\SS14Verify;
 //use Civ14\GameServer as SS14GameServer;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
@@ -814,10 +815,7 @@ class Slash
         });
 
         $this->discord->listenCommand('verifyme', fn(Interaction $interaction): PromiseInterface =>
-            (isset($this->civ13->ss14verifier, $this->civ13->role_ids['SS14 Verified']))
-                ? $this->civ13->ss14verifier->process($interaction->member->id)->then(
-                    fn() => $this->civ13->addRoles($interaction->member, $this->civ13->role_ids['SS14 Verified'])->then(fn() => $this->respondWithMessage($interaction, "👍", true)),
-                    fn(Throwable $e) => $this->respondWithMessage($interaction, $e->getMessage(), true))
-                : $this->respondWithMessage($interaction, 'SS14 verification is not available at this time.', true));
+            $this->respondWithMessage($interaction, (new SS14Verify($this->civ13))->createBuilder($interaction->member))
+        );
     }
 }
