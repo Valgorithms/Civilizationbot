@@ -27,7 +27,7 @@ use function React\Async\await;
 class SS14Verify extends Civ13MessageCommand
 {
     // Header section
-    const string COMMAND_TITLE = 'SS14 Verification';
+    const string TITLE = 'SS14 Verification';
 
     // Description section
     const string DESCRIPTION   = 'Completing this process will grant you the `@SS14 Verified` role.';
@@ -70,7 +70,7 @@ class SS14Verify extends Civ13MessageCommand
         $ss14 = $ip ? $this->getSS14FromIP($ip) : false;
         
         $container->addComponents([
-            TextDisplay::new('# ' . self::COMMAND_TITLE),
+            TextDisplay::new('# ' . self::TITLE),
             Separator::new(),
             TextDisplay::new('## Description'),
             TextDisplay::new(self::DESCRIPTION),
