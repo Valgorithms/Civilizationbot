@@ -44,8 +44,10 @@ class SS14Verify extends Civ13MessageCommand
     const string ROLE_EXISTS   = 'You already have the `@SS14 Verified` role.';
     const string UNAVAILABLE   = 'SS14 verification is not available at this time.';
 
-    // Container defaults
-    const string ACCENT_COLOR  = '1f8b4c';
+    // Color codes
+    const string ACCENT_COLOR_DEFAULT  = 'f1c40f';
+    const string ACCENT_COLOR_SUCCESS  = '2ecc71';
+    const string ACCENT_COLOR_ERROR    = 'e91e63';
 
     // @TODO: Use the bot's configurations
     protected string $dwa_oauth_url  = 'http://www.civ13.com:16260/dwa?login';
@@ -63,7 +65,7 @@ class SS14Verify extends Civ13MessageCommand
 
     public function createContainer(Member $member): Container
     {
-        $container = Container::new()->setAccentColor(self::ACCENT_COLOR);
+        $container = Container::new()->setAccentColor(self::ACCENT_COLOR_DEFAULT);
         $ip = $this->getIPFromDiscord($member->id);
         $ss14 = $ip ? $this->getSS14FromIP($ip) : false;
         
@@ -78,15 +80,15 @@ class SS14Verify extends Civ13MessageCommand
         if (!isset(
             $this->civ13->ss14verifier,
             $this->civ13->role_ids['SS14 Verified']
-        )) return $container->addComponent(TextDisplay::new('### ' . self::UNAVAILABLE));
+        )) return $container->addComponent(TextDisplay::new('### ' . self::UNAVAILABLE))->setAccentColor(self::ACCENT_COLOR_ERROR);
 
         if ($member->roles->has(
             $this->civ13->role_ids['SS14 Verified']
-        )) return $container->addComponent(TextDisplay::new('### ' . self::ROLE_EXISTS));
+        )) return $container->addComponent(TextDisplay::new('### ' . self::ROLE_EXISTS))->setAccentColor(self::ACCENT_COLOR_SUCCESS);
 
         if (($this->civ13->ss14verifier->getEndpoint()->getIndex($member->id)) !== false) {
             $this->addRole($member);
-            return $container->addComponent(TextDisplay::new('### ' . self::ROLE_ADDED));
+            return $container->addComponent(TextDisplay::new('### ' . self::ROLE_ADDED))->setAccentColor(self::ACCENT_COLOR_SUCCESS);
         }
 
         $container->addComponent(TextDisplay::new('## Usage'));
@@ -126,16 +128,23 @@ class SS14Verify extends Civ13MessageCommand
      * @param Member $member
      * @return string Success message if the role is added, or an error message if verification fails.
      */
-    public function process(Member $member): string
+    public function process(Member $member, ?Container &$container = null): string
     {
-        if (!isset($this->civ13->ss14verifier)) return self::UNAVAILABLE; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
+        if (!isset($this->civ13->ss14verifier)) {
+            $container->setAccentColor(self::ACCENT_COLOR_ERROR);
+            return self::UNAVAILABLE; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
+        }
         return await($this->civ13->ss14verifier->process($member->id)->then(
-            function() use ($member) {
+            function() use ($member, $container) {
                 if ($member->roles->has($this->civ13->role_ids['SS14 Verified'])) return self::ROLE_EXISTS; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
                 $this->addRole($member);
+                if ($container) $container->setAccentColor(self::ACCENT_COLOR_SUCCESS);
                 return self::ROLE_ADDED;
             },
-            fn(\Throwable $e) => $e->getMessage()
+            function(\Throwable $e) use ($container) {
+                if ($container) $container->setAccentColor(self::ACCENT_COLOR_ERROR);
+                return $e->getMessage();
+            } 
         ));
     }
 
