@@ -166,7 +166,6 @@ class MessageServiceManager
             ->offsetSet('getrounds',             new Commands\GetRounds($this->civ13),           ['Admin'])
             ->offsetSet('tests',                 new Commands\Tests($this->civ13),               ['Ambassador'])
             ->offsetSet('poll',                  new Commands\Poll($this->civ13),                ['Admin'])
-            ->offsetSet('listpolls',             new Commands\PollList($this->civ13),            ['Admin'])
             ->offsetSet('fullbancheck',          new Commands\BanCheckFull($this->civ13),        ['Ambassador'])
             ->offsetSet('updatebans',            new Commands\BansUpdate($this->civ13),          ['Ambassador'])
             ->offsetSet('fixroles',              new Commands\FixRoles($this->civ13),            ['Ambassador'])

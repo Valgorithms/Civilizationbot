@@ -21,7 +21,7 @@ class Poll extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return Polls::getPoll($this->civ13->discord, trim(substr($message_filtered['message_content'], strlen($command))))->then(
+        return Polls::getPoll($this->civ13->discord, self::messageWithoutCommand($command, $message_filtered))->then(
             static fn(DiscordPoll $poll): PromiseInterface => $message->reply(Civ13::createBuilder()->setPoll($poll)),
             static fn(\Throwable $error): PromiseInterface => $message->react('👎')->then(static fn() => $message->reply($error->getMessage()))
         );

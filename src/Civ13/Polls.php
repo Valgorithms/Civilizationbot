@@ -67,7 +67,7 @@ class Polls
      */
     public static function getPoll(Discord $discord, string $type): PromiseInterface
     {
-        $type = strtoupper($type);
+        if (! $type = strtoupper($type)) return reject(new \Exception("Available polls: " . implode(', ', array_keys(self::listPolls()))));
         if (! isset(self::listPolls()[$type])) return reject(new \Exception("Invalid poll type `$type`. Available polls: " . implode(', ', array_keys(self::listPolls()))));
         return resolve(
             (new Poll($discord))
