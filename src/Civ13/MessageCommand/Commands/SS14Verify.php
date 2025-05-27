@@ -34,7 +34,7 @@ class SS14Verify extends Civ13MessageCommand
 
     // Description section
     const string DESCRIPTION_TEXT          = 'Completing this process will grant you the `@SS14 Verified` role.';
-    const string DESCRIPTION_BANNER        = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
+    const string DESCRIPTION_BANNER_URL    = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
     const string DESCRIPTION_BANNER_ALT    = 'Civilization 14 Banner';
     //const string DESCRIPTION_THUMBNAIL     = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
     //const string DESCRIPTION_THUMBNAIL_ALT = 'Civilization 14 Thumbnail';
@@ -79,7 +79,7 @@ class SS14Verify extends Civ13MessageCommand
 
         $container->addComponents([
             TextDisplay::new('# ' . self::TITLE),
-            //MediaGallery::new(self::DESCRIPTION_BANNER, self::DESCRIPTION_BANNER_ALT),
+            MediaGallery::new(self::DESCRIPTION_BANNER_URL/*, self::DESCRIPTION_BANNER_ALT*/),
             Separator::new(),
             TextDisplay::new('## Description'),
             TextDisplay::new(self::DESCRIPTION_TEXT),
