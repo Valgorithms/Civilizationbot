@@ -161,7 +161,7 @@ class MessageServiceManager
             ->offsetSet('ban',                   new Commands\Ban($this->civ13),                 ['Admin'])
             ->offsetSet('unban',                 new Commands\UnBan($this->civ13),               ['Admin'])
             ->offsetSet('maplist',               new Commands\MapList($this->civ13),             ['Admin'])
-            ->offsetSet('adminlist',             new Commands\AdminList($this->civ13),           ['Admin'])
+            ->offsetSet('listadmins',            new Commands\ListAdmins($this->civ13),          ['Admin'])
             ->offsetSet('factionlist',           new Commands\FactionList($this->civ13),         ['Admin'])
             ->offsetSet('getrounds',             new Commands\GetRounds($this->civ13),           ['Admin'])
             ->offsetSet('tests',                 new Commands\Tests($this->civ13),               ['Ambassador'])

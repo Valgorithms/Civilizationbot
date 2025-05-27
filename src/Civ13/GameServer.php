@@ -1406,6 +1406,18 @@ class GameServer
         };
         return $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
     }
+    public function listadmins(): string|false
+    {
+        if (! @touch($fp = $this->basedir . Civ13::admins)) {
+            $this->logger->warning("Unable to open `$fp`");
+            return false;
+        }
+        if (! $admins = @file_get_contents($fp)) {
+            $this->logger->warning("Unable to read `$fp`");
+            return false;
+        }
+        return $admins;
+    }
 
     public function parseRoundTime(string $time)
     {
