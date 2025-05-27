@@ -20,8 +20,7 @@ class CheckIP extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $this->civ13->reply(
-            $message,
+        return $this->civ13->reply($message,
             @file_get_contents(
                 'http://ipecho.net/plain',
                 false,

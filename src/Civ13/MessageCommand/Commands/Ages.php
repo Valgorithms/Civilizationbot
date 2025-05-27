@@ -21,8 +21,11 @@ class Ages extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return ($ages = $this->civ13->ages)
-            ? $this->civ13->reply($message, json_encode($ages), 'ages.json')
-            : $this->civ13->reply($message, "Unable to locate Byond account ages");
+        return $this->civ13->reply($message,
+            ($ages = $this->civ13->ages)
+                ?  json_encode($ages)
+                : "Unable to locate Byond account ages",
+            'ages.json'
+        );
     }
 }

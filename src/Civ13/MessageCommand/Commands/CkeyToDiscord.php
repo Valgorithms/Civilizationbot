@@ -19,9 +19,9 @@ class CkeyToDiscord extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $this->civ13->reply(
-            $message,
-            ($item = $this->civ13->verifier->get('ss13', $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)))
+        if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) return $this->civ13->reply($message, 'Invalid format. Please provide a valid BYOND ckey.');
+        return $this->civ13->reply($message,
+            ($item = $this->civ13->verifier->get('ss13', $ckey))
                 ? "`$ckey` is registered to <@{$item['discord']}>"
                 : "`$ckey` is not registered to any discord id"
         );
