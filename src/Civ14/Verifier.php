@@ -178,6 +178,11 @@ class Verifier
             : $member->setroles([$this->civ13->role_ids['SS14 Verified']], "SS14 verified join");
     }
 
+    public function get($key, $value): ?array
+    {
+        return $this->endpoint->fetch($key, $value);
+    }
+
     public function getCiv13()
     {
         return $this->civ13;

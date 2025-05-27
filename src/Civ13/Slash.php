@@ -162,6 +162,14 @@ class Slash
             ]));
 
             // if ($command = $commands->get('name', 'ckey')) $commands->delete($command);
+            if (! $commands->get('name', 'ss14')) $this->save($commands, new Command($this->discord, [
+                'type'                       => Command::USER,
+                'name'                       => 'ss14',
+                'dm_permission'              => false,
+                'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
+            ]));
+            
+            // if ($command = $commands->get('name', 'ckey')) $commands->delete($command);
             if (! $commands->get('name', 'ckey')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'ckey',
@@ -527,6 +535,12 @@ class Slash
             ($item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) 
                 ? $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss13']}`"), true)
                 : $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true)    
+        );
+
+        $this->discord->listenCommand('ss14', fn(Interaction $interaction): PromiseInterface =>
+            ($item = $this->civ13->ss14verifier->get('discord', $interaction->data->target_id)) 
+                ? $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss14']}`"), true)
+                : $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with an SS14 account or it does not exist in the cache yet"), true)    
         );
 
         $this->discord->listenCommand('bancheck', function (Interaction $interaction): PromiseInterface
