@@ -815,7 +815,7 @@ class Slash
         });
 
         $this->discord->listenCommand('verifyme', fn(Interaction $interaction): PromiseInterface =>
-            $this->respondWithMessage($interaction, (new SS14Verify($this->civ13))->createBuilder($interaction->member))
+            $this->respondWithMessage($interaction, (new SS14Verify($this->civ13))->createBuilder($interaction->member), true)
         );
     }
 }
