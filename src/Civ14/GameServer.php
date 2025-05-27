@@ -10,6 +10,7 @@ namespace Civ14;
 
 use Civ13\Civ13;
 use Civ13\Exceptions\PartException;
+use Civ13\OSFunctions;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Helpers\Collection;
@@ -30,20 +31,24 @@ use function React\Promise\reject;
 use function React\Async\await;
 
 /**
-  * @property-read  Browser          $browser
-  * @property-read  Discord          $discord
-  * @property-read  LoggerInterface  $logger
-  * @property-read  LoopInterface    $loop
+  * @property-read  ExCollectionInterface $medals
+  * @property-read  Browser               $browser
+  * @property-read  Discord               $discord
+  * @property-read  LoggerInterface       $logger
+  * @property-read  LoopInterface         $loop
   */
 class GameServer
 {
     use ServerApiTrait;
     use DynamicPropertyAccessorTrait;
 
+    public const MEDALS = '/medals.json';
+
     /** @var Civ13 $civ13 */
     protected $civ13;
 
     public bool    $enabled;
+    public string  $basedir;
     public string  $key;
     public string  $host;
     public string  $playercount; // Channel ID for player count
@@ -60,6 +65,7 @@ class GameServer
     ) {
         $this->civ13         = &$civ13;
         $this->enabled       = (bool) $options['enabled'] ?? true;
+        $this->basedir       = $options['basedir']        ?? null;
         $this->key           = $options['key']            ?? 'civ14';
         $this->name          = $options['name']           ?? 'Civilization 14';
         $this->protocol      = $options['protocol']       ?? 'http';
@@ -86,7 +92,6 @@ class GameServer
             },
             __METHOD__ . " ({$this->key})"
         );
-
     }
     protected function setup(): void
     {
@@ -355,6 +360,21 @@ class GameServer
     public function getRoundMessageIdFileName(): string
     {
         return "{$this->key}_round_message_id.json";
+    }
+
+    /**
+     * Retrieves the medals data as an array, or an empty array if the file does not exist.
+     *
+     * @return ExCollectionInterface
+     */
+    protected function getMedalsProperty(): ExCollectionInterface
+    {
+        return new Collection(
+            (is_file($this->basedir . self::MEDALS))
+                ? array_shift(OSFunctions::VarLoad($this->basedir, self::MEDALS, $this->logger))
+                : [],
+            'user'
+        );
     }
     
     /**
