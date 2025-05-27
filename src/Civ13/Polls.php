@@ -17,6 +17,14 @@ use function React\Promise\resolve;
 
 class Polls
 {
+    CONST VERSION_QUESTION = 'Version?';
+    CONST VERSION_ANSWERS = [
+        '13',
+        '14'
+    ];
+    CONST VERSION_ALLOW_MULTISELECT = false;
+    CONST VERSION_DURATION = 1;
+    
     CONST GAMEMODE_QUESTION = 'Gamemode?';
     CONST GAMEMODE_ANSWERS = [
         'Nomads',
