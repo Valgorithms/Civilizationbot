@@ -369,10 +369,9 @@ class GameServer
      */
     protected function getMedalsProperty(): ExCollectionInterface
     {
+        $data = OSFunctions::VarLoad($this->basedir, self::MEDALS, $this->logger);
         return new Collection(
-            (is_file($this->basedir . self::MEDALS))
-                ? array_shift(OSFunctions::VarLoad($this->basedir, self::MEDALS, $this->logger))
-                : [],
+            isset($data) ? array_shift($data) : [],
             'user'
         );
     }

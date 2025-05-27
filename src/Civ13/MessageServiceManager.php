@@ -355,7 +355,7 @@ class MessageServiceManager
     private function __generateServerMessageCommands(): void
     {
         if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards))
-            $this->messageHandler->offsetSet('medals',
+            $this->messageHandler->offsetSet('civ13medals',
                 function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
                 {
                     if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `medals [ckey]`.');
@@ -392,7 +392,7 @@ class MessageServiceManager
                     return $this->civ13->reply($message, $msg, 'medals.txt');
                 }, ['Verified']);
         if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br))
-            $this->messageHandler->offsetSet('brmedals',
+            $this->messageHandler->offsetSet('civ13brmedals',
                 function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
                 {
                     if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
@@ -571,6 +571,10 @@ class MessageServiceManager
                             fn(\Throwable $error): PromiseInterface => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
                         ),
                     ['Owner', 'Chief Technical Officer']);
+        }
+        foreach ($this->civ13->civ14_enabled_gameservers as &$gameserver) {
+            $this->messageHandler
+                ->offsetSet("{$gameserver->key}medals", new Commands\SS14Medals($this->civ13, $gameserver), ['Verified', 'SS14 Verified']);
         }
         
         $this->__declareListener();
