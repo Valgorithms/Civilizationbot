@@ -1601,12 +1601,12 @@ class Civ13
      * Soft bans a user by adding their ckey to the softbanned array or removes them from it if $allow is false.
      * 
      * @param string $ckey The key of the user to be soft banned.
-     * @param bool $allow Whether to add or remove the user from the softbanned array.
+     * @param bool $ban Whether to add or remove the user from the softbanned array.
      * @return array The updated softbanned array.
      */
-    public function softban(string $id, bool $allow = true): array
+    public function softban(string $id, bool $ban = true): array
     {
-        if ($allow) $this->softbanned[$id] = true;
+        if ($ban) $this->softbanned[$id] = true;
         else unset($this->softbanned[$id]);
         $this->VarSave('softbanned.json', $this->softbanned);
         return $this->softbanned;

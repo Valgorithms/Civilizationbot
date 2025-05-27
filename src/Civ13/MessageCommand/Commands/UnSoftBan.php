@@ -19,7 +19,7 @@ class UnSoftBan extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        $this->civ13->softban($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))));
-        return $this->civ13->reply($message, "`$id` is allowed to get verified again.");
+        $this->civ13->softban($id = self::messageWithoutCommand($command, $message_filtered, true, true), false);
+        return $this->civ13->reply($message, "`$id` is allowed to get verified.");
     }
 }
