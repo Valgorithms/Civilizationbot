@@ -79,7 +79,7 @@ class SS14Verify extends Civ13MessageCommand
 
         $container->addComponents([
             TextDisplay::new('# ' . self::TITLE),
-            MediaGallery::new(self::DESCRIPTION_BANNER, self::DESCRIPTION_BANNER_ALT),
+            //MediaGallery::new(self::DESCRIPTION_BANNER, self::DESCRIPTION_BANNER_ALT),
             Separator::new(),
             TextDisplay::new('## Description'),
             TextDisplay::new(self::DESCRIPTION_TEXT),
