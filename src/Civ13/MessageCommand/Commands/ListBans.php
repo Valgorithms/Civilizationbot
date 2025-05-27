@@ -23,7 +23,7 @@ use React\Promise\PromiseInterface;
 class ListBans extends Civ13MessageCommand
 {
     // Header section
-    const string TITLE = 'ListBans';
+    const string TITLE = 'Civ13 Bans List';
 
     // Description section
     const string DESCRIPTION_TEXT = 'Retrieves the bans.txt files for locally hosted Civ13 servers.';
