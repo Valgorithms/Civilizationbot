@@ -12,6 +12,7 @@ use Civ13\MessageCommand\Civ13MessageCommand;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\Components\Container;
+use Discord\Builders\Components\MediaGallery;
 use Discord\Builders\Components\Section;
 use Discord\Builders\Components\Separator;
 use Discord\Builders\Components\TextDisplay;
@@ -32,8 +33,11 @@ class SS14Verify extends Civ13MessageCommand
     const string TITLE = 'SS14 Verification';
 
     // Description section
-    const string DESCRIPTION_TEXT      = 'Completing this process will grant you the `@SS14 Verified` role.';
-    const string DESCRIPTION_THUMBNAIL = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
+    const string DESCRIPTION_TEXT          = 'Completing this process will grant you the `@SS14 Verified` role.';
+    const string DESCRIPTION_BANNER        = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
+    const string DESCRIPTION_BANNER_ALT    = 'Civilization 14 Banner';
+    //const string DESCRIPTION_THUMBNAIL     = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
+    //const string DESCRIPTION_THUMBNAIL_ALT = 'Civilization 14 Thumbnail';
 
     // Steps section
     const string STEP_ONE_TODO = '1. Link your Discord account.';
@@ -75,11 +79,12 @@ class SS14Verify extends Civ13MessageCommand
 
         $container->addComponents([
             TextDisplay::new('# ' . self::TITLE),
+            MediaGallery::new(self::DESCRIPTION_BANNER, self::DESCRIPTION_BANNER_ALT),
             Separator::new(),
             Section::new()
                 ->addComponent(TextDisplay::new('## Description'))
                 ->addComponent(TextDisplay::new(self::DESCRIPTION_TEXT))
-                ->setAccessory(Thumbnail::new(self::DESCRIPTION_THUMBNAIL)->setDescription('Civilization 14 Banner')),
+                /*->setAccessory(Thumbnail::new(self::DESCRIPTION_THUMBNAIL)->setDescription(self::DESCRIPTION_THUMBNAIL_ALT))*/,
             Separator::new(),
         ]);
 
