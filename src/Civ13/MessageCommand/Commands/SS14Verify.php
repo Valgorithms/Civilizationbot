@@ -13,10 +13,8 @@ use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\Components\Container;
 use Discord\Builders\Components\MediaGallery;
-use Discord\Builders\Components\Section;
 use Discord\Builders\Components\Separator;
 use Discord\Builders\Components\TextDisplay;
-use Discord\Builders\Components\Thumbnail;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\User\Member;
@@ -148,6 +146,7 @@ class SS14Verify extends Civ13MessageCommand
             function() use ($member) {
                 if ($member->roles->has($this->civ13->role_ids['SS14 Verified'])) return self::ROLE_EXISTS; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
                 $this->addRole($member);
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $channel->sendMessage("`ss14` has been verified and registered to <@{$member->id}> (Civ14)");
                 if (isset($this->container)) $this->container->setAccentColor(self::ACCENT_COLOR_SUCCESS);
                 return self::ROLE_ADDED;
             },
