@@ -122,9 +122,9 @@ class SS14Verify extends Civ13MessageCommand
         return $this->container
             ->addComponents([
                 Separator::new(),
-                ($ip && $ss14)
-                    ? TextDisplay::new('### ' . $this->process($member, $this->container))
-                    : TextDisplay::new('### ' . self::INITIAL)
+                TextDisplay::new('### ' . (($ip && $ss14)
+                    ? $this->process($member, $this->container)
+                    : self::INITIAL))
             ]);
     }
 
