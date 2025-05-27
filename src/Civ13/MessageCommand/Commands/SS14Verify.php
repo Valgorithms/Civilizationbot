@@ -81,10 +81,8 @@ class SS14Verify extends Civ13MessageCommand
             TextDisplay::new('# ' . self::TITLE),
             MediaGallery::new(self::DESCRIPTION_BANNER, self::DESCRIPTION_BANNER_ALT),
             Separator::new(),
-            Section::new()
-                ->addComponent(TextDisplay::new('## Description'))
-                ->addComponent(TextDisplay::new(self::DESCRIPTION_TEXT))
-                /*->setAccessory(Thumbnail::new(self::DESCRIPTION_THUMBNAIL)->setDescription(self::DESCRIPTION_THUMBNAIL_ALT))*/,
+            TextDisplay::new('## Description'),
+            TextDisplay::new(self::DESCRIPTION_TEXT),
             Separator::new(),
         ]);
 
