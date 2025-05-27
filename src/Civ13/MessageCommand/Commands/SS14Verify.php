@@ -28,31 +28,31 @@ use function React\Async\await;
 class SS14Verify extends Civ13MessageCommand
 {
     // Header section
-    const string TITLE = 'SS14 Verification';
+    public const string TITLE = 'SS14 Verification';
 
     // Description section
-    const string DESCRIPTION_TEXT          = 'Completing this process will grant you the `@SS14 Verified` role.';
-    const string DESCRIPTION_BANNER_URL    = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
-    const string DESCRIPTION_BANNER_ALT    = 'Civilization 14 Banner';
-    //const string DESCRIPTION_THUMBNAIL     = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
-    //const string DESCRIPTION_THUMBNAIL_ALT = 'Civilization 14 Thumbnail';
+    public const string DESCRIPTION_TEXT          = 'Completing this process will grant you the `@SS14 Verified` role.';
+    public const string DESCRIPTION_BANNER_URL    = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
+    public const string DESCRIPTION_BANNER_ALT    = 'Civilization 14 Banner';
+    //public const string DESCRIPTION_THUMBNAIL     = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
+    //public const string DESCRIPTION_THUMBNAIL_ALT = 'Civilization 14 Thumbnail';
 
     // Steps section
-    const string STEP_ONE_TODO = '1. Link your Discord account.';
-    const string STEP_ONE_DONE = '1. Your Discord account is linked.';
-    const string STEP_TWO_TODO = '2. Link your SS14 account.';
-    const string STEP_TWO_DONE = '2. Your SS14 account is linked.';
+    public const string STEP_ONE_TODO = '1. Link your Discord account.';
+    public const string STEP_ONE_DONE = '1. Your Discord account is linked.';
+    public const string STEP_TWO_TODO = '2. Link your SS14 account.';
+    public const string STEP_TWO_DONE = '2. Your SS14 account is linked.';
     
     // Output section
-    const string INITIAL       = 'Please use the `verifyme` command again to complete the process.';
-    const string ROLE_ADDED    = 'You have been granted the `@SS14 Verified` role.';
-    const string ROLE_EXISTS   = 'You already have the `@SS14 Verified` role.';
-    const string UNAVAILABLE   = 'SS14 verification is not available at this time.';
+    public const string INITIAL       = 'Please use the `verifyme` command again to complete the process.';
+    public const string ROLE_ADDED    = 'You have been granted the `@SS14 Verified` role.';
+    public const string ROLE_EXISTS   = 'You already have the `@SS14 Verified` role.';
+    public const string UNAVAILABLE   = 'SS14 verification is not available at this time.';
 
     // Color codes
-    const string ACCENT_COLOR_DEFAULT  = 'f1c40f';
-    const string ACCENT_COLOR_SUCCESS  = '2ecc71';
-    const string ACCENT_COLOR_ERROR    = 'e91e63';
+    public const string ACCENT_COLOR_DEFAULT  = 'f1c40f';
+    public const string ACCENT_COLOR_SUCCESS  = '2ecc71';
+    public const string ACCENT_COLOR_ERROR    = 'e91e63';
 
     // @TODO: Use the bot's configurations
     protected string $dwa_oauth_url  = 'http://www.civ13.com:16260/dwa?login';
