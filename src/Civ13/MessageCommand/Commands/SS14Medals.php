@@ -12,6 +12,40 @@ use Civ13\MessageCommand\Civ13MessageCommand;
 use Civ14\GameServer;
 use Discord\Parts\Channel\Message;
 use React\Promise\PromiseInterface;
+    
+enum SS14MedalEmojis: string
+{
+    case BronzeNomadsVeteran = 'Bronze Nomads Veteran Medal';
+    case SilverNomadsVeteran = 'Silver Nomads Veteran Medal';
+    case GoldNomadsVeteran   = 'Gold Nomads Veteran Medal';
+
+    public function emoji(): string
+    {
+        return match($this) {
+            self::BronzeNomadsVeteran => 'nomads_bronze',
+            self::SilverNomadsVeteran => 'nomads_silver',
+            self::GoldNomadsVeteran   => 'nomads_gold',
+        };
+    }
+
+    public static function fromName(string $name): ?self
+    {
+        return match($name) {
+            self::BronzeNomadsVeteran->value => self::BronzeNomadsVeteran,
+            self::SilverNomadsVeteran->value => self::SilverNomadsVeteran,
+            self::GoldNomadsVeteran->value   => self::GoldNomadsVeteran,
+            default => null,
+        };
+    }
+
+    public static function withEmoji(string $name): string
+    {
+        return ($enum = self::fromName($name))
+            ? $enum->emoji() . ' ' . $name
+            : $name;
+    }
+}
+
 
 /**
  * Handles the "14medals" command.
@@ -33,9 +67,16 @@ class SS14Medals extends Civ13MessageCommand
         if (! $item = $this->gameserver->medals->get('user', $id)) return $this->civ13->reply( $message,
             "No SS14 medals found for `$id`."
         );
+
+        if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id))
+            foreach ($item['medals'] as &$medal)
+                if ($enum = SS14MedalEmojis::fromName($medal))
+                    if ($emoji = $guild->emojis->get('name', $enum->emoji()))
+                        $medal = $emoji . " $medal";
+
         return $this->civ13->reply($message,
             "Medals for {$item['user']}:" . PHP_EOL
-            . (implode(PHP_EOL, $item['medals']) ?? 'No medals found.')
+            . (implode(PHP_EOL, $item['medals']))
         );
     }
 }
