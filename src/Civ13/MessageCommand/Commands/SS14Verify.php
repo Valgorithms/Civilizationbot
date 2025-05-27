@@ -12,8 +12,10 @@ use Civ13\MessageCommand\Civ13MessageCommand;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\Components\Container;
+use Discord\Builders\Components\Section;
 use Discord\Builders\Components\Separator;
 use Discord\Builders\Components\TextDisplay;
+use Discord\Builders\Components\Thumbnail;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\User\Member;
@@ -30,7 +32,8 @@ class SS14Verify extends Civ13MessageCommand
     const string TITLE = 'SS14 Verification';
 
     // Description section
-    const string DESCRIPTION   = 'Completing this process will grant you the `@SS14 Verified` role.';
+    const string DESCRIPTION_TEXT      = 'Completing this process will grant you the `@SS14 Verified` role.';
+    const string DESCRIPTION_THUMBNAIL = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
 
     // Steps section
     const string STEP_ONE_TODO = '1. Link your Discord account.';
@@ -68,12 +71,15 @@ class SS14Verify extends Civ13MessageCommand
         $container = Container::new()->setAccentColor(self::ACCENT_COLOR_DEFAULT);
         $ip = $this->getIPFromDiscord($member->id);
         $ss14 = $ip ? $this->getSS14FromIP($ip) : false;
-        
+
+
         $container->addComponents([
             TextDisplay::new('# ' . self::TITLE),
             Separator::new(),
-            TextDisplay::new('## Description'),
-            TextDisplay::new(self::DESCRIPTION),
+            Section::new()
+                ->addComponent(TextDisplay::new('## Description'))
+                ->addComponent(TextDisplay::new(self::DESCRIPTION_TEXT))
+                ->setAccessory(Thumbnail::new(self::DESCRIPTION_THUMBNAIL)->setDescription('Civilization 14 Banner')),
             Separator::new(),
         ]);
 
@@ -116,7 +122,7 @@ class SS14Verify extends Civ13MessageCommand
             ->addComponents([
                 Separator::new(),
                 ($ip && $ss14)
-                    ? TextDisplay::new('### ' . $this->process($member, null))
+                    ? TextDisplay::new('### ' . $this->process($member, $container))
                     : TextDisplay::new('### ' . self::INITIAL)
             ]);
             
