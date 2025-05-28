@@ -9,6 +9,7 @@ namespace Civ13\MessageCommand\Commands;
 
 use Civ13\Civ13;
 use Civ13\MessageCommand\Civ13MessageCommand;
+use Civ14\GameServer;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\Components\Container;
@@ -38,11 +39,13 @@ class SS14Verify extends Civ13MessageCommand
     //public const string DESCRIPTION_THUMBNAIL_ALT = 'Civilization 14 Thumbnail';
 
     // Steps section
-    public const string STEP_ONE_TODO = '1. Link your Discord account.';
-    public const string STEP_ONE_DONE = '1. Your Discord account is linked.';
-    public const string STEP_TWO_TODO = '2. Link your SS14 account.';
-    public const string STEP_TWO_DONE = '2. Your SS14 account is linked.';
-    
+    public const string STEP_ONE_TODO   = '1. Link your Discord account.';
+    public const string STEP_ONE_DONE   = '1. Your Discord account is linked.';
+    public const string STEP_TWO_TODO   = '2. Link your SS14 account.';
+    public const string STEP_TWO_DONE   = '2. Your SS14 account is linked.';
+    public const string STEP_THREE_TODO = '3. Earn at least one medal by playing the game.';
+    public const string STEP_THREE_DONE = '3. You have earned at least one medal.';
+
     // Output section
     public const string INITIAL       = 'Please use the `verifyme` command again to complete the process.';
     public const string ROLE_ADDED    = 'You have been granted the `@SS14 Verified` role.';
@@ -117,6 +120,15 @@ class SS14Verify extends Civ13MessageCommand
             ->setEmoji('🔗')
             ->setLabel('Link SS14')
             ->setUrl($this->ss14_oauth_url)
+        ));
+
+        $this->container->addComponent(TextDisplay::new(($ss14 && array_reduce(
+            $this->civ13->civ14_enabled_gameservers,
+            static fn($carry, $gameserver) => $carry || SS14Medals::getMedals($gameserver, $ss14),
+            false
+        ))
+            ? "✅ " . self::STEP_THREE_DONE
+            : "❌ " . self::STEP_THREE_TODO
         ));
 
         return $this->container
