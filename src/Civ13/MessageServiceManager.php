@@ -475,99 +475,16 @@ class MessageServiceManager
                             fn(\Throwable $error): PromiseInterface => $message->react("🔥")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
                         ),
                     ['Ambassador', 'Admin'])*/
-                ->offsetSet("{$gameserver->key}host",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(static fn() => $gameserver->Host($message)),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}kill",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(static fn() => $gameserver->Kill($message)),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}restart",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(static fn() => $gameserver->Restart($message)),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}mapswap",
-                    function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
-                    {
-                        $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
-                        if (! isset($split_message[1])) return $message->react("❌")->then(fn () => $this->civ13->reply($message, 'You need to include the name of the map.'));
-                        return $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username)->then(
-                            fn ($result) => $message->react("👍")->then(fn() => $this->civ13->reply($message, $result)),
-                            fn (\Throwable $error) => $message->react($error instanceof FileNotFoundException ? "🔥" : "👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
-                        );
-                    }, ['Ambassador'])
-                ->offsetSet("{$gameserver->key}panic",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $this->civ13->reply($message, "Panic bunker is now " . (($gameserver->panic_bunker = ! $gameserver->panic_bunker) ? 'enabled' : 'disabled')),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}ban",
-                    function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
-                    {
-                        if (! $this->civ13->hasRequiredConfigRoles(['Banished'])) $this->logger->warning("Skipping server function `{$gameserver->key} ban` because the required config roles were not found.");
-                        if (! $message_content = substr($message_filtered['message_content'], strlen($command))) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `{server}ban ckey; duration; reason`');
-                        if (! $split_message = explode('; ', $message_content)) return $this->civ13->reply($message, 'Invalid format! Please use the format `{server}ban ckey; duration; reason`');
-                        if (! $split_message[0]) return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
-                        if (! $split_message[1]) return $this->civ13->reply($message, 'Missing ban duration! Please use the format `ban ckey; duration; reason`');
-                        if (! $split_message[2]) return $this->civ13->reply($message, 'Missing ban reason! Please use the format `ban ckey; duration; reason`');
-                        if (! str_ends_with($split_message[2], '.')) $split_message[2] .= '.';
-                        $maxlen = 150 - strlen(" Appeal at {$this->civ13->discord_formatted}");
-                        if (strlen($split_message[2]) > $maxlen) return $this->civ13->reply($message, "Ban reason is too long! Please limit it to `$maxlen` characters.");
-                        $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2] . " Appeal at {$this->civ13->discord_formatted}"];
-                        $result = $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], strval($gameserver));
-                        if ($member = $this->civ13->verifier->getVerifiedMember('id', $split_message[0]))
-                            if (! $member->roles->has($this->civ13->role_ids['Banished']))
-                                $member->addRole($this->civ13->role_ids['Banished'], $result);
-                        return $this->civ13->reply($message, $result);
-                    },
-                    ['Admin'])
-                ->offsetSet("{$gameserver->key}unban",
-                    function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
-                    {
-                        if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Missing unban ckey! Please use the format `{server}unban ckey`');
-                        if (is_numeric($ckey)) {
-                            if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
-                            $ckey = $item['ckey'];
-                        }
-                        
-                        $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], strval($gameserver));
-                        $result = "`$admin` unbanned `$ckey` from `{$gameserver->name}`";
-                        if ($member = $this->civ13->verifier->getVerifiedMember('id', $ckey))
-                            if ($member->roles->has($this->civ13->role_ids['Banished']))
-                                $member->removeRole($this->civ13->role_ids['Banished'], $result);
-                        return $this->civ13->reply($message, $result);
-                    },
-                    ['Admin'])
-                ->offsetSet("{$gameserver->key}ranking",
-                    fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $gameserver->recalculateRanking()->then(
-                            fn () => $gameserver->getRanking()->then(
-                                fn (string $ranking) => $this->civ13->reply($message, $ranking, 'ranking.txt'),
-                                function (MissingSystemPermissionException $error) use ($message) {
-                                    $this->logger->error($err = $error->getMessage());
-                                    $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
-                                }
-                            ),
-                            function (MissingSystemPermissionException $error) use ($message) {
-                                $this->logger->error($err = $error->getMessage());
-                                $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
-                            }
-                        ),
-                    ['Verified'])
-                ->offsetSet("{$gameserver->key}rank",
-                    function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
-                    {
-                        if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                            if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
-                            $ckey = $item['ss13'];
-                        }
-                        if (! $gameserver->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                        if (! $msg = $gameserver->getRank($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
-                        return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
-                        // return $this->civ13->reply($message, "Your ranking is too long to display.");
-                    },
-                    ['Verified'])
-                ;
+                ->offsetSet("{$gameserver->key}host",    new Commands\Civ13GameServerHost($this->civ13, $gameserver),    ['Ambassador'])
+                ->offsetSet("{$gameserver->key}kill",    new Commands\Civ13GameServerKill($this->civ13, $gameserver),    ['Ambassador'])
+                ->offsetSet("{$gameserver->key}restart", new Commands\Civ13GameServerRestart($this->civ13, $gameserver), ['Ambassador'])
+                ->offsetSet("{$gameserver->key}mapswap", new Commands\Civ13GameServerMapSwap($this->civ13, $gameserver), ['Ambassador'])
+                ->offsetSet("{$gameserver->key}panic",   new Commands\Civ13GameServerPanic($this->civ13, $gameserver),   ['Ambassador'])
+                ->offsetSet("{$gameserver->key}ban",     new Commands\Civ13GameServerBan($this->civ13, $gameserver),     ['Admin'])
+                ->offsetSet("{$gameserver->key}unban",   new Commands\Civ13GameServerUnBan($this->civ13, $gameserver),   ['Admin'])
+                ->offsetSet("{$gameserver->key}ranking", new Commands\Civ13GameServerRanking($this->civ13, $gameserver), ['Verified'])
+                ->offsetSet("{$gameserver->key}rank",    new Commands\Civ13GameServerRank($this->civ13, $gameserver),    ['Verified'])
+            ;
             $this->__declareListener();
         }
         foreach ($this->civ13->civ14_enabled_gameservers as &$gameserver) {
