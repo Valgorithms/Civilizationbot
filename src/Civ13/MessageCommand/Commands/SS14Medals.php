@@ -82,33 +82,46 @@ class SS14Medals extends Civ13MessageCommand
      */
     public static function getMedalsWithEmojis(Guild $guild, array $medals): array
     {
-        return array_map(function($medal) use ($guild) {
-            if ($enum = SS14MedalEmojis::fromName($medal))
-                if ($emoji = $guild->emojis->get('name', $enum->emoji()))
-                    return $emoji . " $medal";
-            return $medal;
-        }, $medals);
+        return array_map(static fn($medal) =>
+            ($emoji = self::getMedalEmoji($guild, $medal))
+                ? "$emoji $medal"
+                : $medal,
+            $medals);
     }
 
     /**
      * Retrieves the emojis for the given medals.
      *
+     * @param Guild $guild
      * @param String[] $medals
      * @return array
      */
     public static function getMedalEmojis(Guild $guild, array $medals): array
     {
-        foreach ($medals as &$medal)
-            if ($enum = SS14MedalEmojis::fromName($medal))
-                $medal = ($emoji = $guild->emojis->get('name', $enum->emoji()))
-                    ? $emoji
-                    : null;
-        return array_filter($medals);
+        return array_filter(array_map(fn($medal) => self::getMedalEmoji($guild, $medal), $medals));
+    }
+
+    /**
+     * Retrieves the emoji for a specific medal.
+     *
+     * @param Guild $guild
+     * @param string $medal
+     * @return string|null
+     */
+    public static function getMedalEmoji(Guild $guild, string $medal): ?string
+    {
+        if ($enum = SS14MedalEmojis::fromName($medal)) {
+            if ($emoji = $guild->emojis->get('name', $enum->emoji())) {
+                return (string) $emoji;
+            }
+        }
+        return null;
     }
     
     /**
      * Retrieves the medals associated with a specific SS14 user.
      *
+     * @param GameServer $gameserver
      * @param string $ss14
      * @return array|null
      */

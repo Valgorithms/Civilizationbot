@@ -354,64 +354,10 @@ class MessageServiceManager
      */
     private function __generateServerMessageCommands(): void
     {
-        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards))
-            $this->messageHandler->offsetSet('civ13medals',
-                function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
-                {
-                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `medals [ckey]`.');
-                    $medals = function (string $ckey) use ($fp): false|string
-                    {
-                        $result = '';
-                        if (! $search = @fopen($fp, 'r')) return false;
-                        $found = false;
-                        while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {  # remove '\n' at end of line
-                            $found = true;
-                            $duser = explode(';', $line);
-                            if ($duser[0] === $ckey) {
-                                switch ($duser[2]) {
-                                    case 'long service medal': $medal_s = '<:long_service:705786458874707978>'; break;
-                                    case 'combat medical badge': $medal_s = '<:combat_medical_badge:706583430141444126>'; break;
-                                    case 'tank destroyer silver badge': $medal_s = '<:tank_silver:705786458882965504>'; break;
-                                    case 'tank destroyer gold badge': $medal_s = '<:tank_gold:705787308926042112>'; break;
-                                    case 'assault badge': $medal_s = '<:assault:705786458581106772>'; break;
-                                    case 'wounded badge': $medal_s = '<:wounded:705786458677706904>'; break;
-                                    case 'wounded silver badge': $medal_s = '<:wounded_silver:705786458916651068>'; break;
-                                    case 'wounded gold badge': $medal_s = '<:wounded_gold:705786458845216848>'; break;
-                                    case 'iron cross 1st class': $medal_s = '<:iron_cross1:705786458572587109>'; break;
-                                    case 'iron cross 2nd class': $medal_s = '<:iron_cross2:705786458849673267>'; break;
-                                    default:  $medal_s = '<:long_service:705786458874707978>';
-                                }
-                                $result .= "`{$duser[1]}:` {$medal_s} **{$duser[2]}, *{$duser[4]}*, {$duser[5]}" . PHP_EOL;
-                            }
-                        }
-                        if ($result != '') return $result;
-                        if (! $found && $result === '') return 'No medals found for this ckey.';
-                        return false;
-                    };
-                    if (! $msg = $medals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
-                    return $this->civ13->reply($message, $msg, 'medals.txt');
-                }, ['Verified']);
-        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br))
-            $this->messageHandler->offsetSet('civ13brmedals',
-                function (Message $message, string $command, array $message_filtered) use ($fp): PromiseInterface
-                {
-                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
-                    $brmedals = function (string $ckey) use ($fp): string
-                    {
-                        if (! $search = @fopen($fp, 'r')) return "Error opening $fp.";
-                        $result = '';
-                        while (! feof($search)) if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
-                            $duser = explode(';', $line);
-                            if ($duser[0] === $ckey) $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})" . PHP_EOL;
-                        }
-                        return $result
-                            ? $result
-                            : 'No medals found for this ckey.';
-                    };
-                    if (! $msg = $brmedals($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your medals!');
-                    return $this->civ13->reply($message, $msg, 'brmedals.txt');
-                    // return $this->civ13->reply($message, "Too many medals to display.");
-                }, ['Verified']);
+        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards))
+            $this->messageHandler->offsetSet('civ13medals',   new Commands\Civ13GameServerMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']),  ['Verified']);
+        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br))
+            $this->messageHandler->offsetSet('civ13brmedals', new Commands\Civ13GameServerBRMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']), ['Verified']);
         
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             /*if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->warning("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
