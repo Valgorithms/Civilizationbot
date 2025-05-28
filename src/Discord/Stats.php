@@ -96,8 +96,7 @@ class Stats
 
     public function handle(): Embed
     {
-        $embed = new Embed($this->discord);
-        $embed
+        return (new Embed($this->discord))
             ->setTitle('DiscordPHP')
             ->setDescription('This bot runs with DiscordPHP.')
             ->addFieldValues('PHP Version', phpversion())
@@ -109,7 +108,6 @@ class Stats
             ->addFieldValues('Channel count', $this->getChannelCount())
             ->addFieldValues('User count', $this->discord->users->count())
             ->addFieldValues('Memory usage', $this->getMemoryUsageFriendly());
-        return $embed;
     }
 
     public function getHelp(): string
