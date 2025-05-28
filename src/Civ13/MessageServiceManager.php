@@ -414,73 +414,93 @@ class MessageServiceManager
                 }, ['Verified']);
         
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-            if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->warning("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
-            else {
-                $this->messageHandler
-                    ->offsetSet("{$gameserver->key}notes",
-                        function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
-                        {
-                            if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Missing ckey! Please use the format `notes ckey`');
-                            $first_letter_lower = strtolower(substr($ckey, 0, 1));
-                            $first_letter_upper = strtoupper(substr($ckey, 0, 1));
-                            
-                            $letter_dir = '';
-                            
-                            if (is_dir($basedir = $gameserver->basedir . Civ13::playernotes_basedir. "/$first_letter_lower")) $letter_dir = $basedir . "/$first_letter_lower";
-                            elseif (is_dir($basedir = $gameserver->basedir . Civ13::playernotes_basedir . "/$first_letter_upper")) $letter_dir = $basedir . "/$first_letter_upper";
-                            else return $this->civ13->reply($message, "No notes found for any ckey starting with `$first_letter_upper`.");
+            /*if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->warning("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
+            else $this->messageHandler->offsetSet("{$gameserver->key}notes",
+                function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
+                {
+                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content'], strlen($command)))) return $this->civ13->reply($message, 'Missing ckey! Please use the format `notes ckey`');
+                    $first_letter_lower = strtolower(substr($ckey, 0, 1));
+                    $first_letter_upper = strtoupper(substr($ckey, 0, 1));
+                    
+                    $letter_dir = '';
+                    
+                    if (is_dir($basedir = $gameserver->basedir . Civ13::playernotes_basedir. "/$first_letter_lower")) $letter_dir = $basedir . "/$first_letter_lower";
+                    elseif (is_dir($basedir = $gameserver->basedir . Civ13::playernotes_basedir . "/$first_letter_upper")) $letter_dir = $basedir . "/$first_letter_upper";
+                    else return $this->civ13->reply($message, "No notes found for any ckey starting with `$first_letter_upper`.");
 
-                            $player_dir = '';
-                            $dirs = [];
-                            $scandir = scandir($letter_dir);
-                            if ($scandir) $dirs = array_filter($scandir, function($dir) use ($ckey) {
-                                return strtolower($dir) === strtolower($ckey)/* && is_dir($letter_dir . "/$dir")*/;
-                            });
-                            if (count($dirs) > 0) $player_dir = $letter_dir . "/" . reset($dirs);
-                            else return $this->civ13->reply($message, "No notes found for `$ckey`.");
+                    $player_dir = '';
+                    $dirs = [];
+                    $scandir = scandir($letter_dir);
+                    if ($scandir) $dirs = array_filter($scandir, static fn($dir) =>
+                        strtolower($dir) === strtolower($ckey) //&& is_dir($letter_dir . "/$dir")
+                    );
+                    if (count($dirs) > 0) $player_dir = $letter_dir . "/" . reset($dirs);
+                    else return $this->civ13->reply($message, "No notes found for `$ckey`.");
 
-                            if (file_exists($player_dir . "/info.sav")) $file_path = $player_dir . "/info.sav";
-                            else return $this->civ13->reply($message, "A notes folder was found for `$ckey`, however no notes were found in it.");
+                    if (file_exists($player_dir . "/info.sav")) $file_path = $player_dir . "/info.sav";
+                    else return $this->civ13->reply($message, "A notes folder was found for `$ckey`, however no notes were found in it.");
 
-                            $result = '';
-                            if ($contents = @file_get_contents($file_path)) $result = $contents;
-                            else return $this->civ13->reply($message, "A notes file with path `$file_path` was found for `$ckey`, however the file could not be read.");
-                            
-                            return $this->civ13->reply($message, $result, 'info.sav', true);
-                        },
-                        ['Admin'])
-                ;
-            }
+                    $result = '';
+                    if ($contents = @file_get_contents($file_path)) $result = $contents;
+                    else return $this->civ13->reply($message, "A notes file with path `$file_path` was found for `$ckey`, however the file could not be read.");
+                    
+                    return $this->civ13->reply($message, $result, 'info.sav', true);
+                },
+                ['Admin']);*/
             $this->messageHandler
-                ->offsetSet("{$gameserver->key}ranking",
-                    fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $gameserver->recalculateRanking()->then(
-                            fn () => $gameserver->getRanking()->then(
-                                fn (string $ranking) => $this->civ13->reply($message, $ranking, 'ranking.txt'),
-                                function (MissingSystemPermissionException $error) use ($message) {
-                                    $this->logger->error($err = $error->getMessage());
-                                    $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
-                                }
-                            ),
-                            function (MissingSystemPermissionException $error) use ($message) {
-                                $this->logger->error($err = $error->getMessage());
-                                $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
-                            }
+                /*->offsetSet("{$gameserver->key}fixembedtimer",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $message->react("⏱️")->then(fn() => $gameserver->currentRoundEmbedTimer($message))->then(
+                            static fn() => $message->react("👍"),
+                            fn(\Throwable $error): PromiseInterface => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
                         ),
-                    ['Verified'])
-                ->offsetSet("{$gameserver->key}rank",
+                    ['Owner', 'Chief Technical Officer'])
+                ->offsetSet("{$gameserver->key}updatecurrentroundembedmessagebuilder",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $message->react("⏱️")->then(fn() => $gameserver->updateCurrentRoundEmbedMessageBuilder())->then(
+                            static fn() => $message->react("👍"),
+                            fn(\Throwable $error): PromiseInterface => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
+                        ),
+                    ['Owner', 'Chief Technical Officer'])
+                ->offsetSet("{$gameserver->key}configexists",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        isset($gameserver->key)
+                            ? $message->react("👍")
+                            : $message->react("👎"),
+                    ['Ambassador'])
+                ->offsetSet("{$gameserver->key}sportsteam",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface => // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.
+                        $gameserver->sportsteam()->then(
+                            fn($content) => $message->reply(Civ13::createBuilder()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content)),
+                            fn(\Throwable $error): PromiseInterface => $message->react("🔥")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
+                        ),
+                    ['Ambassador', 'Admin'])*/
+                ->offsetSet("{$gameserver->key}host",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $message->react("⏱️")->then(static fn() => $gameserver->Host($message)),
+                    ['Ambassador'])
+                ->offsetSet("{$gameserver->key}kill",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $message->react("⏱️")->then(static fn() => $gameserver->Kill($message)),
+                    ['Ambassador'])
+                ->offsetSet("{$gameserver->key}restart",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $message->react("⏱️")->then(static fn() => $gameserver->Restart($message)),
+                    ['Ambassador'])
+                ->offsetSet("{$gameserver->key}mapswap",
                     function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                     {
-                        if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
-                            if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
-                            $ckey = $item['ss13'];
-                        }
-                        if (! $gameserver->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-                        if (! $msg = $gameserver->getRank($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
-                        return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
-                        // return $this->civ13->reply($message, "Your ranking is too long to display.");
-                    },
-                    ['Verified'])                
+                        $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
+                        if (! isset($split_message[1])) return $message->react("❌")->then(fn () => $this->civ13->reply($message, 'You need to include the name of the map.'));
+                        return $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username)->then(
+                            fn ($result) => $message->react("👍")->then(fn() => $this->civ13->reply($message, $result)),
+                            fn (\Throwable $error) => $message->react($error instanceof FileNotFoundException ? "🔥" : "👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
+                        );
+                    }, ['Ambassador'])
+                ->offsetSet("{$gameserver->key}panic",
+                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $this->civ13->reply($message, "Panic bunker is now " . (($gameserver->panic_bunker = ! $gameserver->panic_bunker) ? 'enabled' : 'disabled')),
+                    ['Ambassador'])
                 ->offsetSet("{$gameserver->key}ban",
                     function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                     {
@@ -518,66 +538,42 @@ class MessageServiceManager
                         return $this->civ13->reply($message, $result);
                     },
                     ['Admin'])
-                ->offsetSet("{$gameserver->key}configexists",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        isset($gameserver->key)
-                            ? $message->react("👍")
-                            : $message->react("👎"),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}host",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(static fn() => $gameserver->Host($message)),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}kill",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(static fn() => $gameserver->Kill($message)),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}restart",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(static fn() => $gameserver->Restart($message)),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}mapswap",
+                ->offsetSet("{$gameserver->key}ranking",
+                    fn (Message $message, string $command, array $message_filtered): PromiseInterface =>
+                        $gameserver->recalculateRanking()->then(
+                            fn () => $gameserver->getRanking()->then(
+                                fn (string $ranking) => $this->civ13->reply($message, $ranking, 'ranking.txt'),
+                                function (MissingSystemPermissionException $error) use ($message) {
+                                    $this->logger->error($err = $error->getMessage());
+                                    $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
+                                }
+                            ),
+                            function (MissingSystemPermissionException $error) use ($message) {
+                                $this->logger->error($err = $error->getMessage());
+                                $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
+                            }
+                        ),
+                    ['Verified'])
+                ->offsetSet("{$gameserver->key}rank",
                     function (Message $message, string $command, array $message_filtered) use (&$gameserver): PromiseInterface
                     {
-                        $split_message = explode("{$gameserver->key}mapswap ", $message_filtered['message_content']);
-                        if (! isset($split_message[1])) return $message->react("❌")->then(fn () => $this->civ13->reply($message, 'You need to include the name of the map.'));
-                        return $gameserver->MapSwap($split_message[1], (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username)->then(
-                            fn ($result) => $message->react("👍")->then(fn() => $this->civ13->reply($message, $result)),
-                            fn (\Throwable $error) => $message->react($error instanceof FileNotFoundException ? "🔥" : "👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
-                        );
-                    }, ['Ambassador'])
-                ->offsetSet("{$gameserver->key}sportsteam",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface => // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.
-                        $gameserver->sportsteam()->then(
-                            fn($content) => $message->reply(Civ13::createBuilder()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content)),
-                            fn(\Throwable $error): PromiseInterface => $message->react("🔥")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
-                        ),
-                    ['Ambassador', 'Admin'])
-                ->offsetSet("{$gameserver->key}panic",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $this->civ13->reply($message, "Panic bunker is now " . (($gameserver->panic_bunker = ! $gameserver->panic_bunker) ? 'enabled' : 'disabled')),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}fixembedtimer",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(fn() => $gameserver->currentRoundEmbedTimer($message))->then(
-                            static fn() => $message->react("👍"),
-                            fn(\Throwable $error): PromiseInterface => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
-                        ),
-                    ['Owner', 'Chief Technical Officer'])
-                ->offsetSet("{$gameserver->key}updatecurrentroundembedmessagebuilder",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(fn() => $gameserver->updateCurrentRoundEmbedMessageBuilder())->then(
-                            static fn() => $message->react("👍"),
-                            fn(\Throwable $error): PromiseInterface => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
-                        ),
-                    ['Owner', 'Chief Technical Officer']);
+                        if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) {
+                            if (! $item = $this->civ13->verifier->getVerifiedItem($message->author)) return $this->civ13->reply($message, 'Wrong format. Please try `rankme [ckey]`.');
+                            $ckey = $item['ss13'];
+                        }
+                        if (! $gameserver->recalculateRanking()) return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
+                        if (! $msg = $gameserver->getRank($ckey)) return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
+                        return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
+                        // return $this->civ13->reply($message, "Your ranking is too long to display.");
+                    },
+                    ['Verified'])
+                ;
+            $this->__declareListener();
         }
         foreach ($this->civ13->civ14_enabled_gameservers as &$gameserver) {
             $this->messageHandler
-                ->offsetSet("{$gameserver->key}medals", new Commands\SS14Medals($this->civ13, $gameserver), ['Verified', 'SS14 Verified']);
-        }
-        
-        $this->__declareListener();
+                ->offsetSet("{$gameserver->key}medals", new Commands\SS14Medals($this->civ13, $gameserver), ['Verified', 'SS14 Verified'])
+        ;}
     }
 
     /**
