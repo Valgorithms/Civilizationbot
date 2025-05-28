@@ -425,13 +425,12 @@ class MessageServiceManager
                 ->offsetSet("{$gameserver->key}unban",   new Commands\Civ13GameServerUnBan($this->civ13, $gameserver),   ['Admin'])
                 ->offsetSet("{$gameserver->key}ranking", new Commands\Civ13GameServerRanking($this->civ13, $gameserver), ['Verified'])
                 ->offsetSet("{$gameserver->key}rank",    new Commands\Civ13GameServerRank($this->civ13, $gameserver),    ['Verified'])
-            ;
-            $this->__declareListener();
-        }
+        ;}
         foreach ($this->civ13->civ14_enabled_gameservers as &$gameserver) {
             $this->messageHandler
                 ->offsetSet("{$gameserver->key}medals", new Commands\SS14Medals($this->civ13, $gameserver), ['Verified', 'SS14 Verified'])
         ;}
+        $this->__declareListener();
     }
 
     /**
