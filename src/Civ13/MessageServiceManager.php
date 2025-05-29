@@ -349,10 +349,12 @@ class MessageServiceManager
      */
     private function __generateServerMessageCommands(): void
     {
-        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards))
-            $this->messageHandler->offsetSet('civ13medals',   new Commands\Civ13GameServerMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']),  ['Verified']);
-        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir) && file_exists($this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br))
-            $this->messageHandler->offsetSet('civ13brmedals', new Commands\Civ13GameServerBRMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']), ['Verified']);
+        if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir)) {
+            if (file_exists($this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards))
+                $this->messageHandler->offsetSet('civ13medals',   new Commands\Civ13GameServerMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']),  ['Verified']);
+            if (file_exists($this->civ13->enabled_gameservers['tdm']->basedir . Civ13::awards_br))
+                $this->messageHandler->offsetSet('civ13brmedals', new Commands\Civ13GameServerBRMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']), ['Verified']);
+        }
         
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             /*if (! file_exists($gameserver->basedir . Civ13::playernotes_basedir)) $this->logger->warning("Skipping server function `{$gameserver->key}notes` because the required config files were not found.");
