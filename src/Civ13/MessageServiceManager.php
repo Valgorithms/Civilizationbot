@@ -169,7 +169,8 @@ class MessageServiceManager
                         fn(\Throwable $error): PromiseInterface => $message->react(($error instanceof \InvalidArgumentException) ? "❌" : "👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
                     );
                 }, ['Chief Technical Officer'])
-            ->offsetSet('unverify',             new Commands\Civ13UnVerify     ($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('civ13unverify',         new Commands\Civ13UnVerify     ($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('civ14unverify',         new Commands\Civ14UnVerify     ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('dumpappcommands',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply('Application commands: `' . implode('`, `', array_map(fn($command) => $command->getName(), $this->civ13->discord->__get('application_commands'))) . '`'),

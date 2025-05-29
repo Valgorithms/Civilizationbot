@@ -157,9 +157,9 @@ class Verifier
      * @throws RuntimeException User is not already verified
      * @return PromiseInterface<array>
      */
-    public function unverify(string $discord, string $ss14): PromiseInterface
+    public function unverify(string $discord = '', string $ss14 = ''): PromiseInterface
     {
-        if (!$splice = $this->endpoint->remove($$discord, $ss14)) {
+        if (!$splice = $this->endpoint->remove($discord, $ss14)) {
             $this->logger->warning($err = "Neither Discord ID `{$discord}` nor SS14 name `{$ss14}` is already verified.");
             return reject(new RuntimeException($err));
         }

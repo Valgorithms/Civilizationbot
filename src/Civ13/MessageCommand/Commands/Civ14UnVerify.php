@@ -12,16 +12,22 @@ use Discord\Parts\Channel\Message;
 use React\Promise\PromiseInterface;
 
 /**
- * Handles the "unverify" command.
+ * Handles the "civ13unverify" command.
  * 
  * This function is only authorized to be used by the database administrator
  */
-class Civ13UnVerify extends Civ13MessageCommand
+class Civ14UnVerify extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
         if (! $id = self::messageWithoutCommand($command, $message_filtered, true, true)) return $this->civ13->reply($message, 'Invalid format! Please use the format `unverify <byond username|discord id>`.');
-        return $this->civ13->reply($message, $this->civ13->verifier->unverify($id)['message']);
+        return $this->civ13->ss14verifier->unverify(
+            is_numeric($id) ? $id : null,
+            is_numeric($id) ? null : $id
+        )->then(
+            fn(array $result) => $this->civ13->reply($message, 'Unverified SS14: ' . json_encode($result)),
+            fn (\Throwable $e) => $this->civ13->reply($message, $e->getMessage())
+        );
     }
 }
