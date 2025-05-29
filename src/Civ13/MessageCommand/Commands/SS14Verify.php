@@ -158,7 +158,6 @@ class SS14Verify extends Civ13MessageCommand
             function() use ($member) {
                 if ($member->roles->has($this->civ13->role_ids['SS14 Verified'])) return self::ROLE_EXISTS; // This is already checked in createContainer, so this is just a fallback if the method is called directly.
                 $this->addRole($member);
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $channel->sendMessage("`ss14` has been verified and registered to <@{$member->id}> (Civ14)");
                 if (isset($this->container)) $this->container->setAccentColor(self::ACCENT_COLOR_SUCCESS);
                 return self::ROLE_ADDED;
             },
