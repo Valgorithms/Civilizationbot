@@ -50,7 +50,7 @@ class MessageCommand implements MessageCommandInterface
     public static function messageWithoutCommand(string $command, array $message_filtered, bool $lower = false, bool $sanitize = false): string
     {
         return $sanitize
-            ? Civ13::sanitizeInput(trim(substr($lower ? $message_filtered['message_content_lower'] : $message_filtered['message_content'], strlen($command))))
+            ? Civ13::sanitizeInput(trim(substr($lower ? $message_filtered['message_content_lower'] : $message_filtered['message_content'], strlen($command))), $lower)
             : trim(substr($lower ? $message_filtered['message_content_lower'] : $message_filtered['message_content'], strlen($command)));
     }
 

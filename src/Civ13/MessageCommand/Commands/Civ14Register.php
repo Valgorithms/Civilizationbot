@@ -21,7 +21,7 @@ class Civ14Register extends Civ13MessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-            if (! $split_message = explode(';', self::messageWithoutCommand($command, $message_filtered, true, true))) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
+            if (! $split_message = explode(';', self::messageWithoutCommand($command, $message_filtered, false, true))) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
             if (! isset($split_message[1]) || ! $split_message[1]) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
             if (! $name = $split_message[0]) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
             if (! is_numeric($discord_id = $split_message[1])) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");

@@ -715,9 +715,9 @@ class Civ13
      * @param string $input The input string to be sanitized.
      * @return string The sanitized input string.
      */
-    public static function sanitizeInput(string $input = ''): string
+    public static function sanitizeInput(string $input = '', bool $lower = true): string
     {
-        return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', '+', ' '], '', strtolower($input)));
+        return trim(str_replace(['<@!', '<@&', '<@', '>', '.', '_', '-', '+', ' '], '', $lower ? strtolower($input) : $input));
     }
     /**
      * Check that all required roles are properly declared in the bot's config and exist in the guild.
