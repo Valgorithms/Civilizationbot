@@ -108,14 +108,11 @@ class MessageServiceManager
                     }
                     return $this->civ13->reply($message, $string);
                 }, ['Admin'])
-            ->offsetSet('cleanuplogs',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface => // Attempts to fill in any missing data for the ban
-                    $message->react(array_reduce($this->civ13->enabled_gameservers, fn($carry, $gameserver) => $carry && $gameserver->cleanupLogs(), true) ? "👍" : "👎"),
-                ['Ambassador'])
-            ->offsetSet('playerlist',            new Commands\Civ13PlayerList   ($this->civ13), ['Chief Technical Officer'])
-            ->offsetSet('civ13register',         new Commands\Civ13Register     ($this->civ13), ['Chief Technical Officer'])
-            ->offsetSet('civ13unverify',         new Commands\Civ13UnVerify     ($this->civ13), ['Chief Technical Officer'])
-            ->offsetSet('civ14unverify',         new Commands\Civ14UnVerify     ($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('cleanupgamelogs',       new Commands\Civ13CleanupGameLogs($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('playerlist',            new Commands\Civ13PlayerList     ($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('civ13register',         new Commands\Civ13Register       ($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('civ13unverify',         new Commands\Civ13UnVerify       ($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('civ14unverify',         new Commands\Civ14UnVerify       ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('dumpappcommands',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply('Application commands: `' . implode('`, `', array_map(fn($command) => $command->getName(), $this->civ13->discord->__get('application_commands'))) . '`'),
