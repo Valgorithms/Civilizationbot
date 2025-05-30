@@ -160,7 +160,7 @@ class Verifier
     public function unverify(string $discord = '', string $ss14 = ''): PromiseInterface
     {
         if (!$splice = $this->endpoint->remove($discord, $ss14)) {
-            $this->logger->warning($err = "Neither Discord ID `{$discord}` nor SS14 name `{$ss14}` is already verified.");
+            $this->logger->warning($err = "Neither Discord ID \`{$discord}\` nor SS14 name \`{$ss14}\` is already verified.");
             return reject(new RuntimeException($err));
         }
         ;
