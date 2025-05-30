@@ -89,25 +89,6 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, json_encode($this->civ13->verifier_server->getSessions()), 'ip_sessions.txt', true),
                 ['Owner', 'Chief Technical Officer'])
-            ->offsetSet('refresh',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->verifier->getVerified(false) ? $message->react("👍") : $message->react("👎"),
-                ['Admin'])
-            ->offsetSet('discard',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    if (! $ckey = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command)))) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `discard <byond username>`.');
-                    $string = "`$ckey` will no longer attempt to be automatically registered.";
-                    if ($item = $this->civ13->verifier->provisional->get('ss13', $ckey)) {
-                        if ($member = $message->guild->members->get('id', $item['discord'])) {
-                            $member->removeRole($this->civ13->role_ids['Verified']);
-                            $string .= " The <@&{$this->civ13->role_ids['Verified']}> role has been removed from $member.";
-                        }
-                        $this->civ13->verifier->provisional->pull($ckey);
-                        $this->civ13->VarSave('provisional.json', $this->civ13->verifier->provisional->toArray());
-                    }
-                    return $this->civ13->reply($message, $string);
-                }, ['Admin'])
             ->offsetSet('cleanupgamelogs',       new Commands\Civ13CleanupGameLogs($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('playerlist',            new Commands\Civ13PlayerList     ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ13register',         new Commands\Civ13Register       ($this->civ13), ['Chief Technical Officer'])
