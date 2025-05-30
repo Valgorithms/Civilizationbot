@@ -85,10 +85,7 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, $this->civ13->httpServiceManager->httpHandler->generateHelp(), 'httphelp.txt', true),
                 ['Owner', 'Chief Technical Officer'])
-            ->offsetSet('dumpsessions',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->reply($message, json_encode($this->civ13->verifier_server->getSessions()), 'ip_sessions.txt', true),
-                ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('dumpsessions',          new Commands\DumpOAuthIPSessions ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('cleanupgamelogs',       new Commands\Civ13CleanupGameLogs($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('playerlist',            new Commands\Civ13PlayerList     ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ13register',         new Commands\Civ13Register       ($this->civ13), ['Chief Technical Officer'])
