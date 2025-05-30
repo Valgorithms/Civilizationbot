@@ -114,17 +114,6 @@ class MessageServiceManager
                 ['Ambassador'])
             ->offsetSet('playerlist',            new Commands\Civ13PlayerList   ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ13register',         new Commands\Civ13Register     ($this->civ13), ['Chief Technical Officer'])
-            ->offsetSet('provision',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                { // This function is only authorized to be used by the database administrator
-                    if ($message->user_id !== $this->civ13->technician_id) return $message->react("❌");
-                    if (! isset($this->civ13->verifier)) return $this->civ13->reply($message, 'Verifier is not enabled.');
-                    $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
-                    return $this->civ13->verifier->provision($split_message[0] ?? null, $split_message[1] ?? null)->then(
-                        fn($result) => $message->react("👍")->then(fn () => $this->civ13->reply($message, $result)),
-                        fn(\Throwable $error): PromiseInterface => $message->react(($error instanceof \InvalidArgumentException) ? "❌" : "👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
-                    );
-                }, ['Chief Technical Officer'])
             ->offsetSet('civ13unverify',         new Commands\Civ13UnVerify     ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ14unverify',         new Commands\Civ14UnVerify     ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('dumpappcommands',
