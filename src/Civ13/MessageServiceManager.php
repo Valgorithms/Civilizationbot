@@ -78,20 +78,16 @@ class MessageServiceManager
     private function __generateGlobalMessageCommands(): void
     {
         $this->messageHandler
-            ->offsetSets(['help', 'commands'],
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true))
+            ->offsetSets(['help', 'commands'],   new Commands\Help                ($this->civ13))
             ->offsetSet('httphelp',              new Commands\HTTPHelp            ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('dumpsessions',          new Commands\DumpOAuthIPSessions ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('cleanupgamelogs',       new Commands\Civ13CleanupGameLogs($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('playerlist',            new Commands\Civ13PlayerList     ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ13register',         new Commands\Civ13Register       ($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('civ14register',         new Commands\Civ14Register       ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ13unverify',         new Commands\Civ13UnVerify       ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ14unverify',         new Commands\Civ14UnVerify       ($this->civ13), ['Chief Technical Officer'])
-            ->offsetSet('dumpappcommands',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $message->reply('Application commands: `' . implode('`, `', array_map(fn($command) => $command->getName(), $this->civ13->discord->__get('application_commands'))) . '`'),
-                ['Chief Technical Officer'])
+            ->offsetSet('dumpappcommands',       new Commands\DumpAppCommands     ($this->civ13), ['Chief Technical Officer'])
             /*->offsetSet('restart',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>                
                     $message->react("👍")->then(function () {
