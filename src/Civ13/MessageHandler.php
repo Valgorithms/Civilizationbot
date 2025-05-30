@@ -80,9 +80,9 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
      * If the provided argument is not callable, it assigns it as-is to the callback property.
      *
      * @param \Closure|callable $closure The closure or callable to set as the callback.
-     * @return void
+     * @return self
      */
-    public function setCallback(\Closure|callable $closure): void
+    public function setCallback(\Closure|callable $closure): self
     {
         if (is_callable($closure)) {
             MessageHandlerCallback::validate($closure, true);
@@ -90,6 +90,7 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
                 ? \Closure::fromCallable([$closure, '__invoke'])
                 : \Closure::fromCallable($closure);
         } else $this->callback = $closure;
+        return $this;
     }
 
     /**
