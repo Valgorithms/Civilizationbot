@@ -51,7 +51,7 @@ enum SS14MedalEmojis: string
 /**
  * Handles the "14medals" command.
  */
-class SS14Medals extends Civ13MessageCommand
+class Civ14Medals extends Civ13MessageCommand
 {
     public function __construct(protected Civ13 &$civ13, protected GameServer &$gameserver){}
 

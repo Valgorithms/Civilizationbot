@@ -124,7 +124,7 @@ class Civ14Verify extends Civ13MessageCommand
 
         $this->container->addComponent(TextDisplay::new(($ss14 && $medals = array_reduce(
             $this->civ13->civ14_enabled_gameservers,
-            static fn($carry, $gameserver) => $carry || SS14Medals::getMedals($gameserver, $ss14),
+            static fn($carry, $gameserver) => $carry || Civ14Medals::getMedals($gameserver, $ss14),
             false
         ))
             ? "✅ " . self::STEP_THREE_DONE

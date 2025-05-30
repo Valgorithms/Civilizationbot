@@ -288,7 +288,7 @@ class MessageServiceManager
         ;}
         foreach ($this->civ13->civ14_enabled_gameservers as &$gameserver) {
             $this->messageHandler
-                ->offsetSet("{$gameserver->key}medals", new Commands\SS14Medals($this->civ13, $gameserver), ['Verified', 'SS14 Verified'])
+                ->offsetSet("{$gameserver->key}medals", new Commands\Civ14Medals($this->civ13, $gameserver), ['Verified', 'SS14 Verified'])
         ;}
         $this->__declareListener();
     }
