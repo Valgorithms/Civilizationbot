@@ -148,16 +148,7 @@ class MessageServiceManager
                         return "$ckey: <@$discord_id>";
                     }, $arr))) ? $this->civ13->reply($message, $msg) : $message->react("❌");
                 }, ['Chief Technical Officer'])
-            ->offsetSet('register',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                { // This function is only authorized to be used by the database administrator
-                    if ($message->user_id != $this->civ13->technician_id) return $message->react("❌");
-                    $split_message = explode(';', trim(substr($message_filtered['message_content_lower'], strlen($command))));
-                    if (! isset($split_message[1])) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
-                    if (! $ckey = Civ13::sanitizeInput($split_message[0])) return $this->civ13->reply($message, 'Byond username was not passed. Please use the format `register <byond username>; <discord id>`.');
-                    if (! is_numeric($discord_id = Civ13::sanitizeInput($split_message[1]))) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
-                    return $this->civ13->reply($message, $this->civ13->verifier->register($ckey, $discord_id)['error']);
-                }, ['Chief Technical Officer'])
+            ->offsetSet('civ13register',         new Commands\Civ13Register     ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('provision',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 { // This function is only authorized to be used by the database administrator
