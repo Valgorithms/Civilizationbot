@@ -78,7 +78,7 @@ class MessageServiceManager
     private function __generateGlobalMessageCommands(): void
     {
         $this->messageHandler
-            ->offsetSets(['help', 'commands'],   new Commands\Help                ($this->civ13))
+            ->offsetSets(['help', 'commands'],   new Commands\Help                ($this->civ13, $this->messageHandler))
             ->offsetSet('ping',                  new Commands\Ping                ())
             ->offsetSets(['botstats', 'stats'],  new Commands\BotStats            ($this->civ13), ['Owner', 'Chief Technical Officer'])
             ->offsetSet('updatedeps',            new Commands\UpdateDependencies  ($this->civ13), ['Owner', 'Chief Technical Officer'])
