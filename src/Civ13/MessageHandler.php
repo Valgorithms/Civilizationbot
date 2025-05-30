@@ -44,7 +44,7 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
      *                                   if any parameter is missing a type hint,
      *                                   or if any parameter's type does not match the expected type.
      */
-    public static function validate(callable $callback, bool $fatal = false): bool
+    public static function validate(callable $callback, bool $fatal = false): callable|false
     {
         $reflection = is_object($callback)
             ? new \ReflectionMethod($callback, '__invoke')
@@ -68,7 +68,7 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
             }
         }
 
-        return true;
+        return $callback;
     }
 
     /**
