@@ -81,10 +81,7 @@ class MessageServiceManager
             ->offsetSets(['help', 'commands'],
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $this->civ13->reply($message, $this->messageHandler->generateHelp($message->member->roles), 'help.txt', true))
-            ->offsetSet('httphelp',
-                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                    $this->civ13->reply($message, $this->civ13->httpServiceManager->httpHandler->generateHelp(), 'httphelp.txt', true),
-                ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('httphelp',              new Commands\HTTPHelp            ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('dumpsessions',          new Commands\DumpOAuthIPSessions ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('cleanupgamelogs',       new Commands\Civ13CleanupGameLogs($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('playerlist',            new Commands\Civ13PlayerList     ($this->civ13), ['Chief Technical Officer'])
