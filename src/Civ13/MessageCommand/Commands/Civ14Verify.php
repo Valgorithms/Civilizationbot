@@ -26,7 +26,7 @@ use function React\Async\await;
 /**
  * Handles the "verifyme" command.
  */
-class SS14Verify extends Civ13MessageCommand
+class Civ14Verify extends Civ13MessageCommand
 {
     // Header section
     public const string TITLE = 'SS14 Verification';
@@ -122,7 +122,7 @@ class SS14Verify extends Civ13MessageCommand
             ->setUrl($this->ss14_oauth_url)
         ));
 
-        $this->container->addComponent(TextDisplay::new(($ss14 && array_reduce(
+        $this->container->addComponent(TextDisplay::new(($ss14 && $medals = array_reduce(
             $this->civ13->civ14_enabled_gameservers,
             static fn($carry, $gameserver) => $carry || SS14Medals::getMedals($gameserver, $ss14),
             false
@@ -134,7 +134,7 @@ class SS14Verify extends Civ13MessageCommand
         return $this->container
             ->addComponents([
                 Separator::new(),
-                TextDisplay::new('### ' . (($ip && $ss14)
+                TextDisplay::new('### ' . (($ip && $ss14 && $medals)
                     ? $this->process($member, $this->container)
                     : self::INITIAL))
             ]);

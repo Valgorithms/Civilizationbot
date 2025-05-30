@@ -15,7 +15,7 @@ use React\Promise\PromiseInterface;
 /**
  * Handles the "ss14" command.
  */
-class SS14 extends Civ13MessageCommand
+class Civ14Host extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {

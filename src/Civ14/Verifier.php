@@ -86,7 +86,7 @@ class Verifier
      * @throws RuntimeException
      * @return PromiseInterface
      *
-     * @see Civ13\MessageCommand\Commands\SS14Verify::getIPFromDiscord()
+     * @see Civ13\MessageCommand\Commands\Civ14Verify::getIPFromDiscord()
      */
     protected function getIPFromDiscord(string $discord): PromiseInterface
     {
@@ -121,7 +121,7 @@ class Verifier
      * @throws RuntimeException
      * @return PromiseInterface<string>
      * 
-     * @see Civ13\MessageCommand\Commands\SS14Verify::getSS14FromIP()
+     * @see Civ13\MessageCommand\Commands\Civ14Verify::getSS14FromIP()
      */
     protected function getSS14FromIP(string $ip): PromiseInterface
     {

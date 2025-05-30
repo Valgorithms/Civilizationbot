@@ -10,7 +10,7 @@ namespace Civ13;
 
 use Byond\Byond;
 use Civ13\Exceptions\MissingSystemPermissionException;
-use Civ13\MessageCommand\Commands\SS14Verify;
+use Civ13\MessageCommand\Commands\Civ14Verify;
 //use Civ14\GameServer as SS14GameServer;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
@@ -829,7 +829,7 @@ class Slash
         });
 
         $this->discord->listenCommand('verifyme', fn(Interaction $interaction): PromiseInterface =>
-            $this->respondWithMessage($interaction, (new SS14Verify($this->civ13))->createBuilder($interaction->member), true)
+            $this->respondWithMessage($interaction, (new Civ14Verify($this->civ13))->createBuilder($interaction->member), true)
         );
     }
 }
