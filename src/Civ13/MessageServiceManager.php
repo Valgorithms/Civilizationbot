@@ -96,78 +96,52 @@ class MessageServiceManager
                         return $this->civ13->restart();
                     }),
                 ['Owner', 'Chief Technical Officer'])*/
-            ->offsetSet('ping',                  new Commands\Ping              ())
-            ->offsetSet('cpu',                   new Commands\CPU               ($this->civ13), ['Verified'])
-            ->offsetSets(['botstats', 'stats'],  new Commands\BotStats          ($this->civ13), ['Owner', 'Chief Technical Officer'])
-            ->offsetSet('updatedeps',            new Commands\UpdateDependencies($this->civ13), ['Owner', 'Chief Technical Officer'])
-            ->offsetSet('stop',                  new Commands\Stop              ($this->civ13), ['Owner', 'Chief Technical Officer'])    
-            ->offsetSet('pullrepo',              new Commands\PullCivRepository ($this->civ13), ['Ambassador'])
-            ->offsetSet('checkip',               new Commands\CheckIP           ($this->civ13), ['Verified'])
-            ->offsetSet('bancheck_centcom',      new Commands\BanCheckCentcom   ($this->civ13), ['Verified'])
-            ->offsetSet('bancheck',              new Commands\BanCheck          ($this->civ13), ['Verified'])
-            ->offsetSet('getround',              new Commands\GetRound          ($this->civ13), ['Verified'])
-            ->offsetSet('discord2ckey',          new Commands\DiscordToCkey     ($this->civ13), ['Verified'])
-            ->offsetSet('ages',                  new Commands\Ages              ($this->civ13), ['Ambassador'])
-            ->offsetSet('byondage',              new Commands\ByondAge          ($this->civ13), ['Ambassador'])
-            ->offsetSet('ckeyinfo',              new Commands\CkeyInfo          ($this->civ13), ['Admin'])
-            ->offsetSet('ckey2discord',          new Commands\CkeyToDiscord     ($this->civ13), ['Verified'])
-            ->offsetSet('ckey',                  new Commands\Ckey              ($this->civ13), ['Verified'])
-            ->offsetSet('ooc',                   new Commands\OOC               ($this->civ13), ['Verified'])
-            ->offsetSet('asay',                  new Commands\ASay              ($this->civ13), ['Verified'])
-            ->offsetSets(['dm', 'pm'],           new Commands\DM                ($this->civ13), ['Admin'])
-            ->offsetSet('globalooc',             new Commands\GlobalOOC         ($this->civ13), ['Admin'])
-            ->offsetSet('globalasay',            new Commands\GlobalASay        ($this->civ13), ['Admin'])
-            ->offsetSet('permit',                new Commands\Permit            ($this->civ13), ['Admin'])
-            ->offsetSets(['unpermit', 'revoke'], new Commands\UnPermit          ($this->civ13), ['Admin'])
-            ->offsetSet('permitted',             new Commands\PermitList        ($this->civ13), ['Admin'], 'exact')
-            ->offsetSet('listbans',              new Commands\ListBans          ($this->civ13), ['Admin'])
-            ->offsetSet('softban',               new Commands\SoftBan           ($this->civ13), ['Admin'])
-            ->offsetSet('unsoftban',             new Commands\UnSoftBan         ($this->civ13), ['Admin'])
-            ->offsetSet('ban',                   new Commands\Ban               ($this->civ13), ['Admin'])
-            ->offsetSet('unban',                 new Commands\UnBan             ($this->civ13), ['Admin'])
-            ->offsetSet('maplist',               new Commands\MapList           ($this->civ13), ['Admin'])
-            ->offsetSet('listadmins',            new Commands\ListAdmins        ($this->civ13), ['Admin'])
-            ->offsetSet('factionlist',           new Commands\FactionList       ($this->civ13), ['Admin'])
-            ->offsetSet('getrounds',             new Commands\GetRounds         ($this->civ13), ['Admin'])
-            ->offsetSet('tests',                 new Commands\Tests             ($this->civ13), ['Ambassador'])
-            ->offsetSet('poll',                  new Commands\Poll              ($this->civ13), ['Admin'])
-            ->offsetSet('fullbancheck',          new Commands\BanCheckFull      ($this->civ13), ['Ambassador'])
-            ->offsetSet('updatebans',            new Commands\BansUpdate        ($this->civ13), ['Ambassador'])
-            ->offsetSet('fixroles',              new Commands\FixRoles          ($this->civ13), ['Ambassador'])
-            ->offsetSet('panic_bunker',          new Commands\PanicBunkerToggle ($this->civ13), ['Ambassador'])
-            ->offsetSet('serverstatus',          new Commands\ServerStatus      ($this->civ13), ['Ambassador'])
-            ->offsetSet('newmembers',            new Commands\NewMembers        ($this->civ13), ['Ambassador'])
-            ->offsetSet('fullaltcheck',          new Commands\FullAltCheck      ($this->civ13), ['Ambassador'])
-            ->offsetSet('togglerelaymethod',     new Commands\RelayMethodToggle ($this->civ13), ['Ambassador'])
-            ->offsetSet('listrounds',            new Commands\ListRounds        ($this->civ13), ['Ambassador'])
-            ->offsetSet('updateadmins',          new Commands\AdminListUpdate   ($this->civ13), ['Ambassador'])       
-            ->offsetSet('logs',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $log_handler = function (Message $message, string $message_content): PromiseInterface
-                    {
-                        $tokens = explode(';', $message_content);
-                        $keys = [];
-                        foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                            $keys[] = $gameserver->key;
-                            if (trim($tokens[0]) !== $gameserver->key) continue; // Check if server is valid
-                            if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::log_basedir)) {
-                                $this->logger->warning("Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
-                                return $message->react("🔥");
-                            }
-            
-                            unset($tokens[0]);
-                            $results = $this->civ13->FileNav($gameserver->basedir . Civ13::log_basedir, $tokens);
-                            if ($results[0]) return $message->reply(Civ13::createBuilder()->addFile($results[1], 'log.txt'));
-                            if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-                            if (! isset($results[2]) || ! $results[2]) return $this->civ13->reply($message, 'Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-                            return $this->civ13->reply($message, "{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-                        }
-                        return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`');
-                    };
-                    return $log_handler($message, trim(substr($message_filtered['message_content'], strlen($command))));
-                },
-                ['Admin'])
+            ->offsetSet('ping',                  new Commands\Ping                ())
+            ->offsetSet('cpu',                   new Commands\CPU                 ($this->civ13), ['Verified'])
+            ->offsetSets(['botstats', 'stats'],  new Commands\BotStats            ($this->civ13), ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('updatedeps',            new Commands\UpdateDependencies  ($this->civ13), ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('stop',                  new Commands\Stop                ($this->civ13), ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('pullrepo',              new Commands\PullCivRepository   ($this->civ13), ['Ambassador'])
+            ->offsetSet('checkip',               new Commands\CheckIP             ($this->civ13), ['Verified'])
+            ->offsetSet('bancheck_centcom',      new Commands\BanCheckCentcom     ($this->civ13), ['Verified'])
+            ->offsetSet('bancheck',              new Commands\BanCheck            ($this->civ13), ['Verified'])
+            ->offsetSet('getround',              new Commands\GetRound            ($this->civ13), ['Verified'])
+            ->offsetSet('ages',                  new Commands\Ages                ($this->civ13), ['Ambassador'])
+            ->offsetSet('byondage',              new Commands\ByondAge            ($this->civ13), ['Ambassador'])
+            ->offsetSet('ckeyinfo',              new Commands\CkeyInfo            ($this->civ13), ['Admin'])
+            ->offsetSet('ckey2discord',          new Commands\CkeyToDiscord       ($this->civ13), ['Admin'])
+            ->offsetSet('discord2ckey',          new Commands\DiscordToCkey       ($this->civ13), ['Admin'])
+            ->offsetSet('ckey',                  new Commands\Ckey                ($this->civ13), ['Verified'])
+            ->offsetSet('ooc',                   new Commands\OOC                 ($this->civ13), ['Verified'])
+            ->offsetSet('asay',                  new Commands\ASay                ($this->civ13), ['Verified'])
+            ->offsetSets(['dm', 'pm'],           new Commands\DM                  ($this->civ13), ['Admin'])
+            ->offsetSet('globalooc',             new Commands\GlobalOOC           ($this->civ13), ['Admin'])
+            ->offsetSet('globalasay',            new Commands\GlobalASay          ($this->civ13), ['Admin'])
+            ->offsetSet('permit',                new Commands\Permit              ($this->civ13), ['Admin'])
+            ->offsetSets(['unpermit', 'revoke'], new Commands\UnPermit            ($this->civ13), ['Admin'])
+            ->offsetSet('permitted',             new Commands\PermitList          ($this->civ13), ['Admin'], 'exact')
+            ->offsetSet('listbans',              new Commands\ListBans            ($this->civ13), ['Admin'])
+            ->offsetSet('softban',               new Commands\SoftBan             ($this->civ13), ['Admin'])
+            ->offsetSet('unsoftban',             new Commands\UnSoftBan           ($this->civ13), ['Admin'])
+            ->offsetSet('ban',                   new Commands\Ban                 ($this->civ13), ['Admin'])
+            ->offsetSet('unban',                 new Commands\UnBan               ($this->civ13), ['Admin'])
+            ->offsetSet('maplist',               new Commands\MapList             ($this->civ13), ['Admin'])
+            ->offsetSet('listadmins',            new Commands\ListAdmins          ($this->civ13), ['Admin'])
+            ->offsetSet('factionlist',           new Commands\FactionList         ($this->civ13), ['Admin'])
+            ->offsetSet('getrounds',             new Commands\GetRounds           ($this->civ13), ['Admin'])
+            ->offsetSet('poll',                  new Commands\Poll                ($this->civ13), ['Admin'])
+            ->offsetSet('tests',                 new Commands\Tests               ($this->civ13), ['Ambassador'])
+            ->offsetSet('fullbancheck',          new Commands\BanCheckFull        ($this->civ13), ['Ambassador'])
+            ->offsetSet('updatebans',            new Commands\BansUpdate          ($this->civ13), ['Ambassador'])
+            ->offsetSet('fixroles',              new Commands\FixRoles            ($this->civ13), ['Ambassador'])
+            ->offsetSet('panic_bunker',          new Commands\PanicBunkerToggle   ($this->civ13), ['Ambassador'])
+            ->offsetSet('serverstatus',          new Commands\ServerStatus        ($this->civ13), ['Ambassador'])
+            ->offsetSet('newmembers',            new Commands\NewMembers          ($this->civ13), ['Ambassador'])
+            ->offsetSet('fullaltcheck',          new Commands\FullAltCheck        ($this->civ13), ['Ambassador'])
+            ->offsetSet('togglerelaymethod',     new Commands\RelayMethodToggle   ($this->civ13), ['Ambassador'])
+            ->offsetSet('listrounds',            new Commands\ListRounds          ($this->civ13), ['Ambassador'])
+            ->offsetSet('updateadmins',          new Commands\AdminListUpdate     ($this->civ13), ['Ambassador'])
+            ->offsetSet('logs',                 new Commands\Civ13Logs            ($this->civ13), ['Admin'])
             ->offsetSet('playerlogs',
                 function (Message $message, string $command, array $message_filtered): PromiseInterface
                 {
