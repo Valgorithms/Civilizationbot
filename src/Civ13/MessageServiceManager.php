@@ -181,7 +181,7 @@ class MessageServiceManager
                 $this->messageHandler
                     ->offsetSets(['approveme', 'aproveme', 'approvme'], new Commands\ApproveMe($this->civ13))
                     ->offsetSet('joinroles', new Commands\JoinRoles($this->civ13), ['Chief Technical Officer']);
-            if (file_exists(Civ13::insults_path)) $this->messageHandler->offsetSet('insult', new Commands\Insult($this->civ13), ['Verified']);
+            if (file_exists(Civ13::insults_path)) $this->messageHandler->offsetSet('insult', new Commands\Insult($this->civ13), ['Verified', 'SS14 Verified']);
             if (isset($this->civ13->folders['typespess_path'], $this->civ13->files['typespess_launch_server_path'])) $this->messageHandler->offsetSet('ts', New Commands\TypeSpess($this->civ13), ['Owner', 'Chief Technical Officer']);
             if (isset($this->civ13->folders['ss14_basedir'])) $this->messageHandler->offsetSet('ss14', new Commands\SS14($this->civ13), ['Owner', 'Chief Technical Officer']);
 
