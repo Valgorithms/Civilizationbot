@@ -141,21 +141,8 @@ class MessageServiceManager
             ->offsetSet('togglerelaymethod',     new Commands\RelayMethodToggle   ($this->civ13), ['Ambassador'])
             ->offsetSet('listrounds',            new Commands\ListRounds          ($this->civ13), ['Ambassador'])
             ->offsetSet('updateadmins',          new Commands\AdminListUpdate     ($this->civ13), ['Ambassador'])
-            ->offsetSet('logs',                 new Commands\Civ13Logs            ($this->civ13), ['Admin'])
-            ->offsetSet('playerlogs',
-                function (Message $message, string $command, array $message_filtered): PromiseInterface
-                {
-                    $tokens = explode(';', trim(substr($message_filtered['message_content'], strlen($command))));
-                    $keys = [];
-                    foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-                        $keys[] = $gameserver->key;
-                        if (trim($tokens[0]) !== $gameserver->key) continue;
-                        if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir . Civ13::playerlogs) || ! $file_contents = @file_get_contents($gameserver->basedir . Civ13::playerlogs)) return $message->react("🔥");
-                        return $message->reply(Civ13::createBuilder()->addFileFromContent('playerlogs.txt', $file_contents));
-                    }
-                    return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys). '`' );
-                },
-                ['Admin'])
+            ->offsetSet('civ13logs',             new Commands\Civ13Logs           ($this->civ13), ['Admin'])
+            ->offsetSet('civ13playerlogs',       new Commands\Civ13PlayerLogs     ($this->civ13), ['Admin'])
             ->offsetSet('botlog',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply(Civ13::createBuilder()->addFile('botlog.txt')),
