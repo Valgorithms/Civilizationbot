@@ -40,6 +40,7 @@ trait ServerApiTrait
     public    ?string     $preset           = null;
     public    ?string     $round_start_time = null;
     public    array       $players          = [];
+    protected bool        $announced        = false;
 
     /**
      * Sends a GET request to the specified URL with optional headers.
@@ -97,8 +98,8 @@ trait ServerApiTrait
         $promise = $this->sendGetRequest('/status')->then(function(ResponseInterface $response): ResponseInterface
         {
             if ($status = json_decode($response->getBody()->getContents(), true) ?: []) {
-                if (empty($this->__status) && !empty($status)) $this->announceOnline(true);
-                if (!empty($this->__status) && empty($status)) $this->announceOnline(false);
+                    if (empty($this->__status) && !empty($status) && $this->announced = true) $this->announceOnline(true);
+                    if (!empty($this->__status) && empty($status) && $this->announced) $this->announceOnline(false);
                 $previous_round_id = $this->round_id;
                 $this->updateServerPropertiesFromStatusArray($status);
                 if (
