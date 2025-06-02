@@ -164,9 +164,18 @@ class GameServer
      *
      * @return TimerInterface The periodic timer responsible for updating the player count channel.
      */
-    public function playercountTimer(): TimerInterface
+    public function playercountTimer(): PromiseInterface
     {
-        await($this->civ13->then($this->getStatus(), null, fn(\Throwable $e) => null));
+        //await($this->civ13->then($this->getStatus(), null, fn(\Throwable $e) => null));
+        return $this->civ13->then(
+            $this->getStatus(),
+            fn() => $this->setPlayercountTimer(),
+            fn(\Throwable $e) => null
+        );
+    }
+
+    public function setPlayercountTimer()
+    {
         return (isset($this->playercount_timer))
             ? $this->playercount_timer
             : $this->playercount_timer = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
@@ -238,7 +247,7 @@ class GameServer
             $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
             return reject(new PartException($err));
         }
-        $builder = Civ13::createBuilder()->addEmbed($this->toEmbed(true));
+        $builder = Civ13::createBuilder()->addEmbed($this->toEmbed(/*true*/));
 
         $resend = function (?Message $message, callable $new) {
             if ($message) $message->delete();
