@@ -98,7 +98,10 @@ trait ServerApiTrait
         $promise = $this->sendGetRequest('/status')->then(function(ResponseInterface $response): ResponseInterface
         {
             if ($status = json_decode($response->getBody()->getContents(), true) ?: []) {
-                    if (empty($this->__status) && !empty($status) && $this->announced = true) $this->announceOnline(true);
+                    if (empty($this->__status) && !empty($status)) {
+                        $this->announced = true;
+                        $this->announceOnline(true);
+                    }
                     if (!empty($this->__status) && empty($status) && $this->announced) $this->announceOnline(false);
                 $previous_round_id = $this->round_id;
                 $this->updateServerPropertiesFromStatusArray($status);
