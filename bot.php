@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is a part of the Civ13 project.
  *
@@ -33,7 +35,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 set_time_limit(0);
-ignore_user_abort(1);
+ignore_user_abort(true);
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', '-1'); // Unlimited memory usage
 define('MAIN_INCLUDED', 1); // Token and SQL credential files may be protected locally and require this to be defined to access
@@ -87,6 +89,7 @@ $discord = new Discord([
     'loadAllMembers' => true,
     'storeMessages' => true, // Because why not?
     'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::MESSAGE_CONTENT,
+    //'useGatewayCompression' => false, // Disable gateway compression
 ]);
 
 $stats = Stats::new($discord);
@@ -499,7 +502,7 @@ use VerifierServer\Server as VerifierServer;
 Loop::futureTick(async(static function () use (&$civ13, &$logger, $options, $civ13_server_settings, $civ14_server_settings) {
     $verifier_server = new VerifierServer(
         getenv('VERIFIER_HOST_ADDR'),
-        getenv('VERIFIER_HOST_PORT')
+        intval(getenv('VERIFIER_HOST_PORT'))
     );
     $verifier_server->init(Loop::get());
     $verifier_server->setLogger($logger);
