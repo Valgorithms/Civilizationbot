@@ -89,7 +89,7 @@ $discord = new Discord([
     'loadAllMembers' => true,
     'storeMessages' => true, // Because why not?
     'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::MESSAGE_CONTENT,
-    //'useGatewayCompression' => false, // Disable gateway compression
+    'useGatewayCompression' => false, // Disable gateway compression
 ]);
 
 $stats = Stats::new($discord);
