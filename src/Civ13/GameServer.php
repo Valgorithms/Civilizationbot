@@ -509,29 +509,30 @@ class GameServer
         };
         if (! $builder = $round_embed_builder($round)) return null;
 
-        $interaction_log_handler = function (Interaction $interaction, string $command): PromiseInterface
-        {
-            if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
-            $tokens = explode(';', substr($command, strlen('logs ')));
-            if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) {
-                $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
-                return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($error), true);
-            }
-
-            unset($tokens[0]);
-            $results = $this->civ13->FileNav($this->basedir . Civ13::log_basedir, $tokens);
-            if (! $results[0]) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('No logs found.'), true);
-            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($results[1], 'log.txt'), true);
-        };
         if ($log = str_replace('/', ';', "logs {$this->key}{$round['log']}")) $builder->addComponent(
             ActionRow::new()->addComponent(
                 Button::new(Button::STYLE_PRIMARY, $log)
                     ->setLabel('Log')
                     ->setEmoji('📝')
-                    ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $interaction_log_handler($interaction, $interaction->data['custom_id'])), $this->discord, $oneOff = false)
+                    ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $this->interaction_log_handler($interaction)), $this->discord, $oneOff = false)
             )
         );
         return $builder;
+    }
+
+    protected function interaction_log_handler(Interaction $interaction): PromiseInterface
+    {
+        if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
+        $tokens = explode(';', substr($interaction->data['custom_id'], strlen('logs ')));
+        if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) {
+            $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
+            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($error), true);
+        }
+
+        unset($tokens[0]);
+        $results = $this->civ13->FileNav($this->basedir . Civ13::log_basedir, $tokens);
+        if (! $results[0]) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('No logs found.'), true);
+        return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($results[1], 'log.txt'), true);
     }
 
     public function playercountTimer(): TimerInterface

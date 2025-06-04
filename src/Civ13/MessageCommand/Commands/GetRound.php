@@ -106,15 +106,15 @@ class GetRound extends Civ13MessageCommand
                 Button::new(Button::STYLE_PRIMARY, $log)
                     ->setLabel('Log')
                     ->setEmoji('📝')
-                    ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $this->interaction_log_handler($interaction, $interaction->data['custom_id'])), $this->discord, $oneOff = true)
+                    ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $this->interaction_log_handler($interaction)), $this->discord, $oneOff = true)
             )
         );
     }
 
-    protected function interaction_log_handler(Interaction $interaction, string $command): PromiseInterface
+    protected function interaction_log_handler(Interaction $interaction): PromiseInterface
     {
         if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
-        $tokens = explode(';', substr($command, strlen('logs ')));
+        $tokens = explode(';', substr($interaction->data['custom_id'], strlen('logs ')));
         $keys = [];
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             $keys[] = $gameserver->key;
