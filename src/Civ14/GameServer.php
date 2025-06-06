@@ -166,7 +166,7 @@ class GameServer
      */
     public function playercountTimer(): PromiseInterface
     {
-        //await($this->civ13->then($this->getStatus(), null, fn(\Throwable $e) => null));
+        await($this->civ13->then($this->getStatus(), null, fn(\Throwable $e) => null));
         return $this->civ13->then(
             $this->getStatus(),
             fn() => $this->setPlayercountTimer(),
