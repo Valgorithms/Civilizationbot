@@ -97,22 +97,21 @@ trait ServerApiTrait
     {
         $promise = $this->sendGetRequest('/status')->then(function(ResponseInterface $response): ResponseInterface
         {
-            if ($status = json_decode($response->getBody()->getContents(), true) ?: []) {
-                    if (empty($this->__status) && !empty($status)) {
-                        $this->announced = true;
-                        $this->announceOnline(true);
-                    }
-                    if (!empty($this->__status) && empty($status) && $this->announced) $this->announceOnline(false);
-                $previous_round_id = $this->round_id;
-                $this->updateServerPropertiesFromStatusArray($status);
-                if (
-                    isset($this->discussion) &&
-                    isset($this->__status['round_id']) &&
-                    is_numeric($this->__status['round_id']) &&
-                    $this->round_id !== -1 && // Only announce if we have a previous round_id
-                    $this->__status['round_id'] != $previous_round_id
-                ) $this->announceNewRound();
+            if (! $status = json_decode($response->getBody()->getContents(), true) ?: []) return $response;
+            if (empty($this->__status) && !empty($status)) {
+                $this->announceOnline(true);
+                $this->announced = true;
             }
+            if (!empty($this->__status) && empty($status)) $this->announceOnline(false);
+            $previous_round_id = $this->round_id;
+            $this->updateServerPropertiesFromStatusArray($status);
+            if (
+                isset($this->discussion) &&
+                isset($this->__status['round_id']) &&
+                is_numeric($this->__status['round_id']) &&
+                $this->round_id !== -1 && // Only announce if we have a previous round_id
+                $this->__status['round_id'] != $previous_round_id
+            ) $this->announceNewRound();
             return $response;
         }, function(\Throwable $e) {
             if (!empty($this->__status)) {
