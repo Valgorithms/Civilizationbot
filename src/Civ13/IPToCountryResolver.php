@@ -56,7 +56,7 @@ class IPToCountryResolver
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
-        $response = curl_exec($ch);
+        if (($response = curl_exec($ch)) === false) return []; // If the request failed, return an empty array
         if (! $array = @unserialize($response)) return []; // If the request timed out or if the service 429'd us
         assert(is_array($array));
         if (! isset($array['status']) || $array['status'] !== 'success') return [];
