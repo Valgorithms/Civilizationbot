@@ -247,7 +247,7 @@ class GameServer
             $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
             return reject(new PartException($err));
         }
-        $builder = Civ13::createBuilder()->addEmbed($this->toEmbed(/*true*/));
+        $builder = Civ13::createBuilder()->addEmbed($this->toEmbed(true));
 
         $resend = function (?Message $message, callable $new) {
             if ($message) $message->delete();
