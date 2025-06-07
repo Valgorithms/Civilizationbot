@@ -247,8 +247,11 @@ class GameServer
             $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
             return reject(new PartException($err));
         }
-        $builder = Civ13::createBuilder()->addEmbed($this->toEmbed(true));
+        return $this->getStatus()->finally(fn(): PromiseInterface => $this->__updateCurrentRoundEmbedMessageBuilder($channel, Civ13::createBuilder()->addEmbed($this->toEmbed())));
+    }
 
+    protected function __updateCurrentRoundEmbedMessageBuilder($channel, $builder)
+    {
         $resend = function (?Message $message, callable $new) {
             if ($message) $message->delete();
             return $new(new PartException("Failed to edit message current round message in {$this->key} ({$this->name})"));
