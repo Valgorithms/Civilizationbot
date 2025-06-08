@@ -268,22 +268,14 @@ class GameServer
     /**
      * Generates a Discord embed representing the current state of the game server.
      *
-     * If $fetch is true, attempts to update the server status before generating the embed.
      * If the server is offline or an error occurs during status fetch, the embed will indicate the server is offline.
      * Otherwise, the embed will include details such as server URL, host, player count, map, round ID, and elapsed time.
      *
-     * @param bool $fetch Whether to fetch the latest server status before generating the embed.
      * @return Embed The generated embed containing server information.
      */
-    public function toEmbed(bool $fetch = false): Embed
+    public function toEmbed(): Embed
     {
         $embed = $this->civ13->createEmbed();
-        if ($fetch) try {
-            /** @var array */
-            await($this->civ13->then($this->getStatus(), null, fn(\Throwable $e) => null));
-        } catch (\Throwable $e) { // Ignore errors, just return offline status
-            return $embed->addFieldValues($this->name, 'Offline');
-        }
         if (empty($this->__status)) return $embed->addFieldValues($this->name, 'Offline');
         if (! empty($this->players)) $embed->addFieldValues(
             'Playing',
