@@ -250,7 +250,7 @@ class GameServer
         return $this->getStatus()->finally(fn(): PromiseInterface => $this->__updateCurrentRoundEmbedMessageBuilder($channel, Civ13::createBuilder()->addEmbed($this->toEmbed())));
     }
 
-    protected function __updateCurrentRoundEmbedMessageBuilder($channel, $builder)
+    protected function __updateCurrentRoundEmbedMessageBuilder($channel, $builder): PromiseInterface
     {
         $resend = function (?Message $message, callable $new) {
             if ($message) $message->delete();
