@@ -15,8 +15,10 @@ use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Helpers\Collection;
 use Discord\Helpers\ExCollectionInterface;
+use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
+use Discord\Parts\Thread\Thread;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
@@ -185,7 +187,7 @@ class GameServer
      * Returns the timer responsible for periodically updating the current round embed message.
      *
      * If the timer does not already exist, it initializes the timer to call
-     * updateCurrentRoundEmbedMessageBuilder() every 60 seconds. The timer is stored
+     * processCurrentRoundMessage() every 60 seconds. The timer is stored
      * in $this->current_round_embed_timer to ensure only one instance is active.
      *
      * @return TimerInterface The periodic timer for updating the current round embed message.
@@ -193,8 +195,8 @@ class GameServer
     public function currentRoundEmbedTimer(): TimerInterface
     {
         if (! isset($this->current_round_embed_timer)) {
-            $this->civ13->then($this->updateCurrentRoundEmbedMessageBuilder()); // Call the function on the first access attempt
-            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, async(fn() => $this->civ13->then($this->updateCurrentRoundEmbedMessageBuilder())));
+            $this->civ13->then($this->processCurrentRoundMessage()); // Call the function on the first access attempt
+            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, async(fn() => $this->civ13->then($this->processCurrentRoundMessage())));
         }
         return $this->current_round_embed_timer;
     }
@@ -237,7 +239,7 @@ class GameServer
      * @param MessageBuilder|null $builder The message builder to used to perform the update the message. Defaults to null.
      * @return PromiseInterface<Message> A promise that resolves when the update is complete.
      */
-    public function updateCurrentRoundEmbedMessageBuilder(): PromiseInterface
+    public function processCurrentRoundMessage(): PromiseInterface
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             $this->logger->error($err = "Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
@@ -247,10 +249,10 @@ class GameServer
             $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
             return reject(new PartException($err));
         }
-        return $this->getStatus()->finally(fn(): PromiseInterface => $this->__updateCurrentRoundEmbedMessageBuilder($channel, Civ13::createBuilder()->addEmbed($this->toEmbed())));
+        return $this->getStatus()->finally(fn(): PromiseInterface => $this->__processCurrentRoundMessage($channel, Civ13::createBuilder()->addEmbed($this->toEmbed())));
     }
 
-    protected function __updateCurrentRoundEmbedMessageBuilder($channel, $builder): PromiseInterface
+    protected function __processCurrentRoundMessage(Channel|Thread $channel, MessageBuilder $builder): PromiseInterface
     {
         $resend = function (?Message $message, callable $new) {
             if ($message) $message->delete();
