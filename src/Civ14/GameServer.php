@@ -254,7 +254,7 @@ class GameServer
     {
         $resend = function (?Message $message, callable $new) {
             if ($message) $message->delete();
-            return $new(new PartException("Failed to edit message current round message in {$this->key} ({$this->name})"));
+            return $new(new PartException("Failed to edit current round message in {$this->key} ({$this->name})"));
         };
         $send = fn(Message $message): bool                      => $this->civ13->VarSave($this->getRoundMessageIdFileName(), [$this->round_message_id = $message->id]);
         $new  = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
