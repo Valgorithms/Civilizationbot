@@ -21,15 +21,15 @@ class Civ13GameServerRanking extends Civ13GameServerMessageCommand
     {
         return $this->gameserver->recalculateRanking()->then(
             fn() => $this->gameserver->getRanking()->then(
-                fn (string $ranking) => $this->civ13->reply($message, $ranking, 'ranking.txt'),
+                fn(string $ranking) => $this->civ13->reply($message, $ranking, 'ranking.txt'),
                 function (MissingSystemPermissionException $error) use ($message) {
                     $this->logger->error($err = $error->getMessage());
-                    $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
+                    $message->react("🔥")->then(fn() => $this->civ13->reply($message, $err));
                 }
             ),
             function (MissingSystemPermissionException $error) use ($message) {
                 $this->logger->error($err = $error->getMessage());
-                $message->react("🔥")->then(fn () => $this->civ13->reply($message, $err));
+                $message->react("🔥")->then(fn() => $this->civ13->reply($message, $err));
             }
         );
     }

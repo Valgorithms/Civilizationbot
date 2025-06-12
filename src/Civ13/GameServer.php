@@ -389,7 +389,7 @@ class GameServer
         if (! $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
         if (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface)) {
             $this->logger->debug("Starting file chat relay timer for {$this->key}");
-            if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, fn () => $this->__gameChatFileRelay([Civ13::ooc_path => $this->ooc, Civ13::asay_path => $this->asay]));
+            if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, fn() => $this->__gameChatFileRelay([Civ13::ooc_path => $this->ooc, Civ13::asay_path => $this->asay]));
         }
         return $this->timers['relay_timer'];
     }
@@ -462,7 +462,7 @@ class GameServer
         };
         $send = fn(Message $message): bool                      => $this->civ13->VarSave($this->getRoundMessageIdFileName(), [$this->current_round_message_id = $message->id]);
         $new  = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
-        $edit = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn (\Throwable $error) => $resend($message, $new)) : null;
+        $edit = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn(\Throwable $error) => $resend($message, $new)) : null;
 
         return ($round_message_id = $this->getRoundMessageId())
             ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit, $new)
@@ -538,7 +538,7 @@ class GameServer
     public function playercountTimer(): TimerInterface
     {
         // Update playercount channel every 10 minutes
-        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
+        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn() => $this->playercountChannelUpdate());
         return $this->timers['playercount_timer'];
     }
 

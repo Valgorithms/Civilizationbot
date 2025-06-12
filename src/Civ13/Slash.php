@@ -823,7 +823,7 @@ class Slash
                         )
                     )
                 );
-            return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("Welcome to {$interaction->member->guild->name}}! Your roles have been set and you should now have access to the rest of the server."), true)->then(fn (): PromiseInterface =>
+            return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("Welcome to {$interaction->member->guild->name}}! Your roles have been set and you should now have access to the rest of the server."), true)->then(fn(): PromiseInterface =>
                 $interaction->member->setRoles([$this->civ13->role_ids['Verified']], "approveme {$item['ss13']}")
             );
         });

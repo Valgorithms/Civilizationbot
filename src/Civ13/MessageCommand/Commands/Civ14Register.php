@@ -26,8 +26,8 @@ class Civ14Register extends Civ13MessageCommand
             if (! $name = $split_message[0]) return $this->civ13->reply($message, 'Invalid format! Please use the format `register <byond username>; <discord id>`.');
             if (! is_numeric($discord_id = $split_message[1])) return $this->civ13->reply($message, "Discord id `$discord_id` must be numeric.");
             return $this->civ13->ss14verifier->verify($discord_id, $name)->then(
-                fn (string $ss14) => $this->civ13->reply($message, "Successfully registered `$ss14` to <@$discord_id>."),
-                fn (\Throwable $e) => $this->civ13->reply($message, $e->getMessage())
+                fn(string $ss14) => $this->civ13->reply($message, "Successfully registered `$ss14` to <@$discord_id>."),
+                fn(\Throwable $e) => $this->civ13->reply($message, $e->getMessage())
             );
     }
 }

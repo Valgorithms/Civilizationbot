@@ -23,17 +23,17 @@ use React\Promise\PromiseInterface;
 class ListAdmins extends Civ13MessageCommand
 {
     // Header section
-    public const string TITLE = 'Civ13 Admins List';
+    protected const string TITLE = 'Civ13 Admins List';
 
     // Description section
-    public const string DESCRIPTION_TEXT = 'Retrieves the admins.txt files for locally hosted Civ13 servers.';
+    protected const string DESCRIPTION_TEXT = 'Retrieves the admins.txt files for locally hosted Civ13 servers.';
 
     // Output section
-    public const string UNAVAILABLE = 'Files are not available at this time.';
+    protected const string UNAVAILABLE = 'Files are not available at this time.';
 
     // Color codes
-    public const string ACCENT_COLOR_DEFAULT = 'f1c40f';
-    public const string ACCENT_COLOR_ERROR   = 'e91e63';
+    protected const string ACCENT_COLOR_DEFAULT = 'f1c40f';
+    protected const string ACCENT_COLOR_ERROR   = 'e91e63';
 
     protected Container $container;
 

@@ -21,7 +21,7 @@ class FullAltCheck extends Civ13MessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         $ckeys = [];
-        $members = $message->guild->members->filter(fn (Member $member) => ! $member->roles->has($this->civ13->role_ids['Banished']));
+        $members = $message->guild->members->filter(fn(Member $member) => ! $member->roles->has($this->civ13->role_ids['Banished']));
         foreach ($members as $member) if ($item = $this->civ13->verifier->getVerifiedItem($member->id)) {
             if (!isset($item['ss13'])) continue;
             $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);

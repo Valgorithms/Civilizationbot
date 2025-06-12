@@ -26,8 +26,8 @@ class Civ14UnVerify extends Civ13MessageCommand
             is_numeric($id) ? $id : '',
             is_numeric($id) ? '' : $id
         )->then(
-            fn (array $result) => $this->civ13->reply($message, 'Unverified SS14: ' . json_encode($result)),
-            fn (\Throwable $e) => $this->civ13->reply($message, $e->getMessage())
+            fn(array $result) => $this->civ13->reply($message, 'Unverified SS14: ' . json_encode($result)),
+            fn(\Throwable $e) => $this->civ13->reply($message, $e->getMessage())
         );
     }
 }

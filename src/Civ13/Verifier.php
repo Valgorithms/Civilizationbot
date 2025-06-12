@@ -298,7 +298,7 @@ class Verifier
             if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
             if (isset($ban_appeals)) $this->civ13->then(
                 $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently permanently banned. Please follow the posting guidelines and appeal your ban here.")
-                    ->then(fn (Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
+                    ->then(fn(Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
             );
             return 'This account needs to appeal an existing ban first.';
         }
@@ -306,7 +306,7 @@ class Verifier
             if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
             if (isset($ban_appeals)) $this->civ13->then(
                 $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently under investigation. Please follow the posting guidelines and appeal your ban here.")
-                    ->then(fn (Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
+                    ->then(fn(Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
             );
             return 'This account is currently under investigation.';
         }
@@ -332,7 +332,7 @@ class Verifier
                 $this->civ13->ban($arr, null, null, true);
                 if (isset($ban_appeals)) $this->civ13->then(
                     $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently permanently banned for being too new to be automatically approved. Please follow the posting guidelines and appeal your ban here.")
-                        ->then(fn (Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
+                        ->then(fn(Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
                 );
                 if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Ambassador']}>, Byond account `$ckey` was too new to complete the automatic verification process! Please investigate using the `ckeyinfo` command and manually approve if they should be allowed to bypass the requirements.");
                 return $reason;

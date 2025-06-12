@@ -26,7 +26,7 @@ class FixRoles extends Civ13MessageCommand
                 && ! $member->roles->has($this->civ13->role_ids['Permabanished']);
         })) foreach ($unverified_members as $member) if ($this->civ13->verifier->getVerifiedItem($member)) $member->addRole($this->civ13->role_ids['Verified'], 'fixroles');
         if (
-            $verified_members = $guild->members->filter(fn (Member $member) => $member->roles->has($this->civ13->role_ids['Verified']))
+            $verified_members = $guild->members->filter(fn(Member $member) => $member->roles->has($this->civ13->role_ids['Verified']))
         ) foreach ($verified_members as $member) if (! $this->civ13->verifier->getVerifiedItem($member)) $member->removeRole($this->civ13->role_ids['Verified'], 'fixroles');
         return $message->react("👍");
     }

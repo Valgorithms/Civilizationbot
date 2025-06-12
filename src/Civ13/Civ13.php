@@ -984,26 +984,26 @@ class Civ13
     {
         $builder = array_reduce(
             $this->enabled_gameservers,
-            fn ($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()),
+            fn($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()),
             Civ13::createBuilder()
         );
         $builder = array_reduce(
             $this->civ14_enabled_gameservers,
-            fn ($builder, $gameserver) => $builder->addEmbed($gameserver->toEmbed()),
+            fn($builder, $gameserver) => $builder->addEmbed($gameserver->toEmbed()),
             $builder
         );
 
         $server_list = implode(
             PHP_EOL,
             array_map(
-                fn ($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}",
+                fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}",
                 $this->enabled_gameservers
             )
         );
         $server_list .= PHP_EOL . implode(
             PHP_EOL,
             array_map(
-                fn ($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}",
+                fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}",
                 $this->civ14_enabled_gameservers
             )
         );

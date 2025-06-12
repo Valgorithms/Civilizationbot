@@ -29,33 +29,33 @@ use function React\Async\await;
 class Civ14Verify extends Civ13MessageCommand
 {
     // Header section
-    public const string TITLE = 'SS14 Verification';
+    protected const string TITLE = 'SS14 Verification';
 
     // Description section
-    public const string DESCRIPTION_TEXT          = 'Completing this process will grant you the `@SS14 Verified` role.';
-    public const string DESCRIPTION_BANNER_URL    = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
-    public const string DESCRIPTION_BANNER_ALT    = 'Civilization 14 Banner';
-    //public const string DESCRIPTION_THUMBNAIL     = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
-    //public const string DESCRIPTION_THUMBNAIL_ALT = 'Civilization 14 Thumbnail';
+    protected const string DESCRIPTION_TEXT          = 'Completing this process will grant you the `@SS14 Verified` role.';
+    protected const string DESCRIPTION_BANNER_URL    = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
+    protected const string DESCRIPTION_BANNER_ALT    = 'Civilization 14 Banner';
+    //protected const string DESCRIPTION_THUMBNAIL     = 'https://raw.githubusercontent.com/Civ13/Civ14/refs/heads/master/Resources/Textures/Logo/splash.png';
+    //protected const string DESCRIPTION_THUMBNAIL_ALT = 'Civilization 14 Thumbnail';
 
     // Steps section
-    public const string STEP_ONE_TODO   = '1. Link your Discord account.';
-    public const string STEP_ONE_DONE   = '1. Your Discord account is linked.';
-    public const string STEP_TWO_TODO   = '2. Link your SS14 account.';
-    public const string STEP_TWO_DONE   = '2. Your SS14 account is linked.';
-    public const string STEP_THREE_TODO = '3. Earn at least one medal by playing the game.';
-    public const string STEP_THREE_DONE = '3. You have earned at least one medal.';
+    protected const string STEP_ONE_TODO   = '1. Link your Discord account.';
+    protected const string STEP_ONE_DONE   = '1. Your Discord account is linked.';
+    protected const string STEP_TWO_TODO   = '2. Link your SS14 account.';
+    protected const string STEP_TWO_DONE   = '2. Your SS14 account is linked.';
+    protected const string STEP_THREE_TODO = '3. Earn at least one medal by playing the game.';
+    protected const string STEP_THREE_DONE = '3. You have earned at least one medal.';
 
     // Output section
-    public const string INITIAL       = 'Please use the `verifyme` command again to complete the process.';
-    public const string ROLE_ADDED    = 'You have been granted the `@SS14 Verified` role.';
-    public const string ROLE_EXISTS   = 'You already have the `@SS14 Verified` role.';
-    public const string UNAVAILABLE   = 'SS14 verification is not available at this time.';
+    protected const string INITIAL       = 'Please use the `verifyme` command again to complete the process.';
+    protected const string ROLE_ADDED    = 'You have been granted the `@SS14 Verified` role.';
+    protected const string ROLE_EXISTS   = 'You already have the `@SS14 Verified` role.';
+    protected const string UNAVAILABLE   = 'SS14 verification is not available at this time.';
 
     // Color codes
-    public const string ACCENT_COLOR_DEFAULT  = 'f1c40f';
-    public const string ACCENT_COLOR_SUCCESS  = '2ecc71';
-    public const string ACCENT_COLOR_ERROR    = 'e91e63';
+    protected const string ACCENT_COLOR_DEFAULT  = 'f1c40f';
+    protected const string ACCENT_COLOR_SUCCESS  = '2ecc71';
+    protected const string ACCENT_COLOR_ERROR    = 'e91e63';
 
     // @TODO: Use the bot's configurations
     protected string $dwa_oauth_url  = 'http://www.civ13.com:16260/dwa?login';
