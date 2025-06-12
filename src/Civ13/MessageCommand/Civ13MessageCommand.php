@@ -25,6 +25,11 @@ class Civ13MessageCommand extends MessageCommand
 {
     use DynamicPropertyAccessorTrait;
 
+    protected const string TITLE = 'Command Title';
+    protected const string DESCRIPTION_TEXT = 'This command is not implemented yet.';
+    protected const string ACCENT_COLOR_DEFAULT = 'f1c40f';
+    protected const string ACCENT_COLOR_ERROR   = 'e91e63';
+
     public function __construct(protected Civ13 &$civ13){}
 
     public function new(\Closure|callable|null $callback = null): static
