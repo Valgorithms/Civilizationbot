@@ -106,6 +106,7 @@ class MessageServiceManager
             ->offsetSet('civ14unverify',         new Commands\Civ14UnVerify       ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('dumpappcommands',       new Commands\DumpAppCommands     ($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('ages',                  new Commands\Ages                ($this->civ13), ['Chief Technical Officer'])
+            ->offsetSet('cv2poll',               new Commands\CV2Poll             ($this->civ13), ['Ambassador'])
             ->offsetSet('tests',                 new Commands\Tests               ($this->civ13), ['Ambassador'])
             ->offsetSet('fullbancheck',          new Commands\BanCheckFull        ($this->civ13), ['Ambassador'])
             ->offsetSet('updatebans',            new Commands\BansUpdate          ($this->civ13), ['Ambassador'])
