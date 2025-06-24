@@ -120,14 +120,14 @@ class Slash
             if (! $commands->get('name', 'help')) $this->save($commands, new Command($this->discord, [
                 'name'          => 'help',
                 'description'   => 'View a list of available commands',
-                'dm_permission' => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
             ]));
 
             if ($command = $commands->get('name', 'pull')) $commands->delete($command);
             /*if (! $commands->get('name', 'pull')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'pull',
                     'description'                => "Update the bot's code",
-                    'dm_permission'              => false,
+                    'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));*/
 
@@ -135,7 +135,7 @@ class Slash
             /*if (! $commands->get('name', 'update')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'update',
                     'description'                => "Update the bot's dependencies",
-                    'dm_permission'              => false,
+                    'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));*/
 
@@ -143,7 +143,7 @@ class Slash
             /*if (! $commands->get('name', 'stats')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'stats',
                 'description'                => 'Get runtime information about the bot',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));*/
 
@@ -151,7 +151,7 @@ class Slash
             /*if (! $commands->get('name', 'invite')) $this->save($commands, new Command($this->discord, [
                     'name'                       => 'invite',
                     'description'                => 'Bot invite link',
-                    'dm_permission'              => false,
+                    'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['manage_guild' => true]),
             ]));*/
 
@@ -165,7 +165,7 @@ class Slash
             if (! $commands->get('name', 'ss14')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'ss14',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
             
@@ -173,7 +173,7 @@ class Slash
             if (! $commands->get('name', 'ckey')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'ckey',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
@@ -181,7 +181,7 @@ class Slash
             if (! $commands->get('name', 'ckeyinfo')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'ckeyinfo',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));
 
@@ -189,7 +189,7 @@ class Slash
             if (! $commands->get('name', 'bancheck')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'bancheck',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
@@ -197,7 +197,7 @@ class Slash
             if (! $commands->get('name', 'bancheck_ckey')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'bancheck_ckey',
                 'description'                => 'Check if a ckey is banned on the server',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
                 'options'                    => [
                     [
@@ -213,7 +213,7 @@ class Slash
             if (! $commands->get('name', 'bansearch_centcom')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'bansearch_centcom',
                 'description'                => 'Check if a ckey is banned on centcom.melonmesa.com',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'options'                    => [
                     [
                         'name'        => 'ckey',
@@ -224,11 +224,11 @@ class Slash
                 ]
             ]));
 
-            //if ($command = $commands->get('name', 'unverify')) $commands->delete($command);
+            // if ($command = $commands->get('name', 'unverify')) $commands->delete($command);
             if (! $commands->get('name', 'unverify')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'unverify',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['administrator' => true]),
             ]));
 
@@ -236,7 +236,7 @@ class Slash
             if (! $commands->get('name', 'ban')) $this->save($commands, new Command($this->discord, [
                 'name'			=> 'ban',
                 'description'	=> 'Ban a ckey from the Civ13.com servers',
-                'dm_permission' => false,
+                'contexts'		=> [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
                 'options'		=> [
                     [
@@ -264,7 +264,7 @@ class Slash
             /*if (! $commands->get('name', 'panic_bunker')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'panic_bunker',
                 'description'                => 'Toggles the panic bunker',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['manage_guild' => true]),
             ]));*/
 
@@ -272,7 +272,7 @@ class Slash
             if (! $commands->get('name', 'join_campaign')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'join_campaign',
                 'description'                => 'Get a role to join the campaign',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
             ]));
 
             // if ($command = $commands->get('name', 'assign_faction')) $commands->delete($command);
@@ -282,7 +282,7 @@ class Slash
             if (! $commands->get('name', 'assign_faction')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'assign_faction',
                 'description'                => 'Assign someone to a faction',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'options'		             => [
                     [
                         'name'			=> 'ckey',
@@ -303,26 +303,26 @@ class Slash
             /* Deprecated, use the /rankme or chat command instead
             if ($command = $commands->get('name', 'rank')) $commands->delete($command);
             if (! $commands->get('name', 'rank')) $this->save($commands, new Command($this->discord, [
-                'type'          => Command::USER,
-                'name'          => 'rank',
-                'dm_permission' => false,
+                'type'     => Command::USER,
+                'name'     => 'rank',
+                'contexts' => [Interaction::CONTEXT_TYPE_GUILD],
             ]));*/
 
             /* Deprecated, use the chat command instead
             if ($command = $commands->get('name', 'medals')) $commands->delete($command);
             if (! $commands->get('name', 'medals')) $this->save($commands, new Command($this->discord, [
-                'type'          => Command::USER,
-                'name'          => 'medals',
-                'dm_permission' => false,
+                'type'     => Command::USER,
+                'name'     => 'medals',
+                'contexts' => [Interaction::CONTEXT_TYPE_GUILD],
             ]));
             */
 
             /* Deprecated, use the chat command instead
             if ($command = $commands->get('name', 'brmedals')) $commands->delete($command);
             if (! $commands->get('name', 'brmedals')) $this->save($commands, new Command($this->discord, [
-                'type'          => Command::USER,
-                'name'          => 'brmedals',
-                'dm_permission' => false,
+                'type'     => Command::USER,
+                'name'     => 'brmedals',
+                'contexts' => [Interaction::CONTEXT_TYPE_GUILD],
             ]));*/
 
             if (! empty($this->civ13->functions['ready_slash'])) foreach (array_values($this->civ13->functions['ready_slash']) as $func) $func($this, $commands); // Will be deprecated in the future
@@ -340,7 +340,7 @@ class Slash
             if (! $commands->get('name', 'unban')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'unban',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
@@ -348,7 +348,7 @@ class Slash
             if (! $commands->get('name', 'parole')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'parole',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
             
@@ -357,7 +357,7 @@ class Slash
             if (! $commands->get('name', 'permitted')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permitted',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));*/
 
@@ -365,7 +365,7 @@ class Slash
             if (! $commands->get('name', 'permit')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'permit',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
@@ -373,7 +373,7 @@ class Slash
             if (! $commands->get('name', 'revoke')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'revoke',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
             ]));
 
@@ -381,7 +381,7 @@ class Slash
             /*if (! $commands->get('name', 'statistics')) $this->save($commands, new Command($this->discord, [
                 'type'                       => Command::USER,
                 'name'                       => 'statistics',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 // 'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
             ]));*/
             
@@ -397,7 +397,7 @@ class Slash
                 if (! $commands->get('name', 'rank')) $this->save($commands, new Command($this->discord, [
                     'name'                => 'rank',
                     'description'         => 'See your ranking on a Civ13 server',
-                    'dm_permission'       => false,
+                    'contexts'            => [Interaction::CONTEXT_TYPE_GUILD],
                     'options'             => [
                         [
                             'name'        => 'server',
@@ -419,7 +419,7 @@ class Slash
                 if (! $commands->get('name', 'ranking')) $this->save($commands, new Command($this->discord, [
                     'name'                => 'ranking',
                     'description'         => 'See the ranks of the top players on a Civ13 server',
-                    'dm_permission'       => false,
+                    'contexts'            => [Interaction::CONTEXT_TYPE_GUILD],
                     'options'             => [
                         [
                             'name'        => 'server',
@@ -435,7 +435,7 @@ class Slash
                     'type'                       => Command::CHAT_INPUT,
                     'name'                       => "restart_server",
                     'description'                => "Restart a Civ13 server",
-                    'dm_permission'              => false,
+                    'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                     'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
                     'options'             => [
                         [
@@ -448,9 +448,9 @@ class Slash
                     ]
                 ]));
             } else { // Remove the ranking commands if there are no servers to choose from
-                //if ($command = $commands->get('name', 'rank')) $commands->delete($command);
-                //if ($command = $commands->get('name', 'ranking')) $commands->delete($command);
-                //if ($command = $commands->get('name', 'restart_server')) $commands->delete($command);
+                // if ($command = $commands->get('name', 'rank')) $commands->delete($command);
+                // if ($command = $commands->get('name', 'ranking')) $commands->delete($command);
+                // if ($command = $commands->get('name', 'restart_server')) $commands->delete($command);
             }
             
             
@@ -458,7 +458,7 @@ class Slash
             if (! $commands->get('name', 'approveme')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'approveme',
                 'description'                => 'Civ13 verification process',
-                'dm_permission'              => false,
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
                 'options'                    => [
                     [
                         'name'        => 'ckey',
@@ -473,7 +473,7 @@ class Slash
             if (! $commands->get('name', 'verifyme')) $this->save($commands, new Command($this->discord, [
                 'name'                       => 'verifyme',
                 'description'                => 'Civ14 verification process',
-                'dm_permission'              => false
+                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
             ]));
         });
     }
