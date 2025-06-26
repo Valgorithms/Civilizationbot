@@ -59,7 +59,7 @@ class CV2Poll extends Civ13MessageCommand
                 $this->cancel();
                 return $message->reply('Poll has been cancelled.');
             default:
-                return $message->reply('Invalid format. Use `!cv2poll start` to start a poll or `!cv2poll stop` to cancel it.');
+                return $message->reply('Invalid format. Use `cv2poll start` to start a poll or `cv2poll stop` to cancel it.');
         }
     }
 
