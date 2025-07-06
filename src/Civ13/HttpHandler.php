@@ -120,7 +120,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         //$fragment = $request->getUri()->getFragment(); // Only used on the client side, ignored by the server
         //$url = "$scheme://$host:$port$path". ($query ? "?$query" : '') . ($fragment ? "#$fragment" : '');
         if (str_starts_with($path, '/webhook/')) $this->logger->debug("[WEBHOOK URL] $path");
-        else $this->logger->info("[WEBAPI URL] $path");
+        elseif (! str_starts_with($path, '/ping')) $this->logger->info("[WEBAPI URL] $path");
         try {
             if (! $array = $this->__getCallback($request)) return $this->__throwError("An endpoint for `$path` does not exist.", HttpResponse::STATUS_NOT_FOUND);
             return $this->__processCallback($array['callback'], $request, $array['endpoint']);
