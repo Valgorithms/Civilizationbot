@@ -9,7 +9,7 @@
     ],
     "require": {
         "php": "^8.2.0",
-        "team-reflex/discord-php": "dev-master",
+        "team-reflex/discord-php": "dev-channel-trait",
         "clue/redis-react": "^2.6",
         "react/filesystem": "^0.2@dev",
         "react/async": "4.x-dev",
@@ -18,8 +18,7 @@
         "valzargaming/byond": "dev-main",
         "valzargaming/handler": "dev-main",
         "vzgcoders/verifier-server": "dev-main",
-        "wyrihaximus/react-cache-redis": "^4.5",
-        "valgorithms/discord-php-eventlogger": "dev-master"
+        "wyrihaximus/react-cache-redis": "^4.5"
     },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
