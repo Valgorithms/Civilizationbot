@@ -13,8 +13,8 @@ use React\Promise\PromiseInterface;
 class PromiseMiddleware
 {
     public function __construct(
-        public \Closure $onFulfilledDefault,
-        public \Closure $onRejectedDefault
+        public \Closure|null $onFulfilledDefault,
+        public \Closure|null $onRejectedDefault
     ){}
 
     public function then(PromiseInterface $promise, callable|null $onFulfilled = null, callable|null $onRejected = null): PromiseInterface
