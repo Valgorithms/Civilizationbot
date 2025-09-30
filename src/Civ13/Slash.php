@@ -525,9 +525,7 @@ class Slash
         $this->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
         {
             //$this->respondWithMessage($interaction, array_reduce($this->civ13->enabled_gameservers, fn($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()), Civ13::createBuilder())->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers))))
-            $builder = $this->civ13->createServerstatusEmbed();
-            var_dump($builder);
-            return $this->respondWithMessage($interaction, $builder);
+            return $this->respondWithMessage($interaction, $this->civ13->createServerstatusEmbed());
         });
 
         $this->discord->listenCommand('ckey', fn(Interaction $interaction): PromiseInterface =>
