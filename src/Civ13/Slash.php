@@ -79,25 +79,25 @@ class Slash
      */
     private function save(GlobalCommandRepository|GuildCommandRepository $commands, Command $command): PromiseInterface
     {
-        return $this->civ13->then($commands->save($command));
+        return $this->civ13->then($commands->save($command))->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
     }
 
     public function respondWithMessage(Interaction $interaction, MessageBuilder|string $content, bool $ephemeral = false, string $file_name = 'message.txt') : PromiseInterface
     {
         if ($content instanceof MessageBuilder) return $interaction->respondWithMessage($content, $ephemeral);
         $builder = Civ13::createBuilder();
-        if (strlen($content)<=2000) return $interaction->respondWithMessage($builder->setContent($content), $ephemeral);
-        if (strlen($content)<=4096) return $interaction->respondWithMessage($builder->addEmbed($this->civ13->createEmbed()->setDescription($content)), $ephemeral);
-        return $interaction->respondWithMessage($builder->addFileFromContent($file_name, $content), $ephemeral);
+        if (strlen($content)<=2000) return $interaction->respondWithMessage($builder->setContent($content), $ephemeral)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
+        if (strlen($content)<=4096) return $interaction->respondWithMessage($builder->addEmbed($this->civ13->createEmbed()->setDescription($content)), $ephemeral)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
+        return $interaction->respondWithMessage($builder->addFileFromContent($file_name, $content), $ephemeral)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
     }
 
     public function sendFollowUpMessage(Interaction $interaction, MessageBuilder|string $content, bool $ephemeral = false, string $file_name = 'message.txt') : PromiseInterface
     {
         if ($content instanceof MessageBuilder) return $interaction->sendFollowUpMessage($content, $ephemeral);
         $builder = Civ13::createBuilder();
-        if (strlen($content)<=2000) return $interaction->sendFollowUpMessage($builder->setContent($content), $ephemeral);
-        if (strlen($content)<=4096) return $interaction->sendFollowUpMessage($builder->addEmbed($this->civ13->createEmbed()->setDescription($content)), $ephemeral);
-        return $interaction->sendFollowUpMessage($builder->addFileFromContent($file_name, $content), $ephemeral);
+        if (strlen($content)<=2000) return $interaction->sendFollowUpMessage($builder->setContent($content), $ephemeral)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
+        if (strlen($content)<=4096) return $interaction->sendFollowUpMessage($builder->addEmbed($this->civ13->createEmbed()->setDescription($content)), $ephemeral)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
+        return $interaction->sendFollowUpMessage($builder->addFileFromContent($file_name, $content), $ephemeral)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
     }
 
     private function __updateCommands(): void
