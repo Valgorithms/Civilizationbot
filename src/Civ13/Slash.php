@@ -526,8 +526,8 @@ class Slash
         {
             //$this->respondWithMessage($interaction, array_reduce($this->civ13->enabled_gameservers, fn($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()), Civ13::createBuilder())->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers))))
             $builder = $this->civ13->createServerstatusEmbed();
-            return $this->respondWithMessage($interaction, $builder)
-            ->then(fn() => null, fn($e) => $this->logger->error(implode('', $builder->jsonSerialize()) . $e->getMessage()));
+            var_dump($builder);
+            return $this->respondWithMessage($interaction, $builder);
         });
 
         $this->discord->listenCommand('ckey', fn(Interaction $interaction): PromiseInterface =>
