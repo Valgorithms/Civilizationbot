@@ -25,9 +25,6 @@ use Discord\Repository\Guild\GuildCommandRepository;
 use Discord\Repository\Interaction\GlobalCommandRepository;
 use Monolog\Logger;
 
-use Throwable;
-
-//use function React\Async\await;
 use function React\Promise\resolve;
 use function React\Promise\reject;
 
@@ -120,7 +117,7 @@ class Slash
             if (! $commands->get('name', 'help')) $this->save($commands, new Command($this->discord, [
                 'name'          => 'help',
                 'description'   => 'View a list of available commands',
-                'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
+                'contexts'      => [Interaction::CONTEXT_TYPE_GUILD],
             ]));
 
             if ($command = $commands->get('name', 'pull')) $commands->delete($command);
@@ -528,7 +525,9 @@ class Slash
         $this->discord->listenCommand('players', function (Interaction $interaction): PromiseInterface
         {
             //$this->respondWithMessage($interaction, array_reduce($this->civ13->enabled_gameservers, fn($builder, $gameserver) => $builder->addEmbed($gameserver->generateServerstatusEmbed()), Civ13::createBuilder())->setContent(implode(PHP_EOL, array_map(fn($gameserver) => "{$gameserver->name}: {$gameserver->ip}:{$gameserver->port}", $this->civ13->enabled_gameservers))))
-            return $this->respondWithMessage($interaction, $this->civ13->createServerstatusEmbed());
+            $builder = $this->civ13->createServerstatusEmbed();
+            return $this->respondWithMessage($interaction, $builder)
+            ->then(fn() => null, fn($e) => $this->logger->error(implode('', $builder->jsonSerialize()) . $e->getMessage()));
         });
 
         $this->discord->listenCommand('ckey', fn(Interaction $interaction): PromiseInterface =>
