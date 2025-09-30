@@ -30,7 +30,10 @@ use Discord\Parts\Guild\Role;
 use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Activity;
 use Discord\Parts\User\Member;
+use Discord\Parts\WebSockets\PresenceUpdate;
 use Discord\Stats;
+use Discord\Voice\VoiceClient;
+use Discord\WebSockets\Event;
 use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
@@ -39,7 +42,6 @@ use Psr\Log\LoggerInterface;
 use React\Cache\CacheInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
-use React\EventLoop\StreamSelectLoop;
 use React\EventLoop\TimerInterface;
 use React\Filesystem\AdapterInterface;
 use React\Filesystem\Factory as FilesystemFactory;
@@ -264,7 +266,7 @@ class Civ13
         // Set the file that the object was constructed in
         $this->constructed_file = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'];
 
-        $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
+        $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
         $options = $this->resolveOptions($options);
         $this->options =& $options;
         if (isset($options['discord']) && ($options['discord'] instanceof Discord)) $this->discord =& $options['discord'];
@@ -343,7 +345,7 @@ class Civ13
         $this->byond = new Byond();
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
-        $this->discord->on('init', function () {
+        $this->discord->on('init', function (Discord $discord) {
             $this->ready = true;
             $this->logger->info("Logged in as {$this->discord->username} {$this->discord->user}");
             $this->logger->info('------');
@@ -354,6 +356,7 @@ class Civ13
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
             foreach ($this->functions['init'] as $func) $func($this);
         });
+
     }
     /**
      * Resolves the given options array by validating and setting default values for each option.
@@ -905,9 +908,9 @@ class Civ13
         }
 
         $builder = self::createBuilder($prevent_mentions);
-        if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content));
-        if (strlen($content)<=4096) return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)));
-        return $channel->sendMessage($builder->addFileFromContent($file_name, $content));
+        if (strlen($content)<=2000) return $channel->sendMessage($builder->setContent($content))->then($this->onFulfilledDefault, $this->onRejectedDefault);
+        if (strlen($content)<=4096) return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)))->then($this->onFulfilledDefault, $this->onRejectedDefault);
+        return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($this->onFulfilledDefault, $this->onRejectedDefault);
     }
 
     /**
