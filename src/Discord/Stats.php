@@ -98,7 +98,7 @@ class Stats
     {
         return (new Embed($this->discord))
             ->setTitle('DiscordPHP')
-            ->setDescription('This bot runs with DiscordPHP.')
+            ->setDescription('This bot runs with DiscordPHP.' . PHP_EOL . 'https://github.com/discord-php/DiscordPHP/')
             ->addFieldValues('PHP Version', phpversion())
             ->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
             ->addFieldValues('Bot Version', $this->getBotVersion())
