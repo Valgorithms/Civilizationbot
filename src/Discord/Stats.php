@@ -12,16 +12,16 @@ class Stats
      *
      * @var Carbon
      */
-    private $startTime;
+    protected $startTime;
 
     /**
      * Last reconnect time of bot.
      *
      * @var Carbon
      */
-    private $lastReconnect;
+    protected $lastReconnect;
     
-    private Discord $discord;
+    protected Discord $discord;
 
     public static function new(Discord &$discord): static
     {
@@ -44,7 +44,7 @@ class Stats
      *
      * @return int
      */
-    private function getChannelCount(): int
+    protected function getChannelCount(): int
     {
         $channelCount = $this->discord->private_channels->count();
 
@@ -61,7 +61,7 @@ class Stats
      *
      * @return string
      */
-    private function getBotVersion(): string
+    protected function getBotVersion(): string
     {
         $parse = `git rev-parse --abbrev-ref HEAD; git log --oneline -1`;
         return @str_replace(
@@ -76,7 +76,7 @@ class Stats
      *
      * @return string
      */
-    private function getDiscordPHPVersion(): string
+    protected function getDiscordPHPVersion(): string
     {
         return $this->discord::VERSION;
     }
@@ -86,7 +86,7 @@ class Stats
      *
      * @return string
      */
-    private function getMemoryUsageFriendly(): string
+    protected function getMemoryUsageFriendly(): string
     {
         $size = memory_get_usage(true);
         $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
