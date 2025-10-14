@@ -30,7 +30,7 @@ $status_changer_random = function (Civ13 $civ13): PromiseInterface
     if (! $status) return reject(new \Exception('status must not be empty'));
     $activity = new Activity($civ13->discord, [ // Discord status            
         'name' => $status,
-        'type' => (int) $type, // 0, 1, 2, 3, 4 | Game/Playing, Streaming, Listening, Watching, Custom Status
+        'type' => (int) $type, // 0, 1, 2, 3, 4, 5 | Game/Playing, Streaming, Listening, Watching, Custom Status, Competing
     ]);
     $civ13->statusChanger($activity, $state);
     return resolve(null);
