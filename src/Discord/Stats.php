@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 namespace Discord;
 
 use Discord\Discord;
@@ -48,12 +49,31 @@ class Stats
     {
         $channelCount = $this->discord->private_channels->count();
 
-        /* @var \Discord\Parts\Guild\Guild */
+        /** @var \Discord\Parts\Guild\Guild */
         foreach ($this->discord->guilds as $guild) {
             $channelCount += $guild->channels->count();
         }
 
         return $channelCount;
+    }
+
+    protected function getMessageCount(): int
+    {
+        $messageCount = 0;
+
+        foreach ($this->discord->private_channels as $channel) {
+            $messageCount += $channel->messages->count();
+        }
+
+        /** @var \Discord\Parts\Guild\Guild */
+        foreach ($this->discord->guilds as $guild) {
+            /** @var \Discord\Parts\Channel\Channel */
+            foreach ($guild->channels as $channel) {
+                $messageCount += $channel->messages->count();
+            }
+        }
+
+        return $messageCount;
     }
 
     /**
@@ -99,14 +119,15 @@ class Stats
         return (new Embed($this->discord))
             ->setTitle('DiscordPHP')
             ->setDescription('This bot runs with DiscordPHP.' . PHP_EOL . 'https://github.com/discord-php/DiscordPHP/')
-            ->addFieldValues('PHP Version', phpversion())
+            ->addFieldValues('PHP Version', phpversion() ?: 'Unknown')
             ->addFieldValues('DiscordPHP Version', $this->getDiscordPHPVersion())
             ->addFieldValues('Bot Version', $this->getBotVersion())
             ->addFieldValues('Start time', $this->startTime->longRelativeToNowDiffForHumans(3))
             ->addFieldValues('Last reconnected', $this->lastReconnect->longRelativeToNowDiffForHumans(3))
-            ->addFieldValues('Guild count', $this->discord->guilds->count())
-            ->addFieldValues('Channel count', $this->getChannelCount())
-            ->addFieldValues('User count', $this->discord->users->count())
+            ->addFieldValues('Guild count', (string) $this->discord->guilds->count())
+            ->addFieldValues('Channel count', (string) $this->getChannelCount())
+            ->addFieldValues('Message count', (string) $this->getMessageCount())
+            ->addFieldValues('User count', (string) $this->discord->users->count())
             ->addFieldValues('Memory usage', $this->getMemoryUsageFriendly());
     }
 
