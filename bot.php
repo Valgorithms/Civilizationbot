@@ -59,11 +59,10 @@ function loadEnv(string $filePath = __DIR__ . '/.env'): void
 }
 loadEnv(getcwd() . '/.env');
 
-$streamHandler = new StreamHandler('php://stdout', Level::Debug);
-$streamHandler->setFormatter(new LineFormatter(null, null, true, true, true));
-$logger = new Logger('Civ13', [$streamHandler]);
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
-$logger->pushHandler(new StreamHandler('output.log', Level::Debug));
+$fileHandler = (new StreamHandler('output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
+//$stdoutHandler = (new StreamHandler('php://stdout', Level::Info))->setFormatter(new LineFormatter(null, null, true, true, true));
+$logger = new Logger('Civ13', [$fileHandler, /*$stdoutHandler*/]);
 $logger->info('Loading configurations for the bot...');
 set_rejection_handler(function(\Throwable $e) use ($logger) {
     if ($e->getMessage() !== 'Cannot resume a fiber that is not suspended') $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('#', '\n#', $e->getTraceAsString()));
