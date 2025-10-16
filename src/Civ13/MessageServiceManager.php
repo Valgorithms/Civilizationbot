@@ -13,8 +13,6 @@ use Discord\Parts\Channel\Message;
 use Monolog\Logger;
 use React\Promise\PromiseInterface;
 
-use Throwable;
-
 class MessageServiceManager
 {
     public Civ13 $civ13;
@@ -193,7 +191,6 @@ class MessageServiceManager
      * This method generates server functions based on the server settings.
      * It loops through the server settings and generates server functions for each enabled server.
      * For each server, it generates the following message-related functions, prefixed with the server name:
-     * - configexists: checks if the server configuration exists.
      * - host: starts the server host process.
      * - kill: kills the server process.
      * - restart: restarts the server process by killing and starting it again.
@@ -250,27 +247,7 @@ class MessageServiceManager
                 },
                 ['Admin']);*/
             $this->messageHandler
-                /*->offsetSet("{$gameserver->key}fixembedtimer",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(fn() => $gameserver->currentRoundEmbedTimer($message))->then(
-                            static fn() => $message->react("👍"),
-                            fn(\Throwable $error): PromiseInterface => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
-                        ),
-                    ['Owner', 'Chief Technical Officer'])
-                ->offsetSet("{$gameserver->key}updatecurrentroundembedmessagebuilder",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        $message->react("⏱️")->then(fn() => $gameserver->updateCurrentRoundEmbedMessageBuilder())->then(
-                            static fn() => $message->react("👍"),
-                            fn(\Throwable $error): PromiseInterface => $message->react("👎")->then(fn() => $this->civ13->reply($message, $error->getMessage()))
-                        ),
-                    ['Owner', 'Chief Technical Officer'])
-                ->offsetSet("{$gameserver->key}configexists",
-                    fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
-                        isset($gameserver->key)
-                            ? $message->react("👍")
-                            : $message->react("👎"),
-                    ['Ambassador'])
-                ->offsetSet("{$gameserver->key}sportsteam",
+                /*->offsetSet("{$gameserver->key}sportsteam",
                     fn(Message $message, string $command, array $message_filtered): PromiseInterface => // I don't know what this is supposed to be used for anymore but the file exists, is empty, and can't be read from.
                         $gameserver->sportsteam()->then(
                             fn($content) => $message->reply(Civ13::createBuilder()->setContent('Sports Teams')->addfileFromContent("{$gameserver->key}_sports_teams.txt", $content)),
