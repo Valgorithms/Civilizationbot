@@ -61,8 +61,9 @@ loadEnv(getcwd() . '/.env');
 
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
 $fileHandler = (new StreamHandler('output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
-//$stdoutHandler = (new StreamHandler('php://stdout', Level::Info))->setFormatter(new LineFormatter(null, null, true, true, true));
-$logger = new Logger('Civ13', [$fileHandler, /*$stdoutHandler*/]);
+$stdoutHandler = (new StreamHandler('php://stdout', Level::Info))->setFormatter(new LineFormatter(null, null, true, true, true));
+$logger = new Logger('Civ13', [$fileHandler, $stdoutHandler]);
+Loop::addPeriodicTimer(60 * 10, fn() => $logger->reset()); // Flush all buffers every 10 minutes
 $logger->info('Loading configurations for the bot...');
 set_rejection_handler(function(\Throwable $e) use ($logger) {
     if ($e->getMessage() !== 'Cannot resume a fiber that is not suspended') $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('#', '\n#', $e->getTraceAsString()));
