@@ -413,6 +413,7 @@ $global_error_handler = async(function (int $errno, string $errstr, ?string $err
         && ! str_ends_with($errstr, 'No address associated with hostname') // Either the DNS or the VPS is acting up
         && ! str_ends_with($errstr, 'Temporary failure in name resolution') // Either the DNS or the VPS is acting up
         && ! str_ends_with($errstr, 'Bad Gateway') // Usually happens if the verifier server's PHP-CGI is down
+        && ! str_ends_with($errstr, '(Network is unreachable)') // stream_socket_connect issues within ReactPHP/socket
         //&& ! str_ends_with($errstr, 'HTTP request failed!')
 
         //&& ! str_contains($errstr, 'Undefined array key')
