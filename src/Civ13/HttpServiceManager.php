@@ -814,7 +814,11 @@ class HttpServiceManager
             ->offsetSet('/dwa',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use ($dwa_client_id, $dwa_client_secret): HttpResponse
                 {
-                    return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); // Moved to verifier server
+                    if (! isset($this->civ13->technician_id)) {
+                        return new HttpResponse(HttpResponse::STATUS_INTERNAL_SERVER_ERROR, [], "Technician ID not set in configuration.");
+                    }
+
+                    //return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); // Moved to verifier server
                     $ip = $request->getServerParams()['REMOTE_ADDR'];
                     $this->startSession($ip);
                     if (isset($this->dwa_sessions[$ip]['oauth_steam_url'])) $this->logger->info("[DWA] Steam URL for `$ip`: {$this->dwa_sessions[$ip]['oauth_steam_url']}");
@@ -839,9 +843,8 @@ class HttpServiceManager
                         return $DiscordWebAuth->removeToken();
                     }
                     
-                    $tech_ping = '';
-                    if (isset($this->civ13->technician_id)) $tech_ping = "<@{$this->civ13->technician_id}>, ";
-                    if (isset($DiscordWebAuth->user) && isset($DiscordWebAuth->user->id)) {
+                    $tech_ping = "<@{$this->civ13->technician_id}>, ";
+                    if (isset($DiscordWebAuth->user, $DiscordWebAuth->user->id) && $DiscordWebAuth->user->id == $this->civ13->technician_id) {
                         $this->dwa_discord_ids[$ip] = $DiscordWebAuth->user->id;
                         if (! $this->civ13->verifier->get('discord', $DiscordWebAuth->user->id)) {
                             $this->logger->info("[DWA] Unauthorized Discord ID: {$DiscordWebAuth->user->id}");
