@@ -365,7 +365,7 @@ class HttpServiceManager
                 fn(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
                     HttpResponse::plaintext(//'Contact: mailto:valithor@valzargaming.com' . PHP_EOL . 
                     "Contact: {$this->civ13->github}" . PHP_EOL .
-                    'Acknowledgments: http://valzargaming.com/partners' . PHP_EOL .
+                    'Acknowledgments: https://github.com/orgs/discord-php/teams/contributors' . PHP_EOL .
                     'Preferred-Languages: en' . PHP_EOL . 
                     "Canonical: http://{$this->httpHandler->external_ip}:{$this->http_port}/.well-known/security.txt" . PHP_EOL . 
                     'Policy: http://valzargaming.com/legal'))
