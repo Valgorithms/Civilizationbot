@@ -605,9 +605,9 @@ class Slash
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             return $interaction->acknowledge()->then(function () use ($interaction, $item) { // wait until the bot says "Is thinking..."
                 if ($interaction->user->id !== $this->civ13->technician_id) return $this->sendFollowUpMessage($interaction, Civ13::createBuilder()->setContent("You do not have permission to unverify <@{$interaction->data->target_id}>"), true);
-                return $this->sendFollowUpMessage($interaction, Civ13::createBuilder()->setContent('Unverifying `' . $item['ss13'] ?? $item['discord'] . '`...'))->then(function ($message) use ($interaction, $item) {
+                return $this->sendFollowUpMessage($interaction, Civ13::createBuilder()->setContent('Unverifying `' . ($item['ss13'] ?? $item['discord']) . '`...'))->then(function ($message) use ($interaction, $item) {
                     $content = $this->civ13->verifier->unverify($item['ss13'] ?? $item['discord']);
-                    $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Processed request to unverify `' . $item['ss13'] ?? $item['discord'] . '`.'));
+                    $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Processed request to unverify `' . ($item['ss13'] ?? $item['discord']) . '`.'));
                     if (! $content['success']) return $this->sendFollowUpMessage($interaction, Civ13::createBuilder()->setContent($content['message']), true);
                     return $this->sendFollowUpMessage($interaction, Civ13::createBuilder()->setContent($content['message']), true);
                 });
