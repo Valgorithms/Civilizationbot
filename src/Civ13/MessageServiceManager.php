@@ -86,6 +86,10 @@ class MessageServiceManager
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
                     $message->reply(Civ13::createBuilder()->addFile('botlog.txt')),
                 ['Owner', 'Chief Technical Officer'])
+            ->offsetSet('output',
+                fn(Message $message, string $command, array $message_filtered): PromiseInterface =>
+                    $message->reply(Civ13::createBuilder()->addFile('output.log')),
+                ['Owner', 'Chief Technical Officer'])
             /*->offsetSet('restart',
                 fn(Message $message, string $command, array $message_filtered): PromiseInterface =>                
                     $message->react("👍")->then(function () {
