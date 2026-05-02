@@ -61,7 +61,7 @@ loadEnv(getcwd() . '/.env');
 
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
 $fileHandler = (new StreamHandler('output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
-$stdoutHandler = (new StreamHandler('php://stdout', Level::Info))->setFormatter(new LineFormatter(null, null, true, true, true));
+$stdoutHandler = (new StreamHandler('php://stdout', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$fileHandler, $stdoutHandler]);
 Loop::addPeriodicTimer(60 * 10, fn() => $logger->reset()); // Flush all buffers every 10 minutes
 $logger->info('Loading configurations for the bot...');
@@ -417,11 +417,15 @@ $global_error_handler = async(function (int $errno, string $errstr, ?string $err
         //&& ! str_ends_with($errstr, 'HTTP request failed!')
 
         //&& ! str_contains($errstr, 'Undefined array key')
-    )
-    {
-        $logger->error($msg = sprintf("[%d] Fatal error on `%s:%d`: %s\nBacktrace:\n```\n%s\n```", $errno, $errfile, $errline, $errstr, implode("\n", array_map(fn($trace) => ($trace['file'] ?? '') . ':' . ($trace['line'] ?? '') . ($trace['function'] ?? ''), debug_backtrace()))));
+    ) {
+        $msg = sprintf("[%d] Fatal error on `%s:%d`: %s\nBacktrace:\n", $errno, $errfile, $errline, $errstr);
+        $backtrace = implode("\n", array_map(fn($trace) => ($trace['file'] ?? '') . ':' . ($trace['line'] ?? '') . ($trace['function'] ?? ''), debug_backtrace()));
+        $logger->error($msg.$backtrace);
+        if ($testing) return;
+
         if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
-        if (! $testing) $civ13->sendMessage($channel, $msg);
+        
+        $civ13->sendMessage($channel, $civ13::createBuilder()->setContent($msg)->addFileFromContent('error.txt', $msg . PHP_EOL . $backtrace));
     }
 });
 set_error_handler($global_error_handler);
