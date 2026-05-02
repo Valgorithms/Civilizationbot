@@ -138,7 +138,7 @@ trait ServerApiTrait
         $this->round_id         = $this->__status['round_id']         ?? $this->round_id;
         $this->soft_max_players = $this->__status['soft_max_players'] ?? $this->soft_max_players;
         $this->panic_bunker     = $this->__status['panic_bunker']     ?? $this->panic_bunker;
-        $this->run_level        = (int)$this->__status['run_level']   ?? $this->run_level;
+        $this->run_level        = (int) ($this->__status['run_level'] ?? $this->run_level);
         $this->preset           = $this->__status['preset']           ?? $this->preset;
         $this->round_start_time = $this->__status['round_start_time'] ?? $this->round_start_time;
         $this->players          = $this->__status['playerlist']       ?? $this->players;
