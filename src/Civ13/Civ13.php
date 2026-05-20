@@ -9,6 +9,7 @@
 namespace Civ13;
 
 use Byond\Byond;
+use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\Exceptions\PartException;
 use Civ13\Moderator;
 use Civ13\PromiseMiddleware;
@@ -33,6 +34,7 @@ use Discord\Parts\User\Member;
 use Discord\Parts\WebSockets\PresenceUpdate;
 use Discord\Stats;
 use Discord\Voice\VoiceClient;
+use Discord\Voice\VoicePacket;
 use Discord\WebSockets\Event;
 use Monolog\Level;
 use Monolog\Logger;
@@ -83,7 +85,7 @@ enum CPUUsage: string
 
     private static function getWindowsUsage(): string
     {
-        return 'CPU Usage: ' . round(floatval(trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"')), 2)) . '%';
+        return 'CPU Usage: ' . round(floatval(trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"'))), 2) . '%';
     }
 
     private static function getLinuxUsage(): string
@@ -248,8 +250,7 @@ class Civ13
      * 
      * @param array $options An array of options for configuring the client.
      * @param array $civ13_server_settings An array of configurations for the game servers.
-     * @throws E_USER_ERROR If the code is not running in a CLI environment.
-     * @throws E_USER_WARNING If the ext-gmp extension is not loaded.
+     * @throws \RuntimeException If the ext-gmp extension is not loaded.
      */
     public function __construct(
         array $options = [],
@@ -258,10 +259,10 @@ class Civ13
         public ?VerifierServer $verifier_server = null,
     )
     {
-        if (php_sapi_name() !== 'cli') trigger_error('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.', E_USER_ERROR);
+        if (! in_array(php_sapi_name(), ['cli', 'micro'])) $this->logger->critical('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.');
 
         // x86 need gmp extension for big integer operation
-        if (PHP_INT_SIZE === 4 && ! BigInt::init()) trigger_error('ext-gmp is not loaded. Permissions will NOT work correctly!', E_USER_WARNING);
+        if (PHP_INT_SIZE === 4 && ! BigInt::init()) throw new \RuntimeException('ext-gmp is not loaded. Permissions will NOT work correctly!');
 
         // Set the file that the object was constructed in
         $this->constructed_file = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'];
@@ -326,8 +327,8 @@ class Civ13
      * It initializes various properties, starts timers, and starts handling events.
      *
      * @param array $options An array of options.
-     * @param array $civ13_server_options An array of server options for Civ13.
-     * @param array $civ14_server_options An array of server options for Civ14.
+     * @param array $civ13_server_settings An array of server settings for Civ13.
+     * @param array $civ14_server_settings An array of server settings for Civ14.
      * @return void
      */
     private function afterConstruct(
@@ -490,7 +491,7 @@ class Civ13
         $this->welcome_message = $options['welcome_message'];
 
         if (! $options['logger']) {
-            $streamHandler = new StreamHandler('php://stdout', Level::Info);
+            $streamHandler = new StreamHandler('php://stdout', Level::Debug);
             $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
             $options['logger'] = new Logger(self::class, [$streamHandler]);
         }
@@ -570,7 +571,7 @@ class Civ13
 
         $options['loop'] = $options['loop'] ?? Loop::get();
         $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
-        $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create($options['loop']);
+        $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create();
 
         return $options;
     }
@@ -742,7 +743,6 @@ class Civ13
      * @return void
      *
      * @throws \Discord\Exceptions\IntentException
-     * @throws \Discord\Exceptions\SocketException
      */
     public function run(): void
     {
@@ -1426,7 +1426,7 @@ class Civ13
     public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): PromiseInterface
     {
         $admin ??= $this->discord->username;
-        if (is_null($gameserver)) foreach ($this->enabled_gameservers as &$gameserver) $this->unban($ckey, $admin, $gameserver->key);
+        if (is_null($gameserver)) foreach ($this->enabled_gameservers as $gs) $this->unban($ckey, $admin, $gs->key);
         elseif(isset($this->enabled_gameservers[$gameserver])) $this->enabled_gameservers[$gameserver]->unban($ckey, $admin);
         else {
             $this->logger->warning($err = "Invalid server specified for unban.");
@@ -1500,7 +1500,7 @@ class Civ13
             'verified'  => ! empty($discords)
         ];
     }
-    private function __processLogs($logs, &$found_ckeys, &$found_ips, &$found_cids, $ckeys, $ips, $cids): bool
+    private function __processLogs(CollectionInterface|array $logs, array &$found_ckeys, array &$found_ips, array &$found_cids, array $ckeys, array $ips, array $cids): bool
     {
         $found = false;
         $ckeys_set = array_flip($ckeys);
@@ -1603,7 +1603,7 @@ class Civ13
     /**
      * Soft bans a user by adding their ckey to the softbanned array or removes them from it if $allow is false.
      * 
-     * @param string $ckey The key of the user to be soft banned.
+     * @param string $id The key of the user to be soft banned.
      * @param bool $ban Whether to add or remove the user from the softbanned array.
      * @return array The updated softbanned array.
      */
