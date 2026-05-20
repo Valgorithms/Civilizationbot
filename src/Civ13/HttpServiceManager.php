@@ -11,7 +11,6 @@ namespace Civ13;
 use Byond\Byond;
 use Discord\Discord;
 use Discord\DiscordWebAuth;
-use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
