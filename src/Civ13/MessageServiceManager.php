@@ -292,7 +292,8 @@ class MessageServiceManager
         $this->civ13->discord->on('message', function (Message $message): void
         {
             if ($message->author->bot || $message->webhook_id) return; // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
-            if (! $this->handle($message, $message_filtered = $this->civ13->filterMessage($message))) { // This section will be deprecated in the future
+            if (! $this->handle($message)) { // This section will be deprecated in the future
+                $message_filtered = $this->civ13->filterMessage($message);
                 if (! empty($this->civ13->functions['message'])) foreach ($this->civ13->functions['message'] as $func) $func($this->civ13, $message, $message_filtered); // Variable functions
                 //else $this->logger->debug('No message variable functions found!');
             }
