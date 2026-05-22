@@ -1119,17 +1119,19 @@ class GameServer
         if ($cid && ! in_array($cid, $this->rounds[$this->current_round]['players'][$ckey]['cid'] ?? [])) $this->rounds[$this->current_round]['players'][$ckey]['cid'][] = $cid;
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
 
-        if (! isset($this->civ13->permitted[$ckey])) {
-            $ip_data = $this->civ13->getIpData($ip);
-            $conditions = [
-                'Proxy' => isset($ip_data['proxy']) && $ip_data['proxy'],
-                'Hosting' => isset($ip_data['hosting']) && $ip_data['hosting'],
-            ];
-            $ban_reason = array_reduce(array_keys($conditions), fn($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
-            if ($ban_reason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '2 minutes', 'reason' => "You cannot use a VPN or VPS hosting provider to play. Please disable it before reconnecting."], null, null, true) . " ($ban_reason)");
-            }
+        // Early return if the player is permitted to bypass restrictions
+        if (isset($this->civ13->permitted[$ckey])) return resolve(null);
+
+        $ip_data = $this->civ13->getIpData($ip);
+        $conditions = [
+            'Proxy' => isset($ip_data['proxy']) && $ip_data['proxy'],
+            'Hosting' => isset($ip_data['hosting']) && $ip_data['hosting'],
+        ];
+        $ban_reason = array_reduce(array_keys($conditions), fn($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
+        if ($ban_reason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+            return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '2 minutes', 'reason' => "You cannot use a VPN or VPS hosting provider to play. Please disable it before reconnecting."], null, null, true) . " ($ban_reason)");
         }
+
         return resolve(null);
     }
     /**
