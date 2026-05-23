@@ -326,7 +326,7 @@ class Verifier
             }, '');
             if (! array_reduce(explode('|', $file_contents), fn($carry, $line) => $carry || explode(';', trim($line))[0] === $ckey, false)) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
             // Check if the player's account is old enough
-            if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` does not exist!";
+            if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` either does not exist or the website can't be reached! Please contact the CTO for assistance.";
             if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
                 $this->civ13->ban($arr, null, null, true);
