@@ -392,7 +392,7 @@ class CommandServiceManager
      * Retrieves the help string for guild commands.
      *
      * @param string|null $guild_id The ID of the guild. Defaults to null.
-     * @param string|null $command The name of the command. Defaults to null.
+     * @param string|null $command_name The name of the command. Defaults to null.
      * @param string $help The existing help string. Defaults to an empty string.
      * @param Guild|null $guild The guild object. Defaults to null.
      * @return string The help string for guild commands.
@@ -407,11 +407,11 @@ class CommandServiceManager
             foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['general_usage'])) $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
             return $help;
         }
-        foreach (array_keys($this->guild_commands) as $guild_id) {
-            if (! $guild = $this->discord->guilds->get('id', $guild_id)) continue;
-            if (! $this->guild_commands[$guild_id]) continue;
-            $help .= "__{$guild->name} ({$guild_id})___" . PHP_EOL;
-            foreach ($this->guild_commands[$guild_id] as $command) if (isset($command['general_usage'])) $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
+        foreach (array_keys($this->guild_commands) as $guild_command_id) {
+            if (! $guild = $this->discord->guilds->get('id', $guild_command_id)) continue;
+            if (! $this->guild_commands[$guild_command_id]) continue;
+            $help .= "__{$guild->name} ({$guild_command_id})___" . PHP_EOL;
+            foreach ($this->guild_commands[$guild_command_id] as $command) if (isset($command['general_usage'])) $help .= "`{$command['name']}` - {$command['general_usage']}" . PHP_EOL;
         }
         return $help;
     }
