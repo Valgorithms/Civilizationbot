@@ -83,11 +83,10 @@ class Stats
      */
     protected function getBotVersion(): string
     {
-        $parse = shell_exec('git rev-parse --abbrev-ref HEAD; git log --oneline -1');
         return @str_replace(
             "\n",
             ' ',
-            $parse ?? 'Failed to execute command'
+            shell_exec('git rev-parse --abbrev-ref HEAD; git log --oneline -1') ?: 'Failed to execute command'
         );
     }
 
@@ -109,9 +108,9 @@ class Stats
     protected function getMemoryUsageFriendly(): string
     {
         $size = memory_get_usage(true);
-        $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        static $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-        return @round($size / pow(1024, ($i = floor(log($size, 1024)))), 2).' '.$unit[$i];
+        return (string) @round($size / pow(1024, ($i = floor(log($size, 1024)))), 2).' '.$unit[(string) $i];
     }
 
     public function handle(): Embed
