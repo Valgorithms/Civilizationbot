@@ -95,7 +95,7 @@ $discord = new Discord([
 
 $stats = Stats::new($discord);
 $browser = new Browser(Loop::get());
-$filesystem = FilesystemFactory::create(Loop::get());
+$filesystem = FilesystemFactory::create();
 include 'variable_functions.php';
 
 $http_whitelist = [
