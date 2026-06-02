@@ -19,6 +19,9 @@
         "vzgcoders/verifier-server": "dev-main",
         "wyrihaximus/react-cache-redis": "^4.5"
     },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3"
+    },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
         "ext-libev": "For a faster, and more performant loop.",
@@ -26,7 +29,7 @@
         "ext-mbstring": "For accurate calculations of string length when handling non-english characters."
     },
     "scripts": {
-        "cs": ["./vendor/bin/php-cs-fixer fix"],
+        "cs": "php-cs-fixer fix",
         "unit": ["./vendor/bin/phpunit --testdox"]
     },
     "minimum-stability": "dev",

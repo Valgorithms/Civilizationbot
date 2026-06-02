@@ -19,3 +19,4 @@ test.php
 /mac
 /windows
 .phpunit.cache/test-results
+.php-cs-fixer.cache
