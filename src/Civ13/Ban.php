@@ -158,7 +158,7 @@ class Ban
             $this->ip . '|||';
     }
 
-    public function __get($name)
+    public function __get(string $name)
     {
         if (method_exists($this, $name)) return $this->$name();
         return $this->$name;
