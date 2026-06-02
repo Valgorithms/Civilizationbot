@@ -104,7 +104,7 @@ class Slash
     {
         $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
         {
-            if ($names = array_map(fn($command) => $command->name, iterator_to_array($commands)))
+            if ($names = array_map(fn(Command $command) => $command->name, iterator_to_array($commands)))
                 $this->logger->debug(sprintf('[GLOBAL APPLICATION COMMAND LIST] `%s`', implode('`, `', $names)));
 
             // if ($command = $commands->get('name', 'ping')) $commands->delete($command);
@@ -330,7 +330,7 @@ class Slash
     {
         $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands): void
         {
-            if ($names = array_map(fn($command) => $command->name, iterator_to_array($commands)))
+            if ($names = array_map(fn(Command $command) => $command->name, iterator_to_array($commands)))
                 $this->logger->debug(sprintf('[GUILD APPLICATION COMMAND LIST] `%s`', implode('`, `', $names)));
             
             // if ($command = $commands->get('name', 'unban')) $commands->delete($command);
@@ -774,7 +774,7 @@ class Slash
             if (is_numeric($ckey = Civ13::sanitizeInput($ckey)) && ! $ckey = $this->civ13->verifier->get('discord', $ckey)['ss13']) return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("The Byond username or Discord ID `{$interaction->data->options['ckey']->value}` is not currently verified with a Byond username or it does not exist in the cache yet"), true);
             return $interaction->acknowledge()->then(fn(): PromiseInterface => // wait until the bot says "Is thinking..."
                 $this->sendFollowUpMessage($interaction, Civ13::createBuilder()->setContent("Generating rank for `$ckey`..."), true)->then(fn($message): PromiseInterface =>
-                    $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent($this->civ13->enabled_gameservers[$interaction->data->options['server']->value]->getRank($ckey), true))
+                    $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent($this->civ13->enabled_gameservers[$interaction->data->options['server']->value]->getRank($ckey)))
                 )
             );
         });
