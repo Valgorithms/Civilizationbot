@@ -164,7 +164,7 @@ class GameServer
      * The method then returns an existing periodic timer for updating the player count channel,
      * or creates a new one if it does not exist. The timer triggers every 600 seconds.
      *
-     * @return TimerInterface The periodic timer responsible for updating the player count channel.
+     * @return PromiseInterface<TimerInterface> The periodic timer responsible for updating the player count channel.
      */
     public function playercountTimer(): PromiseInterface
     {
@@ -176,7 +176,7 @@ class GameServer
         );
     }
 
-    public function setPlayercountTimer()
+    public function setPlayercountTimer(): TimerInterface
     {
         return (isset($this->playercount_timer))
             ? $this->playercount_timer
@@ -236,7 +236,6 @@ class GameServer
     /**
      * Updates the current round embed message builder.
      *
-     * @param MessageBuilder|null $builder The message builder to used to perform the update the message. Defaults to null.
      * @return PromiseInterface<Message> A promise that resolves when the update is complete.
      */
     public function processCurrentRoundMessage(): PromiseInterface

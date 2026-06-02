@@ -378,7 +378,7 @@ class GameServer
                 $badword_warnings
             );
         }
-        if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false, true);
+        if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false);
         $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
@@ -625,16 +625,9 @@ class GameServer
         return true;
     }
     /**
-     * Sends a player message to a channel.
-     *
-     * @param Channel|Thread|string $channel The channel to send the message to.
-     * @param bool $urgent Whether the message is urgent or not.
-     * @param string $content The content of the message.
-     * @param string $sender The sender of the message (ckey or Discord username).
-     * @param string $recipient The recipient of the message (optional).
-     * @param string $file_name The name of the file to attach to the message (default: 'message.txt').
-     * @param bool $prevent_mentions Whether to prevent mentions in the message (default: false).
-     * @return PromiseInterface<Message>|null A promise that resolves to the sent message, or null if the message couldn't be sent.
+     * Hosts the game server by executing necessary commands and setting up timers for hosting.
+     * 
+     * @param Message|null $message An optional message object that can be used to react to the hosting action.
      */
 
     public function Host(?Message $message = null): void
@@ -646,7 +639,7 @@ class GameServer
         if (! isset($this->civ13->timers["{$this->key}host"])) {
             $this->civ13->timers["{$this->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($message) {
                 unset($this->civ13->timers["{$this->key}host"]);
-                $proc = OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself > /dev/null 2>&1 & disown");
+                $promise = OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself > /dev/null 2>&1 & disown");
                 if ($message) $message->react("👍");
             });
         } else $this->logger->info("Server host timer already exists for {$this->key}.");
@@ -1064,7 +1057,7 @@ class GameServer
     /**
      * Retrieves an array of collections containing information about rounds.
      *
-     * @return array An array of collections, where each collection represents a server and its rounds.
+     * @return CollectionInterface An array of collections, where each collection represents a server and its rounds.
      */
     public function getRoundsCollection(): CollectionInterface // [string $server, collection $rounds]
     {
@@ -1139,8 +1132,7 @@ class GameServer
      *
      * @param string $ckey The player's ckey.
      * @param string $time The login time.
-     * @param string $ip The player's IP address (optional).
-     * @param string $cid The player's CID (optional).
+     * 
      * @return PromiseInterface<array>
      */
     public function logPlayerLogout(string $ckey, string $time): PromiseInterface
@@ -1164,8 +1156,7 @@ class GameServer
     /**
      * Retrieves the rounds based on the provided criteria.
      *
-     * @param string|null $ckey The first player's key (optional).
-     * @param string|null $ckey2 The second player's key (optional).
+     * @param string[] $ckeys An array of player keys to filter by (optional).
      * @param array|null $rounds The array of rounds (optional).
      * @return array The filtered array of rounds.
      */

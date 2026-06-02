@@ -69,7 +69,7 @@ class GetRound extends Civ13MessageCommand
         return $builder;
     }
 
-    protected function createEmbed($server, array $round, bool $high_staff = false, ?string $ckey = null): Embed
+    protected function createEmbed(string|int $server, array $round, bool $high_staff = false, ?string $ckey = null): Embed
     {
         $embed = $this->civ13->createEmbed()
             ->setTitle($server)

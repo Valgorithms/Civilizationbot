@@ -61,7 +61,7 @@ class Verifier
         $this->provisional = new Collection($provisional, 'ss13');
         $this->afterConstruct();
     }
-    public function resolveOptions(&$options)
+    public function resolveOptions(array &$options)
     {
         if (! isset($options['verify_url'])) $options['verify_url'] = 'http://valzargaming.com:8080/verified/';
     }
@@ -704,7 +704,7 @@ class Verifier
     /**
      * Retrieves verified users from a JSON file or an API endpoint and returns them as a Collection.
      *
-     * @param bool $reload Whether to force a reload of the data from the cached data (JSON file) if the API endpoint is unreachable.
+     * @param bool $initialize Whether to force a reload of the data from the cached data (JSON file) if the API endpoint is unreachable.
      *
      * @return ExCollectionInterface The verified users as a Collection.
      */

@@ -18,10 +18,10 @@ enum SS13Medal: string
     case CombatMedicalBadge  = 'combat medical badge';
     case TankDestroyerSilverBadge = 'tank destroyer silver badge';
     case TankDestroyerGoldBadge = 'tank destroyer gold badge';
-    case AssaultBadge = 'tank destroyer silver badge';
-    case WoundedBadge = 'assault badge';
+    case AssaultBadge = 'assault badge';
+    case WoundedBadge = 'wounded badge';
     case WoundedSilverBadge = 'wounded silver badge';
-    case WoundedGoldBadge = 'wounded badge';
+    case WoundedGoldBadge = 'wounded gold badge';
     case IronCross1stClass = 'iron cross 1st class';
     case IronCross2ndClass = 'iron cross 2nd class';
     case LongServiceMedal = 'long service medal';

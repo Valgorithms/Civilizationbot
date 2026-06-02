@@ -130,7 +130,7 @@ class HttpServiceManager
      * 
      * @return void
      */
-    private function startSession(string $ip): void
+    protected function startSession(string $ip): void
     {
         if (isset($this->dwa_sessions[$ip])) return; // Session already exists
         $this->logger->info("Starting session for $ip");
@@ -152,7 +152,7 @@ class HttpServiceManager
      * 
      * @return void
      */
-    private function endSession(string $ip): void
+    protected function endSession(string $ip): void
     {
         $this->logger->info("Ending session for $ip");
         if (isset($this->dwa_timers[$ip]) && $this->dwa_timers[$ip] instanceof TimerInterface) {
@@ -167,11 +167,9 @@ class HttpServiceManager
      *
      * Logs the timeout event and ends the session associated with the given IP address.
      *
-     * @param string
-     * 
-     * @return void
+     * @param string $ip
      */
-    private function timeoutSession(string $ip): void
+    protected function timeoutSession(string $ip): void
     {
         $this->logger->info("Timeout session for $ip");
         $this->endSession($ip);
@@ -188,7 +186,7 @@ class HttpServiceManager
      *
      * @return void
      */
-    private function __populateWhitelist(): void
+    protected function __populateWhitelist(): void
     {
         if ($this->httpHandler && $this->civ13->civ13_guild_id && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) // Whitelist the IPs of all Ambassador            $members = $guild->members->filter(function ($member) {
             foreach ($guild->members->filter(fn($member) => $member->roles->has($this->civ13->role_ids['Ambassador'])) as $member)
@@ -200,7 +198,7 @@ class HttpServiceManager
                                     $this->httpHandler->whitelist($log['ip']);
     }
 
-    private function __generateEndpoints()
+    protected function __generateEndpoints()
     {
         $this->httpHandler
             ->offsetSet('/get-channels',
@@ -878,7 +876,7 @@ class HttpServiceManager
         $this->__generateWebsiteEndpoints();
     }
 
-    private function __generateServerEndpoints()
+    protected function __generateServerEndpoints()
     {        
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             // General usage server endpoints
@@ -1314,7 +1312,7 @@ class HttpServiceManager
         }
     }
 
-    private function __generateWebsiteEndpoints()
+    protected function __generateWebsiteEndpoints()
     {
         if (! is_dir($dirPath = $this->basedir . self::HTMLDIR) && ! mkdir($dirPath, 0664, true))
                 return $this->logger->error('Failed to create `/html` directory');

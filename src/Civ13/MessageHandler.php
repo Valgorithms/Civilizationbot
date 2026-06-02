@@ -371,7 +371,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     }
 
     /**
-     * @throws Exception if toArray property does not exist
+     * @throws \Exception if toArray property does not exist
      */
     public function merge(object $handler): self
     {
@@ -380,7 +380,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             return $this;
         }
         $toArray = $handler->toArray();
-        $this->attributes = array_map(fn($key) => [...$this->attributes[$key], ...array_shift($toArray[$key] ?? [])], array_keys($this->fillable));
+        $this->attributes = array_map(fn($key) => [...$this->attributes[$key], ...array_shift($toArray[$key])], array_keys($this->fillable));
         $this->__reorderHandlers();
         return $this;
     }

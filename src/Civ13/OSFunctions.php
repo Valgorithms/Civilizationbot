@@ -155,7 +155,7 @@ class OSFunctions
      * Terminates any process currently using the specified port.
      *
      * @param int $port The port number to check for active processes.
-     * @throws RuntimeException If the command execution fails or no processes are found.
+     * @throws \RuntimeException If the command execution fails or no processes are found.
      *
      * Notes:
      * - On Windows, it uses `netstat` to find processes and `taskkill` to terminate them.

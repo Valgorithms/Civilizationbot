@@ -33,11 +33,11 @@ class Verifier
 {
     use DynamicPropertyAccessorTrait;
 
-    protected $civ13;
+    protected Civ13 $civ13;
     //protected $oauth_endpoint;
-    protected $endpoint;
+    protected SS14VerifiedEndpoint $endpoint;
 
-    public function __construct(&$civ13) {
+    public function __construct(Civ13 &$civ13) {
         /** @var Civ13 $civ13 */
         $this->civ13 = &$civ13;
         if (! isset($this->civ13->verifier_server)) {
@@ -178,7 +178,7 @@ class Verifier
             : $member->setroles([$this->civ13->role_ids['SS14 Verified']], "SS14 verified join");
     }
 
-    public function get($key, $value): ?array
+    public function get(int|string $key, string $value): ?array
     {
         return $this->endpoint->fetch($key, $value);
     }

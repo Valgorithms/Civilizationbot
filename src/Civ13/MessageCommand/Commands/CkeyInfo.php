@@ -34,6 +34,9 @@ class CkeyInfo extends Civ13MessageCommand
         $cids = [];
         $dates = [];
         $ckey_age = [];
+        $ips_string = '';
+        $cids_string = '';
+        $dates_string = '';
         // Get the ckey's primary identifiers and fill in any blanks
         foreach ($collectionsArray as $item) foreach ($item as $log) {
             if (isset($log['ip'])   && ! isset($ips[$log['ip']]))     $ips[$log['ip']]     = $log['ip'];

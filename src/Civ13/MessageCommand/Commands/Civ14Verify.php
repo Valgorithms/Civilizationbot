@@ -134,8 +134,8 @@ class Civ14Verify extends Civ13MessageCommand
         return $this->container
             ->addComponents([
                 Separator::new(),
-                TextDisplay::new('### ' . (($ip && $ss14 && $medals)
-                    ? $this->process($member, $this->container)
+                TextDisplay::new('### ' . (($ip && $ss14 && ($medals ?? false))
+                    ? $this->process($member)
                     : self::INITIAL))
             ]);
     }
@@ -144,7 +144,6 @@ class Civ14Verify extends Civ13MessageCommand
      * Processes the verification of a member using the SS14 verifier.
      *
      * @param Member $member
-     * @param Container|null $this->container
      * @return string Success message if the role is added, or an error message if verification fails.
      */
     public function process(Member $member): string
