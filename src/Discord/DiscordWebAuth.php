@@ -17,23 +17,23 @@ Class DiscordWebAuth
     public Civ13 $civ13;
     protected array $sessions;
     protected array $params;
-    protected $CLIENT_ID = '';
-    protected $CLIENT_SECRET = '';
+    protected string $CLIENT_ID = '';
+    protected string $CLIENT_SECRET = '';
     protected string $requesting_ip;
 
-    protected $baseURL = 'https://discord.com/api/v10';
-    protected $default_redirect;
+    protected string $baseURL = 'https://discord.com/api/v10';
+    protected string $default_redirect;
 
-    protected $access_token = false;
+    protected string|false $access_token = false;
     protected string $state = '';
-    public $user;
-    public $connections;
+    public ?object $user = null;
+    public ?array $connections = null;
     
-    protected $external_ip = '';
-    protected $web_address = 'www.civ13.com:55555/';
-    protected $redirect_home = '';
-    protected $originating_url = null;
-    protected $allowed_uri = []; //Exact URL as added in https://discord.com/developers/applications/###/oauth2
+    protected string $external_ip = '';
+    protected string $web_address = 'www.civ13.com:55555/';
+    protected string $redirect_home = '';
+    protected ?string $originating_url = null;
+    protected array $allowed_uri = []; //Exact URL as added in https://discord.com/developers/applications/###/oauth2
 
     function __construct(Civ13 &$civ13, array &$sessions, string $client_id, string $client_secret, string $web_address, int $http_port, string $resolved_ip, ServerRequestInterface $request) {
         $this->civ13 =& $civ13;
@@ -203,7 +203,7 @@ Class DiscordWebAuth
         return !is_null($this->user);
     }
 
-    public function getGuild($id)
+    public function getGuild(string|int $id)
     {
         if (is_null($this->user))
             return false;
