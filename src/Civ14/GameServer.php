@@ -47,7 +47,7 @@ class GameServer
     public const MEDALS = '/medals.json';
 
     /** @var Civ13 $civ13 */
-    protected $civ13;
+    protected Civ13 $civ13;
 
     public bool    $enabled;
     public string  $basedir;
@@ -62,21 +62,21 @@ class GameServer
 
     // Normally would just promote the property, but currently causes an issue in PHPUnit tests
     public function __construct(
-        &$civ13,
+        Civ13 &$civ13,
         array &$options = []
     ) {
         $this->civ13         = &$civ13;
-        $this->enabled       = (bool) $options['enabled'] ?? true;
-        $this->basedir       = $options['basedir']        ?? null;
-        $this->key           = $options['key']            ?? 'civ14';
-        $this->name          = $options['name']           ?? 'Civilization 14';
-        $this->protocol      = $options['protocol']       ?? 'http';
-        $this->ip            = $options['ip']             ?? '127.0.0.1';
-        $this->port          = (int) $options['port']     ?? 1212;
-        $this->host          = $options['host']           ?? 'Taislin';
-        $this->playercount   = $options['playercount']    ?? '';
-        $this->discussion    = $options['discussion']     ?? '';
-        $this->watchdogToken = $options['watchdogToken']  ?? null;
+        $this->enabled       = (bool) ($options['enabled'] ?? true);
+        $this->basedir       = $options['basedir']         ?? '';
+        $this->key           = $options['key']             ?? 'civ14';
+        $this->name          = $options['name']            ?? 'Civilization 14';
+        $this->protocol      = $options['protocol']        ?? 'http';
+        $this->ip            = $options['ip']              ?? '127.0.0.1';
+        $this->port          = (int) ($options['port']     ?? 1212);
+        $this->host          = $options['host']            ?? 'Taislin';
+        $this->playercount   = $options['playercount']     ?? '';
+        $this->discussion    = $options['discussion']      ?? '';
+        $this->watchdogToken = $options['watchdogToken']   ?? null;
         if ($status = $this->civ13->VarLoad("{$this->key}_status.json") ?? []) $this->updateServerPropertiesFromStatusArray($status, false);
         $this->afterConstruct();
     }
@@ -416,7 +416,7 @@ class GameServer
      */
     protected function getLoggerProperty(): LoggerInterface
     {
-        return $this->civ13->logger;
+        return $this->civ13->logger ?? new \Monolog\Logger('GameServer'); // Workaround for civ13->logger property not set in PHPUnit tests
     }
 
     /**

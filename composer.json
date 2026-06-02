@@ -20,6 +20,9 @@
         "vzgcoders/verifier-server": "dev-main",
         "wyrihaximus/react-cache-redis": "^4.5"
     },
+    "require-dev":{
+        "phpunit/phpunit": "^9.4.4"
+    },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
         "ext-libev": "For a faster, and more performant loop.",
@@ -28,7 +31,7 @@
     },
     "scripts": {
         "cs": ["./vendor/bin/php-cs-fixer fix"],
-        "unit": ["./vendor/bin/phpunit"]
+        "unit": ["./vendor/bin/phpunit --testdox"]
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
