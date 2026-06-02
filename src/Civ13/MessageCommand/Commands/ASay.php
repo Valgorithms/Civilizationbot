@@ -18,7 +18,7 @@ class ASay extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        if (! $msg = self::messageWithoutCommand($command, $message_filtered['message_content'])) return $this->civ13->reply($message, 'Invalid format! Please use the format `asay [message]`.');
+        if (! $msg = self::messageWithoutCommand($command, $message_filtered)) return $this->civ13->reply($message, 'Invalid format! Please use the format `asay [message]`.');
         foreach ($this->civ13->enabled_gameservers as $server) {
             switch (strtolower($message->channel->name)) {
                 case "asay-{$server->key}":
