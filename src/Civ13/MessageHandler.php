@@ -1,9 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2023-present Valithor Obsidion <valithor@valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13;
@@ -17,13 +22,13 @@ use React\Promise\PromiseInterface;
 
 final class MessageHandlerCallback implements MessageHandlerCallbackInterface
 {
-    const array PARAMETER_TYPES = [Message::class, 'string', 'array'];
+    public const array PARAMETER_TYPES = [Message::class, 'string', 'array'];
 
     private \Closure $callback;
 
     /**
-     * @param \Closure|callable $callback The callback function to be executed
-     * @throws \InvalidArgumentException  If the callback does not have the expected number of parameters, if any parameter does not have a type hint, or a type hint is of the wrong type.
+     * @param  \Closure|callable         $callback The callback function to be executed
+     * @throws \InvalidArgumentException If the callback does not have the expected number of parameters, if any parameter does not have a type hint, or a type hint is of the wrong type.
      */
     public function __construct(\Closure|callable $callback)
     {
@@ -39,7 +44,7 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
      * - Each parameter's type matches the corresponding type in self::PARAMETER_TYPES.
      *
      * @param callable $callback The callback to validate.
-     * 
+     *
      * @throws \InvalidArgumentException If the callback does not have the correct number of parameters,
      *                                   if any parameter is missing a type hint,
      *                                   or if any parameter's type does not match the expected type.
@@ -51,19 +56,30 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
             : new \ReflectionFunction($callback);
         $parameters = $reflection->getParameters();
         if (count($parameters) !== $count = count(self::PARAMETER_TYPES)) {
-            if ($fatal) throw new \InvalidArgumentException("The callback must take exactly $count parameters: " . implode(', ', self::PARAMETER_TYPES));
+            if ($fatal) {
+                throw new \InvalidArgumentException("The callback must take exactly $count parameters: ".implode(', ', self::PARAMETER_TYPES));
+            }
+
             return false;
         }
 
         foreach ($parameters as $index => $parameter) {
             if (! $parameter->hasType()) {
-                if ($fatal) throw new \InvalidArgumentException("Parameter $index must have a type hint.");
+                if ($fatal) {
+                    throw new \InvalidArgumentException("Parameter $index must have a type hint.");
+                }
+
                 return false;
             }
             $type = $parameter->getType();
-            if ($type instanceof \ReflectionNamedType) $type = $type->getName();
+            if ($type instanceof \ReflectionNamedType) {
+                $type = $type->getName();
+            }
             if ($type !== self::PARAMETER_TYPES[$index]) {
-                if ($fatal) throw new \InvalidArgumentException("Parameter $index must be of type " . self::PARAMETER_TYPES[$index] . '.');
+                if ($fatal) {
+                    throw new \InvalidArgumentException("Parameter $index must be of type ".self::PARAMETER_TYPES[$index].'.');
+                }
+
                 return false;
             }
         }
@@ -79,7 +95,7 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
      * Otherwise, it wraps the callable directly.
      * If the provided argument is not callable, it assigns it as-is to the callback property.
      *
-     * @param \Closure|callable $closure The closure or callable to set as the callback.
+     * @param  \Closure|callable $closure The closure or callable to set as the callback.
      * @return self
      */
     public function setCallback(\Closure|callable $closure): self
@@ -89,16 +105,19 @@ final class MessageHandlerCallback implements MessageHandlerCallbackInterface
             $this->callback = is_object($closure)
                 ? \Closure::fromCallable([$closure, '__invoke'])
                 : \Closure::fromCallable($closure);
-        } else $this->callback = $closure;
+        } else {
+            $this->callback = $closure;
+        }
+
         return $this;
     }
 
     /**
      * Invokes the Message handler.
      *
-     * @param Message $message The original message object.
-     * @param string $endpoint The endpoint string.
-     * @param array $message_filtered The filtered message array.
+     * @param  Message               $message          The original message object.
+     * @param  string                $endpoint         The endpoint string.
+     * @param  array                 $message_filtered The filtered message array.
      * @return PromiseInterface|null The result of the callback function.
      */
     public function __invoke(Message $message, string $endpoint = '', array $message_filtered = []): ?PromiseInterface
@@ -144,24 +163,28 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     /**
      * Handles the incoming message and processes the callback.
      *
-     * @param Message $message The incoming message object.
-     * @return PromiseInterface|null A PromiseInterface object or null.
+     * @param  Message                  $message The incoming message object.
+     * @return PromiseInterface|null    A PromiseInterface object or null.
      * @throws CallbackHandlerException If the callback function fails to execute.
      */
     public function handle(Message $message): ?PromiseInterface
     {
         try {
-            if (! $array = $this->__getCallback($message)) return null;
+            if (! $array = $this->__getCallback($message)) {
+                return null;
+            }
+
             return $this->__processCallback($array['callback'], $array['message'], $array['endpoint'], $array['message_filtered']);
         } catch (CallbackHandlerException $e) {
-            $this->logger->error("Message Handler error: An endpoint for `$message->content` failed with error `{$e->getMessage()}`. Stack Trace:" . PHP_EOL . str_replace('#', PHP_EOL . '#', $e->getTraceAsString()));
-            return $message->react("🔥");
+            $this->logger->error("Message Handler error: An endpoint for `$message->content` failed with error `{$e->getMessage()}`. Stack Trace:".PHP_EOL.str_replace('#', PHP_EOL.'#', $e->getTraceAsString()));
+
+            return $message->react('🔥');
         }
     }
     /**
      * Validates a callback function and returns a new instance of MessageHandlerCallback.
      *
-     * @param callable $callback The callable function to be validated.
+     * @param  callable $callback The callable function to be validated.
      * @return callable New instance of MessageHandlerCallback, which can be invoked as the callable.
      */
     public function validate(callable $callback): callable
@@ -171,13 +194,15 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     /**
      * Retrieves the callback information for a given message.
      *
-     * @param Message $message The message object.
+     * @param  Message    $message The message object.
      * @return array|null The callback information array if a match is found, otherwise null.
      */
     private function __getCallback(Message $message): ?array
     {
         // if (! $message->member) return $message->reply('Unable to get Discord Member class. endpoints are only available in guilds.');
-        if (! $message->member) return null;
+        if (! $message->member) {
+            return null;
+        }
         //if (empty($this->attributes['handlers'])) $this->logger->debug('No message handlers found!');
         $message_filtered = $this->civ13->filterMessage($message);
         if (
@@ -185,27 +210,36 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             && (isset($this->attributes['handlers'][$endpoint]) && $callback = $this->attributes['handlers'][$endpoint])
             && (isset($this->attributes['match_methods'][$endpoint]) && $matchMethod = $this->attributes['match_methods'][$endpoint])
             && ($matchMethod === 'exact')
-        ) return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback, ];
-        
-        foreach ($this->attributes['handlers'] as $endpoint => $callback) if (isset($this->attributes['match_methods'][$endpoint])) {
-            $matchMethod = $this->attributes['match_methods'][$endpoint] ?? 'str_starts_with';
-            if ($matchMethod === 'exact') continue; // We've reached the end of the relevant array and there were no exact matches
-            if (is_callable($matchMethod) && call_user_func($matchMethod, $message_filtered['message_content_lower'], $endpoint))
-                return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
-            if (! is_callable($matchMethod) && str_starts_with($message_filtered['message_content_lower'], $endpoint)) // Default to str_starts_with if no valid match method is provided
-                return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
+        ) {
+            return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
         }
+        
+        foreach ($this->attributes['handlers'] as $endpoint => $callback) {
+            if (isset($this->attributes['match_methods'][$endpoint])) {
+                $matchMethod = $this->attributes['match_methods'][$endpoint] ?? 'str_starts_with';
+                if ($matchMethod === 'exact') {
+                    continue;
+                } // We've reached the end of the relevant array and there were no exact matches
+                if (is_callable($matchMethod) && call_user_func($matchMethod, $message_filtered['message_content_lower'], $endpoint)) {
+                    return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
+                }
+                if (! is_callable($matchMethod) && str_starts_with($message_filtered['message_content_lower'], $endpoint)) { // Default to str_starts_with if no valid match method is provided
+                    return ['message' => $message, 'message_filtered' => $message_filtered, 'endpoint' => $endpoint, 'callback' => $callback];
+                }
+            }
+        }
+
         return null;
     }
     /**
      * Executes the Message handler.
      *
-     * @param Message $message The original message object.
-     * @param array $message_filtered The filtered message content.
-     * @param string $endpoint The endpoint being processed.
-     * @param callable $callback The callback function to be executed.
-     * @return PromiseInterface|null Returns a PromiseInterface if the callback is asynchronous, otherwise returns null.
-     * @throws InvalidConfigException If the required role ID for the lowest rank cannot be found.
+     * @param  Message                  $message          The original message object.
+     * @param  array                    $message_filtered The filtered message content.
+     * @param  string                   $endpoint         The endpoint being processed.
+     * @param  callable                 $callback         The callback function to be executed.
+     * @return PromiseInterface|null    Returns a PromiseInterface if the callback is asynchronous, otherwise returns null.
+     * @throws InvalidConfigException   If the required role ID for the lowest rank cannot be found.
      * @throws CallbackHandlerException If the callback function fails to execute
      */
     private function __processCallback(callable $callback, Message $message, string $endpoint, array $message_filtered): ?PromiseInterface
@@ -215,14 +249,17 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             if (! isset($this->civ13->role_ids[$lowest_rank])) {
                 $this->logger->warning($err = "Unable to find role ID for rank `$lowest_rank`");
                 throw new InvalidConfigException($err);
-            } elseif (! $this->checkRank($message->member->roles, $this->attributes['required_permissions'][$endpoint] ?? [])) return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&' . $this->civ13->role_ids[$lowest_rank] . '> rank.');
+            } elseif (! $this->checkRank($message->member->roles, $this->attributes['required_permissions'][$endpoint] ?? [])) {
+                return $this->civ13->reply($message, 'Rejected! You need to have at least the <@&'.$this->civ13->role_ids[$lowest_rank].'> rank.');
+            }
         }
         $this->logger->debug("Endpoint '$endpoint' triggered");
         try {
             return $callback($message, $endpoint, $message_filtered);
         } catch (CallbackHandlerException $e) {
-            $this->logger->error("Message Handler error: `A callback for `$endpoint` failed with error `{$e->getMessage()}`. Stack Trace:" . PHP_EOL . str_replace('#', PHP_EOL . '#', $e->getTraceAsString()));
-            return $message->react("🔥");
+            $this->logger->error("Message Handler error: `A callback for `$endpoint` failed with error `{$e->getMessage()}`. Stack Trace:".PHP_EOL.str_replace('#', PHP_EOL.'#', $e->getTraceAsString()));
+
+            return $message->react('🔥');
         }
     }
 
@@ -240,6 +277,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             $this->attributes['match_methods'][$index],
             $this->attributes['descriptions'][$index]
         );
+
         return $return;
     }
 
@@ -250,18 +288,22 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
 
     public function fill(array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
     { // TODO: This should overwrite the existing handlers, not append to them
-        if (! array_is_list($handlers)) foreach ($handlers as $command => $handler) {
-            $this->pushHandler($handler, $command);
-            $this->pushPermission(array_shift($required_permissions), $command);
-            $this->pushMethod(array_shift($match_methods), $command);
-            $this->pushDescription(array_shift($descriptions), $command);
+        if (! array_is_list($handlers)) {
+            foreach ($handlers as $command => $handler) {
+                $this->pushHandler($handler, $command);
+                $this->pushPermission(array_shift($required_permissions), $command);
+                $this->pushMethod(array_shift($match_methods), $command);
+                $this->pushDescription(array_shift($descriptions), $command);
+            }
+        } else {
+            foreach ($handlers as $name => $handler) {
+                $this->pushHandler($name, $handler);
+                $this->pushPermission(array_shift($required_permissions));
+                $this->pushMethod(array_shift($match_methods));
+                $this->pushDescription(array_shift($descriptions));
+            }
         }
-        else foreach ($handlers as $name => $handler) {
-            $this->pushHandler($name, $handler);
-            $this->pushPermission(array_shift($required_permissions));
-            $this->pushMethod(array_shift($match_methods));
-            $this->pushDescription(array_shift($descriptions));
-        }
+
         return $this;
     }
 
@@ -277,14 +319,21 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
 
     public function pushHandlers(array $handlers): self
     {
-        foreach ($handlers as $handler) $this->pushHandler($handler);
+        foreach ($handlers as $handler) {
+            $this->pushHandler($handler);
+        }
+
         return $this;
     }
 
     public function pushHandler(callable $handler, int|string|null $command = null): self
     {
-        if ($command) $this->attributes['handlers'][$command] = $handler;
-        else $this->attributes['handlers'][] = $handler;
+        if ($command) {
+            $this->attributes['handlers'][$command] = $handler;
+        } else {
+            $this->attributes['handlers'][] = $handler;
+        }
+
         return $this;
     }
 
@@ -293,14 +342,19 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         if (isset($this->attributes['handlers'][$offset])) {
             $item = $this->attributes['handlers'][$offset];
             unset($this->attributes['handlers'][$offset]);
+
             return $item;
         }
+
         return $default;
     }
 
     public function fillHandlers(array $items): self
     {
-        foreach ($items as $command => $handler) $this->pushHandler($handler, $command);
+        foreach ($items as $command => $handler) {
+            $this->pushHandler($handler, $command);
+        }
+
         return $this;
     }
 
@@ -313,40 +367,55 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
 
     public function pushPermission(array $required_permissions, int|string|null $command = null): self
     {
-        if ($command) $this->attributes['required_permissions'][$command] = $required_permissions;
-        else $this->attributes['required_permissions'][] = $required_permissions;
+        if ($command) {
+            $this->attributes['required_permissions'][$command] = $required_permissions;
+        } else {
+            $this->attributes['required_permissions'][] = $required_permissions;
+        }
+
         return $this;
     }
 
     public function pushMethod(string $method, int|string|null $command = null): self
     {
-        if ($command) $this->attributes['match_methods'][$command] = $method;
-        else $this->attributes['match_methods'][] = $method;
+        if ($command) {
+            $this->attributes['match_methods'][$command] = $method;
+        } else {
+            $this->attributes['match_methods'][] = $method;
+        }
+
         return $this;
     }
 
     public function pushDescription(string $description, int|string|null $command = null): self
     {
-        if ($command) $this->attributes['descriptions'][$command] = $description;
-        else $this->attributes['descriptions'][] = $description;
+        if ($command) {
+            $this->attributes['descriptions'][$command] = $description;
+        } else {
+            $this->attributes['descriptions'][] = $description;
+        }
+
         return $this;
     }
 
     public function first(null|int|string $name = null): mixed
     {
-        return array_map(fn($array) => array_shift($array) ?? null, $this->toArray());
+        return array_map(fn ($array) => array_shift($array) ?? null, $this->toArray());
     }
     
     public function last(null|int|string $name = null): mixed
     {
-        return array_map(fn($array) => array_pop($array) ?? null, $this->toArray());
+        return array_map(fn ($array) => array_pop($array) ?? null, $this->toArray());
     }
 
     public function find(callable $callback): array
     {
-        foreach ($this->attributes['handlers'] as $index => $handler)
-            if ($callback($handler))
+        foreach ($this->attributes['handlers'] as $index => $handler) {
+            if ($callback($handler)) {
                 return [$handler, $this->attributes['required_permissions'][$index] ?? [], $this->attributes['match_methods'][$index] ?? 'str_starts_with', $this->attributes['descriptions'][$index] ?? ''];
+            }
+        }
+
         return [];
     }
 
@@ -357,9 +426,12 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
 
     public function has(array ...$offsets): bool
     {
-        foreach ($offsets as $offset)
-            if (! isset($this->attributes['handlers'][$offset]))
+        foreach ($offsets as $offset) {
+            if (! isset($this->attributes['handlers'][$offset])) {
                 return false;
+            }
+        }
+
         return true;
     }
     
@@ -367,6 +439,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     public function map(callable $callback): static
     {
         $this->attributes = array_map($callback, $this->attributes);
+
         return $this;
     }
 
@@ -376,37 +449,49 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     public function merge(object $handler): self
     {
         if (! property_exists($handler, 'toArray')) {
-            throw new \InvalidArgumentException('Handler::merge() expects parameter 1 to be an object with a method named "toArray", ' . gettype($handler) . ' given');
+            throw new \InvalidArgumentException('Handler::merge() expects parameter 1 to be an object with a method named "toArray", '.gettype($handler).' given');
+
             return $this;
         }
         $toArray = $handler->toArray();
-        $this->attributes = array_map(fn($key) => [...$this->attributes[$key], ...array_shift($toArray[$key])], array_keys($this->fillable));
+        $this->attributes = array_map(fn ($key) => [...$this->attributes[$key], ...array_shift($toArray[$key])], array_keys($this->fillable));
         $this->__reorderHandlers();
+
         return $this;
     }
 
     public function offsetExists(int|string $offset, ?string $name = null): bool
     {
         if ($name) {
-            if (! $attribute = $this->__offsetGet($name)) return false;
+            if (! $attribute = $this->__offsetGet($name)) {
+                return false;
+            }
+
             return isset($attribute[$name][$offset]);
         }
+
         return isset($this->attributes['handlers'][$offset]);
     }
 
     public function offsetGet(int|string $offset, ?string $name = null): mixed
     {
         if ($name) {
-            if (! $attribute = $this->__offsetGet($name)) return null;
+            if (! $attribute = $this->__offsetGet($name)) {
+                return null;
+            }
+
             return $attribute[$offset] ?? null;
         }
-        if ($return = array_filter(array_map(fn($attribute) => $attribute[$offset] ?? null, $this->attributes))) return $return;
+        if ($return = array_filter(array_map(fn ($attribute) => $attribute[$offset] ?? null, $this->attributes))) {
+            return $return;
+        }
+
         return null;
     }
     
     /**
      * @throws \InvalidArgumentException If the callback does not have the expected number of parameters, if any parameter does not have a type hint, or a type hint is of the wrong type.
-     */    
+     */
     public function offsetSet(int|string $offset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
         $this->attributes['handlers'][$offset] = $this->validate($callback); // @throws InvalidArgumentException
@@ -414,7 +499,8 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $this->attributes['match_methods'][$offset] = $method ?? 'str_starts_with';
         $this->attributes['descriptions'][$offset] = $description ?? '';
         //if ($method === 'exact')
-            $this->__reorderHandlers();
+        $this->__reorderHandlers();
+
         return $this;
     }
 
@@ -428,7 +514,8 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             $this->attributes['descriptions'][$offset] = $description ?? '';
         }
         //if ($method === 'exact')
-            $this->__reorderHandlers();
+        $this->__reorderHandlers();
+
         return $this;
     }
 
@@ -443,18 +530,19 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
      * This method separates the handlers into two arrays: $exactHandlers and $otherHandlers.
      * Handlers with a match method of 'exact' are stored in $exactHandlers, while the rest are stored in $otherHandlers.
      * The two arrays are then merged and assigned back to the $handlers property, ensuring that exact matches are checked last.
-     *
-     * @return void
      */
     private function __reorderHandlers(): void
     {
         $exactHandlers = [];
         $otherHandlers = [];
         $commands = array_keys($this->attributes['handlers']);
-        usort($commands, fn($a, $b) => strlen($b) <=> strlen($a)); // Prioritize longer commands to avoid improper matching
+        usort($commands, fn ($a, $b) => strlen($b) <=> strlen($a)); // Prioritize longer commands to avoid improper matching
         foreach ($commands as $command) {
-            if ($this->attributes['match_methods'][$command] === 'exact') $exactHandlers[$command] = $this->attributes['handlers'][$command];
-            else $otherHandlers[$command] = $this->attributes['handlers'][$command];
+            if ($this->attributes['match_methods'][$command] === 'exact') {
+                $exactHandlers[$command] = $this->attributes['handlers'][$command];
+            } else {
+                $otherHandlers[$command] = $this->attributes['handlers'][$command];
+            }
         }
         $this->attributes['handlers'] = array_filter(array_merge($otherHandlers, $exactHandlers));
     }
@@ -473,8 +561,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             'handlers' => [$newOffset => $callback],
             'required_permissions' => [$newOffset => $required_permissions],
             'match_methods' => [$newOffset => $method],
-            'descriptions' => [$newOffset => $description]
+            'descriptions' => [$newOffset => $description],
         ], $this->attributes);
+
         return $this;
     }
 
@@ -489,7 +578,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             'handlers' => $this->attributes['handlers'] ?? [],
             'required_permissions' => $this->attributes['required_permissions'] ?? [],
             'match_methods' => $this->attributes['match_methods'] ?? [],
-            'descriptions' => $this->attributes['descriptions'] ?? []
+            'descriptions' => $this->attributes['descriptions'] ?? [],
         ];
     }
 
@@ -507,18 +596,27 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         foreach (array_keys($this->attributes['handlers']) as $command) {
             $required_permissions = $this->attributes['required_permissions'][$command] ?? [];
             $lowest_rank = array_pop($required_permissions) ?? 'everyone';
-            if (! $roles) $array[$lowest_rank][] = $command;
-            elseif ($lowest_rank == 'everyone' || $this->checkRank($roles, $this->attributes['required_permissions'][$command])) $array[$lowest_rank][] = $command;
+            if (! $roles) {
+                $array[$lowest_rank][] = $command;
+            } elseif ($lowest_rank == 'everyone' || $this->checkRank($roles, $this->attributes['required_permissions'][$command])) {
+                $array[$lowest_rank][] = $command;
+            }
         }
         $string = '';
         foreach ($ranks as $rank) {
-            if (! isset($array[$rank]) || ! $array[$rank]) continue;
-            if (is_numeric($rank)) $string .= '<@&' . $this->civ13->role_ids[$rank] . '>: `';
-            else $string .= '@' . $rank . ': `'; // everyone
+            if (! isset($array[$rank]) || ! $array[$rank]) {
+                continue;
+            }
+            if (is_numeric($rank)) {
+                $string .= '<@&'.$this->civ13->role_ids[$rank].'>: `';
+            } else {
+                $string .= '@'.$rank.': `';
+            } // everyone
             asort($array[$rank]);
             $string .= implode('`, `', $array[$rank]);
-            $string .= '`' . PHP_EOL;
+            $string .= '`'.PHP_EOL;
         }
+
         return $string;
     }
 

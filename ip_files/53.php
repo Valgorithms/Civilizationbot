@@ -1,6 +1,14 @@
 <?php
-//889192448-905969663
-$ranges=Array(
-"889192448" => array("905969663","DE"),
-);
-?>
+
+/*
+ * This file is a part of the Civilizationbot project.
+ *
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
+ */
+
+$ranges = [
+'889192448' => ['905969663','DE'],
+];

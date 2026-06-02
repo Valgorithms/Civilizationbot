@@ -1,6 +1,14 @@
 <?php
-//117440512-134217727
-$ranges=Array(
-"117440512" => array("134217727","US"),
-);
-?>
+
+/*
+ * This file is a part of the Civilizationbot project.
+ *
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
+ */
+
+$ranges = [
+'117440512' => ['134217727','US'],
+];

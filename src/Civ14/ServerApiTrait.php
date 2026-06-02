@@ -1,4 +1,15 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is a part of the Civilizationbot project.
+ *
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
+ */
 
 namespace Civ14;
 
@@ -8,68 +19,69 @@ use React\Http\Browser;
 use React\Promise\PromiseInterface;
 
 use function React\Promise\reject;
+
 /**
-  * @see Civ14\GameServer
-  * @property Civ13 $civ13
-  * @property Browser $browser
-  * @property string $discussion
-  * @property string $key
-  * 
-  * @see Civ14\GameServer::announceNewRound()
-  * @method PromiseInterface announceNewRound()
-  * @see Civ14\GameServer::announceOnline()
-  * @method PromiseInterface announceOnline(bool $status)
-  */
+ * @see Civ14\GameServer
+ * @property Civ13   $civ13
+ * @property Browser $browser
+ * @property string  $discussion
+ * @property string  $key
+ *
+ * @see Civ14\GameServer::announceNewRound()
+ * @method PromiseInterface announceNewRound()
+ * @see Civ14\GameServer::announceOnline()
+ * @method PromiseInterface announceOnline(bool $status)
+ */
 trait ServerApiTrait
 {
     // Server
-    protected string      $protocol      = 'http';
-    public    string      $ip            = '127.0.0.1';
-    public    int         $port          = 1212;
+    protected string      $protocol = 'http';
+    public string      $ip = '127.0.0.1';
+    public int         $port = 1212;
     protected string|null $watchdogToken = null;
     // Status endpoint response
-    public    array       $__status         = [];
-    public    string      $name             = '[EN] Civilization 14';
-    public    int         $playing          = 0;
-    public    array       $tags             = [];
-    public    string      $map              = 'Unknown';
-    public    int         $round_id         = -1;
-    public    int         $soft_max_players = 0;
-    public    bool        $panic_bunker     = false;
-    public    int         $run_level        = 0;
-    public    ?string     $preset           = null;
-    public    ?string     $round_start_time = null;
-    public    array       $players          = [];
-    protected bool        $announced        = false;
+    public array       $__status = [];
+    public string      $name = '[EN] Civilization 14';
+    public int         $playing = 0;
+    public array       $tags = [];
+    public string      $map = 'Unknown';
+    public int         $round_id = -1;
+    public int         $soft_max_players = 0;
+    public bool        $panic_bunker = false;
+    public int         $run_level = 0;
+    public ?string     $preset = null;
+    public ?string     $round_start_time = null;
+    public array       $players = [];
+    protected bool        $announced = false;
 
     /**
      * Sends a GET request to the specified URL with optional headers.
      *
-     * @param string $endpoint The endpoint to send the GET request to.
-     * @param array $headers An optional array of headers to include in the request.
+     * @param  string           $endpoint The endpoint to send the GET request to.
+     * @param  array            $headers  An optional array of headers to include in the request.
      * @return PromiseInterface A promise representing the asynchronous HTTP response.
      */
-    public function sendGetRequest(string $endpoint, array $headers = array()): PromiseInterface
+    public function sendGetRequest(string $endpoint, array $headers = []): PromiseInterface
     {
         return ($this->isLocal() && $this->isPortFree())
             ? reject(new \RuntimeException('Port is not listening'))
-            : $this->browser->get($this->baseURL() . $endpoint, $headers);
+            : $this->browser->get($this->baseURL().$endpoint, $headers);
     }
 
     /**
      * Sends a POST request to the specified URL with the given headers and body.
      *
-     * @param string $endpoint The endpoint to send the POST request to.
-     * @param array $headers An associative array of headers to include in the request.
-     * @param string $body The body content to include in the POST request. Defaults to an empty string.
+     * @param  string           $endpoint The endpoint to send the POST request to.
+     * @param  array            $headers  An associative array of headers to include in the request.
+     * @param  string           $body     The body content to include in the POST request. Defaults to an empty string.
      * @return PromiseInterface A promise representing the asynchronous HTTP response.
      */
-    public function sendPostRequest(string $endpoint, array $headers = array(), $body = ''): PromiseInterface
+    public function sendPostRequest(string $endpoint, array $headers = [], $body = ''): PromiseInterface
     {
         return ($this->isLocal() && $this->isPortFree())
             ? reject(new \RuntimeException('Port is not listening'))
             : $this->browser->post(
-                $this->baseURL() . $endpoint,
+                $this->baseURL().$endpoint,
                 array_merge($headers, $this->authHeaders()),
                 $body
             );
@@ -95,14 +107,17 @@ trait ServerApiTrait
      */
     public function getStatus(): PromiseInterface
     {
-        $promise = $this->sendGetRequest('/status')->then(function(ResponseInterface $response): ResponseInterface
-        {
-            if (! $status = json_decode($response->getBody()->getContents(), true) ?: []) return $response;
-            if (empty($this->__status) && !empty($status)) {
+        $promise = $this->sendGetRequest('/status')->then(function (ResponseInterface $response): ResponseInterface {
+            if (! $status = json_decode($response->getBody()->getContents(), true) ?: []) {
+                return $response;
+            }
+            if (empty($this->__status) && ! empty($status)) {
                 $this->announceOnline(true);
                 $this->announced = true;
             }
-            if (!empty($this->__status) && empty($status)) $this->announceOnline(false);
+            if (! empty($this->__status) && empty($status)) {
+                $this->announceOnline(false);
+            }
             $previous_round_id = $this->round_id;
             $this->updateServerPropertiesFromStatusArray($status);
             if (
@@ -111,37 +126,45 @@ trait ServerApiTrait
                 is_numeric($this->__status['round_id']) &&
                 $this->round_id !== -1 && // Only announce if we have a previous round_id
                 $this->__status['round_id'] != $previous_round_id
-            ) $this->announceNewRound();
+            ) {
+                $this->announceNewRound();
+            }
+
             return $response;
-        }, function(\Throwable $e) {
-            if (!empty($this->__status)) {
+        }, function (\Throwable $e) {
+            if (! empty($this->__status)) {
                 $this->__status = [];
                 $this->announceOnline(false);
             }
+
             return null;
         });
-        return $promise->then(fn(?ResponseInterface $response) =>
-            ($response instanceof ResponseInterface)
+
+        return $promise->then(
+            fn (?ResponseInterface $response) => ($response instanceof ResponseInterface)
                 ? self::parseResponse($response)
                 : [],
-        fn(\Throwable $e) => null);
+            fn (\Throwable $e) => null
+        );
     }
 
     protected function updateServerPropertiesFromStatusArray(array $status, bool $save = true): void
     {
-        if ($save) $this->civ13->VarSave("{$this->key}_status.json", $status);
-        $this->__status         = $status;
-        $this->name             = $this->__status['name']             ?? $this->name;
-        $this->playing          = (int)$this->__status['players']     ?? $this->playing;
-        $this->tags             = $this->__status['tags']             ?? $this->tags;
-        $this->map              = $this->__status['map']              ?? $this->map;
-        $this->round_id         = $this->__status['round_id']         ?? $this->round_id;
+        if ($save) {
+            $this->civ13->VarSave("{$this->key}_status.json", $status);
+        }
+        $this->__status = $status;
+        $this->name = $this->__status['name'] ?? $this->name;
+        $this->playing = (int) $this->__status['players'] ?? $this->playing;
+        $this->tags = $this->__status['tags'] ?? $this->tags;
+        $this->map = $this->__status['map'] ?? $this->map;
+        $this->round_id = $this->__status['round_id'] ?? $this->round_id;
         $this->soft_max_players = $this->__status['soft_max_players'] ?? $this->soft_max_players;
-        $this->panic_bunker     = $this->__status['panic_bunker']     ?? $this->panic_bunker;
-        $this->run_level        = (int) ($this->__status['run_level'] ?? $this->run_level);
-        $this->preset           = $this->__status['preset']           ?? $this->preset;
+        $this->panic_bunker = $this->__status['panic_bunker'] ?? $this->panic_bunker;
+        $this->run_level = (int) ($this->__status['run_level'] ?? $this->run_level);
+        $this->preset = $this->__status['preset'] ?? $this->preset;
         $this->round_start_time = $this->__status['round_start_time'] ?? $this->round_start_time;
-        $this->players          = $this->__status['playerlist']       ?? $this->players;
+        $this->players = $this->__status['playerlist'] ?? $this->players;
     }
 
     /**
@@ -152,9 +175,10 @@ trait ServerApiTrait
     public function getInfo(bool $use_default_handlers = false): PromiseInterface
     {
         $promise = $this->sendGetRequest('/info')
-            ->then(fn(ResponseInterface $response) => self::parseResponse($response));
+            ->then(fn (ResponseInterface $response) => self::parseResponse($response));
+
         return $use_default_handlers
-            ? $this->civ13->then($promise, null, fn(\Throwable $e) => null) // Catch but ignore errors
+            ? $this->civ13->then($promise, null, fn (\Throwable $e) => null) // Catch but ignore errors
             : $promise;
     }
 
@@ -166,9 +190,10 @@ trait ServerApiTrait
     public function update(bool $use_default_handlers = false): PromiseInterface
     {
         $promise = $this->sendPostRequest('/update')
-            ->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
+            ->then(fn (ResponseInterface $response) => self::isResponseSuccessful($response));
+
         return $use_default_handlers
-            ? $this->civ13->then($promise, null, fn(\Throwable $e) => null) // Catch but ignore errors
+            ? $this->civ13->then($promise, null, fn (\Throwable $e) => null) // Catch but ignore errors
             : $promise;
     }
 
@@ -180,9 +205,10 @@ trait ServerApiTrait
     public function shutdown(bool $use_default_handlers = false): PromiseInterface
     {
         $promise = $this->sendPostRequest('/shutdown')
-            ->then(fn(ResponseInterface $response) => self::isResponseSuccessful($response));
+            ->then(fn (ResponseInterface $response) => self::isResponseSuccessful($response));
+
         return $use_default_handlers
-            ? $this->civ13->then($promise, null, fn(\Throwable $e) => null) // Catch but ignore errors
+            ? $this->civ13->then($promise, null, fn (\Throwable $e) => null) // Catch but ignore errors
             : $promise;
     }
 
@@ -190,7 +216,7 @@ trait ServerApiTrait
      * Parses the given HTTP response and decodes its JSON content into an associative array.
      *
      * @param ResponseInterface $response The HTTP response to parse.
-     * 
+     *
      * @return array The decoded JSON content as an associative array.
      */
     public static function parseResponse(ResponseInterface $response): array
@@ -229,7 +255,7 @@ trait ServerApiTrait
      */
     public function isLocal(): bool
     {
-        return !filter_var($this->ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+        return ! filter_var($this->ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
     }
 
     /**
@@ -243,8 +269,11 @@ trait ServerApiTrait
      */
     public function isPortFree(): bool
     {
-        if (! $connection = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) return true;
+        if (! $connection = @fsockopen('localhost', $this->port, $errno, $errstr, 1)) {
+            return true;
+        }
         fclose($connection);
+
         return false;
     }
 
@@ -254,8 +283,8 @@ trait ServerApiTrait
      * This method checks if the status code of the provided response
      * is equal to 200, which indicates a successful HTTP request.
      *
-     * @param ResponseInterface $response The HTTP response to evaluate.
-     * @return bool True if the response status code is 200, otherwise false.
+     * @param  ResponseInterface $response The HTTP response to evaluate.
+     * @return bool              True if the response status code is 200, otherwise false.
      */
     public static function isResponseSuccessful(ResponseInterface $response): bool
     {
@@ -269,7 +298,7 @@ trait ServerApiTrait
      */
     public function baseUrl(): string
     {
-        return $this->protocol . '://' . $this->ip . ':' . $this->port;
+        return $this->protocol.'://'.$this->ip.':'.$this->port;
     }
 
     /**
@@ -328,8 +357,6 @@ trait ServerApiTrait
      * Sets the protocol to be used by the server.
      *
      * @param string $protocol The protocol to set (default is 'http').
-     *
-     * @return void
      */
     public function setProtocol(string $protocol = 'http'): void
     {
@@ -340,15 +367,13 @@ trait ServerApiTrait
      * Sets the IP address for the server.
      *
      * @param string $ip The IP address to set. Defaults to '127.0.0.1'.
-     *                    Must be a valid IPv4 or IPv6 address.
-     * 
+     *                   Must be a valid IPv4 or IPv6 address.
+     *
      * @throws \InvalidArgumentException If the provided IP address is invalid.
-     * 
-     * @return void
      */
     public function setIP(string $ip = '127.0.0.1'): void
     {
-        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        if (! filter_var($ip, FILTER_VALIDATE_IP)) {
             throw new \InvalidArgumentException('Invalid IP address provided.');
         }
         $this->ip = $ip;
@@ -357,16 +382,14 @@ trait ServerApiTrait
     /**
      * Sets the port for the server.
      *
-     * @param int|string $port The port number to set. Defaults to 1212. 
+     * @param int|string $port The port number to set. Defaults to 1212.
      *                         Must be numeric, otherwise an exception is thrown.
-     * 
+     *
      * @throws \InvalidArgumentException If the provided port is not numeric.
-     * 
-     * @return void
      */
     public function setPort(int|string $port = 1212): void
     {
-        if (!is_numeric($port)) {
+        if (! is_numeric($port)) {
             throw new \InvalidArgumentException('Port must be a number.');
         }
         $this->port = (int) $port;
@@ -376,7 +399,6 @@ trait ServerApiTrait
      * Sets the watchdog token.
      *
      * @param string|null $token The token to set, or null to clear the token.
-     * @return void
      */
     public function setWatchdogToken(?string $token = null): void
     {

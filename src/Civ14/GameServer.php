@@ -1,9 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2024-present Valithor Obsidion <valithor@valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ14;
@@ -33,12 +38,12 @@ use function React\Promise\reject;
 use function React\Async\await;
 
 /**
-  * @property-read  ExCollectionInterface $medals
-  * @property-read  Browser               $browser
-  * @property-read  Discord               $discord
-  * @property-read  LoggerInterface       $logger
-  * @property-read  LoopInterface         $loop
-  */
+ * @property-read ExCollectionInterface $medals
+ * @property-read Browser               $browser
+ * @property-read Discord               $discord
+ * @property-read LoggerInterface       $logger
+ * @property-read LoopInterface         $loop
+ */
 class GameServer
 {
     use ServerApiTrait;
@@ -46,7 +51,7 @@ class GameServer
 
     public const MEDALS = '/medals.json';
 
-    /** @var Civ13 $civ13 */
+    /** @var Civ13 */
     protected Civ13 $civ13;
 
     public bool    $enabled;
@@ -65,41 +70,46 @@ class GameServer
         Civ13 &$civ13,
         array &$options = []
     ) {
-        $this->civ13         = &$civ13;
-        $this->enabled       = (bool) ($options['enabled'] ?? true);
-        $this->basedir       = $options['basedir']         ?? '';
-        $this->key           = $options['key']             ?? 'civ14';
-        $this->name          = $options['name']            ?? 'Civilization 14';
-        $this->protocol      = $options['protocol']        ?? 'http';
-        $this->ip            = $options['ip']              ?? '127.0.0.1';
-        $this->port          = (int) ($options['port']     ?? 1212);
-        $this->host          = $options['host']            ?? 'Taislin';
-        $this->playercount   = $options['playercount']     ?? '';
-        $this->discussion    = $options['discussion']      ?? '';
-        $this->watchdogToken = $options['watchdogToken']   ?? null;
-        if ($status = $this->civ13->VarLoad("{$this->key}_status.json") ?? []) $this->updateServerPropertiesFromStatusArray($status, false);
+        $this->civ13 = &$civ13;
+        $this->enabled = (bool) ($options['enabled'] ?? true);
+        $this->basedir = $options['basedir'] ?? '';
+        $this->key = $options['key'] ?? 'civ14';
+        $this->name = $options['name'] ?? 'Civilization 14';
+        $this->protocol = $options['protocol'] ?? 'http';
+        $this->ip = $options['ip'] ?? '127.0.0.1';
+        $this->port = (int) ($options['port'] ?? 1212);
+        $this->host = $options['host'] ?? 'Taislin';
+        $this->playercount = $options['playercount'] ?? '';
+        $this->discussion = $options['discussion'] ?? '';
+        $this->watchdogToken = $options['watchdogToken'] ?? null;
+        if ($status = $this->civ13->VarLoad("{$this->key}_status.json") ?? []) {
+            $this->updateServerPropertiesFromStatusArray($status, false);
+        }
         $this->afterConstruct();
     }
     protected function afterConstruct(): void
     {
         $this->setup();
-        if (! $this->enabled) return; // Don't start timers for disabled servers
+        if (! $this->enabled) {
+            return;
+        } // Don't start timers for disabled servers
         $this->civ13->deferUntilReady(
-            function (): void
-            {
+            function (): void {
                 $this->getStatus(); // Ignore errors, just return offline status
                 $this->logger->info("Getting player count for SS14 GameServer {$this->name}");
                 $this->playercountTimer(); // Update playercount channel every 10 minutes
                 $this->currentRoundEmbedTimer(); // The bot has to set a round id first
             },
-            __METHOD__ . " ({$this->key})"
+            __METHOD__." ({$this->key})"
         );
     }
     protected function setup(): void
     {
-        $this->civ13->civ14_gameservers[$this->key] =& $this;
-        if ($this->enabled) $this->civ13->civ14_enabled_gameservers[$this->key] =& $this;
-        $this->logger->info('Added ' . ($this->enabled ? 'enabled' : 'disabled') . " SS14 game server: {$this->name} ({$this->key})");
+        $this->civ13->civ14_gameservers[$this->key] = &$this;
+        if ($this->enabled) {
+            $this->civ13->civ14_enabled_gameservers[$this->key] = &$this;
+        }
+        $this->logger->info('Added '.($this->enabled ? 'enabled' : 'disabled')." SS14 game server: {$this->name} ({$this->key})");
     }
 
     /**
@@ -113,19 +123,24 @@ class GameServer
      */
     public function announceNewRound(): PromiseInterface
     {
-        if (! $this->enabled) return resolve(null);
+        if (! $this->enabled) {
+            return resolve(null);
+        }
         if (! $channel = $this->discord->getChannel($this->discussion)) {
             $this->logger->debug($err = "Channel {$this->discussion} doesn't exist!");
+
             return reject(new PartException($err));
         }
         if (! $channel->created) {
             $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
+
             return reject(new PartException($err));
         }
+
         return $this->civ13->sendMessage(
             $channel,
-            (isset($this->civ13->role_ids['round_start']) ? "<@&{$this->civ13->role_ids['round_start']}>, " : "")
-                . "New round `{$this->round_id}` has started!"
+            (isset($this->civ13->role_ids['round_start']) ? "<@&{$this->civ13->role_ids['round_start']}>, " : '')
+                ."New round `{$this->round_id}` has started!"
         );
     }
 
@@ -135,20 +150,25 @@ class GameServer
      * This method checks if the announcement feature is enabled and if the specified discussion channel exists and is created.
      * If all checks pass, it sends an online or offline message to the channel.
      *
-     * @param bool $status Indicates whether to announce as online (true) or offline (false). Defaults to true (online).
+     * @param  bool             $status Indicates whether to announce as online (true) or offline (false). Defaults to true (online).
      * @return PromiseInterface Resolves when the message is sent, or rejects with a PartException if the channel is invalid.
      */
     public function announceOnline(bool $status = true)
     {
-        if (! $this->enabled) return resolve(null);
+        if (! $this->enabled) {
+            return resolve(null);
+        }
         if (! $channel = $this->discord->getChannel($this->discussion)) {
             $this->logger->debug($err = "Channel {$this->discussion} doesn't exist!");
+
             return reject(new PartException($err));
         }
         if (! $channel->created) {
             $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
+
             return reject(new PartException($err));
         }
+
         return $this->civ13->sendMessage(
             $channel,
             ($status ? '**Online**' : '**Offline**')
@@ -168,11 +188,12 @@ class GameServer
      */
     public function playercountTimer(): PromiseInterface
     {
-        await($this->civ13->then($this->getStatus(), null, fn(\Throwable $e) => null));
+        await($this->civ13->then($this->getStatus(), null, fn (\Throwable $e) => null));
+
         return $this->civ13->then(
             $this->getStatus(),
-            fn() => $this->setPlayercountTimer(),
-            fn(\Throwable $e) => null
+            fn () => $this->setPlayercountTimer(),
+            fn (\Throwable $e) => null
         );
     }
 
@@ -180,7 +201,7 @@ class GameServer
     {
         return (isset($this->playercount_timer))
             ? $this->playercount_timer
-            : $this->playercount_timer = $this->loop->addPeriodicTimer(600, fn() => $this->playercountChannelUpdate());
+            : $this->playercount_timer = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
     }
 
     /**
@@ -196,8 +217,9 @@ class GameServer
     {
         if (! isset($this->current_round_embed_timer)) {
             $this->civ13->then($this->processCurrentRoundMessage()); // Call the function on the first access attempt
-            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, async(fn() => $this->civ13->then($this->processCurrentRoundMessage())));
+            $this->current_round_embed_timer = $this->loop->addPeriodicTimer(60, async(fn () => $this->civ13->then($this->processCurrentRoundMessage())));
         }
+
         return $this->current_round_embed_timer;
     }
 
@@ -216,10 +238,12 @@ class GameServer
     {
         if (! $channel = $this->discord->getChannel($this->playercount)) {
             $this->logger->debug($err = "Channel {$this->playercount} doesn't exist!");
+
             return reject(new PartException($err));
         }
         if (! $channel->created) {
             $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
+
             return reject(new PartException($err));
         }
         [$channel_prefix, $existing_count] = explode('-', $channel->name);
@@ -228,8 +252,10 @@ class GameServer
             : $this->playing;
         if ((int) $existing_count !== $playing_count) {
             $channel->name = "{$channel_prefix}-{$playing_count}";
+
             return $channel->guild->channels->save($channel);
         }
+
         return resolve(null);
     }
 
@@ -242,24 +268,30 @@ class GameServer
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             $this->logger->error($err = "Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
+
             return reject(new PartException($err));
         }
         if (! $channel = $guild->channels->get('id', $this->playercount)) {
             $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
+
             return reject(new PartException($err));
         }
-        return $this->getStatus()->finally(fn(): PromiseInterface => $this->__processCurrentRoundMessage($channel, Civ13::createBuilder()->addEmbed($this->toEmbed())));
+
+        return $this->getStatus()->finally(fn (): PromiseInterface => $this->__processCurrentRoundMessage($channel, Civ13::createBuilder()->addEmbed($this->toEmbed())));
     }
 
     protected function __processCurrentRoundMessage(Channel|Thread $channel, MessageBuilder $builder): PromiseInterface
     {
         $resend = function (?Message $message, callable $new) {
-            if ($message) $message->delete();
+            if ($message) {
+                $message->delete();
+            }
+
             return $new(new PartException("Failed to edit current round message in {$this->key} ({$this->name})"));
         };
-        $send = fn(Message $message): bool                      => $this->civ13->VarSave($this->getRoundMessageIdFileName(), [$this->round_message_id = $message->id]);
-        $new  = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
-        $edit = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn(\Throwable $error) => $resend($message, $new)) : null;
+        $send = fn (Message $message): bool => $this->civ13->VarSave($this->getRoundMessageIdFileName(), [$this->round_message_id = $message->id]);
+        $new = fn (\Throwable $error): PromiseInterface => $this->civ13->then($channel->sendMessage($builder), $send);
+        $edit = fn (?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn (\Throwable $error) => $resend($message, $new)) : null;
         
         return ($round_message_id = $this->getRoundMessageId())
             ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit, $new)
@@ -277,31 +309,40 @@ class GameServer
     public function toEmbed(): Embed
     {
         $embed = $this->civ13->createEmbed();
-        if (empty($this->__status)) return $embed->addFieldValues($this->name, 'Offline');
-        if (! empty($this->players)) $embed->addFieldValues(
-            'Playing',
-            implode(', ', $this->playersCollection(true)->toArray())
-        );
+        if (empty($this->__status)) {
+            return $embed->addFieldValues($this->name, 'Offline');
+        }
+        if (! empty($this->players)) {
+            $embed->addFieldValues(
+                'Playing',
+                implode(', ', $this->playersCollection(true)->toArray())
+            );
+        }
+
         return $embed
             ->setTitle($this->name)
             ->addFieldValues('Server URL', "ss14://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
             ->addFieldValues('Players', "{$this->playing}/{$this->soft_max_players}", true)
             ->addFieldValues('Map', $this->map, true)
-            ->addFieldValues('Round ID', (string)$this->round_id, true)
+            ->addFieldValues('Round ID', (string) $this->round_id, true)
             ->addFieldValues('Elapsed Time', ($this->round_start_time && $elapsed = $this->parseElapsedTime()) ? $elapsed : 'N/A', true);
     }
 
     public function playersCollection(bool $desc_safe = false): ExCollectionInterface
     {
-        if (! $collection = $this->civ13->ss14verifier->toCollection($discrim = 'ss14')) return new Collection($this->players);
+        if (! $collection = $this->civ13->ss14verifier->toCollection($discrim = 'ss14')) {
+            return new Collection($this->players);
+        }
 
         $players = array_map(
-            fn($player) => ($item = $collection->get($discrim, $player)) ? "<@{$item['discord']}>" : $player,
+            fn ($player) => ($item = $collection->get($discrim, $player)) ? "<@{$item['discord']}>" : $player,
             $this->players
         );
 
-        if (! $desc_safe) return new Collection($players);
+        if (! $desc_safe) {
+            return new Collection($players);
+        }
 
         // Ensure the combined length of the imploded $players does not exceed 1024 characters
         $max_length = 1024;
@@ -311,7 +352,9 @@ class GameServer
 
         foreach ($players as $player) {
             $add_length = strlen($player) + ($result ? strlen($separator) : 0);
-            if ($current_length + $add_length > $max_length) break;
+            if ($current_length + $add_length > $max_length) {
+                break;
+            }
             $result[] = $player;
             $current_length += $add_length;
         }
@@ -329,12 +372,13 @@ class GameServer
      */
     protected function parseElapsedTime(): string
     {
-        $interval = (new \DateTime($this->round_start_time))->diff(new \DateTime("now", new \DateTimeZone("UTC")));
+        $interval = (new \DateTime($this->round_start_time))->diff(new \DateTime('now', new \DateTimeZone('UTC')));
+
         return implode(', ', array_filter([
-            $interval->d > 0 ? $interval->d . ' days' : null,
-            $interval->h > 0 ? $interval->h . ' hours' : null,
-            $interval->i > 0 ? $interval->i . ' minutes' : null,
-            $interval->s > 0 ? $interval->s . ' seconds' : null,
+            $interval->d > 0 ? $interval->d.' days' : null,
+            $interval->h > 0 ? $interval->h.' hours' : null,
+            $interval->i > 0 ? $interval->i.' minutes' : null,
+            $interval->s > 0 ? $interval->s.' seconds' : null,
         ]));
     }
 
@@ -352,8 +396,13 @@ class GameServer
      */
     public function getRoundMessageId(): ?string
     {
-        if (isset($this->round_message_id)) return $this->round_message_id;
-        if ($serialized_array = $this->civ13->VarLoad($this->getRoundMessageIdFileName())) return $this->round_message_id = array_shift($serialized_array);
+        if (isset($this->round_message_id)) {
+            return $this->round_message_id;
+        }
+        if ($serialized_array = $this->civ13->VarLoad($this->getRoundMessageIdFileName())) {
+            return $this->round_message_id = array_shift($serialized_array);
+        }
+
         return null;
     }
 
@@ -375,6 +424,7 @@ class GameServer
     protected function getMedalsProperty(): ExCollectionInterface
     {
         $data = OSFunctions::VarLoad($this->basedir, self::MEDALS, $this->logger);
+
         return new Collection(
             isset($data) ? array_shift($data) : [],
             'user'
@@ -392,7 +442,7 @@ class GameServer
      * @return Browser
      */
     protected function getBrowserProperty(): Browser
-    { 
+    {
         return isset($this->civ13->browser)
             ? $this->civ13->browser
             : new Browser($this->loop ?? Loop::get()); // Workaround for civ13->browser property not set in PHPUnit tests
@@ -428,7 +478,7 @@ class GameServer
      * @return LoopInterface
      */
     protected function getLoopProperty(): LoopInterface
-    { 
+    {
         return isset($this->civ13->loop)
             ? $this->civ13->loop
             : Loop::get(); // Workaround for civ13->loop property not set in PHPUnit tests

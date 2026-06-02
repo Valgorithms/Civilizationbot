@@ -1,16 +1,20 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2024-present Valithor Obsidion <valithor@valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ14;
 
 trait DynamicPropertyAccessorTrait
 {
-
     /**
      * Checks if there is a get mutator present.
      *

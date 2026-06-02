@@ -1,8 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand\Commands;
@@ -28,19 +34,30 @@ class Civ13Logs extends Civ13MessageCommand
         $keys = [];
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             $keys[] = $gameserver->key;
-            if (trim($tokens[0]) !== $gameserver->key) continue; // Check if server is valid
-            if (! isset($gameserver->basedir) || ! file_exists($fp = $gameserver->basedir . Civ13::log_basedir)) {
+            if (trim($tokens[0]) !== $gameserver->key) {
+                continue;
+            } // Check if server is valid
+            if (! isset($gameserver->basedir) || ! file_exists($fp = $gameserver->basedir.Civ13::log_basedir)) {
                 $this->logger->warning("`$fp` is either not set or does not exist");
-                return $message->react("🔥");
+
+                return $message->react('🔥');
             }
 
             unset($tokens[0]);
-            $results = $this->civ13->FileNav($gameserver->basedir . Civ13::log_basedir, $tokens);
-            if ($results[0]) return $message->reply(Civ13::createBuilder()->addFile($results[1], 'log.txt'));
-            if (count($results[1]) > 7) $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-            if (! isset($results[2]) || ! $results[2]) return $this->civ13->reply($message, 'Available options: ' . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
-            return $this->civ13->reply($message, "{$results[2]} is not an available option! Available options: " . PHP_EOL . '`' . implode('`' . PHP_EOL . '`', $results[1]) . '`');
+            $results = $this->civ13->FileNav($gameserver->basedir.Civ13::log_basedir, $tokens);
+            if ($results[0]) {
+                return $message->reply(Civ13::createBuilder()->addFile($results[1], 'log.txt'));
+            }
+            if (count($results[1]) > 7) {
+                $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
+            }
+            if (! isset($results[2]) || ! $results[2]) {
+                return $this->civ13->reply($message, 'Available options: '.PHP_EOL.'`'.implode('`'.PHP_EOL.'`', $results[1]).'`');
+            }
+
+            return $this->civ13->reply($message, "{$results[2]} is not an available option! Available options: ".PHP_EOL.'`'.implode('`'.PHP_EOL.'`', $results[1]).'`');
         }
-        return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `' . implode(', ', $keys) . '`');
+
+        return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `'.implode(', ', $keys).'`');
     }
 }

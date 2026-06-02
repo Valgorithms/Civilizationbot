@@ -1,8 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand\Commands;
@@ -33,7 +39,7 @@ class ListAdmins extends Civ13MessageCommand
 
     // Color codes
     protected const string ACCENT_COLOR_DEFAULT = 'f1c40f';
-    protected const string ACCENT_COLOR_ERROR   = 'e91e63';
+    protected const string ACCENT_COLOR_ERROR = 'e91e63';
 
     protected Container $container;
 
@@ -51,24 +57,29 @@ class ListAdmins extends Civ13MessageCommand
     public function createBuilder(): MessageBuilder
     {
         $builder = Civ13::createBuilder(true);
+
         return $builder->addComponent($this->createContainer($builder));
     }
 
     private function createContainer(MessageBuilder $builder): Container
     {
         $this->container = Container::new()->setAccentColor(self::ACCENT_COLOR_DEFAULT)->addComponents([
-            TextDisplay::new('# ' . self::TITLE),
+            TextDisplay::new('# '.self::TITLE),
             Separator::new(),
             TextDisplay::new('## Description'),
             TextDisplay::new(self::DESCRIPTION_TEXT),
             Separator::new(),
         ]);
 
-        foreach ($this->civ13->enabled_gameservers as $gameserver) if ($admins = $gameserver->listadmins()) {
-            $builder->addFileFromContent($filename = $gameserver->name . '_admins.txt', $admins);
-            $this->container->addComponent(File::new($filename));
-        };
-        if (empty($builder->getFiles())) $this->container->addComponent(TextDisplay::new('### ' . self::UNAVAILABLE))->setAccentColor(self::ACCENT_COLOR_ERROR);
+        foreach ($this->civ13->enabled_gameservers as $gameserver) {
+            if ($admins = $gameserver->listadmins()) {
+                $builder->addFileFromContent($filename = $gameserver->name.'_admins.txt', $admins);
+                $this->container->addComponent(File::new($filename));
+            }
+        }
+        if (empty($builder->getFiles())) {
+            $this->container->addComponent(TextDisplay::new('### '.self::UNAVAILABLE))->setAccentColor(self::ACCENT_COLOR_ERROR);
+        }
 
         return $this->container;
     }

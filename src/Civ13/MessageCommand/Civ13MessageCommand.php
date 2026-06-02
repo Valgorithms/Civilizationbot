@@ -1,8 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand;
@@ -16,11 +22,11 @@ use React\EventLoop\LoopInterface;
 use React\Http\Browser;
 
 /**
-  * @property-read  Browser          $browser
-  * @property-read  Discord          $discord
-  * @property-read  LoggerInterface  $logger
-  * @property-read  LoopInterface    $loop
-  */
+ * @property-read Browser         $browser
+ * @property-read Discord         $discord
+ * @property-read LoggerInterface $logger
+ * @property-read LoopInterface   $loop
+ */
 class Civ13MessageCommand extends MessageCommand
 {
     use DynamicPropertyAccessorTrait;
@@ -28,19 +34,22 @@ class Civ13MessageCommand extends MessageCommand
     protected const string TITLE = 'Command Title';
     protected const string DESCRIPTION_TEXT = 'This command is not implemented yet.';
     protected const string ACCENT_COLOR_DEFAULT = 'f1c40f';
-    protected const string ACCENT_COLOR_ERROR   = 'e91e63';
+    protected const string ACCENT_COLOR_ERROR = 'e91e63';
 
-    public function __construct(protected Civ13 &$civ13){}
+    public function __construct(protected Civ13 &$civ13)
+    {
+    }
 
     public function new(\Closure|callable|null $callback = null): static
     {
         $new = new static($this->civ13);
         $new->setCallback($callback);
+
         return $new;
     }
 
     protected function getBrowserProperty(): Browser
-    { 
+    {
         return isset($this->civ13->browser)
             ? $this->civ13->browser
             : new Browser($this->loop ?? Loop::get()); // Workaround for PHPUnit tests
@@ -57,7 +66,7 @@ class Civ13MessageCommand extends MessageCommand
     }
 
     protected function getLoopProperty(): LoopInterface
-    { 
+    {
         return isset($this->civ13->loop)
             ? $this->civ13->loop
             : Loop::get(); // Workaround for PHPUnit tests

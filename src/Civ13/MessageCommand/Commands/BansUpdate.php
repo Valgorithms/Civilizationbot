@@ -1,8 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand\Commands;
@@ -16,18 +22,21 @@ use function React\Async\await;
 
 /**
  * Handles the "updatebans" command.
- * 
  */
 class BansUpdate extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $message->react(array_reduce($this->civ13->enabled_gameservers, fn($carry, $gameserver) => 
-            $carry || array_reduce($this->civ13->enabled_gameservers, fn($carry2, $gameserver2) =>
-                $carry2 || (! await($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir . Civ13::playerlogs))) instanceof \Throwable),
-                false),
-            false)
-            ? "👍"
-            : "🔥");
+        return $message->react(array_reduce(
+            $this->civ13->enabled_gameservers,
+            fn ($carry, $gameserver) => $carry || array_reduce(
+                $this->civ13->enabled_gameservers,
+                fn ($carry2, $gameserver2) => $carry2 || (! await($gameserver->banlog_update(null, file_get_contents($gameserver2->basedir.Civ13::playerlogs))) instanceof \Throwable),
+                false
+            ),
+            false
+        )
+            ? '👍'
+            : '🔥');
     }
 }

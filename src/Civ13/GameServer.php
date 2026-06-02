@@ -1,9 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2024-present Valithor Obsidion <valithor@valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13;
@@ -20,7 +25,6 @@ use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Helpers\Collection;
 use Discord\Helpers\CollectionInterface;
-use Discord\Helpers\ExCollectionInterface;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
@@ -47,14 +51,14 @@ class GameServer
      * @var array
      */
     public const ADMIN_PERMISSIONS = [
-        'Owner'                     => ['Host',                     '65535'],
-        'Chief Technical Officer'   => ['Chief Technical Officer',  '65535'],
-        'Host'                      => ['Host',                     '65535'], // Default Host permission, only used if a higher listed role is not found first
-        'Head Admin'                => ['Head Admin',               '16382'], // Deprecation TBD
+        'Owner' => ['Host',                     '65535'],
+        'Chief Technical Officer' => ['Chief Technical Officer',  '65535'],
+        'Host' => ['Host',                     '65535'], // Default Host permission, only used if a higher listed role is not found first
+        'Head Admin' => ['Head Admin',               '16382'], // Deprecation TBD
         //'Manager'                 => ['Manager',                  '16382'], // Deprecated
         //'Supervisor'              => ['Supervisor',               '16382'], // Deprecated
-        'Ambassador'                => ['Ambassador',               '16382'], // Default High Staff permission, only used if a higher listed role is not found first
-        'Admin'                     => ['Admin',                    '16254'],
+        'Ambassador' => ['Ambassador',               '16382'], // Default High Staff permission, only used if a higher listed role is not found first
+        'Admin' => ['Admin',                    '16254'],
         //'Moderator'               => ['Moderator',                '25088'], // Deprecated
         //'Developer'               => ['Developer',                 '7288'], // This Discord role doesn't exist
         //'Mentor'                  => ['Mentor',                   '16384'], // Deprecated
@@ -123,8 +127,8 @@ class GameServer
 
     public function __construct(public Civ13 &$civ13, array &$options)
     {
-        $this->discord =& $civ13->discord;
-        $this->logger =& $civ13->logger;
+        $this->discord = &$civ13->discord;
+        $this->logger = &$civ13->logger;
         $this->loop = $civ13->loop;
         $this->resolveOptions($options);
         $this->basedir = $options['basedir'];
@@ -134,13 +138,15 @@ class GameServer
         $this->port = $options['port'];
         $this->host = $options['host'];
         $this->supported = $options['supported'] ?? false;
-        if ($options['enabled'] && $this->basedir && !is_dir($this->basedir)) { // Will cause issues
+        if ($options['enabled'] && $this->basedir && ! is_dir($this->basedir)) { // Will cause issues
             $this->logger->error("GameServer {$this->key} has an invalid basedir: {$this->basedir}, disabling server.");
             $this->enabled = false;
-        } else $this->enabled = $options['enabled'] ?? false;
+        } else {
+            $this->enabled = $options['enabled'] ?? false;
+        }
         $this->legacy = $options['legacy'] ?? true;
         $this->moderate = $options['moderate'] ?? true;
-        $this->panic_bunker = $options['panic_bunker']  ?? false;
+        $this->panic_bunker = $options['panic_bunker'] ?? false;
         $this->log_attacks = $options['log_attacks'] ?? true;
         $this->legacy_relay = $options['legacy_relay'] ?? false;
         $this->discussion = $options['discussion'];
@@ -167,21 +173,25 @@ class GameServer
             if ($current_round = array_shift($current_round)) {
                 $this->rounds[$this->current_round = $current_round]['interrupted'] = true;
                 $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
-            } else $this->logger->warning("No current round found for {$this->key}.");
+            } else {
+                $this->logger->warning("No current round found for {$this->key}.");
+            }
         }
-        $this->serverdata = $this->basedir . Civ13::serverdata;
-        $this->discord2unban = $this->basedir . Civ13::discord2unban;
-        $this->discord2ban = $this->basedir . Civ13::discord2ban;
-        $this->admins = $this->basedir . Civ13::admins;
-        $this->whitelist = $this->basedir . Civ13::whitelist;
-        $this->factionlist = $this->basedir . Civ13::factionlist;
-        $this->ranking_path = $this->basedir . Civ13::ranking_path;
+        $this->serverdata = $this->basedir.Civ13::serverdata;
+        $this->discord2unban = $this->basedir.Civ13::discord2unban;
+        $this->discord2ban = $this->basedir.Civ13::discord2ban;
+        $this->admins = $this->basedir.Civ13::admins;
+        $this->whitelist = $this->basedir.Civ13::whitelist;
+        $this->factionlist = $this->basedir.Civ13::factionlist;
+        $this->ranking_path = $this->basedir.Civ13::ranking_path;
         $this->afterConstruct();
     }
     protected function afterConstruct(): void
     {
         $this->setup();
-        if (! $this->enabled) return; // Don't start timers for disabled servers
+        if (! $this->enabled) {
+            return;
+        } // Don't start timers for disabled servers
         $this->civ13->deferUntilReady(
             function () {
                 $this->logger->info("Getting player count for GameServer {$this->name}");
@@ -192,9 +202,8 @@ class GameServer
                 $this->relayTimer(); // File chat relay
                 $this->currentRoundEmbedTimer(); // The bot has to set a round id first
             },
-            __METHOD__ . " ({$this->key})"
+            __METHOD__." ({$this->key})"
         );
-
     }
     /**
      * This method is responsible for setting up the game server by performing the following tasks:
@@ -203,16 +212,20 @@ class GameServer
      * - Adding the game server to the list of enabled game servers in the Civ13 object if it is enabled.
      * - Logging an informational message about the added game server.
      * - Setting the "ready" flag to true.
-     *
-     * @return void
      */
     private function setup()
     {
-        if ($this->ready) return;
-        if (count($this->civ13->gameservers) > 5) $this->logger->warning('Configuring more than 5 gameservers are not supported and you will likely experience issues.');
-        $this->civ13->gameservers[$this->key] =& $this;
-        if ($this->enabled) $this->civ13->enabled_gameservers[$this->key] =& $this;
-        $this->logger->info('Added ' . ($this->enabled ? 'enabled' : 'disabled') . " game server: {$this->name} ({$this->key})");
+        if ($this->ready) {
+            return;
+        }
+        if (count($this->civ13->gameservers) > 5) {
+            $this->logger->warning('Configuring more than 5 gameservers are not supported and you will likely experience issues.');
+        }
+        $this->civ13->gameservers[$this->key] = &$this;
+        if ($this->enabled) {
+            $this->civ13->enabled_gameservers[$this->key] = &$this;
+        }
+        $this->logger->info('Added '.($this->enabled ? 'enabled' : 'disabled')." game server: {$this->name} ({$this->key})");
         $this->ready = true;
     }
     private function __updateDiscordVariables()
@@ -231,11 +244,13 @@ class GameServer
             'name',
             'ip',
             'port',
-            'host'
+            'host',
         ];
-        foreach ($requiredProperties as $property)
-            if (! isset($options[$property]))
+        foreach ($requiredProperties as $property) {
+            if (! isset($options[$property])) {
                 throw new \RuntimeException("GameServer missing required property: $property");
+            }
+        }
         $optionalProperties = [
             'discussion',
             'playercount',
@@ -248,11 +263,13 @@ class GameServer
             'debug',
             'garbage',
             'runtime',
-            'attack'
+            'attack',
         ];
-        foreach ($optionalProperties as $property)
-            if (! isset($options[$property]))
+        foreach ($optionalProperties as $property) {
+            if (! isset($options[$property])) {
                 trigger_error("GameServer missing optional property: $property", E_USER_WARNING);
+            }
+        }
     }
     
     /**
@@ -261,20 +278,32 @@ class GameServer
      * @return int The total player count for this locally hosted server, or 0 if the server is not local.
      */
     public function localServerPlayerCount(array $players = []): int
-    {    
-        if (! $this->enabled) return 0;
-        if (isset($this->civ13->httpServiceManager) && $this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return 0; // Don't try and access files if the server is not local
-        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) return 0;
+    {
+        if (! $this->enabled) {
+            return 0;
+        }
+        if (isset($this->civ13->httpServiceManager) && $this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) {
+            return 0;
+        } // Don't try and access files if the server is not local
+        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) {
+            return 0;
+        }
         fclose($socket);
         $playercount = 0;
         if (! @file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
             $this->logger->warning("Unable to open `{$this->serverdata}`");
+
             return 0;
         }
         $data = self::explodeServerdata($data);
-        if (isset($data[11])) $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn($player) => $player)));
-        if (isset($data[4])) $playercount = (int) $data[4]; // Player count
+        if (isset($data[11])) {
+            $players = array_filter(array_map(fn ($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn ($player) => $player)));
+        }
+        if (isset($data[4])) {
+            $playercount = (int) $data[4];
+        } // Player count
         $this->players = $players;
+
         return $playercount;
     }
     
@@ -284,15 +313,17 @@ class GameServer
      * This method takes an array of paths and relays game chat messages to those paths.
      * If no paths are provided, it defaults to relaying to the #ooc-server and #asay-server paths.
      *
-     * @param array $paths An associative array where keys are file paths and values are the corresponding chat channels IDs.
-     * @return bool Returns true if all chat messages were successfully relayed, false otherwise.
+     * @param  array $paths An associative array where keys are file paths and values are the corresponding chat channels IDs.
+     * @return bool  Returns true if all chat messages were successfully relayed, false otherwise.
      */
     private function __gameChatFileRelay(array $paths): bool
     {
         $result = true;
-        foreach ($paths as $filepath => $channel)
-            $this->gameChatFileRelay($this->basedir . $filepath, $channel)
+        foreach ($paths as $filepath => $channel) {
+            $this->gameChatFileRelay($this->basedir.$filepath, $channel)
                 ?: (($result = false) && $this->logger->error("Failed to relay chat messages to $filepath"));
+        }
+
         return $result;
     }
     /**
@@ -301,70 +332,83 @@ class GameServer
      * This function reads chat messages from a file and relays them to a Discord channel.
      * It also performs chat moderation by checking for blacklisted words and applying warnings and bans to players.
      *
-     * @param string $file_path The path to the file containing the chat messages.
-     * @param string $channel_id The ID of the Discord channel to relay the messages to.
-     * @param bool|null $moderate (Optional) Whether to enable chat moderation. Defaults to false.
-     * @param bool $ooc (Optional) Whether to include out-of-character (OOC) messages. Defaults to true.
-     * @return bool Returns true if the chat messages were successfully relayed, false otherwise.
+     * @param  string    $file_path  The path to the file containing the chat messages.
+     * @param  string    $channel_id The ID of the Discord channel to relay the messages to.
+     * @param  bool|null $moderate   (Optional) Whether to enable chat moderation. Defaults to false.
+     * @param  bool      $ooc        (Optional) Whether to include out-of-character (OOC) messages. Defaults to true.
+     * @return bool      Returns true if the chat messages were successfully relayed, false otherwise.
      */
     public function gameChatFileRelay(string $file_path, string $channel_id, ?bool $ooc = true, ?bool $moderate = null): bool
     {
-        if (! $this->legacy_relay) return false;
-        if (! $return = $this->gameChatFileRelay($file_path, $channel_id, $ooc, $moderate ?? $this->moderate)) $this->legacy_relay = false; // Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
+        if (! $this->legacy_relay) {
+            return false;
+        }
+        if (! $return = $this->gameChatFileRelay($file_path, $channel_id, $ooc, $moderate ?? $this->moderate)) {
+            $this->legacy_relay = false;
+        } // Failsafe to prevent the bot from calling this function again. This should be a safe alternative to disabling relaying entirely.
+
         return $return;
     }
     /**
      * Relays game chat messages to a Discord channel using a webhook.
      *
-     * @param string $ckey The ckey of the player sending the message.
-     * @param string $message The message to be relayed.
-     * @param string $channel_id The ID of the Discord channel to relay the message to.
-     * @param bool|null $moderate Whether to moderate the message or not. Defaults to true.
-     * @param bool|null $ooc Whether the message is out-of-character or not. Defaults to true.
+     * @param  string                    $ckey       The ckey of the player sending the message.
+     * @param  string                    $message    The message to be relayed.
+     * @param  string                    $channel_id The ID of the Discord channel to relay the message to.
+     * @param  bool|null                 $moderate   Whether to moderate the message or not. Defaults to true.
+     * @param  bool|null                 $ooc        Whether the message is out-of-character or not. Defaults to true.
      * @return PromiseInterface<Message> A promise that resolves with the message sent to the channel.
      */
     public function gameChatWebhookRelay(string $message, string $channel_id, ?string $ckey = null, ?bool $ooc = true, ?bool $moderate = true): PromiseInterface
     {
-        if ($this->legacy_relay) return reject(new \LogicException('gameChatWebhookRelay() is not available for legacy relays.'));
+        if ($this->legacy_relay) {
+            return reject(new \LogicException('gameChatWebhookRelay() is not available for legacy relays.'));
+        }
         if (! $message || ! is_string($channel_id) || ! is_numeric($channel_id)) {
-            $this->logger->warning($err = 'gameChatWebhookRelay() was called with invalid parameters: ' . json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
+            $this->logger->warning($err = 'gameChatWebhookRelay() was called with invalid parameters: '.json_encode(['ckey' => $ckey, 'message' => $message, 'channel_id' => $channel_id]));
+
             return reject(new \InvalidArgumentException($err));
         }
         if (! $channel = $this->discord->getChannel($channel_id)) {
             $this->logger->warning($err = "gameChatWebhookRelay() was unable to retrieve the channel with ID `$channel_id`");
+
             return reject(new PartException($err));
         }
         
         if (! $this->ready || ! $this->civ13->ready) {
             $this->civ13->deferUntilReady(
-                fn() => $this->gameChatWebhookRelay($message, $channel_id, $ckey, $ooc, $moderate),
-                __METHOD__ . " ({$this->key})"
+                fn () => $this->gameChatWebhookRelay($message, $channel_id, $ckey, $ooc, $moderate),
+                __METHOD__." ({$this->key})"
             );
+
             return resolve(null);
         }
         
         ($ckey)
-            ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc, $moderate)    
+            ? $this->__gameChatRelay($channel, ['ckey' => $ckey, 'message' => $message, 'server' => explode('-', $channel->name)[1]], $ooc, $moderate)
             : $this->civ13->sendMessage($channel_id, $message, 'message.txt', true); // Send the message as is if no ckey is provided
+
         return resolve(null);
     }
     /**
      * Relays game chat messages to a Discord channel.
      *
-     * @param Channel|Thread|string $channel The Discord channel to send the message to.
-     * @param array $array The array containing the chat message information.
-     * @param bool $moderate (optional) Whether to apply moderation to the message. Default is true.
-     * @param bool $ooc (optional) Whether the message is out-of-character (OOC) or in-character (IC). Default is true.
+     * @param  Channel|Thread|string     $channel  The Discord channel to send the message to.
+     * @param  array                     $array    The array containing the chat message information.
+     * @param  bool                      $moderate (optional) Whether to apply moderation to the message. Default is true.
+     * @param  bool                      $ooc      (optional) Whether the message is out-of-character (OOC) or in-character (IC). Default is true.
      * @return PromiseInterface<Message> A promise that resolves with the message sent to the channel.
      */
     private function __gameChatRelay(Channel|Thread|string $channel, array $array, ?bool $ooc = true, ?bool $moderate = true): PromiseInterface
     {
         if (is_string($channel) && ! $channel = $this->discord->getChannel($channel)) {
-            $this->logger->error($err = "Channel not found for __gameChatRelay");
+            $this->logger->error($err = 'Channel not found for __gameChatRelay');
+
             return reject(new PartException($err));
         }
         if (! $array || ! isset($array['ckey']) || ! isset($array['message']) || ! isset($array['server']) || ! $array['ckey'] || ! $array['message'] || ! $array['server']) {
             $this->logger->warning($err = '__gameChatRelay() was called with an empty array or invalid content.');
+
             return reject(new \InvalidArgumentException($err));
         }
         if (isset($this->civ13->moderator) && $this->moderate && $moderate) {
@@ -378,46 +422,72 @@ class GameServer
                 $badword_warnings
             );
         }
-        if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false);
+        if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) {
+            return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false);
+        }
         $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);
-        if ($user = $this->discord->users->get('id', $item['discord'])) $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
+        if ($user = $this->discord->users->get('id', $item['discord'])) {
+            $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar);
+        }
+
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
         return $channel->sendMessage(Civ13::createBuilder(true)->addEmbed($embed));
     }
     public function relayTimer(): ?TimerInterface
     {
-        if (! $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
+        if (! $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            return null;
+        }
         if (! (isset($this->timers['relay_timer'])) || (! $this->timers['relay_timer'] instanceof TimerInterface)) {
             $this->logger->debug("Starting file chat relay timer for {$this->key}");
-            if (! isset($this->timers['relay_timer'])) $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, fn() => $this->__gameChatFileRelay([Civ13::ooc_path => $this->ooc, Civ13::asay_path => $this->asay]));
+            if (! isset($this->timers['relay_timer'])) {
+                $this->timers['relay_timer'] = $this->discord->getLoop()->addPeriodicTimer(10, fn () => $this->__gameChatFileRelay([Civ13::ooc_path => $this->ooc, Civ13::asay_path => $this->asay]));
+            }
         }
+
         return $this->timers['relay_timer'];
     }
     public function serverinfoTimer(): TimerInterface
     {
-        if (! isset($this->timers['serverinfo_timer'])) $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(180, function () {
-            if (! /*$playercount =*/ $this->localServerPlayerCount()) return; // No data available
-            foreach ($this->players as $ckey) {
-                if (is_null($ckey)) continue;
-                if (isset($this->civ13->moderator)) $this->civ13->moderator->scrutinizeCkey($ckey);
-            }
-        });
+        if (! isset($this->timers['serverinfo_timer'])) {
+            $this->timers['serverinfo_timer'] = $this->discord->getLoop()->addPeriodicTimer(180, function () {
+                if (! /*$playercount =*/ $this->localServerPlayerCount()) {
+                    return;
+                } // No data available
+                foreach ($this->players as $ckey) {
+                    if (is_null($ckey)) {
+                        continue;
+                    }
+                    if (isset($this->civ13->moderator)) {
+                        $this->civ13->moderator->scrutinizeCkey($ckey);
+                    }
+                }
+            });
+        }
+
         return $this->timers['serverinfo_timer']; // Check players every minute
     }
     public function serverinfoPlayers(): array
-    { 
-        if (empty($data_json = $this->serverinfo)) return [];
+    {
+        if (empty($data_json = $this->serverinfo)) {
+            return [];
+        }
         $this->players = [];
         foreach ($data_json as $server) {
-            if (array_key_exists('ERROR', $server)) continue;
+            if (array_key_exists('ERROR', $server)) {
+                continue;
+            }
             //$stationname = $server['stationname'] ?? ''; // TODO: Compare this to the server's name as it appears on the Byond hub
-            foreach (array_keys($server) as $key) if (($p = explode('player', $key)) && isset($p[1]) && is_numeric($p[1])) {
-                $this->players[] = $ckey = Civ13::sanitizeInput(urldecode($server[$key]));
-                if (! array_key_exists($ckey, $this->rounds[$this->current_round]['players'])) { // TODO
-                    $this->rounds[$this->current_round]['players'][$ckey] = [];
+            foreach (array_keys($server) as $key) {
+                if (($p = explode('player', $key)) && isset($p[1]) && is_numeric($p[1])) {
+                    $this->players[] = $ckey = Civ13::sanitizeInput(urldecode($server[$key]));
+                    if (! array_key_exists($ckey, $this->rounds[$this->current_round]['players'])) { // TODO
+                        $this->rounds[$this->current_round]['players'][$ckey] = [];
+                    }
                 }
             }
         }
+
         return $this->players;
     }
     /**
@@ -431,38 +501,45 @@ class GameServer
     {
         if (! isset($this->timers['current_round_embed'])) {
             $this->updateCurrentRoundEmbedMessageBuilder();
-            $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, async(fn() => $this->updateCurrentRoundEmbedMessageBuilder()));
+            $this->timers['current_round_embed'] = $this->loop->addPeriodicTimer(60, async(fn () => $this->updateCurrentRoundEmbedMessageBuilder()));
         }
+
         return $this->timers['current_round_embed'];
     }
     /**
      * Updates the current round embed message builder.
      *
-     * @param MessageBuilder|null $builder The message builder to used to perform the update the message. Defaults to null.
+     * @param  MessageBuilder|null       $builder The message builder to used to perform the update the message. Defaults to null.
      * @return PromiseInterface<Message> A promise that resolves when the update is complete.
      */
     public function updateCurrentRoundEmbedMessageBuilder(?MessageBuilder $builder = null): PromiseInterface
     {
         if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             $this->logger->error($err = "Could not find Guild with ID `{$this->civ13->civ13_guild_id}`");
+
             return reject(new PartException($err));
         }
         if (! $channel = $guild->channels->get('id', $this->playercount)) {
             $this->logger->error($err = "Could not find Channel with ID `{$this->playercount}`");
+
             return reject(new PartException($err));
         }
         if (! $builder = $this->createCurrentRoundEmbedMessageBuilder()) {
             $this->logger->error($err = "Could not create a MessageBuilder for {$this->key}");
+
             return reject(new PartException($err));
         }
 
-       $resend = function (?Message $message, callable $new) {
-            if ($message) $message->delete();
+        $resend = function (?Message $message, callable $new) {
+            if ($message) {
+                $message->delete();
+            }
+
             return $new(new PartException("Failed to edit message current round message in {$this->key} ({$this->name})"));
         };
-        $send = fn(Message $message): bool                      => $this->civ13->VarSave($this->getRoundMessageIdFileName(), [$this->current_round_message_id = $message->id]);
-        $new  = fn(\Throwable $error): PromiseInterface         => $this->civ13->then($channel->sendMessage($builder), $send);
-        $edit = fn(?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn(\Throwable $error) => $resend($message, $new)) : null;
+        $send = fn (Message $message): bool => $this->civ13->VarSave($this->getRoundMessageIdFileName(), [$this->current_round_message_id = $message->id]);
+        $new = fn (\Throwable $error): PromiseInterface => $this->civ13->then($channel->sendMessage($builder), $send);
+        $edit = fn (?Message $message = null): ?PromiseInterface => $message ? $this->civ13->then($message->edit($builder), null, fn (\Throwable $error) => $resend($message, $new)) : null;
 
         return ($round_message_id = $this->getRoundMessageId())
             ? $this->civ13->then($channel->messages->fetch($round_message_id), $edit, $new)
@@ -475,70 +552,99 @@ class GameServer
      */
     public function createCurrentRoundEmbedMessageBuilder(): ?MessageBuilder
     {
-        if (! $round = $this->getRound($this->current_round)) return null;
-        $round_embed_builder = function (array $round): ?MessageBuilder
-        {
-            if (! file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) return null;
+        if (! $round = $this->getRound($this->current_round)) {
+            return null;
+        }
+        $round_embed_builder = function (array $round): ?MessageBuilder {
+            if (! file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
+                return null;
+            }
             $data = self::explodeServerdata($data);
             $embed = $this->civ13->createEmbed()
                 ->setTitle($this->name)
                 //->addFieldValues('Game ID', $game_id);
                 ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
                 ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
-            if (isset($data[7]))  $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
-            if (isset($data[8]))  $embed->addFieldValues('Map', $data[8], true);
-            if (isset($data[9]))  $embed->addFieldValues('Epoch', $data[9], true);
-            if (isset($data[10])) $embed->addFieldValues('Season', $data[10], true);
-            if ($this->players)   $embed->addFieldValues('Online Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
+            if (isset($data[7])) {
+                $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
+            }
+            if (isset($data[8])) {
+                $embed->addFieldValues('Map', $data[8], true);
+            }
+            if (isset($data[9])) {
+                $embed->addFieldValues('Epoch', $data[9], true);
+            }
+            if (isset($data[10])) {
+                $embed->addFieldValues('Season', $data[10], true);
+            }
+            if ($this->players) {
+                $embed->addFieldValues('Online Players ('.count($this->players).')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
+            }
             $embed->addFieldValues(
-                'Participating Players (' . count($players = array_keys($round['players'])) . ')',
+                'Participating Players ('.count($players = array_keys($round['players'])).')',
                 $players
                     ? (strlen($participating_players = implode(', ', $players)) <= 1024
                         ? $participating_players
-                        : substr($participating_players, 0, 1021) . '...')
+                        : substr($participating_players, 0, 1021).'...')
                     : 'None'
             );
-            if ($discord_ids = array_filter(array_map(fn($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, $players)))
+            if ($discord_ids = array_filter(array_map(fn ($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, $players))) {
                 $embed->addFieldValues(
-                    'Verified Players (' . count($discord_ids) . ')',
+                    'Verified Players ('.count($discord_ids).')',
                     strlen($verified_players = implode(', ', $discord_ids)) <= 1024
                         ? $verified_players
-                        : substr($verified_players, 0, 1021) . '...'
+                        : substr($verified_players, 0, 1021).'...'
                 );
+            }
+
             return Civ13::createBuilder()->setContent("Round data for game_id `$this->current_round`")->addEmbed($embed);
         };
-        if (! $builder = $round_embed_builder($round)) return null;
+        if (! $builder = $round_embed_builder($round)) {
+            return null;
+        }
 
-        if ($log = str_replace('/', ';', "logs {$this->key}{$round['log']}")) $builder->addComponent(
-            ActionRow::new()->addComponent(
-                Button::new(Button::STYLE_PRIMARY, $log)
-                    ->setLabel('Log')
-                    ->setEmoji('📝')
-                    ->setListener(fn($interaction) => $interaction->acknowledge()->then(fn() => $this->interaction_log_handler($interaction)), $this->discord, $oneOff = false)
-            )
-        );
+        if ($log = str_replace('/', ';', "logs {$this->key}{$round['log']}")) {
+            $builder->addComponent(
+                ActionRow::new()->addComponent(
+                    Button::new(Button::STYLE_PRIMARY, $log)
+                        ->setLabel('Log')
+                        ->setEmoji('📝')
+                        ->setListener(fn ($interaction) => $interaction->acknowledge()->then(fn () => $this->interaction_log_handler($interaction)), $this->discord, $oneOff = false)
+                )
+            );
+        }
+
         return $builder;
     }
 
     protected function interaction_log_handler(Interaction $interaction): PromiseInterface
     {
-        if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
+        if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) {
+            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
+        }
         $tokens = explode(';', substr($interaction->data['custom_id'], strlen('logs ')));
-        if (! isset($this->basedir) || ! file_exists($this->basedir . Civ13::log_basedir)) {
-            $this->logger->warning($error = "Either basedir or `" . Civ13::log_basedir . "` is not defined or does not exist");
+        if (! isset($this->basedir) || ! file_exists($this->basedir.Civ13::log_basedir)) {
+            $this->logger->warning($error = 'Either basedir or `'.Civ13::log_basedir.'` is not defined or does not exist');
+
             return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($error), true);
         }
 
         unset($tokens[0]);
-        $results = $this->civ13->FileNav($this->basedir . Civ13::log_basedir, $tokens);
-        if (! $results[0]) return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('No logs found.'), true);
+        $results = $this->civ13->FileNav($this->basedir.Civ13::log_basedir, $tokens);
+        if (! $results[0]) {
+            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('No logs found.'), true);
+        }
+
         return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($results[1], 'log.txt'), true);
     }
 
     public function playercountTimer(): TimerInterface
     {
         // Update playercount channel every 10 minutes
-        if (! isset($this->timers['playercount_timer]'])) $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn() => $this->playercountChannelUpdate());
+        if (! isset($this->timers['playercount_timer]'])) {
+            $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
+        }
+
         return $this->timers['playercount_timer'];
     }
 
@@ -546,7 +652,7 @@ class GameServer
      * This function parses the serverinfo data and updates the relevant Discord channel name with the current player counts
      * Prefix is used to differentiate between two different servers, however it cannot be used with more due to ratelimits on Discord
      * It is called on ready and every 5 minutes
-     * 
+     *
      * @param int $count The player count to update the channel with.
      * @return PromiseInterface<?Channel> A promise that resolves to the updated channel, or null if the channel didn't need to be updated.
      */
@@ -555,94 +661,115 @@ class GameServer
         $count = count($this->players);
         if (! $channel = $this->discord->getChannel($this->playercount)) {
             $this->logger->warning($err = "Channel {$this->playercount} doesn't exist!");
+
             return reject(new PartException($err));
         }
         if (! $channel->created) {
             $this->logger->warning($err = "Channel {$channel->name} hasn't been created!");
+
             return reject(new PartException($err));
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
         if ((int) $existingCount !== $count) {
             $channel->name = "{$channelPrefix}-{$count}";
+
             return $channel->guild->channels->save($channel);
         }
+
         return resolve(null);
     }
 
     /**
      * Sends an out-of-character (OOC) message.
      *
-     * @param string $message The message to be sent.
-     * @param string $sender The sender of the message.
-     * @return bool Returns a PromiseInterface if the message is successfully sent, or false if sending the message fails.
+     * @param  string $message The message to be sent.
+     * @param  string $sender  The sender of the message.
+     * @return bool   Returns a PromiseInterface if the message is successfully sent, or false if sending the message fails.
      */
     public function OOCMessage(string $message, string $sender): bool
     {
-        if (! $this->enabled) return false;
-        if (! touch($path = $this->basedir . Civ13::discord2ooc) || ! $file = @fopen($path, 'a')) {
-            $this->logger->error("Unable to open `$path` for writing");
+        if (! $this->enabled) {
             return false;
         }
-        fwrite($file, "$sender:::$message" . PHP_EOL);
+        if (! touch($path = $this->basedir.Civ13::discord2ooc) || ! $file = @fopen($path, 'a')) {
+            $this->logger->error("Unable to open `$path` for writing");
+
+            return false;
+        }
+        fwrite($file, "$sender:::$message".PHP_EOL);
         fclose($file);
+
         return true;
     }
     /**
      * Sends an admin message to the server.
      *
-     * @param string $message The message to send.
-     * @param string $sender The sender of the message.
-     * @return bool Returns true if the message was sent successfully, false otherwise.
+     * @param  string $message The message to send.
+     * @param  string $sender  The sender of the message.
+     * @return bool   Returns true if the message was sent successfully, false otherwise.
      */
     public function AdminMessage(string $message, string $sender): PromiseInterface|bool
     {
-        if (! $this->enabled) return false;
-        if (! @touch($path = $this->basedir . Civ13::discord2admin) || ! $file = @fopen($path, 'a')) {
-            $this->logger->error("Unable to open `$path` for writing");
+        if (! $this->enabled) {
             return false;
         }
-        fwrite($file, "$sender:::$message" . PHP_EOL);
+        if (! @touch($path = $this->basedir.Civ13::discord2admin) || ! $file = @fopen($path, 'a')) {
+            $this->logger->error("Unable to open `$path` for writing");
+
+            return false;
+        }
+        fwrite($file, "$sender:::$message".PHP_EOL);
         fclose($file);
+
         return true;
     }
     /**
      * Sends a direct message to a recipient using the specified sender and message.
      *
-     * @param string $recipient The recipient of the direct message.
-     * @param string $message The content of the direct message.
-     * @param string $sender The sender of the direct message.
-     * @return bool Returns true if the direct message was sent successfully, false otherwise.
+     * @param  string $recipient The recipient of the direct message.
+     * @param  string $message   The content of the direct message.
+     * @param  string $sender    The sender of the direct message.
+     * @return bool   Returns true if the direct message was sent successfully, false otherwise.
      */
     public function DirectMessage(string $message, string $sender, string $recipient): bool
     {
-        if (! $this->enabled) return false;
-        if (! @touch($path = $this->basedir . Civ13::discord2dm) || ! $file = @fopen($path, 'a')) {
-            $this->logger->debug("Unable to open `$path` for writing");
+        if (! $this->enabled) {
             return false;
         }
-        fwrite($file, "$sender:::$recipient:::$message" . PHP_EOL);
+        if (! @touch($path = $this->basedir.Civ13::discord2dm) || ! $file = @fopen($path, 'a')) {
+            $this->logger->debug("Unable to open `$path` for writing");
+
+            return false;
+        }
+        fwrite($file, "$sender:::$recipient:::$message".PHP_EOL);
         fclose($file);
+
         return true;
     }
     /**
      * Hosts the game server by executing necessary commands and setting up timers for hosting.
-     * 
+     *
      * @param Message|null $message An optional message object that can be used to react to the hosting action.
      */
-
     public function Host(?Message $message = null): void
     {
-        OSFunctions::execInBackground("python3 {$this->basedir}" . Civ13::updateserverabspaths);
-        if (file_exists($this->basedir . Civ13::serverdata)) OSFunctions::execInBackground("rm -f {$this->basedir}" . Civ13::serverdata);
-        OSFunctions::execInBackground("python3 $this->basedir}" . Civ13::killsudos);
+        OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::updateserverabspaths);
+        if (file_exists($this->basedir.Civ13::serverdata)) {
+            OSFunctions::execInBackground("rm -f {$this->basedir}".Civ13::serverdata);
+        }
+        OSFunctions::execInBackground("python3 $this->basedir}".Civ13::killsudos);
 
         if (! isset($this->civ13->timers["{$this->key}host"])) {
             $this->civ13->timers["{$this->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($message) {
                 unset($this->civ13->timers["{$this->key}host"]);
-                $promise = OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}" . Civ13::dmb . " {$this->port} -trusted -webclient -logself > /dev/null 2>&1 & disown");
-                if ($message) $message->react("👍");
+                $promise = OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}".Civ13::dmb." {$this->port} -trusted -webclient -logself > /dev/null 2>&1 & disown");
+                if ($message) {
+                    $message->react('👍');
+                }
             });
-        } else $this->logger->info("Server host timer already exists for {$this->key}.");
+        } else {
+            $this->logger->info("Server host timer already exists for {$this->key}.");
+        }
     }
     public function Kill(?Message $message = null, bool $notify = true): void
     {
@@ -650,66 +777,77 @@ class GameServer
             $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
             $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender);
         }
-        $this->civ13->loop->addTimer(10, function () use ($message): void
-        {
-            OSFunctions::execInBackground("python3 {$this->basedir}" . Civ13::killciv13);
-            if ($message) $message->react("👍");
+        $this->civ13->loop->addTimer(10, function () use ($message): void {
+            OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::killciv13);
+            if ($message) {
+                $message->react('👍');
+            }
         });
     }
     public function Restart(?Message $message = null, bool $notify = true): void
     {
         $this->Kill(null, false);
-        $this->civ13->loop->addTimer(20, function () use ($message, &$gameserver): void
-        {
+        $this->civ13->loop->addTimer(20, function () use ($message, &$gameserver): void {
             $this->Host($message);
         });
-        if ($notify) $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $message ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username);
+        if ($notify) {
+            $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $message ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username);
+        }
     }
     /**
      * Swaps the current map to the specified map.
      *
-     * @param string $mapto The name of the map to switch to.
-     * @param string $admin The name of the admin requesting the map swap.
+     * @param  string                   $mapto The name of the map to switch to.
+     * @param  string                   $admin The name of the admin requesting the map swap.
      * @return PromiseInterface<string> A promise that resolves with a success message or rejects with an error message.
      */
     public function MapSwap(string $mapto, string $admin): PromiseInterface
     {
         $mapto = strtoupper($mapto);
-        if (! file_exists($fp = $this->civ13->gitdir . Civ13::maps) || ! $file = @fopen($fp, 'r')) {
+        if (! file_exists($fp = $this->civ13->gitdir.Civ13::maps) || ! $file = @fopen($fp, 'r')) {
             $this->logger->error($err = "Unable to open `$fp` for reading.");
+
             return reject(new FileNotFoundException($err));
         }
     
-        $maps = array();
+        $maps = [];
         while (($fp = fgets($file, 4096)) !== false) {
             $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
-            if (isset($linesplit[2]) && $map = trim($linesplit[2])) $maps[] = $map;
+            if (isset($linesplit[2]) && $map = trim($linesplit[2])) {
+                $maps[] = $map;
+            }
         }
         fclose($file);
-        if (! in_array($mapto, $maps)) return reject(new UserInputException("`$mapto` was not found in the map definitions."));
+        if (! in_array($mapto, $maps)) {
+            return reject(new UserInputException("`$mapto` was not found in the map definitions."));
+        }
 
         $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->username);
         if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
-            if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']); $msg = "<@&$role>, {$this->name} $msg";
+            if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']);
+            $msg = "<@&$role>, {$this->name} $msg";
             $channel->sendMessage($msg);
         }
-        $this->loop->addTimer(10, fn() => OSFunctions::execInBackground("python3 {$this->basedir}" . Civ13::mapswap . " $mapto"));
+        $this->loop->addTimer(10, fn () => OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::mapswap." $mapto"));
+
         return resolve($msg);
     }
 
     public function cleanupLogs(): void
     {
-        $this->__cleanupLog($this->basedir . Civ13::bans);
-        $this->__cleanupLog($this->basedir . Civ13::playerlogs);
+        $this->__cleanupLog($this->basedir.Civ13::bans);
+        $this->__cleanupLog($this->basedir.Civ13::playerlogs);
     }
     public function __cleanupLog(string $path): bool
     {
         if (! @file_exists($path)) {
             $this->logger->warning("Unable to open `$path`");
+
             return false;
         }
         if (($original_file_contents = @file_get_contents($path)) === false) {
             $this->logger->warning("Unable to read `$path`");
+
             return false;
         }
         $original_file_contents = str_replace('||||||', '|||', $original_file_contents);
@@ -717,11 +855,14 @@ class GameServer
         $new_file_contents = array_unique($new_file_contents);
         $new_file_contents = implode(PHP_EOL, $new_file_contents);
 
-        if ($original_file_contents === $new_file_contents) return true; // No changes were made
+        if ($original_file_contents === $new_file_contents) {
+            return true;
+        } // No changes were made
 
         // Write the results back to the file
         if (file_put_contents($path, $new_file_contents) === false) {
             $this->logger->warning("Unable to write to `$path`");
+
             return false;
         }
 
@@ -733,9 +874,9 @@ class GameServer
      * This function is called when a user is verified to determine whether they should be given the banished role or have it taken away.
      * It checks the nomads_bans.txt and tdm_bans.txt files for the ckey.
      *
-     * @param string $ckey The ckey to check for banishment.
-     * @param bool $bypass (optional) If set to true, the function will not add or remove the banished role from the user.
-     * @return bool Returns true if the ckey is found in either ban file, false otherwise.
+     * @param  string $ckey   The ckey to check for banishment.
+     * @param  bool   $bypass (optional) If set to true, the function will not add or remove the banished role from the user.
+     * @return bool   Returns true if the ckey is found in either ban file, false otherwise.
      */
     public function bancheck(string $ckey, bool $bypass = false, bool $use_cache = false): bool
     {
@@ -743,7 +884,10 @@ class GameServer
     }
     public function permabancheck(string $id, bool $bypass = false): bool
     {
-        if (! $id = Civ13::sanitizeInput($id)) return false;
+        if (! $id = Civ13::sanitizeInput($id)) {
+            return false;
+        }
+
         return $this->legacy
             ? $this->legacyPermabancheck($id)
             : $this->sqlPermabancheck($id);
@@ -751,31 +895,34 @@ class GameServer
     /**
      * Checks if a player with the given ckey is permabanned based on legacy settings.
      *
-     * @param string $ckey The ckey of the player to check.
-     * @return bool Returns true if the player is permabanned, false otherwise.
+     * @param  string $ckey The ckey of the player to check.
+     * @return bool   Returns true if the player is permabanned, false otherwise.
      */
     public function legacyPermabancheck(string $ckey): bool
     {
-        if (! @file_exists($path = $this->basedir . Civ13::bans) || ! $file = @fopen($path, 'r')) {
+        if (! @file_exists($path = $this->basedir.Civ13::bans) || ! $file = @fopen($path, 'r')) {
             $this->logger->debug("Unable to open `$path`");
+
             return false;
         }
         while (($fp = fgets($file, 4096)) !== false) {
             // str_replace(PHP_EOL, '', $fp); // Is this necessary?
             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-            if ((count($linesplit)>=8) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
+            if ((count($linesplit) >= 8) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
                 fclose($file);
+
                 return true;
             }
         }
         fclose($file);
+
         return false;
     }
     /**
      * Checks if a player with the given ckey is permabanned.
      *
-     * @param string $ckey The ckey of the player to check.
-     * @return bool Returns true if the player is permabanned, false otherwise.
+     * @param  string $ckey The ckey of the player to check.
+     * @return bool   Returns true if the player is permabanned, false otherwise.
      */
     public function sqlPermabancheck(string $ckey): bool
     { // TODO, pending /tg/ SQL server implementation
@@ -784,35 +931,43 @@ class GameServer
     /**
      * Checks if a given ckey is banned based on legacy ban data.
      *
-     * @param string $ckey The ckey to check for ban.
-     * @return bool Returns true if the ckey is banned, false otherwise.
+     * @param  string $ckey The ckey to check for ban.
+     * @return bool   Returns true if the ckey is banned, false otherwise.
      */
     public function legacyBancheck(string $ckey, bool $use_cache = false): bool
     {
-        if (! $use_cache || ! $this->bancheck_cache) $this->updateBanCache();
-        foreach (explode(PHP_EOL, $this->bancheck_cache) as $line)
-            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey))
-                return true; // $split_ckey[0] is the ckey
+        if (! $use_cache || ! $this->bancheck_cache) {
+            $this->updateBanCache();
+        }
+        foreach (explode(PHP_EOL, $this->bancheck_cache) as $line) {
+            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey)) {
+                return true;
+            }
+        } // $split_ckey[0] is the ckey
+
         return false;
     }
 
     public function updateBanCache(): ?string
     {
-        if (! @file_exists($path = $this->basedir . Civ13::bans)) {
+        if (! @file_exists($path = $this->basedir.Civ13::bans)) {
             $this->logger->debug("Unable to open `$path`");
+
             return null;
         }
         if (($file_contents = @file_get_contents($path)) === false) {
             $this->logger->debug("Unable to read `$path`");
+
             return null;
         }
+
         return $this->bancheck_cache = $file_contents;
     }
     /**
      * Checks if a player with the given ckey is banned.
      *
-     * @param string $ckey The ckey of the player to check.
-     * @return bool Returns true if the player is banned, false otherwise.
+     * @param  string $ckey The ckey of the player to check.
+     * @return bool   Returns true if the player is banned, false otherwise.
      */
     public function sqlBancheck(string $ckey): bool
     { // TODO, pending /tg/ SQL server implementation
@@ -822,39 +977,52 @@ class GameServer
     /**
      * Updates the ban log in the game server based on the player log.
      *
-     * @param int|string|null $ckey The ckey of the player to update the ban log for. If null, all bans will be updated.
-     * @param string|null $playerlog The player log content as a string. If not provided, the player log file for this server will be used.
+     * @param  int|string|null          $ckey      The ckey of the player to update the ban log for. If null, all bans will be updated.
+     * @param  string|null              $playerlog The player log content as a string. If not provided, the player log file for this server will be used.
      * @return PromiseInterface<string> The updated ban log as a string, or a throwable string if there was an error.
      */
     public function banlog_update(int|string|null $ckey = null, ?string $playerlog = ''): PromiseInterface
     {
-        if (! touch($fp = $this->basedir . Civ13::playerlogs)) {
+        if (! touch($fp = $this->basedir.Civ13::playerlogs)) {
             $this->logger->warning($err = "Unable to open `$fp`");
+
             return reject(new FileNotFoundException($err));
         }
-        if (! touch($fp = $this->basedir . Civ13::bans)) {
+        if (! touch($fp = $this->basedir.Civ13::bans)) {
             $this->logger->warning($err = "Unable to open `$fp`");
+
             return reject(new FileNotFoundException($err));
         }
-        if (! $playerlog && ! $playerlog = @file_get_contents($fp = $this->basedir . Civ13::playerlogs)) {
+        if (! $playerlog && ! $playerlog = @file_get_contents($fp = $this->basedir.Civ13::playerlogs)) {
             $this->logger->warning("Unable to read `$fp`");
+
             return reject(new FileNotFoundException("Unable to read `$fp`"));
         }
-        if (! $banlog = @file_get_contents($fp = $this->basedir . Civ13::bans)) {
+        if (! $banlog = @file_get_contents($fp = $this->basedir.Civ13::bans)) {
             $this->logger->warning("Unable to read `$fp`");
+
             return reject(new FileNotFoundException("Unable to read `$fp`"));
         }
-        $this->logger->debug("Updating ban log for {$this->name}. " . ($ckey ? "ckey: $ckey" : "All bans") . '.');
+        $this->logger->debug("Updating ban log for {$this->name}. ".($ckey ? "ckey: $ckey" : 'All bans').'.');
         $temp = [];
         $oldlist = [];
         foreach (explode('|||', $banlog) as $bsplit) {
-            if (! $bsplit) continue; // Skip empty lines
+            if (! $bsplit) {
+                continue;
+            } // Skip empty lines
             $ban = explode(';', trim($bsplit));
             if (isset($ban[8])) {
-                if ($ckey && $ckey != $ban[8]) continue;
-                if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') $oldlist[] = $bsplit;
-                else $temp[$ban[8]] = $bsplit;
-            } else $temp[$ckey] = $bsplit; // This is a ban that doesn't have a ckey, so we'll just add it to the temp array
+                if ($ckey && $ckey != $ban[8]) {
+                    continue;
+                }
+                if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') {
+                    $oldlist[] = $bsplit;
+                } else {
+                    $temp[$ban[8]] = $bsplit;
+                }
+            } else {
+                $temp[$ckey] = $bsplit;
+            } // This is a ban that doesn't have a ckey, so we'll just add it to the temp array
         }
         /**
          * This function takes a player log's content as a string and updates the corresponding logs in the game server.
@@ -875,9 +1043,11 @@ class GameServer
         }, $logs);
 
         $updated = [];
-        foreach ($temp as $ban) is_array($ban)
-            ? array_merge($updated, $ban)
-            : $updated[] = $ban;
+        foreach ($temp as $ban) {
+            is_array($ban)
+                ? array_merge($updated, $ban)
+                : $updated[] = $ban;
+        }
         
         /**
          * This function updates the bans list by merging the old list with the updated list.
@@ -885,21 +1055,25 @@ class GameServer
          * If the updated list is not empty, it merges the old list with the updated list, replaces line breaks with '|||', trims the result, and appends a line break.
          */
         $final = $updated
-            ? trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, array_merge($oldlist, $updated)))) . '|||' . PHP_EOL
-            : trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||' . PHP_EOL, $oldlist))) . '|||' . PHP_EOL;
+            ? trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||'.PHP_EOL, array_merge($oldlist, $updated)))).'|||'.PHP_EOL
+            : trim(preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, implode('|||'.PHP_EOL, $oldlist))).'|||'.PHP_EOL;
         $ckey ? file_put_contents($fp, $final, FILE_APPEND) : file_put_contents($fp, $final);
+
         return resolve($final);
     }
     public function listbans(): string|false
     {
-        if (! @touch($fp = $this->basedir . Civ13::bans)) {
+        if (! @touch($fp = $this->basedir.Civ13::bans)) {
             $this->logger->warning("Unable to open `$fp`");
+
             return false;
         }
         if (! $banlog = @file_get_contents($fp)) {
             $this->logger->warning("Unable to read `$fp`");
+
             return false;
         }
+
         return $banlog;
     }
     public function merge_banlist(array $banlists): array
@@ -911,29 +1085,54 @@ class GameServer
 
     public function panicCheck(string $ckey): void
     {
-        if (! $ban_reason = $this->__panicCheck($ckey)) return;
-        if (! isset($this->civ13->channel_ids['staff_bot']) || ! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) return;
+        if (! $ban_reason = $this->__panicCheck($ckey)) {
+            return;
+        }
+        if (! isset($this->civ13->channel_ids['staff_bot']) || ! $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+            return;
+        }
         $this->civ13->sendMessage($channel, $ban_reason);
     }
     private function __panicCheck(string $ckey): string|false
     {
-        if (! $this->panic_bunker) return false;
-        if (! isset($this->civ13->verifier)) return false;
-        if ($this->civ13->verifier->getVerifiedItem($ckey)) return false; // Whether the ckey is verified
-        if (! @file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
-            $this->logger->warning("Unable to open `{$this->serverdata}`");
+        if (! $this->panic_bunker) {
             return false;
         }
-        if (self::explodeServerdata($data)[12] ?? true) return false; // Whether restart vote is allowed
-        if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return false;
-        if (! $admins = $guild->members->filter(fn(Member $member) => $member->roles->has($this->civ13->role_ids['Admin']))) return false; // Get a list of admins from the Discord server
+        if (! isset($this->civ13->verifier)) {
+            return false;
+        }
+        if ($this->civ13->verifier->getVerifiedItem($ckey)) {
+            return false;
+        } // Whether the ckey is verified
+        if (! @file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
+            $this->logger->warning("Unable to open `{$this->serverdata}`");
+
+            return false;
+        }
+        if (self::explodeServerdata($data)[12] ?? true) {
+            return false;
+        } // Whether restart vote is allowed
+        if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            return false;
+        }
+        if (! $admins = $guild->members->filter(fn (Member $member) => $member->roles->has($this->civ13->role_ids['Admin']))) {
+            return false;
+        } // Get a list of admins from the Discord server
         if (! $admins->reduce(function ($carry, $member) {
             /** @var bool $carry */
-            if ($carry) return $carry;
+            if ($carry) {
+                return $carry;
+            }
             /** @var Member $member */
-            if (! $item = $this->civ13->verifier->get('discord', $member->id)) return $carry;
+            if (! $item = $this->civ13->verifier->get('discord', $member->id)) {
+                return $carry;
+            }
+
             return in_array($item['ss13'], $this->players);
-        }, false)) return false;
+        }, false)) {
+            return false;
+        }
+
         return $this->ban(['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` must register and be approved to play. Verify at {$this->civ13->discord_formatted}"]);
     }
 
@@ -944,14 +1143,26 @@ class GameServer
      */
     public function ban(array $array /* = ['ckey' => '', 'duration' => '', 'reason' => ''] */, ?string $admin = null, bool $permanent = false): string
     {
-        if (! isset($array['ckey'])) return "You must specify a ckey to ban.";
-        if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) return "The ckey must be a Byond username or Discord ID.";
-        if (! isset($array['duration'])) return "You must specify a duration to ban for.";
-        if ($array['duration'] === '999 years') $permanent = true;
-        if (! isset($array['reason'])) return "You must specify a reason for the ban.";
+        if (! isset($array['ckey'])) {
+            return 'You must specify a ckey to ban.';
+        }
+        if (! is_numeric($array['ckey']) && ! is_string($array['ckey'])) {
+            return 'The ckey must be a Byond username or Discord ID.';
+        }
+        if (! isset($array['duration'])) {
+            return 'You must specify a duration to ban for.';
+        }
+        if ($array['duration'] === '999 years') {
+            $permanent = true;
+        }
+        if (! isset($array['reason'])) {
+            return 'You must specify a reason for the ban.';
+        }
 
         if (is_numeric($array['ckey'] = Civ13::sanitizeInput($array['ckey']))) {
-            if (! isset($this->civ13->verifier) || ! $item = $this->civ13->verifier->get('discord', $array['ckey'])) return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
+            if (! isset($this->civ13->verifier) || ! $item = $this->civ13->verifier->get('discord', $array['ckey'])) {
+                return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
+            }
             $array['ckey'] = $item['ss13'];
         }
         if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($array['ckey'])) {
@@ -961,7 +1172,9 @@ class GameServer
             }
         }
 
-        if (! isset($this->timers["ban_cleanup_timer"])) $this->civ13->timers["ban_cleanup_timer"] = $this->civ13->discord->getLoop()->addTimer(300, fn() => $this->cleanupLogs());
+        if (! isset($this->timers['ban_cleanup_timer'])) {
+            $this->civ13->timers['ban_cleanup_timer'] = $this->civ13->discord->getLoop()->addTimer(300, fn () => $this->cleanupLogs());
+        }
 
         return $this->legacy
             ? $this->legacyBan($array, $admin)
@@ -970,58 +1183,69 @@ class GameServer
     private function legacyBan(array $array, ?string $admin = null): string
     {
         $admin = $admin ?? $this->discord->username;
-        if (str_starts_with(strtolower($array['duration']), 'perm')) $array['duration'] = '999 years';
+        if (str_starts_with(strtolower($array['duration']), 'perm')) {
+            $array['duration'] = '999 years';
+        }
         if (! @touch($this->discord2ban) || ! $file = @fopen($this->discord2ban, 'a')) {
             $this->logger->warning("Unable to open `{$this->discord2ban}`");
-            return "Unable to open `{$this->discord2ban}`" . PHP_EOL;
+
+            return "Unable to open `{$this->discord2ban}`".PHP_EOL;
         }
-        fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}" . PHP_EOL);
+        fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}".PHP_EOL);
         fclose($file);
-        if (! isset($this->timers["banlog_update_{$array['ckey']}"])) $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn() => array_walk($this->civ13->enabled_gameservers, fn(GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir . Civ13::playerlogs)))); // Attempts to fill in any missing data for the ban
-        return "`$admin` `Server` banned `{$array['ckey']}` from `{$this->name}` for `{$array['duration']}` with the reason `{$array['reason']}`" . PHP_EOL;
+        if (! isset($this->timers["banlog_update_{$array['ckey']}"])) {
+            $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn () => array_walk($this->civ13->enabled_gameservers, fn (GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir.Civ13::playerlogs))));
+        } // Attempts to fill in any missing data for the ban
+
+        return "`$admin` `Server` banned `{$array['ckey']}` from `{$this->name}` for `{$array['duration']}` with the reason `{$array['reason']}`".PHP_EOL;
     }
     private function sqlBan(array $array, ?string $admin = null): string
     {
-        return "SQL methods are not yet implemented!" . PHP_EOL;
+        return 'SQL methods are not yet implemented!'.PHP_EOL;
     }
 
     /**
      * Unbans a player with the specified ckey.
      *
-     * @param string $ckey The ckey of the player to unban.
+     * @param string      $ckey  The ckey of the player to unban.
      * @param string|null $admin The name of the admin who is performing the unban. If not provided, the display name of the Discord user will be used.
-     * @return void
      */
-    public function unban(string $ckey, ?string $admin = null,): void
+    public function unban(string $ckey, ?string $admin = null): void
     {
         $admin ??= $this->discord->username;
         $this->legacy ? $this->legacyUnban($ckey, $admin) : $this->sqlUnban($ckey, $admin);
         if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
-            if ($member->roles->has($this->civ13->role_ids['Banished'])) $member->removeRole($this->civ13->role_ids['Banished'], "Unbanned by $admin");
+            if ($member->roles->has($this->civ13->role_ids['Banished'])) {
+                $member->removeRole($this->civ13->role_ids['Banished'], "Unbanned by $admin");
+            }
             if ($member->roles->has($this->civ13->role_ids['Permabanished'])) {
                 $member->removeRole($this->civ13->role_ids['Permabanished'], "Unbanned by $admin")->then(function () use (&$member, $admin) {
                     $member->addRole($this->civ13->role_ids['Verified'], "Unbanned by $admin");
                 });
             }
         }
-        foreach (explode(PHP_EOL, $this->bancheck_cache) as $line)
-            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey))
+        foreach (explode(PHP_EOL, $this->bancheck_cache) as $line) {
+            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey)) {
                 $this->bancheck_cache = str_replace($line, '', $this->bancheck_cache);
+            }
+        }
     }
     private function legacyUnban(string $ckey, ?string $admin = null): PromiseInterface
     {
         $admin = $admin ?? $this->discord->username;
         if (! @touch($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
             $this->logger->warning($err = "Unable to open `$this->discord2unban`");
+
             return reject(new MissingSystemPermissionException($err));
         }
-        fwrite($file, $admin . ":::$ckey");
+        fwrite($file, $admin.":::$ckey");
         fclose($file);
+
         return resolve(null);
     }
     private function sqlUnban($array, ?string $admin = null): string
     {
-        return "SQL methods are not yet implemented!" . PHP_EOL;
+        return 'SQL methods are not yet implemented!'.PHP_EOL;
     }
 
     /**
@@ -1038,11 +1262,15 @@ class GameServer
      */
     public function getRoundMessageId(): ?string
     {
-        if (isset($this->current_round_message_id)) return $this->current_round_message_id;
-        if ($serialized_array = $this->civ13->VarLoad($this->getRoundMessageIdFileName())) return $this->current_round_message_id = array_shift($serialized_array);
+        if (isset($this->current_round_message_id)) {
+            return $this->current_round_message_id;
+        }
+        if ($serialized_array = $this->civ13->VarLoad($this->getRoundMessageIdFileName())) {
+            return $this->current_round_message_id = array_shift($serialized_array);
+        }
+
         return null;
     }
-    
     
     /**
      * Generates the filename for storing the round message ID associated with this game server instance.
@@ -1061,26 +1289,26 @@ class GameServer
      */
     public function getRoundsCollection(): CollectionInterface // [string $server, collection $rounds]
     {
-        return new Collection(array_filter(array_map(fn($game_id, $round) => array_merge($round, ['game_id' => $game_id]), array_keys($this->rounds), $this->rounds)), 'game_id');
+        return new Collection(array_filter(array_map(fn ($game_id, $round) => array_merge($round, ['game_id' => $game_id]), array_keys($this->rounds), $this->rounds)), 'game_id');
     }
     /**
      * Logs a new round in the game.
      *
      * @param string $game_id The game ID.
-     * @param string $time The current time.
-     * @return void
+     * @param string $time    The current time.
      */
     public function logNewRound(string $game_id, string $time): void
     {
-        if (isset($this->rounds[$this->current_round])) // If the round already exists and is not the current round
-            $this->rounds[$this->current_round]['end'] ??= substr($time, 1, -1) . ' ' . date("m/d/Y"); // Set end time of previous round
+        if (isset($this->rounds[$this->current_round])) { // If the round already exists and is not the current round
+            $this->rounds[$this->current_round]['end'] ??= substr($time, 1, -1).' '.date('m/d/Y');
+        } // Set end time of previous round
         $this->rounds[$this->current_round = $game_id] = [
             'game_id' => $game_id,
-            'log' => '/' . date("Y/m-F/d-l") . ".log",
-            'start' => substr($time, 1, -1) . ' ' . date("m/d/Y"),
+            'log' => '/'.date('Y/m-F/d-l').'.log',
+            'start' => substr($time, 1, -1).' '.date('m/d/Y'),
             'end' => null,
             'players' => [],
-            'interrupted' => false
+            'interrupted' => false,
         ];
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
         $this->civ13->VarSave("{$this->key}_current_round.json", [$this->current_round]);
@@ -1088,41 +1316,54 @@ class GameServer
     /**
      * Logs the login of a player.
      *
-     * @param string $ckey The player's ckey.
-     * @param string $time The login time.
-     * @param string $ip The player's IP address (optional).
-     * @param string $cid The player's CID (optional).
+     * @param  string                     $ckey The player's ckey.
+     * @param  string                     $time The login time.
+     * @param  string                     $ip   The player's IP address (optional).
+     * @param  string                     $cid  The player's CID (optional).
      * @return PromiseInterface<?Message> A promise that resolves with the message sent to the staff channel
      */
     public function logPlayerLogin(string $ckey, string $time, string $ip = '', string $cid = ''): PromiseInterface
     {
-        if (! $this->enabled) return reject(new \LogicException("Game server is not enabled."));
-        if ($ckey === '(NULL)') return reject(new \InvalidArgumentException("Invalid ckey provided."));
-        if (! in_array($ckey, $this->players)) $this->players[] = $ckey;
+        if (! $this->enabled) {
+            return reject(new \LogicException('Game server is not enabled.'));
+        }
+        if ($ckey === '(NULL)') {
+            return reject(new \InvalidArgumentException('Invalid ckey provided.'));
+        }
+        if (! in_array($ckey, $this->players)) {
+            $this->players[] = $ckey;
+        }
         if (! $this->current_round) {
             $this->logger->warning($err = "No current round found for {$this->key} logPlayerLogin.");
+
             return reject(new \LogicException($err));
         }
         $this->rounds[$this->current_round]['players'][$ckey] ??= [ // Initialize the player if they don't exist
             'ip' => [],
             'cid' => [],
-            'login' => $time
+            'login' => $time,
         ];
-        if ($ip && ! in_array($ip, $this->rounds[$this->current_round]['players'][$ckey]['ip'] ?? [])) $this->rounds[$this->current_round]['players'][$ckey]['ip'][] = $ip; 
-        if ($cid && ! in_array($cid, $this->rounds[$this->current_round]['players'][$ckey]['cid'] ?? [])) $this->rounds[$this->current_round]['players'][$ckey]['cid'][] = $cid;
+        if ($ip && ! in_array($ip, $this->rounds[$this->current_round]['players'][$ckey]['ip'] ?? [])) {
+            $this->rounds[$this->current_round]['players'][$ckey]['ip'][] = $ip;
+        }
+        if ($cid && ! in_array($cid, $this->rounds[$this->current_round]['players'][$ckey]['cid'] ?? [])) {
+            $this->rounds[$this->current_round]['players'][$ckey]['cid'][] = $cid;
+        }
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
 
         // Early return if the player is permitted to bypass restrictions
-        if (isset($this->civ13->permitted[$ckey])) return resolve(null);
+        if (isset($this->civ13->permitted[$ckey])) {
+            return resolve(null);
+        }
 
         $ip_data = $this->civ13->getIpData($ip);
         $conditions = [
             'Proxy' => isset($ip_data['proxy']) && $ip_data['proxy'],
             'Hosting' => isset($ip_data['hosting']) && $ip_data['hosting'],
         ];
-        $ban_reason = array_reduce(array_keys($conditions), fn($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
+        $ban_reason = array_reduce(array_keys($conditions), fn ($carry, $key) => $carry ?: ($conditions[$key] ? $key : null), null);
         if ($ban_reason && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-            return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '2 minutes', 'reason' => "You cannot use a VPN or VPS hosting provider to play. Please disable it before reconnecting."], null, null, true) . " ($ban_reason)");
+            return $this->civ13->sendMessage($channel, $this->civ13->ban(['ckey' => $ckey, 'duration' => '2 minutes', 'reason' => 'You cannot use a VPN or VPS hosting provider to play. Please disable it before reconnecting.'], null, null, true)." ($ban_reason)");
         }
 
         return resolve(null);
@@ -1132,39 +1373,55 @@ class GameServer
      *
      * @param string $ckey The player's ckey.
      * @param string $time The login time.
-     * 
+     *
      * @return PromiseInterface<array>
      */
     public function logPlayerLogout(string $ckey, string $time): PromiseInterface
     {
-        if (! $this->enabled) return reject(new \LogicException("Game server is not enabled."));
-        if ($ckey === '(NULL)') return reject(new \InvalidArgumentException("Invalid ckey provided."));
-        if (in_array($ckey, $this->players)) unset($this->players[array_search($ckey, $this->players)]);
+        if (! $this->enabled) {
+            return reject(new \LogicException('Game server is not enabled.'));
+        }
+        if ($ckey === '(NULL)') {
+            return reject(new \InvalidArgumentException('Invalid ckey provided.'));
+        }
+        if (in_array($ckey, $this->players)) {
+            unset($this->players[array_search($ckey, $this->players)]);
+        }
         if (! $this->current_round) {
             $this->logger->warning($err = "No current round found for {$this->key} logPlayerLogout");
+
             return reject(new \LogicException($err));
         }
         $this->rounds[$this->current_round]['players'][$ckey] ??= [
             'ip' => [],
             'cid' => [],
-            'login' => $time
+            'login' => $time,
         ];
         $this->rounds[$this->current_round]['players'][$ckey]['logout'] = $time;
         $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+
         return resolve($this->rounds);
     }
     /**
      * Retrieves the rounds based on the provided criteria.
      *
-     * @param string[] $ckeys An array of player keys to filter by (optional).
-     * @param array|null $rounds The array of rounds (optional).
-     * @return array The filtered array of rounds.
+     * @param  string[]   $ckeys  An array of player keys to filter by (optional).
+     * @param  array|null $rounds The array of rounds (optional).
+     * @return array      The filtered array of rounds.
      */
     public function getRounds(?array $ckeys = [], ?array $rounds = null): array
     {
-        if (! $ckeys) return $rounds ?? $this->rounds;        
-        return array_filter($rounds ?? $this->rounds, function($round) use ($ckeys) {
-            foreach ($ckeys as $ckey) if (! isset($round['players'][$ckey])) return false;
+        if (! $ckeys) {
+            return $rounds ?? $this->rounds;
+        }
+
+        return array_filter($rounds ?? $this->rounds, function ($round) use ($ckeys) {
+            foreach ($ckeys as $ckey) {
+                if (! isset($round['players'][$ckey])) {
+                    return false;
+                }
+            }
+
             return true;
         });
     }
@@ -1176,18 +1433,21 @@ class GameServer
     /**
      * Retrieves the rank for a given ckey from a file.
      *
-     * @param string $ckey The ckey to search for.
+     * @param  string       $ckey The ckey to search for.
      * @return false|string Returns the rank for the ckey as a string if found, or false if the file does not exist or cannot be accessed.
      */
     public function getRank(string $ckey): string
     {
-        $line_array = array();
+        $line_array = [];
         $return = '';
         if (! @touch($this->ranking_path) || ! $search = @fopen($this->ranking_path, 'r')) {
             $this->logger->warning($return = "Unable to open `{$this->ranking_path}`");
+
             return $return;
         }
-        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+        while (($fp = fgets($search, 4096)) !== false) {
+            $line_array[] = $fp;
+        }
         fclose($search);
         
         $found = false;
@@ -1197,28 +1457,37 @@ class GameServer
             if ($sline[1] == $ckey) {
                 $found = true;
                 $result .= "`{$sline[1]}` has a total rank of `{$sline[0]}`";
-            };
+            }
         }
-        if (! $found) return "No medals found for ckey `$ckey`.";
+        if (! $found) {
+            return "No medals found for ckey `$ckey`.";
+        }
+
         return $result;
     }
     /**
      * Retrieves the ranking from a file and returns it as a formatted string.
      *
-     * @return PromiseInterface<string> Returns the top 10 ranks as a string if found, or false if the file does not exist or cannot be opened.
+     * @return PromiseInterface<string>         Returns the top 10 ranks as a string if found, or false if the file does not exist or cannot be opened.
      * @throws MissingSystemPermissionException If the file cannot be accessed or read.
-     */    
+     */
     public function getRanking(): PromiseInterface
     {
-        if (! @touch($path = $this->basedir . Civ13::ranking_path) || ! $search = @fopen($path, 'r')) return reject(new MissingSystemPermissionException("Unable to open `$path`"));
+        if (! @touch($path = $this->basedir.Civ13::ranking_path) || ! $search = @fopen($path, 'r')) {
+            return reject(new MissingSystemPermissionException("Unable to open `$path`"));
+        }
         
-        $line_array = array();
-        while (($fp = fgets($search, 4096)) !== false) $line_array[] = $fp;
+        $line_array = [];
+        while (($fp = fgets($search, 4096)) !== false) {
+            $line_array[] = $fp;
+        }
         fclose($search);
 
         $topsum = 0;
+
         return resolve(implode(PHP_EOL, array_map(function ($line) use (&$topsum) {
             $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+
             return '('.++$topsum."): `{$sline[1]}` with `{$sline[0]}` points.";
         }, array_slice($line_array, 0, 10)))); // Limit the array to only 10 values
     }
@@ -1239,10 +1508,16 @@ class GameServer
      */
     public function recalculateRanking(): PromiseInterface
     {
-        if ( ! @touch($awards = $this->basedir . Civ13::awards)) return reject(new MissingSystemPermissionException("Unable to access `{$awards}`"));
-        if ( ! @touch($ranking_path = $this->basedir . Civ13::ranking_path)) return reject(new MissingSystemPermissionException("Unable to access `{$ranking_path}`"));
-        if (! $lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) return reject(new MissingSystemPermissionException("Unable to read `$awards`"));
-        $result = array();
+        if (! @touch($awards = $this->basedir.Civ13::awards)) {
+            return reject(new MissingSystemPermissionException("Unable to access `{$awards}`"));
+        }
+        if (! @touch($ranking_path = $this->basedir.Civ13::ranking_path)) {
+            return reject(new MissingSystemPermissionException("Unable to access `{$ranking_path}`"));
+        }
+        if (! $lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
+            return reject(new MissingSystemPermissionException("Unable to read `$awards`"));
+        }
+        $result = [];
         foreach ($lines as $line) {
             $medal_s = 0;
             $duser = explode(';', trim($line));
@@ -1258,32 +1533,42 @@ class GameServer
                 'iron cross 1st class' => 3,
                 'iron cross 2nd class' => 5,
             ];
-            if (! isset($result[$duser[0]])) $result[$duser[0]] = 0;
-            if (isset($duser[2]) && isset($medalScores[$duser[2]])) $medal_s += $medalScores[$duser[2]];
+            if (! isset($result[$duser[0]])) {
+                $result[$duser[0]] = 0;
+            }
+            if (isset($duser[2]) && isset($medalScores[$duser[2]])) {
+                $medal_s += $medalScores[$duser[2]];
+            }
             $result[$duser[0]] += $medal_s;
         }
         arsort($result);
         if (file_put_contents($ranking_path, implode(PHP_EOL, array_map(function ($ckey, $score) {
             return "$score;$ckey";
-        }, array_keys($result), $result))) === false) return reject(new MissingSystemPermissionException("Unable to write to `$ranking_path`"));
+        }, array_keys($result), $result))) === false) {
+            return reject(new MissingSystemPermissionException("Unable to write to `$ranking_path`"));
+        }
+
         return resolve(null);
     }
     /**
      * Reads the content of the sports teams file and returns it as a promise.
      *
      * @return PromiseInterface<string> A promise that resolves with the content of the sports teams file.
-     * @throws FileNotFoundException If the file does not exist or cannot be read.
+     * @throws FileNotFoundException    If the file does not exist or cannot be read.
      */
     public function sportsteam(): PromiseInterface
     {
-        if (! file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir . Civ13::sportsteams)) {
+        if (! file_exists($fp = $this->civ13->enabled_gameservers['tdm']->basedir.Civ13::sportsteams)) {
             $this->logger->warning($err = "Unable to find `$fp`");
+
             return reject(new FileNotFoundException($err));
         }
         if (! $content = @file_get_contents($fp)) {
             $this->logger->warning($err = "Unable to read `$fp`");
+
             return reject(new MissingSystemPermissionException($err));
         }
+
         return resolve($content);
     }
 
@@ -1291,125 +1576,164 @@ class GameServer
      * This function is used to update the contents of files based on the roles of verified members.
      * The callback function is used to determine what to write to the file.
      *
-     * @param callable $callback The callback function that determines what to write to the file.
-     * @param array $file_paths An array of file paths to update.
-     * @param array $required_roles An array of required roles for the members.
+     * @param  callable         $callback       The callback function that determines what to write to the file.
+     * @param  array            $file_paths     An array of file paths to update.
+     * @param  array            $required_roles An array of required roles for the members.
      * @return PromiseInterface A promise that resolves when the files are successfully updated, or rejects if there is an error.
      */
     public function updateFilesFromMemberRoles(callable $callback, array $file_paths, array $required_roles): PromiseInterface
     {
         if (! isset($this->civ13->verifier)) {
             $this->logger->error($err = 'Unable to update files from member roles: Verifier is not set.');
+
             return reject(new VerifierException($err));
-        } 
+        }
         $file_contents = '';
-        foreach ($this->civ13->verifier->verified as $item)
-            if ($member = $this->civ13->verifier->getVerifiedMember($item))
+        foreach ($this->civ13->verifier->verified as $item) {
+            if ($member = $this->civ13->verifier->getVerifiedMember($item)) {
                 $file_contents .= $callback($member, $item, $required_roles);
-        if ($file_contents) foreach ($file_paths as $fp) if (@touch($fp))
-            if (file_put_contents($fp, $file_contents) === false) // Attempt to write to the file
-                $this->logger->error("Failed to write to file `$fp`"); // Log an error if the write failed
+            }
+        }
+        if ($file_contents) {
+            foreach ($file_paths as $fp) {
+                if (@touch($fp)) {
+                    if (file_put_contents($fp, $file_contents) === false) { // Attempt to write to the file
+                        $this->logger->error("Failed to write to file `$fp`");
+                    }
+                }
+            }
+        } // Log an error if the write failed
+
         return resolve(null);
     }
     /**
      * Updates the whitelist based on the member roles.
      *
-     * @param array|null $required_roles The required roles for whitelisting. Default is ['Verified'].
-     * @return bool Returns true if the whitelist update is successful, false otherwise.
+     * @param  array|null $required_roles The required roles for whitelisting. Default is ['Verified'].
+     * @return bool       Returns true if the whitelist update is successful, false otherwise.
      */
     public function whitelistUpdate(?array $required_roles = ['Verified']): bool
     {
-        if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
-        if (! $this->enabled) return false;
+        if (! $this->civ13->hasRequiredConfigRoles($required_roles)) {
+            return false;
+        }
+        if (! $this->enabled) {
+            return false;
+        }
         if (! @touch($this->whitelist)) {
             $this->logger->warning("Unable to open `{$this->whitelist}`");
+
             return false;
         }
         $file_paths = [];
         $file_paths[] = $this->whitelist;
 
-        $callback = function (Member $member, array $item, array $required_roles): string
-        {
+        $callback = function (Member $member, array $item, array $required_roles): string {
             $string = '';
-            foreach ($required_roles as $role)
-                if ($member->roles->has($this->civ13->role_ids[$role]))
-                    $string .= "{$item['ss13']} = {$item['discord']}" . PHP_EOL;
+            foreach ($required_roles as $role) {
+                if ($member->roles->has($this->civ13->role_ids[$role])) {
+                    $string .= "{$item['ss13']} = {$item['discord']}".PHP_EOL;
+                }
+            }
+
             return $string;
         };
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
+
         return true;
     }
     /**
      * Updates the faction list based on the required roles.
      *
-     * @param array|null $required_roles The required roles for updating the faction list.
-     * @return bool Returns true if the faction list is successfully updated, false otherwise.
+     * @param  array|null $required_roles The required roles for updating the faction list.
+     * @return bool       Returns true if the faction list is successfully updated, false otherwise.
      */
     public function factionlistUpdate(?array $required_roles = null): bool
     {
-        if (! $this->enabled) return false;
-        if (! $required_roles) $required_roles = array_merge(Civ13::faction_teams, Civ13::faction_admins);
-        if (! $this->civ13->hasRequiredConfigRoles($required_roles)) return false;
+        if (! $this->enabled) {
+            return false;
+        }
+        if (! $required_roles) {
+            $required_roles = array_merge(Civ13::faction_teams, Civ13::faction_admins);
+        }
+        if (! $this->civ13->hasRequiredConfigRoles($required_roles)) {
+            return false;
+        }
         if (! @touch($this->factionlist)) {
             $this->logger->warning("Unable to open `{$this->factionlist}`");
+
             return false;
         }
         $file_paths = [];
         $file_paths[] = $this->factionlist;
 
-        $callback = function (Member $member, array $item, array $required_roles): string
-        {
+        $callback = function (Member $member, array $item, array $required_roles): string {
             return array_reduce($required_roles, function ($carry, $role) use ($member, $item) {
                 return $member->roles->has($this->civ13->role_ids[$role])
-                    ? $carry . "{$item['ss13']};{$role}" . PHP_EOL
+                    ? $carry."{$item['ss13']};{$role}".PHP_EOL
                     : $carry;
             }, '');
         };
         $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
+
         return true;
     }
     /**
      * Updates admin lists with required roles and permissions.
      *
-     * @param array $required_roles An array of required roles and their corresponding permissions.
+     * @param  array            $required_roles An array of required roles and their corresponding permissions.
      * @return PromiseInterface A promise that resolves when the admin list is successfully updated, or rejects if there is an error.
      */
     public function adminlistUpdate(?array $required_roles = null): PromiseInterface
     {
-        if (! $this->enabled) return reject(new \LogicException("Game server is not enabled."));
-        if (! $required_roles) $required_roles = self::ADMIN_PERMISSIONS;
+        if (! $this->enabled) {
+            return reject(new \LogicException('Game server is not enabled.'));
+        }
+        if (! $required_roles) {
+            $required_roles = self::ADMIN_PERMISSIONS;
+        }
         if (! $this->civ13->hasRequiredConfigRoles(array_keys($required_roles))) {
-            $this->logger->warning($err = "Missing required roles for adminlist update.");
+            $this->logger->warning($err = 'Missing required roles for adminlist update.');
+
             return reject(new InvalidConfigException($err));
         }
         if (! @touch($this->admins)) {
             $this->logger->warning($err = "Unable to open `{$this->admins}`");
+
             return reject(new MissingSystemPermissionException($err));
         }
         $file_paths[] = $this->admins;
 
-        $callback = function (Member $member, array $item, array $required_roles): string
-        {
+        $callback = function (Member $member, array $item, array $required_roles): string {
             $string = '';
             $checked_ids = [];
-            foreach (array_keys($required_roles) as $role) if ($member->roles->has($this->civ13->role_ids[$role])) if (! in_array($member->id, $checked_ids)) {
-                $string .= "{$item['ss13']};{$required_roles[$role][0]};{$required_roles[$role][1]}|||" . PHP_EOL;
-                $checked_ids[] = $member->id;
+            foreach (array_keys($required_roles) as $role) {
+                if ($member->roles->has($this->civ13->role_ids[$role])) {
+                    if (! in_array($member->id, $checked_ids)) {
+                        $string .= "{$item['ss13']};{$required_roles[$role][0]};{$required_roles[$role][1]}|||".PHP_EOL;
+                        $checked_ids[] = $member->id;
+                    }
+                }
             }
+
             return $string;
         };
+
         return $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
     }
     public function listadmins(): string|false
     {
-        if (! @touch($fp = $this->basedir . Civ13::admins)) {
+        if (! @touch($fp = $this->basedir.Civ13::admins)) {
             $this->logger->warning("Unable to open `$fp`");
+
             return false;
         }
         if (! $admins = @file_get_contents($fp)) {
             $this->logger->warning("Unable to read `$fp`");
+
             return false;
         }
+
         return $admins;
     }
 
@@ -1418,7 +1742,8 @@ class GameServer
         [$hours, $minutes] = array_map('intval', explode(':', $time) + [0, 0]);
         $days = floor($hours / 24);
         $hours = $hours % 24;
-        return ($days ? $days . 'd' : '') . ($hours ? $hours . 'h' : '') . $minutes . 'm';
+
+        return ($days ? $days.'d' : '').($hours ? $hours.'h' : '').$minutes.'m';
     }
     /**
      * Generates a server status embed.
@@ -1427,28 +1752,46 @@ class GameServer
      */
     public function generateServerstatusEmbed(): ?Embed
     {
-        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) return $this->toEmbed(); // Don't try and access files if the server is not local
-        if (! @touch($this->basedir . Civ13::serverdata) || ! $data = @file_get_contents($this->basedir . Civ13::serverdata)) {
-            $this->logger->warning("Unable to open `{$this->basedir}" . Civ13::serverdata . "`");
+        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) {
+            return $this->toEmbed();
+        } // Don't try and access files if the server is not local
+        if (! @touch($this->basedir.Civ13::serverdata) || ! $data = @file_get_contents($this->basedir.Civ13::serverdata)) {
+            $this->logger->warning("Unable to open `{$this->basedir}".Civ13::serverdata.'`');
+
             return null;
         }
         $embed = $this->civ13->createEmbed();
-        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) return $embed->addFieldValues($this->name, 'Offline');
+        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) {
+            return $embed->addFieldValues($this->name, 'Offline');
+        }
         fclose($socket);
         $data = self::explodeServerdata($data);
-        if (isset($data['status'])) $embed->addFieldValues($this->name, $data['status']);
+        if (isset($data['status'])) {
+            $embed->addFieldValues($this->name, $data['status']);
+        }
         $embed->addFieldValues('Host', $this->host, true);
-        if (isset($data['round_timer'])) $embed->addFieldValues('Round Time', $this->parseRoundTime($data['round_timer']), true);
-        if (isset($data['map_name'])) $embed->addFieldValues('Map', $data['map_name'], true); // Appears twice in the data
+        if (isset($data['round_timer'])) {
+            $embed->addFieldValues('Round Time', $this->parseRoundTime($data['round_timer']), true);
+        }
+        if (isset($data['map_name'])) {
+            $embed->addFieldValues('Map', $data['map_name'], true);
+        } // Appears twice in the data
         //if (isset($data[3])) $embed->addFieldValues('Gamemode', $data[3], true);
-        if (isset($data['epoch'])) $embed->addFieldValues('Epoch', $data['epoch'], true);
+        if (isset($data['epoch'])) {
+            $embed->addFieldValues('Epoch', $data['epoch'], true);
+        }
         if (isset($data['ckey_list'])) { // Player list
             $players = explode('&', $data['ckey_list']);
-            $players = array_filter(array_map(fn($player) => Civ13::sanitizeInput($player), $players));
-            if (! $players_list = implode(", ", $players)) $players_list = 'N/A';
-            $embed->addFieldValues('Players (' . count($players) . ')', $players_list, true);
+            $players = array_filter(array_map(fn ($player) => Civ13::sanitizeInput($player), $players));
+            if (! $players_list = implode(', ', $players)) {
+                $players_list = 'N/A';
+            }
+            $embed->addFieldValues('Players ('.count($players).')', $players_list, true);
         }
-        if (isset($data['season'])) $embed->addFieldValues('Season', $data['season'], true);
+        if (isset($data['season'])) {
+            $embed->addFieldValues('Season', $data['season'], true);
+        }
+
         //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
         //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
         return $embed;
@@ -1471,12 +1814,14 @@ class GameServer
      * 11 => ckey_list={ckey&ckey}
      * 12 => allow_vote_restart={1/0}
      *
-     * @param string $data The server data string to be exploded.
-     * @return array The exploded server data as an array.
+     * @param  string $data The server data string to be exploded.
+     * @return array  The exploded server data as an array.
      */
     public static function explodeServerdata(string $data): array
     {
-        if (! $data) return [];
+        if (! $data) {
+            return [];
+        }
 
         $data = explode(';', str_replace([
             '<b>Server Status</b>: ',
@@ -1508,16 +1853,16 @@ class GameServer
         $return[10] = $return['season'] = $data[10] ?? 'N/A';
         $return[11] = $return['ckey_list'] = $data[11] ?? 'N/A';
         $return[12] = $return['allow_vote_restart'] = $data[12] ?? 1;
+
         return $return;
-        
     }
     public function toEmbed(): Embed
     {
         return $this->civ13->createEmbed()
             ->setTitle($this->name)
-            ->addFieldValues("Server URL", "byond://{$this->ip}:{$this->port}", false)
+            ->addFieldValues('Server URL', "byond://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
-            ->addFieldValues('Players (' . count($this->players) . ')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
+            ->addFieldValues('Players ('.count($this->players).')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
     }
     // Magic Methods
     public function __toString(): string
@@ -1528,6 +1873,7 @@ class GameServer
     {
         $array = get_object_vars($this);
         unset($array['civ13']);
+
         return $array;
     }
     public function __serialize(): array
@@ -1540,6 +1886,8 @@ class GameServer
     }
     public function __destruct()
     {
-        foreach ($this->timers as $timer) $this->loop->cancelTimer($timer);
+        foreach ($this->timers as $timer) {
+            $this->loop->cancelTimer($timer);
+        }
     }
 }

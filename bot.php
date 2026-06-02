@@ -3,19 +3,20 @@
 declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13;
 
-use \Exception;
-use Civ13\Civ13;
+use Exception;
 use Clue\React\Redis\Factory as Redis;
 use Discord\Discord;
 use Discord\Stats;
-use Discord\Builders\MessageBuilder;
 use Discord\Helpers\CacheConfig;
 use Discord\WebSockets\Intents;
 use Monolog\Formatter\LineFormatter;
@@ -41,32 +42,39 @@ ini_set('memory_limit', '-1'); // Unlimited memory usage
 define('MAIN_INCLUDED', 1); // Token and SQL credential files may be protected locally and require this to be defined to access
 
 //if (! $token_included = require getcwd() . '/token.php') // $token
-    //throw new \Exception('Token file not found. Create a file named token.php in the root directory with the bot token.');
-if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : __DIR__.'/../../autoload.php')
+//throw new \Exception('Token file not found. Create a file named token.php in the root directory with the bot token.');
+if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : __DIR__.'/../../autoload.php') {
     throw new \Exception('Composer autoloader not found. Run `composer install` and try again.');
-function loadEnv(string $filePath = __DIR__ . '/.env'): void
+}
+function loadEnv(string $filePath = __DIR__.'/.env'): void
 {
-    if (! file_exists($filePath)) throw new Exception("The .env file does not exist.");
+    if (! file_exists($filePath)) {
+        throw new Exception('The .env file does not exist.');
+    }
 
     $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     $trimmedLines = array_map('trim', $lines);
-    $filteredLines = array_filter($trimmedLines, fn($line) => $line && ! str_starts_with($line, '#'));
+    $filteredLines = array_filter($trimmedLines, fn ($line) => $line && ! str_starts_with($line, '#'));
 
-    array_walk($filteredLines, function($line) {
+    array_walk($filteredLines, function ($line) {
         [$name, $value] = array_map('trim', explode('=', $line, 2));
-        if (! array_key_exists($name, $_ENV)) putenv(sprintf('%s=%s', $name, $value));
+        if (! array_key_exists($name, $_ENV)) {
+            putenv(sprintf('%s=%s', $name, $value));
+        }
     });
 }
-loadEnv(getcwd() . '/.env');
+loadEnv(getcwd().'/.env');
 
 file_put_contents('output.log', ''); // Clear the contents of 'output.log'
 $fileHandler = (new StreamHandler('output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
 $stdoutHandler = (new StreamHandler('php://stdout', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$fileHandler, $stdoutHandler]);
-Loop::addPeriodicTimer(60 * 10, fn() => $logger->reset()); // Flush all buffers every 10 minutes
+Loop::addPeriodicTimer(60 * 10, fn () => $logger->reset()); // Flush all buffers every 10 minutes
 $logger->info('Loading configurations for the bot...');
-set_rejection_handler(function(\Throwable $e) use ($logger) {
-    if ($e->getMessage() !== 'Cannot resume a fiber that is not suspended') $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('#', '\n#', $e->getTraceAsString()));
+set_rejection_handler(function (\Throwable $e) use ($logger) {
+    if ($e->getMessage() !== 'Cannot resume a fiber that is not suspended') {
+        $logger->warning("Unhandled Promise Rejection: {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] ".str_replace('#', '\n#', $e->getTraceAsString()));
+    }
 });
 
 $discord = new Discord([
@@ -102,7 +110,6 @@ $http_whitelist = [
     $civ13_ip = gethostbyname('www.civ13.com'),
     $vzg_ip = gethostbyname('www.valzargaming.com'),
     $val_ip = gethostbyname('www.valgorithms.com'),
-    '47.134.24.40'
 ];
 
 $webapi = null;
@@ -147,7 +154,7 @@ $ic_badwords = $ooc_badwords = [
     ['word' => 'CN',          'duration' => '2 minutes', 'reason' => '仅英语.',             'category' => 'language', 'method' => 'chinese',  'warnings' => 2],
     ['word' => 'KR',          'duration' => '2 minutes', 'reason' => '영어로만 제공.',       'category' => 'language', 'method' => 'korean',   'warnings' => 2],
 ];
-$options = array(
+$options = [
     'github' => 'https://github.com/VZGCoders/Civilizationbot',
     'command_symbol' => '@Civilizationbot',
     'owner_id' => '196253985072611328', // Taislin
@@ -164,18 +171,18 @@ $options = array(
     // Reach out to Valithor if you need help setting up your website
     'webserver_url' => 'www.valzargaming.com',
     //'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
-    'verify_url' => getenv('VERIFIER_HOST_ADDR') . ':' . getenv('VERIFIER_HOST_PORT') . '/verified/', // Local/Integrated Verifier Server
+    'verify_url' => getenv('VERIFIER_HOST_ADDR').':'.getenv('VERIFIER_HOST_PORT').'/verified/', // Local/Integrated Verifier Server
     // 'serverinfo_url' => '', // URL of the serverinfo.json file, defaults to the webserver if left blank
     'ooc_badwords' => $ooc_badwords,
     'ic_badwords' => $ic_badwords,
-    'folders' => array(
+    'folders' => [
         // 'typespess_path' => '/home/civ13/civ13-typespess',
-        'ss14_basedir' => '/home/civ13/civ14'
-    ),
-    'files' => array( // Server-specific file paths MUST start with the server name as defined in civ13_server_settings unless otherwise specified
+        'ss14_basedir' => '/home/civ13/civ14',
+    ],
+    'files' => [ // Server-specific file paths MUST start with the server name as defined in civ13_server_settings unless otherwise specified
         // 'typespess_launch_server_path' => '/home/civ13/civ13-typespess/scripts/launch_server.sh',
-    ),
-    'channel_ids' => array(
+    ],
+    'channel_ids' => [
         //'get-approved' => '690025163634376738', #get-approved (Deprecated)
         'bot-stuff' => '932431238894092309', #bot-stuff
         'information' => '857295113071362069', #information
@@ -185,9 +192,9 @@ $options = array(
         'parole_logs' => '985606778916048966', // #parole-logs (for tracking)
         'parole_notif' => '977715818731294790', // #parole-notif (for login/logout notifications)
         'email' => '1225600172336353430', // #email
-        'ban_appeals' => '1019718839749062687' #ban-appeals
-    ),
-    'role_ids' => array( // The keys in this array must directly correspond to the expected role names and as defined in GameServer.php. Do not alter these keys unless you know what you are doing.
+        'ban_appeals' => '1019718839749062687', #ban-appeals
+    ],
+    'role_ids' => [ // The keys in this array must directly correspond to the expected role names and as defined in GameServer.php. Do not alter these keys unless you know what you are doing.
         /* Discord Staff Roles */
         'Owner' => '468980650914086913', // Discord Server Owner
         'Chief Technical Officer' => '791450326455681034', // Debug Host / Database admin
@@ -221,9 +228,9 @@ $options = array(
         //'tdm' => '753768519203684445',
         //'nomads' => '753768513671397427',
         //'pers' => '753768492834095235',
-    ),
-);
-$options['welcome_message'] = 'Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `/approveme` slash command (Civ13) or the `/verifyme` slash command (Civ14).' ; // . ' Failure to verify in a timely manner will result in an automatic removal from the server.';
+    ],
+];
+$options['welcome_message'] = 'Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `/approveme` slash command (Civ13) or the `/verifyme` slash command (Civ14).'; // . ' Failure to verify in a timely manner will result in an automatic removal from the server.';
 /*
 foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я', 'і', 'ї', 'є'] as $char) { // // Ban use of Cyrillic characters
     $arr = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
@@ -236,7 +243,6 @@ foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к'
 
 //$json = json_encode($options, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 //file_put_contents("config.json", $json);
-
 
 // Load configurations from the JSON file
 /*
@@ -339,7 +345,9 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         'attack' => '1139614643954921593',
     ],
 ];
-foreach ($civ13_server_settings as $key => $value) $civ13_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
+foreach ($civ13_server_settings as $key => $value) {
+    $civ13_server_settings[$key]['key'] = $key;
+} // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
 $civ14_server_settings = [
     'civ14' => [
@@ -362,7 +370,9 @@ $civ14_server_settings = [
         'playercount' => '1354164249487737013',
     ],
 ];
-foreach ($civ14_server_settings as $key => $value) $civ14_server_settings[$key]['key'] = $key; // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
+foreach ($civ14_server_settings as $key => $value) {
+    $civ14_server_settings[$key]['key'] = $key;
+} // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
 $hidden_options = [
     'loop' => Loop::get(),
@@ -380,7 +390,7 @@ $hidden_options = [
     'http_whitelist' => $http_whitelist,
     'civ_token' => getenv('CIV_TOKEN') ?: 'CHANGEME',
     'civ13_server_settings' => $civ13_server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
-    'functions' => array(
+    'functions' => [
         'init' => [
             // 'on_ready' => $on_ready,
             'status_changer_timer' => $status_changer_timer,
@@ -389,7 +399,7 @@ $hidden_options = [
         'misc' => [ // Custom functions
             //
         ],
-    ),
+    ],
 ];
 $options = array_merge($options, $hidden_options);
 
@@ -400,7 +410,7 @@ $global_error_handler = async(function (int $errno, string $errstr, ?string $err
         $civ13 && // If the bot is running
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         // fsockopen
-        && ! str_ends_with($errstr, 'Connection timed out') 
+        && ! str_ends_with($errstr, 'Connection timed out')
         && ! str_ends_with($errstr, '(Connection timed out)')
         && ! str_ends_with($errstr, 'Connection refused') // Usually happens if the verifier server doesn't respond quickly enough
         && ! str_contains($errstr, '(Connection refused)') // Usually happens in localServerPlayerCount
@@ -419,13 +429,17 @@ $global_error_handler = async(function (int $errno, string $errstr, ?string $err
         //&& ! str_contains($errstr, 'Undefined array key')
     ) {
         $msg = sprintf("[%d] Fatal error on `%s:%d`: %s\nBacktrace:\n", $errno, $errfile, $errline, $errstr);
-        $backtrace = implode("\n", array_map(fn($trace) => ($trace['file'] ?? '') . ':' . ($trace['line'] ?? '') . ($trace['function'] ?? ''), debug_backtrace()));
+        $backtrace = implode("\n", array_map(fn ($trace) => ($trace['file'] ?? '').':'.($trace['line'] ?? '').($trace['function'] ?? ''), debug_backtrace()));
         $logger->error($msg.$backtrace);
-        if ($testing) return;
+        if ($testing) {
+            return;
+        }
 
-        if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) $msg = "<@{$tech_id}>, $msg";
+        if (isset($civ13->technician_id) && $tech_id = $civ13->technician_id) {
+            $msg = "<@{$tech_id}>, $msg";
+        }
         
-        $civ13->sendMessage($channel, $civ13::createBuilder()->setContent($msg)->addFileFromContent('error.txt', $msg . PHP_EOL . $backtrace));
+        $civ13->sendMessage($channel, $civ13::createBuilder()->setContent($msg)->addFileFromContent('error.txt', $msg.PHP_EOL.$backtrace));
     }
 });
 set_error_handler($global_error_handler);
@@ -434,33 +448,38 @@ use React\Socket\SocketServer;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use Psr\Http\Message\ServerRequestInterface;
+
 $socket = new SocketServer(
     sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55555),
     [
         'tcp' => [
-            'so_reuseport' => true
-        ]
+            'so_reuseport' => true,
+        ],
     ],
     Loop::get()
 );
 /**
  * Handles the HTTP request using the HttpServiceManager.
  *
- * @param ServerRequestInterface $request The HTTP request object.
- * @return Response The HTTP response object.
+ * @param  ServerRequestInterface $request The HTTP request object.
+ * @return Response               The HTTP response object.
  */
-$webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $request) use (&$civ13, &$logger): Response
-{
+$webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $request) use (&$civ13, &$logger): Response {
     /** @var ?Civ13 $civ13 */
     if (! $civ13 || ! $civ13 instanceof Civ13) {
         $logger->warning('Civ13 instance not found. Please check the server settings.');
+
         return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     }
     if (! isset($civ13->httpServiceManager)) {
         $logger->warning('HttpServiceManager not found. Please check the server settings.');
+
         return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Unavailable');
     }
-    if (! $civ13->ready) return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Not Yet Ready');
+    if (! $civ13->ready) {
+        return new Response(Response::STATUS_SERVICE_UNAVAILABLE, ['Content-Type' => 'text/plain'], 'Service Not Yet Ready');
+    }
+
     return $civ13->httpServiceManager->handle($request);
 }));
 /**
@@ -471,24 +490,29 @@ $webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $re
  * The restart process includes sending a message to a specific Discord channel and closing the socket connection.
  * After a delay of 5 seconds, the script is restarted by calling the 'restart' function and closing the Discord connection.
  *
- * @param Exception $e The exception object representing the error.
+ * @param Exception                               $e       The exception object representing the error.
  * @param \Psr\Http\Message\RequestInterface|null $request The HTTP request object associated with the error, if available.
- * @param object $civ13 The main object of the application.
- * @param object $socket The socket object.
- * @param bool $testing Flag indicating if the script is running in testing mode.
- * @return void
+ * @param object                                  $civ13   The main object of the application.
+ * @param object                                  $socket  The socket object.
+ * @param bool                                    $testing Flag indicating if the script is running in testing mode.
  */
 $webapi->on('error', async(function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use (&$civ13, &$logger, &$socket) {
     if (
         str_starts_with($e->getMessage(), 'Received request with invalid protocol version')
-    ) return; // Ignore this error, it's not important
-    $error = "[WEBAPI] {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] " . str_replace('\n', PHP_EOL, $e->getTraceAsString());
+    ) {
+        return;
+    } // Ignore this error, it's not important
+    $error = "[WEBAPI] {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] ".str_replace('\n', PHP_EOL, $e->getTraceAsString());
     $logger->error("[WEBAPI] $error");
-    if ($request) $logger->error('[WEBAPI] Request: ' .  preg_replace('/(?<=key=)[^&]+/', '********', $request->getRequestTarget()));
+    if ($request) {
+        $logger->error('[WEBAPI] Request: '.preg_replace('/(?<=key=)[^&]+/', '********', $request->getRequestTarget()));
+    }
     if (str_starts_with($e->getMessage(), 'The response callback')) {
         $logger->info('[WEBAPI] ERROR - RESTART');
         /** @var ?Civ13 $civ13 */
-        if (! $civ13) return;
+        if (! $civ13) {
+            return;
+        }
         if (! getenv('testing') && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
             $builder = Civ13::createBuilder()
                 ->setContent('Restarting due to error in HttpServer API...')
@@ -496,7 +520,9 @@ $webapi->on('error', async(function (Exception $e, ?\Psr\Http\Message\RequestInt
             $channel->sendMessage($builder);
         }
         $socket->close();
-        if (! isset($civ13->timers['restart'])) $civ13->timers['restart'] = Loop::addTimer(5, fn() => $civ13->restart());
+        if (! isset($civ13->timers['restart'])) {
+            $civ13->timers['restart'] = Loop::addTimer(5, fn () => $civ13->restart());
+        }
     }
 }));
 

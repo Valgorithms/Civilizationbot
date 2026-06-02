@@ -1,9 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2024-present Valithor Obsidion <valithor@valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13;
@@ -13,7 +18,7 @@ use Carbon\Carbon;
 
 /*
  * Class representing a ban
- * 
+ *
  * Ban logs are formatted by the following:
  *   0 => Type
  *   1 => Job (defaults to nil)
@@ -44,8 +49,12 @@ class Ban
 
     public function __construct(array|string $ban)
     {
-        if (is_string($ban)) $ban = explode(';', $ban);
-        if (count($ban) !== 11) throw new \Exception('Invalid ban log format');
+        if (is_string($ban)) {
+            $ban = explode(';', $ban);
+        }
+        if (count($ban) !== 11) {
+            throw new \Exception('Invalid ban log format');
+        }
         /** @var ?string $field */
         $resolver = new \Symfony\Component\OptionsResolver\OptionsResolver();
         $resolver->setDefaults([
@@ -64,12 +73,12 @@ class Ban
 
         $ban = $resolver->resolve(array_combine(array_keys(get_class_vars(self::class)), $ban));
 
-        array_walk($ban, fn($value, $field) => $this->$field = "$value");
+        array_walk($ban, fn ($value, $field) => $this->$field = "$value");
     }
 
     public function uid()
     {
-        return $this->uid ?? $this->uid = self::num2text(rand(1, 1000*1000*1000), 20);
+        return $this->uid ?? $this->uid = self::num2text(rand(1, 1000 * 1000 * 1000), 20);
     }
     
     public function date(): Carbon
@@ -85,23 +94,26 @@ class Ban
     /**
      * Converts a number to its textual representation.
      * @link https://secure.byond.com/docs/ref/#/proc/num2text
-     * 
-     * @param mixed $N The number to be converted.
-     * @param int $SigFig The number of significant figures to include in the output (default is 6).
-     * @param int|null $Digits The number of digits to pad the result to (only used if $Radix is not 10).
-     * @param int $Radix The base to convert the number to (default is 10).
-     * @param bool $Scientific Whether to use scientific notation (default is false, but Byond produces scientific notation when there are more than 6 digits).
-     * @return string The textual representation of the number.
+     *
+     * @param  mixed    $N          The number to be converted.
+     * @param  int      $SigFig     The number of significant figures to include in the output (default is 6).
+     * @param  int|null $Digits     The number of digits to pad the result to (only used if $Radix is not 10).
+     * @param  int      $Radix      The base to convert the number to (default is 10).
+     * @param  bool     $Scientific Whether to use scientific notation (default is false, but Byond produces scientific notation when there are more than 6 digits).
+     * @return string   The textual representation of the number.
      */
     public static function num2text($N, int $SigFig = 6, ?int $Digits = null, int $Radix = 10, bool $Scientific = false): string
     {
-        if (! is_numeric($N)) throw new \Exception('Invalid number');
+        if (! is_numeric($N)) {
+            throw new \Exception('Invalid number');
+        }
 
         if ($Radix !== 10) {
             $result = base_convert($N, 10, $Radix);
             if ($Digits !== null) {
                 $result = str_pad($result, $Digits, '0', STR_PAD_LEFT);
             }
+
             return $result;
         }
 
@@ -112,14 +124,16 @@ class Ban
                 if (strpos($result, 'e') !== false) {
                     list($base, $exp) = explode('e', $result);
                     $base = rtrim(rtrim($base, '0'), '.');
-                    $result = $base . 'e' . $exp;
+                    $result = $base.'e'.$exp;
                 }
+
                 return $result;
             }
         } elseif ($SigFig !== null) {
-                $format = sprintf('%%.%df', $SigFig - 1);
-                $result = sprintf($format, $N);
-                return rtrim(rtrim($result, '0'), '.');
+            $format = sprintf('%%.%df', $SigFig - 1);
+            $result = sprintf($format, $N);
+
+            return rtrim(rtrim($result, '0'), '.');
         }
 
         return strval($N);
@@ -138,29 +152,32 @@ class Ban
             'expires' => $this->expires,
             'ckey' => $this->ckey,
             'cid' => $this->cid,
-            'ip' => $this->ip
+            'ip' => $this->ip,
         ];
     }
 
     public function __toString(): string
     {
         return
-            $this->type . ';' .
-            $this->job . ';' .
-            $this->uid ?? self::uid() . ';'  .
-            $this->reason . ';' .
-            $this->admin . ';' .
-            $this->date ?? self::date() . ';' .
-            $this->timestamp ?? self::timestamp() . ';' .
-            $this->expires . ';' .
-            $this->ckey . ';' .
-            $this->cid . ';' .
-            $this->ip . '|||';
+            $this->type.';'.
+            $this->job.';'.
+            $this->uid ?? self::uid().';'.
+            $this->reason.';'.
+            $this->admin.';'.
+            $this->date ?? self::date().';'.
+            $this->timestamp ?? self::timestamp().';'.
+            $this->expires.';'.
+            $this->ckey.';'.
+            $this->cid.';'.
+            $this->ip.'|||';
     }
 
     public function __get(string $name)
     {
-        if (method_exists($this, $name)) return $this->$name();
+        if (method_exists($this, $name)) {
+            return $this->$name();
+        }
+
         return $this->$name;
     }
 

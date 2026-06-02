@@ -1,9 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2024-present Valithor Obsidion <valithor@valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13;
@@ -47,9 +52,9 @@ class Verifier
 
     public function __construct(Civ13 &$civ13, array $options = [])
     {
-        $this->civ13 =& $civ13;
-        $this->discord =& $civ13->discord;
-        $this->logger =& $civ13->logger;
+        $this->civ13 = &$civ13;
+        $this->discord = &$civ13->discord;
+        $this->logger = &$civ13->logger;
         $this->resolveOptions($options);
         $this->verify_url = $options['verify_url'];
         $this->pending = new Collection([], 'discord');
@@ -63,21 +68,22 @@ class Verifier
     }
     public function resolveOptions(array &$options)
     {
-        if (! isset($options['verify_url'])) $options['verify_url'] = 'http://valzargaming.com:8080/verified/';
+        if (! isset($options['verify_url'])) {
+            $options['verify_url'] = 'http://valzargaming.com:8080/verified/';
+        }
     }
     public function afterConstruct(): void
     {
-        $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member): void
-        {
+        $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member): void {
             $this->getVerified();
             $this->joinRoles($member);
             if (isset($this->civ13->timers["add_{$member->id}"])) {
                 $this->civ13->discord->getLoop()->cancelTimer($this->civ13->timers["add_{$member->id}"]);
                 unset($this->civ13->timers["add_{$member->id}"]);
             }
-            $this->civ13->timers["add_{$member->id}"] = $this->civ13->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface
-            { // Kick member if they have not verified
+            $this->civ13->timers["add_{$member->id}"] = $this->civ13->discord->getLoop()->addTimer(8640, function () use ($member): ?PromiseInterface { // Kick member if they have not verified
                 $this->getVerified();
+
                 /* Disabled for now
                 if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null; // Guild not found (bot not in guild)
                 if (! $member_future = $guild->members->get('id', $member->id)) return null; // Member left before timer was up
@@ -89,14 +95,18 @@ class Verifier
                 ) return null; // Don't kick if they have a verified or banned role
                 return $guild->members->kick($member_future, 'Not verified');
                 */
-               return null;
+                return null;
             });
         });
-        $this->civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void
-        {
+        $this->civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void {
             $this->getVerified();
             $this->civ13->whitelistUpdate();
-            foreach (Civ13::faction_teams as $faction_name) if ($member->roles->has($this->civ13->role_ids[$faction_name])) { $this->civ13->factionlistUpdate(); break;}
+            foreach (Civ13::faction_teams as $faction_name) {
+                if ($member->roles->has($this->civ13->role_ids[$faction_name])) {
+                    $this->civ13->factionlistUpdate();
+                    break;
+                }
+            }
             $roles = [
                 'Owner',
                 'Chief Technical Officer',
@@ -111,23 +121,32 @@ class Verifier
                 'Banished',
                 'Paroled',
             ];
-            foreach ($roles as $role_name) if ($member->roles->has($this->civ13->role_ids[$role_name])) { $this->civ13->adminlistUpdate(); break; }
+            foreach ($roles as $role_name) {
+                if ($member->roles->has($this->civ13->role_ids[$role_name])) {
+                    $this->civ13->adminlistUpdate();
+                    break;
+                }
+            }
         });
-        $this->civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void
-        {
+        $this->civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void {
             if (! $member_old) { // Not enough information is known about the change, so we will update everything
                 $this->getVerified();
                 $this->civ13->whitelistUpdate();
                 $this->civ13->factionlistUpdate();
                 $this->civ13->adminlistUpdate();
+
                 return;
             }
             if ($member->roles->has($this->civ13->role_ids['Verified']) !== $member_old->roles->has($this->civ13->role_ids['Verified'])) {
                 $this->getVerified();
                 $this->civ13->whitelistUpdate();
             }
-            foreach (Civ13::faction_teams as $role_name)  if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name]))
-                { $this->civ13->factionlistUpdate(); break;}
+            foreach (Civ13::faction_teams as $role_name) {
+                if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name])) {
+                    $this->civ13->factionlistUpdate();
+                    break;
+                }
+            }
             $roles = [
                 'Owner',
                 'Chief Technical Officer',
@@ -142,102 +161,145 @@ class Verifier
                 'Banished',
                 'Paroled',
             ];
-            foreach ($roles as $role_name) 
-                if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name]))
-                    { $this->civ13->adminlistUpdate(); break;}
+            foreach ($roles as $role_name) {
+                if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name])) {
+                    $this->civ13->adminlistUpdate();
+                    break;
+                }
+            }
         });
-        $this->civ13->discord->on('THREAD_CREATE', function (Thread $thread): ?PromiseInterface
-        {
-            if ($last_message = $thread->messages->get('id', $thread->last_message_id))
-                if ($last_message->member && $last_message->member->id === $this->civ13->discord->id) // This event also gets fired when the bot joins the thread
+        $this->civ13->discord->on('THREAD_CREATE', function (Thread $thread): ?PromiseInterface {
+            if ($last_message = $thread->messages->get('id', $thread->last_message_id)) {
+                if ($last_message->member && $last_message->member->id === $this->civ13->discord->id) { // This event also gets fired when the bot joins the thread
                     return null;
-            if ($thread->owner_id === $this->civ13->discord->id) return null;
-            if ($thread->members->has($this->civ13->discord->id)) return null;
-            if ($thread->guild_id !== $this->civ13->civ13_guild_id) return null;
-            if ($thread->parent_id !== $this->civ13->channel_ids['ban_appeals']) return null;
-            if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
-            if (! $member = $guild->members->get('id', $thread->owner_id)) return null;
-            return $thread->join()->then(fn(): PromiseInterface =>
-                $this->civ13->then(
-                    $thread->sendMessage(Civ13::createBuilder()->setContent(
-                        !($item = $this->getVerifiedItem($member))
-                            ? "Your Discord account has not yet been linked to a Byond account. If you were directed here automatically during the verification process please wait for a staff member to assist you. Be aware that you must complete the verification process before your ban appeal can be considered. "
+                }
+            }
+            if ($thread->owner_id === $this->civ13->discord->id) {
+                return null;
+            }
+            if ($thread->members->has($this->civ13->discord->id)) {
+                return null;
+            }
+            if ($thread->guild_id !== $this->civ13->civ13_guild_id) {
+                return null;
+            }
+            if ($thread->parent_id !== $this->civ13->channel_ids['ban_appeals']) {
+                return null;
+            }
+            if (! $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+                return null;
+            }
+            if (! $member = $guild->members->get('id', $thread->owner_id)) {
+                return null;
+            }
+
+            return $thread->join()->then(fn (): PromiseInterface => $this->civ13->then(
+                $thread->sendMessage(Civ13::createBuilder()->setContent(
+                    ! ($item = $this->getVerifiedItem($member))
+                            ? 'Your Discord account has not yet been linked to a Byond account. If you were directed here automatically during the verification process please wait for a staff member to assist you. Be aware that you must complete the verification process before your ban appeal can be considered. '
                             : ($this->civ13->bancheck($item['ss13'], true)
                                 ? "Byond account `{$item['ss13']}` is currently banned. Please wait for a staff member to assist you. "
                                 : "Byond account `{$item['ss13']}` is not currently banned. If you still need assistance please wait for a staff member to assist you. ")
-                    )),
-                    fn(Message $message): ?PromiseInterface => 
-                        ($staff_bot = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']))
+                )),
+                fn (Message $message): ?PromiseInterface => ($staff_bot = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']))
                             ? $this->civ13->sendMessage($staff_bot, "<@&{$this->civ13->role_ids['Admin']}>, a new ban appeal has been created by <@{$thread->owner_id}> in $thread. Please review the appeal and respond accordingly.")
                             : null
-                ));
+            ));
         });
         $fn = function () {
             $this->getVerified();
             $this->logger->info('[Provisional Array]', $this->provisional->toArray());
-            foreach ($this->provisional as $item) $this->provisionalRegistration($item['ss13'], $item['discord']); // Attempt to register all provisional user 
-            if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) foreach ($guild->members as $member) {
-                /** @var Member $member */
-                if (! $member->user->bot && ! $member->roles->has($this->civ13->role_ids['Verified']))
-                    $this->joinRoles($member, false);
+            foreach ($this->provisional as $item) {
+                $this->provisionalRegistration($item['ss13'], $item['discord']);
+            } // Attempt to register all provisional user
+            if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+                foreach ($guild->members as $member) {
+                    /** @var Member $member */
+                    if (! $member->user->bot && ! $member->roles->has($this->civ13->role_ids['Verified'])) {
+                        $this->joinRoles($member, false);
+                    }
+                }
             }
             $this->verifierStatusTimer();
             $this->setup();
         };
         $this->civ13->ready
             ? $fn()
-            : $this->discord->once('init', fn() => $fn());
+            : $this->discord->once('init', fn () => $fn());
     }
     public function setup()
     {
-        if ($this->ready) return;
-        $this->civ13->verifier =& $this;
-        $this->logger->info("Added Verifier");
+        if ($this->ready) {
+            return;
+        }
+        $this->civ13->verifier = &$this;
+        $this->logger->info('Added Verifier');
         $this->ready = true;
     }
 
     public function verifierStatusChannelUpdate(bool $status): ?PromiseInterface
     {
-        if (! $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['verifier-status'])) return null;
+        if (! $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['verifier-status'])) {
+            return null;
+        }
         [$verifier_name, $reported_status] = explode('-', $channel->name);
-        if ($reported_status === ($status = $this->civ13->verifier_online ? 'online' : 'offline')) return null;
-        if ($channel->name === "{$verifier_name}-{$status}") return null;
+        if ($reported_status === ($status = $this->civ13->verifier_online ? 'online' : 'offline')) {
+            return null;
+        }
+        if ($channel->name === "{$verifier_name}-{$status}") {
+            return null;
+        }
         //if ($status === 'offline') $msg .= PHP_EOL . "Verifier technician <@{$this->technician_id}> has been notified";
         $channel->name = "{$verifier_name}-{$status}";
+
         return $this->civ13->then(
             $this->civ13->sendMessage($this->civ13->discord->getChannel($channel->id), "Verifier is now `{$status}`."),
-            fn(Message $message) => $channel->guild->channels->save($channel)
+            fn (Message $message) => $channel->guild->channels->save($channel)
         );
     }
 
     /**
      * This function takes a member and checks if they have previously been verified
      * If they have, it will assign them the appropriate roles
-     * If they have not, it will send them a message indicating that they need to verify if the 'welcome_message' is set
+     * If they have not, it will send them a message indicating that they need to verify if the 'welcome_message' is set.
      *
-     * @param Member                 $member               The member to check and assign roles to
-     * @param bool                   $send_welcome_message Whether to send the welcome message or not
-     * 
+     * @param Member $member               The member to check and assign roles to
+     * @param bool   $send_welcome_message Whether to send the welcome message or not
+     *
      * @return PromiseInterface<Member>|null
      */
     public function joinRoles(Member $member, bool $send_welcome_message = true): ?PromiseInterface
     {
         if ($member->guild_id === $this->civ13->civ13_guild_id && $item = $this->get('discord', $member->id)) {
-            if (! isset($item['ss13'])) $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
-            else {
-                if (isset($this->civ13->softbanned[$member->id]) || ($item['ss13'] && isset($this->civ13->softbanned[$item['ss13']]))) return null;
+            if (! isset($item['ss13'])) {
+                $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
+            } else {
+                if (isset($this->civ13->softbanned[$member->id]) || ($item['ss13'] && isset($this->civ13->softbanned[$item['ss13']]))) {
+                    return null;
+                }
                 $banned = $this->civ13->bancheck($item['ss13'], true);
                 $paroled = isset($this->civ13->paroled[$item['ss13']]);
-                if ($banned && $paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished'], $this->civ13->role_ids['Paroled']], "bancheck join {$item['ss13']}");
-                if ($banned) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished']], "bancheck join {$item['ss13']}");
-                if ($paroled) return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Paroled']], "parole join {$item['ss13']}");
+                if ($banned && $paroled) {
+                    return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished'], $this->civ13->role_ids['Paroled']], "bancheck join {$item['ss13']}");
+                }
+                if ($banned) {
+                    return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished']], "bancheck join {$item['ss13']}");
+                }
+                if ($paroled) {
+                    return $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Paroled']], "parole join {$item['ss13']}");
+                }
+
                 return $member->setroles([$this->civ13->role_ids['Verified']], "verified join {$item['ss13']}");
             }
         }
-        if ($send_welcome_message)
-            if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['bot-stuff']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id)
-                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['bot-stuff']))
+        if ($send_welcome_message) {
+            if (isset($this->civ13->welcome_message, $this->civ13->channel_ids['bot-stuff']) && $this->civ13->welcome_message && $member->guild_id === $this->civ13->civ13_guild_id) {
+                if ($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['bot-stuff'])) {
                     return $this->civ13->sendMessage($channel, "<@{$member->id}>, {$this->civ13->welcome_message}");
+                }
+            }
+        }
+
         return null;
     }
 
@@ -249,32 +311,41 @@ class Verifier
      */
     public function generateToken(string $ckey, string $discord_id, string $charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', int $length = 50): string
     {
-        if ($item = $this->pending->get('ss13', $ckey)) return $item['token'];
+        if ($item = $this->pending->get('ss13', $ckey)) {
+            return $item['token'];
+        }
         $this->pending->pushItem(
             ['discord' => $discord_id,
             'ss13' => $ckey,
-            'token' => $token = implode('', array_map(static fn() => $charset[random_int(0, strlen($charset) - 1)], range(1, $length)))
-        ]);
+            'token' => $token = implode('', array_map(static fn () => $charset[random_int(0, strlen($charset) - 1)], range(1, $length))),
+        ]
+        );
+
         return $token;
     }
     /**
      * This function is used to verify a BYOND account.
-     * 
+     *
      * The function first checks if the discord_id is in the pending collection.
      * If the discord_id is not in the pending collection, the function returns false.
-     * 
+     *
      * The function then attempts to retrieve the 50 character token from the BYOND website.
      * If the token found on the BYOND website does not match the token in the pending collection, the function returns false.
-     * 
+     *
      * If the token matches, the function returns true.
-     * 
-     * @param string $discord_id The Discord ID of the user to verify.
-     * @return bool Returns true if the token matches, false otherwise.
+     *
+     * @param  string $discord_id The Discord ID of the user to verify.
+     * @return bool   Returns true if the token matches, false otherwise.
      */
     public function checkToken(string $discord_id): bool
     { // Check if the user set their token
-        if (! $item = $this->pending->get('discord', $discord_id)) return false; // User is not in pending collection (This should never happen and is probably a programming error)
-        if (! isset($item['token']) || $item['token'] !== Byond::getDesc($item['ss13'])) return false; // Token does not match the description
+        if (! $item = $this->pending->get('discord', $discord_id)) {
+            return false;
+        } // User is not in pending collection (This should never happen and is probably a programming error)
+        if (! isset($item['token']) || $item['token'] !== Byond::getDesc($item['ss13'])) {
+            return false;
+        } // Token does not match the description
+
         return true; // Token matches
     }
 
@@ -285,94 +356,135 @@ class Verifier
      * It will send a message to the user with instructions on how to verify.
      * If they have, it will check if they have the verified role, and if not, it will add it.
      *
-     * @param string $ckey The ckey of the user.
-     * @param string $discord_id The Discord ID of the user.
-     * @param Member|null $m The Discord member object (optional).
-     * @return string The verification status message.
+     * @param  string      $ckey       The ckey of the user.
+     * @param  string      $discord_id The Discord ID of the user.
+     * @param  Member|null $m          The Discord member object (optional).
+     * @return string      The verification status message.
      */
     public function process(string $ckey, string $discord_id, ?Member $m = null): string
     {
-        if (! $ckey = Civ13::sanitizeInput($ckey)) return 'Invalid ckey!';
-        if (isset($this->civ13->channel_ids['ban_appeals'])) $ban_appeals = $this->civ13->discord->getChannel($this->civ13->channel_ids['ban_appeals']);
+        if (! $ckey = Civ13::sanitizeInput($ckey)) {
+            return 'Invalid ckey!';
+        }
+        if (isset($this->civ13->channel_ids['ban_appeals'])) {
+            $ban_appeals = $this->civ13->discord->getChannel($this->civ13->channel_ids['ban_appeals']);
+        }
         if (! isset($this->civ13->permitted[$ckey]) && $this->civ13->permabancheck($ckey)) {
-            if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
-            if (isset($ban_appeals)) $this->civ13->then(
-                $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently permanently banned. Please follow the posting guidelines and appeal your ban here.")
-                    ->then(fn(Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
-            );
+            if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) {
+                $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
+            }
+            if (isset($ban_appeals)) {
+                $this->civ13->then(
+                    $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently permanently banned. Please follow the posting guidelines and appeal your ban here.")
+                        ->then(fn (Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
+                );
+            }
+
             return 'This account needs to appeal an existing ban first.';
         }
         if (isset($this->civ13->softbanned[$ckey]) || isset($this->civ13->softbanned[$discord_id])) {
-            if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
-            if (isset($ban_appeals)) $this->civ13->then(
-                $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently under investigation. Please follow the posting guidelines and appeal your ban here.")
-                    ->then(fn(Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
-            );
+            if ($m && ! $m->roles->has($this->civ13->role_ids['Permabanished'])) {
+                $m->addRole($this->civ13->role_ids['Permabanished'], "permabancheck $ckey");
+            }
+            if (isset($ban_appeals)) {
+                $this->civ13->then(
+                    $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently under investigation. Please follow the posting guidelines and appeal your ban here.")
+                        ->then(fn (Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
+                );
+            }
+
             return 'This account is currently under investigation.';
         }
         if ($this->get('discord', $discord_id)) {
-            if (($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id)) && ! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setRoles([$this->civ13->role_ids['Verified']], "approveme join $ckey");
+            if (($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id)) && ! $member->roles->has($this->civ13->role_ids['Verified'])) {
+                $member->setRoles([$this->civ13->role_ids['Verified']], "approveme join $ckey");
+            }
+
             return 'You are already verified!';
         }
-        if ($this->get('ckey', $ckey)) return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
+        if ($this->get('ckey', $ckey)) {
+            return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
+        }
         if (! $this->pending->get('discord', $discord_id)) {
             // Check if the player's account has played on the server before
             $file_contents = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
-                if (! file_exists($fp = $gameserver->basedir . Civ13::playerlogs) || ! $fc = @file_get_contents($fp)) {
+                if (! file_exists($fp = $gameserver->basedir.Civ13::playerlogs) || ! $fc = @file_get_contents($fp)) {
                     $this->logger->warning("Unable to open `$fp`");
+
                     return $carry;
                 }
-                return $carry . $fc;
+
+                return $carry.$fc;
             }, '');
-            if (! array_reduce(explode('|', $file_contents), fn($carry, $line) => $carry || explode(';', trim($line))[0] === $ckey, false)) return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying."; 
+            if (! array_reduce(explode('|', $file_contents), fn ($carry, $line) => $carry || explode(';', trim($line))[0] === $ckey, false)) {
+                return "Byond account `$ckey` has never been seen on the server before! You'll need to join one of our servers at least once before verifying.";
+            }
             // Check if the player's account is old enough
-            if (! $age = $this->civ13->getByondAge($ckey)) return "Byond account `$ckey` either does not exist or the website can't be reached! Please contact the CTO for assistance.";
+            if (! $age = $this->civ13->getByondAge($ckey)) {
+                return "Byond account `$ckey` either does not exist or the website can't be reached! Please contact the CTO for assistance.";
+            }
             if (! isset($this->civ13->permitted[$ckey]) && ! $this->civ13->checkByondAge($age)) {
                 $arr = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => $reason = "Byond account `$ckey` does not meet the requirements to be approved. ($age)"];
                 $this->civ13->ban($arr, null, null, true);
-                if (isset($ban_appeals)) $this->civ13->then(
-                    $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently permanently banned for being too new to be automatically approved. Please follow the posting guidelines and appeal your ban here.")
-                        ->then(fn(Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
-                );
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Ambassador']}>, Byond account `$ckey` was too new to complete the automatic verification process! Please investigate using the `ckeyinfo` command and manually approve if they should be allowed to bypass the requirements.");
+                if (isset($ban_appeals)) {
+                    $this->civ13->then(
+                        $this->civ13->startForumThread($ban_appeals, "`$ckey`'s Ban Appeal", "<@$discord_id>, your Byond account `$ckey` is currently permanently banned for being too new to be automatically approved. Please follow the posting guidelines and appeal your ban here.")
+                            ->then(fn (Thread $thread): ?PromiseInterface => ($user = $this->discord->users->get('id', $discord_id)) ? $thread->addMember($user) : null)
+                    );
+                }
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                    $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Ambassador']}>, Byond account `$ckey` was too new to complete the automatic verification process! Please investigate using the `ckeyinfo` command and manually approve if they should be allowed to bypass the requirements.");
+                }
+
                 return $reason;
             }
-            return 'Login to your profile at ' . Byond::PROFILE . ' and enter this token as your description: `' . $this->generateToken($ckey, $discord_id) . PHP_EOL . '`Use the command again once this process has been completed.';
+
+            return 'Login to your profile at '.Byond::PROFILE.' and enter this token as your description: `'.$this->generateToken($ckey, $discord_id).PHP_EOL.'`Use the command again once this process has been completed.';
         }
+
         return $this->new($discord_id)['error']; // ['success'] will be false if verification cannot proceed or true if succeeded but is only needed if debugging, ['error'] will contain the error/success message and will be messaged to the user
     }
     /**
      * This function is called when a user still needs to set their token in their BYOND description and call the approveme prompt.
      * It will check if the token is valid, then add the user to the verified list.
      *
-     * @param string $discord_id The Discord ID of the user to verify.
-     * @return array An array with the verification result. The array contains the following keys:
-     *   - 'success' (bool): Indicates whether the verification was successful.
-     *   - 'error' (string): If 'success' is false, this contains the error message.
+     * @param  string $discord_id The Discord ID of the user to verify.
+     * @return array  An array with the verification result. The array contains the following keys:
+     *                - 'success' (bool): Indicates whether the verification was successful.
+     *                - 'error' (string): If 'success' is false, this contains the error message.
      */
     public function new(string $discord_id): array // ['success' => bool, 'error' => string]
     { // Attempt to verify a user
-        if (! $item = $this->pending->get('discord', $discord_id)) return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->civ13->technician_id}>."];
-        if (! $this->checkToken($discord_id)) return ['success' => false, 'error' => "You have not set your description yet! It needs to be set to `{$item['token']}`"];
+        if (! $item = $this->pending->get('discord', $discord_id)) {
+            return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->civ13->technician_id}>."];
+        }
+        if (! $this->checkToken($discord_id)) {
+            return ['success' => false, 'error' => "You have not set your description yet! It needs to be set to `{$item['token']}`"];
+        }
         $ckeyinfo = $this->civ13->ckeyinfo($item['ss13']);
         if (($ckeyinfo['altbanned'] || count($ckeyinfo['discords']) > 1) && ! isset($this->civ13->permitted[$item['ss13']])) { // TODO: Add check for permaban
             // TODO: add to pending list?
-            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Ambassador']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Ambassador']}>, {$item['ss13']} has been flagged as needing additional review. Please `permit` the ckey after reviewing if they should be allowed to complete the verification process.");
+            }
+
             return ['success' => false, 'error' => "Your ckey `{$item['ss13']}` has been flagged as needing additional review. Please wait for a staff member to assist you."];
         }
+
         return $this->verify($item['ss13'], $discord_id);
     }
     /**
      * This function allows a ckey to bypass the verification process entirely.
      * NOTE: This function is only authorized to be used by the database administrator.
      *
-     * @param string $ckey The ckey to register.
-     * @param string $discord_id The Discord ID associated with the ckey.
-     * @return array An array containing the success status and error message (if any).
+     * @param  string $ckey       The ckey to register.
+     * @param  string $discord_id The Discord ID associated with the ckey.
+     * @return array  An array containing the success status and error message (if any).
      */
     public function register(string $ckey, string $discord_id): array // ['success' => bool, 'error' => string]
     {
         $this->civ13->permitCkey($ckey, true);
+
         return $this->verify($ckey, $discord_id);
     }
     /**
@@ -380,10 +492,10 @@ class Verifier
      * If the Discord ID or ckey is already in the SQL database, it will return an error message stating that the ckey is already verified.
      * Otherwise, it will add the user to the SQL database and the verified list, remove them from the pending list, and give them the verified role.
      *
-     * @param string $ckey The ckey of the user.
-     * @param string $discord_id The Discord ID of the user.
-     * @param bool $provisional (Optional) Whether the registration is provisional or not. Default is false.
-     * @return array An array with 'success' (bool) and 'error' (string) keys indicating the success status and error message, if any.
+     * @param  string $ckey        The ckey of the user.
+     * @param  string $discord_id  The Discord ID of the user.
+     * @param  bool   $provisional (Optional) Whether the registration is provisional or not. Default is false.
+     * @return array  An array with 'success' (bool) and 'error' (string) keys indicating the success status and error message, if any.
      */
     public function verify(string $ckey, string $discord_id, bool $provisional = false): array // ['success' => bool, 'error' => string]
     { // Send $_POST information to the website. Only call this function after the token verification process has been completed!
@@ -399,7 +511,10 @@ class Verifier
                 $this->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
                 $this->civ13->VarSave('provisional.json', $this->provisional->toArray());
             }
-            if ($this->provisionalRegistration($ckey, $discord_id)) $error = "Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
+            if ($this->provisionalRegistration($ckey, $discord_id)) {
+                $error = "Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
+            }
+
             return ['success' => $success, 'error' => $error];
         }
        
@@ -407,87 +522,116 @@ class Verifier
         switch ($http_status) {
             case 200: // Verified
                 $success = true;
-                $error = "`$ckey` " . ((isset($this->civ13->ages[$ckey])) ? "- ({$this->civ13->ages[$ckey]})" : '') . " has been verified and registered to <@$discord_id> (Civ13)";
+                $error = "`$ckey` ".((isset($this->civ13->ages[$ckey])) ? "- ({$this->civ13->ages[$ckey]})" : '')." has been verified and registered to <@$discord_id> (Civ13)";
                 $this->pending->offsetUnset($discord_id);
                 $this->getVerified(false);
-                if (! isset($this->civ13->ages[$ckey])) $this->civ13->ages[$ckey] = $this->civ13->getByondAge($ckey) ?: null;
-                if (! $member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id)) return ['success' => false, 'error' => "($ckey - " . ($this->civ13->ages[$ckey] ?? 'N/A') . ") was verified but the member couldn't be found in the server."];
+                if (! isset($this->civ13->ages[$ckey])) {
+                    $this->civ13->ages[$ckey] = $this->civ13->getByondAge($ckey) ?: null;
+                }
+                if (! $member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id)) {
+                    return ['success' => false, 'error' => "($ckey - ".($this->civ13->ages[$ckey] ?? 'N/A').") was verified but the member couldn't be found in the server."];
+                }
                 $channel = isset($this->civ13->channel_ids['staff_bot']) ? $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']) : null;
                 if (isset($this->civ13->panic_bans[$ckey])) {
                     $this->civ13->__panicUnban($ckey);
                     $error .= ' and the panic bunker ban removed.';
-                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
-                    if ($channel) $this->civ13->sendMessage($channel, "Verified and removed the panic bunker ban from $member (`$ckey` - {$this->civ13->ages[$ckey]}).");
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) {
+                        $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
+                    }
+                    if ($channel) {
+                        $this->civ13->sendMessage($channel, "Verified and removed the panic bunker ban from $member (`$ckey` - {$this->civ13->ages[$ckey]}).");
+                    }
                 } elseif ($this->civ13->bancheck($ckey, true)) {
-                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished']], "approveme verified ($ckey)");
-                    if ($channel) $this->civ13->sendMessage($channel, "Added the banished role to $member (`$ckey` - {$this->civ13->ages[$ckey]}).");
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) {
+                        $member->setroles([$this->civ13->role_ids['Verified'], $this->civ13->role_ids['Banished']], "approveme verified ($ckey)");
+                    }
+                    if ($channel) {
+                        $this->civ13->sendMessage($channel, "Added the banished role to $member (`$ckey` - {$this->civ13->ages[$ckey]}).");
+                    }
                 } else {
-                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
-                    if ($channel) $this->civ13->sendMessage($channel, "Verified $member. (`$ckey`" . ((isset($this->civ13->ages[$ckey])) ? " - {$this->civ13->ages[$ckey]})" : ')'));
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) {
+                        $member->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
+                    }
+                    if ($channel) {
+                        $this->civ13->sendMessage($channel, "Verified $member. (`$ckey`".((isset($this->civ13->ages[$ckey])) ? " - {$this->civ13->ages[$ckey]})" : ')'));
+                    }
                 }
                 break;
             case 400: //DB rejects processing (likely duplicate entry) or ckey/discord weren't passed properly (highly unlikely)
                 $this->getVerified(false);
-                $error = 'The database rejected the request due to a bad request. This issue is usually temporary and resolves itself immediately with a second attempt.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = 'The database rejected the request due to a bad request. This issue is usually temporary and resolves itself immediately with a second attempt.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
             case 401:
-                $error = 'I do not currently have the necessary authorization from the website to complete your request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = 'I do not currently have the necessary authorization from the website to complete your request. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
             case 403: // Already registered
                 $error = "Either Byond account `$ckey` or <@$discord_id> has already been verified."; // This should have been caught above. Need to run getVerified() again?
                 $this->getVerified(false);
                 // Check if the user is already verified and add the role if it's missing
-                if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) break;
+                if (! $guild = $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+                    break;
+                }
                 if (! $members = $guild->members->filter(function (Member $member) {
                     return ! $member->roles->has($this->civ13->role_ids['Verified'])
                         && ! $member->roles->has($this->civ13->role_ids['Banished'])
                         && ! $member->roles->has($this->civ13->role_ids['Permabanished']);
-                })) break;
-                if (! $member = $members->get('id', $discord_id)) break;
-                if (! $m = $this->getVerifiedMember($member)) break;
+                })) {
+                    break;
+                }
+                if (! $member = $members->get('id', $discord_id)) {
+                    break;
+                }
+                if (! $m = $this->getVerifiedMember($member)) {
+                    break;
+                }
                 $m->addRole($this->civ13->role_ids['Verified'], "approveme verified ($ckey)");
                 break;
             case 404:
-                $error = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = 'The website could not be found or is misconfigured. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
             case 502: // NGINX's PHP-CGI workers are unavailable
-                $error = 'The website\'s PHP-CGI workers are currently unavailable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = 'The website\'s PHP-CGI workers are currently unavailable. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
             case 503: // Database unavailable
-                $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
             case 504: // Gateway timeout
-                $error = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = 'The website timed out while attempting to process the request. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
             case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
                 $this->verifierStatusChannelUpdate($this->civ13->verifier_online = false);
-                $error = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = 'The website could not be reached. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                 if (! $provisional) {
                     if (! $this->provisional->get('ss13', $ckey)) {
                         $this->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
                         $this->civ13->VarSave('provisional.json', $this->provisional->toArray());
                     }
-                    if ($this->provisionalRegistration($ckey, $discord_id)) $error = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
-                    else $error .= ' Provisional registration is already pending and a new provisional role will not be provided at this time.' . PHP_EOL . $error;
+                    if ($this->provisionalRegistration($ckey, $discord_id)) {
+                        $error = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
+                    } else {
+                        $error .= ' Provisional registration is already pending and a new provisional role will not be provided at this time.'.PHP_EOL.$error;
+                    }
                 }
                 break;
             default:
-                $error = "There was an error attempting to process the request: [$http_status] $response" . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                $error = "There was an error attempting to process the request: [$http_status] $response".PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                 break;
         }
+
         return ['success' => $success, 'error' => $error];
     }
     /**
      * Removes a ckey from the verified list and sends a DELETE request to a website.
      *
-     * @param string $id The ckey to be removed.
-     * @return array An array with the success status and a message.
-     *               ['success' => bool, 'message' => string]
+     * @param  string $id The ckey to be removed.
+     * @return array  An array with the success status and a message.
+     *                ['success' => bool, 'message' => string]
      */
     public function unverify(string $id): array // ['success' => bool, 'message' => string]
     {
-        if ( ! $verified_array = $this->civ13->VarLoad('verified.json')) {
+        if (! $verified_array = $this->civ13->VarLoad('verified.json')) {
             $this->logger->warning('Unable to load the verified list.');
+
             return ['success' => false, 'message' => 'Unable to load the verified list.'];
         }
 
@@ -497,22 +641,29 @@ class Verifier
 
         if (! $removed) {
             $this->logger->info("Unable to find `$id` in the verified list.");
+
             return ['success' => false, 'message' => "Unable to find `$id` in the verified list."];
         }
 
         $verified_array = array_values(array_diff_key($verified_array, $removed));
-        $this->verified = new Collection($verified_array, 'discord');   
+        $this->verified = new Collection($verified_array, 'discord');
         $this->civ13->VarSave('verified.json', $verified_array);
 
-         // Send $_POST information to the website.
+        // Send $_POST information to the website.
         $message = '';
         if (isset($this->verify_url) && $this->verify_url) { // Bypass webserver deregistration if not configured
             ['response' => $response, 'http_status' => $http_status] = $this->__unverify($id);
             switch ($http_status) {
                 case 200: // Verified
-                    if (! $member = $this->getVerifiedMember($id)) $message = "`$id` was unverified but the member couldn't be found in the server.";
-                    if ($member && $member->roles->has($this->civ13->role_ids['Verified'])) $member->setRoles([], "unverified ($id)");
-                    if ($channel = isset($this->civ13->channel_ids['staff_bot']) ? $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']) : null) $this->civ13->sendMessage($channel, "Unverified `$id`.");
+                    if (! $member = $this->getVerifiedMember($id)) {
+                        $message = "`$id` was unverified but the member couldn't be found in the server.";
+                    }
+                    if ($member && $member->roles->has($this->civ13->role_ids['Verified'])) {
+                        $member->setRoles([], "unverified ($id)");
+                    }
+                    if ($channel = isset($this->civ13->channel_ids['staff_bot']) ? $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']) : null) {
+                        $this->civ13->sendMessage($channel, "Unverified `$id`.");
+                    }
                     $this->getVerified(false);
                     break;
                 case 403: // Already registered
@@ -520,33 +671,38 @@ class Verifier
                     $this->getVerified(false);
                     break;
                 case 404:
-                    $message = 'The website could not be found or is misconfigured. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                    $message = 'The website could not be found or is misconfigured. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
                 case 405: // Method not allowed
-                    $message = "The method used to access the website is not allowed. Please check the configuration of the website." . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>. Reason: $response";
+                    $message = 'The method used to access the website is not allowed. Please check the configuration of the website.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>. Reason: $response";
                     break;
                 case 502: // NGINX's PHP-CGI workers are unavailable
-                    $message = "The website's PHP-CGI workers are currently unavailable. Please try again later." . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                    $message = "The website's PHP-CGI workers are currently unavailable. Please try again later.".PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
                 case 503: // Database unavailable
-                    $message = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                    $message = 'The website timed out while attempting to process the request because the database is currently unreachable. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
                 case 504: // Gateway timeout
-                    $message = 'The website timed out while attempting to process the request. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                    $message = 'The website timed out while attempting to process the request. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
                 case 0: // The website is down, so allow provisional registration, then try to verify when it comes back up
                     $this->verifierStatusChannelUpdate($this->civ13->verifier_online = false);
-                    $message = 'The website could not be reached. Please try again later.' . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                    $message = 'The website could not be reached. Please try again later.'.PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
                 default:
-                    $message = "There was an error attempting to process the request: [$http_status] $response" . PHP_EOL . "If this error persists, contact <@{$this->civ13->technician_id}>.";
+                    $message = "There was an error attempting to process the request: [$http_status] $response".PHP_EOL."If this error persists, contact <@{$this->civ13->technician_id}>.";
                     break;
             }
         }
         
-        $removed_items = implode(PHP_EOL, array_map(fn($item) => json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), $removed));
-        if ($removed_items) $message .= PHP_EOL . 'Removed from the verified list: ```json' . PHP_EOL . $removed_items . PHP_EOL . '```' . PHP_EOL . $message;
-        if ($message) $this->logger->info($message);
+        $removed_items = implode(PHP_EOL, array_map(fn ($item) => json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), $removed));
+        if ($removed_items) {
+            $message .= PHP_EOL.'Removed from the verified list: ```json'.PHP_EOL.$removed_items.PHP_EOL.'```'.PHP_EOL.$message;
+        }
+        if ($message) {
+            $this->logger->info($message);
+        }
+
         return ['success' => true, 'message' => $message];
     }
     private function __verify(string $ckey, string $discord_id): array
@@ -586,7 +742,7 @@ class Verifier
 
             return [
                 'response' => $body,
-                'http_status' => $http_status
+                'http_status' => $http_status,
             ];
         }
         
@@ -601,9 +757,10 @@ class Verifier
             CURLOPT_TIMEOUT => 5, // Set a timeout of 5 seconds
             CURLOPT_CONNECTTIMEOUT => 2, // Set a connection timeout of 2 seconds
         ]);
+
         return [
             'response' => $response = curl_exec($ch),
-            'http_status' => ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE) // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
+            'http_status' => ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE), // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
         ];
     }
 
@@ -613,9 +770,9 @@ class Verifier
      * If the website is down, it will add the user to the provisional list and set a timer to try to verify them again in 30 minutes.
      * If the user is allowed to be granted a provisional role, it will return true.
      *
-     * @param string $ckey The BYOND ckey of the user.
-     * @param string $discord_id The Discord ID of the user.
-     * @return bool Returns true if the user is allowed to be granted a provisional role, false otherwise.
+     * @param  string $ckey       The BYOND ckey of the user.
+     * @param  string $discord_id The Discord ID of the user.
+     * @return bool   Returns true if the user is allowed to be granted a provisional role, false otherwise.
      */
     public function provisionalRegistration(string $ckey, string $discord_id): bool
     {
@@ -623,40 +780,67 @@ class Verifier
             if ($this->verified->get('discord', $discord_id)) { // User already verified, this function shouldn't be called (may happen anyway because of the timer)
                 $this->provisional->pull($ckey);
                 $this->civ13->VarSave('provisional.json', $this->provisional->toArray());
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "User <@$discord_id> is already verified and could not be provisionally registered.");
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                    $this->civ13->sendMessage($channel, "User <@$discord_id> is already verified and could not be provisionally registered.");
+                }
+
                 return false;
             }
 
             $result = [];
-            if (isset($this->verify_url) && $this->verify_url) $result = $this->verify($ckey, $discord_id, true);
+            if (isset($this->verify_url) && $this->verify_url) {
+                $result = $this->verify($ckey, $discord_id, true);
+            }
             if (isset($result['success']) && $result['success']) {
                 $this->provisional->pull($ckey);
                 $this->civ13->VarSave('provisional.json', $this->provisional->toArray());
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "Successfully verified Byond account `$ckey` with Discord ID <@$discord_id>.");
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                    $this->civ13->sendMessage($channel, "Successfully verified Byond account `$ckey` with Discord ID <@$discord_id>.");
+                }
+
                 return false;
             }
             if (isset($result['error']) && $result['error']) {
                 if (str_starts_with($result['error'], 'The website') || (! isset($this->verify_url) || ! $this->verify_url)) { // The website URL is not configured or the website could not be reached
-                    if ($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id))
-                    if ((isset($this->verify_url) && $this->verify_url)) {
-                        if (! isset($this->civ13->timers['provisional_registration_'.$discord_id])) $this->civ13->timers['provisional_registration_'.$discord_id] = $this->civ13->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) { $provisionalRegistration($ckey, $discord_id); });
-                        if (! $member->roles->has($this->civ13->role_ids['Verified']) && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}" . PHP_EOL . 'Providing provisional verification role and trying again in 30 minutes... ');
+                    if ($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id)) {
+                        if ((isset($this->verify_url) && $this->verify_url)) {
+                            if (! isset($this->civ13->timers['provisional_registration_'.$discord_id])) {
+                                $this->civ13->timers['provisional_registration_'.$discord_id] = $this->civ13->discord->getLoop()->addTimer(1800, function () use ($provisionalRegistration, $ckey, $discord_id) {
+                                    $provisionalRegistration($ckey, $discord_id);
+                                });
+                            }
+                            if (! $member->roles->has($this->civ13->role_ids['Verified']) && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                                $this->civ13->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}".PHP_EOL.'Providing provisional verification role and trying again in 30 minutes... ');
+                            }
+                        }
                     }
-                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) $member->setRoles([$this->civ13->role_ids['Verified']], "Provisional verification `$ckey`");
+                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) {
+                        $member->setRoles([$this->civ13->role_ids['Verified']], "Provisional verification `$ckey`");
+                    }
+
                     return true;
                 }
-                if ($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id))
-                    if ($member->roles->has($this->civ13->role_ids['Verified']))
+                if ($member = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)->members->get('id', $discord_id)) {
+                    if ($member->roles->has($this->civ13->role_ids['Verified'])) {
                         $member->setRoles([], 'Provisional verification failed');
+                    }
+                }
                 $this->provisional->pull($ckey);
                 $this->civ13->VarSave('provisional.json', $this->provisional->toArray());
-                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}");
+                if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                    $this->civ13->sendMessage($channel, "Failed to verify Byond account `$ckey` with Discord ID <@$discord_id>: {$result['error']}");
+                }
+
                 return false;
             }
             // The code should only get this far if $result['error'] wasn't set correctly. This should never happen and is probably a programming error.
-            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) $this->civ13->sendMessage($channel, "Something went wrong trying to process the provisional registration for Byond account `$ckey` with Discord ID <@$discord_id>. If this error persists, contact <@{$this->civ13->technician_id}>.");
+            if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                $this->civ13->sendMessage($channel, "Something went wrong trying to process the provisional registration for Byond account `$ckey` with Discord ID <@$discord_id>. If this error persists, contact <@{$this->civ13->technician_id}>.");
+            }
+
             return false;
         };
+
         return $provisionalRegistration($ckey, $discord_id);
     }
 
@@ -664,20 +848,29 @@ class Verifier
      * Provisions a Byond username and Discord ID for provisional registration.
      * This function bypasses the verification process and should only be used when the user has been verified manually.
      *
-     * @param string|null $ckey The Byond ckey to provision.
-     * @param string|null $discord_id The Discord ID to provision.
+     * @param  string|null              $ckey       The Byond ckey to provision.
+     * @param  string|null              $discord_id The Discord ID to provision.
      * @return PromiseInterface<string> A promise that resolves with a success message or rejects with an error message.
      */
     public function provision(?string $ckey = '', ?string $discord_id = ''): PromiseInterface
     {
-        if (! $ckey || ! $discord_id) return reject(new \InvalidArgumentException('Invalid format! Please use the format `provision <byond username>; <discord id>`.'));
-        if (! $ckey = Civ13::sanitizeInput($ckey)) return reject(new \InvalidArgumentException('Byond username was not passed. Please use the format `provision <byond username>; <discord id>`.'));
-        if (! is_numeric($discord_id = Civ13::sanitizeInput($discord_id))) return reject(new \InvalidArgumentException("Discord id `$discord_id` must be numeric."));
-        if ($this->isVerified($ckey, $discord_id)) return reject(new VerifierException("Either Byond account `$ckey` or <@$discord_id> has already been verified."));
+        if (! $ckey || ! $discord_id) {
+            return reject(new \InvalidArgumentException('Invalid format! Please use the format `provision <byond username>; <discord id>`.'));
+        }
+        if (! $ckey = Civ13::sanitizeInput($ckey)) {
+            return reject(new \InvalidArgumentException('Byond username was not passed. Please use the format `provision <byond username>; <discord id>`.'));
+        }
+        if (! is_numeric($discord_id = Civ13::sanitizeInput($discord_id))) {
+            return reject(new \InvalidArgumentException("Discord id `$discord_id` must be numeric."));
+        }
+        if ($this->isVerified($ckey, $discord_id)) {
+            return reject(new VerifierException("Either Byond account `$ckey` or <@$discord_id> has already been verified."));
+        }
         if (! $this->provisional->get('ss13', $ckey)) {
             $this->provisional->pushitem(['ss13' => $ckey, 'discord' => $discord_id]);
             $this->civ13->VarSave('provisional.json', $this->provisional->toArray());
         }
+
         return resolve("Provisional registration for `$ckey` to <@$discord_id> has been added.");
     }
 
@@ -688,12 +881,12 @@ class Verifier
      * 1. If the input is verified in the 'ss13' context.
      * 2. If the input is numeric and verified in the 'discord' context.
      *
-     * @param string ...$inputs The inputs to be verified.
-     * @return bool Returns true if any of the inputs are verified, otherwise false.
+     * @param  string ...$inputs The inputs to be verified.
+     * @return bool   Returns true if any of the inputs are verified, otherwise false.
      */
     public function isVerified(...$inputs): bool
     {
-        return array_reduce($inputs, fn($carry, $input) => $carry || $this->get('ss13', $input) || (is_numeric($input) && $this->get('discord', $input)), false);
+        return array_reduce($inputs, fn ($carry, $input) => $carry || $this->get('ss13', $input) || (is_numeric($input) && $this->get('discord', $input)), false);
     }
     /*
      * This function is used to refresh the bot's cache of verified users
@@ -714,20 +907,25 @@ class Verifier
         ['json' => $json, 'http_status' => $http_status] = $this->fetchVerifiedData();
         
         $this->civ13->verifier_online = ($http_status === 200);
-        $this->logger->debug('Verifier status: ' . ($this->civ13->verifier_online ? 'Online' : 'Offline'));
+        $this->logger->debug('Verifier status: '.($this->civ13->verifier_online ? 'Online' : 'Offline'));
         $this->verifierStatusChannelUpdate($this->civ13->verifier_online);
         //if ($json) $this->logger->debug('Verifier JSON response: ' . $json);
         if ($verified_array = $json ? json_decode($json, true) ?? [] : []) { // If the API endpoint is reachable, use the data from the API endpoint
             $this->logger->debug('Overwriting cached verified list from Webserver API...');
             $this->civ13->VarSave('verified.json', $verified_array);
+
             return $this->verified = new Collection($verified_array, 'discord');
         }
         if ($initialize) { // If the API endpoint is unreachable, use the data from the file cache
             $this->logger->debug('Loading cached verified list...');
-            if (! $verified_array = $this->civ13->VarLoad('verified.json') ?? []) $this->civ13->VarSave('verified.json', $verified_array);
+            if (! $verified_array = $this->civ13->VarLoad('verified.json') ?? []) {
+                $this->civ13->VarSave('verified.json', $verified_array);
+            }
+
             return $this->verified = new Collection($verified_array, 'discord');
         }
-        return $this->verified ?? $this->verified = new Collection($verified_array ?? [], 'discord'); 
+
+        return $this->verified ?? $this->verified = new Collection($verified_array ?? [], 'discord');
     }
 
     /**
@@ -743,10 +941,12 @@ class Verifier
      */
     public function fetchVerifiedData(): array
     {
-        if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) return [
-            'json' => json_encode($this->civ13->verifier_server->getState()->getVerifyList()),
-            'http_status' => 200
-        ];
+        if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) {
+            return [
+                'json' => json_encode($this->civ13->verifier_server->getState()->getVerifyList()),
+                'http_status' => 200,
+            ];
+        }
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->verify_url);
@@ -757,9 +957,10 @@ class Verifier
         $response = curl_exec($ch);
         $http_status = ($response === false) ? 0 : curl_getinfo($ch, CURLINFO_HTTP_CODE); // Validate the website's HTTP response! 200 = success, 403 = ckey already registered, anything else is an error
         $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE); // Get the size of the headers
+
         return [
             'json' => (! is_bool($response) && $response !== false) ? substr($response, $header_size) : '',
-            'http_status' => $http_status
+            'http_status' => $http_status,
         ];
     }
     /**
@@ -767,26 +968,41 @@ class Verifier
      * If the user is verified, it will return an array containing the verified item.
      * It will return false if the user is not verified.
      *
-     * @param Member|User|array|string $input The input value to search for the verified item.
-     * @return array|null The verified item as an array, or null if not found.
+     * @param  Member|User|array|string $input The input value to search for the verified item.
+     * @return array|null               The verified item as an array, or null if not found.
      */
     public function getVerifiedItem(Member|User|array|string $input): ?array
     {
         switch (true) {
             case is_string($input):
-                if (! $input = Civ13::sanitizeInput($input)) return null;
-                if (is_numeric($input) && $item = $this->get('discord', $input)) return $item;
-                if ($item = $this->get('ss13', $input)) return $item;
+                if (! $input = Civ13::sanitizeInput($input)) {
+                    return null;
+                }
+                if (is_numeric($input) && $item = $this->get('discord', $input)) {
+                    return $item;
+                }
+                if ($item = $this->get('ss13', $input)) {
+                    return $item;
+                }
                 break;
             case ($input instanceof Member || $input instanceof User):
-                if ($item = $this->get('discord', $input->id)) return $item;
+                if ($item = $this->get('discord', $input->id)) {
+                    return $item;
+                }
                 break;
             case is_array($input):
-                if (! isset($input['discord']) && ! isset($input['ss13'])) return null;
-                if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->get('discord', Civ13::sanitizeInput($input['discord']))) return $item;
-                if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->get('ss13', Civ13::sanitizeInput($input['ss13']))) return $item;
+                if (! isset($input['discord']) && ! isset($input['ss13'])) {
+                    return null;
+                }
+                if (isset($input['discord']) && is_numeric($input['discord']) && $item = $this->get('discord', Civ13::sanitizeInput($input['discord']))) {
+                    return $item;
+                }
+                if (isset($input['ss13']) && is_string($input['ss13']) && $item = $this->get('ss13', Civ13::sanitizeInput($input['ss13']))) {
+                    return $item;
+                }
                 break;
         }
+
         return null;
     }
     /**
@@ -797,32 +1013,48 @@ class Verifier
      */
     public function getVerifiedMemberItems(): CollectionInterface
     {
-        if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return $this->verified->filter(function($v) use ($guild) { return $guild->members->has($v['discord']); });
+        if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            return $this->verified->filter(function ($v) use ($guild) {
+                return $guild->members->has($v['discord']);
+            });
+        }
+
         return $this->verified;
     }
     /**
      * This function is used to get a Member object from a ckey or Discord ID.
      * It will return false if the user is not verified, if the user is not in the Civ13 Discord server, or if the bot is not in the Civ13 Discord server.
      *
-     * @param Member|User|array|string|null $input The input parameter can be a Member object, User object, an array, a string, or null.
-     * @return Member|null The Member object if found, or null if not found or not verified.
+     * @param  Member|User|array|string|null $input The input parameter can be a Member object, User object, an array, a string, or null.
+     * @return Member|null                   The Member object if found, or null if not found or not verified.
      */
     public function getVerifiedMember(Member|User|array|string|null $input): ?Member
     {
-        if (! $input) return null;
-        if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
+        if (! $input) {
+            return null;
+        }
+        if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            return null;
+        }
         if (! ($id = match (true) {
             $input instanceof Member, $input instanceof User => $input->id,
             is_string($input) => is_numeric($input = Civ13::sanitizeInput($input)) ? $input : ($this->get('ss13', $input)['discord'] ?? null),
             is_array($input) => isset($input['discord'], $input['ss13d']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord'] ?? '')) ? $discord_id : ($this->get('ss13', Civ13::sanitizeInput($input['ss13'] ?? ''))['discord'] ?? 'null'),
             default => null,
-        }) || ! $this->isVerified($id)) return null;
+        }) || ! $this->isVerified($id)) {
+            return null;
+        }
+
         return $guild->members->get('id', $id);
     }
     public function getVerifiedUser(Member|User|array|string|null $input): ?User
     {
-        if (! $input) return null;
-        if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) return null;
+        if (! $input) {
+            return null;
+        }
+        if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            return null;
+        }
 
         // Get Discord ID
         if (! ($id = match (true) {
@@ -830,37 +1062,59 @@ class Verifier
             is_string($input) => is_numeric($input = Civ13::sanitizeInput($input)) ? $input : ($this->get('ss13', $input)['discord'] ?? null),
             is_array($input) => isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord'])) ? $discord_id : ($this->get('ss13', Civ13::sanitizeInput($input['ss13']))['discord'] ?? null),
             default => null,
-        }) || ! $this->isVerified($id)) return null;
-        if ($user = $this->discord->users->get('id', $id)); return $user;
+        }) || ! $this->isVerified($id)) {
+            return null;
+        }
+        if ($user = $this->discord->users->get('id', $id));
+
+        return $user;
         $this->logger->warning("Unable to find user with ID `$id`.");
-        try { if ($user = await($this->discord->users->fetch('id', $id))) return $user;
-        } catch (\Throwable $e) { $this->logger->warning("Unable to fetch user with ID `$id`. Error: {$e->getMessage()}"); }
+        try {
+            if ($user = await($this->discord->users->fetch('id', $id))) {
+                return $user;
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning("Unable to fetch user with ID `$id`. Error: {$e->getMessage()}");
+        }
         $this->logger->warning("Unable to find user with ID `$id`.");
+
         return null;
     }
 
     public function verifierStatusTimer(): TimerInterface
     {
-        if (! isset($this->timers['verifier_status_timer'])) $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
-            if (! $status = $this->civ13->verifier_online) {
-                $this->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
-                if ($status !== $this->civ13->verifier_online) foreach ($this->provisional as $item) $this->provisionalRegistration($item['ss13'], $item['discord']); // If the verifier was offline, but is now online, reattempt registration of all provisional users
-            }
-        });
+        if (! isset($this->timers['verifier_status_timer'])) {
+            $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
+                if (! $status = $this->civ13->verifier_online) {
+                    $this->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
+                    if ($status !== $this->civ13->verifier_online) {
+                        foreach ($this->provisional as $item) {
+                            $this->provisionalRegistration($item['ss13'], $item['discord']);
+                        }
+                    } // If the verifier was offline, but is now online, reattempt registration of all provisional users
+                }
+            });
+        }
+
         return $this->timers['verifier_status_timer'];
     }
 
     /**
      * Retrieves a value from the specified discriminator and key.
      *
-     * @param string $discrim The discriminator.
-     * @param mixed $key The key.
-     * @return mixed The retrieved value.
+     * @param  string $discrim The discriminator.
+     * @param  mixed  $key     The key.
+     * @return mixed  The retrieved value.
      */
     public function get(string $discrim, $key): mixed
     {
-        if ($item = $this->verified->get($discrim, $key)) return $item;
-        if ($item = $this->provisional->get($discrim, $key)) return $item;
+        if ($item = $this->verified->get($discrim, $key)) {
+            return $item;
+        }
+        if ($item = $this->provisional->get($discrim, $key)) {
+            return $item;
+        }
+
         return null;
     }
 
@@ -871,6 +1125,8 @@ class Verifier
     // Magic Methods
     public function __destruct()
     {
-        foreach ($this->timers as $timer) $this->civ13->loop->cancelTimer($timer);
+        foreach ($this->timers as $timer) {
+            $this->civ13->loop->cancelTimer($timer);
+        }
     }
 }

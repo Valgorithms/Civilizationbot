@@ -1,6 +1,14 @@
 <?php
-//3909091328-3925868543
-$ranges=Array(
-"3909091328" => array("3925868543","ZZ"),
-);
-?>
+
+/*
+ * This file is a part of the Civilizationbot project.
+ *
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
+ */
+
+$ranges = [
+'3909091328' => ['3925868543','ZZ'],
+];

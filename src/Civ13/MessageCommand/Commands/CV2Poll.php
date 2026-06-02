@@ -1,9 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand\Commands;
@@ -31,10 +36,10 @@ use function React\Promise\resolve;
  */
 class CV2Poll extends Civ13MessageCommand
 {
-    protected const string    TITLE            = 'Poll';
+    protected const string    TITLE = 'Poll';
     protected const string    DESCRIPTION_TEXT = 'Click a button to vote.';
-    protected const int|float TIMER_INTERVAL   = 5.0; // Seconds
-    protected const int|float TIMER_DURATION   = 60.0; // Seconds
+    protected const int|float TIMER_INTERVAL = 5.0; // Seconds
+    protected const int|float TIMER_DURATION = 60.0; // Seconds
 
     protected array|null          $yes_votes;
     protected array|null          $no_votes;
@@ -57,6 +62,7 @@ class CV2Poll extends Civ13MessageCommand
             case 'stop':
             case 'cancel':
                 $this->cancel();
+
                 return $message->reply('Poll has been cancelled.');
             default:
                 return $message->reply('Invalid format. Use `cv2poll start` to start a poll or `cv2poll stop` to cancel it.');
@@ -68,22 +74,33 @@ class CV2Poll extends Civ13MessageCommand
     {
         if (isset($this->ticker)) {
             $this->logger->warning('Poll already active in channel {channel_id}', ['channel_id' => $channel->id, 'ticket_class' => get_class($this->ticker)]);
+
             return null; // Only one poll can be active at a time
         }
 
         $this->channel = $channel;
 
-        return $this->tick()->then(fn() => $this->createTicker());
+        return $this->tick()->then(fn () => $this->createTicker());
     }
 
     protected function cancel(): void
     {
         $this->cancelTicker();
-        if (isset($this->yes_button)) $this->yes_button->removeListener();
-        if (isset($this->no_button)) $this->no_button->removeListener();
-        if (isset($this->abstain_button)) $this->abstain_button->removeListener();
-        if (isset($this->resolve_button)) $this->resolve_button->removeListener();
-        if (isset($this->cancel_button)) $this->cancel_button->removeListener();
+        if (isset($this->yes_button)) {
+            $this->yes_button->removeListener();
+        }
+        if (isset($this->no_button)) {
+            $this->no_button->removeListener();
+        }
+        if (isset($this->abstain_button)) {
+            $this->abstain_button->removeListener();
+        }
+        if (isset($this->resolve_button)) {
+            $this->resolve_button->removeListener();
+        }
+        if (isset($this->cancel_button)) {
+            $this->cancel_button->removeListener();
+        }
         $this->yes_votes = null;
         $this->no_votes = null;
         $this->channel = null;
@@ -110,20 +127,20 @@ class CV2Poll extends Civ13MessageCommand
     public function createContainer(bool $final = false): Container
     {
         return Container::new()->setAccentColor(self::ACCENT_COLOR_DEFAULT)->addComponents([
-            TextDisplay::new('# ' . self::TITLE),
+            TextDisplay::new('# '.self::TITLE),
             Separator::new(),
             TextDisplay::new('## Description'),
             TextDisplay::new(self::DESCRIPTION_TEXT),
             Separator::new(),
             TextDisplay::new('## Votes'),
-            TextDisplay::new('Yes: ' . (isset($this->yes_votes) ? count($this->yes_votes) : 0)),
-            TextDisplay::new('No: ' . (isset($this->no_votes) ? count($this->no_votes) : 0)),
+            TextDisplay::new('Yes: '.(isset($this->yes_votes) ? count($this->yes_votes) : 0)),
+            TextDisplay::new('No: '.(isset($this->no_votes) ? count($this->no_votes) : 0)),
             $final
                 ? TextDisplay::new('Poll has ended.')
-                : TextDisplay::new('Poll ends in ' . Carbon::now()->diffForHumans(($this->start_time ??= Carbon::now())->copy()->addSeconds(self::TIMER_DURATION), true)),
+                : TextDisplay::new('Poll ends in '.Carbon::now()->diffForHumans(($this->start_time ??= Carbon::now())->copy()->addSeconds(self::TIMER_DURATION), true)),
             Separator::new(),
             $final
-                ? TextDisplay::new('### Winner: ' . $this->getWinner())
+                ? TextDisplay::new('### Winner: '.$this->getWinner())
                 : ActionRow::new()
                     ->addComponent($this->getYesButton())
                     ->addComponent($this->getNoButton())
@@ -138,7 +155,10 @@ class CV2Poll extends Civ13MessageCommand
         $yes_count = count($this->yes_votes ?? []);
         $no_count = count($this->no_votes ?? []);
 
-        if ($yes_count === 0 && $no_count === 0) return 'No votes cast';
+        if ($yes_count === 0 && $no_count === 0) {
+            return 'No votes cast';
+        }
+
         return match ($yes_count <=> $no_count) {
             1 => 'Yes',
             0 => 'Tie',
@@ -149,7 +169,7 @@ class CV2Poll extends Civ13MessageCommand
     protected function getYesButton(): Button
     {
         return $this->yes_button ??= Button::new(Button::STYLE_PRIMARY, 'vote_yes')->setLabel('Yes')->setListener(
-            fn(Interaction $interaction) => $this->voteYes($interaction->member->id),
+            fn (Interaction $interaction) => $this->voteYes($interaction->member->id),
             $this->discord,
             false
         );
@@ -158,7 +178,7 @@ class CV2Poll extends Civ13MessageCommand
     protected function getNoButton(): Button
     {
         return $this->no_button ??= Button::new(Button::STYLE_PRIMARY, 'vote_no')->setLabel('No')->setListener(
-            fn(Interaction $interaction) => $this->voteNo($interaction->member->id),
+            fn (Interaction $interaction) => $this->voteNo($interaction->member->id),
             $this->discord,
             false
         );
@@ -167,7 +187,7 @@ class CV2Poll extends Civ13MessageCommand
     protected function getAbstainButton(): Button
     {
         return $this->abstain_button ??= Button::new(Button::STYLE_SECONDARY, 'vote_abstain')->setLabel('Remove My Vote')->setListener(
-            fn(Interaction $interaction) => $this->removeVote($interaction->member->id),
+            fn (Interaction $interaction) => $this->removeVote($interaction->member->id),
             $this->discord,
             false
         );
@@ -176,7 +196,7 @@ class CV2Poll extends Civ13MessageCommand
     protected function getResolveButton(): Button
     {
         return $this->resolve_button ??= Button::new(Button::STYLE_SUCCESS, 'vote_resolve')->setLabel('Resolve Vote')->setListener(
-            fn(Interaction $interaction) => $this->tick(true),
+            fn (Interaction $interaction) => $this->tick(true),
             $this->discord,
             true
         );
@@ -188,8 +208,9 @@ class CV2Poll extends Civ13MessageCommand
             function (Interaction $interaction) {
                 $message = clone $this->poll_message;
                 $channel = clone $this->poll_message->channel;
-                $this->loop->addTimer(self::TIMER_INTERVAL+1, // Workaround for Discord API rate limits
-                    fn() => $channel->messages->delete($message, 'Poll cancelled')
+                $this->loop->addTimer(
+                    self::TIMER_INTERVAL + 1, // Workaround for Discord API rate limits
+                    fn () => $channel->messages->delete($message, 'Poll cancelled')
                 );
                 $this->cancel();
             },
@@ -201,8 +222,10 @@ class CV2Poll extends Civ13MessageCommand
     protected function createTicker(): TimerInterface
     {
         $this->cancelTicker(); // Avoid multiple timers
-        return $this->ticker = $this->loop->addPeriodicTimer(self::TIMER_INTERVAL,
-            fn() => $this->civ13->then($this->tick())
+
+        return $this->ticker = $this->loop->addPeriodicTimer(
+            self::TIMER_INTERVAL,
+            fn () => $this->civ13->then($this->tick())
         );
     }
 
@@ -218,12 +241,11 @@ class CV2Poll extends Civ13MessageCommand
     protected function createMessage(MessageBuilder $builder): PromiseInterface
     {
         return isset($this->channel)
-            ?   $this->civ13->then(
-                    $this->channel->sendMessage($builder),
-                    fn(Message $message) => $this->poll_message = $message
-                )
-            :   resolve(null); // No channel to send the message to
-
+            ? $this->civ13->then(
+                $this->channel->sendMessage($builder),
+                fn (Message $message) => $this->poll_message = $message
+            )
+            : resolve(null); // No channel to send the message to
     }
 
     /** @return PromiseInterface<?Message> */
@@ -245,14 +267,16 @@ class CV2Poll extends Civ13MessageCommand
             ? $this->editMessage($this->createBuilder($final))
             : $this->createMessage($this->createBuilder($final));
 
-        if ($final) $this->resolve();
+        if ($final) {
+            $this->resolve();
+        }
 
         return $promise;
     }
 
     protected function voteYes(string $user_id): void
     {
-        if (!in_array($user_id, $this->yes_votes ?? [])) {
+        if (! in_array($user_id, $this->yes_votes ?? [])) {
             $this->yes_votes[] = $user_id;
         }
 
@@ -263,7 +287,7 @@ class CV2Poll extends Civ13MessageCommand
 
     protected function voteNo(string $user_id): void
     {
-        if (!in_array($user_id, $this->no_votes ?? [])) {
+        if (! in_array($user_id, $this->no_votes ?? [])) {
             $this->no_votes[] = $user_id;
         }
 

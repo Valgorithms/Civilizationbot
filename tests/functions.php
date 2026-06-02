@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is a part of the DiscordPHP project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2015-2022 David Cole <david.cole1340@gmail.com>
- * Copyright (c) 2020-present Valithor Obsidion <valithor@discordphp.org>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
  *
  * This file is subject to the MIT license that is bundled
  * with this source code in the LICENSE.md file.

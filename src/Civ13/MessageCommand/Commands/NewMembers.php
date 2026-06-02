@@ -1,8 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand\Commands;
@@ -20,15 +26,17 @@ class NewMembers extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $message->reply(Civ13::createBuilder()
-            ->addFileFromContent('new_members.json', $message->guild->members
-                ->sort(static fn(Member $a, Member $b) =>
-                    $b->joined_at->getTimestamp() <=> $a->joined_at->getTimestamp())
+        return $message->reply(
+            Civ13::createBuilder()
+            ->addFileFromContent(
+                'new_members.json',
+                $message->guild->members
+                ->sort(static fn (Member $a, Member $b) => $b->joined_at->getTimestamp() <=> $a->joined_at->getTimestamp())
                 ->slice(0, 10)
-                ->map(static fn(Member $member) => [
+                ->map(static fn (Member $member) => [
                     'username' => $member->user->username,
                     'id' => $member->id,
-                    'join_date' => $member->joined_at->format('Y-m-d H:i:s')
+                    'join_date' => $member->joined_at->format('Y-m-d H:i:s'),
                 ])
                 ->serialize(JSON_PRETTY_PRINT)
             )

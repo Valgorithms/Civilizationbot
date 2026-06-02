@@ -1,10 +1,15 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2022-present Valithor Obsidion <valithor@valzargaming.com>
- */ 
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
+ */
 
 use Civ13\Civ13;
 use Civ13\Exceptions\FileNotFoundException;
@@ -14,32 +19,37 @@ use React\Promise\PromiseInterface;
 use function React\Promise\reject;
 use function React\Promise\resolve;
 
-$status_changer_random = function (Civ13 $civ13): PromiseInterface
-{ // on ready
+$status_changer_random = function (Civ13 $civ13): PromiseInterface { // on ready
     if (! $civ13::status) {
         unset($civ13->timers['status_changer_timer']);
         $civ13->logger->warning($err = 'status is not defined');
+
         return reject(new \LogicException($err));
     }
     if (! $status_array = file($civ13::status, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
         unset($civ13->timers['status_changer_timer']);
-        $civ13->logger->warning($err = 'unable to open file `' . $civ13::status . '`');
+        $civ13->logger->warning($err = 'unable to open file `'.$civ13::status.'`');
+
         return reject(new FileNotFoundException($err));
     }
     list($status, $type, $state) = explode('; ', $status_array[array_rand($status_array)]);
-    if (! $status) return reject(new \Exception('status must not be empty'));
-    $activity = new Activity($civ13->discord, [ // Discord status            
+    if (! $status) {
+        return reject(new \Exception('status must not be empty'));
+    }
+    $activity = new Activity($civ13->discord, [ // Discord status
         'name' => $status,
         'type' => (int) $type, // 0, 1, 2, 3, 4, 5 | Game/Playing, Streaming, Listening, Watching, Custom Status, Competing
     ]);
     $civ13->statusChanger($activity, $state);
+
     return resolve(null);
 };
-$status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void
-{ // on ready
-    if (! isset($civ13->timers['status_changer_timer'])) $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, fn() => $status_changer_random($civ13));
+$status_changer_timer = function (Civ13 $civ13) use ($status_changer_random): void { // on ready
+    if (! isset($civ13->timers['status_changer_timer'])) {
+        $civ13->timers['status_changer_timer'] = $civ13->discord->getLoop()->addPeriodicTimer(120, fn () => $status_changer_random($civ13));
+    }
 };
 /*$on_ready = function (Civ13 $civ13): void
-{    
-    // 
+{
+    //
 };*/

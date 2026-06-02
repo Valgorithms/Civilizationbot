@@ -1,8 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand\Commands;
@@ -21,10 +27,13 @@ class ListRounds extends Civ13MessageCommand
         return $this->civ13->reply(
             $message,
             ($rounds = array_reduce($this->civ13->enabled_gameservers, function ($carry, $gameserver) {
-                if ($r = $gameserver->getRounds()) $carry[$gameserver->name] = $r;
+                if ($r = $gameserver->getRounds()) {
+                    $carry[$gameserver->name] = $r;
+                }
+
                 return $carry;
             }, []))
-                ?  "Rounds: " . json_encode($rounds)
+                ? 'Rounds: '.json_encode($rounds)
                 : 'No data found.'
         );
     }

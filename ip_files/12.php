@@ -1,6 +1,14 @@
 <?php
-//201326592-218103807
-$ranges=Array(
-"201326592" => array("218103807","US"),
-);
-?>
+
+/*
+ * This file is a part of the Civilizationbot project.
+ *
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
+ */
+
+$ranges = [
+'201326592' => ['218103807','US'],
+];

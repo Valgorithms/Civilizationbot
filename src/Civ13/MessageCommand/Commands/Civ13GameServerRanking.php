@@ -1,8 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand\Commands;
@@ -20,16 +26,16 @@ class Civ13GameServerRanking extends Civ13GameServerMessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $this->gameserver->recalculateRanking()->then(
-            fn() => $this->gameserver->getRanking()->then(
-                fn(string $ranking) => $this->civ13->reply($message, $ranking, 'ranking.txt'),
+            fn () => $this->gameserver->getRanking()->then(
+                fn (string $ranking) => $this->civ13->reply($message, $ranking, 'ranking.txt'),
                 function (MissingSystemPermissionException $error) use ($message) {
                     $this->logger->error($err = $error->getMessage());
-                    $message->react("🔥")->then(fn() => $this->civ13->reply($message, $err));
+                    $message->react('🔥')->then(fn () => $this->civ13->reply($message, $err));
                 }
             ),
             function (MissingSystemPermissionException $error) use ($message) {
                 $this->logger->error($err = $error->getMessage());
-                $message->react("🔥")->then(fn() => $this->civ13->reply($message, $err));
+                $message->react('🔥')->then(fn () => $this->civ13->reply($message, $err));
             }
         );
     }

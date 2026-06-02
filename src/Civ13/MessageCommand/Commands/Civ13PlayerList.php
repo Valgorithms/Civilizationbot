@@ -1,8 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /*
- * This file is a part of the Civ13 project.
+ * This file is a part of the Civilizationbot project.
  *
- * Copyright (c) 2025-present Valithor Obsidion <valzargaming.com>
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
  */
 
 namespace Civ13\MessageCommand\Commands;
@@ -18,8 +24,8 @@ class Civ13PlayerList extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return (($message->user_id === $this->civ13->technician_id) && $playerlist = array_unique(array_merge(...array_map(fn($gameserver) => $gameserver->players, $this->civ13->enabled_gameservers))))
+        return (($message->user_id === $this->civ13->technician_id) && $playerlist = array_unique(array_merge(...array_map(fn ($gameserver) => $gameserver->players, $this->civ13->enabled_gameservers))))
             ? $this->civ13->reply($message, implode(', ', $playerlist))
-            : $message->react("❌");
+            : $message->react('❌');
     }
 }
