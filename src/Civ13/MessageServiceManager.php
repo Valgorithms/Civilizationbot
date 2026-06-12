@@ -255,7 +255,9 @@ class MessageServiceManager
     {
         if (isset($this->civ13->enabled_gameservers['tdm'], $this->civ13->enabled_gameservers['tdm']->basedir)) {
             if (file_exists($this->civ13->enabled_gameservers['tdm']->basedir.Civ13::awards)) {
-                $this->messageHandler->offsetSet('civ13medals', new Commands\Civ13GameServerMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']), ['Verified']);
+                $this->messageHandler
+                    ->offsetSet('civ13medals', new Commands\Civ13GameServerMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']), ['Verified'])
+                    ->offsetSet('civ13listmedals', new Commands\Civ13GameServerListMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']), ['Ambassador']);
             }
             if (file_exists($this->civ13->enabled_gameservers['tdm']->basedir.Civ13::awards_br)) {
                 $this->messageHandler->offsetSet('civ13brmedals', new Commands\Civ13GameServerBRMedals($this->civ13, $this->civ13->enabled_gameservers['tdm']), ['Verified']);
