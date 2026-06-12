@@ -15,6 +15,7 @@ namespace Civ13\MessageCommand\Commands;
 
 use Civ13\MessageCommand\Civ13MessageCommand;
 use Discord\Parts\Channel\Message;
+use Discord\Parts\User\Member;
 use React\Promise\PromiseInterface;
 
 /**
