@@ -221,7 +221,8 @@ class MessageServiceManager
         if (isset($this->civ13->verifier, $this->civ13->role_ids['Verified'])) {
             $this->messageHandler
                 ->offsetSets(['approveme', 'aproveme', 'approvme'], new Commands\ApproveMe($this->civ13))
-                ->offsetSet('joinroles', new Commands\JoinRoles($this->civ13), ['Chief Technical Officer']);
+                ->offsetSet('joinroles', new Commands\JoinRoles($this->civ13), ['Chief Technical Officer'])
+                ->offsetSet('listverified', new Commands\ListVerified($this->civ13), ['Ambassador']);
         }
         if (file_exists(Civ13::insults_path)) {
             $this->messageHandler->offsetSet('insult', new Commands\Insult($this->civ13), ['Verified', 'SS14 Verified']);
