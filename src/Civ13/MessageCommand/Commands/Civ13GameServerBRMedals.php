@@ -26,7 +26,7 @@ class Civ13GameServerBRMedals extends Civ13GameServerMessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {
-            return $this->civ13->reply($message, 'Wrong format. Please try `brmedals [ckey]`.');
+            return $this->civ13->reply($message, 'Wrong format. Please try `civ13brmedals [ckey]`.');
         }
         if (! $msg = self::brmedals($this->civ13->enabled_gameservers['tdm']->basedir.Civ13::awards_br, $ckey)) {
             return $this->civ13->reply($message, 'There was an error trying to get your medals!');

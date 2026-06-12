@@ -85,7 +85,7 @@ class Civ13GameServerMedals extends Civ13GameServerMessageCommand
                 return $this->civ13->reply($message, 'Please register your SS13 account using the `/approveme` command.');
             }
 
-            return $this->civ13->reply($message, 'Wrong format. Please try `medals [ckey]`.');
+            return $this->civ13->reply($message, 'Wrong format. Please try `civ13medals [ckey]`.');
         }
         if (! $msg = self::medals($message->guild, $this->civ13->enabled_gameservers['tdm']->basedir.Civ13::awards, $ckey)) {
             return $this->civ13->reply($message, 'There was an error trying to get your medals!');
