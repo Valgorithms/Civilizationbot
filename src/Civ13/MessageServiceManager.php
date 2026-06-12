@@ -215,14 +215,16 @@ class MessageServiceManager
                     ['Admin']
                 );
         }
+        if (isset($this->civ13->verifier)) {
+            $this->messageHandler->offsetSet('listverified', new Commands\ListVerified($this->civ13), ['Admin']);
+        }
         if (isset($this->civ13->ss14verifier, $this->civ13->role_ids['SS14 Verified'])) {
             $this->messageHandler->offsetSet('verifyme', new Commands\Civ14Verify($this->civ13));
         }
         if (isset($this->civ13->verifier, $this->civ13->role_ids['Verified'])) {
             $this->messageHandler
                 ->offsetSets(['approveme', 'aproveme', 'approvme'], new Commands\ApproveMe($this->civ13))
-                ->offsetSet('joinroles', new Commands\JoinRoles($this->civ13), ['Chief Technical Officer'])
-                ->offsetSet('listverified', new Commands\ListVerified($this->civ13), ['Ambassador']);
+                ->offsetSet('joinroles', new Commands\JoinRoles($this->civ13), ['Chief Technical Officer']);
         }
         if (file_exists(Civ13::insults_path)) {
             $this->messageHandler->offsetSet('insult', new Commands\Insult($this->civ13), ['Verified', 'SS14 Verified']);
