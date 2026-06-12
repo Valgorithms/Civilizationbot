@@ -141,6 +141,7 @@ class MessageServiceManager
             ->offsetSet('updateadmins', new Commands\AdminListUpdate($this->civ13), ['Ambassador'])
             ->offsetSet('pullrepo', new Commands\PullCivRepository($this->civ13), ['Ambassador'])
             ->offsetSet('byondage', new Commands\ByondAge($this->civ13), ['Ambassador'])
+            ->offsetSet('listverified', new Commands\ListVerified($this->civ13), ['Admin'])
             ->offsetSet('cpu', new Commands\CPU($this->civ13), ['Admin'])
             ->offsetSet('ckeyinfo', new Commands\CkeyInfo($this->civ13), ['Admin'])
             ->offsetSet('ckey2discord', new Commands\CkeyToDiscord($this->civ13), ['Admin'])
@@ -170,10 +171,7 @@ class MessageServiceManager
             ->offsetSet('bancheck_centcom', new Commands\BanCheckCentcom($this->civ13), ['Verified'])
             ->offsetSet('bancheck', new Commands\BanCheck($this->civ13), ['Verified'])
             ->offsetSet('getround', new Commands\GetRound($this->civ13), ['Verified']);
-        if (isset($this->civ13->verifier)) {
-            $this->messageHandler->offsetSet('listverified', new Commands\ListVerified($this->civ13), ['Admin']);
-        }
-        if (isset($this->civ13->verifier, $this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs'])) {
+        if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs'])) {
             $this->messageHandler
                 ->offsetSet(
                     'parole',
@@ -221,7 +219,7 @@ class MessageServiceManager
         if (isset($this->civ13->ss14verifier, $this->civ13->role_ids['SS14 Verified'])) {
             $this->messageHandler->offsetSet('verifyme', new Commands\Civ14Verify($this->civ13));
         }
-        if (isset($this->civ13->verifier, $this->civ13->role_ids['Verified'])) {
+        if (isset($this->civ13->role_ids['Verified'])) {
             $this->messageHandler
                 ->offsetSets(['approveme', 'aproveme', 'approvme'], new Commands\ApproveMe($this->civ13))
                 ->offsetSet('joinroles', new Commands\JoinRoles($this->civ13), ['Chief Technical Officer']);
