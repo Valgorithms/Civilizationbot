@@ -170,7 +170,10 @@ class MessageServiceManager
             ->offsetSet('bancheck_centcom', new Commands\BanCheckCentcom($this->civ13), ['Verified'])
             ->offsetSet('bancheck', new Commands\BanCheck($this->civ13), ['Verified'])
             ->offsetSet('getround', new Commands\GetRound($this->civ13), ['Verified']);
-        if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs'])) {
+        if (isset($this->civ13->verifier)) {
+            $this->messageHandler->offsetSet('listverified', new Commands\ListVerified($this->civ13), ['Admin']);
+        }
+        if (isset($this->civ13->verifier, $this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs'])) {
             $this->messageHandler
                 ->offsetSet(
                     'parole',
@@ -214,9 +217,6 @@ class MessageServiceManager
                     },
                     ['Admin']
                 );
-        }
-        if (isset($this->civ13->verifier)) {
-            $this->messageHandler->offsetSet('listverified', new Commands\ListVerified($this->civ13), ['Admin']);
         }
         if (isset($this->civ13->ss14verifier, $this->civ13->role_ids['SS14 Verified'])) {
             $this->messageHandler->offsetSet('verifyme', new Commands\Civ14Verify($this->civ13));
