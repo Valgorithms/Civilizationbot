@@ -22,7 +22,7 @@ use React\Promise\PromiseInterface;
 /**
  * Handles the 'campaignveterans' command.
  *
- * Replies with a list of campaign veterans, if found.
+ * Replies with a list of ckeys of campaign veterans, if found.
  * Replies with an error message if no campaign veterans are found.
  */
 class CampaignVeterans extends Civ13MessageCommand
