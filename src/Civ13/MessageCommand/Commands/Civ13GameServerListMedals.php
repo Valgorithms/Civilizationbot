@@ -28,15 +28,17 @@ class Civ13GameServerListMedals extends Civ13GameServerMessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        if (! @touch($awardsPath = $this->gameserver->basedir . Civ13::awards)) {
+        if (! @touch($awardsPath = $this->gameserver->basedir.Civ13::awards)) {
             return reject(new MissingSystemPermissionException("Unable to access `{$awardsPath}`"));
         }
 
-        return $message->reply(Civ13::createBuilder()
+        return $message->reply(
+            Civ13::createBuilder()
             ->setContent('Medals')
             ->addFile(
                 $awardsPath,
-                $this->gameserver->key . '_awards.txt')
-            );
+                $this->gameserver->key.'_awards.txt'
+            )
+        );
     }
 }
