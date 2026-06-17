@@ -164,6 +164,7 @@ class MessageServiceManager
             ->offsetSet('poll', new Commands\Poll($this->civ13), ['Admin'])
             ->offsetSet('civ13logs', new Commands\Civ13Logs($this->civ13), ['Admin'])
             ->offsetSet('civ13playerlogs', new Commands\Civ13PlayerLogs($this->civ13), ['Admin'])
+            ->offsetSet('campaignveterans', new Commands\CampaignVeterans($this->civ13), ['Admin'])
             ->offsetSet('checkip', new Commands\CheckIP($this->civ13), ['Verified', 'SS14 Verified'])
             ->offsetSet('ckey', new Commands\Ckey($this->civ13), ['Verified'])
             ->offsetSet('ooc', new Commands\OOC($this->civ13), ['Verified'])
