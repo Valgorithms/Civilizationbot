@@ -26,10 +26,14 @@ class UnBan extends Civ13MessageCommand
 {
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
+        $item = null;
         if (is_numeric($ckey = Civ13::sanitizeInput($message_filtered['message_content_lower'] = substr($message_filtered['message_content_lower'], strlen(trim($command)))))) {
             if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) {
                 return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
             }
+        }
+        if (! $item) {
+            return $this->civ13->reply($message, "No data found for input `$ckey`.");
         }
         $ckey = $item['ss13'];
         if (isset($this->civ13->verifier) && ! $message->member->roles->has($this->civ13->role_ids['Ambassador']) && ! $this->civ13->verifier->isVerified($ckey)) {
