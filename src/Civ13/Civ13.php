@@ -29,6 +29,7 @@ use Discord\Parts\Channel\Message;
 use Discord\Parts\Channel\Message\AllowedMentions;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Guild\Guild;
+use Discord\Parts\Guild\GuildJoinRequest;
 use Discord\Parts\Guild\Role;
 use Discord\Parts\Thread\Thread;
 use Discord\Parts\User\Activity;
@@ -1360,6 +1361,18 @@ class Civ13
 
         $this->discord->on('GUILD_CREATE', function (Guild $guild): void {
             ! empty($this->functions['GUILD_CREATE']) && array_walk($this->functions['GUILD_CREATE'], fn ($func) => $func($this, $guild));
+        });
+
+        $this->discord->on('GUILD_JOIN_REQUEST_CREATE', function (GuildJoinRequest $request): void {
+            if ($this->verifier->getVerifiedMemberItems()->get('discord', $request->user_id)) {
+                $request->approve();
+            }
+        });
+
+        $this->discord->on('GUILD_JOIN_REQUEST_UPDATE', function (GuildJoinRequest $request): void {
+            if ($this->verifier->getVerifiedMemberItems()->get('discord', $request->user_id)) {
+                $request->approve();
+            }
         });
     }
     
