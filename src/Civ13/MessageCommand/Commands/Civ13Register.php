@@ -24,6 +24,9 @@ use React\Promise\PromiseInterface;
  */
 class Civ13Register extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if ($message->user_id != $this->civ13->technician_id) {

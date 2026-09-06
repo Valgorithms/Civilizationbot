@@ -24,6 +24,9 @@ use React\Promise\PromiseInterface;
  */
 class CPU extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $this->civ13->reply($message, $this->civ13->CPU());

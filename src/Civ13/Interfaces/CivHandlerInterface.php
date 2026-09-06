@@ -24,5 +24,9 @@ use Handler\HandlerInterface;
  */
 interface CivHandlerInterface extends HandlerInterface
 {
+    /**
+     * Whether a member holding `$roles` is allowed to run a handler that
+     * requires one of `$allowed_ranks` (an empty list means "anyone").
+     */
     public function checkRank(?Collection $roles = null, array $allowed_ranks = []): bool;
 }

@@ -24,5 +24,10 @@ use React\Http\Message\Response as HttpResponse;
  */
 interface HttpHandlerCallbackInterface
 {
+    /**
+     * @param ServerRequestInterface $request     The incoming HTTP request.
+     * @param string                 $endpoint    The matched route path.
+     * @param bool                   $whitelisted Whether the caller IP is whitelisted.
+     */
     public function __invoke(ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse;
 }

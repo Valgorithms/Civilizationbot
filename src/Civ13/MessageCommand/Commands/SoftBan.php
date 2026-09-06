@@ -22,6 +22,9 @@ use React\Promise\PromiseInterface;
  */
 class SoftBan extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         $this->civ13->softban($id = self::messageWithoutCommand($command, $message_filtered, true, true), true);

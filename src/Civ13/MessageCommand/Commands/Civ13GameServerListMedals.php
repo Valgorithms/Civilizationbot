@@ -26,6 +26,9 @@ use function React\Promise\reject;
  */
 class Civ13GameServerListMedals extends Civ13GameServerMessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! @touch($awardsPath = $this->gameserver->basedir.Civ13::awards)) {

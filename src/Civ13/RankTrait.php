@@ -17,6 +17,11 @@ use Discord\Helpers\Collection;
 
 trait RankTrait
 {
+    /**
+     * Whether a member holding `$roles` has at least one of `$allowed_ranks`
+     * (an empty list means "anyone"). Ranks are resolved to role ids via
+     * `$this->civ13->role_ids`.
+     */
     public function checkRank(?Collection $roles = null, array $allowed_ranks = []): bool
     {
         if (empty($allowed_ranks)) {

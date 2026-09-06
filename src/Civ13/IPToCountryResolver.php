@@ -17,6 +17,10 @@ class IPToCountryResolver
 {
     public bool $online = true;
 
+    /**
+     * @param bool $online Whether {@see __invoke()} should use the online ip-api
+     *                     lookup rather than the bundled offline database.
+     */
     public function __construct(bool $online = false)
     {
         $this->online = $online;
@@ -95,6 +99,10 @@ class IPToCountryResolver
         return reset($country) ?: 'unknown';
     }
 
+    /**
+     * Resolves `$ip` per the `online` flag: the ip-api `countryCode` (online) or
+     * the offline database's `CC->REGION->CITY` string.
+     */
     public function __invoke(string $ip): array|string
     {
         return $this->online ? self::Online($ip)['countryCode'] ?? 'unknown' : self::Offline($ip);

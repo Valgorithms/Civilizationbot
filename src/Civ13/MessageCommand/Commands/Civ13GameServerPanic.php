@@ -22,6 +22,9 @@ use React\Promise\PromiseInterface;
  */
 class Civ13GameServerPanic extends Civ13GameServerMessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $this->civ13->reply($message, 'Panic bunker is now '.(($this->gameserver->panic_bunker = ! $this->gameserver->panic_bunker)

@@ -24,6 +24,9 @@ use React\Promise\PromiseInterface;
  */
 class Ban extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         $split_message = explode('; ', self::messageWithoutCommand($command, $message_filtered, true));

@@ -22,6 +22,9 @@ use React\Promise\PromiseInterface;
  */
 class ApproveMe extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (isset($this->civ13->role_ids['Verified']) && $message->member->roles->has($this->civ13->role_ids['Verified'])) {

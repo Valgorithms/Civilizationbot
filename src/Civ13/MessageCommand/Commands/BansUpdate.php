@@ -25,6 +25,9 @@ use function React\Async\await;
  */
 class BansUpdate extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $message->react(array_reduce(

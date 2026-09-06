@@ -23,6 +23,9 @@ use React\Promise\PromiseInterface;
  */
 class FixRoles extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {

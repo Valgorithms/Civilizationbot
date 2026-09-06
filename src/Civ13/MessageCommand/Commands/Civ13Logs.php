@@ -23,6 +23,9 @@ use React\Promise\PromiseInterface;
  */
 class Civ13Logs extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $this->logHandler($message, self::messageWithoutCommand($command, $message_filtered));

@@ -25,6 +25,9 @@ use React\Promise\PromiseInterface;
  */
 class Poll extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return Polls::getPoll($this->civ13->discord, self::messageWithoutCommand($command, $message_filtered))->then(

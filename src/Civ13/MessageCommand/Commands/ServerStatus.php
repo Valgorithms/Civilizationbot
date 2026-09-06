@@ -22,6 +22,9 @@ use React\Promise\PromiseInterface;
  */
 class ServerStatus extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $message->reply($this->civ13->createServerstatusEmbed());

@@ -48,6 +48,11 @@ enum ModerationMethod: string
     case STR_ENDS_WITH = 'str_ends_with';
     case STR_CONTAINS = 'str_contains';
 
+    /**
+     * Tests `$lower` against a badword rule. `$badwords` carries `word` and an
+     * optional `method` (one of this enum's cases); an unknown method falls
+     * back to `str_contains`. Returns a truthy match result.
+     */
     public static function matches(string $lower, array $badwords): int|bool
     {
         $method = $badwords['method'] ?? self::STR_CONTAINS;
@@ -70,6 +75,7 @@ enum ModerationMethod: string
         };
     }
 
+    /** Whether `$haystack` contains any one of `$needles`. */
     private static function str_contains_any(string $haystack, array $needles): bool
     {
         return array_reduce($needles, static fn ($carry, $needle) => $carry || str_contains($haystack, $needle), false);

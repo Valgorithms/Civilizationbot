@@ -54,6 +54,9 @@ class CV2Poll extends Civ13MessageCommand
     protected Button|null $resolve_button;
     protected Button|null $cancel_button;
 
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         switch (self::messageWithoutCommand($command, $message_filtered, true)) {

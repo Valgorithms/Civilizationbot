@@ -23,6 +23,9 @@ use React\Promise\PromiseInterface;
  */
 class TypeSpess extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) {

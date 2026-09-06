@@ -30,6 +30,9 @@ use React\Promise\PromiseInterface;
  */
 class BanCheck extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {

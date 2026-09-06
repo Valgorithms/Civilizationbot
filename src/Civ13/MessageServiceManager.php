@@ -26,6 +26,10 @@ class MessageServiceManager
     public Logger $logger;
     public MessageHandler $messageHandler;
 
+    /**
+     * @param Civ13 $civ13 The bot instance (by reference); its discord/logger are
+     *                     captured and a {@see MessageHandler} is built and populated.
+     */
     public function __construct(Civ13 &$civ13)
     {
         $this->civ13 = &$civ13;
@@ -35,12 +39,18 @@ class MessageServiceManager
         $this->__afterConstruct();
     }
 
+    /** Post-construction hook: registers the global message commands and logs the list. */
     public function __afterConstruct()
     {
         $this->__generateGlobalMessageCommands();
         $this->logger->debug('[CHAT COMMAND LIST] '.PHP_EOL.$this->messageHandler->generateHelp());
     }
 
+    /**
+     * Entry point for an incoming message: ignores it unless the bot was
+     * addressed, then delegates to the {@see MessageHandler} and finally to a
+     * fallback response.
+     */
     public function handle(Message $message): ?PromiseInterface
     {
         $message_array = $this->civ13->filterMessage($message);

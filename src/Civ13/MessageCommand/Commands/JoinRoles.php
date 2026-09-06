@@ -23,6 +23,9 @@ use React\Promise\PromiseInterface;
  */
 class JoinRoles extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         $this->civ13->verifier->getVerified();

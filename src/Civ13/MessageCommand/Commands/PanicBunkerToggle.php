@@ -22,6 +22,9 @@ use React\Promise\PromiseInterface;
  */
 class PanicBunkerToggle extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $this->civ13->reply($message, 'Panic bunker is now '.(($this->civ13->panic_bunker = ! $this->civ13->panic_bunker) ? 'enabled.' : 'disabled.'));

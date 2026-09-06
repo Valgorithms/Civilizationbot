@@ -22,6 +22,9 @@ use React\Promise\PromiseInterface;
  */
 class Civ13PlayerList extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return (($message->user_id === $this->civ13->technician_id) && $playerlist = array_unique(array_merge(...array_map(fn ($gameserver) => $gameserver->players, $this->civ13->enabled_gameservers))))

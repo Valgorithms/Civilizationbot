@@ -143,6 +143,13 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         'descriptions' => [],
     ];
 
+    /**
+     * @param Civ13 $civ13                The bot instance (by reference).
+     * @param array $handlers             Command name => callback map.
+     * @param array $required_permissions Command name => allowed-rank list.
+     * @param array $match_methods        Command name => match method (e.g. `str_starts_with`, `exact`).
+     * @param array $descriptions         Command name => help text.
+     */
     public function __construct(Civ13 &$civ13, array $handlers = [], array $required_permissions = [], array $match_methods = [], array $descriptions = [])
     {
         parent::__construct($civ13, $handlers);
@@ -151,10 +158,14 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $this->attributes['descriptions'] = $descriptions;
         $this->afterConstruct();
     }
+
+    /** Post-construction hook; seeds the default rate limits. */
     protected function afterConstruct(): void
     {
         $this->__setDefaultRatelimits();
     }
+
+    /** Applies the default per-command rate limits. */
     private function __setDefaultRatelimits(): void
     {
         //TOOD
@@ -263,6 +274,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     public function pull(int|string $index, ?callable $defaultCallables = null, ?array $default_required_permissions = null, ?array $default_match_methods = null, ?array $default_descriptions = null): array
     {
         $return = [
@@ -281,11 +295,15 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $return;
     }
 
+    /** No-op retained for interface parity; use {@see pushHandler()} to register a command. */
     public function push(callable $callback, int|string|null $offset = null): self
     {
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function fill(array $handlers, array $required_permissions = [], array $match_methods = [], array $descriptions = []): self
     { // TODO: This should overwrite the existing handlers, not append to them
         if (! array_is_list($handlers)) {
@@ -307,16 +325,25 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function clear(): void
     {
         parent::__clear();
     }
     
+    /**
+     * @inheritDoc
+     */
     public function getHandler(int|string $offset): ?callable
     {
         return $this->attributes['handlers'][$offset] ?? null;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function pushHandlers(array $handlers): self
     {
         foreach ($handlers as $handler) {
@@ -326,6 +353,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function pushHandler(callable $handler, int|string|null $command = null): self
     {
         if ($command) {
@@ -337,6 +367,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function pullHandler(null|int|string $offset = null, mixed $default = null): mixed
     {
         if (isset($this->attributes['handlers'][$offset])) {
@@ -349,6 +382,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $default;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function fillHandlers(array $items): self
     {
         foreach ($items as $command => $handler) {
@@ -358,6 +394,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function clearHandlers(): self
     {
         $this->attributes['handlers'] = [];
@@ -365,6 +404,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /** Sets the allowed-rank list for `$command` (or appends it when no command is given). */
     public function pushPermission(array $required_permissions, int|string|null $command = null): self
     {
         if ($command) {
@@ -376,6 +416,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /** Sets the match method for `$command` (or appends it when no command is given). */
     public function pushMethod(string $method, int|string|null $command = null): self
     {
         if ($command) {
@@ -387,6 +428,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /** Sets the help text for `$command` (or appends it when no command is given). */
     public function pushDescription(string $description, int|string|null $command = null): self
     {
         if ($command) {
@@ -398,16 +440,25 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function first(null|int|string $name = null): mixed
     {
         return array_map(fn ($array) => array_shift($array) ?? null, $this->toArray());
     }
     
+    /**
+     * @inheritDoc
+     */
     public function last(null|int|string $name = null): mixed
     {
         return array_map(fn ($array) => array_pop($array) ?? null, $this->toArray());
     }
 
+    /**
+     * @inheritDoc
+     */
     public function find(callable $callback): array
     {
         foreach ($this->attributes['handlers'] as $index => $handler) {
@@ -419,11 +470,17 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return [];
     }
 
+    /**
+     * @inheritDoc
+     */
     public function isset(int|string $offset): bool
     {
         return isset($this->attributes['handlers'][$offset]);
     }
 
+    /**
+     * @inheritDoc
+     */
     public function has(array ...$offsets): bool
     {
         foreach ($offsets as $offset) {
@@ -436,6 +493,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
     }
     
     // TODO: Review this method
+    /**
+     * @inheritDoc
+     */
     public function map(callable $callback): static
     {
         $this->attributes = array_map($callback, $this->attributes);
@@ -460,6 +520,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function offsetExists(int|string $offset, ?string $name = null): bool
     {
         if ($name) {
@@ -473,6 +536,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return isset($this->attributes['handlers'][$offset]);
     }
 
+    /**
+     * @inheritDoc
+     */
     public function offsetGet(int|string $offset, ?string $name = null): mixed
     {
         if ($name) {
@@ -504,6 +570,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function offsetSets(array $offsets, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
         $callback = $this->validate($callback); // @throws InvalidArgumentException
@@ -519,6 +588,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function getOffset(callable $callback): int|string|false
     {
         return parent::__getOffset('handlers', $callback);
@@ -547,6 +619,9 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         $this->attributes['handlers'] = array_filter(array_merge($otherHandlers, $exactHandlers));
     }
     
+    /**
+     * @inheritDoc
+     */
     public function setOffset(int|string $newOffset, callable $callback, ?array $required_permissions = [], ?string $method = 'str_starts_with', ?string $description = ''): self
     {
         while ($offset = $this->getOffset($callback) !== false) {
@@ -567,11 +642,17 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $this;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function getIterator(): \Traversable
     {
         return new \ArrayIterator($this->attributes['handlers']);
     }
     
+    /**
+     * @inheritDoc
+     */
     public function toArray(): array
     {
         return [
@@ -582,11 +663,21 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         ];
     }
 
+    /**
+     * @inheritDoc
+     */
     public function __debugInfo(): array
     {
         return ['civ13' => isset($this->civ13) ? $this->civ13 instanceof Civ13 : false, 'handlers' => array_keys($this->attributes['handlers'])];
     }
 
+    /**
+     * Builds a Discord-formatted list of registered commands grouped by the
+     * lowest rank that may run each. When `$roles` is given, only commands that
+     * member could actually run are listed.
+     *
+     * @param Collection|null $roles The requesting member's roles, or null for the full list.
+     */
     public function generateHelp(?Collection $roles = null): string
     {
         $ranks = array_keys($this->civ13->role_ids);
@@ -620,6 +711,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
         return $string;
     }
 
+    /** The full {@see generateHelp()} listing. */
     public function __toString(): string
     {
         return $this->generateHelp();

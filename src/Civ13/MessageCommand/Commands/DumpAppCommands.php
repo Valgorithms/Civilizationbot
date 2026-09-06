@@ -22,6 +22,9 @@ use React\Promise\PromiseInterface;
  */
 class DumpAppCommands extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $message->reply('Application commands: `'.implode('`, `', array_map(fn ($command) => $command->getName(), $this->civ13->discord->__get('application_commands'))).'`');

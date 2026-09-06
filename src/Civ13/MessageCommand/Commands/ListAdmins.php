@@ -43,6 +43,9 @@ class ListAdmins extends Civ13MessageCommand
 
     protected Container $container;
 
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         /*return $message->reply(

@@ -19,6 +19,9 @@ use React\Promise\PromiseInterface;
 
 class Ping extends MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $message->reply('Pong!');

@@ -23,6 +23,9 @@ use React\Promise\PromiseInterface;
  */
 class MapList extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return (file_exists($fp = $this->civ13->gitdir.Civ13::maps) && $file_contents = @file_get_contents($fp))

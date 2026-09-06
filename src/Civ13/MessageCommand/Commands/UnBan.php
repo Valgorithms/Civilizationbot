@@ -24,6 +24,9 @@ use React\Promise\PromiseInterface;
  */
 class UnBan extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         $item = null;

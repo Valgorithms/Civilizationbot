@@ -23,6 +23,9 @@ use React\Promise\PromiseInterface;
  */
 class Insult extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! $insults_array = file(Civ13::insults_path, FILE_IGNORE_NEW_LINES)) {

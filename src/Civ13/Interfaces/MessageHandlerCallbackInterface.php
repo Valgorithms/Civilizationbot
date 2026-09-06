@@ -26,5 +26,10 @@ use React\Promise\PromiseInterface;
  */
 interface MessageHandlerCallbackInterface
 {
+    /**
+     * @param Message $message          The message that triggered the command.
+     * @param string  $command          The matched command name.
+     * @param array   $message_filtered The pre-parsed message parts.
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): ?PromiseInterface;
 }

@@ -25,6 +25,9 @@ use React\Promise\PromiseInterface;
  */
 class ByondAge extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return ($ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) && ($age = $this->civ13->getByondAge($ckey))

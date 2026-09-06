@@ -22,6 +22,9 @@ use React\Promise\PromiseInterface;
  */
 class IPData extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $this->civ13->reply(

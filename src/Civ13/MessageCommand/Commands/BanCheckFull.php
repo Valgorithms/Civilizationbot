@@ -23,6 +23,9 @@ use React\Promise\PromiseInterface;
  */
 class BanCheckFull extends Civ13MessageCommand
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $message->guild->members->map(fn (Member $member) => ($item = $this->civ13->verifier->getVerifiedItem($member)) ? $this->civ13->bancheck($item['ss13']) : null)
