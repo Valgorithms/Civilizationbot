@@ -16,6 +16,16 @@ use Handler\HandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response as HttpResponse;
 
+/**
+ * Contract for the bot's built-in HTTP server router: a {@see HandlerInterface}
+ * collection of {@see HttpHandlerCallbackInterface} routes plus IP
+ * whitelisting, per-endpoint rate limiting and a generated help page. `handle()`
+ * resolves an incoming request to a route and returns its {@see HttpResponse}.
+ *
+ * @see \Civ13\HttpHandler The concrete implementation
+ * @see \Civ13\HttpServiceManager Registers the routes on the handler
+ * @see \Handler\HandlerInterface The base handler-collection contract
+ */
 interface HttpHandlerInterface extends HandlerInterface
 {
     public function handle(ServerRequestInterface $request): HttpResponse;

@@ -15,6 +15,18 @@ use Discord\Parts\Channel\Message;
 use Handler\HandlerInterface;
 use React\Promise\PromiseInterface;
 
+/**
+ * Contract for the bot's `!command` router: a {@see HandlerInterface}
+ * collection that maps a command name to a
+ * {@see MessageHandlerCallbackInterface}, together with the required-permission,
+ * match-method and description metadata for each entry. `handle()` dispatches
+ * an incoming {@see Message} to the matching command and returns its
+ * {@see PromiseInterface}.
+ *
+ * @see \Civ13\MessageHandler The concrete implementation
+ * @see \Civ13\MessageServiceManager Registers the commands on the handler
+ * @see \Handler\HandlerInterface The base handler-collection contract
+ */
 interface MessageHandlerInterface extends HandlerInterface
 {
     // Item Operations
