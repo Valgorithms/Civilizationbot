@@ -76,11 +76,17 @@ class Civ14Verify extends Civ13MessageCommand
         return $message->reply($this->createBuilder($message->member));
     }
 
+    /** Builds the components-v2 message wrapping {@see createContainer()} for `$member`. */
     public function createBuilder(Member $member): MessageBuilder
     {
         return Civ13::createBuilder(true)->addComponent($this->createContainer($member));
     }
 
+    /**
+     * Builds the SS14 verification container for `$member`, reflecting which of the
+     * three verification steps (link Discord, link SS14, earn a medal) are complete
+     * and adding the "SS14 Verified" role when all are.
+     */
     public function createContainer(Member $member): Container
     {
         $this->container = Container::new()->setAccentColor(self::ACCENT_COLOR_DEFAULT)->addComponents([

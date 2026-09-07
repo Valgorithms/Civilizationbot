@@ -47,6 +47,11 @@ class Ban
     public string $cid;
     public string $ip;
 
+    /**
+     * @param array|string $ban A raw `;`-delimited ban log line, or its already-split 11-element array.
+     *
+     * @throws \Exception If the log does not have exactly 11 fields.
+     */
     public function __construct(array|string $ban)
     {
         if (is_string($ban)) {
@@ -76,16 +81,19 @@ class Ban
         array_walk($ban, fn ($value, $field) => $this->$field = "$value");
     }
 
+    /** The ban UID, lazily generating a random 20-digit one on first access when absent. */
     public function uid()
     {
         return $this->uid ?? $this->uid = self::num2text(rand(1, 1000 * 1000 * 1000), 20);
     }
-    
+
+    /** The ban date as a Carbon instance, defaulting to now (format `D M d H.i.s Y`) when absent. */
     public function date(): Carbon
     { // Sun Oct 13 10.05.32 2024
         return $this->date ?? $this->date = Carbon::createFromFormat('D M d H.i.s Y', date('D M d H.i.s Y'));
     }
 
+    /** The BYOND-epoch timestamp of the ban, defaulting to the current time when absent. */
     public function timestamp(): string
     {
         return $this->timestamp ?? $this->timestamp = strval(Byond::convertToByondFromUnix(time()));
@@ -139,6 +147,11 @@ class Ban
         return strval($N);
     }
 
+    /**
+     * The ban as an associative array keyed by field name.
+     *
+     * @return array<string, ?string>
+     */
     public function __toArray()
     {
         return [
@@ -156,6 +169,7 @@ class Ban
         ];
     }
 
+    /** Serialises the ban back to the `;`-delimited log line format terminated with `|||`. */
     public function __toString(): string
     {
         return
@@ -172,6 +186,7 @@ class Ban
             $this->ip.'|||';
     }
 
+    /** Exposes the private `uid`/`date`/`timestamp` accessors (and other properties) as readable attributes. */
     public function __get(string $name)
     {
         if (method_exists($this, $name)) {
@@ -181,6 +196,7 @@ class Ban
         return $this->$name;
     }
 
+    /** @inheritDoc */
     public function __debugInfo()
     {
         return $this->__toArray();

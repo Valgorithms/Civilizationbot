@@ -40,6 +40,7 @@ class Slash
     public Logger $logger;
     private bool $setup = false;
 
+    /** @param Civ13 $civ13 The bot instance; its `discord` and `logger` are bound by reference. */
     public function __construct(Civ13 &$civ13)
     {
         $this->civ13 = &$civ13;
@@ -93,6 +94,7 @@ class Slash
         return $this->civ13->then($commands->save($command))->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
     }
 
+    /** Responds to `$interaction`, automatically switching to an embed (>2000 chars) or a file attachment (>4096 chars) for long content. */
     public function respondWithMessage(Interaction $interaction, MessageBuilder|string $content, bool $ephemeral = false, string $file_name = 'message.txt') : PromiseInterface
     {
         if ($content instanceof MessageBuilder) {
@@ -109,6 +111,7 @@ class Slash
         return $interaction->respondWithMessage($builder->addFileFromContent($file_name, $content), $ephemeral)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
     }
 
+    /** Sends a follow-up to `$interaction`, automatically switching to an embed (>2000 chars) or a file attachment (>4096 chars) for long content. */
     public function sendFollowUpMessage(Interaction $interaction, MessageBuilder|string $content, bool $ephemeral = false, string $file_name = 'message.txt') : PromiseInterface
     {
         if ($content instanceof MessageBuilder) {
@@ -125,6 +128,7 @@ class Slash
         return $interaction->sendFollowUpMessage($builder->addFileFromContent($file_name, $content), $ephemeral)->then($this->civ13->onFulfilledDefault, $this->civ13->onRejectedDefault);
     }
 
+    /** Freshens the global application command list, ensures the built-in `ping` command exists and runs any registered `ready_slash` callbacks. */
     private function __updateCommands(): void
     {
         $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void {
@@ -391,6 +395,7 @@ class Slash
             //else $this->logger->debug('No ready slash functions found!');
         });
     }
+    /** Freshens the Civ13 guild command list and (re)declares the guild-scoped interaction commands. */
     private function __updateGuildCommands(): void
     {
         $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands): void {
@@ -557,6 +562,7 @@ class Slash
             }
         });
     }
+    /** Registers every `listenCommand` handler for the interaction commands (git pull, verify, etc.). */
     private function __declareListeners(): void
     {
         $this->discord->listenCommand('pull', function (Interaction $interaction): PromiseInterface {

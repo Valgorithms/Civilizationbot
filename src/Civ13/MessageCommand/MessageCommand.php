@@ -53,6 +53,14 @@ class MessageCommand implements MessageCommandInterface
             : $message->reply('This command is not implemented yet.');
     }
 
+    /**
+     * Strips the leading command word from the message content, optionally lower-casing and sanitising.
+     *
+     * @param string                $command          The matched command word.
+     * @param array<string, string> $message_filtered Pre-split message content (`message_content` / `message_content_lower`).
+     * @param bool                  $lower            Operate on the lower-cased content.
+     * @param bool                  $sanitize         Run the result through {@see Civ13::sanitizeInput()}.
+     */
     public static function messageWithoutCommand(string $command, array $message_filtered, bool $lower = false, bool $sanitize = false): string
     {
         return $sanitize
@@ -60,6 +68,7 @@ class MessageCommand implements MessageCommandInterface
             : trim(substr($lower ? $message_filtered['message_content_lower'] : $message_filtered['message_content'], strlen($command)));
     }
 
+    /** Sets the closure invoked by {@see __invoke()}; validates and normalises a callable to a Closure. */
     public function setCallback(\Closure|callable|null $closure = null): void
     {
         if (is_callable($closure)) {
@@ -72,11 +81,13 @@ class MessageCommand implements MessageCommandInterface
         }
     }
 
+    /** The configured callback closure. */
     public function getCallback(): \Closure
     {
         return $this->closure;
     }
 
+    /** @inheritDoc */
     public function __debugInfo(): array
     {
         return [

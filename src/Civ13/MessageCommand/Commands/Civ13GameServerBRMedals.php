@@ -38,6 +38,14 @@ class Civ13GameServerBRMedals extends Civ13GameServerMessageCommand
         return $this->civ13->reply($message, $msg, 'brmedals.txt');
     }
 
+    /**
+     * Reads a battle-royale awards file and formats every medal line for `$ckey`.
+     *
+     * @param string $fp   Path to the `awards_br` file.
+     * @param string $ckey The ckey to search for.
+     *
+     * @return string The formatted medal list, a "no medals" message, or an error string if the file cannot be opened.
+     */
     public static function brmedals(string $fp, string $ckey): string
     {
         if (! $search = @fopen($fp, 'r')) {

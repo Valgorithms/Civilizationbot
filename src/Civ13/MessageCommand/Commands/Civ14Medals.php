@@ -26,6 +26,7 @@ enum SS14MedalEmojis: string
     case SilverNomadsVeteran = 'Silver Nomads Veteran Medal';
     case GoldNomadsVeteran = 'Gold Nomads Veteran Medal';
 
+    /** The emoji name registered on the guild for this medal. */
     public function emoji(): string
     {
         return match ($this) {
@@ -35,6 +36,7 @@ enum SS14MedalEmojis: string
         };
     }
 
+    /** Resolves a medal display name to its enum case, or null when unrecognised. */
     public static function fromName(string $name): ?self
     {
         return match ($name) {
@@ -45,6 +47,7 @@ enum SS14MedalEmojis: string
         };
     }
 
+    /** Prefixes `$name` with its emoji name when the medal is known, otherwise returns it unchanged. */
     public static function withEmoji(string $name): string
     {
         return ($enum = self::fromName($name))
@@ -58,6 +61,10 @@ enum SS14MedalEmojis: string
  */
 class Civ14Medals extends Civ13MessageCommand
 {
+    /**
+     * @param Civ13      $civ13      The bot instance (held by reference).
+     * @param GameServer $gameserver The SS14 game server whose medals are queried (held by reference).
+     */
     public function __construct(protected Civ13 &$civ13, protected GameServer &$gameserver)
     {
     }

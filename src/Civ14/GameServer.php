@@ -66,6 +66,10 @@ class GameServer
     protected TimerInterface $current_round_embed_timer;
 
     // Normally would just promote the property, but currently causes an issue in PHPUnit tests
+    /**
+     * @param Civ13                $civ13   The bot instance (held by reference).
+     * @param array<string, mixed> $options Server config: `enabled`, `basedir`, `key`, `name`, `protocol`, `ip`, `port`, `host`, `playercount`, `discussion`, `watchdogToken`.
+     */
     public function __construct(
         Civ13 &$civ13,
         array &$options = []
@@ -87,6 +91,7 @@ class GameServer
         }
         $this->afterConstruct();
     }
+    /** Registers the server via {@see setup()} and, when enabled, defers status/player-count/round-embed timers until the bot is ready. */
     protected function afterConstruct(): void
     {
         $this->setup();
@@ -103,6 +108,7 @@ class GameServer
             __METHOD__." ({$this->key})"
         );
     }
+    /** Registers this server in `civ13->civ14_gameservers` (and `civ14_enabled_gameservers` when enabled). */
     protected function setup(): void
     {
         $this->civ13->civ14_gameservers[$this->key] = &$this;
@@ -197,6 +203,7 @@ class GameServer
         );
     }
 
+    /** The 10-minute periodic timer that updates the player-count channel, creating it on first call. */
     public function setPlayercountTimer(): TimerInterface
     {
         return (isset($this->playercount_timer))
@@ -280,6 +287,10 @@ class GameServer
         return $this->getStatus()->finally(fn (): PromiseInterface => $this->__processCurrentRoundMessage($channel, Civ13::createBuilder()->addEmbed($this->toEmbed())));
     }
 
+    /**
+     * Upserts the persistent "current round" embed message in `$channel`: edits the stored
+     * message id if it still exists, otherwise sends a new one and persists its id.
+     */
     protected function __processCurrentRoundMessage(Channel|Thread $channel, MessageBuilder $builder): PromiseInterface
     {
         $resend = function (?Message $message, callable $new) {
@@ -329,6 +340,11 @@ class GameServer
             ->addFieldValues('Elapsed Time', ($this->round_start_time && $elapsed = $this->parseElapsedTime()) ? $elapsed : 'N/A', true);
     }
 
+    /**
+     * The current player list as a Collection, mapping each SS14 name to a Discord mention when verified.
+     *
+     * @param bool $desc_safe Reserved for description-safe formatting.
+     */
     public function playersCollection(bool $desc_safe = false): ExCollectionInterface
     {
         if (! $collection = $this->civ13->ss14verifier->toCollection($discrim = 'ss14')) {

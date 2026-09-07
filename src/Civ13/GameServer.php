@@ -125,6 +125,10 @@ class GameServer
 
     public string $bancheck_cache = '';
 
+    /**
+     * @param Civ13                $civ13   The bot instance (held by reference).
+     * @param array<string, mixed> $options Server config (held by reference); `basedir`, `key`, `name`, `ip`, `port`, `host` are required, the rest optional.
+     */
     public function __construct(public Civ13 &$civ13, array &$options)
     {
         $this->discord = &$civ13->discord;
@@ -186,6 +190,7 @@ class GameServer
         $this->ranking_path = $this->basedir.Civ13::ranking_path;
         $this->afterConstruct();
     }
+    /** Registers the server via {@see setup()} and, when enabled, defers its timers (player count, serverinfo, relay, round embed) until the bot is ready. */
     protected function afterConstruct(): void
     {
         $this->setup();
@@ -228,6 +233,7 @@ class GameServer
         $this->logger->info('Added '.($this->enabled ? 'enabled' : 'disabled')." game server: {$this->name} ({$this->key})");
         $this->ready = true;
     }
+    /** Caches the guild role whose name matches this server's name. */
     private function __updateDiscordVariables()
     {
         if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
@@ -236,6 +242,7 @@ class GameServer
             }
         }
     }
+    /** Validates the option array: throws when a required key is missing and warns for missing optional keys. */
     private function resolveOptions(array $options)
     {
         $requiredProperties = [
@@ -433,6 +440,7 @@ class GameServer
         // else $this->discord->users->fetch('id', $item['discord']); // disabled to prevent rate limiting
         return $channel->sendMessage(Civ13::createBuilder(true)->addEmbed($embed));
     }
+    /** The 10-second file-chat relay timer (OOC + admin-say), created on first call. Null when the bot is not in the guild. */
     public function relayTimer(): ?TimerInterface
     {
         if (! $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
@@ -447,6 +455,7 @@ class GameServer
 
         return $this->timers['relay_timer'];
     }
+    /** The 3-minute timer that refreshes the player list and runs each ckey through the moderator, created on first call. */
     public function serverinfoTimer(): TimerInterface
     {
         if (! isset($this->timers['serverinfo_timer'])) {
@@ -467,6 +476,7 @@ class GameServer
 
         return $this->timers['serverinfo_timer']; // Check players every minute
     }
+    /** Parses the cached `serverinfo` payload into the player list and returns it. */
     public function serverinfoPlayers(): array
     {
         if (empty($data_json = $this->serverinfo)) {
@@ -617,6 +627,10 @@ class GameServer
         return $builder;
     }
 
+    /**
+     * Handles a "Log" button click: validates the Admin role, parses the `logs {path}` custom id,
+     * navigates this server's log directory and follows up with the log file or "No logs found".
+     */
     protected function interaction_log_handler(Interaction $interaction): PromiseInterface
     {
         if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) {
@@ -638,6 +652,7 @@ class GameServer
         return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($results[1], 'log.txt'), true);
     }
 
+    /** The 10-minute timer that renames the player-count channel via {@see playercountChannelUpdate()}, created on first call. */
     public function playercountTimer(): TimerInterface
     {
         // Update playercount channel every 10 minutes
@@ -771,6 +786,7 @@ class GameServer
             $this->logger->info("Server host timer already exists for {$this->key}.");
         }
     }
+    /** Shuts the server down (via `killciv13`), optionally announcing it in OOC first. */
     public function Kill(?Message $message = null, bool $notify = true): void
     {
         if ($notify) {
@@ -784,6 +800,7 @@ class GameServer
             }
         });
     }
+    /** Kills the server and re-hosts it 20s later, optionally announcing the restart in OOC. */
     public function Restart(?Message $message = null, bool $notify = true): void
     {
         $this->Kill(null, false);
@@ -833,11 +850,17 @@ class GameServer
         return resolve($msg);
     }
 
+    /** Trims the bans and player-log files via {@see __cleanupLog()}. */
     public function cleanupLogs(): void
     {
         $this->__cleanupLog($this->basedir.Civ13::bans);
         $this->__cleanupLog($this->basedir.Civ13::playerlogs);
     }
+    /**
+     * Rewrites the log file at `$path`, dropping entries older than the retention window.
+     *
+     * @return bool False when the file cannot be read.
+     */
     public function __cleanupLog(string $path): bool
     {
         if (! @file_exists($path)) {
@@ -882,6 +905,7 @@ class GameServer
     {
         return $this->legacy ? $this->legacyBancheck($ckey, $use_cache) : $this->sqlBancheck($ckey);
     }
+    /** Whether `$id` (ckey) is permabanned, dispatching to the legacy-file or SQL check. */
     public function permabancheck(string $id, bool $bypass = false): bool
     {
         if (! $id = Civ13::sanitizeInput($id)) {
@@ -948,6 +972,7 @@ class GameServer
         return false;
     }
 
+    /** Reloads `bancheck_cache` from the bans file. Returns the file contents, or null on failure. */
     public function updateBanCache(): ?string
     {
         if (! @file_exists($path = $this->basedir.Civ13::bans)) {
@@ -1061,6 +1086,7 @@ class GameServer
 
         return resolve($final);
     }
+    /** The raw contents of this server's bans file, or false when it cannot be read. */
     public function listbans(): string|false
     {
         if (! @touch($fp = $this->basedir.Civ13::bans)) {
@@ -1076,6 +1102,7 @@ class GameServer
 
         return $banlog;
     }
+    /** Adds this server's ban list to `$banlists` keyed by server name. */
     public function merge_banlist(array $banlists): array
     {
         return ($banlist = $this->listbans())
@@ -1083,6 +1110,7 @@ class GameServer
             : $banlists;
     }
 
+    /** Runs {@see __panicCheck()} for `$ckey` and posts the resulting ban reason to the staff channel. */
     public function panicCheck(string $ckey): void
     {
         if (! $ban_reason = $this->__panicCheck($ckey)) {
@@ -1093,6 +1121,10 @@ class GameServer
         }
         $this->civ13->sendMessage($channel, $ban_reason);
     }
+    /**
+     * The panic-bunker ban reason for `$ckey` when the bunker is active and the player is unverified,
+     * or false when no panic ban applies.
+     */
     private function __panicCheck(string $ckey): string|false
     {
         if (! $this->panic_bunker) {
@@ -1180,6 +1212,12 @@ class GameServer
             ? $this->legacyBan($array, $admin)
             : $this->sqlBan($array, $admin);
     }
+    /**
+     * Appends a ban to the `discord2ban` file and schedules a follow-up to backfill missing ban data.
+     *
+     * @param array{ckey: string, duration: string, reason: string} $array
+     * @return string A human-readable confirmation (or error) line.
+     */
     private function legacyBan(array $array, ?string $admin = null): string
     {
         $admin = $admin ?? $this->discord->username;
@@ -1199,6 +1237,7 @@ class GameServer
 
         return "`$admin` `Server` banned `{$array['ckey']}` from `{$this->name}` for `{$array['duration']}` with the reason `{$array['reason']}`".PHP_EOL;
     }
+    /** SQL ban backend — not yet implemented. */
     private function sqlBan(array $array, ?string $admin = null): string
     {
         return 'SQL methods are not yet implemented!'.PHP_EOL;
@@ -1230,6 +1269,11 @@ class GameServer
             }
         }
     }
+    /**
+     * Appends an unban entry to the `discord2unban` file.
+     *
+     * @return PromiseInterface Rejected with {@see MissingSystemPermissionException} when the file cannot be opened.
+     */
     private function legacyUnban(string $ckey, ?string $admin = null): PromiseInterface
     {
         $admin = $admin ?? $this->discord->username;
@@ -1243,6 +1287,7 @@ class GameServer
 
         return resolve(null);
     }
+    /** SQL unban backend — not yet implemented. */
     private function sqlUnban($array, ?string $admin = null): string
     {
         return 'SQL methods are not yet implemented!'.PHP_EOL;
@@ -1425,6 +1470,7 @@ class GameServer
             return true;
         });
     }
+    /** The stored data for round `$game_id`, or an empty array when unknown. */
     public function getRound(string $game_id): array
     {
         return $this->rounds[$game_id] ?? [];
@@ -1721,6 +1767,7 @@ class GameServer
 
         return $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
     }
+    /** The raw contents of this server's admins file, or false when it cannot be read. */
     public function listadmins(): string|false
     {
         if (! @touch($fp = $this->basedir.Civ13::admins)) {
@@ -1737,6 +1784,9 @@ class GameServer
         return $admins;
     }
 
+    /**
+     * Formats an `H:i` round-time string as a compact `<d>d<h>h<m>m` duration.
+     */
     public function parseRoundTime(string $time)
     {
         [$hours, $minutes] = array_map('intval', explode(':', $time) + [0, 0]);
@@ -1856,6 +1906,7 @@ class GameServer
 
         return $return;
     }
+    /** A short embed with this server's URL, host and current player list. */
     public function toEmbed(): Embed
     {
         return $this->civ13->createEmbed()
@@ -1865,10 +1916,20 @@ class GameServer
             ->addFieldValues('Players ('.count($this->players).')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
     }
     // Magic Methods
+    /**
+     * @inheritDoc
+     *
+     * Returns this server's key.
+     */
     public function __toString(): string
     {
         return $this->key;
     }
+    /**
+     * The server as an array of its public properties (minus the `civ13` back-reference).
+     *
+     * @return array<string, mixed>
+     */
     public function __toArray(): array
     {
         $array = get_object_vars($this);
@@ -1876,14 +1937,23 @@ class GameServer
 
         return $array;
     }
+    /**
+     * @inheritDoc
+     */
     public function __serialize(): array
     {
         return $this->__toArray();
     }
+    /**
+     * @inheritDoc
+     */
     public function __debugInfo(): array
     {
         return $this->__toArray();
     }
+    /**
+     * Cancels every timer this server registered.
+     */
     public function __destruct()
     {
         foreach ($this->timers as $timer) {

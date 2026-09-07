@@ -43,6 +43,7 @@ class HttpServiceManager
     protected array $dwa_timers = [];
     protected array $dwa_discord_ids = [];
 
+    /** @param Civ13 $civ13 The bot instance; builds the {@see HttpHandler} and binds `discord`/`logger` by reference. */
     public function __construct(public Civ13 &$civ13)
     {
         $this->discord = &$civ13->discord;
@@ -52,6 +53,7 @@ class HttpServiceManager
         $this->__afterConstruct();
     }
 
+    /** Closes the listening socket, if one is open. */
     public function __destruct()
     {
         if (isset($this->socket)) {
@@ -59,6 +61,7 @@ class HttpServiceManager
         }
     }
 
+    /** Boots the web API: validates the required `webapi`/`socket`/`web_address`/`http_port` options, then binds endpoints and the listening socket. */
     protected function __afterConstruct()
     {
         if (! isset($this->civ13->options['webapi'], $this->civ13->options['socket'], $this->civ13->options['web_address'], $this->civ13->options['http_port'])) {
@@ -215,6 +218,7 @@ class HttpServiceManager
         }
     }
 
+    /** Registers the core web-API routes (channel browser, message/embed senders, admin actions), then delegates to the per-server and website route generators. */
     protected function __generateEndpoints()
     {
         $this->httpHandler
@@ -1007,6 +1011,7 @@ class HttpServiceManager
         $this->__generateWebsiteEndpoints();
     }
 
+    /** Registers per-game-server web-API routes (`/{key}/bans`, etc.) for every enabled game server. */
     protected function __generateServerEndpoints()
     {
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
@@ -1652,6 +1657,7 @@ class HttpServiceManager
         }
     }
 
+    /** Serves every `*.html` file under the `/html` directory as its own web-API route, creating the directory if missing. */
     protected function __generateWebsiteEndpoints()
     {
         if (! is_dir($dirPath = $this->basedir.self::HTMLDIR) && ! mkdir($dirPath, 0664, true)) {

@@ -91,6 +91,7 @@ class Moderator
     public string $status = 'status.txt';
     public bool $ready = false;
 
+    /** @param Civ13 $civ13 The bot instance; its `discord` and `logger` are bound by reference. */
     public function __construct(Civ13 $civ13)
     {
         $this->civ13 = &$civ13;
@@ -98,12 +99,20 @@ class Moderator
         $this->logger = &$civ13->logger;
         $this->afterConstruct();
     }
+
+    /** Runs {@see setup()} immediately if the bot is ready, otherwise on the next `init` event. */
     protected function afterConstruct(): void
     {
         $this->civ13->ready
             ? $this->setup()
             : $this->discord->once('init', fn () => $this->setup());
     }
+
+    /**
+     * Registers this instance as `civ13->moderator` and marks it ready.
+     *
+     * @return PromiseInterface Rejected with {@see \LogicException} if already set up.
+     */
     public function setup(): PromiseInterface
     {
         if ($this->ready) {

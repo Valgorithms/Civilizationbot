@@ -53,6 +53,11 @@ class GetRound extends Civ13MessageCommand
         ));
     }
 
+    /**
+     * Collects round `$game_id` data from every enabled game server.
+     *
+     * @return array<string, array<string, mixed>> Round data keyed by server name (with `server_key` added).
+     */
     protected function getRounds(string $game_id): array
     {
         $rounds = [];
@@ -66,6 +71,14 @@ class GetRound extends Civ13MessageCommand
         return $rounds;
     }
 
+    /**
+     * Builds the reply: one embed per server's round, adding staff-only details for admins.
+     *
+     * @param Member                              $member  The requesting member, used for rank checks.
+     * @param string                              $game_id The round id.
+     * @param array<string, array<string, mixed>> $rounds  Per-server round data from {@see getRounds()}.
+     * @param string|null                         $ckey    Optional ckey to include a per-player data field for.
+     */
     protected function createBuilder(Member $member, string $game_id, array $rounds, ?string $ckey = null): MessageBuilder
     {
         $builder = Civ13::createBuilder(true)->setContent("Round data for game_id `$game_id`".($ckey ? " (ckey: `$ckey`)" : ''));
@@ -89,6 +102,14 @@ class GetRound extends Civ13MessageCommand
         return $builder;
     }
 
+    /**
+     * Builds one round embed: start/end times, player and verified-player lists, and an
+     * optional per-player data field (IP/CID redacted unless `$high_staff`).
+     *
+     * @param array<string, mixed> $round      Round data for one server.
+     * @param bool                 $high_staff Whether to show unredacted IP/CID values.
+     * @param string|null          $ckey       Player to add a detail field for.
+     */
     protected function createEmbed(string|int $server, array $round, bool $high_staff = false, ?string $ckey = null): Embed
     {
         $embed = $this->civ13->createEmbed()
@@ -121,6 +142,12 @@ class GetRound extends Civ13MessageCommand
         return $embed;
     }
 
+    /**
+     * Adds admin-only fields (logging-interrupted flag, log command) to `$embed` and a
+     * "Log" button to `$builder` that fetches the round's log file on click.
+     *
+     * @param array<string, mixed> $round Round data for one server.
+     */
     protected function addStaffDetails(Embed &$embed, MessageBuilder &$builder, array $round)
     {
         $log = (isset($round['log']) && ! empty($round['log']))
@@ -138,6 +165,10 @@ class GetRound extends Civ13MessageCommand
         );
     }
 
+    /**
+     * Handles a "Log" button click: validates the Admin role, parses the `logs {server};{path}`
+     * custom id, navigates the server's log directory and follows up with the file or the options.
+     */
     protected function interaction_log_handler(Interaction $interaction): PromiseInterface
     {
         if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) {

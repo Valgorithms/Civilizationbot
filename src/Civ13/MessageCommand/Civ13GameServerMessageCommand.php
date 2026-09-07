@@ -18,10 +18,19 @@ use Civ13\GameServer;
 
 class Civ13GameServerMessageCommand extends Civ13MessageCommand
 {
+    /**
+     * @param Civ13      $civ13      The bot instance (held by reference).
+     * @param GameServer $gameserver The game server this command acts on (held by reference).
+     */
     public function __construct(protected Civ13 &$civ13, protected GameServer &$gameserver)
     {
     }
-    
+
+    /**
+     * Returns a fresh instance bound to the same bot and game server, with `$callback` as its handler.
+     *
+     * @return static
+     */
     public function new(\Closure|callable|null $callback = null): static
     {
         $new = new static($this->civ13, $this->gameserver);

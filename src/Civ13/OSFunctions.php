@@ -33,6 +33,11 @@ class OSFunctions
         2 => ['pipe', 'w'],
     ];
     
+    /**
+     * Drains stdin/stdout/stderr from a `proc_open()` pipe set to the PHP error log.
+     *
+     * @param array<int, resource> $pipes The pipe descriptors (by reference).
+     */
     private static function readPipes(array &$pipes)
     {
         if (is_resource($pipes[0]) && $stdin = fread($pipes[0], 4096)) {

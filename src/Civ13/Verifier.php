@@ -50,6 +50,7 @@ class Verifier
      */
     public array $timers = [];
 
+    /** @param Civ13 $civ13 The bot instance (held by reference). @param array<string,mixed> $options Verifier config; `verify_url` is required (defaulted by {@see resolveOptions()}). */
     public function __construct(Civ13 &$civ13, array $options = [])
     {
         $this->civ13 = &$civ13;
@@ -66,12 +67,14 @@ class Verifier
         $this->provisional = new Collection($provisional, 'ss13');
         $this->afterConstruct();
     }
+    /** Fills in default option values (currently just `verify_url`). */
     public function resolveOptions(array &$options)
     {
         if (! isset($options['verify_url'])) {
             $options['verify_url'] = 'http://valzargaming.com:8080/verified/';
         }
     }
+    /** Wires up `GUILD_MEMBER_ADD` handling (role sync plus an 8640s verify-or-kick timer) and runs {@see setup()} once the bot is ready. */
     public function afterConstruct(): void
     {
         $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member): void {
@@ -227,6 +230,7 @@ class Verifier
             ? $fn()
             : $this->discord->once('init', fn () => $fn());
     }
+    /** Registers this instance as `civ13->verifier` and marks it ready (no-op if already set up). */
     public function setup()
     {
         if ($this->ready) {
@@ -237,6 +241,7 @@ class Verifier
         $this->ready = true;
     }
 
+    /** Renames the `verifier-status` channel to `{name}-online` / `{name}-offline` to match the current verifier state, announcing the change. */
     public function verifierStatusChannelUpdate(bool $status): ?PromiseInterface
     {
         if (! $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['verifier-status'])) {
@@ -705,6 +710,11 @@ class Verifier
 
         return ['success' => true, 'message' => $message];
     }
+    /**
+     * Sends a verification request linking `$ckey` to `$discord_id`.
+     *
+     * @return array<string,mixed> The verifier response.
+     */
     private function __verify(string $ckey, string $discord_id): array
     {
         return $this->__verifyRequest([
@@ -712,6 +722,11 @@ class Verifier
             'discord' => $discord_id,
         ]);
     }
+    /**
+     * Sends a DELETE verification request for `$id` (matched as either ckey or Discord id).
+     *
+     * @return array<string,mixed> The verifier response.
+     */
     private function __unverify(string $id): array
     {
         return $this->__verifyRequest([
@@ -720,6 +735,13 @@ class Verifier
             'discord' => $id,
         ]);
     }
+    /**
+     * Performs a verification API call, using the in-process verifier server when available and cURL otherwise.
+     *
+     * @param array<string,mixed> $postfields Request fields; `token` is added automatically.
+     *
+     * @return array<string,mixed> `['success' => bool, 'message' => string, ...]`.
+     */
     private function __verifyRequest(array $postfields): array
     {
         $postfields['token'] = $this->civ13->civ_token;
@@ -1047,6 +1069,7 @@ class Verifier
 
         return $guild->members->get('id', $id);
     }
+    /** Resolves a Member/User/id/verified-record to the Discord {@see User} for a verified member, or null. */
     public function getVerifiedUser(Member|User|array|string|null $input): ?User
     {
         if (! $input) {
@@ -1081,6 +1104,7 @@ class Verifier
         return null;
     }
 
+    /** The 30-minute periodic timer that re-checks verifier connectivity and replays provisional registrations when it comes back online. */
     public function verifierStatusTimer(): TimerInterface
     {
         if (! isset($this->timers['verifier_status_timer'])) {
@@ -1118,11 +1142,19 @@ class Verifier
         return null;
     }
 
+    /**
+     * @inheritDoc
+     *
+     * Iterates the verified list.
+     */
     public function getIterator(): Traversable
     {
         return $this->verified->getIterator();
     }
     // Magic Methods
+    /**
+     * Cancels every timer this verifier registered.
+     */
     public function __destruct()
     {
         foreach ($this->timers as $timer) {

@@ -25,6 +25,10 @@ abstract class CivHandler extends Handler implements CivHandlerInterface
 
     use RankTrait;
     
+    /**
+     * @param Civ13                       $civ13    The bot instance; its `discord` and `logger` are bound by reference.
+     * @param array<string, callable>     $handlers Initial handler map.
+     */
     public function __construct(public Civ13 &$civ13, array $handlers = [])
     {
         parent::__construct();

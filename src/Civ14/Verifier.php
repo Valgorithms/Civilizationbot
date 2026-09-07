@@ -42,6 +42,7 @@ class Verifier
     //protected $oauth_endpoint;
     protected SS14VerifiedEndpoint $endpoint;
 
+    /** Resolves the `/ss14verified` endpoint on the running verifier server and wires up member-join role syncing. */
     public function __construct(Civ13 &$civ13)
     {
         /** @var Civ13 $civ13 */
@@ -62,6 +63,7 @@ class Verifier
         $this->endpoint = &$endpoint;
         $this->afterConstruct();
     }
+    /** Registers this instance as `civ13->ss14verifier` and subscribes to `GUILD_MEMBER_ADD` for role syncing. */
     protected function afterConstruct(): void
     {
         $this->civ13->ss14verifier = &$this;
@@ -208,46 +210,65 @@ class Verifier
             : $member->setroles([$this->civ13->role_ids['SS14 Verified']], 'SS14 verified join');
     }
 
+    /** The verified record matching `$key` => `$value` (e.g. `discord`, `ss14`), or null. */
     public function get(int|string $key, string $value): ?array
     {
         return $this->endpoint->fetch($key, $value);
     }
 
+    /** The bot instance this verifier belongs to. */
     public function getCiv13()
     {
         return $this->civ13;
     }
 
+    /** The underlying SS14 verified-users endpoint. */
     public function getEndpoint(): SS14VerifiedEndpoint
     {
         return $this->endpoint;
     }
 
+    /** Backs the `logger` magic property. */
     public function getLoggerProperty(): LoggerInterface
     {
         return $this->civ13->logger;
     }
 
+    /**
+     * @inheritDoc
+     *
+     * Iterates the verified list.
+     */
     public function getIterator(): Traversable
     {
         return new \ArrayIterator($this->toArray());
     }
 
+    /** The full verified list as a plain array. */
     public function toArray(): array
     {
         return $this->endpoint->getState()->getVerifyList();
     }
 
+    /** The verified list as a Collection keyed by `$discrim` (default `ss14`). */
     public function toCollection(string $discrim = 'ss14'): ExCollectionInterface
     {
         return new Collection($this->endpoint->getState()->getVerifyList(), $discrim);
     }
 
+    /**
+     * @inheritDoc
+     *
+     * Serialises to the verified list.
+     */
     public function jsonSerialize(): array
     {
         return $this->toArray();
     }
 
+    /**
+     * @inheritDoc
+     */
     public function __debugInfo(): array
     {
         return $this->toArray();

@@ -36,10 +36,16 @@ class Civ13MessageCommand extends MessageCommand
     protected const string ACCENT_COLOR_DEFAULT = 'f1c40f';
     protected const string ACCENT_COLOR_ERROR = 'e91e63';
 
+    /** @param Civ13 $civ13 The bot instance this command reads its services from (held by reference). */
     public function __construct(protected Civ13 &$civ13)
     {
     }
 
+    /**
+     * Returns a fresh instance bound to the same bot, with `$callback` as its handler.
+     *
+     * @return static
+     */
     public function new(\Closure|callable|null $callback = null): static
     {
         $new = new static($this->civ13);
@@ -48,6 +54,7 @@ class Civ13MessageCommand extends MessageCommand
         return $new;
     }
 
+    /** Backs the `browser` magic property; falls back to a fresh Browser during PHPUnit runs. */
     protected function getBrowserProperty(): Browser
     {
         return isset($this->civ13->browser)
@@ -55,16 +62,19 @@ class Civ13MessageCommand extends MessageCommand
             : new Browser($this->loop ?? Loop::get()); // Workaround for PHPUnit tests
     }
 
+    /** Backs the `discord` magic property. */
     protected function getDiscordProperty(): Discord
     {
         return $this->civ13->discord;
     }
 
+    /** Backs the `logger` magic property. */
     protected function getLoggerProperty(): LoggerInterface
     {
         return $this->civ13->logger;
     }
 
+    /** Backs the `loop` magic property; falls back to the global loop during PHPUnit runs. */
     protected function getLoopProperty(): LoopInterface
     {
         return isset($this->civ13->loop)
@@ -72,6 +82,7 @@ class Civ13MessageCommand extends MessageCommand
             : Loop::get(); // Workaround for PHPUnit tests
     }
 
+    /** @inheritDoc */
     public function __debugInfo(): array
     {
         return [

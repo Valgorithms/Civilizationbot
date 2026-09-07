@@ -148,6 +148,13 @@ trait ServerApiTrait
         );
     }
 
+    /**
+     * Copies a fetched `/status` payload onto this server's public properties (name, player
+     * count, map, round id, run level, etc.), optionally persisting it to `{key}_status.json`.
+     *
+     * @param array<string, mixed> $status The parsed status response.
+     * @param bool                 $save   Whether to write the payload to disk.
+     */
     protected function updateServerPropertiesFromStatusArray(array $status, bool $save = true): void
     {
         if ($save) {

@@ -40,6 +40,16 @@ class DiscordWebAuth
     protected ?string $originating_url = null;
     protected array $allowed_uri = []; //Exact URL as added in https://discord.com/developers/applications/###/oauth2
 
+    /**
+     * @param Civ13                  $civ13         The bot instance (held by reference).
+     * @param array<string, mixed>   $sessions      The shared per-IP session store (held by reference).
+     * @param string                 $client_id     Discord application client id.
+     * @param string                 $client_secret Discord application client secret.
+     * @param string                 $web_address   Public host for building redirect URIs.
+     * @param int                    $http_port     Public HTTP port.
+     * @param string                 $resolved_ip   Resolved server IP, added to the allowed redirect list.
+     * @param ServerRequestInterface $request       The incoming OAuth2 callback request.
+     */
     public function __construct(Civ13 &$civ13, array &$sessions, string $client_id, string $client_secret, string $web_address, int $http_port, string $resolved_ip, ServerRequestInterface $request)
     {
         $this->civ13 = &$civ13;
@@ -71,6 +81,7 @@ class DiscordWebAuth
         }
     }
 
+    /** Performs a cURL request to the Discord API, attaching the bearer token when present and JSON-decoding the response. */
     private function apiRequest(string $url = '', object|array|null $post = null, ?bool $associative = null)
     {
         $ch = curl_init($url);
@@ -93,6 +104,7 @@ class DiscordWebAuth
         return @json_decode($response, $associative);
     }
 
+    /** Redirects the browser to the Discord OAuth2 authorize page, or to the first allowed URI when the redirect target is not whitelisted. */
     public function login(?string $redirect_uri = null, ?string $scope = 'identify guilds connections'): Response
     {
         if (! isset($redirect_uri)) {
@@ -120,6 +132,7 @@ class DiscordWebAuth
         );
     }
 
+    /** Clears this IP's session and redirects home. */
     public function logout(): Response
     {
         unset($this->sessions[$this->requesting_ip]);
@@ -130,6 +143,7 @@ class DiscordWebAuth
         );
     }
 
+    /** Exchanges the OAuth2 `code` for an access token (when `$state` matches) and stores it on the session, then redirects home. */
     public function getToken(string $state = '', string $redirect_uri = ''): Response
     {
         if ($state === $this->state) {
@@ -155,6 +169,7 @@ class DiscordWebAuth
         return new Response(Response::STATUS_BAD_REQUEST);
     }
 
+    /** Revokes the current access token with Discord and logs the user out. */
     public function removeToken(): Response
     {
         if ($this->access_token) {
@@ -170,6 +185,7 @@ class DiscordWebAuth
         return $this->logout();
     }
 
+    /** Fetches `/users/@me` plus the user's guilds, decorating them with avatar/icon CDN URLs. */
     public function getUser()
     {
         $user = $this->apiRequest($this->baseURL.'/users/@me');
@@ -184,6 +200,7 @@ class DiscordWebAuth
         return $user;
     }
     
+    /** Fetches `/users/@me/connections` and mirrors each connection's id/name (and Steam URL) into the session. */
     public function getConnections()
     {
         $connections = $this->apiRequest($this->baseURL.'/users/@me/connections');
@@ -211,11 +228,13 @@ class DiscordWebAuth
         return $connections;
     }
 
+    /** Whether a Discord user has been resolved for this session. */
     public function isAuthed(): bool
     {
         return ! is_null($this->user);
     }
 
+    /** The authed user's guild matching `$id`, or false when unauthenticated or not a member. */
     public function getGuild(string|int $id)
     {
         if (is_null($this->user)) {

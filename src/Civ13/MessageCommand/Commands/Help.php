@@ -24,6 +24,10 @@ use React\Promise\PromiseInterface;
  */
 class Help extends Civ13MessageCommand
 {
+    /**
+     * @param Civ13          $civ13          The bot instance (held by reference).
+     * @param MessageHandler $messageHandler Source of the role-filtered help text.
+     */
     public function __construct(protected Civ13 &$civ13, protected MessageHandler $messageHandler)
     {
     }

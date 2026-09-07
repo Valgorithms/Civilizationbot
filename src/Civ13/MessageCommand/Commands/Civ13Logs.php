@@ -31,6 +31,12 @@ class Civ13Logs extends Civ13MessageCommand
         return $this->logHandler($message, self::messageWithoutCommand($command, $message_filtered));
     }
 
+    /**
+     * Navigates a game server's log directory from a `;`-delimited path and replies with a file or the available options.
+     *
+     * @param Message $message         The triggering message.
+     * @param string  $message_content The command arguments: `{server};{path};{segments...}`.
+     */
     public function logHandler(Message $message, string $message_content): PromiseInterface
     {
         $tokens = explode(';', $message_content);

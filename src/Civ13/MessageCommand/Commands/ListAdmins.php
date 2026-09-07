@@ -57,6 +57,7 @@ class ListAdmins extends Civ13MessageCommand
         return $message->reply($this->createBuilder());
     }
 
+    /** Builds the components-v2 reply that attaches each enabled server's `admins.txt`. */
     public function createBuilder(): MessageBuilder
     {
         $builder = Civ13::createBuilder(true);
@@ -64,6 +65,7 @@ class ListAdmins extends Civ13MessageCommand
         return $builder->addComponent($this->createContainer($builder));
     }
 
+    /** Attaches one admins file per enabled server to `$builder` and returns the display container. */
     private function createContainer(MessageBuilder $builder): Container
     {
         $this->container = Container::new()->setAccentColor(self::ACCENT_COLOR_DEFAULT)->addComponents([

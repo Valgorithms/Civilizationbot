@@ -104,6 +104,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         $this->key = $key;
         $this->afterConstruct();
     }
+    /** Applies the default rate limits via {@see __setDefaultRatelimits()}. */
     protected function afterConstruct(): void
     {
         $this->__setDefaultRatelimits();
@@ -404,6 +405,10 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
 
         return $this->__getRateLimitExpiration($endpoint, $ip);
     }
+    /**
+     * The Unix time at which `$ip`'s rate limit for `$endpoint` expires, or null when
+     * no limit is defined or the caller is not currently limited.
+     */
     public function __getRateLimitExpiration(string $endpoint, string $ip): ?int
     {
         if (! isset($this->attributes['ratelimits'][$endpoint])) {
@@ -457,6 +462,12 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         $this->attributes['ratelimits'][$endpoint] = $rateLimit;
     }
 
+    /**
+     * @inheritDoc
+     *
+     * With `$name`, returns `$attributes[$name][$offset]`; otherwise returns
+     * `[handler, whitelisted, match_method, description]` for `$offset`.
+     */
     public function offsetGet(int|string $offset, ?string $name = null): mixed
     {
         if ($name) {
@@ -500,6 +511,17 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         return $this;
     }
 
+    /**
+     * Registers `$callback` for every offset in `$offsets` at once.
+     *
+     * @param array<int|string> $offsets     Route keys to bind.
+     * @param callable          $callback    Handler; validated before storing.
+     * @param bool|null         $whitelisted Whether the routes require a whitelisted IP.
+     * @param string|null       $method      Match method (`exact`, `str_starts_with`, ...).
+     * @param string|null       $description Help text for the routes.
+     *
+     * @see offsetSet()
+     */
     public function offsetSets(array $offsets, callable $callback, ?bool $whitelisted = false, ?string $method = 'exact', ?string $description = ''): HttpHandler
     {
         foreach ($offsets as $offset) {
@@ -608,6 +630,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
+    /** @inheritDoc */
     public function __debugInfo(): array
     {
         return [

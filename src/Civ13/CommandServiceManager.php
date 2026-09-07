@@ -50,6 +50,12 @@ class CommandServiceManager
 
     private readonly bool $setup;
 
+    /**
+     * @param Discord                $discord                Main Discord client (held by reference).
+     * @param HttpServiceManager      $httpServiceManager    Registers HTTP command routes (held by reference).
+     * @param MessageServiceManager   $messageServiceManager Registers message command routes (held by reference).
+     * @param Civ13                   $civ13                 The bot instance (held by reference).
+     */
     public function __construct(Discord &$discord, HttpServiceManager &$httpServiceManager, MessageServiceManager &$messageServiceManager, Civ13 &$civ13)
     {
         $this->civ13 = &$civ13;
@@ -65,6 +71,7 @@ class CommandServiceManager
     * This function is called after the constructor is finished.
     * It is used to load the files, start the timers, and start handling events.
     */
+    /** Runs {@see setup()} once the bot is ready (immediately, or on the next `init` event) and logs the resulting application command list. */
     protected function afterConstruct(): void
     {
         $fn = function () {
@@ -187,6 +194,7 @@ class CommandServiceManager
         return $this->civ13->then($commands->save($command));
     }
 
+    /** Appends this class’s built-in command definitions (currently `ping`) to `$array` and returns it. */
     private function populateCommands(array $array = []): array
     {
         $array[] = [
@@ -220,6 +228,7 @@ class CommandServiceManager
 
         return $array;
     }
+    /** Registers the built-in `help` command (message, HTTP and interaction handlers). */
     private function loadDefaultHelpCommand(): void
     {
         $help = [
@@ -293,6 +302,7 @@ class CommandServiceManager
         }
     }
     
+    /** Registers a message-handler route for every global and guild command via {@see createMessageCommand()}. */
     private function setupMessageCommands(): void
     {
         foreach ($this->global_commands as $global_command) {
@@ -302,6 +312,13 @@ class CommandServiceManager
             $this->createMessageCommand($guild_command);
         }
     }
+    /**
+     * Registers `$command` (and its aliases) as a message-handler route.
+     *
+     * @param array<string,mixed> $command A command definition from {@see populateCommands()} / the command files.
+     *
+     * @return bool False when the definition has no `message_handler`.
+     */
     public function createMessageCommand(array $command): bool
     {
         if (! isset($command['message_handler'])) {
@@ -390,6 +407,7 @@ class CommandServiceManager
             }
         }
     }
+    /** Registers an HTTP route for every valid global and guild command via {@see createHTTPCommand()}. */
     private function setupHTTPCommands(): void
     {
         foreach ($this->global_commands as $global_command) {
@@ -403,6 +421,13 @@ class CommandServiceManager
             }
         }
     }
+    /**
+     * Registers `$command` (and its aliases) as an HTTP route, applying any configured rate limit.
+     *
+     * @param array<string,mixed> $command A command definition.
+     *
+     * @return bool False when the definition has no `http_handler`.
+     */
     public function createHTTPCommand(array $command): bool
     {
         if (! isset($command['http_handler'])) {
@@ -427,6 +452,7 @@ class CommandServiceManager
         return true;
     }
     
+    /** Builds the help reply: an embed when it fits, otherwise a `commands.txt` attachment. */
     public function getHelpMessageBuilder(?string $guild_id = null, ?string $command = null, ?MessageBuilder $messagebuilder = new MessageBuilder()): MessageBuilder
     {
         if ($embed = $this->getHelpEmbed($guild_id, $command)) {
@@ -435,6 +461,7 @@ class CommandServiceManager
 
         return $messagebuilder->addFileFromContent('commands.txt', $this->getHelpString($guild_id, $command));
     }
+    /** The "Commands List" help embed for `$command_name` (or all commands), or false when empty or over 4096 chars. */
     public function getHelpEmbed(?string $guild_id = null, ?string $command_name = null): Embed|false
     {
         if (! $description = $this->getGlobalHelpString($command_name).$this->getGuildHelpString($guild_id, $command_name)) {
@@ -448,10 +475,12 @@ class CommandServiceManager
             ->setTitle('Commands List')
             ->setDescription($description);
     }
+    /** The combined global + guild help text for `$command` (or all commands). */
     public function getHelpString(?string $guild_id = null, ?string $command = null): string
     {
         return $this->getGlobalHelpString($command).$this->getGuildHelpString($guild_id, $command);
     }
+    /** Appends the global commands help text (or just `$command_name`’s line) to `$help` and returns it. */
     public function getGlobalHelpString(?string $command_name = null, ?string $help = ''): string
     {
         if (! $this->global_commands) {
@@ -517,6 +546,9 @@ class CommandServiceManager
         return $help;
     }
 
+    /**
+     * Reserved hook for refreshing the global application command list (currently disabled).
+     */
     private function __updateCommands(): void
     {
         /*$this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void
@@ -529,6 +561,7 @@ class CommandServiceManager
             if ($names) $this->logger->debug('[GLOBAL APPLICATION COMMAND LIST]' . PHP_EOL .  '`' . implode('`, `', $names) . '`');
         });*/
     }
+    /** Reserved hook for refreshing the guild application command list (currently disabled). */
     private function __updateGuildCommands(): void
     {
         /*$this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands) {
@@ -538,6 +571,11 @@ class CommandServiceManager
         });*/
     }
 
+    /**
+     * @inheritDoc
+     *
+     * Returns the full help string.
+     */
     public function __toString(): string
     {
         return $this->getHelpString();

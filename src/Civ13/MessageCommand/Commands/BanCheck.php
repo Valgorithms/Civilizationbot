@@ -52,6 +52,11 @@ class BanCheck extends Civ13MessageCommand
             : $message->react('🔥');
     }
 
+    /**
+     * Scans every enabled game server's ban file for `$ckey` and builds the reply text.
+     *
+     * @return string|false The formatted ban listing (or a "no bans" line), or false if a ban file could not be read.
+     */
     protected function createContent(string $ckey): string|false
     {
         $content = '';
@@ -69,6 +74,16 @@ class BanCheck extends Civ13MessageCommand
         return $content;
     }
 
+    /**
+     * Appends one game server's matching ban lines for `$ckey` to `$content`.
+     *
+     * @param GameServer $gameserver Server whose ban file is scanned.
+     * @param string     $content    Accumulator for reply text (by reference).
+     * @param bool       $found      Set to true if any ban matched (by reference).
+     * @param string     $ckey       The ckey to match (case-insensitively).
+     *
+     * @return bool False if the ban file could not be opened, true otherwise.
+     */
     protected function fillContent(GameServer &$gameserver, string &$content, bool &$found, string $ckey): bool
     {
         if (! touch($gameserver->basedir.Civ13::bans) || ! $file = @fopen($gameserver->basedir.Civ13::bans, 'r')) {
@@ -93,6 +108,11 @@ class BanCheck extends Civ13MessageCommand
         return true;
     }
 
+    /**
+     * Grants the "Banished" role to `$ckey`'s verified member when a ban was found.
+     *
+     * @return PromiseInterface|null The role-add promise, or null when there is nothing to do.
+     */
     protected function updateBanished(bool $found = true, string $ckey): ?PromiseInterface
     {
         if (! isset($this->civ13->role_ids['Banished'])) {

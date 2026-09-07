@@ -34,6 +34,7 @@ class Stats
     
     protected Discord $discord;
 
+    /** Creates an instance and binds it to `$discord` via {@see init()}. */
     public static function new(Discord &$discord): static
     {
         $instance = new static();
@@ -41,6 +42,8 @@ class Stats
 
         return $instance;
     }
+
+    /** Records the start time and tracks reconnects so uptime figures stay accurate. */
     public function init(Discord &$discord): void
     {
         $this->startTime = $this->lastReconnect = Carbon::now();
@@ -68,6 +71,11 @@ class Stats
         return $channelCount;
     }
 
+    /**
+     * The number of cached messages across every private channel and guild channel.
+     *
+     * @return int
+     */
     protected function getMessageCount(): int
     {
         $messageCount = 0;
@@ -124,6 +132,7 @@ class Stats
         return (string) @round($size / pow(1024, ($i = floor(log($size, 1024)))), 2).' '.$unit[(string) $i];
     }
 
+    /** Builds the stats embed: PHP/DiscordPHP/bot versions, uptime, guild/channel/message/user counts and memory usage. */
     public function handle(): Embed
     {
         return (new Embed($this->discord))
@@ -141,6 +150,7 @@ class Stats
             ->addFieldValues('Memory usage', $this->getMemoryUsageFriendly());
     }
 
+    /** The one-line help description for the stats command. */
     public function getHelp(): string
     {
         return 'Provides statistics relating to the bots health.';

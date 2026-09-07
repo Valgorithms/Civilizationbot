@@ -86,6 +86,7 @@ class CV2Poll extends Civ13MessageCommand
         return $this->tick()->then(fn () => $this->createTicker());
     }
 
+    /** Tears down an active poll: cancels the ticker, drops every button listener and clears all poll state. */
     protected function cancel(): void
     {
         $this->cancelTicker();
@@ -116,17 +117,20 @@ class CV2Poll extends Civ13MessageCommand
         $this->cancel_button = null;
     }
 
+    /** Finalises a completed poll. Currently just tears it down via {@see cancel()}. */
     protected function resolve(): void
     {
         // @todo
         $this->cancel();
     }
 
+    /** Builds the components-v2 poll message; pass `$final` to render the ended/winner view. */
     public function createBuilder(bool $final = false): MessageBuilder
     {
         return Civ13::createBuilder(true)->addComponent($this->createContainer($final));
     }
 
+    /** Builds the poll container: title, live vote tallies, countdown and either the vote buttons or the winner line when `$final`. */
     public function createContainer(bool $final = false): Container
     {
         return Container::new()->setAccentColor(self::ACCENT_COLOR_DEFAULT)->addComponents([
@@ -153,6 +157,7 @@ class CV2Poll extends Civ13MessageCommand
         ]);
     }
 
+    /** The poll outcome as `Yes`, `No`, `Tie` or `No votes cast`, from the current tallies. */
     public function getWinner(): string
     {
         $yes_count = count($this->yes_votes ?? []);
@@ -169,6 +174,7 @@ class CV2Poll extends Civ13MessageCommand
         };
     }
 
+    /** The lazily-created "Yes" vote button, wired to {@see voteYes()}. */
     protected function getYesButton(): Button
     {
         return $this->yes_button ??= Button::new(Button::STYLE_PRIMARY, 'vote_yes')->setLabel('Yes')->setListener(
@@ -178,6 +184,7 @@ class CV2Poll extends Civ13MessageCommand
         );
     }
 
+    /** The lazily-created "No" vote button, wired to {@see voteNo()}. */
     protected function getNoButton(): Button
     {
         return $this->no_button ??= Button::new(Button::STYLE_PRIMARY, 'vote_no')->setLabel('No')->setListener(
@@ -187,6 +194,7 @@ class CV2Poll extends Civ13MessageCommand
         );
     }
 
+    /** The lazily-created "Remove My Vote" button, wired to {@see removeVote()}. */
     protected function getAbstainButton(): Button
     {
         return $this->abstain_button ??= Button::new(Button::STYLE_SECONDARY, 'vote_abstain')->setLabel('Remove My Vote')->setListener(
@@ -196,6 +204,7 @@ class CV2Poll extends Civ13MessageCommand
         );
     }
 
+    /** The lazily-created "Resolve Vote" button, which ends the poll immediately. */
     protected function getResolveButton(): Button
     {
         return $this->resolve_button ??= Button::new(Button::STYLE_SUCCESS, 'vote_resolve')->setLabel('Resolve Vote')->setListener(
@@ -205,6 +214,7 @@ class CV2Poll extends Civ13MessageCommand
         );
     }
 
+    /** The lazily-created "Cancel Vote" button, which deletes the poll message and tears the poll down. */
     protected function getCancelButton(): Button
     {
         return $this->cancel_button ??= Button::new(Button::STYLE_DANGER, 'vote_cancel')->setLabel('Cancel Vote')->setListener(
@@ -222,6 +232,7 @@ class CV2Poll extends Civ13MessageCommand
         );
     }
 
+    /** Starts the periodic timer that refreshes the poll message every {@see TIMER_INTERVAL} seconds. */
     protected function createTicker(): TimerInterface
     {
         $this->cancelTicker(); // Avoid multiple timers
@@ -232,6 +243,7 @@ class CV2Poll extends Civ13MessageCommand
         );
     }
 
+    /** Cancels and clears the poll refresh timer if one is running. */
     protected function cancelTicker(): void
     {
         if (isset($this->ticker)) {
@@ -277,6 +289,7 @@ class CV2Poll extends Civ13MessageCommand
         return $promise;
     }
 
+    /** Records a "Yes" vote for `$user_id`, removing any prior "No" vote. */
     protected function voteYes(string $user_id): void
     {
         if (! in_array($user_id, $this->yes_votes ?? [])) {
@@ -288,6 +301,7 @@ class CV2Poll extends Civ13MessageCommand
         }
     }
 
+    /** Records a "No" vote for `$user_id`, removing any prior "Yes" vote. */
     protected function voteNo(string $user_id): void
     {
         if (! in_array($user_id, $this->no_votes ?? [])) {
@@ -299,6 +313,7 @@ class CV2Poll extends Civ13MessageCommand
         }
     }
 
+    /** Removes `$user_id`'s vote from both tallies. */
     protected function removeVote(string $user_id): void
     {
         if (in_array($user_id, $this->yes_votes ?? [])) {

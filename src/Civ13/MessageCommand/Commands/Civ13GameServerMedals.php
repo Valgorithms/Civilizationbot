@@ -32,6 +32,7 @@ enum SS13Medal: string
     case IronCross2ndClass = 'iron cross 2nd class';
     case LongServiceMedal = 'long service medal';
 
+    /** The emoji name registered on the guild for this medal. */
     public function emoji(): string
     {
         return match ($this) {
@@ -48,6 +49,7 @@ enum SS13Medal: string
         };
     }
 
+    /** Resolves a medal display name to its enum case, or null when unrecognised. */
     public static function fromName(string $name): ?self
     {
         return match ($name) {
@@ -65,6 +67,7 @@ enum SS13Medal: string
         };
     }
 
+    /** Prefixes `$name` with its emoji name when the medal is known, otherwise returns it unchanged. */
     public static function withEmoji(string $name): string
     {
         return ($enum = self::fromName($name))
@@ -97,6 +100,15 @@ class Civ13GameServerMedals extends Civ13GameServerMessageCommand
         return $this->civ13->reply($message, $msg, 'medals.txt');
     }
 
+    /**
+     * Reads an awards file and formats every medal line for `$ckey`, resolving guild emojis.
+     *
+     * @param Guild  $guild Guild used to look up medal emojis.
+     * @param string $fp    Path to the `awards` file.
+     * @param string $ckey  The ckey to search for.
+     *
+     * @return string|false Formatted list / "no medals" text, or an error string when the file cannot be opened.
+     */
     public static function medals(Guild $guild, string $fp, string $ckey): string|false
     {
         if (! $search = @fopen($fp, 'r')) {

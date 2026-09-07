@@ -63,6 +63,7 @@ enum CPUUsage: string
     case Linux = 'Linux';
     case Unknown = 'Unknown';
 
+    /** The case matching the current `PHP_OS_FAMILY`. */
     public static function fromPHPOSFamily(): self
     {
         return match (PHP_OS_FAMILY) {
@@ -72,6 +73,9 @@ enum CPUUsage: string
         };
     }
 
+    /**
+     * Returns a formatted CPU-usage string for this OS, or an error string for unrecognised ones.
+     */
     public function __invoke(): string
     {
         return match ($this) {
@@ -82,11 +86,13 @@ enum CPUUsage: string
         };
     }
 
+    /** CPU usage line via PowerShell's processor-time performance counter. */
     private static function getWindowsUsage(): string
     {
         return 'CPU Usage: '.round(floatval(trim(shell_exec('powershell -command "Get-Counter -Counter \'\\Processor(_Total)\\% Processor Time\' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"'))), 2).'%';
     }
 
+    /** CPU usage line from the 1-minute load average divided by `nproc`. */
     private static function getLinuxUsage(): string
     {
         return 'CPU Usage: '.round(sys_getloadavg()[0] * 100 / shell_exec('nproc'), 2).'%';
@@ -775,6 +781,11 @@ class Civ13
         return $promise->then($onFulfilled ?? $this->onFulfilledDefault, $onRejected ?? $onRejectedDefault ?? $this->onRejectedDefault);
         */
     }
+    /**
+     * Runs `$callback` now when the bot is ready, otherwise on the next `init` event.
+     *
+     * @param string|null $function Label for the log line describing what is being deferred.
+     */
     public function deferUntilReady(callable $callback, ?string $function = null): void
     {
         $this->logger->info(
@@ -787,6 +798,7 @@ class Civ13
             : $this->discord->once('init', $callback);
     }
 
+    /** The command prefix `$content` starts with (bot mention or `command_symbol`), or null. */
     private function getCommandPrefix(string $content): ?string
     {
         foreach ([
@@ -911,6 +923,7 @@ class Civ13
         return OSFunctions::restart($file ?? $this->constructed_file);
     }
 
+    /** A formatted CPU-usage string for the host OS. */
     public function CPU(): string
     {
         return (CPUUsage::fromPHPOSFamily())();
@@ -1150,6 +1163,12 @@ class Civ13
         // $this->logger->debug("Sending message to {$channel->name} ({$channel->id}): {$message}");
         return $channel->sendMessage($builder->setContent($content)->addEmbed($embed->setFooter($this->embed_footer)));
     }
+    /**
+     * A new {@see Embed} pre-set with the bot colour and timestamp, and optionally the standard footer.
+     *
+     * @param bool|null $footer Whether to attach the standard footer.
+     * @param int       $color  Embed colour.
+     */
     public function createEmbed(?bool $footer = true, int $color = 0xE1452D): Embed
     {
         $embed = new Embed($this->discord);
@@ -1162,6 +1181,11 @@ class Civ13
             ->setTimestamp()
             ->setURL('');
     }
+    /**
+     * A new {@see MessageBuilder}, optionally with every allowed mention suppressed.
+     *
+     * @param bool $prevent_mentions Disable all mentions on the builder.
+     */
     public static function createBuilder(bool $prevent_mentions = false): MessageBuilder
     {
         $builder = MessageBuilder::new();
@@ -1171,6 +1195,7 @@ class Civ13
 
         return $builder;
     }
+    /** A message builder with one status embed per enabled Civ13 and Civ14 game server. */
     public function createServerstatusEmbed(): MessageBuilder
     {
         $builder = array_reduce(
@@ -1345,6 +1370,7 @@ class Civ13
             : $guild->roles->get('name', $input);
     }
 
+    /** Registers the guild member add/remove/update gateway listeners that fan out to the `functions[...]` hooks. */
     private function declareListeners(): void
     {
         $this->discord->on('GUILD_MEMBER_ADD', function (Member $member): void {
@@ -1530,6 +1556,7 @@ class Civ13
 
         return $this->timers['bancheck_timer'];
     }
+    /** Cancels the ban-check timer when no verifier is configured; otherwise leaves it running. */
     private function __bancheckTimer(): void
     {
         if (! isset($this->verifier)) {
@@ -1616,6 +1643,9 @@ class Civ13
     {
         return array_reduce($ckeys, fn ($carry, $key) => $carry || ($key !== $exclude && $this->bancheck($key)), false);
     }
+    /**
+     * Whether `$ckey` is permabanned on any enabled server, syncing the Banished/Permabanished roles unless `$bypass`.
+     */
     public function permabancheck(string $ckey, bool $bypass = false): bool
     {
         if (! $ckey = self::sanitizeInput($ckey)) {
@@ -1652,6 +1682,7 @@ class Civ13
 
         return $this->paroled;
     }
+    /** Applies a 1-hour panic-bunker ban for `$ckey` on every panic-bunkered server and records it in `panic_bans.json`. */
     public function __panicBan(string $ckey): void
     {
         if (! $this->bancheck($ckey, true)) {
@@ -1665,6 +1696,7 @@ class Civ13
             $this->VarSave('panic_bans.json', $this->panic_bans);
         }
     }
+    /** Lifts the panic-bunker ban for `$ckey` on every panic-bunkered server and updates `panic_bans.json`. */
     public function __panicUnban(string $ckey): void
     {
         foreach ($this->enabled_gameservers as &$gameserver) {
@@ -1727,6 +1759,12 @@ class Civ13
 
         return $return;
     }
+    /**
+     * Unbans `$ckey` on one named server, or on every enabled server when `$gameserver` is null, and clears the Banished/Permabanished roles.
+     *
+     * @param string|array|null $gameserver Server key, or null for all enabled servers.
+     * @return PromiseInterface Rejected with {@see \InvalidArgumentException} for an unknown server key.
+     */
     public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): PromiseInterface
     {
         $admin ??= $this->discord->username;
@@ -1831,6 +1869,11 @@ class Civ13
             'verified' => ! empty($discords),
         ];
     }
+    /**
+     * Scans `$logs` for rows matching any known ckey/ip/cid, appending newly discovered identifiers to the `$found_*` arrays.
+     *
+     * @return bool Whether any new identifier was found this pass.
+     */
     private function __processLogs(CollectionInterface|array $logs, array &$found_ckeys, array &$found_ips, array &$found_cids, array $ckeys, array $ips, array $cids): bool
     {
         $found = false;
@@ -1932,6 +1975,11 @@ class Civ13
         } // Helps to prevent infinite loops, just in case
         self::updateCkeyinfoVariables($logs, $ckeys, $ips, $cids, $dates, $found_ckeys, $found_ips, $found_cids, $found_dates, $update_found_ckeys, $i, $found); // Recursively call the function until no new ckeys, ips, or cids are found
     }
+    /**
+     * An embed summarising what is known about `$ckey`: linked ckeys, IPs, CIDs, ban status and Discord account.
+     *
+     * @param array|null $ckeyinfo Pre-computed {@see ckeyinfo()} result, or null to compute it.
+     */
     public function ckeyinfoEmbed(string $ckey, ?array $ckeyinfo = null): Embed
     {
         if (! $ckeyinfo) {
@@ -2000,6 +2048,12 @@ class Civ13
         return $this->softbanned;
     }
 
+    /**
+     * Every enabled server's bans file merged into one Collection of associative ban rows.
+     *
+     * @param CollectionInterface $log_collection Collection to append to.
+     * @param int                 $increment      Starting value for the per-row `increment` key.
+     */
     public function bansToCollection($log_collection = new Collection([], 'increment'), int $increment = 0): CollectionInterface
     {
         foreach ($this->enabled_gameservers as &$gameserver) {
@@ -2019,6 +2073,12 @@ class Civ13
         return $log_collection;
     }
 
+    /**
+     * Every enabled server's player-log file merged into one Collection of associative log rows.
+     *
+     * @param CollectionInterface $log_collection Collection to append to (by reference).
+     * @param int                 $increment      Starting value for the per-row `increment` key (by reference).
+     */
     public function playerlogsToCollection(&$log_collection = new Collection([], 'increment'), int &$increment = 0): CollectionInterface
     {
         foreach ($this->enabled_gameservers as &$gameserver) {
@@ -2073,6 +2133,7 @@ class Civ13
 
         return $ban;
     }
+    /** Builds a {@see Ban} from an 11-element ban-log row, or null when the row is malformed. */
     public function banArrayToObj(array $ban): ?Ban
     {
         if (count($ban) !== 11) {
@@ -2105,6 +2166,11 @@ class Civ13
 
         return $playerlog;
     }
+    /**
+     * The player-log and ban Collections cross-referencing everything linked to `$ckey`.
+     *
+     * @return array{playerlogs: CollectionInterface, bans: CollectionInterface}|array{} Empty array when nothing matches.
+     */
     public function getCkeyLogCollections(string $ckey): ?array
     {
         return (
@@ -2113,6 +2179,7 @@ class Civ13
         ) ? ['playerlogs' => $playerlog, 'bans' => $bans] : [];
     }
 
+    /** Renames the `webserver-status` channel to `{name}-online` / `{name}-offline` to match `$status`, announcing the change. */
     public function statusChannelUpdate(string $channel, bool $status): ?PromiseInterface
     {
         if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) {
@@ -2179,12 +2246,14 @@ class Civ13
     }
 
     // Magic Methods
+    /** Cancels every timer the bot registered. */
     public function __destruct()
     {
         foreach ($this->timers as $timer) {
             $this->loop->cancelTimer($timer);
         }
     }
+    /** The fully-qualified class name. */
     public function __toString(): string
     {
         return self::class;
