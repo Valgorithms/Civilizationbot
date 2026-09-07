@@ -43,10 +43,42 @@ define('MAIN_INCLUDED', 1); // Token and SQL credential files may be protected l
 
 //if (! $token_included = require getcwd() . '/token.php') // $token
 //throw new \Exception('Token file not found. Create a file named token.php in the root directory with the bot token.');
-if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : __DIR__.'/../../autoload.php') {
-    throw new \Exception('Composer autoloader not found. Run `composer install` and try again.');
+/**
+ * The project base directory. Works when run as `php bot.php` from the repo, and
+ * when run as a phpacker/phpmicro binary (nested under
+ * `bin/build/<name>/<platform>/`) launched directly or from a shortcut, from any
+ * working directory: walk up from the real executable path, then the working
+ * directory, to the first ancestor with `vendor/autoload.php` or a `.env`.
+ */
+$baseDir = (static function (): string {
+    $seen = [];
+    foreach ([\Phar::running(false) ?: null, __FILE__, \getcwd() ?: null] as $start) {
+        if ($start === null) {
+            continue;
+        }
+        $dir = \is_dir($start) ? $start : \dirname((string) \preg_replace('#^phar://#', '', $start));
+        for ($i = 0; $i < 12; $i++) {
+            if (isset($seen[$dir])) {
+                break;
+            }
+            $seen[$dir] = true;
+            if (\is_file($dir.'/vendor/autoload.php') || \is_file($dir.'/.env')) {
+                return $dir;
+            }
+            if (($up = \dirname($dir)) === $dir) {
+                break;
+            }
+            $dir = $up;
+        }
+    }
+
+    return \getcwd() ?: __DIR__;
+})();
+
+if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : $baseDir.'/vendor/autoload.php') {
+    throw new \Exception('Composer autoloader not found. Run `composer install`, or keep the binary inside the project directory.');
 }
-function loadEnv(string $filePath = __DIR__.'/.env'): void
+function loadEnv(string $filePath): void
 {
     if (! file_exists($filePath)) {
         throw new Exception('The .env file does not exist.');
@@ -63,10 +95,10 @@ function loadEnv(string $filePath = __DIR__.'/.env'): void
         }
     });
 }
-loadEnv(getcwd().'/.env');
+loadEnv($baseDir.'/.env');
 
-file_put_contents('output.log', ''); // Clear the contents of 'output.log'
-$fileHandler = (new StreamHandler('output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
+file_put_contents($baseDir.'/output.log', ''); // Clear the contents of 'output.log'
+$fileHandler = (new StreamHandler($baseDir.'/output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
 $stdoutHandler = (new StreamHandler('php://stdout', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$fileHandler, $stdoutHandler]);
 Loop::addPeriodicTimer(60 * 10, fn () => $logger->reset()); // Flush all buffers every 10 minutes
@@ -104,7 +136,7 @@ $discord = new Discord([
 $stats = Stats::new($discord);
 $browser = new Browser(Loop::get());
 $filesystem = FilesystemFactory::create();
-include 'variable_functions.php';
+include $baseDir.'/variable_functions.php';
 
 $http_whitelist = [
     $civ13_ip = gethostbyname('www.civ13.com'),

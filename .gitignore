@@ -15,8 +15,11 @@ composer.lock
 output.log
 ranking.txt
 test.php
+.phpunit.cache/test-results
+.php-cs-fixer.cache
+
+# phpacker build output
+/bin/build
 /linux
 /mac
 /windows
-.phpunit.cache/test-results
-.php-cs-fixer.cache

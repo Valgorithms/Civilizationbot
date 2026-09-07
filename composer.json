@@ -20,7 +20,8 @@
         "wyrihaximus/react-cache-redis": "^4.5"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3"
+        "friendsofphp/php-cs-fixer": "^3",
+        "phpacker/phpacker": "^0.6.4"
     },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
@@ -30,7 +31,13 @@
     },
     "scripts": {
         "cs": "php-cs-fixer fix",
-        "unit": ["./vendor/bin/phpunit --testdox"]
+        "unit": [
+            "./vendor/bin/phpunit --testdox"
+        ],
+        "phpacker": [
+            "@phpacker:bot"
+        ],
+        "phpacker:bot": "phpacker build --src=bot.php --dest=bin/build/bot"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
@@ -45,5 +52,9 @@
             "Civ14\\": "src/Civ14/",
             "Discord\\": "src/Discord/"
         }
+    },
+    "scripts-descriptions": {
+        "phpacker": "Build a standalone binary for bot.php (all platforms).",
+        "phpacker:bot": "Build a standalone binary for bot.php into bin/build/bot."
     }
 }
