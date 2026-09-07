@@ -1762,8 +1762,8 @@ class Civ13
     /**
      * Unbans `$ckey` on one named server, or on every enabled server when `$gameserver` is null, and clears the Banished/Permabanished roles.
      *
-     * @param string|array|null $gameserver Server key, or null for all enabled servers.
-     * @return PromiseInterface Rejected with {@see \InvalidArgumentException} for an unknown server key.
+     * @param  string|array|null $gameserver Server key, or null for all enabled servers.
+     * @return PromiseInterface  Rejected with {@see \InvalidArgumentException} for an unknown server key.
      */
     public function unban(string $ckey, ?string $admin = null, string|array|null $gameserver = null): PromiseInterface
     {

@@ -51,10 +51,10 @@ class CommandServiceManager
     private readonly bool $setup;
 
     /**
-     * @param Discord                $discord                Main Discord client (held by reference).
-     * @param HttpServiceManager      $httpServiceManager    Registers HTTP command routes (held by reference).
-     * @param MessageServiceManager   $messageServiceManager Registers message command routes (held by reference).
-     * @param Civ13                   $civ13                 The bot instance (held by reference).
+     * @param Discord               $discord               Main Discord client (held by reference).
+     * @param HttpServiceManager    $httpServiceManager    Registers HTTP command routes (held by reference).
+     * @param MessageServiceManager $messageServiceManager Registers message command routes (held by reference).
+     * @param Civ13                 $civ13                 The bot instance (held by reference).
      */
     public function __construct(Discord &$discord, HttpServiceManager &$httpServiceManager, MessageServiceManager &$messageServiceManager, Civ13 &$civ13)
     {

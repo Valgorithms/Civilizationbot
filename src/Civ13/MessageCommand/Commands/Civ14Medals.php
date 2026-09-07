@@ -19,7 +19,7 @@ use Civ14\GameServer;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Guild\Guild;
 use React\Promise\PromiseInterface;
-    
+
 enum SS14MedalEmojis: string
 {
     case BronzeNomadsVeteran = 'Bronze Nomads Veteran Medal';

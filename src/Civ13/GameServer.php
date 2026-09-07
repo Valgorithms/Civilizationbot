@@ -1215,8 +1215,8 @@ class GameServer
     /**
      * Appends a ban to the `discord2ban` file and schedules a follow-up to backfill missing ban data.
      *
-     * @param array{ckey: string, duration: string, reason: string} $array
-     * @return string A human-readable confirmation (or error) line.
+     * @param  array{ckey: string, duration: string, reason: string} $array
+     * @return string                                                A human-readable confirmation (or error) line.
      */
     private function legacyBan(array $array, ?string $admin = null): string
     {
