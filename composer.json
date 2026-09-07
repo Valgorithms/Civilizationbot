@@ -21,7 +21,8 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3",
-        "phpacker/phpacker": "^0.6.4"
+        "phpacker/phpacker": "^0.6.4",
+        "symfony/console": "^7.4"
     },
     "suggest": {
         "ext-uv": "For a faster, and more performant loop. PHP >=7 only. Preferred.",
