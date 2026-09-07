@@ -157,6 +157,7 @@ class Civ13
     public \Closure $onRejectedDefault;
 
     public Slash $slash;
+    public Panels $panels;
     /** @var HttpServiceManager&HttpHandler */
     public HttpServiceManager $httpServiceManager;
     /** @var HttpServiceManager&MessageHandler */
@@ -437,7 +438,10 @@ class Civ13
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
             $this->__UpdateDiscordVariables();
-            $this->loop->addTimer(5, fn () => $this->slash = new Slash($this));
+            $this->loop->addTimer(5, function () {
+                $this->slash = new Slash($this);
+                $this->panels = new Panels($this);
+            });
             $this->declareListeners();
             $this->bancheckTimer(); // Start the unban timer and remove the role from anyone who has been unbanned
             foreach ($this->functions['init'] as $func) {
