@@ -444,22 +444,31 @@ class HttpServiceManager
             ->offsetSet(
                 '/githubupdated',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
-                    if (! $signature = $request->getHeaderLine('X-Hub-Signature')) {
-                        $headers = $request->getHeaders();
-                        $this->logger->warning("Unauthorized Request Headers on `$endpoint` endpoint: ".json_encode($headers));
-                        //$this->logger->warning("Signature: $signature, Hash: $hash");
-                        $tech_ping = '';
-                        if (isset($this->civ13->technician_id)) {
-                            $tech_ping = "<@{$this->civ13->technician_id}>, ";
-                        }
-                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                            $this->civ13->sendMessage($channel, $tech_ping."Unauthorized Request Headers on `$endpoint` endpoint: ".json_encode($headers));
-                        }
+                    $secret = (string) getenv('github_secret');
+                    $body = strval($request->getBody());
+                    // Prefer the SHA-256 signature GitHub sends; fall back to SHA-1.
+                    $sig256 = $request->getHeaderLine('X-Hub-Signature-256');
+                    $sig1 = $request->getHeaderLine('X-Hub-Signature');
 
-                        return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
-                    }
-                    if ($signature !== $hash = 'sha1='.hash_hmac('sha1', strval($request->getBody()), getenv('github_secret'))) {
-                        $this->logger->warning("Unauthorized Request Signature on `$endpoint` endpoint: `$signature` != `$hash`");
+                    $valid = $secret !== '' && (
+                        ($sig256 !== '' && hash_equals('sha256='.hash_hmac('sha256', $body, $secret), $sig256))
+                        || ($sig1 !== '' && hash_equals('sha1='.hash_hmac('sha1', $body, $secret), $sig1))
+                    );
+
+                    if (! $valid) {
+                        // Log only non-sensitive request metadata, never the raw headers.
+                        $meta = json_encode([
+                            'delivery' => $request->getHeaderLine('X-GitHub-Delivery'),
+                            'event' => $request->getHeaderLine('X-GitHub-Event'),
+                            'ua' => $request->getHeaderLine('User-Agent'),
+                            'has_sig' => $sig256 !== '' || $sig1 !== '',
+                            'secret_configured' => $secret !== '',
+                        ]);
+                        $this->logger->warning("Rejected unsigned/invalid webhook on `$endpoint`: $meta");
+                        $tech_ping = isset($this->civ13->technician_id) ? "<@{$this->civ13->technician_id}>, " : '';
+                        if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                            $this->civ13->sendMessage($channel, $tech_ping."Rejected unsigned/invalid webhook on `$endpoint` endpoint.");
+                        }
 
                         return new HttpResponse(HttpResponse::STATUS_UNAUTHORIZED);
                     }
@@ -902,7 +911,9 @@ class HttpServiceManager
                             $embed->setAuthor("{$user->username} ({$user->id})", $user->avatar ?? $this->discord->avatar);
                         }
                     }
-                    $this->logger->info("[CONTACT FORM] IP: $ip, Byond Username: $ckey, Email: $email, Message: $messageContent");
+                    // Do not log the submitter's email or message body — they go
+                    // to the private #email channel embed above, not the logs.
+                    $this->logger->info(sprintf('[CONTACT FORM] IP: %s, Byond Username: %s, message %d chars', $ip, $ckey, strlen((string) $messageContent)));
                     if (isset($this->civ13->channel_ids['email']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['email'])) {
                         $channel->sendMessage(Civ13::createBuilder()->addEmbed($embed));
                     }
@@ -947,10 +958,12 @@ class HttpServiceManager
                             $DiscordWebAuth = new DiscordWebAuth($this->civ13, $this->dwa_sessions, $dwa_client_id, $dwa_client_secret, $this->web_address, $this->http_port, gethostbyname('www.civ13.com'), $request);
 
                             $params = $request->getQueryParams();
-                            if (isset($params['code']) && isset($params['state'])) {
-                                $this->logger->info("[DWA] Code: {$params['code']}, State: {$params['state']}");
+                            if (isset($params['code'], $params['state'])) {
+                                // Never log the authorization code (it is an
+                                // exchangeable credential).
+                                $this->logger->info('[DWA] OAuth callback received; exchanging code.');
 
-                                return $DiscordWebAuth->getToken($params['state']);
+                                return $DiscordWebAuth->getToken((string) $params['state']);
                             }
                             if (isset($params['login'])) {
                                 $this->logger->info('[DWA] Login requested');

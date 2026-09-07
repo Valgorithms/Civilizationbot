@@ -70,7 +70,9 @@ class DiscordWebAuth
         if (isset($this->sessions[$this->requesting_ip]['discord_state'])) {
             $this->state = $this->sessions[$this->requesting_ip]['discord_state'];
         } else {
-            $this->state = uniqid();
+            // Cryptographically random, not uniqid() (which is predictable
+            // microtime) — this is the OAuth2 CSRF token.
+            $this->state = bin2hex(random_bytes(16));
             $this->sessions[$this->requesting_ip]['discord_state'] = $this->state;
         }
 
@@ -86,13 +88,19 @@ class DiscordWebAuth
     {
         $ch = curl_init($url);
 
-        $headers[] = 'Accept: application/json';
+        $headers = ['Accept: application/json'];
         if ($this->access_token) {
             $headers[] = 'Authorization: Bearer '.$this->access_token;
         }
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt_array($ch, [
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 15,
+        ]);
 
         if ($post) {
             curl_setopt($ch, CURLOPT_POST, true);
@@ -100,30 +108,33 @@ class DiscordWebAuth
         }
 
         $response = curl_exec($ch);
+        curl_close($ch);
 
-        return @json_decode($response, $associative);
+        return is_string($response) ? @json_decode($response, $associative) : null;
     }
 
     /** Redirects the browser to the Discord OAuth2 authorize page, or to the first allowed URI when the redirect target is not whitelisted. */
     public function login(?string $redirect_uri = null, ?string $scope = 'identify guilds connections'): Response
     {
-        if (! isset($redirect_uri)) {
-            if (! in_array(($redirect_uri ? $redirect_uri : $this->default_redirect), $this->allowed_uri)) {
-                $this->civ13->logger->info('[DWA] Redirect URI not allowed: '.($redirect_uri ? $redirect_uri : $this->default_redirect).' => '.$this->allowed_uri[0]);
+        // Always validate the effective redirect target against the allow-list —
+        // a caller-supplied $redirect_uri must not skip the check (open redirect
+        // / auth-code interception).
+        $target = $redirect_uri ?: $this->default_redirect;
+        if (! in_array($target, $this->allowed_uri, true)) {
+            $this->civ13->logger->info('[DWA] Redirect URI not allowed: '.$target.' => '.$this->allowed_uri[0]);
 
-                return new Response(
-                    Response::STATUS_FOUND,
-                    ['Location' => $this->allowed_uri[0].'?login']
-                );
-            }
+            return new Response(
+                Response::STATUS_FOUND,
+                ['Location' => $this->allowed_uri[0].'?login']
+            );
         }
-        
+
         $params = [
             'client_id' => $this->CLIENT_ID,
             'response_type' => 'code',
             'scope' => $scope,
             'state' => $this->state,
-            'redirect_uri' => ($redirect_uri ? $redirect_uri : $this->default_redirect),
+            'redirect_uri' => $target,
         ];
 
         return new Response(
@@ -139,34 +150,41 @@ class DiscordWebAuth
 
         return new Response(
             Response::STATUS_FOUND,
-            ['Location' => ($redirect_home ?? $this->default_redirect)]
+            ['Location' => ($this->redirect_home ?: $this->default_redirect)]
         );
     }
 
     /** Exchanges the OAuth2 `code` for an access token (when `$state` matches) and stores it on the session, then redirects home. */
     public function getToken(string $state = '', string $redirect_uri = ''): Response
     {
-        if ($state === $this->state) {
-            $params = [
-                'client_id' => $this->CLIENT_ID,
-                'client_secret' => $this->CLIENT_SECRET,
-                'grant_type' => 'authorization_code',
-                'code' => $this->params['code'],
-                'redirect_uri' => ($redirect_uri ? $redirect_uri : $this->default_redirect),
-            ];
+        $code = (string) ($this->params['code'] ?? '');
 
-            $token = $this->apiRequest($this->baseURL.'/oauth2/token', $params);
-            if (! isset($token->error)) {
-                $this->sessions[$this->requesting_ip]['discord_access_token'] = $token->access_token;
-            }
-
-            return new Response(
-                Response::STATUS_FOUND,
-                ['Location' => ($redirect_home ?? $this->default_redirect)]
-            );
+        // Constant-time CSRF check; reject an empty/absent state or code outright.
+        if ($state === '' || $code === '' || $this->state === '' || ! hash_equals($this->state, $state)) {
+            return new Response(Response::STATUS_BAD_REQUEST);
         }
 
-        return new Response(Response::STATUS_BAD_REQUEST);
+        // Single-use: burn the state so a replayed callback cannot reuse it.
+        unset($this->sessions[$this->requesting_ip]['discord_state']);
+        $this->state = '';
+
+        $params = [
+            'client_id' => $this->CLIENT_ID,
+            'client_secret' => $this->CLIENT_SECRET,
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => ($redirect_uri ?: $this->default_redirect),
+        ];
+
+        $token = $this->apiRequest($this->baseURL.'/oauth2/token', $params);
+        if (is_object($token) && ! isset($token->error) && isset($token->access_token)) {
+            $this->sessions[$this->requesting_ip]['discord_access_token'] = $token->access_token;
+        }
+
+        return new Response(
+            Response::STATUS_FOUND,
+            ['Location' => ($this->redirect_home ?: $this->default_redirect)]
+        );
     }
 
     /** Revokes the current access token with Discord and logs the user out. */
@@ -189,9 +207,13 @@ class DiscordWebAuth
     public function getUser()
     {
         $user = $this->apiRequest($this->baseURL.'/users/@me');
-        $user->avatar_url = 'https://cdn.discordapp.com/avatars/'.$user->id.'/'.$user->avatar.'.png';
+        if (! is_object($user) || ! isset($user->id)) {
+            return null;
+        }
+
+        $user->avatar_url = 'https://cdn.discordapp.com/avatars/'.$user->id.'/'.($user->avatar ?? '').'.png';
         $user->guilds = $this->apiRequest($this->baseURL.'/users/@me/guilds');
-        foreach ($user->guilds as $key => $guild) {
+        foreach ((is_iterable($user->guilds) ? $user->guilds : []) as $key => $guild) {
             if (isset($guild->icon) && $guild->icon) {
                 $user->guilds[$key]->avatar_url = 'https://cdn.discordapp.com/icons/'.$guild->id.'/'.$guild->icon.'.png';
             }
@@ -204,7 +226,7 @@ class DiscordWebAuth
     public function getConnections()
     {
         $connections = $this->apiRequest($this->baseURL.'/users/@me/connections');
-        foreach ($connections as $key => $connection) {
+        foreach ((is_iterable($connections) ? $connections : []) as $key => $connection) {
             /*
             id    string    id of the connection account
             name    string    the username of the connection account
