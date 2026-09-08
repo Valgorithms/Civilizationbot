@@ -23,3 +23,8 @@ test.php
 /linux
 /mac
 /windows
+/build/
+/.phpdoc/
+/tools/
+/phive.xml
+/.phive/
