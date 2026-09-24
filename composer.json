@@ -1,6 +1,8 @@
 {
     "name": "vzgcoders/civilizationbot",
     "description": "Civ13's offical Discord bot built in ReactPHP.",
+    "type": "project",
+    "license": "MIT",
     "authors": [
         {
             "name": "Valithor Obsidion",
