@@ -1,0 +1,36 @@
+name: Offline verifier integration
+
+on:
+  push:
+    paths:
+      - 'composer.json'
+      - 'src/Civ13/Verifier.php'
+      - 'tests/verifier-integration.php'
+      - '.github/workflows/verifier-integration.yml'
+  pull_request:
+    paths:
+      - 'composer.json'
+      - 'src/Civ13/Verifier.php'
+      - 'tests/verifier-integration.php'
+      - '.github/workflows/verifier-integration.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring
+          coverage: none
+      # composer.lock is intentionally ignored here. Resolve dependencies for
+      # each supported PHP runtime while retaining the explicit verifier pin.
+      - run: composer install --no-dev --no-scripts --no-plugins --prefer-dist --no-interaction
+      - run: php tests/verifier-integration.php
