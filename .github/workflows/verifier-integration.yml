@@ -21,6 +21,7 @@ jobs:
   verifier:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # Current DiscordPHP dev-master's voice dependency requires PHP 8.3.
         php: ['8.3', '8.4']
