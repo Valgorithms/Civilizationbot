@@ -101,7 +101,13 @@ $legacyPath = tempnam(sys_get_temp_dir(), 'civ-economy-migrate-');
 try {
     $ledger = new Ledger($path);
     $calls = 0;
-    $disabled = new Service($ledger, new AuthoritativeAccounts(function () use (&$calls) { ++$calls; return fixtureSnapshot(); }));
+    $disabled = new Service(
+        $ledger,
+        new AuthoritativeAccounts(function () use (&$calls) { ++$calls; return fixtureSnapshot(); }),
+        new Config(),
+        function () use (&$calls) { ++$calls; return 'fixture-server'; },
+        function () use (&$calls) { ++$calls; return 100; },
+    );
     economyReject(fn () => $disabled->read(FIXTURE_DISCORD), 'Economy is disabled.');
     economyReject(fn () => $disabled->process(fixtureEvent('disabled'), null), 'Economy is disabled.');
     economyCheck($calls === 0 && $ledger->history('fixture-realm', 'fixtureplayer') === [], 'Disabled service accessed adapters or wrote an entry.');
@@ -116,6 +122,8 @@ try {
     economyReject(fn () => $service->process($event + ['delta' => 1000], fixtureSignature($event)), 'Invalid server outcome envelope.');
     $unknown = fixtureEvent('unknown', 'unapproved-outcome');
     economyReject(fn () => $service->process($unknown, fixtureSignature($unknown)), 'No approved accounting policy for this outcome.');
+    $noPolicy = new Service($ledger, new AuthoritativeAccounts(fixtureSnapshot(...)), new Config(true, 'fixture-realm', ['fixture-server'], 'fixture-v1'), fn () => 'fixture-server');
+    economyReject(fn () => $noPolicy->process($event, null), 'No approved accounting policy for this outcome.');
     $unverified = $event;
     $unverified['account'] = 'unverifiedplayer';
     economyReject(fn () => $service->process($unverified, fixtureSignature($unverified)), 'An authoritative verified game account is required.');
@@ -141,7 +149,7 @@ try {
     $snapshot = ['http_status' => 200, 'json' => json_encode([['ss13' => 'fixtureplayer', 'discord' => FIXTURE_DISCORD], ['ss13' => 'anotherplayer', 'discord' => FIXTURE_DISCORD]])];
     economyReject(fn () => $dynamic->read(FIXTURE_DISCORD), 'Invalid or ambiguous authoritative verification snapshot.');
 
-    unset($disabled, $service, $dynamic, $newPolicy, $ledger);
+    unset($disabled, $service, $dynamic, $newPolicy, $noPolicy, $ledger);
     gc_collect_cycles();
     economyCheck(simultaneous($path, ['spend-1', 'spend-2'], 'fixture-spend') === [0, 3], 'Competing spends were not serialized.');
     economyCheck(simultaneous($path, ['duplicate-run', 'duplicate-run'], 'fixture-credit') === [0, 0], 'Simultaneous duplicate replay failed.');
@@ -161,7 +169,7 @@ try {
     gc_collect_cycles();
     echo "Economy authority checks passed: disabled defaults, authenticated server, verified ownership/revocation, approved policy, atomic audit, conflicts, concurrent replay/spend, restart, migration.\n";
 } finally {
-    unset($disabled, $service, $dynamic, $newPolicy, $ledger, $migrated, $legacy);
+    unset($disabled, $service, $dynamic, $newPolicy, $noPolicy, $ledger, $migrated, $legacy);
     gc_collect_cycles();
     foreach ([$path, $legacyPath] as $database) {
         foreach ([$database, $database.'-wal', $database.'-shm'] as $file) {
