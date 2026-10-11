@@ -24,8 +24,9 @@ function verifyCheck(bool $condition, string $message): void
 // No Server constructor, init(), start(), sockets or Discord client are invoked.
 final class OfflineVerifierServer extends Server
 {
-    public function __construct(VerifiedEndpoint $endpoint)
+    public function __construct(VerifiedEndpoint $endpoint, PersistentState $state)
     {
+        $this->state = $state;
         $this->endpoints['/verified'] = $endpoint;
     }
 }
@@ -46,7 +47,7 @@ try {
     $token = 'offline-token';
     $state = new PersistentState($token, 'filesystem', basename($path));
     $endpoint = new VerifiedEndpoint($state);
-    $server = new OfflineVerifierServer($endpoint);
+    $server = new OfflineVerifierServer($endpoint, $state);
     $bot = (new ReflectionClass(Civ13::class))->newInstanceWithoutConstructor();
     $bot->civ_token = $token;
     $bot->verifier_server = $server;
@@ -61,6 +62,7 @@ try {
     verifyCheck($result['http_status'] === 200, 'Bot registration status failed.');
     $records = json_decode($result['response'], true, 512, JSON_THROW_ON_ERROR);
     verifyCheck($records[0]['ss13'] === 'fixtureplayer', 'Bot registration payload failed.');
+    verifyCheck(json_decode($verifier->fetchVerifiedData()['json'], true, 512, JSON_THROW_ON_ERROR) === $records, 'Bot verified-list retrieval failed.');
     verifyCheck($endpoint->getIndex('123456789012345678', '') === 0, 'Discord-only lookup missed index zero.');
     verifyCheck($register->invoke($verifier, 'fixtureplayer', '123456789012345678')['http_status'] === 403, 'Duplicate registration accepted.');
 
@@ -70,6 +72,7 @@ try {
     $bot->civ_token = $token;
     verifyCheck($unregister->invoke($verifier, '123456789012345678')['http_status'] === 200, 'Bot Discord-ID unverify failed.');
     verifyCheck($endpoint->getIndex('123456789012345678', '') === false, 'Lookup cache retained deleted account.');
+    verifyCheck($verifier->fetchVerifiedData() === ['json' => '[]', 'http_status' => 200], 'Bot retrieval retained deleted account.');
 
     // The remote bot path uses this same form encoding. Deliver a PSR request
     // directly to the real endpoint instead of making a network/cURL call.
