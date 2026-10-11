@@ -114,7 +114,11 @@ registration/unverify calls against the installed verifier, plus form decoding,
 status codes, authorization, duplicate rejection, Discord-only deletion, lookup
 invalidation and restart persistence. It never starts the bot, listens on a
 socket or sends a live Discord/HTTP request. CI resolves dependencies separately
-for PHP 8.2 and 8.4; the installed verifier reference must match the manifest pin.
+for PHP 8.3 and 8.4; the installed verifier reference must match the manifest pin.
+Fresh PHP 8.2 dependency resolution is currently blocked by DiscordPHP
+`dev-master` requiring a voice package that needs PHP 8.3, despite this project's
+existing PHP 8.2 declaration. This verifier update does not change that support
+declaration or override the DiscordPHP dependency.
 
 Contributions are welcome! Please open an issue or submit a pull request on GitHub.
 
