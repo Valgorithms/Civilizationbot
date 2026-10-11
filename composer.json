@@ -10,12 +10,13 @@
         }
     ],
     "require": {
-        "php": "^8.2.0",
+        "php": "^8.3.0",
         "team-reflex/discord-php": "dev-master",
         "clue/redis-react": "^2.6",
         "react/filesystem": "^0.2@dev",
         "react/async": "4.x-dev",
         "react/child-process": "^0.6.6",
+        "react/http": "^1.11.1",
         "valzargaming/byond": "dev-main",
         "valzargaming/handler": "dev-main",
         "vzgcoders/verifier-server": "dev-main#838750d11353a8223c652f678bfdfee32b40edb3",

@@ -12,6 +12,10 @@ Civilizationbot is [Civ13](https://civ13.com)'s official Discord bot designed to
 
 ## Installation
 
+Requires PHP 8.3 or later. The DiscordPHP voice dependency already requires
+PHP 8.3, and bot source uses PHP 8.3 syntax. `react/http` must be at least 1.11.1
+to include the response-header and chunked-parser denial-of-service fixes.
+
 To install Civilizationbot, follow these steps:
 
 1. Clone the repository:
@@ -114,11 +118,21 @@ registration/unverify calls against the installed verifier, plus form decoding,
 status codes, authorization, duplicate rejection, Discord-only deletion, lookup
 invalidation and restart persistence. It never starts the bot, listens on a
 socket or sends a live Discord/HTTP request. CI resolves dependencies separately
-for PHP 8.3 and 8.4; the installed verifier reference must match the manifest pin.
-Fresh PHP 8.2 dependency resolution is currently blocked by DiscordPHP
-`dev-master` requiring a voice package that needs PHP 8.3, despite this project's
-existing PHP 8.2 declaration. This verifier update does not change that support
-declaration or override the DiscordPHP dependency.
+for PHP 8.3, 8.4 and 8.5; the installed verifier reference must match the manifest pin.
+
+### Dependency and HTTP checks
+
+For an existing local lock, update the patched HTTP package and pinned verifier
+with `composer update react/http vzgcoders/verifier-server`; preserve any local
+path repositories. Then run `composer check-platform-reqs`,
+`composer audit --locked`, and `php tests/http-dependency.php`.
+The HTTP runner uses injected in-memory connections and streams, with bounded
+malformed inputs and legitimate response controls; it never opens a socket.
+CI resolves the full dependency set, including development tools, on each
+supported runtime, checks platform requirements and audit results, parses all
+bot source, and runs the HTTP, verifier and disabled-economy offline suites.
+The ignored-lock convention is unchanged. Updating deployment dependencies and
+restarting the live bot are separate operational actions.
 
 Contributions are welcome! Please open an issue or submit a pull request on GitHub.
 

@@ -1,17 +1,23 @@
-name: Offline verifier integration
+name: Offline bot dependency contracts
 
 on:
   push:
     paths:
       - 'composer.json'
-      - 'src/Civ13/Verifier.php'
+      - 'src/**'
       - 'tests/verifier-integration.php'
+      - 'tests/http-dependency.php'
+      - 'tests/economy.php'
+      - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
   pull_request:
     paths:
       - 'composer.json'
-      - 'src/Civ13/Verifier.php'
+      - 'src/**'
       - 'tests/verifier-integration.php'
+      - 'tests/http-dependency.php'
+      - 'tests/economy.php'
+      - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
 
 permissions:
@@ -23,16 +29,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Current DiscordPHP dev-master's voice dependency requires PHP 8.3.
-        php: ['8.3', '8.4']
+        php: ['8.3', '8.4', '8.5']
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring
+          extensions: mbstring, pdo_sqlite
           coverage: none
       # composer.lock is intentionally ignored here. Resolve dependencies for
       # each supported PHP runtime while retaining the explicit verifier pin.
-      - run: composer install --no-dev --no-scripts --no-plugins --prefer-dist --no-interaction
+      - run: composer install --no-scripts --no-plugins --prefer-dist --no-interaction
+      - run: composer validate --no-check-publish
+      - run: composer check-platform-reqs
+      - run: composer audit --locked
+      - run: find src -name '*.php' -print0 | xargs -0 -n1 php -l
+      - run: php tests/http-dependency.php
       - run: php tests/verifier-integration.php
+      - run: php tests/economy.php
+      - run: php tests/economy-service.php
