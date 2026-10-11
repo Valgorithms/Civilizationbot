@@ -7,6 +7,8 @@ on:
       - 'src/**'
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
+      - 'tests/economy.php'
+      - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
   pull_request:
     paths:
@@ -14,6 +16,8 @@ on:
       - 'src/**'
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
+      - 'tests/economy.php'
+      - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
 
 permissions:
