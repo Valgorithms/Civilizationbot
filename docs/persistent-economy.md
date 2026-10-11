@@ -4,8 +4,16 @@ Development scope for this milestone is Civ13 only. Civ14/SS14 is deferred.
 
 ## Existing boundaries
 
-Civilizationbot serves both games. Civ13 identity is available through
-`Civ13\Verifier::get('discord', $discordId)` (record field `ss13`); Civ14 uses
+Civilizationbot serves both games. Civ13's convenience lookup
+`Civ13\Verifier::get('discord', $discordId)` (record field `ss13`) includes
+provisional registrations as well as verified records. Do not use that lookup
+alone to authorize economy access. Resolve the exact Discord ID against the
+authoritative verifier state and reject missing, provisional or unavailable
+verification. The bot's `getVerified()` refresh can also fall back to its file
+cache for an empty successful list; that fallback must not authorize an account
+removed from the server. `fetchVerifiedData()` exposes the authoritative embedded
+server list without that fallback and is covered by the integration check.
+Civ14 uses
 `Civ14\Verifier::get('discord', $discordId)` (field `ss14`) through its verifier
 server endpoint. Use an explicit Discord lookup, not `getVerifiedItem(string)`,
 which can also interpret strings as game names. Revalidate on every request.
@@ -39,8 +47,8 @@ AccountView accepts an injected current-verifier resolver and offers reads only.
 Its caller must derive the Discord ID from the interaction, never a user option.
 Accounts belong to game identities, so unlinking does not erase the ledger.
 
-Example offline adapter: resolve realm `civ13:test:season-1` using Civ13 verifier
-field `ss13`. Return null
+Example offline adapter: resolve realm `civ13:test:season-1` using authoritative
+Civ13 verifier field `ss13`, matching the exact requesting Discord ID. Return null
 for unknown realms or missing links. Realm names are policy, not implicit shared
 balances. No earning amounts or season policy are selected by this foundation.
 
