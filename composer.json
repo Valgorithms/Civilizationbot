@@ -18,7 +18,7 @@
         "react/child-process": "^0.6.6",
         "valzargaming/byond": "dev-main",
         "valzargaming/handler": "dev-main",
-        "vzgcoders/verifier-server": "dev-main#09e0036acc1a26a75eabe55de057651d04164c29",
+        "vzgcoders/verifier-server": "dev-main#838750d11353a8223c652f678bfdfee32b40edb3",
         "wyrihaximus/react-cache-redis": "^4.5"
     },
     "require-dev": {
