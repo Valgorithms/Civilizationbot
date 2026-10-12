@@ -559,7 +559,7 @@ class HttpServiceManager
                 '/kill',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
                     $message = 'Shutting down...';
-                    $this->discord->getLoop()->addTimer(3, $this->civ13->restart());
+                    $this->discord->getLoop()->addTimer(3, fn () => $this->civ13->restart());
 
                     return HttpResponse::plaintext($message);
                 },
