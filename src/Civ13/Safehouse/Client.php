@@ -19,13 +19,25 @@ final class Client
             throw new \InvalidArgumentException('Invalid request identity/action/revision');
         }
         $request = ['protocol' => self::PROTOCOL, 'request_id' => $requestId, 'discord_id' => $discordId, 'action' => $action, 'expected_account_revision' => $expectedAccountRevision, 'payload' => self::canonical($payload)];
-        $digest = hash('sha256', json_encode($request, JSON_THROW_ON_ERROR));
+        $encoded = json_encode($request, JSON_THROW_ON_ERROR);
+        if (strlen($encoded) > 8192) {
+            throw new \InvalidArgumentException('Request exceeds safehouse size bound');
+        }
+        $digest = hash('sha256', $encoded);
         $request['request_digest'] = $digest;
         // Serialize local delivery and persist before external effects. A timeout retains
         // the exact request for replay; only the game can deduplicate settlement.
         $lock = fopen($this->journal.'.lock', 'c+');
-        if ($lock === false || !flock($lock, LOCK_EX)) {
+        if ($lock === false) {
             throw new \RuntimeException('Cannot acquire safehouse journal lock');
+        }
+        $deadline = microtime(true) + 2;
+        while (!flock($lock, LOCK_EX | LOCK_NB)) {
+            if (microtime(true) >= $deadline) {
+                fclose($lock);
+                return ['protocol' => self::PROTOCOL, 'request_id' => $requestId, 'status' => 'pending', 'reason' => 'local_delivery_busy'];
+            }
+            usleep(10000);
         }
         try {
             $records = is_file($this->journal) ? json_decode(file_get_contents($this->journal), true, 64, JSON_THROW_ON_ERROR) : [];
@@ -58,6 +70,9 @@ final class Client
             }
             if (!in_array($response['status'] ?? null, ['pending', 'committed', 'rejected'], true)) {
                 throw new \UnexpectedValueException('Unknown game outcome');
+            }
+            if (strlen(json_encode($response, JSON_THROW_ON_ERROR)) > 65536) {
+                throw new \UnexpectedValueException('Game reply exceeds size bound');
             }
             $records[$requestId]['response'] = $response;
             $this->persist($records);

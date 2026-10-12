@@ -59,6 +59,20 @@ transport delivery and caches terminal replies. It bounds records at 1000 and
 fails closed when full; archive only under an operator-approved game receipt
 retention policy. The transport must enforce a finite timeout. Blocking transport
 must not run on the shared Discord event loop. No live spool, game-side checks,
-wallet/pricing/escrow correctness, cross-process crash durability or live command
+wallet/pricing/escrow correctness, production crash durability or live command
 registration has been verified. Activation depends on game handler compatibility,
 authenticated async adapter, wallet/escrow and identity reconciliation.
+
+Native cross-process tests additionally prove local same-ID delivery serialization
+and exact replay after a worker exits after mock game commit. The mock game's
+durable receipt establishes one synthetic settlement; this does not prove the
+production game's transaction durability. Local lock acquisition is bounded at
+two seconds, requests at 8 KiB and replies at 64 KiB. A busy lock returns pending.
+
+For an asynchronous adapter, split durable enqueue and reply handling: hold flock
+only while inserting immutable serialized envelope bytes and checking known
+receipts, atomically publish a signed IPC file, then poll bounded reply paths with
+the React event-loop timer. Resolve timeout as pending, retaining the same request
+bytes. Validate authenticated reply binding before terminal journal storage. Do
+not call this synchronous client from a Discord interaction callback; the current
+implementation belongs in an isolated worker until this split adapter is built.

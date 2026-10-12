@@ -41,12 +41,48 @@ try {
     rejects(fn () => $client->request('i2', '123', 'stash.inspect', [], null));
     $transport->mismatch = false;
     $controller = new Controller($client);
+    check($controller->handle('empty', '123', 'stash.inspect', '{}', null)['outcome']['status'] === 'committed', 'Empty object rejected');
     rejects(fn () => $controller->handle('i3', '123', 'trade.confirm', '{"confirmation_token":"token"}', null));
     rejects(fn () => $controller->handle('i3', '123', 'trade.quote', '{"price":1}', 4));
     check($controller->handle('i3', '123', 'stash.inspect', '{"page":1}', null)['ephemeral'], 'Private response not ephemeral');
     check(count(Controller::schema()['options'][0]['choices']) === count(Client::ACTIONS), 'Schema/router mismatch');
+    $canonical = $client->request('ordered', '123', 'trade.quote', ['z' => 2, 'a' => ['q' => 2, 'b' => 1]], 4);
+    check($client->request('ordered', '123', 'trade.quote', ['a' => ['b' => 1, 'q' => 2], 'z' => 2], 4) === $canonical, 'Object order changed identity');
+    rejects(fn () => $client->request('large', '123', 'stash.inspect', ['value' => str_repeat('x', 9000)], null));
+    // Separate native PHP processes exercise the OS lock and restart after a
+    // committed mock-game effect followed by process death before reply storage.
+    $spawn = function (string $path, string $mode): array {
+        $pipes = [];
+        $process = proc_open([PHP_BINARY, __DIR__.'/worker.php', $path, $mode], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        check(is_resource($process), 'Worker did not start');
+        fclose($pipes[0]);
+        return [$process, $pipes];
+    };
+    $finish = function (array $worker, int $expected): void {
+        [$process, $pipes] = $worker;
+        $output = stream_get_contents($pipes[1]);
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[1]); fclose($pipes[2]);
+        check(proc_close($process) === $expected && $error === '', 'Worker failed: '.$error.$output);
+    };
+    foreach (['parallel', 'crash'] as $case) { mkdir($directory.'/'.$case, 0700); }
+    $one = $spawn($directory.'/parallel', 'normal');
+    $two = $spawn($directory.'/parallel', 'normal');
+    $finish($one, 0); $finish($two, 0);
+    check(count(file($directory.'/parallel/deliveries')) === 1, 'Concurrent terminal duplicate reached transport');
+    $finish($spawn($directory.'/crash', 'crash'), 23);
+    $finish($spawn($directory.'/crash', 'normal'), 0);
+    check(count(file($directory.'/crash/deliveries')) === 2, 'Crash did not replay');
+    check(count(file($directory.'/crash/settlements')) === 1, 'Mock game settled twice');
+    check(file($directory.'/crash/deliveries')[0] === file($directory.'/crash/deliveries')[1], 'Crash replay changed bytes');
     echo "PASS disabled default, restart replay, terminal deduplication, actor/payload binding, response negative control, confirmation gates, private schema\n";
+    echo "PASS native cross-process lock, crash after game commit, exact replay and mock game single settlement\n";
 } finally {
-    foreach (glob($directory.'/*') as $file) { unlink($file); }
+    foreach (glob($directory.'/*') as $file) {
+        if (is_dir($file)) {
+            foreach (glob($file.'/*') as $child) { unlink($child); }
+            rmdir($file);
+        } else { unlink($file); }
+    }
     rmdir($directory);
 }
