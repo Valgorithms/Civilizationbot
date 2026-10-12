@@ -132,7 +132,36 @@ class HttpServiceManager
      */
     public static function decodeParamData(ServerRequestInterface $request): array
     {
-        return ($params = $request->getQueryParams()) && isset($params['data']) ? @json_decode(urldecode($params['data']), true) : [];
+        $value = $request->getQueryParams()['data'] ?? null;
+        if (!is_string($value) || strlen($value) > 65536) { return []; }
+        $decoded = json_decode(urldecode($value), true, 16);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /** Authenticated structured OOC identity, independent of network whitelist. */
+    public function handleOocWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $data = self::decodeParamData($request);
+        $key = $this->civ13->options['http_key'] ?? '';
+        if (!is_string($key) || $key === '' || !is_string($data['key'] ?? null) || !hash_equals($key, $data['key'])) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        if (!is_string($data['ckey'] ?? null) || !preg_match('/^[A-Za-z0-9_ ]{1,64}$/D', $data['ckey'])
+            || !is_string($data['message'] ?? null) || $data['message'] === '' || strlen($data['message']) > 16384
+            || str_contains($data['message'], "\0")) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        $ckey = Civ13::sanitizeInput($data['ckey']);
+        if ($ckey === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        if ($gameserver->legacy_relay) { return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); }
+        if (!isset($gameserver->ooc) || !$this->discord->getChannel($gameserver->ooc)) {
+            return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message'])));
+        if ($message === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        $gameserver->gameChatWebhookRelay($message, $gameserver->ooc, $ckey, true)
+            ->then(null, fn (\Throwable $error) => $this->logger->error('Structured OOC relay failed: '.$error->getMessage()));
+        return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
     /**
@@ -1317,27 +1346,7 @@ class HttpServiceManager
                 )
                 ->offsetSet(
                     $server_endpoint.'/oocmessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->ooc)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->ooc)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        //$time = '['.date('H:i:s', time()).']';
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        //$message = "**__{$time} OOC__ $ckey:** $message";
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleOocWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(

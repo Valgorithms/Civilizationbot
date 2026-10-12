@@ -1098,13 +1098,13 @@ class Civ13
 
         $builder = self::createBuilder($prevent_mentions);
         if (strlen($content) <= 2000) {
-            return $channel->sendMessage($builder->setContent($content))->then($this->onFulfilledDefault, $this->onRejectedDefault);
+            return $channel->sendMessage($builder->setContent($content))->then($this->onFulfilledDefault, function (\Throwable $reason): never { ($this->onRejectedDefault)($reason); throw $reason; });
         }
         if (strlen($content) <= 4096) {
-            return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)))->then($this->onFulfilledDefault, $this->onRejectedDefault);
+            return $channel->sendMessage($builder->addEmbed($this->createEmbed()->setDescription($content)))->then($this->onFulfilledDefault, function (\Throwable $reason): never { ($this->onRejectedDefault)($reason); throw $reason; });
         }
 
-        return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($this->onFulfilledDefault, $this->onRejectedDefault);
+        return $channel->sendMessage($builder->addFileFromContent($file_name, $content))->then($this->onFulfilledDefault, function (\Throwable $reason): never { ($this->onRejectedDefault)($reason); throw $reason; });
     }
 
     /**

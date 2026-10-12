@@ -368,7 +368,10 @@ class GameServer
         if (! $this->legacy_relay) {
             return false;
         }
-        $this->fileRelay ??= new \Civ13\Server\FileRelay();
+        $this->fileRelay ??= new \Civ13\Server\FileRelay(
+            $this->civ13->filecache_path.'relay-checkpoints',
+            fn (string $path, int $offset) => $this->logger->warning('Oversized server relay record discarded at byte '.$offset.' in '.$path)
+        );
         $this->fileRelay->relay($file_path, fn (string $line) => $this->civ13->sendMessage($channel_id, $line, 'relay.txt', true))
             ->then(null, fn (\Throwable $error) => $this->logger->error('Server file relay failed: '.$error->getMessage()));
         return true;
