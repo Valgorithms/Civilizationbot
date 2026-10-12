@@ -32,11 +32,11 @@ final class DiscordRoute
             try {
                 $promise = $this->gateway->submit($request);
             } catch (\Throwable $error) {
-                return $interaction->updateOriginalResponse(self::message('Request remains unresolved. Inspect its status before retrying an economic action.'));
+                return $interaction->updateOriginalResponse(self::message(self::render(['status' => 'pending', 'request_id' => $request['request_id']], $request)));
             }
             return $promise->then(
-                fn (array $outcome): PromiseInterface => $interaction->updateOriginalResponse(self::message(self::render($outcome))),
-                fn (\Throwable $error): PromiseInterface => $interaction->updateOriginalResponse(self::message('Request remains unresolved. Inspect its status before retrying an economic action.'))
+                fn (array $outcome): PromiseInterface => $interaction->updateOriginalResponse(self::message(self::render($outcome, $request))),
+                fn (\Throwable $error): PromiseInterface => $interaction->updateOriginalResponse(self::message(self::render(['status' => 'pending', 'request_id' => $request['request_id']], $request)))
             );
         });
     }
@@ -49,13 +49,21 @@ final class DiscordRoute
         return MessageBuilder::new()->setContent($match[0])->setAllowedMentions(['parse' => []]);
     }
 
-    private static function render(array $outcome): string
+    private static function render(array $outcome, array $request): string
     {
         $id = (string) ($outcome['request_id'] ?? 'unknown');
         $status = $outcome['status'] ?? 'pending';
-        if ($status === 'pending') { return 'Request '.$id.' is pending. No completed trade is confirmed. Use status recovery before another economic action.'; }
+        if ($status === 'pending') { return 'Request '.$id.' is pending. No completed trade is confirmed. Do not submit another economic operation. Use trade.status with payload '.json_encode(['operation_request_id' => $request['request_id'], 'operation_request_digest' => $request['request_digest']], JSON_THROW_ON_ERROR); }
         if ($status === 'rejected') { return 'Game rejected request '.$id.'. '.json_encode($outcome['data'] ?? $outcome['reason'] ?? [], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR); }
         if ($status !== 'committed') { return 'Request '.$id.' remains unresolved.'; }
+        if ($request['action'] === 'trade.status') {
+            $operationStatus = $outcome['data']['operation_status'] ?? null;
+            if (!in_array($operationStatus, ['pending', 'committed', 'rejected', 'not_found'], true)) { return 'Status query completed, but the original operation remains unresolved.'; }
+            if ($operationStatus === 'pending' || $operationStatus === 'not_found') { return 'Status query completed. Original operation is '.$operationStatus.'. No completed trade is confirmed. Do not issue another economic operation; retain its original request for recovery.'; }
+            $receipt = $outcome['data']['operation_receipt'] ?? null;
+            if (!is_array($receipt) || ($receipt['request_id'] ?? null) !== $request['payload']['operation_request_id'] || ($receipt['request_digest'] ?? null) !== $request['payload']['operation_request_digest'] || ($receipt['discord_id'] ?? null) !== $request['discord_id'] || ($receipt['status'] ?? null) !== $operationStatus) { return 'Status query completed, but its original receipt binding is unresolved.'; }
+            return 'Original operation '.$receipt['request_id'].' is '.$operationStatus.'. '.json_encode($receipt['data'] ?? [], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        }
         return 'Game confirmed request '.$id.'. '.json_encode($outcome['data'] ?? [], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 }

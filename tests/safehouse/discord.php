@@ -75,6 +75,7 @@ check($gateway->requests[0]['discord_id'] === '123', 'Actor not bound to Discord
 check($gateway->requests[0]['payload'] === ['page' => 0], 'Discord inspection incompatible with native page schema');
 $gateway->deferreds[0]->resolve(['status' => 'pending', 'request_id' => '123456']);
 check(str_contains($inspect->messages[1][2]['content'], 'pending') && $inspect->messages[1][2]['allowed_mentions'] === ['parse' => []], 'Pending claimed success or allowed mentions');
+check(str_contains($inspect->messages[1][2]['content'], $gateway->requests[0]['request_digest']), 'Pending omitted bound recovery digest');
 $confirmed = MockInteraction::fixture('trade.confirm', '{"confirmation_token":"game-token"}', 4, true); $confirmed->id = '123457';
 $route->handle($confirmed);
 check($gateway->requests[1]['payload'] === ['confirmation_token' => 'game-token'], 'Confirmation changed opaque game token');
@@ -84,6 +85,19 @@ $unicode = MockInteraction::fixture(); $unicode->id = 'unicode';
 $route->handle($unicode);
 $gateway->deferreds[2]->resolve(['status' => 'committed', 'request_id' => 'unicode', 'data' => ['name' => str_repeat('🌍', 2000)]]);
 check(preg_match('//u', $unicode->messages[1][2]['content']) === 1 && strlen($unicode->messages[1][2]['content']) <= 3600, 'Bounded render split Unicode');
+
+$digest = str_repeat('a', 64);
+foreach (['pending', 'not_found', 'committed', 'rejected', 'wrong_actor'] as $operationStatus) {
+    $statusInteraction = MockInteraction::fixture('trade.status', json_encode(['operation_request_id' => 'original-operation', 'operation_request_digest' => $digest]));
+    $statusInteraction->id = 'status-'.$operationStatus;
+    $route->handle($statusInteraction);
+    $data = ['operation_status' => $operationStatus === 'wrong_actor' ? 'committed' : $operationStatus];
+    if (in_array($operationStatus, ['committed', 'rejected', 'wrong_actor'], true)) { $data['operation_receipt'] = ['request_id' => 'original-operation', 'request_digest' => $digest, 'discord_id' => $operationStatus === 'wrong_actor' ? '999' : '123', 'status' => $data['operation_status']]; }
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'committed', 'data' => $data]);
+    $content = $statusInteraction->messages[1][2]['content'];
+    check(!str_contains($content, 'Game confirmed request'), 'Status query misreported original success');
+    check(str_contains($content, $operationStatus === 'wrong_actor' ? 'unresolved' : $operationStatus), 'Original operation status omitted');
+}
 
 // Construct only the Slash adapter over a reflection-created inert Civ13 object.
 // No Civ13/Discord constructor, token, init event or remote command save runs.
@@ -114,7 +128,7 @@ check(isset($enabledBot->discord->bound['safehouse']) && isset($enabledBot->disc
 $boundInteraction = MockInteraction::fixture(); $boundInteraction->id = '654321';
 ($enabledBot->discord->bound['safehouse'])($boundInteraction);
 check(end($gateway->requests)['request_id'] === '654321', 'Slash callback did not use actual safehouse route');
-$gateway->deferreds[3]->resolve(['status' => 'rejected', 'request_id' => '654321', 'reason' => 'unlinked']);
+$gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'rejected', 'request_id' => '654321', 'reason' => 'unlinked']);
 check(str_contains($boundInteraction->messages[1][2]['content'], 'unlinked'), 'Authoritative unlinked rejection omitted');
 
 // Fake timer driver checks finite asynchronous polling and cancellation.

@@ -2,9 +2,9 @@
 
 This patch provides a controller, command schema, durable request client,
 disabled enqueue/poll authenticated spool and actual DiscordPHP routing hooks.
-No commands have been registered, bot started or game saves read. Compatibility
-is unaccepted until the game handler executes this
-contract fixture. Existing verifier cache entries provide no trade authority.
+No commands have been registered, bot started or game saves read by the bot.
+Native fixture compatibility is recorded in `safehouse-acceptance.md`; live and
+host acceptance remain separate. Existing verifier cache entries provide no trade authority.
 
 ## Version 1 request
 
@@ -23,8 +23,8 @@ Proposed payloads: link.challenge {challenge_id}; link.complete {challenge_id,
 proof}; stash.inspect/room.inspect {page}; room.manage {confirmation_token};
 trade.quote {sale_kind, item_ids or listing_id}; trade.confirm {confirmation_token};
 trade.status {operation_request_id, operation_request_digest}; market.list {confirmation_token}; market.buy
-{confirmation_token}; market.cancel {confirmation_token}. This is a proposal,
-not an implemented game schema. No client price or account identity is accepted.
+{confirmation_token}; market.cancel {confirmation_token}. The native handler
+accepts this versioned schema. No client price or account identity is accepted.
 The refined economic proposal is in `safehouse-economic-contract.md` and
 `tests/safehouse/economic-contract.json`; native acceptance remains separate.
 Quotes bind actor, item graph IDs, revision, approved game price, action and
@@ -100,8 +100,8 @@ transport delivery and caches terminal replies. It bounds records at 1000 and
 fails closed when full; archive only under an operator-approved game receipt
 retention policy. The transport must enforce a finite timeout. Blocking transport
 must not run on the shared Discord event loop. No live spool, game-side checks,
-wallet/pricing/escrow correctness, production crash durability or live command
-registration has been verified. Activation depends on game handler compatibility,
+production crash durability or live command registration has been verified.
+Isolated native wallet/escrow acceptance is recorded separately. Activation depends on host compatibility,
 authenticated async adapter, wallet/escrow and identity reconciliation.
 
 Native cross-process tests additionally prove local same-ID delivery serialization

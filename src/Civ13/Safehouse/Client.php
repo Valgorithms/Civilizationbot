@@ -40,7 +40,7 @@ final class Client
 
     public static function envelope(string $requestId, string $discordId, string $action, array $payload, ?int $expectedAccountRevision): array
     {
-        if (!preg_match('/^[A-Za-z0-9_-]{1,96}$/D', $requestId) || !preg_match('/^[0-9]{1,22}$/D', $discordId) || !in_array($action, self::ACTIONS, true) || ($expectedAccountRevision !== null && $expectedAccountRevision < 0)) {
+        if (!preg_match('/^[A-Za-z0-9_-]{1,96}$/D', $requestId) || !preg_match('/^[0-9]{1,22}$/D', $discordId) || !in_array($action, self::ACTIONS, true) || ($expectedAccountRevision !== null && ($expectedAccountRevision < 0 || $expectedAccountRevision > 1000000))) {
             throw new \InvalidArgumentException('Invalid request identity/action/revision');
         }
         $request = ['protocol' => self::PROTOCOL, 'request_id' => $requestId, 'discord_id' => $discordId, 'action' => $action, 'expected_account_revision' => $expectedAccountRevision, 'payload' => self::canonical($payload)];

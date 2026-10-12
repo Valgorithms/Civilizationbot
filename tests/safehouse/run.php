@@ -48,6 +48,10 @@ try {
         foreach (['{}', '{"page":8}', '{"page":-1}', '{"page":"0"}', '{"page":0,"extra":1}'] as $invalidPage) { rejects(fn () => Controller::prepare('invalid-page', '123', $inspection, $invalidPage, null)); }
         check(Controller::prepare('valid-page', '123', $inspection, '{"page":0}', null)['payload'] === ['page' => 0], 'Inspection page changed');
     }
+    foreach ([['trade.quote', '{"sale_kind":"player_purchase","item_ids":["root"]}', 1], ['trade.quote', '{"sale_kind":"server_buyback","item_ids":["root","root"]}', 1], ['trade.quote', '{"sale_kind":"server_buyback","item_ids":["root"]}', null], ['link.complete', '{"challenge_id":"id","proof":"proof","ckey":"victim"}', null], ['link.complete', '{"challenge_id":"id"}', null], ['trade.confirm', '{"confirmation_token":"token","price":1}', 1], ['trade.status', '{"operation_request_id":"id","operation_request_digest":"bad"}', null], ['stash.inspect', '{"page":0}', 1000001]] as [$action, $payload, $revision]) {
+        rejects(fn () => Controller::prepare('bad-contract', '123', $action, $payload, $revision));
+    }
+    check(Controller::prepare('link-proof', '123', 'link.complete', '{"challenge_id":"game-origin","proof":"game-proof"}', null)['payload'] === ['challenge_id' => 'game-origin', 'proof' => 'game-proof'], 'Game-origin link proof altered');
     rejects(fn () => $controller->handle('i3', '123', 'trade.confirm', '{"confirmation_token":"token"}', null));
     rejects(fn () => $controller->handle('i3', '123', 'trade.quote', '{"price":1}', 4));
     check($controller->handle('i3', '123', 'stash.inspect', '{"page":1}', null)['ephemeral'], 'Private response not ephemeral');

@@ -41,6 +41,30 @@ final class Controller
         if (in_array($action, ['stash.inspect', 'room.inspect'], true) && (array_keys($payload) !== ['page'] || !is_int($payload['page']) || $payload['page'] < 0 || $payload['page'] > 7)) {
             throw new \InvalidArgumentException('Inspection requires exactly integer page in 0..7');
         }
+        $fields = match ($action) {
+            'link.challenge' => ['challenge_id'],
+            'link.complete' => ['challenge_id', 'proof'],
+            'stash.inspect', 'room.inspect' => ['page'],
+            'room.manage', 'trade.confirm', 'market.list', 'market.buy', 'market.cancel' => ['confirmation_token'],
+            'trade.status' => ['operation_request_digest', 'operation_request_id'],
+            'trade.quote' => match ($payload['sale_kind'] ?? null) {
+                'server_buyback', 'player_listing' => ['item_ids', 'sale_kind'],
+                'player_purchase', 'listing_cancel' => ['listing_id', 'sale_kind'],
+                default => throw new \InvalidArgumentException('Unknown sale kind'),
+            },
+            default => throw new \InvalidArgumentException('Unknown action'),
+        };
+        $keys = array_keys($payload); sort($keys); sort($fields);
+        if ($keys !== $fields) { throw new \InvalidArgumentException('Unexpected or missing action payload fields'); }
+        foreach ($payload as $field => $value) {
+            if ($field === 'page') { continue; }
+            if ($field === 'item_ids') {
+                if (!is_array($value) || !array_is_list($value) || count($value) < 1 || count($value) > 16 || count(array_unique($value, SORT_REGULAR)) !== count($value)) { throw new \InvalidArgumentException('Select 1..16 distinct root IDs'); }
+                foreach ($value as $id) { if (!is_string($id) || !preg_match('/^[A-Za-z0-9_-]{1,80}$/D', $id)) { throw new \InvalidArgumentException('Invalid graph root ID'); } }
+            } elseif (!is_string($value) || !preg_match('/^[A-Za-z0-9_-]{1,128}$/D', $value)) { throw new \InvalidArgumentException('Invalid game-issued identifier'); }
+        }
+        if ($action === 'trade.status' && !preg_match('/^[a-f0-9]{64}$/D', $payload['operation_request_digest'])) { throw new \InvalidArgumentException('Invalid original request digest'); }
+        if ($action === 'trade.quote' && $revision === null) { throw new \InvalidArgumentException('Quote requires expected account revision'); }
         if (in_array($action, ['trade.confirm', 'market.list', 'market.buy', 'market.cancel', 'room.manage'], true) && (!is_string($payload['confirmation_token'] ?? null) || $payload['confirmation_token'] === '' || $revision === null)) {
             throw new \InvalidArgumentException('Game confirmation token and revision required');
         }
