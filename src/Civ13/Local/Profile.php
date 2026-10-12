@@ -10,6 +10,7 @@ final class Profile
         $config = json_decode(file_get_contents($file) ?: '', true, 32, JSON_THROW_ON_ERROR);
         if (!is_array($config)) { throw new \InvalidArgumentException('Invalid local profile object'); }
         $fields = ['allowed_channel_ids', 'application_id', 'authority', 'bind', 'enabled', 'guild_id', 'official_application_id', 'pc_root', 'port', 'public_key_file', 'read_key_file', 'servers', 'state_directory', 'token_file'];
+        if (array_key_exists('controls', $config)) { $fields[] = 'controls'; sort($fields); }
         $keys = array_keys($config); sort($keys);
         if ($keys !== $fields || !is_bool($config['enabled']) || $config['bind'] !== '127.0.0.1' || !is_int($config['port']) || $config['port'] < 1024 || $config['port'] > 65535 || $config['application_id'] === $config['official_application_id']) { throw new \InvalidArgumentException('Invalid isolated local profile'); }
         foreach (['application_id', 'guild_id', 'official_application_id'] as $key) { if (!is_string($config[$key]) || !preg_match('/^[0-9]{1,22}$/D', $config[$key])) { throw new \InvalidArgumentException('Invalid local Discord identity'); } }
@@ -25,8 +26,26 @@ final class Profile
         if (!is_array($config['servers']) || array_keys($config['servers']) !== ['nomads', 'tdm']) { throw new \InvalidArgumentException('Only local Nomads/TDM pointers are supported'); }
         $ports = [$config['port']];
         foreach ($config['servers'] as $server) {
+            if (is_array($server) && array_key_exists('engine', $server)) {
+                $keys = array_keys($server); sort($keys);
+                if ($keys !== ['engine', 'gameplay_port', 'host', 'runtime_dir', 'topic_port'] || $server['engine'] !== 'opendream' || $server['host'] !== '127.0.0.1') { throw new \InvalidArgumentException('Unsupported local engine profile'); }
+                self::inside($server['runtime_dir'], $root); self::directory($server['runtime_dir']);
+                foreach (['gameplay_port', 'topic_port'] as $name) {
+                    if (!is_int($server[$name]) || $server[$name] < 1024 || $server[$name] > 65535 || in_array($server[$name], $ports, true)) { throw new \InvalidArgumentException('Distinct local gameplay and Topic ports required'); }
+                    $ports[] = $server[$name];
+                }
+                continue;
+            }
             if (!is_array($server) || array_keys($server) !== ['directory', 'host', 'port'] || $server['host'] !== '127.0.0.1' || !is_int($server['port']) || $server['port'] < 1024 || $server['port'] > 65535 || in_array($server['port'], $ports, true)) { throw new \InvalidArgumentException('Nonlocal/duplicate server destination'); }
             self::inside($server['directory'], $root); self::directory($server['directory']); $ports[] = $server['port'];
+        }
+        if (isset($config['controls'])) {
+            $control = $config['controls']; $keys = is_array($control) ? array_keys($control) : []; sort($keys);
+            if ($keys !== ['controller', 'enabled', 'profiles', 'python', 'read_key_file'] || !is_bool($control['enabled']) || !is_array($control['profiles']) || array_keys($control['profiles']) !== ['nomads', 'tdm']) { throw new \InvalidArgumentException('Exact control configuration required'); }
+            self::inside($control['read_key_file'], $root);
+            if ($control['read_key_file'] === $config['read_key_file'] || $control['read_key_file'] === $config['token_file'] || filesize($control['read_key_file']) > 4096 || strlen(trim(file_get_contents($control['read_key_file']) ?: '')) < 32) { throw new \InvalidArgumentException('Separate bounded control credential required'); }
+            foreach (['python', 'controller'] as $key) { if (!is_string($control[$key]) || !is_file($control[$key]) || !(str_starts_with($control[$key], '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $control[$key]))) { throw new \InvalidArgumentException('Absolute existing adapter path required'); } self::noLinks($control[$key]); }
+            foreach ($control['profiles'] as $key => $path) { self::inside($path, $root); if (!is_file($path) || ($config['servers'][$key]['engine'] ?? null) !== 'opendream') { throw new \InvalidArgumentException('Local OpenDream control profile required'); } }
         }
         return $config;
     }
