@@ -46,3 +46,4 @@ jobs:
       - run: php tests/local/relay.php vendor/autoload.php
       - run: php tests/local/message-delivery.php vendor/autoload.php
       - run: php tests/local/ooc-webhook.php vendor/autoload.php
+      - run: php tests/local/unban-commands.php vendor/autoload.php

@@ -35,6 +35,7 @@ class UnBan extends Civ13MessageCommand
                 return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
             }
         }
+        $item ??= $this->civ13->verifier->getVerifiedItem($ckey);
         if (! $item) {
             return $this->civ13->reply($message, "No data found for input `$ckey`.");
         }
@@ -45,8 +46,10 @@ class UnBan extends Civ13MessageCommand
         if (! isset($this->civ13->ages[$ckey]) && ! Byond::isValidCkey($ckey)) {
             return $this->civ13->reply($message, "Byond username `$ckey` does not exist.");
         }
-        $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13']);
-
-        return $this->civ13->reply($message, "`$admin` unbanned `$ckey`");
+        $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username;
+        return $this->civ13->unban($ckey, $admin)->then(
+            fn () => $this->civ13->reply($message, "`$admin` queued an unban for `$ckey`."),
+            fn (\Throwable $error) => $this->civ13->reply($message, 'Unban failed; some destinations may already have queued the request.')
+        );
     }
 }

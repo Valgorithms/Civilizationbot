@@ -1196,6 +1196,11 @@ class GameServer
         if (! isset($array['reason'])) {
             return 'You must specify a reason for the ban.';
         }
+        foreach ([$array['duration'], $array['reason'], $admin ?? $this->discord->username] as $field) {
+            if (!is_string($field) || $field === '' || strlen($field) > 8192 || str_contains($field, ':::') || preg_match('/[\r\n\x00]/', $field)) {
+                return 'Invalid ban record field.';
+            }
+        }
 
         if (is_numeric($array['ckey'] = Civ13::sanitizeInput($array['ckey']))) {
             if (! isset($this->civ13->verifier) || ! $item = $this->civ13->verifier->get('discord', $array['ckey'])) {
@@ -1203,6 +1208,10 @@ class GameServer
             }
             $array['ckey'] = $item['ss13'];
         }
+        if (!preg_match('/^[a-z0-9]{1,64}$/D', $array['ckey'])) { return 'Invalid ban ckey.'; }
+        if (!$this->legacy) { return $this->sqlBan($array, $admin); }
+        $result = $this->legacyBan($array, $admin);
+        if (str_starts_with($result, 'Unable to open')) { return $result; }
         if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($array['ckey'])) {
             if (! $member->roles->has($this->civ13->role_ids['Banished'])) {
                 $string = "Banned for {$array['duration']} with the reason {$array['reason']}";
@@ -1214,9 +1223,7 @@ class GameServer
             $this->civ13->timers['ban_cleanup_timer'] = $this->civ13->discord->getLoop()->addTimer(300, fn () => $this->cleanupLogs());
         }
 
-        return $this->legacy
-            ? $this->legacyBan($array, $admin)
-            : $this->sqlBan($array, $admin);
+        return $result;
     }
     /**
      * Appends a ban to the `discord2ban` file and schedules a follow-up to backfill missing ban data.
@@ -1230,13 +1237,11 @@ class GameServer
         if (str_starts_with(strtolower($array['duration']), 'perm')) {
             $array['duration'] = '999 years';
         }
-        if (! @touch($this->discord2ban) || ! $file = @fopen($this->discord2ban, 'a')) {
+        if (!\Civ13\Server\Ipc::append($this->discord2ban, [$admin, $array['ckey'], $array['duration'], $array['reason']])) {
             $this->logger->warning("Unable to open `{$this->discord2ban}`");
 
             return "Unable to open `{$this->discord2ban}`".PHP_EOL;
         }
-        fwrite($file, "$admin:::{$array['ckey']}:::{$array['duration']}:::{$array['reason']}".PHP_EOL);
-        fclose($file);
         if (! isset($this->timers["banlog_update_{$array['ckey']}"])) {
             $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn () => array_walk($this->civ13->enabled_gameservers, fn (GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir.Civ13::playerlogs))));
         } // Attempts to fill in any missing data for the ban
@@ -1255,25 +1260,30 @@ class GameServer
      * @param string      $ckey  The ckey of the player to unban.
      * @param string|null $admin The name of the admin who is performing the unban. If not provided, the display name of the Discord user will be used.
      */
-    public function unban(string $ckey, ?string $admin = null): void
+    public function unban(string $ckey, ?string $admin = null): PromiseInterface
     {
         $admin ??= $this->discord->username;
-        $this->legacy ? $this->legacyUnban($ckey, $admin) : $this->sqlUnban($ckey, $admin);
-        if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
-            if ($member->roles->has($this->civ13->role_ids['Banished'])) {
-                $member->removeRole($this->civ13->role_ids['Banished'], "Unbanned by $admin");
+        if (!preg_match('/^[a-z0-9]{1,64}$/D', $ckey)) { return reject(new \InvalidArgumentException('Invalid unban ckey.')); }
+        if (!$this->legacy) { return reject(new \LogicException('SQL unban is not implemented.')); }
+        return $this->legacyUnban($ckey, $admin)->then(function () use ($ckey, $admin): PromiseInterface {
+            $roles = [];
+            if (isset($this->civ13->verifier) && $member = $this->civ13->verifier->getVerifiedMember($ckey)) {
+                if ($member->roles->has($this->civ13->role_ids['Banished'])) {
+                    $roles[] = $member->removeRole($this->civ13->role_ids['Banished'], "Unbanned by $admin");
+                }
+                if ($member->roles->has($this->civ13->role_ids['Permabanished'])) {
+                    $roles[] = $member->removeRole($this->civ13->role_ids['Permabanished'], "Unbanned by $admin")->then(function () use (&$member, $admin) {
+                        return $member->addRole($this->civ13->role_ids['Verified'], "Unbanned by $admin");
+                    });
+                }
             }
-            if ($member->roles->has($this->civ13->role_ids['Permabanished'])) {
-                $member->removeRole($this->civ13->role_ids['Permabanished'], "Unbanned by $admin")->then(function () use (&$member, $admin) {
-                    $member->addRole($this->civ13->role_ids['Verified'], "Unbanned by $admin");
-                });
+            foreach (explode(PHP_EOL, $this->bancheck_cache) as $line) {
+                if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 9) && ($linesplit[8] === $ckey)) {
+                    $this->bancheck_cache = str_replace($line, '', $this->bancheck_cache);
+                }
             }
-        }
-        foreach (explode(PHP_EOL, $this->bancheck_cache) as $line) {
-            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey)) {
-                $this->bancheck_cache = str_replace($line, '', $this->bancheck_cache);
-            }
-        }
+            return \React\Promise\all($roles);
+        });
     }
     /**
      * Appends an unban entry to the `discord2unban` file.
@@ -1283,13 +1293,11 @@ class GameServer
     private function legacyUnban(string $ckey, ?string $admin = null): PromiseInterface
     {
         $admin = $admin ?? $this->discord->username;
-        if (! @touch($this->discord2unban) || ! $file = @fopen($this->discord2unban, 'a')) {
+        if (!\Civ13\Server\Ipc::append($this->discord2unban, [$admin, $ckey])) {
             $this->logger->warning($err = "Unable to open `$this->discord2unban`");
 
             return reject(new MissingSystemPermissionException($err));
         }
-        fwrite($file, $admin.":::$ckey"."\n");
-        fclose($file);
 
         return resolve(null);
     }
@@ -1350,6 +1358,18 @@ class GameServer
      */
     public function logNewRound(string $game_id, string $time): void
     {
+        if (!preg_match('/^[A-Za-z0-9_-]{1,80}$/D', $game_id)) {
+            throw new \InvalidArgumentException('Invalid round identity.');
+        }
+        // Repeated authenticated delivery must not erase the recorded players.
+        if (isset($this->rounds[$game_id])) {
+            if ($this->current_round !== $game_id) { throw new \LogicException('Historical round cannot become current.'); }
+            if (!$this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds)
+                || !$this->civ13->VarSave("{$this->key}_current_round.json", [$this->current_round])) {
+                throw new MissingSystemPermissionException('Unable to persist round state.');
+            }
+            return;
+        }
         if (isset($this->rounds[$this->current_round])) { // If the round already exists and is not the current round
             $this->rounds[$this->current_round]['end'] ??= substr($time, 1, -1).' '.date('m/d/Y');
         } // Set end time of previous round
@@ -1361,8 +1381,10 @@ class GameServer
             'players' => [],
             'interrupted' => false,
         ];
-        $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
-        $this->civ13->VarSave("{$this->key}_current_round.json", [$this->current_round]);
+        if (!$this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds)
+            || !$this->civ13->VarSave("{$this->key}_current_round.json", [$this->current_round])) {
+            throw new MissingSystemPermissionException('Unable to persist round state.');
+        }
     }
     /**
      * Logs the login of a player.
@@ -1378,17 +1400,15 @@ class GameServer
         if (! $this->enabled) {
             return reject(new \LogicException('Game server is not enabled.'));
         }
-        if ($ckey === '(NULL)') {
+        if (!preg_match('/^[a-z0-9]{1,64}$/D', $ckey)) {
             return reject(new \InvalidArgumentException('Invalid ckey provided.'));
-        }
-        if (! in_array($ckey, $this->players)) {
-            $this->players[] = $ckey;
         }
         if (! $this->current_round) {
             $this->logger->warning($err = "No current round found for {$this->key} logPlayerLogin.");
 
             return reject(new \LogicException($err));
         }
+        if (! in_array($ckey, $this->players, true)) { $this->players[] = $ckey; }
         $this->rounds[$this->current_round]['players'][$ckey] ??= [ // Initialize the player if they don't exist
             'ip' => [],
             'cid' => [],
@@ -1400,7 +1420,9 @@ class GameServer
         if ($cid && ! in_array($cid, $this->rounds[$this->current_round]['players'][$ckey]['cid'] ?? [])) {
             $this->rounds[$this->current_round]['players'][$ckey]['cid'][] = $cid;
         }
-        $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+        if (!$this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds)) {
+            return reject(new MissingSystemPermissionException('Unable to persist player login.'));
+        }
 
         // Early return if the player is permitted to bypass restrictions
         if (isset($this->civ13->permitted[$ckey])) {
@@ -1432,7 +1454,7 @@ class GameServer
         if (! $this->enabled) {
             return reject(new \LogicException('Game server is not enabled.'));
         }
-        if ($ckey === '(NULL)') {
+        if (!preg_match('/^[a-z0-9]{1,64}$/D', $ckey)) {
             return reject(new \InvalidArgumentException('Invalid ckey provided.'));
         }
         if (in_array($ckey, $this->players)) {
@@ -1449,7 +1471,9 @@ class GameServer
             'login' => $time,
         ];
         $this->rounds[$this->current_round]['players'][$ckey]['logout'] = $time;
-        $this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds);
+        if (!$this->civ13->VarSave("{$this->key}_rounds.json", $this->rounds)) {
+            return reject(new MissingSystemPermissionException('Unable to persist player logout.'));
+        }
 
         return resolve($this->rounds);
     }
@@ -1506,6 +1530,7 @@ class GameServer
         $result = '';
         foreach ($line_array as $line) {
             $sline = explode(';', trim(str_replace(PHP_EOL, '', $line)));
+            if (count($sline) !== 2 || !is_numeric($sline[0]) || !preg_match('/^[a-z0-9]{1,64}$/D', $sline[1])) { continue; }
             if ($sline[1] == $ckey) {
                 $found = true;
                 $result .= "`{$sline[1]}` has a total rank of `{$sline[0]}`";
@@ -1530,8 +1555,9 @@ class GameServer
         }
         
         $line_array = [];
-        while (($fp = fgets($search, 4096)) !== false) {
-            $line_array[] = $fp;
+        for ($scanned = 0; $scanned < 256 && count($line_array) < 10 && ($fp = fgets($search, 4096)) !== false; $scanned++) {
+            $fields = explode(';', trim($fp));
+            if (count($fields) === 2 && is_numeric($fields[0]) && preg_match('/^[a-z0-9]{1,64}$/D', $fields[1])) { $line_array[] = $fp; }
         }
         fclose($search);
 
@@ -1566,7 +1592,7 @@ class GameServer
         if (! @touch($ranking_path = $this->basedir.Civ13::ranking_path)) {
             return reject(new MissingSystemPermissionException("Unable to access `{$ranking_path}`"));
         }
-        if (! $lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) {
+        if (($lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) === false) {
             return reject(new MissingSystemPermissionException("Unable to read `$awards`"));
         }
         $result = [];

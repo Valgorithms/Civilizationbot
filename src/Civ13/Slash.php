@@ -752,9 +752,11 @@ class Slash
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) {
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             }
-            $this->civ13->unban($item['ss13'], $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'] ?? $interaction->user->username);
-
-            return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`$admin` unbanned `{$item['ss13']}`."));
+            $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'] ?? $interaction->user->username;
+            return $this->civ13->unban($item['ss13'], $admin)->then(
+                fn () => $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`$admin` queued an unban for `{$item['ss13']}`.")),
+                fn (\Throwable $error) => $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent('Unban failed; some destinations may already have queued the request.'), true)
+            );
         });
 
         $this->discord->listenCommand('parole', function (Interaction $interaction): PromiseInterface {

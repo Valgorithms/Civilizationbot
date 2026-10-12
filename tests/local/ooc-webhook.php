@@ -34,6 +34,8 @@ final class OocVerifier extends \Civ13\Verifier {
     public function get(string $discrim,$key):mixed {$this->lookups[]=[$discrim,$key]; return ['ss13'=>'onlineadmin'];}
 }
 final class OocServer extends \Civ13\GameServer {
+    public bool $denyRound=false;
+    public function logNewRound(string $game_id,string $time):void {if($this->denyRound){throw new RuntimeException('synthetic storage denial');}$this->events[]=['round',$game_id];}
     public array $calls=[];
     public ?PromiseInterface $relayOutcome=null;
     public array $events=[];
@@ -88,7 +90,19 @@ $manager->httpHandler=$handler; $manager->logger=$handler->logger;
 (new ReflectionProperty($handler,'attributes'))->setValue($handler,['handlers'=>[],'whitelisted'=>[],'match_methods'=>[],'descriptions'=>[],'whitelist'=>[],'ratelimits'=>[]]);
 (new ReflectionMethod($handler,'afterConstruct'))->invoke($handler);
 (new ReflectionMethod($manager,'__generateServerEndpoints'))->invoke($manager);
-$server->ic='123456789012345670';$server->transit='123456789012345671';
+$server->ic='123456789012345670';$server->transit='123456789012345671';$server->discussion='123456789012345675';
+$roundRequest=fn($data,$key='synthetic-ooc-key')=>$request($valid)->withQueryParams(['key'=>$key,'method'=>'round_start','data'=>json_encode($data)]);
+foreach([[],['round'=>null],['round'=>[]],['round'=>''],['round'=>str_repeat('a',81)],['round'=>"bad\nround"]] as $data){
+ $before=count($server->events);$messages=count($civ->staffMessages);
+ if($handler->handle($roundRequest($data))->getStatusCode()!==400||count($server->events)!==$before||count($civ->staffMessages)!==$messages){throw new RuntimeException('Malformed round changed state');}
+}
+if($handler->handle($roundRequest(['round'=>'round-1'],'wrong'))->getStatusCode()!==403){throw new RuntimeException('Unauthenticated round accepted');}
+if($handler->handle($roundRequest(['round'=>'round-1']))->getStatusCode()!==202||end($server->events)!==['round','round-1']||!str_contains(end($civ->staffMessages)[1],'round-1')){throw new RuntimeException('Registered round route not queued');}
+$messages=count($civ->staffMessages);$server->denyRound=true;
+if($handler->handle($roundRequest(['round'=>'round-2']))->getStatusCode()!==503||count($civ->staffMessages)!==$messages){throw new RuntimeException('Failed round storage falsely notified');}
+$server->denyRound=false;$civ->staffMessages=[];
+// Start the next independent boundary case with a fresh rate window.
+$handler->setRateLimit('invalid',10,300)->setRateLimit('abuse',100,86400);
 $server->runtime='123456789012345672';$server->adminlog='123456789012345673';$server->attack='123456789012345674';$server->log_attacks=true;
 $civ->moderator=(new ReflectionClass(OocModerator::class))->newInstanceWithoutConstructor();
 foreach(['icmessage','memessage','login','logout'] as $method){

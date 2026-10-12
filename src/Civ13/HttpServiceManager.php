@@ -176,6 +176,34 @@ class HttpServiceManager
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
+    /** Round identity is authenticated; a channel name is not a player-count source. */
+    public function handleRoundStartWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $secret = $this->civ13->options['http_key'] ?? '';
+        $key = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($secret) || $secret === '' || !is_string($key) || !hash_equals($secret, $key) || $gameserver->legacy_relay) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        $data = self::decodeParamData($request);
+        if (!is_string($data['round'] ?? null) || !preg_match('/^[A-Za-z0-9_-]{1,80}$/D', $data['round'])) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if (!isset($gameserver->discussion) || !$channel = $this->discord->getChannel($gameserver->discussion)) {
+            return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        try { $gameserver->logNewRound($data['round'], '['.date('H:i:s').']'); }
+        catch (\Throwable $error) {
+            $this->logger->error('Round persistence failed', ['exception' => $error]);
+            return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        $role = $this->civ13->role_ids['round_start'] ?? null;
+        $message = ($role ? "<@&$role>, " : '').'New round `'.$data['round'].'` has started!';
+        $this->civ13->sendMessage($channel, $message)->then(null, function (\Throwable $error): void {
+            $this->logger->error('Queued round notification failed', ['exception' => $error]);
+        });
+        return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
     /** Staff messages preserve display text without inferring account authority. */
     public function handleStaffWebhook(ServerRequestInterface $request, GameServer $gameserver, string $kind = 'asay'): HttpResponse
     {
@@ -1358,56 +1386,7 @@ class HttpServiceManager
                 )
                 ->offsetSet(
                     $server_endpoint.'/round_start',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->discussion)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $channel = $this->discord->getChannel($gameserver->discussion)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        $time = '['.date('H:i:s', time()).']';
-                        $message = '';
-                        if (isset($this->civ13->role_ids['round_start'])) {
-                            $message .= "<@&{$this->civ13->role_ids['round_start']}>, ";
-                        }
-                        $message .= 'New round ';
-                        if (isset($data, $data['round']) && $game_id = $data['round']) {
-                            $gameserver->logNewRound($game_id, $time);
-                            $message .= "`$game_id` ";
-                        }
-                        $message .= 'has started!';
-                        if ($playercount_channel = $this->discord->getChannel($gameserver->playercount)) {
-                            if ($existingCount = explode('-', $playercount_channel->name)[1]) {
-                                $existingCount = intval($existingCount);
-                                switch ($existingCount) {
-                                    case 0:
-                                        $message .= " There are currently no players on the {$gameserver->name} server.";
-                                        break;
-                                    case 1:
-                                        $message .= " There is currently 1 player on the {$gameserver->name} server.";
-                                        break;
-                                    default:
-                                        if (isset($this->civ13->role_ids['30+']) && $this->civ13->role_ids['30+'] && ($existingCount >= 30)) {
-                                            $message .= " <@&{$this->civ13->role_ids['30+']}>,";
-                                        } elseif (isset($this->civ13->role_ids['15+']) && $this->civ13->role_ids['15+'] && ($existingCount >= 15)) {
-                                            $message .= " <@&{$this->civ13->role_ids['15+']}>,";
-                                        } elseif (isset($this->civ13->role_ids['2+']) && $this->civ13->role_ids['2+'] && ($existingCount >= 2)) {
-                                            $message .= " <@&{$this->civ13->role_ids['2+']}>,";
-                                        }
-                                        $message .= " There are currently $existingCount players on the {$gameserver->name} server.";
-                                        break;
-                                }
-                            }
-                        }
-                        $this->civ13->sendMessage($channel, $message);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleRoundStartWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(
@@ -1457,7 +1436,7 @@ class HttpServiceManager
                             $message .= " and CID of {$data['cid']}";
                         }
                         $message .= '.';
-                        $gameserver->logPlayerLogin($ckey, $time, $data['ip'] ?? '', $data['cid'] ?? '');
+                        $gameserver->logPlayerLogin($ckey, $time, $data['ip'] ?? '', $data['cid'] ?? '')->then(null, fn (\Throwable $error) => $this->logger->error('Player login persistence failed', ['exception' => $error]));
 
                         if ($parole_notif_channel && isset($this->civ13->paroled[$ckey])) {
                             $message2 = '';
@@ -1505,7 +1484,7 @@ class HttpServiceManager
                         }
                         $time = '['.date('H:i:s', time()).']';
                         $message = "$ckey disconnected from the server.";
-                        $gameserver->logPlayerLogout($ckey, $time);
+                        $gameserver->logPlayerLogout($ckey, $time)->then(null, fn (\Throwable $error) => $this->logger->error('Player logout persistence failed', ['exception' => $error]));
 
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, false);
                         if ($parole_notif_channel && isset($this->civ13->paroled[$ckey])) {
