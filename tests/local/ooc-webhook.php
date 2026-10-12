@@ -28,10 +28,10 @@ $manager->discord->channel=(new ReflectionClass(\Discord\Parts\Channel\Channel::
 $server=(new ReflectionClass(OocServer::class))->newInstanceWithoutConstructor();
 $server->legacy_relay=false; $server->ooc='123456789012345678';
 $valid=['key'=>'synthetic-ooc-key','ckey'=>'Real_Player','message'=>'Impersonator/otherkey: harmless display'];
-$request=function($data) {
+$request=function($data,string $ip='127.0.0.1') {
     $query=['method'=>'oocmessage','data'=>urlencode(json_encode(array_diff_key($data,['key'=>true])))];
     if(array_key_exists('key',$data)){$query['key']=$data['key'];}
-    return (new ServerRequest('GET','http://localhost/webhook/test',[], '', '1.1',['REMOTE_ADDR'=>'127.0.0.1']))->withQueryParams($query);
+    return (new ServerRequest('GET','http://localhost/webhook/test',[], '', '1.1',['REMOTE_ADDR'=>$ip]))->withQueryParams($query);
 };
 $check=function($data,int $expected)use($manager,$server,$request){
     $count=count($server->calls); $status=$manager->handleOocWebhook($request($data),$server)->getStatusCode();
@@ -47,6 +47,16 @@ if(!$handler->__isWhitelisted($request($valid),'8.8.8.8')
 }
 $nested=$request($valid)->withQueryParams(['method'=>'oocmessage','data'=>urlencode(json_encode($valid))]);
 if($manager->handleOocWebhook($nested,$server)->getStatusCode()!==403){throw new RuntimeException('Nested-only key accepted');}
+$handler->logger=new \Monolog\Logger('offline-ooc',[new \Monolog\Handler\NullHandler()]);
+$manager->httpHandler=$handler; $manager->logger=$handler->logger;
+(new ReflectionProperty($server,'key'))->setValue($server,'test'); $civ->enabled_gameservers=['test'=>$server];
+(new ReflectionProperty($handler,'attributes'))->setValue($handler,['handlers'=>[],'whitelisted'=>[],'match_methods'=>[],'descriptions'=>[],'whitelist'=>[],'ratelimits'=>[]]);
+(new ReflectionMethod($handler,'afterConstruct'))->invoke($handler);
+(new ReflectionMethod($manager,'__generateServerEndpoints'))->invoke($manager);
+foreach([[$valid,'8.8.8.8',202],[array_replace($valid,['key'=>'wrong']),'8.8.8.8',403],[array_replace($valid,['key'=>'wrong']),'127.0.0.1',403]] as [$payload,$ip,$status]) {
+    $full=$request($payload,$ip);
+    if($handler->handle($full)->getStatusCode()!==$status){throw new RuntimeException('Actual registered native dispatcher contract failed');}
+}
 if($server->calls[0]!==[$valid['message'],$server->ooc,'realplayer',true,true]){throw new RuntimeException('Display text altered trusted actor/moderation');}
 foreach(['wrong',null,[],123] as $key){$check(array_replace($valid,['key'=>$key]),403);}
 $without=$valid; unset($without['key']); $check($without,403);
