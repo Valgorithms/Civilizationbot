@@ -598,9 +598,10 @@ class Slash
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("No gamserver found for `{$interaction->data->options['server']->value}`"));
             }
             $gameserver = &$this->civ13->enabled_gameservers[$interaction->data->options['server']->value];
-            $gameserver->Restart();
-
-            return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("Attempted to kill, update, and bring up `{$gameserver->name}` <byond://{$gameserver->ip}:{$gameserver->port}>"));
+            return $interaction->acknowledge()->then(fn () => $gameserver->Restart())->then(
+                fn ($receipt) => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent("Restart request completed for `{$gameserver->name}`. Engine: {$gameserver->engine}. Process control does not establish gameplay readiness.")),
+                fn (\Throwable $error) => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Restart failed: '.$error->getMessage()))
+            );
         });
         
         $this->discord->listenCommand(

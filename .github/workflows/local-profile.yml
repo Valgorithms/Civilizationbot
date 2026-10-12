@@ -42,3 +42,4 @@ jobs:
       - run: php tests/local/library.php
       - run: php tests/local/opendream.php
       - run: php tests/local/controls.php
+      - run: php tests/local/server-compatibility.php vendor/autoload.php
