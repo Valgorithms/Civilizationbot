@@ -1,6 +1,6 @@
 {
   "schema": "civilizationbot.api-docs.v1",
-  "source_commit": "d85ba927663bc4499401ccbe0011d7a17479a7dd",
+  "source_commit": "685d1bf3f4f5d5fb984b90a882631cd7ce1b96a9",
   "phpdocumentor": "3.10.0",
   "version": "5.0.0",
   "publication_path": "v5/",
