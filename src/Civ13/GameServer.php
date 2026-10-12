@@ -1655,20 +1655,21 @@ class GameServer
      * Updates the whitelist based on the member roles.
      *
      * @param  array|null $required_roles The required roles for whitelisting. Default is ['Verified'].
-     * @return bool       Returns true if the whitelist update is successful, false otherwise.
+     * @return PromiseInterface Resolves after every requested replacement completes; rejects on failure.
      */
-    public function whitelistUpdate(?array $required_roles = ['Verified']): bool
+    public function whitelistUpdate(?array $required_roles = ['Verified']): PromiseInterface
     {
+        $required_roles ??= ['Verified'];
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) {
-            return false;
+            return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
         }
         if (! $this->enabled) {
-            return false;
+            return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
         }
         if (! @touch($this->whitelist)) {
             $this->logger->warning("Unable to open `{$this->whitelist}`");
 
-            return false;
+            return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
         }
         $file_paths = [];
         $file_paths[] = $this->whitelist;
@@ -1683,31 +1684,29 @@ class GameServer
 
             return $string;
         };
-        $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
-
-        return true;
+        return $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
     }
     /**
      * Updates the faction list based on the required roles.
      *
      * @param  array|null $required_roles The required roles for updating the faction list.
-     * @return bool       Returns true if the faction list is successfully updated, false otherwise.
+     * @return PromiseInterface Resolves after every requested replacement completes; rejects on failure.
      */
-    public function factionlistUpdate(?array $required_roles = null): bool
+    public function factionlistUpdate(?array $required_roles = null): PromiseInterface
     {
         if (! $this->enabled) {
-            return false;
+            return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
         }
         if (! $required_roles) {
             $required_roles = array_merge(Civ13::faction_teams, Civ13::faction_admins);
         }
         if (! $this->civ13->hasRequiredConfigRoles($required_roles)) {
-            return false;
+            return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
         }
         if (! @touch($this->factionlist)) {
             $this->logger->warning("Unable to open `{$this->factionlist}`");
 
-            return false;
+            return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
         }
         $file_paths = [];
         $file_paths[] = $this->factionlist;
@@ -1719,9 +1718,7 @@ class GameServer
                     : $carry;
             }, '');
         };
-        $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
-
-        return true;
+        return $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
     }
     /**
      * Updates admin lists with required roles and permissions.
@@ -1910,7 +1907,7 @@ class GameServer
     {
         return $this->civ13->createEmbed()
             ->setTitle($this->name)
-            ->addFieldValues('Server URL', "byond://{$this->ip}:{$this->port}", false)
+            ->addFieldValues($this->engine === 'opendream' ? 'OpenDream gameplay endpoint' : 'Server URL', $this->engine === 'opendream' ? "{$this->ip}:{$this->port}" : "byond://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
             ->addFieldValues('Players ('.count($this->players).')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
     }

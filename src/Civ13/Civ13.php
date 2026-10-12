@@ -2226,31 +2226,31 @@ class Civ13
      * Updates the whitelist based on the member roles.
      *
      * @param  array|null $required_roles The required roles for whitelisting. Default is ['Verified'].
-     * @return bool       Returns true if the whitelist update is successful, false otherwise.
+     * @return PromiseInterface Resolves after every requested replacement completes; rejects on failure.
      */
-    public function whitelistUpdate(?array $required_roles = ['Verified']): bool
+    public function whitelistUpdate(?array $required_roles = ['Verified']): PromiseInterface
     {
-        return array_reduce($this->enabled_gameservers, fn ($carry, $gameserver) => $gameserver->whitelistUpdate($required_roles) || $carry, false);
+        return \React\Promise\all(array_map(fn ($gameserver) => $gameserver->whitelistUpdate($required_roles), $this->enabled_gameservers));
     }
     /**
      * Updates the faction list based on the required roles.
      *
      * @param  array|null $required_roles The required roles for updating the faction list.
-     * @return bool       Returns true if the faction list is successfully updated, false otherwise.
+     * @return PromiseInterface Resolves after every requested replacement completes; rejects on failure.
      */
-    public function factionlistUpdate(?array $required_roles = null): bool
+    public function factionlistUpdate(?array $required_roles = null): PromiseInterface
     {
-        return array_reduce($this->enabled_gameservers, fn ($carry, $gameserver) => $gameserver->factionlistUpdate() || $carry, false);
+        return \React\Promise\all(array_map(fn ($gameserver) => $gameserver->factionlistUpdate($required_roles), $this->enabled_gameservers));
     }
     /**
      * Updates admin lists with required roles and permissions.
      *
      * @param  array $required_roles An array of required roles and their corresponding permissions. (Defined in GameServer.php)
-     * @return bool  Returns true if the update was successful, false otherwise.
+     * @return PromiseInterface Resolves after every requested replacement completes; rejects on failure.
      */
-    public function adminlistUpdate(?array $required_roles = null): bool
+    public function adminlistUpdate(?array $required_roles = null): PromiseInterface
     {
-        return array_reduce($this->enabled_gameservers, fn ($carry, $gameserver) => $gameserver->adminlistUpdate($required_roles) || $carry, false);
+        return \React\Promise\all(array_map(fn ($gameserver) => $gameserver->adminlistUpdate($required_roles), $this->enabled_gameservers));
     }
 
     // Magic Methods
