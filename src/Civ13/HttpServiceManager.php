@@ -176,6 +176,71 @@ class HttpServiceManager
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
+    /** Staff messages preserve display text without inferring account authority. */
+    public function handleStaffWebhook(ServerRequestInterface $request, GameServer $gameserver, string $kind = 'asay'): HttpResponse
+    {
+        if (!in_array($kind, ['asay', 'ahelp', 'urgent'], true)) { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        $secret = $this->civ13->options['http_key'] ?? '';
+        $supplied = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($secret) || $secret === '' || !is_string($supplied) || !hash_equals($secret, $supplied)) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        if ($gameserver->legacy_relay) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        if (! isset($gameserver->asay)) {
+            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+        }
+        if (! $channel = $this->discord->getChannel($channel_id = $gameserver->asay)) {
+            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        $data = self::decodeParamData($request);
+        $time = '['.date('H:i:s', time()).']';
+        // Native asay's ckey currently contains key_name display text, not proven account identity.
+        if (!is_string($data['message'] ?? null) || $data['message'] === '' || strlen($data['message']) > 16384 || str_contains($data['message'], "\0")) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
+        //$message = "**__{$time} ASAY__ $ckey:** $message";
+        $message = ($kind === 'ahelp' ? "**__{$time} AHELP__:** " : "**__{$time}__** ").$message;
+        if ($kind === 'urgent' && isset($this->civ13->role_ids['Admin'])) { $message = "<@&{$this->civ13->role_ids['Admin']}>, ".$message; }
+
+        $gameserver->gameChatWebhookRelay($message, $channel_id, null, true, false)
+            ->then(null, fn (\Throwable $error) => $this->logger->error('Staff display relay failed: '.$error->getMessage()));
+
+        if ($kind === 'urgent') { return new HttpResponse(HttpResponse::STATUS_ACCEPTED); }
+
+        // Notify staff based on verified online Discord members only.
+        if (isset($this->civ13->role_ids['Admin']) && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            $urgent = true;
+            $admin = false;
+            if (isset($this->civ13->verifier)) {
+                if (! $admin) {
+                    if ($playerlist = $gameserver->players) {
+                        if ($admins = $guild->members->filter(function (Member $member) {
+                            return $member->roles->has($this->civ13->role_ids['Admin']);
+                        })) {
+                            foreach ($admins as $member) {
+                                if ($item = $this->civ13->verifier->get('discord', $member->id)) {
+                                    if (in_array($item['ss13'], $playerlist)) {
+                                        $urgent = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if ($urgent && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
+                $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
+            }
+        }
+
+        return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
     /** Authenticated bounded display logs; account sanctions never derive from log text. */
     public function handleLogWebhook(ServerRequestInterface $request, GameServer $gameserver, string $kind): HttpResponse
     {
@@ -1212,148 +1277,17 @@ class HttpServiceManager
                 )
                 ->offsetSet(
                     $server_endpoint.'/ahelpmessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->asay)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->asay)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        
-                        $time = '['.date('H:i:s', time()).']';
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        $message = "**__{$time} AHELP__ $ckey:** ".$message;
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true);
-                        
-                        // Check if there are any Discord admins on the server, notify staff in Discord if there are not
-                        if (isset($this->civ13->verifier) && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
-                            $urgent = true;
-                            $admin = false;
-                            if ($item = $this->civ13->verifier->get('ss13', $ckey)) {
-                                if ($member = $guild->members->get('id', $item['discord'])) {
-                                    if ($member->roles->has($this->civ13->role_ids['Admin'])) {
-                                        $admin = true;
-                                        $urgent = false;
-                                    }
-                                }
-                            }
-                            if (! $admin) {
-                                if ($playerlist = $gameserver->players) {
-                                    if ($admins = $guild->members->filter(function (Member $member) {
-                                        return $member->roles->has($this->civ13->role_ids['Admin']);
-                                    })) {
-                                        $urgent = empty($admins->filter(fn ($member) => $item = $this->civ13->verifier->get('discord', $member->id) && in_array($item['ss13'], $playerlist)));
-                                    }
-                                }
-                            }
-                            if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                                $this->civ13->sendMessage(
-                                    $channel,
-                                    "<@&{$this->civ13->role_ids['Admin']}>, a request for help "
-                                    .($ckey ? "from `$ckey` " : '')
-                                    .(($member = ($item = $this->civ13->verifier->get('ss13', $ckey)) ? $guild->members->get('id', $item['discord']) : null) ? "$member " : '')
-                                    ." has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: $message"
-                                );
-                            }
-                        }
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleStaffWebhook($request, $gameserver, 'ahelp'),
                     true
                 )
                 ->offsetSet(
                     $server_endpoint.'/asaymessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        $secret = $this->civ13->options['http_key'] ?? '';
-                        $supplied = $request->getQueryParams()['key'] ?? null;
-                        if (!is_string($secret) || $secret === '' || !is_string($supplied) || !hash_equals($secret, $supplied)) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->asay)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $channel = $this->discord->getChannel($channel_id = $gameserver->asay)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        
-                        $data = self::decodeParamData($request);
-                        $time = '['.date('H:i:s', time()).']';
-                        // Native asay's ckey currently contains key_name display text, not proven account identity.
-                        if (!is_string($data['message'] ?? null) || $data['message'] === '' || strlen($data['message']) > 16384 || str_contains($data['message'], "\0")) {
-                            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
-                        }
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        //$message = "**__{$time} ASAY__ $ckey:** $message";
-                        $message = "**__{$time}__** $message";
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id, null, true, false); // Display only: no account moderation or verifier attribution.
-
-                        // Check if there are any Discord admins on the server, notify staff in Discord if there are not
-                        if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
-                            $urgent = true;
-                            $admin = false;
-                            if (isset($this->civ13->verifier)) {
-                                if (! $admin) {
-                                    if ($playerlist = $gameserver->players) {
-                                        if ($admins = $guild->members->filter(function (Member $member) {
-                                            return $member->roles->has($this->civ13->role_ids['Admin']);
-                                        })) {
-                                            foreach ($admins as $member) {
-                                                if ($item = $this->civ13->verifier->get('discord', $member->id)) {
-                                                    if (in_array($item['ss13'], $playerlist)) {
-                                                        $urgent = false;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if ($urgent && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                                $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
-                            }
-                        }
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleStaffWebhook($request, $gameserver, 'asay'),
                     true
                 )
                 ->offsetSet(
                     $server_endpoint.'/urgentasaymessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->asay)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->asay)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        $time = '['.date('H:i:s', time()).']';
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        $message = "<@{$this->civ13->role_ids['Admin']}>, ";
-                        isset($data['message']) ? $message .= strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message .= '(NULL)';
-                        //$message = "**__{$time} ASAY__ $ckey:** $message";
-                        $message = "**__{$time}__** $message";
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, false);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleStaffWebhook($request, $gameserver, 'urgent'),
                     true
                 )
 

@@ -130,7 +130,7 @@ $disabled=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'
 if($handler->handle($disabled)->getStatusCode()!==403){throw new RuntimeException('Disabled attack log sent');}$server->log_attacks=true;
 $server->asay='123456789012345679';
 $asay=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['ckey'=>'Admin (display)','message'=>'BotName literal %41 + é'])]);
-if($handler->handle($asay)->getStatusCode()!==200 || end($server->calls)[2]!==null || end($server->calls)[4]!==false){throw new RuntimeException('Asay display identity reached account moderation');}
+if($handler->handle($asay)->getStatusCode()!==202 || end($server->calls)[2]!==null || end($server->calls)[4]!==false){throw new RuntimeException('Asay display identity reached account moderation');}
 if(!str_contains(end($server->calls)[0],'BotName literal %41 + é')){throw new RuntimeException('Asay display content lost');}
 if($handler->handle($asay->withQueryParams(['key'=>'wrong','method'=>'asaymessage','data'=>json_encode(['message'=>'forged'])]))->getStatusCode()!==403){throw new RuntimeException('Trusted IP forged asay accepted');}
 $civ->channel_ids=['staff_bot'=>'staff-channel']; $civ->role_ids=['Admin'=>'admin-role'];
@@ -143,6 +143,24 @@ $civ->verifier=(new ReflectionClass(OocVerifier::class))->newInstanceWithoutCons
 $members->list=[(new ReflectionClass(OocMember::class))->newInstanceWithoutConstructor()]; $server->players=['onlineadmin'];
 $handler->handle($asay);
 if(count($civ->staffMessages)!==1 || $civ->verifier->lookups!==[['discord','staff-member']]){throw new RuntimeException('Online staff suppression or actor isolation lost');}
+foreach(['ahelpmessage','urgentasaymessage'] as $method){
+    $staff=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>$method,'data'=>json_encode(['ckey'=>['untrusted'=>'identity'],'message'=>'display %41 + é'])]);
+    $lookups=count($civ->verifier->lookups);
+    if($handler->handle($staff)->getStatusCode()!==202){throw new RuntimeException('Staff alias not queued');}
+    $call=end($server->calls);
+    if($call[2]!==null||$call[4]!==false||!str_contains($call[0],'display %41 + é')){throw new RuntimeException('Staff alias inferred identity or lost text');}
+    foreach(array_slice($civ->verifier->lookups,$lookups) as $lookup){if($lookup[0]!=='discord'){throw new RuntimeException('Staff display reached account attribution');}}
+    if($method==='urgentasaymessage'&&!str_contains($call[0],'<@&admin-role>')){throw new RuntimeException('Urgent staff role notification lost');}
+    if($handler->handle($staff->withQueryParams(['key'=>'wrong','method'=>$method,'data'=>'{}']))->getStatusCode()!==403){throw new RuntimeException('Forged staff alias accepted');}
+    if($handler->handle($staff->withQueryParams(['key'=>'synthetic-ooc-key','method'=>$method,'data'=>json_encode(['message'=>[]])]))->getStatusCode()!==400){throw new RuntimeException('Malformed staff body accepted');}
+}
+$members->list=[];$notifications=count($civ->staffMessages);
+$help=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'ahelpmessage','data'=>json_encode(['message'=>'help needed'])]);
+$handler->handle($help);
+if(count($civ->staffMessages)!==$notifications+1){throw new RuntimeException('Absent-staff ahelp notification lost');}
+$civ->role_ids=[];
+if($handler->handle($help)->getStatusCode()!==202){throw new RuntimeException('Missing optional staff role blocked display');}
+$civ->role_ids=['Admin'=>'admin-role'];
 $manager->discord->guildFixture=null;
 foreach([[$valid,'8.8.8.8',202],[array_replace($valid,['key'=>'wrong']),'8.8.8.8',403],[array_replace($valid,['key'=>'wrong']),'127.0.0.1',403]] as [$payload,$ip,$status]) {
     $full=$request($payload,$ip);
