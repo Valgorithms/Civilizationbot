@@ -12,6 +12,7 @@ use function React\Promise\resolve;
 final class OocDiscord extends \Discord\Discord {
     public ?\Discord\Parts\Channel\Channel $channel;
     public function getChannel($channel_id): ?\Discord\Parts\Channel\Channel { return $this->channel; }
+    public function __get(string $name) { return $name==='guilds' ? new \Discord\Helpers\Collection() : parent::__get($name); }
 }
 final class OocServer extends \Civ13\GameServer {
     public array $calls=[];
@@ -53,6 +54,11 @@ $manager->httpHandler=$handler; $manager->logger=$handler->logger;
 (new ReflectionProperty($handler,'attributes'))->setValue($handler,['handlers'=>[],'whitelisted'=>[],'match_methods'=>[],'descriptions'=>[],'whitelist'=>[],'ratelimits'=>[]]);
 (new ReflectionMethod($handler,'afterConstruct'))->invoke($handler);
 (new ReflectionMethod($manager,'__generateServerEndpoints'))->invoke($manager);
+$server->asay='123456789012345679';
+$asay=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['ckey'=>'Admin (display)','message'=>'BotName literal %41 + é'])]);
+if($handler->handle($asay)->getStatusCode()!==200 || end($server->calls)[2]!==null || end($server->calls)[4]!==false){throw new RuntimeException('Asay display identity reached account moderation');}
+if(!str_contains(end($server->calls)[0],'BotName literal %41 + é')){throw new RuntimeException('Asay display content lost');}
+if($handler->handle($asay->withQueryParams(['key'=>'wrong','method'=>'asaymessage','data'=>json_encode(['message'=>'forged'])]))->getStatusCode()!==403){throw new RuntimeException('Trusted IP forged asay accepted');}
 foreach([[$valid,'8.8.8.8',202],[array_replace($valid,['key'=>'wrong']),'8.8.8.8',403],[array_replace($valid,['key'=>'wrong']),'127.0.0.1',403]] as [$payload,$ip,$status]) {
     $full=$request($payload,$ip);
     if($handler->handle($full)->getStatusCode()!==$status){throw new RuntimeException('Actual registered native dispatcher contract failed');}
