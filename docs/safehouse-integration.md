@@ -175,3 +175,7 @@ only the two named request/reply sets to temporary storage. This proves supplied
 native artifacts work with PHP polling; it does not prove economic command
 round trips, host writer exclusion or power-loss durability. The manifest has no
 source-head field, so the generating checkout head must be verified separately.
+
+Native stash.inspect and room.inspect require exactly {page: integer 0..7}. The
+Discord controller rejects omitted, extra, noninteger or out-of-range fields
+before transport. The synthetic economics driver emits page 0 for inspection.

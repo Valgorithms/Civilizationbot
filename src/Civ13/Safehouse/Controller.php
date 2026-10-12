@@ -38,6 +38,9 @@ final class Controller
                 throw new \InvalidArgumentException('Game authority cannot be supplied: '.$authority);
             }
         }
+        if (in_array($action, ['stash.inspect', 'room.inspect'], true) && (array_keys($payload) !== ['page'] || !is_int($payload['page']) || $payload['page'] < 0 || $payload['page'] > 7)) {
+            throw new \InvalidArgumentException('Inspection requires exactly integer page in 0..7');
+        }
         if (in_array($action, ['trade.confirm', 'market.list', 'market.buy', 'market.cancel', 'room.manage'], true) && (!is_string($payload['confirmation_token'] ?? null) || $payload['confirmation_token'] === '' || $revision === null)) {
             throw new \InvalidArgumentException('Game confirmation token and revision required');
         }

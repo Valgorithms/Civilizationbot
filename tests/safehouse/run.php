@@ -44,7 +44,10 @@ try {
     rejects(fn () => $client->request('i2', '123', 'stash.inspect', [], null));
     $transport->mismatch = false;
     $controller = new Controller($client);
-    check($controller->handle('empty', '123', 'stash.inspect', '{}', null)['outcome']['status'] === 'committed', 'Empty object rejected');
+    foreach (['stash.inspect', 'room.inspect'] as $inspection) {
+        foreach (['{}', '{"page":8}', '{"page":-1}', '{"page":"0"}', '{"page":0,"extra":1}'] as $invalidPage) { rejects(fn () => Controller::prepare('invalid-page', '123', $inspection, $invalidPage, null)); }
+        check(Controller::prepare('valid-page', '123', $inspection, '{"page":0}', null)['payload'] === ['page' => 0], 'Inspection page changed');
+    }
     rejects(fn () => $controller->handle('i3', '123', 'trade.confirm', '{"confirmation_token":"token"}', null));
     rejects(fn () => $controller->handle('i3', '123', 'trade.quote', '{"price":1}', 4));
     check($controller->handle('i3', '123', 'stash.inspect', '{"page":1}', null)['ephemeral'], 'Private response not ephemeral');

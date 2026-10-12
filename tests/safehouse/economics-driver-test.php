@@ -21,7 +21,10 @@ function reply(string $id, array $data): void {
     file_put_contents($directory.'/'.$id.'.reply', json_encode(AsyncSpool::seal(json_encode($body), 'reply', 1000, 1120, $key)));
 }
 try {
-    $inspect = invoke(['inspect', 'inspect-seller', '123']); reply($inspect, ['revision' => 7]);
+    $inspect = invoke(['inspect', 'inspect-seller', '123']);
+    $inspectBody = json_decode(base64_decode(json_decode(file_get_contents($directory.'/'.$inspect.'.request'), true)['body']), true);
+    if ($inspectBody['payload'] !== ['page' => 0]) { throw new RuntimeException('Native inspection page missing'); }
+    reply($inspect, ['revision' => 7]);
     foreach (['server_buyback' => 'trade.confirm', 'player_listing' => 'market.list', 'player_purchase' => 'market.buy', 'listing_cancel' => 'market.cancel'] as $kind => $action) {
         $selection = in_array($kind, ['server_buyback', 'player_listing'], true) ? '["native-root"]' : '"native-listing"';
         $quote = invoke(['quote', 'quote-'.$kind, $inspect, $kind, $selection]);

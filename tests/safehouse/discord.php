@@ -20,7 +20,7 @@ class MockInteraction extends Interaction
     public $data;
     public array $messages = [];
     public bool $failAck = false;
-    public static function fixture(string $action = 'stash.inspect', string $payload = '{}', ?int $revision = null, bool $confirm = false): self {
+    public static function fixture(string $action = 'stash.inspect', string $payload = '{"page":0}', ?int $revision = null, bool $confirm = false): self {
         $fixture = (new ReflectionClass(self::class))->newInstanceWithoutConstructor();
         $fixture->member = (object) ['id' => '123'];
         $fixture->data = (object) ['options' => ['action' => (object) ['value' => $action], 'payload' => (object) ['value' => $payload], 'confirm' => (object) ['value' => $confirm]]];
@@ -53,6 +53,9 @@ $disabled = MockInteraction::fixture();
 (new DiscordRoute($gateway, '456'))->handle($disabled);
 check(count($gateway->requests) === 0 && $disabled->messages[0][1], 'Disabled route sent request or leaked response');
 $route = new DiscordRoute($gateway, '456', true);
+$missingPage = MockInteraction::fixture('stash.inspect', '{}');
+$route->handle($missingPage);
+check(count($gateway->requests) === 0 && $missingPage->messages[0][0] === 'initial', 'Missing inspection page reached transport');
 $wrongGuild = MockInteraction::fixture(); $wrongGuild->guild_id = '999';
 $route->handle($wrongGuild);
 check(count($gateway->requests) === 0, 'Wrong guild reached game');
@@ -69,6 +72,7 @@ $inspect = MockInteraction::fixture();
 $route->handle($inspect);
 check($inspect->messages === [['defer', true]], 'Inspection did not defer ephemerally');
 check($gateway->requests[0]['discord_id'] === '123', 'Actor not bound to Discord member');
+check($gateway->requests[0]['payload'] === ['page' => 0], 'Discord inspection incompatible with native page schema');
 $gateway->deferreds[0]->resolve(['status' => 'pending', 'request_id' => '123456']);
 check(str_contains($inspect->messages[1][2]['content'], 'pending') && $inspect->messages[1][2]['allowed_mentions'] === ['parse' => []], 'Pending claimed success or allowed mentions');
 $confirmed = MockInteraction::fixture('trade.confirm', '{"confirmation_token":"game-token"}', 4, true); $confirmed->id = '123457';

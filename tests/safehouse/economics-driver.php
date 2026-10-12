@@ -22,7 +22,7 @@ switch ($command) {
     case 'recover':
         echo $spool->recover($argv[5] ?? '', $requestId)."\n"; exit;
     case 'inspect':
-        $request = Client::envelope($requestId, $argv[5] ?? '', 'stash.inspect', [], null); break;
+        $request = Client::envelope($requestId, $argv[5] ?? '', 'stash.inspect', ['page' => 0], null); break;
     case 'quote':
         $source = $boundReply($argv[5] ?? '');
         required(($source['action'] ?? null) === 'stash.inspect', 'Quote revision must come from inspection');
