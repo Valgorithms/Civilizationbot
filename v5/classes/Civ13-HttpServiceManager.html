@@ -307,6 +307,13 @@
 <dd>Handles an incoming HTTP request and returns an HTTP response.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/Civ13-HttpServiceManager.html#method_handleLogWebhook">handleLogWebhook()</a>
+    <span>
+                                &nbsp;: <abbr title="\React\Http\Message\Response">Response</abbr>    </span>
+</dt>
+<dd>Authenticated bounded display logs; account sanctions never derive from log text.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/Civ13-HttpServiceManager.html#method_handleOocWebhook">handleOocWebhook()</a>
     <span>
                                 &nbsp;: <abbr title="\React\Http\Message\Response">Response</abbr>    </span>
@@ -892,7 +899,7 @@
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1737</span>
+    <span class="phpdocumentor-element-found-in__line">1694</span>
 
     </aside>
 
@@ -1165,6 +1172,69 @@ a warning is logged with the URI path of the request.</p>
             -public
                                                         "
 >
+    <h4 class="phpdocumentor-element__name" id="method_handleLogWebhook">
+        handleLogWebhook()
+        <a href="classes/Civ13-HttpServiceManager.html#method_handleLogWebhook" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">180</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Authenticated bounded display logs; account sanctions never derive from log text.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">handleLogWebhook</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type"><abbr title="\Psr\Http\Message\ServerRequestInterface">ServerRequestInterface</abbr>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$request</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__type"><a href="classes/Civ13-GameServer.html"><abbr title="\Civ13\GameServer">GameServer</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$gameserver</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$kind</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\React\Http\Message\Response">Response</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$request</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><abbr title="\Psr\Http\Message\ServerRequestInterface">ServerRequestInterface</abbr></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$gameserver</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><a href="classes/Civ13-GameServer.html"><abbr title="\Civ13\GameServer">GameServer</abbr></a></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$kind</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\React\Http\Message\Response">Response</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
     <h4 class="phpdocumentor-element__name" id="method_handleOocWebhook">
         handleOocWebhook()
         <a href="classes/Civ13-HttpServiceManager.html#method_handleOocWebhook" class="headerlink"><i class="fas fa-link"></i></a>
@@ -1327,7 +1397,7 @@ a warning is logged with the URI path of the request.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">263</span>
+    <span class="phpdocumentor-element-found-in__line">289</span>
 
     </aside>
 
@@ -1362,7 +1432,7 @@ a warning is logged with the URI path of the request.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1069</span>
+    <span class="phpdocumentor-element-found-in__line">1095</span>
 
     </aside>
 
@@ -1397,7 +1467,7 @@ a warning is logged with the URI path of the request.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1663</span>
+    <span class="phpdocumentor-element-found-in__line">1620</span>
 
     </aside>
 
@@ -1432,7 +1502,7 @@ a warning is logged with the URI path of the request.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">243</span>
+    <span class="phpdocumentor-element-found-in__line">269</span>
 
     </aside>
 
@@ -1473,7 +1543,7 @@ added to the whitelist using the HTTP handler.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">211</span>
+    <span class="phpdocumentor-element-found-in__line">237</span>
 
     </aside>
 
@@ -1521,7 +1591,7 @@ using the event loop, and both the timer and session data are cleaned up.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">189</span>
+    <span class="phpdocumentor-element-found-in__line">215</span>
 
     </aside>
 
@@ -1571,7 +1641,7 @@ activity occurs.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="src/Civ13/HttpServiceManager.php"><a href="files/src-civ13-httpservicemanager.html"><abbr title="src/Civ13/HttpServiceManager.php">HttpServiceManager.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">228</span>
+    <span class="phpdocumentor-element-found-in__line">254</span>
 
     </aside>
 
@@ -1656,6 +1726,7 @@ activity occurs.</p>
                                             <li class=""><a href="classes/Civ13-HttpServiceManager.html#method___destruct">__destruct()</a></li>
                                             <li class=""><a href="classes/Civ13-HttpServiceManager.html#method_decodeParamData">decodeParamData()</a></li>
                                             <li class=""><a href="classes/Civ13-HttpServiceManager.html#method_handle">handle()</a></li>
+                                            <li class=""><a href="classes/Civ13-HttpServiceManager.html#method_handleLogWebhook">handleLogWebhook()</a></li>
                                             <li class=""><a href="classes/Civ13-HttpServiceManager.html#method_handleOocWebhook">handleOocWebhook()</a></li>
                                             <li class=""><a href="classes/Civ13-HttpServiceManager.html#method_handleStructuredChatWebhook">handleStructuredChatWebhook()</a></li>
                                             <li class=""><a href="classes/Civ13-HttpServiceManager.html#method___afterConstruct">__afterConstruct()</a></li>
