@@ -2256,6 +2256,11 @@ Search.appendIndex(
             "summary": "Bounded\u0020native\u0020actor\/message\u0020records\u0020for\u0020OOC,\u0020IC\u0020and\u0020emote\u0020chat.",
             "url": "classes/Civ13-HttpServiceManager.html#method_handleStructuredChatWebhook"
         },                {
+            "fqsen": "\\Civ13\\HttpServiceManager\u003A\u003AhandleStaffWebhook\u0028\u0029",
+            "name": "handleStaffWebhook",
+            "summary": "Staff\u0020messages\u0020preserve\u0020display\u0020text\u0020without\u0020inferring\u0020account\u0020authority.",
+            "url": "classes/Civ13-HttpServiceManager.html#method_handleStaffWebhook"
+        },                {
             "fqsen": "\\Civ13\\HttpServiceManager\u003A\u003AhandleLogWebhook\u0028\u0029",
             "name": "handleLogWebhook",
             "summary": "Authenticated\u0020bounded\u0020display\u0020logs\u003B\u0020account\u0020sanctions\u0020never\u0020derive\u0020from\u0020log\u0020text.",
