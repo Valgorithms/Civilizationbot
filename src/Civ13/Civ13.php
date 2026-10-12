@@ -248,6 +248,7 @@ class Civ13
     public Message $restart_message;
 
     private string $constructed_file;
+    private RestartPolicy $restartPolicy;
 
     private PromiseMiddleware $then;
 
@@ -275,6 +276,7 @@ class Civ13
 
         // Set the file that the object was constructed in
         $this->constructed_file = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'];
+        $this->restartPolicy = new RestartPolicy($options['restart_mode'] ?? 'legacy');
 
         $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
         $options = $this->resolveOptions($options);
@@ -922,9 +924,7 @@ class Civ13
      */
     public function restart(?string $file = null): PromiseInterface
     {
-        $this->stop();
-
-        return OSFunctions::restart($file ?? $this->constructed_file);
+        return $this->restartPolicy->restart($file, fn () => $this->stop(), fn (?string $entry) => OSFunctions::restart($entry ?? $this->constructed_file));
     }
 
     /** A formatted CPU-usage string for the host OS. */

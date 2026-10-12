@@ -1,0 +1,19 @@
+{
+    "enabled": false,
+    "guild_id": "468979034571931648",
+    "application_id": "REPLACE_WITH_LOCAL_APPLICATION_ID",
+    "official_application_id": "REPLACE_WITH_OFFICIAL_APPLICATION_ID",
+    "allowed_channel_ids": ["REPLACE_WITH_PRIVATE_LOCAL_CHANNEL_ID"],
+    "pc_root": "/home/LOCALUSER/civ13-local",
+    "state_directory": "/home/LOCALUSER/civ13-local/state",
+    "token_file": "/home/LOCALUSER/civ13-local/private/local-token",
+    "read_key_file": "/home/LOCALUSER/civ13-local/private/local-read-key",
+    "public_key_file": "/home/LOCALUSER/civ13-local/private/official-ed25519-public.base64",
+    "authority": "civ13-official",
+    "bind": "127.0.0.1",
+    "port": 18130,
+    "servers": {
+        "nomads": {"directory": "/home/LOCALUSER/civ13-local/nomads", "host": "127.0.0.1", "port": 18131},
+        "tdm": {"directory": "/home/LOCALUSER/civ13-local/tdm", "host": "127.0.0.1", "port": 18132}
+    }
+}
