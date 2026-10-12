@@ -143,7 +143,8 @@ class HttpServiceManager
     {
         $data = self::decodeParamData($request);
         $key = $this->civ13->options['http_key'] ?? '';
-        if (!is_string($key) || $key === '' || !is_string($data['key'] ?? null) || !hash_equals($key, $data['key'])) {
+        $requestKey = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($key) || $key === '' || !is_string($requestKey) || !hash_equals($key, $requestKey)) {
             return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
         }
         if (!is_string($data['ckey'] ?? null) || !preg_match('/^[A-Za-z0-9_ ]{1,64}$/D', $data['ckey'])
