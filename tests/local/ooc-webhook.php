@@ -6,13 +6,31 @@ require __DIR__.'/../../src/Civ13/GameServer.php';
 require __DIR__.'/../../src/Civ13/HttpServiceManager.php';
 require_once __DIR__.'/../../src/Civ13/CivHandler.php';
 require_once __DIR__.'/../../src/Civ13/HttpHandler.php';
+require_once __DIR__.'/../../src/Civ13/Verifier.php';
 use React\Promise\PromiseInterface;
 use React\Http\Message\ServerRequest;
 use function React\Promise\resolve;
 final class OocDiscord extends \Discord\Discord {
     public ?\Discord\Parts\Channel\Channel $channel;
     public function getChannel($channel_id): ?\Discord\Parts\Channel\Channel { return $this->channel; }
-    public function __get(string $name) { return $name==='guilds' ? new \Discord\Helpers\Collection() : parent::__get($name); }
+    public $guildFixture=null;
+    public function __get(string $name) {
+        if($name==='guilds'){return new class($this->guildFixture){public function __construct(private $guild){} public function get(...$args){return $this->guild;}};}
+        return parent::__get($name);
+    }
+}
+final class OocCiv extends \Civ13\Civ13 {
+    public array $staffMessages=[];
+    public function sendMessage(\Discord\Parts\Channel\Channel|\Discord\Parts\Thread\Thread|string $channel,\Discord\Builders\MessageBuilder|string $content,string $file_name='message.txt',bool $prevent_mentions=false): PromiseInterface {
+        $this->staffMessages[]=[$channel,$content]; return resolve(null);
+    }
+}
+final class OocMember extends \Discord\Parts\User\Member {
+    public function __get(string $key){return $key==='id'?'staff-member':new class{public function has($id){return $id==='admin-role';}};}
+}
+final class OocVerifier extends \Civ13\Verifier {
+    public array $lookups=[];
+    public function get(string $discrim,$key):mixed {$this->lookups[]=[$discrim,$key]; return ['ss13'=>'onlineadmin'];}
 }
 final class OocServer extends \Civ13\GameServer {
     public array $calls=[];
@@ -20,7 +38,7 @@ final class OocServer extends \Civ13\GameServer {
         $this->calls[]=[$message,$channel_id,$ckey,$ooc,$moderate]; return resolve(null);
     }
 }
-$civ=(new ReflectionClass(\Civ13\Civ13::class))->newInstanceWithoutConstructor();
+$civ=(new ReflectionClass(OocCiv::class))->newInstanceWithoutConstructor();
 $civ->options=['http_key'=>'synthetic-ooc-key'];
 $manager=(new ReflectionClass(\Civ13\HttpServiceManager::class))->newInstanceWithoutConstructor();
 $manager->civ13=$civ;
@@ -59,6 +77,17 @@ $asay=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'a
 if($handler->handle($asay)->getStatusCode()!==200 || end($server->calls)[2]!==null || end($server->calls)[4]!==false){throw new RuntimeException('Asay display identity reached account moderation');}
 if(!str_contains(end($server->calls)[0],'BotName literal %41 + é')){throw new RuntimeException('Asay display content lost');}
 if($handler->handle($asay->withQueryParams(['key'=>'wrong','method'=>'asaymessage','data'=>json_encode(['message'=>'forged'])]))->getStatusCode()!==403){throw new RuntimeException('Trusted IP forged asay accepted');}
+$civ->channel_ids=['staff_bot'=>'staff-channel']; $civ->role_ids=['Admin'=>'admin-role'];
+(new ReflectionProperty($server,'name'))->setValue($server,'Synthetic server');
+$members=new class {public array $list=[];public function filter($callback){return array_filter($this->list,$callback);}};
+$manager->discord->guildFixture=(object)['members'=>$members];
+$handler->handle($asay);
+if(count($civ->staffMessages)!==1 || !str_contains($civ->staffMessages[0][1],'<@&admin-role>')){throw new RuntimeException('Absent staff notification lost');}
+$civ->verifier=(new ReflectionClass(OocVerifier::class))->newInstanceWithoutConstructor();
+$members->list=[(new ReflectionClass(OocMember::class))->newInstanceWithoutConstructor()]; $server->players=['onlineadmin'];
+$handler->handle($asay);
+if(count($civ->staffMessages)!==1 || $civ->verifier->lookups!==[['discord','staff-member']]){throw new RuntimeException('Online staff suppression or actor isolation lost');}
+$manager->discord->guildFixture=null;
 foreach([[$valid,'8.8.8.8',202],[array_replace($valid,['key'=>'wrong']),'8.8.8.8',403],[array_replace($valid,['key'=>'wrong']),'127.0.0.1',403]] as [$payload,$ip,$status]) {
     $full=$request($payload,$ip);
     if($handler->handle($full)->getStatusCode()!==$status){throw new RuntimeException('Actual registered native dispatcher contract failed');}
