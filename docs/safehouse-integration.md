@@ -164,3 +164,14 @@ removing the marker, and on restart compare the original durable operation recei
 before clearing a crash marker. Expired replies recover through fresh status.
 Native power-loss flush ordering remains a separate acceptance requirement;
 presence barriers do not themselves prove durable storage ordering.
+
+The isolated native fixture at game commit
+`6ae539e5940a6a84c22163b1ca57cc662cbaf60f` was read by the bot adapter with
+`php tests/safehouse/native-compatibility.php <synthetic-fixture-directory>`.
+Both native inspection and link receipts passed marker/restart recovery, reply
+expiry, immutable original bytes/timewindow, wrong-MAC and signed wrong-actor
+negative controls. The runner validates synthetic manifest metadata and copies
+only the two named request/reply sets to temporary storage. This proves supplied
+native artifacts work with PHP polling; it does not prove economic command
+round trips, host writer exclusion or power-loss durability. The manifest has no
+source-head field, so the generating checkout head must be verified separately.
