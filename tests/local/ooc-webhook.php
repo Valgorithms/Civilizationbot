@@ -27,11 +27,11 @@ $manager->discord=(new ReflectionClass(OocDiscord::class))->newInstanceWithoutCo
 $manager->discord->channel=(new ReflectionClass(\Discord\Parts\Channel\Channel::class))->newInstanceWithoutConstructor();
 $server=(new ReflectionClass(OocServer::class))->newInstanceWithoutConstructor();
 $server->legacy_relay=false; $server->ooc='123456789012345678';
-$valid=['key'=>'synthetic-ooc-key','ckey'=>'Real_Player','message'=>'Impersonator/otherkey: harmless display'];
+$valid=['key'=>'synthetic-ooc-key','ckey'=>'Real_Player','message'=>'Impersonator/otherkey: harmless %41 + é display'];
 $request=function($data,string $ip='127.0.0.1') {
-    $query=['method'=>'oocmessage','data'=>urlencode(json_encode(array_diff_key($data,['key'=>true])))];
+    $query=['method'=>'oocmessage','data'=>json_encode(array_diff_key($data,['key'=>true]))];
     if(array_key_exists('key',$data)){$query['key']=$data['key'];}
-    return (new ServerRequest('GET','http://localhost/webhook/test',[], '', '1.1',['REMOTE_ADDR'=>$ip]))->withQueryParams($query);
+    return new ServerRequest('GET','http://localhost/webhook/test?'.http_build_query($query),[], '', '1.1',['REMOTE_ADDR'=>$ip]);
 };
 $check=function($data,int $expected)use($manager,$server,$request){
     $count=count($server->calls); $status=$manager->handleOocWebhook($request($data),$server)->getStatusCode();

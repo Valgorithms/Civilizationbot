@@ -134,7 +134,9 @@ class HttpServiceManager
     {
         $value = $request->getQueryParams()['data'] ?? null;
         if (!is_string($value) || strlen($value) > 65536) { return []; }
-        $decoded = json_decode(urldecode($value), true, 16);
+        // PSR query parsing normally decoded the URL once already. Preserve message %/plus bytes.
+        $decoded = json_decode($value, true, 16);
+        if (!is_array($decoded)) { $decoded = json_decode(urldecode($value), true, 16); }
         return is_array($decoded) ? $decoded : [];
     }
 
