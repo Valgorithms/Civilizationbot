@@ -1,11 +1,12 @@
 # Safehouse economics contract v1
 
-This pins the bot-side proposal for the native handler. It is not native handler
-acceptance and does not enable trades. It extends the immutable request and
+This pins the DTO agreed with the native owner through the coordinator. Native
+end-to-end bot compatibility remains unverified; this does not enable trades.
+It extends the immutable request and
 authenticated exact-byte envelope in `safehouse-integration.md`; neither envelope
 version changes. Existing game link/read/signing acceptance is reported by the
-game owner separately. Price-table IDs, wallet units/bounds and native escrow
-implementation remain game-owned dependencies, not values invented by the bot.
+game owner separately. Prices, wallet bounds and native escrow implementation
+remain game-owned dependencies, not values invented by the bot.
 
 ## Quote and confirmation actions
 
@@ -108,8 +109,8 @@ Agreed stable business `data.code` values: `invalid_payload`, `unlinked`,
 text and any safe current revision, never a replacement price or confirmation.
 Authentication/body/signature failures are transport failures, not accepted
 economic requests. `recovery_required` means pending with no success claim until
-the durable transaction resolves. The native owner must approve these names and
-DTOs before compatibility is claimed.
+the durable transaction resolves. Native integration tests must match these
+agreed names and DTOs before compatibility is claimed.
 
 The agreed native prototype price table is modern_safehouse_prices_v1. These are
 prototype game credits and approved allowlisted prices, never Discord currency.
