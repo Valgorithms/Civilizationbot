@@ -22,6 +22,7 @@
   "status_action": "trade.status",
   "status_payload_fields": ["operation_request_id", "operation_request_digest"],
   "status_result_fields": ["operation_status", "operation_receipt"],
+  "operation_status_values": ["pending", "committed", "rejected", "not_found"],
   "business_rejection_codes": ["invalid_payload", "unlinked", "busy", "in_raid", "stale_revision", "item_not_owned", "item_ineligible", "invalid_graph", "pricing_unavailable", "quote_expired", "token_invalid", "token_used", "action_mismatch", "listing_unavailable", "self_purchase", "insufficient_funds", "capacity_exceeded", "request_conflict"],
   "pending_code": "recovery_required",
   "game_dependencies": ["approved-price-table-identifiers", "wallet-unit-and-safe-integer-bounds", "native-atomic-escrow-and-shared-receipt", "quote-and-listing-revision-rules", "native-handler-DTO-acceptance"]

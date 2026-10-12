@@ -92,7 +92,8 @@ operation_request_digest}`. Verify the original receipt's actor ownership before
 disclosing it. The outer status refers to completion of the status query;
 `data.operation_status` and `data.operation_receipt` refer to the original
 economic operation. Never interpret a successful status query as a completed
-trade. Not-found is a query result, not authorization to repeat an economic
+trade. `operation_status` is pending, committed, rejected or not_found. Not-found
+is a query result, not authorization to repeat an economic
 operation. Expired IPC requests remain immutable and recover via this fresh
 status envelope; no uncertain operation file is overwritten or silently purged.
 

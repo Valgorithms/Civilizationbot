@@ -21,8 +21,8 @@ pending even when the game may already have committed. Replay the exact request.
 
 Proposed payloads: link.challenge {challenge_id}; link.complete {challenge_id,
 proof}; stash.inspect/room.inspect {page}; room.manage {confirmation_token};
-trade.quote {item_ids, sale_kind}; trade.confirm {confirmation_token};
-trade.status {transaction_id}; market.list {confirmation_token}; market.buy
+trade.quote {sale_kind, item_ids or listing_id}; trade.confirm {confirmation_token};
+trade.status {operation_request_id, operation_request_digest}; market.list {confirmation_token}; market.buy
 {confirmation_token}; market.cancel {confirmation_token}. This is a proposal,
 not an implemented game schema. No client price or account identity is accepted.
 The refined economic proposal is in `safehouse-economic-contract.md` and
