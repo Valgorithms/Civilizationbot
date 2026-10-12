@@ -143,6 +143,13 @@ class HttpServiceManager
     /** Authenticated structured OOC identity, independent of network whitelist. */
     public function handleOocWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
     {
+        return $this->handleStructuredChatWebhook($request, $gameserver, 'ooc');
+    }
+
+    /** Bounded native actor/message records for OOC, IC and emote chat. */
+    public function handleStructuredChatWebhook(ServerRequestInterface $request, GameServer $gameserver, string $kind): HttpResponse
+    {
+        if (!in_array($kind, ['ooc', 'ic', 'me'], true)) { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
         $data = self::decodeParamData($request);
         $key = $this->civ13->options['http_key'] ?? '';
         $requestKey = $request->getQueryParams()['key'] ?? null;
@@ -157,13 +164,15 @@ class HttpServiceManager
         $ckey = Civ13::sanitizeInput($data['ckey']);
         if ($ckey === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
         if ($gameserver->legacy_relay) { return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); }
-        if (!isset($gameserver->ooc) || !$this->discord->getChannel($gameserver->ooc)) {
+        $channel = $kind === 'ooc' ? ($gameserver->ooc ?? null) : ($gameserver->ic ?? null);
+        if (!$channel || !$this->discord->getChannel($channel)) {
             return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
         }
         $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message'])));
         if ($message === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
-        $gameserver->gameChatWebhookRelay($message, $gameserver->ooc, $ckey, true)
-            ->then(null, fn (\Throwable $error) => $this->logger->error('Structured OOC relay failed: '.$error->getMessage()));
+        if ($kind === 'me') { $message = '**__['.date('H:i:s').'] EMOTE__ '.$ckey.':** '.$message; }
+        $gameserver->gameChatWebhookRelay($message, $channel, $ckey, $kind === 'ooc')
+            ->then(null, fn (\Throwable $error) => $this->logger->error('Structured chat relay failed: '.$error->getMessage()));
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
@@ -1354,52 +1363,12 @@ class HttpServiceManager
                 )
                 ->offsetSet(
                     $server_endpoint.'/icmessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->ic)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->ic)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        //$time = '['.date('H:i:s', time()).']';
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        //$message = "**__{$time} OOC__ $ckey:** $message";
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, false);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleStructuredChatWebhook($request, $gameserver, 'ic'),
                     true
                 )
                 ->offsetSet(
                     $server_endpoint.'/memessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->ic)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->ic)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        $time = '['.date('H:i:s', time()).']';
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        $message = "**__{$time} EMOTE__ $ckey:** $message";
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, false);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleStructuredChatWebhook($request, $gameserver, 'me'),
                     true
                 )
                 ->offsetSet(
@@ -1500,17 +1469,21 @@ class HttpServiceManager
                         if (! $this->discord->getChannel($channel_id = $gameserver->transit)) {
                             return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         }
-                        if (! isset($this->civ13->channel_ids['parole_notif'])) {
-                            return HttpResponse::plaintext('Parole Notification Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $parole_notif_channel = $this->discord->getChannel($this->civ13->channel_ids['parole_notif'])) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
+                        $parole_notif_channel = isset($this->civ13->channel_ids['parole_notif'])
+                            ? $this->discord->getChannel($this->civ13->channel_ids['parole_notif']) : null;
 
                         $data = self::decodeParamData($request);
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        if (!is_string($data['ckey'] ?? null) || !preg_match('/^[A-Za-z0-9_ ]{1,64}$/D', $data['ckey'])
+                            || ($ckey = Civ13::sanitizeInput($data['ckey'])) === '') {
+                            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+                        }
+                        foreach (['ip', 'cid'] as $field) {
+                            if (array_key_exists($field, $data) && (!is_string($data[$field]) || strlen($data[$field]) > 128 || str_contains($data[$field], "\0"))) {
+                                return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+                            }
+                        }
                         if ($gameserver = $this->civ13->enabled_gameservers[$gameserver->key]) {
-                            if (! $ckey !== '(NULL)' && ! in_array($ckey, $gameserver->players)) {
+                            if (!in_array($ckey, $gameserver->players, true)) {
                                 $gameserver->players[] = $ckey;
                             }
                         }
@@ -1526,7 +1499,7 @@ class HttpServiceManager
                         $message .= '.';
                         $gameserver->logPlayerLogin($ckey, $time, $data['ip'] ?? '', $data['cid'] ?? '');
 
-                        if (isset($this->civ13->paroled[$ckey])) {
+                        if ($parole_notif_channel && isset($this->civ13->paroled[$ckey])) {
                             $message2 = '';
                             if (isset($this->civ13->role_ids['Parolemin'])) {
                                 $message2 .= "<@&{$this->civ13->role_ids['Parolemin']}>, ";
@@ -1557,21 +1530,25 @@ class HttpServiceManager
                         if (! $this->discord->getChannel($channel_id = $gameserver->transit)) {
                             return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
                         }
-                        if (! isset($this->civ13->channel_ids['parole_notif'])) {
-                            return HttpResponse::plaintext('Parole Notification Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $parole_notif_channel = $this->discord->getChannel($this->civ13->channel_ids['parole_notif'])) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
+                        $parole_notif_channel = isset($this->civ13->channel_ids['parole_notif'])
+                            ? $this->discord->getChannel($this->civ13->channel_ids['parole_notif']) : null;
 
                         $data = self::decodeParamData($request);
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
+                        if (!is_string($data['ckey'] ?? null) || !preg_match('/^[A-Za-z0-9_ ]{1,64}$/D', $data['ckey'])
+                            || ($ckey = Civ13::sanitizeInput($data['ckey'])) === '') {
+                            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+                        }
+                        foreach (['ip', 'cid'] as $field) {
+                            if (array_key_exists($field, $data) && (!is_string($data[$field]) || strlen($data[$field]) > 128 || str_contains($data[$field], "\0"))) {
+                                return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+                            }
+                        }
                         $time = '['.date('H:i:s', time()).']';
                         $message = "$ckey disconnected from the server.";
                         $gameserver->logPlayerLogout($ckey, $time);
 
                         $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true, false);
-                        if (isset($this->civ13->paroled[$ckey])) {
+                        if ($parole_notif_channel && isset($this->civ13->paroled[$ckey])) {
                             $message2 = '';
                             if (isset($this->civ13->role_ids['Parolemin'])) {
                                 $message2 .= "<@&{$this->civ13->role_ids['Parolemin']}>, ";

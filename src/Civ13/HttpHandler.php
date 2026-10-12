@@ -567,9 +567,9 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     {
         // Native webhook_send places its secret beside method/data, not inside JSON.
         $outerKey = $request->getQueryParams()['key'] ?? null;
-        if (str_starts_with($request->getUri()->getPath(), '/webhook/') && $this->key !== ''
-            && is_string($outerKey) && hash_equals($this->key, $outerKey)) {
-            return true;
+        if (str_starts_with($request->getUri()->getPath(), '/webhook/')) {
+            // A trusted network address is not authentication of a game event.
+            return $this->key !== '' && is_string($outerKey) && hash_equals($this->key, $outerKey);
         }
         if ($this->key) {
             $data = [];

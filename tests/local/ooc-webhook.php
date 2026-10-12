@@ -7,6 +7,7 @@ require __DIR__.'/../../src/Civ13/HttpServiceManager.php';
 require_once __DIR__.'/../../src/Civ13/CivHandler.php';
 require_once __DIR__.'/../../src/Civ13/HttpHandler.php';
 require_once __DIR__.'/../../src/Civ13/Verifier.php';
+require_once __DIR__.'/../../src/Civ13/Moderator.php';
 use React\Promise\PromiseInterface;
 use React\Http\Message\ServerRequest;
 use function React\Promise\resolve;
@@ -34,9 +35,17 @@ final class OocVerifier extends \Civ13\Verifier {
 }
 final class OocServer extends \Civ13\GameServer {
     public array $calls=[];
+    public array $events=[];
+    public function logPlayerLogin(string $ckey,string $time,string $ip='',string $cid=''):PromiseInterface {$this->events[]=['login',$ckey,$ip,$cid]; return resolve(null);}
+    public function logPlayerLogout(string $ckey,string $time):PromiseInterface {$this->events[]=['logout',$ckey];$this->players=array_values(array_diff($this->players,[$ckey]));return resolve([]);}
+    public function panicCheck(string $ckey):void {$this->events[]=['panic',$ckey];}
     public function gameChatWebhookRelay(string $message,string $channel_id,?string $ckey=null,?bool $ooc=true,?bool $moderate=true): PromiseInterface {
         $this->calls[]=[$message,$channel_id,$ckey,$ooc,$moderate]; return resolve(null);
     }
+}
+final class OocModerator extends \Civ13\Moderator {
+    public array $actors=[];
+    public function scrutinizeCkey(string $ckey):void {$this->actors[]=$ckey;}
 }
 $civ=(new ReflectionClass(OocCiv::class))->newInstanceWithoutConstructor();
 $civ->options=['http_key'=>'synthetic-ooc-key'];
@@ -64,6 +73,12 @@ if(!$handler->__isWhitelisted($request($valid),'8.8.8.8')
     || $handler->__isWhitelisted($request(array_replace($valid,['key'=>'wrong'])),'8.8.8.8')) {
     throw new RuntimeException('Actual dispatch whitelist rejected native outer key or accepted forged key');
 }
+foreach(['127.0.0.1','::1','10.0.0.2','8.8.8.8'] as $ip){
+    foreach([null,[],123,'wrong',''] as $key){if($handler->__isWhitelisted($request(array_replace($valid,['key'=>$key])),$ip)){throw new RuntimeException('Webhook network bypassed service authentication');}}
+}
+(new ReflectionProperty($handler,'key'))->setValue($handler,'');
+if($handler->__isWhitelisted($request($valid),'127.0.0.1')){throw new RuntimeException('Empty configured webhook key accepted');}
+(new ReflectionProperty($handler,'key'))->setValue($handler,'synthetic-ooc-key');
 $nested=$request($valid)->withQueryParams(['method'=>'oocmessage','data'=>urlencode(json_encode($valid))]);
 if($manager->handleOocWebhook($nested,$server)->getStatusCode()!==403){throw new RuntimeException('Nested-only key accepted');}
 $handler->logger=new \Monolog\Logger('offline-ooc',[new \Monolog\Handler\NullHandler()]);
@@ -72,6 +87,26 @@ $manager->httpHandler=$handler; $manager->logger=$handler->logger;
 (new ReflectionProperty($handler,'attributes'))->setValue($handler,['handlers'=>[],'whitelisted'=>[],'match_methods'=>[],'descriptions'=>[],'whitelist'=>[],'ratelimits'=>[]]);
 (new ReflectionMethod($handler,'afterConstruct'))->invoke($handler);
 (new ReflectionMethod($manager,'__generateServerEndpoints'))->invoke($manager);
+$server->ic='123456789012345670';$server->transit='123456789012345671';
+$civ->moderator=(new ReflectionClass(OocModerator::class))->newInstanceWithoutConstructor();
+foreach(['icmessage','memessage','login','logout'] as $method){
+    $route=fn($data,$key='synthetic-ooc-key')=>$request($valid)->withQueryParams(['key'=>$key,'method'=>$method,'data'=>json_encode($data)]);
+    $before=count($server->calls);$events=count($server->events);$players=$server->players;
+    foreach([null,[],123,'(NULL)','',str_repeat('a',65)] as $actor){
+        if($handler->handle($route(['ckey'=>$actor,'message'=>'harmless']))->getStatusCode()!==400){throw new RuntimeException('Malformed registered actor accepted '.$method);}
+    }
+    if($handler->handle($route(['ckey'=>'realplayer','message'=>'harmless'],'wrong'))->getStatusCode()!==403){throw new RuntimeException('Trusted IP bypassed route authentication '.$method);}
+    if(count($server->calls)!==$before||count($server->events)!==$events||$server->players!==$players){throw new RuntimeException('Rejected request changed player or relay state '.$method);}
+    if(in_array($method,['icmessage','memessage'],true)){
+        foreach([null,[],123,"bad\0message",str_repeat('é',8193)] as $body){if($handler->handle($route(['ckey'=>'realplayer','message'=>$body]))->getStatusCode()!==400){throw new RuntimeException('Malformed chat body accepted');}}
+        if($handler->handle($route(['ckey'=>'Real_Player','message'=>'literal %41 + é']))->getStatusCode()!==202){throw new RuntimeException('Structured IC/emote failed');}
+        $call=end($server->calls);if($call[2]!=='realplayer'||$call[3]!==false||!str_contains($call[0],'literal %41 + é')){throw new RuntimeException('IC actor/channel/display mismatch');}
+    }else{
+        if($handler->handle($route(['ckey'=>'realplayer','ip'=>[]]))->getStatusCode()!==400){throw new RuntimeException('Malformed transit metadata accepted');}
+        if($handler->handle($route(['ckey'=>'Real_Player']))->getStatusCode()!==200){throw new RuntimeException('Transit incorrectly depends on optional parole channel');}
+        if(($method==='login')!==in_array('realplayer',$server->players,true)){throw new RuntimeException('Transit player state mismatch');}
+    }
+}
 $server->asay='123456789012345679';
 $asay=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['ckey'=>'Admin (display)','message'=>'BotName literal %41 + é'])]);
 if($handler->handle($asay)->getStatusCode()!==200 || end($server->calls)[2]!==null || end($server->calls)[4]!==false){throw new RuntimeException('Asay display identity reached account moderation');}
@@ -105,4 +140,4 @@ foreach(['{invalid','null','123','[]',str_repeat('x',65537)] as $raw){
     $bad=$request($valid)->withQueryParams(['data'=>$raw]);
     if($manager->handleOocWebhook($bad,$server)->getStatusCode()!==403){throw new RuntimeException('Malformed raw JSON accepted');}
 }
-echo "PASS actual structured OOC handler: trusted identity separate from display, wrong/missing key on loopback, malformed actor/body, UTF8 byte bounds, disabled/missing destination\n";
+echo "PASS actual registered OOC/IC/emote/login/logout routes: independent service authentication, bounded canonical actors/body, rejected requests preserve state, optional parole channel, staff display isolation\n";
