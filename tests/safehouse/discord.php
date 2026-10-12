@@ -76,6 +76,10 @@ $route->handle($confirmed);
 check($gateway->requests[1]['payload'] === ['confirmation_token' => 'game-token'], 'Confirmation changed opaque game token');
 $gateway->deferreds[1]->resolve(['status' => 'committed', 'request_id' => '123457', 'data' => ['nested_id' => 'child', 'fir' => true, 'condition' => 0.75]]);
 check(str_contains($confirmed->messages[1][2]['content'], 'child'), 'Inspection metadata omitted');
+$unicode = MockInteraction::fixture(); $unicode->id = 'unicode';
+$route->handle($unicode);
+$gateway->deferreds[2]->resolve(['status' => 'committed', 'request_id' => 'unicode', 'data' => ['name' => str_repeat('🌍', 2000)]]);
+check(preg_match('//u', $unicode->messages[1][2]['content']) === 1 && strlen($unicode->messages[1][2]['content']) <= 3600, 'Bounded render split Unicode');
 
 // Construct only the Slash adapter over a reflection-created inert Civ13 object.
 // No Civ13/Discord constructor, token, init event or remote command save runs.
@@ -106,7 +110,7 @@ check(isset($enabledBot->discord->bound['safehouse']) && isset($enabledBot->disc
 $boundInteraction = MockInteraction::fixture(); $boundInteraction->id = '654321';
 ($enabledBot->discord->bound['safehouse'])($boundInteraction);
 check(end($gateway->requests)['request_id'] === '654321', 'Slash callback did not use actual safehouse route');
-$gateway->deferreds[2]->resolve(['status' => 'rejected', 'request_id' => '654321', 'reason' => 'unlinked']);
+$gateway->deferreds[3]->resolve(['status' => 'rejected', 'request_id' => '654321', 'reason' => 'unlinked']);
 check(str_contains($boundInteraction->messages[1][2]['content'], 'unlinked'), 'Authoritative unlinked rejection omitted');
 
 // Fake timer driver checks finite asynchronous polling and cancellation.

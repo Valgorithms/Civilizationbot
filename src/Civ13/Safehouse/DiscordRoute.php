@@ -43,7 +43,10 @@ final class DiscordRoute
 
     private static function message(string $content): MessageBuilder
     {
-        return MessageBuilder::new()->setContent(substr($content, 0, 1900))->setAllowedMentions(['parse' => []]);
+        // Bound Unicode codepoints without splitting UTF-8. 900 supplementary
+        // codepoints are at most 1800 UTF-16 units for Discord's 2000 limit.
+        if (!preg_match('/^.{0,900}/us', $content, $match)) { $match = ['Request remains unresolved.']; }
+        return MessageBuilder::new()->setContent($match[0])->setAllowedMentions(['parse' => []]);
     }
 
     private static function render(array $outcome): string
