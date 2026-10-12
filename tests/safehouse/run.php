@@ -94,7 +94,36 @@ try {
     $replyPath = $directory.'/spool/'.$fileKey.'.reply';
     $sealed = AsyncSpool::seal(json_encode($reply), 'reply', 1000, 1120, $key);
     file_put_contents($replyPath, json_encode($sealed));
+    $markerPath = $replyPath.'.pending';
+    file_put_contents($markerPath, '');
+    check($spool->poll($fileKey)['reason'] === 'reply_write_pending', 'Empty marker allowed success');
+    file_put_contents($replyPath, '{partial');
+    check($spool->poll($fileKey)['status'] === 'pending', 'Partial marked reply claimed success');
+    file_put_contents($markerPath, '{invalid-marker');
+    check($spool->poll($fileKey)['status'] === 'pending', 'Invalid marker allowed success');
+    unlink($markerPath);
+    try { $spool->poll($fileKey); throw new LogicException('Unmarked partial reply accepted'); } catch (JsonException $e) {}
+    file_put_contents($replyPath, json_encode($sealed));
+    file_put_contents($markerPath, 'crash-after-complete-write');
+    check($spool->poll($fileKey)['status'] === 'pending', 'Complete reply bypassed crash marker');
+    check($spool->enqueue($request) === $fileKey, 'Marked reply changed immutable replay');
+    check(is_file($markerPath), 'Bot removed native recovery marker');
+    unlink($markerPath);
     check($spool->poll($fileKey)['status'] === 'committed', 'Authenticated reply not accepted');
+    $writerPipes = [];
+    $writer = proc_open([PHP_BINARY, __DIR__.'/reply-worker.php', $replyPath, base64_encode(json_encode($sealed))], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $writerPipes);
+    check(is_resource($writer), 'Reply writer unavailable');
+    check(trim(fgets($writerPipes[1])) === 'partial', 'Writer partial stage missing');
+    check($spool->poll($fileKey)['status'] === 'pending', 'Concurrent partial publication accepted');
+    fwrite($writerPipes[0], "continue\n"); fflush($writerPipes[0]);
+    check(trim(fgets($writerPipes[1])) === 'complete-marked', 'Writer complete stage missing');
+    check($spool->poll($fileKey)['status'] === 'pending', 'Concurrent complete marked publication accepted');
+    fwrite($writerPipes[0], "continue\n"); fflush($writerPipes[0]);
+    check(trim(fgets($writerPipes[1])) === 'released', 'Writer release missing');
+    check($spool->poll($fileKey)['status'] === 'committed', 'Released authenticated reply unavailable');
+    fclose($writerPipes[0]); fclose($writerPipes[1]);
+    check(stream_get_contents($writerPipes[2]) === '', 'Reply worker diagnostics'); fclose($writerPipes[2]);
+    check(proc_close($writer) === 0, 'Reply worker failed');
     $tampered = $sealed; $tampered['mac'] = str_repeat('0', 64);
     file_put_contents($replyPath, json_encode($tampered));
     rejects(fn () => $spool->poll($fileKey));
@@ -116,6 +145,9 @@ try {
     rejects(fn () => $recoverySpool->recover($fileKey, $request['request_id']));
     // Linux CI can create symlinks without Windows Developer Mode privileges.
     if (PHP_OS_FAMILY !== 'Windows') {
+        check(symlink($directory.'/journal', $markerPath), 'Marker symlink fixture unavailable');
+        try { $spool->poll($fileKey); throw new LogicException('Marker symlink accepted'); } catch (RuntimeException $e) { check(str_contains($e->getMessage(), 'Symlink'), 'Wrong marker symlink rejection'); }
+        unlink($markerPath);
         unlink($replyPath);
         $linkPath = $replyPath;
         check(symlink($directory.'/journal', $linkPath), 'Symlink fixture unavailable');

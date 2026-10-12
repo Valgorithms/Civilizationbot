@@ -151,3 +151,16 @@ fixtures for Slash/Discord and mocks interaction calls/game gateway. Run
 CI tests Discord routing against resolved Composer dependencies separately from
 the dependency-free Windows/Linux spool regressions. No live registration or
 Discord send was performed.
+# Native reply publication barrier
+
+For a native writer without atomic rename, create `<hash>.reply.pending` before
+writing any `<hash>.reply` bytes. The bot checks marker presence before and after
+authenticated reply parsing with refreshed filesystem metadata. Any marker,
+including empty or malformed content, keeps the request pending; symlinks reject.
+Missing, partial, invalid, expired or incorrectly bound replies never mean success.
+The bot never clears a marker. One game writer must serialize publication per key,
+never overwrite a completed reply, validate its signed completed receipt before
+removing the marker, and on restart compare the original durable operation receipt
+before clearing a crash marker. Expired replies recover through fresh status.
+Native power-loss flush ordering remains a separate acceptance requirement;
+presence barriers do not themselves prove durable storage ordering.

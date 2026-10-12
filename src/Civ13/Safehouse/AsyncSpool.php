@@ -67,6 +67,7 @@ final class AsyncSpool
         if (!$this->enabled) { throw new \LogicException('Safehouse spool disabled'); }
         $requestEnvelope = $this->read($this->path($id, 'request'), 'request');
         $request = json_decode(base64_decode($requestEnvelope['body'], true), true, 32, JSON_THROW_ON_ERROR);
+        if ($this->replyPending($id)) { return ['status' => 'pending', 'request_id' => $request['request_id'], 'reason' => 'reply_write_pending']; }
         $replyPath = $this->path($id, 'reply');
         if (!is_file($replyPath)) { return ['status' => 'pending', 'request_id' => $request['request_id']]; }
         $replyEnvelope = $this->read($replyPath, 'reply');
@@ -76,7 +77,16 @@ final class AsyncSpool
             if (($reply[$field] ?? null) !== $request[$field]) { throw new \UnexpectedValueException('Reply identity mismatch'); }
         }
         if (!in_array($reply['status'] ?? null, ['pending', 'committed', 'rejected'], true)) { throw new \UnexpectedValueException('Unknown reply status'); }
+        if ($this->replyPending($id)) { return ['status' => 'pending', 'request_id' => $request['request_id'], 'reason' => 'reply_write_pending']; }
         return $reply;
+    }
+
+    /** Presence only: malformed/empty markers also block success. Only the game
+     * writer may clear its barrier after validating the durable signed receipt. */
+    private function replyPending(string $id): bool
+    {
+        clearstatcache();
+        return @lstat($this->path($id, 'reply.pending')) !== false;
     }
 
     /** Fresh authenticated read-only status request for an expired/uncertain

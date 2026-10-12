@@ -1,4 +1,4 @@
-# Safehouse economics contract proposal v1
+# Safehouse economics contract v1
 
 This pins the bot-side proposal for the native handler. It is not native handler
 acceptance and does not enable trades. It extends the immutable request and
@@ -9,7 +9,7 @@ implementation remain game-owned dependencies, not values invented by the bot.
 
 ## Quote and confirmation actions
 
-All quotes require the linked actor's nonnegative `expected_account_revision`.
+All quotes require the linked actor's integer `expected_account_revision` in 0..1000000.
 The request actor is the authenticated Discord actor, never a payload ckey.
 `trade.quote` has exactly one of the following payloads:
 
@@ -32,8 +32,8 @@ quote_id: opaque string
 confirmation_token: opaque game-issued string
 confirm_action: one of the confirmation actions above
 expected_account_revision: actor revision captured by quote
-expires_at: integer UTC epoch seconds
-price: {currency_id: game identifier, amount: bounded integer game units}
+expires_at: canonical decimal Unix-seconds STRING
+price: {currency_id: civ13.game_credits.v1, amount: bounded integer game units}
 item_ids: exact top-level graph roots covered
 listing_id, listing_revision: present for purchase/cancellation
 ```
@@ -99,7 +99,7 @@ status envelope; no uncertain operation file is overwritten or silently purged.
 
 ## Rejections and pending outcomes
 
-Proposed stable business `data.code` values: `invalid_payload`, `unlinked`,
+Agreed stable business `data.code` values: `invalid_payload`, `unlinked`,
 `busy`, `in_raid`, `stale_revision`, `item_not_owned`, `item_ineligible`,
 `invalid_graph`, `pricing_unavailable`, `quote_expired`, `token_invalid`,
 `token_used`, `action_mismatch`, `listing_unavailable`, `self_purchase`,
@@ -110,3 +110,12 @@ Authentication/body/signature failures are transport failures, not accepted
 economic requests. `recovery_required` means pending with no success claim until
 the durable transaction resolves. The native owner must approve these names and
 DTOs before compatibility is claimed.
+
+The agreed native prototype price table is modern_safehouse_prices_v1. These are
+prototype game credits and approved allowlisted prices, never Discord currency.
+Quote expiry uses decimal text because native DM cannot exactly represent current
+Unix epoch numbers. IPC timestamp tokens retain the existing wire format.
+Duplicate token replay still requires valid fresh IPC bounds; an expired immutable
+economic envelope must recover with fresh read-only status. For not_found the
+operation_receipt is absent or null; other statuses carry the original actor and
+request-digest-bound durable response when available.
