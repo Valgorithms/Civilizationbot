@@ -14,10 +14,17 @@ final class Controller
             ['name' => 'action', 'description' => 'Game-authoritative action', 'type' => 3, 'required' => true, 'choices' => array_map(fn ($action) => ['name' => $action, 'value' => $action], Client::ACTIONS)],
             ['name' => 'payload', 'description' => 'Action JSON (confirmation token for irreversible actions)', 'type' => 3, 'required' => true],
             ['name' => 'revision', 'description' => 'Expected game account revision', 'type' => 4, 'required' => false],
+            ['name' => 'confirm', 'description' => 'Confirm the reviewed game quote for an irreversible action', 'type' => 5, 'required' => false],
         ]];
     }
 
     public function handle(string $interactionId, string $actorDiscordId, string $action, string $json, ?int $revision): array
+    {
+        $request = self::prepare($interactionId, $actorDiscordId, $action, $json, $revision);
+        return ['ephemeral' => true, 'outcome' => $this->client->request($interactionId, $actorDiscordId, $action, $request['payload'], $revision)];
+    }
+
+    public static function prepare(string $interactionId, string $actorDiscordId, string $action, string $json, ?int $revision): array
     {
         if (strlen($json) > 4096) {
             throw new \InvalidArgumentException('Payload too large');
@@ -34,6 +41,6 @@ final class Controller
         if (in_array($action, ['trade.confirm', 'market.list', 'market.buy', 'market.cancel', 'room.manage'], true) && (!is_string($payload['confirmation_token'] ?? null) || $payload['confirmation_token'] === '' || $revision === null)) {
             throw new \InvalidArgumentException('Game confirmation token and revision required');
         }
-        return ['ephemeral' => true, 'outcome' => $this->client->request($interactionId, $actorDiscordId, $action, $payload, $revision)];
+        return Client::envelope($interactionId, $actorDiscordId, $action, $payload, $revision);
     }
 }

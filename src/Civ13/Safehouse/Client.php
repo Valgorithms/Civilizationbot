@@ -15,16 +15,7 @@ final class Client
         if (!$this->enabled) {
             throw new \LogicException('Safehouse integration is disabled');
         }
-        if (!preg_match('/^[A-Za-z0-9_-]{1,96}$/D', $requestId) || !preg_match('/^[0-9]{1,22}$/D', $discordId) || !in_array($action, self::ACTIONS, true) || ($expectedAccountRevision !== null && $expectedAccountRevision < 0)) {
-            throw new \InvalidArgumentException('Invalid request identity/action/revision');
-        }
-        $request = ['protocol' => self::PROTOCOL, 'request_id' => $requestId, 'discord_id' => $discordId, 'action' => $action, 'expected_account_revision' => $expectedAccountRevision, 'payload' => self::canonical($payload)];
-        $encoded = json_encode($request, JSON_THROW_ON_ERROR);
-        if (strlen($encoded) > 8192) {
-            throw new \InvalidArgumentException('Request exceeds safehouse size bound');
-        }
-        $digest = hash('sha256', $encoded);
-        $request['request_digest'] = $digest;
+        $request = self::envelope($requestId, $discordId, $action, $payload, $expectedAccountRevision);
         // Serialize local delivery and persist before external effects. A timeout retains
         // the exact request for replay; only the game can deduplicate settlement.
         $lock = fopen($this->journal.'.lock', 'c+');
@@ -40,6 +31,30 @@ final class Client
             usleep(10000);
         }
         try {
+            return $this->deliver($request, $requestId);
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    public static function envelope(string $requestId, string $discordId, string $action, array $payload, ?int $expectedAccountRevision): array
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{1,96}$/D', $requestId) || !preg_match('/^[0-9]{1,22}$/D', $discordId) || !in_array($action, self::ACTIONS, true) || ($expectedAccountRevision !== null && $expectedAccountRevision < 0)) {
+            throw new \InvalidArgumentException('Invalid request identity/action/revision');
+        }
+        $request = ['protocol' => self::PROTOCOL, 'request_id' => $requestId, 'discord_id' => $discordId, 'action' => $action, 'expected_account_revision' => $expectedAccountRevision, 'payload' => self::canonical($payload)];
+        $encoded = json_encode($request, JSON_THROW_ON_ERROR);
+        if (strlen($encoded) > 8192) {
+            throw new \InvalidArgumentException('Request exceeds safehouse size bound');
+        }
+        $digest = hash('sha256', $encoded);
+        $request['request_digest'] = $digest;
+        return $request;
+    }
+
+    private function deliver(array $request, string $requestId): array
+    {
             $records = is_file($this->journal) ? json_decode(file_get_contents($this->journal), true, 64, JSON_THROW_ON_ERROR) : [];
             if (!is_array($records)) {
                 throw new \RuntimeException('Invalid safehouse journal');
@@ -77,10 +92,6 @@ final class Client
             $records[$requestId]['response'] = $response;
             $this->persist($records);
             return $response;
-        } finally {
-            flock($lock, LOCK_UN);
-            fclose($lock);
-        }
     }
 
     private function persist(array $records): void

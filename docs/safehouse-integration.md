@@ -1,9 +1,9 @@
 # Discord safehouse integration (provisional, disabled)
 
-This patch provides a pure controller, command schema, durable request client and
-disabled enqueue/poll authenticated spool primitives.
-It does not register commands, start a bot, read game saves or provide a live
-transport. Compatibility is unaccepted until the game handler executes this
+This patch provides a controller, command schema, durable request client,
+disabled enqueue/poll authenticated spool and actual DiscordPHP routing hooks.
+No commands have been registered, bot started or game saves read. Compatibility
+is unaccepted until the game handler executes this
 contract fixture. Existing verifier cache entries provide no trade authority.
 
 ## Version 1 request
@@ -91,7 +91,7 @@ Run `C:/php/php.exe tests/safehouse/run.php`. It bypasses the ordinary test
 bootstrap, which reads `.env`. Tests use injected game transport and temporary
 journals with no Discord/network/bootstrap effects. Constructor `enabled` is
 false by default. Hosting code must use trusted Discord actor/interaction IDs
-and ephemeral responses; this patch exposes no bot config or listener yet.
+and ephemeral responses; the disabled routing configuration is documented below.
 
 The journal serializes local requests with an OS file lock, persists before
 transport delivery and caches terminal replies. It bounds records at 1000 and
@@ -114,4 +114,38 @@ receipts, atomically publish a signed IPC file, then poll bounded reply paths wi
 the React event-loop timer. Resolve timeout as pending, retaining the same request
 bytes. Validate authenticated reply binding before terminal journal storage. Do
 not call this synchronous client from a Discord interaction callback; the current
-implementation belongs in an isolated worker until this split adapter is built.
+implementation belongs in an isolated worker; Discord uses AsyncDriver and the spool primitives instead.
+
+## Disabled Discord routing activation package
+
+`config/safehouse.example.php` declares `safehouse_enabled=false` and
+`safehouse_gateway=null`. Civ13's actual options resolver validates these values.
+When explicitly enabled with an injected `AsyncGateway` and configured
+`civ13_guild_id`, Slash binds only the `safehouse` callback and reconciles only
+that named global command, preserving other commands. It never bulk overwrites
+the command repository. Disabled mode neither binds nor saves a safehouse command.
+Registered stale commands are not silently deleted when disabled.
+
+The actual route rejects wrong-guild/absent-member requests, derives actor from
+Discord membership and request ID from the interaction, and requires both a game
+confirmation token/revision and explicit `confirm=true` for irreversible actions.
+It defers ephemerally using DiscordPHP `acknowledgeWithResponse(true)` before
+enqueueing; a failed acknowledgement sends no request. All later updates retain
+that private response and disable mentions. Pending and transport errors report
+uncertainty; rejected outcomes remain game rejections. JSON views are bounded and
+page requests are game-owned; rendering does not edit metadata or inventories.
+
+Construct `AsyncDriver(spool, ReactTimer::repeat(loop))` only after crypto/game
+compatibility acceptance. It deduplicates active identical requests, bounds 64
+active requests and 40 quarter-second polls by default, cancels terminal/timeout
+timers and resolves timeouts as pending. No blocking synchronous client runs in
+this route. It is an injected timer driver, not automatic production activation.
+
+Run `php tests/safehouse/discord.php <trusted vendor/autoload.php>` for offline
+actual installed-library signature and handler tests. The runner loads Composer
+autoload only; it bypasses bot constructors and `.env`, creates inert reflection
+fixtures for Slash/Discord and mocks interaction calls/game gateway. Run
+`php tests/safehouse/schema.php` to export the exact desired schema without a bot.
+CI tests Discord routing against resolved Composer dependencies separately from
+the dependency-free Windows/Linux spool regressions. No live registration or
+Discord send was performed.
