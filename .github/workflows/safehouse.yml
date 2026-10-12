@@ -1,0 +1,47 @@
+name: Offline safehouse contract
+on:
+  pull_request:
+    paths:
+      - 'src/Civ13/Safehouse/**'
+      - 'src/Civ13/Slash.php'
+      - 'src/Civ13/Civ13.php'
+      - 'tests/safehouse/**'
+      - '.github/workflows/safehouse.yml'
+  push:
+    paths:
+      - 'src/Civ13/Safehouse/**'
+      - 'src/Civ13/Slash.php'
+      - 'src/Civ13/Civ13.php'
+      - 'tests/safehouse/**'
+      - '.github/workflows/safehouse.yml'
+permissions:
+  contents: read
+jobs:
+  safehouse:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        php: ['8.3', '8.4']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - run: php tests/safehouse/run.php
+      - run: php tests/safehouse/economics-driver-test.php
+  discord-routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+      - run: composer install --no-dev --prefer-dist --no-interaction --no-progress
+      - run: php tests/safehouse/discord.php
+      - run: php tests/safehouse/schema.php > /tmp/safehouse-desired.json

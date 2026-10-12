@@ -1,0 +1,141 @@
+{
+  "contract": "civ13.safehouse.economics.v1",
+  "acceptance": "dto-agreed-native-integration-unverified",
+  "request_protocol": "civ13.safehouse.v1",
+  "ipc_protocol": "civ13.safehouse.ipc.v1",
+  "quote_action": "trade.quote",
+  "quote_variants": [
+    {
+      "sale_kind": "server_buyback",
+      "selector": "item_ids",
+      "confirm_action": "trade.confirm"
+    },
+    {
+      "sale_kind": "player_listing",
+      "selector": "item_ids",
+      "confirm_action": "market.list"
+    },
+    {
+      "sale_kind": "player_purchase",
+      "selector": "listing_id",
+      "confirm_action": "market.buy"
+    },
+    {
+      "sale_kind": "listing_cancel",
+      "selector": "listing_id",
+      "confirm_action": "market.cancel"
+    }
+  ],
+  "quote_required_fields": [
+    "quote_id",
+    "confirmation_token",
+    "confirm_action",
+    "expected_account_revision",
+    "expires_at",
+    "item_ids"
+  ],
+  "price_fields": [
+    "currency_id",
+    "amount"
+  ],
+  "price_authority": "approved-game-tables-only-no-client-price",
+  "confirmation_payload_fields": [
+    "confirmation_token"
+  ],
+  "confirmation_account_revision": "required-exact-quoted-actor-revision",
+  "confirmation_ui_option": "confirm=true",
+  "quote_max_age_seconds": 120,
+  "listing_confirmation_fields": [
+    "listing_id",
+    "listing_revision"
+  ],
+  "immutable_operation_identity": [
+    "request_id",
+    "discord_id",
+    "request_digest",
+    "exact_authenticated_request_bytes"
+  ],
+  "status_action": "trade.status",
+  "status_payload_fields": [
+    "operation_request_id",
+    "operation_request_digest"
+  ],
+  "status_result_fields": [
+    "operation_status",
+    "operation_receipt"
+  ],
+  "operation_status_values": [
+    "pending",
+    "committed",
+    "rejected",
+    "not_found"
+  ],
+  "business_rejection_codes": [
+    "invalid_payload",
+    "unlinked",
+    "busy",
+    "in_raid",
+    "stale_revision",
+    "item_not_owned",
+    "item_ineligible",
+    "invalid_graph",
+    "pricing_unavailable",
+    "quote_expired",
+    "token_invalid",
+    "token_used",
+    "action_mismatch",
+    "listing_unavailable",
+    "self_purchase",
+    "insufficient_funds",
+    "capacity_exceeded",
+    "request_conflict"
+  ],
+  "pending_code": "recovery_required",
+  "game_dependencies": [
+    "approved-price-table-identifiers",
+    "wallet-unit-and-safe-integer-bounds",
+    "native-atomic-escrow-and-shared-receipt",
+    "quote-and-listing-revision-rules",
+    "native-handler-DTO-acceptance"
+  ],
+  "currency_id": "civ13.game_credits.v1",
+  "table_id": "modern_safehouse_prices_v1",
+  "quote_expires_at_type": "canonical-decimal-unix-seconds-string",
+  "account_revision_max": 1000000,
+  "not_found_receipt": "null-or-absent",
+  "decoded_body_max_bytes": 8192,
+  "wire_max_bytes": 12000,
+  "spool_file_max_bytes": 12001,
+  "additive_actions": [
+    {
+      "payload_fields": [
+        "item_id",
+        "page"
+      ],
+      "nodes_per_page": 16,
+      "action": "stash.detail",
+      "outer_revision": "nullable",
+      "page_max": 31
+    },
+    {
+      "payload_fields": [
+        "page"
+      ],
+      "listings_per_page": 8,
+      "action": "market.browse",
+      "outer_revision": "nullable",
+      "page_max": 15
+    },
+    {
+      "payload_fields": [
+        "item_ids",
+        "operation"
+      ],
+      "confirm_action": "room.manage",
+      "operation": "upgrade",
+      "action": "room.quote",
+      "atomic_receipt": "single-account-snapshot",
+      "outer_revision": "required0..1000000"
+    }
+  ]
+}
