@@ -1,10 +1,10 @@
 {
   "schema": "civilizationbot.api-docs.v1",
-  "source_commit": "685d1bf3f4f5d5fb984b90a882631cd7ce1b96a9",
+  "source_commit": "cb2b131e951ae6dc642a41872224bb4238b0a6b0",
   "phpdocumentor": "3.10.0",
   "version": "5.0.0",
   "publication_path": "v5/",
   "files": 304,
-  "local_links_checked": 25035,
-  "search_sha256": "bb632dd8ff7be06fbdc5b2d2a70fd444f8f0b132ffef2513a1eb69f685174542"
+  "local_links_checked": 25041,
+  "search_sha256": "278e445e50066bdbdade561dfb65add3e7a7e38655f8e3dec043d17c251265b1"
 }

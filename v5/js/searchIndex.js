@@ -2251,6 +2251,11 @@ Search.appendIndex(
             "summary": "Authenticated\u0020structured\u0020OOC\u0020identity,\u0020independent\u0020of\u0020network\u0020whitelist.",
             "url": "classes/Civ13-HttpServiceManager.html#method_handleOocWebhook"
         },                {
+            "fqsen": "\\Civ13\\HttpServiceManager\u003A\u003AhandleStructuredChatWebhook\u0028\u0029",
+            "name": "handleStructuredChatWebhook",
+            "summary": "Bounded\u0020native\u0020actor\/message\u0020records\u0020for\u0020OOC,\u0020IC\u0020and\u0020emote\u0020chat.",
+            "url": "classes/Civ13-HttpServiceManager.html#method_handleStructuredChatWebhook"
+        },                {
             "fqsen": "\\Civ13\\HttpServiceManager\u003A\u003AstartSession\u0028\u0029",
             "name": "startSession",
             "summary": "Starts\u0020a\u0020session\u0020for\u0020the\u0020given\u0020IP\u0020address.",
