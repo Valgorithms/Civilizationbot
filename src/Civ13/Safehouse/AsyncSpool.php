@@ -79,6 +79,20 @@ final class AsyncSpool
         return $reply;
     }
 
+    /** Fresh authenticated read-only status request for an expired/uncertain
+     * operation. Never re-signs or reissues that economic operation. The game
+     * checks the actor against the original durable receipt before disclosure. */
+    public function recover(string $id, string $statusRequestId): string
+    {
+        if (!$this->enabled) { throw new \LogicException('Safehouse spool disabled'); }
+        $originalEnvelope = $this->read($this->path($id, 'request'), 'request');
+        $original = json_decode(base64_decode($originalEnvelope['body'], true), true, 32, JSON_THROW_ON_ERROR);
+        if ($statusRequestId === $original['request_id']) { throw new \InvalidArgumentException('Recovery needs a new status request ID'); }
+        $request = ['protocol' => Client::PROTOCOL, 'request_id' => $statusRequestId, 'discord_id' => $original['discord_id'], 'action' => 'trade.status', 'expected_account_revision' => null, 'payload' => ['operation_request_id' => $original['request_id'], 'operation_request_digest' => $original['request_digest']]];
+        $request['request_digest'] = hash('sha256', json_encode($request, JSON_THROW_ON_ERROR));
+        return $this->enqueue($request);
+    }
+
     /** Public for independent fixture adapters; signing never authorizes a trade. */
     public static function seal(string $bytes, string $direction, int $issued, int $expires, string $key): array
     {

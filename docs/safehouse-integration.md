@@ -75,6 +75,16 @@ Independent Python-generated signing bytes are pinned in
 real key appears in code, fixtures, arguments or environment examples. This
 fixture is the proposed game compatibility input, not game acceptance evidence.
 
+Expired envelopes do not imply economic failure. `recover(file_key,
+new_status_request_id)` enqueues a newly signed read-only `trade.status` request
+whose payload is `{operation_request_id, operation_request_digest}` and whose
+actor matches the original operation. Its fresh envelope has an independent
+request ID/digest, while the economic operation and original file remain
+immutable. The game authenticates it and checks ownership of the original
+receipt before returning its outcome. Do not reissue an economic operation with
+a fresh ID after a timeout or envelope expiry. Status queries consume bounded
+queue capacity and do not authorize deleting uncertain operation files.
+
 ## Local operation and limits
 
 Run `C:/php/php.exe tests/safehouse/run.php`. It bypasses the ordinary test

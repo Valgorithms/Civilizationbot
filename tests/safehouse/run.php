@@ -81,7 +81,8 @@ try {
     mkdir($directory.'/spool', 0700);
     $key = str_repeat('synthetic-test-key-', 3);
     $now = 1000;
-    $spool = new AsyncSpool($directory.'/spool', $key, true, 1, fn () => $now);
+    $clock = function () use (&$now): int { return $now; };
+    $spool = new AsyncSpool($directory.'/spool', $key, true, 1, $clock);
     $request = $original;
     $fileKey = $spool->enqueue($request);
     $published = file_get_contents($directory.'/spool/'.$fileKey.'.request');
@@ -105,6 +106,14 @@ try {
     file_put_contents($replyPath, json_encode(AsyncSpool::seal(json_encode($reply), 'reply', 800, 920, $key)));
     check($spool->poll($fileKey)['status'] === 'pending', 'Expired reply claimed success');
     rejects(fn () => $spool->poll('../escape'));
+    $now = 1300;
+    $recoverySpool = new AsyncSpool($directory.'/spool', $key, true, 2, $clock);
+    $recoveryId = $recoverySpool->recover($fileKey, 'status-after-expiry');
+    $recoveryEnvelope = json_decode(file_get_contents($directory.'/spool/'.$recoveryId.'.request'), true);
+    $recoveryRequest = json_decode(base64_decode($recoveryEnvelope['body']), true);
+    check($recoveryEnvelope['issued_at'] === 1300 && $recoveryRequest['action'] === 'trade.status' && $recoveryRequest['payload']['operation_request_id'] === $request['request_id'] && $recoveryRequest['payload']['operation_request_digest'] === $request['request_digest'], 'Recovery reissued economic operation');
+    check(file_get_contents($directory.'/spool/'.$fileKey.'.request') === $published, 'Recovery overwrote immutable operation');
+    rejects(fn () => $recoverySpool->recover($fileKey, $request['request_id']));
     // Linux CI can create symlinks without Windows Developer Mode privileges.
     if (PHP_OS_FAMILY !== 'Windows') {
         unlink($replyPath);
