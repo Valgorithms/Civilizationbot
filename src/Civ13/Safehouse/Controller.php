@@ -43,6 +43,7 @@ final class Controller
             if (!is_int($payload['page'] ?? null) || $payload['page'] < 0 || $payload['page'] > $pageMax) { throw new \InvalidArgumentException('Invalid observation page'); }
         }
         $fields = match ($action) {
+            'insurance.inspect' => ['cursor'],
             'link.challenge' => ['challenge_id'],
             'link.complete' => ['challenge_id', 'proof'],
             'stash.inspect', 'room.inspect' => ['page'],
@@ -61,6 +62,7 @@ final class Controller
         $keys = array_keys($payload); sort($keys); sort($fields);
         if ($keys !== $fields) { throw new \InvalidArgumentException('Unexpected or missing action payload fields'); }
         foreach ($payload as $field => $value) {
+            if ($action === 'insurance.inspect' && $field === 'cursor') { self::cursor($value); continue; }
             if ($field === 'page') { continue; }
             if ($field === 'item_ids') {
                 if (!is_array($value) || !array_is_list($value) || count($value) < 1 || count($value) > 16 || count(array_unique($value, SORT_REGULAR)) !== count($value)) { throw new \InvalidArgumentException('Select 1..16 distinct root IDs'); }
@@ -75,5 +77,36 @@ final class Controller
             throw new \InvalidArgumentException('Game confirmation token and revision required');
         }
         return Client::envelope($interactionId, $actorDiscordId, $action, $payload, $revision);
+    }
+
+    private static function cursor(mixed $value): void
+    {
+        if ($value !== null && (!is_string($value) || !preg_match('/^[!-~]{1,256}$/D', $value))) { throw new \InvalidArgumentException('Invalid insurance cursor'); }
+    }
+
+    /** Validate the native projection without deriving eligibility from local clocks. */
+    public static function insuranceProjection(array $data): array
+    {
+        $exact = static function (array $object, array $fields): void { $keys = array_keys($object); sort($keys); sort($fields); if ($keys !== $fields) { throw new \UnexpectedValueException('Invalid insurance projection fields'); } };
+        $integer = static function (mixed $value, int $max): void { if (!is_int($value) || $value < 0 || $value > $max) { throw new \UnexpectedValueException('Invalid insurance counter'); } };
+        $exact($data, ['account_revision', 'mail_revision', 'completed_generation', 'expiration', 'entries', 'next_cursor']);
+        $integer($data['account_revision'], 1000000);
+        foreach (['mail_revision', 'completed_generation'] as $field) { $integer($data[$field], 16777215); }
+        self::cursor($data['next_cursor']);
+        if ($data['expiration'] !== 'to be implemented' || !is_array($data['entries']) || !array_is_list($data['entries']) || count($data['entries']) > 8) { throw new \UnexpectedValueException('Invalid insurance projection bounds'); }
+        foreach ($data['entries'] as $entry) {
+            if (!is_array($entry)) { throw new \UnexpectedValueException('Invalid insurance entry'); }
+            $exact($entry, ['item_id', 'type', 'name', 'condition', 'found_in_raid', 'returned_generation', 'eligible_generation', 'state']);
+            if (!is_string($entry['item_id']) || !preg_match('/^[A-Za-z0-9_-]{1,80}$/D', $entry['item_id'])) { throw new \UnexpectedValueException('Invalid insurance item identity'); }
+            foreach (['type' => 160, 'name' => 128] as $field => $max) { $value = $entry[$field]; if ($value !== null && (!is_string($value) || strlen($value) > $max || !preg_match('//u', $value))) { throw new \UnexpectedValueException('Invalid insurance catalog string'); } }
+            if (!is_array($entry['condition'])) { throw new \UnexpectedValueException('Invalid insurance condition'); }
+            $exact($entry['condition'], ['health', 'maxhealth']);
+            foreach ($entry['condition'] as $value) { if ($value !== null && ((!is_int($value) && !is_float($value)) || !is_finite((float) $value))) { throw new \UnexpectedValueException('Invalid insurance condition'); } }
+            if ($entry['found_in_raid'] !== null && !is_bool($entry['found_in_raid'])) { throw new \UnexpectedValueException('Invalid insurance provenance'); }
+            foreach (['returned_generation', 'eligible_generation'] as $field) { $integer($entry[$field], 16777215); }
+            if (!in_array($entry['state'], ['pending', 'eligible'], true)) { throw new \UnexpectedValueException('Invalid insurance state'); }
+        }
+        if (strlen(json_encode($data, JSON_THROW_ON_ERROR)) > 8192) { throw new \UnexpectedValueException('Invalid insurance projection size'); }
+        return $data;
     }
 }

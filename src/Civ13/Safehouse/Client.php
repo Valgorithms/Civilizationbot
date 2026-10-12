@@ -6,7 +6,7 @@ namespace Civ13\Safehouse;
 final class Client
 {
     public const PROTOCOL = 'civ13.safehouse.v1';
-    public const ACTIONS = ['link.challenge', 'link.complete', 'stash.inspect', 'room.inspect', 'room.manage', 'trade.quote', 'trade.confirm', 'trade.status', 'market.list', 'market.buy', 'market.cancel', 'stash.detail', 'market.browse', 'room.quote'];
+    public const ACTIONS = ['link.challenge', 'link.complete', 'stash.inspect', 'room.inspect', 'room.manage', 'trade.quote', 'trade.confirm', 'trade.status', 'market.list', 'market.buy', 'market.cancel', 'stash.detail', 'market.browse', 'room.quote', 'insurance.inspect'];
 
     public function __construct(private Transport $transport, private string $journal, private bool $enabled = false, private int $capacity = 1000) {}
 

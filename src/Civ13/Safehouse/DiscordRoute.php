@@ -56,6 +56,11 @@ final class DiscordRoute
         if ($status === 'pending') { return 'Request '.$id.' is pending. No completed trade is confirmed. Do not submit another economic operation. Use trade.status with payload '.json_encode(['operation_request_id' => $request['request_id'], 'operation_request_digest' => $request['request_digest']], JSON_THROW_ON_ERROR); }
         if ($status === 'rejected') { return 'Game rejected request '.$id.'. '.json_encode($outcome['data'] ?? $outcome['reason'] ?? [], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR); }
         if ($status !== 'committed') { return 'Request '.$id.' remains unresolved.'; }
+        if ($request['action'] === 'insurance.inspect') {
+            try { $data = Controller::insuranceProjection($outcome['data'] ?? []); }
+            catch (\Throwable $error) { return 'Insurance inspection completed, but its projection is invalid. No eligibility or claim is confirmed.'; }
+            return 'Insurance returns: game-reported pending or eligible state. Pending returns remain locked through one additional full round closure. No Discord claim action is available. Expiration: to be implemented. '.json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        }
         if ($request['action'] === 'trade.status') {
             $operationStatus = $outcome['data']['operation_status'] ?? null;
             if (!in_array($operationStatus, ['pending', 'committed', 'rejected', 'not_found'], true)) { return 'Status query completed, but the original operation remains unresolved.'; }

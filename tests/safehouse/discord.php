@@ -110,6 +110,20 @@ $unconfirmedRoom = MockInteraction::fixture('room.manage', '{"confirmation_token
 $countBefore = count($gateway->requests); $route->handle($unconfirmedRoom);
 check(count($gateway->requests) === $countBefore, 'Room mutation bypassed explicit confirmation');
 
+$insuranceData = ['account_revision' => 4, 'mail_revision' => 9, 'completed_generation' => 5, 'expiration' => 'to be implemented', 'entries' => [['item_id' => 'return_1', 'type' => null, 'name' => null, 'condition' => ['health' => null, 'maxhealth' => null], 'found_in_raid' => null, 'returned_generation' => 5, 'eligible_generation' => 6, 'state' => 'pending']], 'next_cursor' => 'opaque.next'];
+foreach (['pending', 'eligible', 'invalid', 'stale_cursor'] as $case) {
+    $inspection = MockInteraction::fixture('insurance.inspect', '{"cursor":null}'); $inspection->id = 'insurance-'.$case;
+    $route->handle($inspection);
+    $data = $insuranceData;
+    if ($case === 'eligible') { $data['entries'][0]['state'] = 'eligible'; }
+    if ($case === 'invalid') { $data['entries'][0]['eligible_generation'] = 16777216; }
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => $case === 'stale_cursor' ? 'rejected' : 'committed', 'data' => $case === 'stale_cursor' ? ['code' => 'stale_cursor'] : $data]);
+    $content = $inspection->messages[1][2]['content'];
+    check(str_contains($content, $case === 'invalid' ? 'invalid' : $case), 'Insurance state/rejection omitted');
+    if ($case === 'pending' || $case === 'eligible') { check(str_contains($content, 'to be implemented') && str_contains($content, 'No Discord claim'), 'Insurance expiration or claim boundary misleading'); }
+    check($inspection->messages[0] === ['defer', true], 'Insurance inspection not ephemeral');
+}
+
 // Construct only the Slash adapter over a reflection-created inert Civ13 object.
 // No Civ13/Discord constructor, token, init event or remote command save runs.
 require __DIR__.'/../../src/Civ13/Civ13.php';

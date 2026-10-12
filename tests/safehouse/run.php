@@ -23,6 +23,17 @@ $transport = new class implements Transport {
     }
 };
 try {
+    $insurance = ['account_revision' => 4, 'mail_revision' => 9, 'completed_generation' => 5, 'expiration' => 'to be implemented', 'entries' => [['item_id' => 'return_1', 'type' => '/obj/item', 'name' => null, 'condition' => ['health' => 2, 'maxhealth' => null], 'found_in_raid' => true, 'returned_generation' => 5, 'eligible_generation' => 6, 'state' => 'pending']], 'next_cursor' => 'opaque.cursor'];
+    check(Controller::insuranceProjection($insurance) === $insurance, 'Pending eligibility was inferred locally');
+    check(Controller::prepare('insurance1', '123', 'insurance.inspect', '{"cursor":null}', null)['payload'] === ['cursor' => null], 'Initial insurance cursor changed');
+    check(Controller::prepare('insurance2', '123', 'insurance.inspect', '{"cursor":"opaque.cursor"}', 4)['payload']['cursor'] === 'opaque.cursor', 'Opaque cursor changed');
+    foreach (['{"cursor":""}', '{"cursor":"é"}', '{"cursor":0}', '{"cursor":null,"page":0}'] as $invalid) { rejects(fn () => Controller::prepare('insurance3', '123', 'insurance.inspect', $invalid, null)); }
+    rejects(fn () => Controller::prepare('insurance4', '123', 'insurance.claim', '{"item_id":"return_1"}', 4));
+    foreach (['mail_revision' => 16777216, 'account_revision' => 1000001, 'expiration' => 'tomorrow', 'next_cursor' => ''] as $field => $value) { $bad = $insurance; $bad[$field] = $value; rejects(fn () => Controller::insuranceProjection($bad)); }
+    $bad = $insurance; $bad['entries'] = array_fill(0, 9, $insurance['entries'][0]); rejects(fn () => Controller::insuranceProjection($bad));
+    foreach (['state' => 'claimable', 'found_in_raid' => 1, 'name' => str_repeat('😀', 33), 'eligible_generation' => -1, 'proof' => 'secret'] as $field => $value) { $bad = $insurance; $bad['entries'][0][$field] = $value; rejects(fn () => Controller::insuranceProjection($bad)); }
+    $bad = $insurance; $bad['entries'][0]['condition']['health'] = INF; rejects(fn () => Controller::insuranceProjection($bad));
+    echo "PASS insurance pending projection, opaque paging, premature claim rejection and counter/catalog/condition limits\n";
     $signingFixture = json_decode(file_get_contents(__DIR__.'/signing-fixture.json'), true, 32, JSON_THROW_ON_ERROR);
     check(AsyncSpool::seal($signingFixture['exact_body'], 'request', 1000, 1120, $signingFixture['synthetic_key']) === $signingFixture['envelope'], 'Independent Python HMAC fixture mismatch');
     rejects(fn () => (new Client($transport, $directory.'/disabled'))->request('i1', '123', 'stash.inspect', [], null));
