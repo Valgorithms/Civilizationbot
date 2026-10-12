@@ -6,7 +6,7 @@ namespace Civ13\Safehouse;
 final class Client
 {
     public const PROTOCOL = 'civ13.safehouse.v1';
-    public const ACTIONS = ['link.challenge', 'link.complete', 'stash.inspect', 'room.inspect', 'room.manage', 'trade.quote', 'trade.confirm', 'trade.status', 'market.list', 'market.buy', 'market.cancel'];
+    public const ACTIONS = ['link.challenge', 'link.complete', 'stash.inspect', 'room.inspect', 'room.manage', 'trade.quote', 'trade.confirm', 'trade.status', 'market.list', 'market.buy', 'market.cancel', 'stash.detail', 'market.browse', 'room.quote'];
 
     public function __construct(private Transport $transport, private string $journal, private bool $enabled = false, private int $capacity = 1000) {}
 
@@ -86,7 +86,7 @@ final class Client
             if (!in_array($response['status'] ?? null, ['pending', 'committed', 'rejected'], true)) {
                 throw new \UnexpectedValueException('Unknown game outcome');
             }
-            if (strlen(json_encode($response, JSON_THROW_ON_ERROR)) > 65536) {
+            if (strlen(json_encode($response, JSON_THROW_ON_ERROR)) > 8192) {
                 throw new \UnexpectedValueException('Game reply exceeds size bound');
             }
             $records[$requestId]['response'] = $response;

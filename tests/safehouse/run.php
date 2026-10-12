@@ -52,6 +52,10 @@ try {
         rejects(fn () => Controller::prepare('bad-contract', '123', $action, $payload, $revision));
     }
     check(Controller::prepare('link-proof', '123', 'link.complete', '{"challenge_id":"game-origin","proof":"game-proof"}', null)['payload'] === ['challenge_id' => 'game-origin', 'proof' => 'game-proof'], 'Game-origin link proof altered');
+    check(Controller::prepare('detail', '123', 'stash.detail', '{"item_id":"root","page":31}', null)['payload'] === ['item_id' => 'root', 'page' => 31], 'Detail schema changed');
+    check(Controller::prepare('browse', '123', 'market.browse', '{"page":15}', null)['action'] === 'market.browse', 'Browse missing');
+    check(Controller::prepare('room-quote', '123', 'room.quote', '{"operation":"upgrade","item_ids":["part"]}', 7)['payload'] === ['item_ids' => ['part'], 'operation' => 'upgrade'], 'Room quote mutated selectors');
+    foreach ([['stash.detail', '{"item_id":"root","page":32}', null], ['market.browse', '{"page":16}', null], ['market.browse', '{"page":"1"}', null], ['room.quote', '{"operation":"upgrade","item_ids":["part"]}', null], ['room.quote', '{"operation":"downgrade","item_ids":["part"]}', 1], ['room.quote', '{"operation":"upgrade","item_ids":["part","part"]}', 1], ['room.quote', '{"operation":"upgrade","item_ids":["part"],"required_parts":5}', 1]] as [$action, $payload, $revision]) { rejects(fn () => Controller::prepare('bad-addition', '123', $action, $payload, $revision)); }
     rejects(fn () => $controller->handle('i3', '123', 'trade.confirm', '{"confirmation_token":"token"}', null));
     rejects(fn () => $controller->handle('i3', '123', 'trade.quote', '{"price":1}', 4));
     check($controller->handle('i3', '123', 'stash.inspect', '{"page":1}', null)['ephemeral'], 'Private response not ephemeral');
@@ -100,6 +104,17 @@ try {
     $reply = array_merge($request, ['status' => 'committed']);
     $replyPath = $directory.'/spool/'.$fileKey.'.reply';
     $sealed = AsyncSpool::seal(json_encode($reply), 'reply', 1000, 1120, $key);
+    check(strlen(AsyncSpool::seal(str_repeat('x', 8192), 'reply', 1000, 1120, $key)['body']) === 10924, 'Exact byte boundary rejected');
+    rejects(fn () => AsyncSpool::seal(str_repeat('x', 8193), 'reply', 1000, 1120, $key));
+    rejects(fn () => AsyncSpool::seal(str_repeat('🌍', 2049), 'reply', 1000, 1120, $key));
+    file_put_contents($replyPath, json_encode($sealed)."\n");
+    check($spool->poll($fileKey)['status'] === 'committed', 'Native single-LF reply rejected');
+    file_put_contents($replyPath, json_encode($sealed)."\r\n"); check($spool->poll($fileKey)['status'] === 'committed', 'Bounded historical CRLF rejected');
+    $oversizedBody = base64_encode(str_repeat('x', 8193));
+    $oversized = ['protocol' => AsyncSpool::IPC_PROTOCOL, 'issued_at' => 1000, 'expires_at' => 1120, 'body' => $oversizedBody, 'mac' => hash_hmac('sha256', AsyncSpool::IPC_PROTOCOL."\nreply\n1000\n1120\n".$oversizedBody, $key)];
+    file_put_contents($replyPath, json_encode($oversized)); rejects(fn () => $spool->poll($fileKey));
+    file_put_contents($replyPath, str_repeat('x', 12002));
+    try { $spool->poll($fileKey); throw new LogicException('Oversized wire accepted'); } catch (RuntimeException $e) { check(str_contains($e->getMessage(), 'oversized'), 'Wrong file bound rejection'); }
     file_put_contents($replyPath, json_encode($sealed));
     $markerPath = $replyPath.'.pending';
     file_put_contents($markerPath, '');

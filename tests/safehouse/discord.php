@@ -98,6 +98,17 @@ foreach (['pending', 'not_found', 'committed', 'rejected', 'wrong_actor'] as $op
     check(!str_contains($content, 'Game confirmed request'), 'Status query misreported original success');
     check(str_contains($content, $operationStatus === 'wrong_actor' ? 'unresolved' : $operationStatus), 'Original operation status omitted');
 }
+foreach ([['stash.detail', '{"item_id":"native-root","page":31}', null], ['market.browse', '{"page":15}', null], ['room.quote', '{"operation":"upgrade","item_ids":["native-part"]}', 4]] as [$action, $payload, $revision]) {
+    $observation = MockInteraction::fixture($action, $payload, $revision); $observation->id = 'addition-'.str_replace('.', '-', $action);
+    $route->handle($observation);
+    check(end($gateway->requests)['action'] === $action && $observation->messages[0] === ['defer', true], 'Additive action not routed ephemerally');
+    $data = ['nodes' => [['index' => 1, 'id' => 'native-root', 'parent' => 0, 'found_in_raid' => true, 'condition' => ['health' => 20, 'maxhealth' => 100], 'material_key' => null, 'amount' => null, 'ammo_refs' => []]], 'next_page' => null];
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'committed', 'data' => $data]);
+    check(str_contains($observation->messages[1][2]['content'], 'found_in_raid') && str_contains($observation->messages[1][2]['content'], 'maxhealth'), 'Authoritative node summary omitted');
+}
+$unconfirmedRoom = MockInteraction::fixture('room.manage', '{"confirmation_token":"native-room-token"}', 4);
+$countBefore = count($gateway->requests); $route->handle($unconfirmedRoom);
+check(count($gateway->requests) === $countBefore, 'Room mutation bypassed explicit confirmation');
 
 // Construct only the Slash adapter over a reflection-created inert Civ13 object.
 // No Civ13/Discord constructor, token, init event or remote command save runs.

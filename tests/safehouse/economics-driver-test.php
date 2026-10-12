@@ -25,6 +25,12 @@ try {
     $inspectBody = json_decode(base64_decode(json_decode(file_get_contents($directory.'/'.$inspect.'.request'), true)['body']), true);
     if ($inspectBody['payload'] !== ['page' => 0]) { throw new RuntimeException('Native inspection page missing'); }
     reply($inspect, ['revision' => 7]);
+    invoke(['browse', 'browse-market', $inspect, '15']); invoke(['detail', 'detail-root', $inspect, 'native-root', '31']);
+    invoke(['browse', 'invalid-page', $inspect, '16'], false); invoke(['detail', 'invalid-detail-page', $inspect, 'native-root', '32'], false);
+    $roomQuote = invoke(['room-quote', 'room-quote', $inspect, '["native-part"]']);
+    $roomData = ['confirm_action' => 'room.manage', 'confirmation_token' => 'native-room-token', 'expected_account_revision' => 7, 'expires_at' => '1120']; reply($roomQuote, $roomData);
+    invoke(['confirm', 'room-manage', $roomQuote]);
+    $roomData['confirm_action'] = 'trade.confirm'; reply($roomQuote, $roomData); invoke(['confirm', 'wrong-room-action', $roomQuote], false);
     foreach (['server_buyback' => 'trade.confirm', 'player_listing' => 'market.list', 'player_purchase' => 'market.buy', 'listing_cancel' => 'market.cancel'] as $kind => $action) {
         $selection = in_array($kind, ['server_buyback', 'player_listing'], true) ? '["native-root"]' : '"native-listing"';
         $quote = invoke(['quote', 'quote-'.$kind, $inspect, $kind, $selection]);

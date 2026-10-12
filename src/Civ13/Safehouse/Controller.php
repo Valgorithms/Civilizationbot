@@ -38,13 +38,17 @@ final class Controller
                 throw new \InvalidArgumentException('Game authority cannot be supplied: '.$authority);
             }
         }
-        if (in_array($action, ['stash.inspect', 'room.inspect'], true) && (array_keys($payload) !== ['page'] || !is_int($payload['page']) || $payload['page'] < 0 || $payload['page'] > 7)) {
-            throw new \InvalidArgumentException('Inspection requires exactly integer page in 0..7');
+        if (in_array($action, ['stash.inspect', 'room.inspect', 'stash.detail', 'market.browse'], true)) {
+            $pageMax = match ($action) { 'stash.detail' => 31, 'market.browse' => 15, default => 7 };
+            if (!is_int($payload['page'] ?? null) || $payload['page'] < 0 || $payload['page'] > $pageMax) { throw new \InvalidArgumentException('Invalid observation page'); }
         }
         $fields = match ($action) {
             'link.challenge' => ['challenge_id'],
             'link.complete' => ['challenge_id', 'proof'],
             'stash.inspect', 'room.inspect' => ['page'],
+            'stash.detail' => ['item_id', 'page'],
+            'market.browse' => ['page'],
+            'room.quote' => ['item_ids', 'operation'],
             'room.manage', 'trade.confirm', 'market.list', 'market.buy', 'market.cancel' => ['confirmation_token'],
             'trade.status' => ['operation_request_digest', 'operation_request_id'],
             'trade.quote' => match ($payload['sale_kind'] ?? null) {
@@ -63,8 +67,10 @@ final class Controller
                 foreach ($value as $id) { if (!is_string($id) || !preg_match('/^[A-Za-z0-9_-]{1,80}$/D', $id)) { throw new \InvalidArgumentException('Invalid graph root ID'); } }
             } elseif (!is_string($value) || !preg_match('/^[A-Za-z0-9_-]{1,128}$/D', $value)) { throw new \InvalidArgumentException('Invalid game-issued identifier'); }
         }
+        if ($action === 'stash.detail' && strlen($payload['item_id']) > 80) { throw new \InvalidArgumentException('Invalid graph root ID'); }
+        if ($action === 'room.quote' && $payload['operation'] !== 'upgrade') { throw new \InvalidArgumentException('Unknown room operation'); }
         if ($action === 'trade.status' && !preg_match('/^[a-f0-9]{64}$/D', $payload['operation_request_digest'])) { throw new \InvalidArgumentException('Invalid original request digest'); }
-        if ($action === 'trade.quote' && $revision === null) { throw new \InvalidArgumentException('Quote requires expected account revision'); }
+        if (in_array($action, ['trade.quote', 'room.quote'], true) && $revision === null) { throw new \InvalidArgumentException('Quote requires expected account revision'); }
         if (in_array($action, ['trade.confirm', 'market.list', 'market.buy', 'market.cancel', 'room.manage'], true) && (!is_string($payload['confirmation_token'] ?? null) || $payload['confirmation_token'] === '' || $revision === null)) {
             throw new \InvalidArgumentException('Game confirmation token and revision required');
         }

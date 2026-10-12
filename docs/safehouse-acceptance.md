@@ -14,7 +14,7 @@ Ordinary tests/bootstrap.php loads .env; safehouse runners deliberately bypass i
 | Economics | Native 19-phase roundtrip manifest pins game1644e49dc46a82e430e16c0cfbe47cb911b8cfd4 and bot470fdfb6c3a407cc272f0c63a494de84e3a638d8: list/purchase/cancel/buyback/replay/interruption status | Pricing is approved native prototype allowlist/table, not production market acceptance |
 | Confirmation/pending | Exact token-only payload and explicit confirm=true; strict selectors/revision bounds; original status distinguished from query status; bound recovery JSON displayed | Human Discord usability/registration scope has not been exercised |
 | Replay/crash/concurrency | Exact bytes retained; queue/active bounds; process lock/replay/crash mocks; native markers and signed recovery artifacts | Host exclusion of concurrent native writers and actual power-loss ordering |
-| Room management/market discovery | Current allowed actions preserve game authority | Four sale kinds do not define room quote issuance; no listing browse/catalog action. Native/product contract required |
+| Room management/market discovery | Additive room.quote/market.browse/stash.detail DTO agreed and bot routing implemented disabled | Native implementation and exact-head integrated fixture acceptance pending; room upgrades use one account snapshot and receipt |
 | Audit/retention | Immutable request/reply and native transaction receipts retained; no automatic uncertain deletion | Host audit export/access/retention/ack policy and bounded archival before capacity fills |
 
 The native economic manifest was inspected as supplied evidence, not rerun by

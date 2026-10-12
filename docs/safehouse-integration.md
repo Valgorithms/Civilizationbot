@@ -108,7 +108,10 @@ Native cross-process tests additionally prove local same-ID delivery serializati
 and exact replay after a worker exits after mock game commit. The mock game's
 durable receipt establishes one synthetic settlement; this does not prove the
 production game's transaction durability. Local lock acquisition is bounded at
-two seconds, requests at 8 KiB and replies at 64 KiB. A busy lock returns pending.
+two seconds, decoded request/reply bodies at 8192 bytes. Sealed wire is at most
+12000 bytes, and the entire spool file at most12001 bytes before trimming outer
+JSON whitespace. LF and historical Windows CRLF are accepted only within that
+file cap; authenticated decoded body bytes are never trimmed. A busy lock returns pending.
 
 For an asynchronous adapter, split durable enqueue and reply handling: hold flock
 only while inserting immutable serialized envelope bytes and checking known

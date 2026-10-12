@@ -106,6 +106,7 @@ final class AsyncSpool
     /** Public for independent fixture adapters; signing never authorizes a trade. */
     public static function seal(string $bytes, string $direction, int $issued, int $expires, string $key): array
     {
+        if (strlen($bytes) > 8192) { throw new \InvalidArgumentException('Decoded IPC body exceeds 8192 bytes'); }
         $body = base64_encode($bytes);
         $signed = self::IPC_PROTOCOL."\n".$direction."\n".$issued."\n".$expires."\n".$body;
         return ['protocol' => self::IPC_PROTOCOL, 'issued_at' => $issued, 'expires_at' => $expires, 'body' => $body, 'mac' => hash_hmac('sha256', $signed, $key)];
@@ -121,10 +122,18 @@ final class AsyncSpool
 
     private function read(string $path, string $direction): array
     {
-        if (!is_file($path) || filesize($path) > 100000) { throw new \RuntimeException('Missing or oversized spool entry'); }
-        $envelope = json_decode(file_get_contents($path), true, 32, JSON_THROW_ON_ERROR);
+        clearstatcache(true, $path);
+        if (!is_file($path) || filesize($path) > 12001) { throw new \RuntimeException('Missing or oversized spool entry'); }
+        $wire = file_get_contents($path);
+        // Native text2file and historical Windows fixture writers may append
+        // CRLF. Bound the entire file first; only outer JSON whitespace is trim.
+        $wire = trim($wire);
+        if (strlen($wire) > 12000) { throw new \UnexpectedValueException('IPC wire exceeds 12000 bytes'); }
+        $envelope = json_decode($wire, true, 32, JSON_THROW_ON_ERROR);
         if (($envelope['protocol'] ?? null) !== self::IPC_PROTOCOL || !is_int($envelope['issued_at'] ?? null) || !is_int($envelope['expires_at'] ?? null) || !is_string($envelope['body'] ?? null) || !is_string($envelope['mac'] ?? null) || base64_decode($envelope['body'], true) === false) { throw new \UnexpectedValueException('Invalid authenticated envelope'); }
         if ($envelope['expires_at'] < $envelope['issued_at'] || $envelope['expires_at'] - $envelope['issued_at'] > 120 || $envelope['issued_at'] > ($this->clock)() + 5) { throw new \UnexpectedValueException('Invalid envelope time bound'); }
+        $decoded = base64_decode($envelope['body'], true);
+        if (strlen($decoded) > 8192 || base64_encode($decoded) !== $envelope['body']) { throw new \UnexpectedValueException('Noncanonical or oversized IPC body'); }
         $expected = self::seal(base64_decode($envelope['body'], true), $direction, $envelope['issued_at'], $envelope['expires_at'], $this->key);
         if (!hash_equals($expected['mac'], $envelope['mac'])) { throw new \UnexpectedValueException('Invalid service authentication'); }
         return $envelope;

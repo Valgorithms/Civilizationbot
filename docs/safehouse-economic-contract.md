@@ -1,5 +1,27 @@
 # Safehouse economics contract v1
 
+Additive agreed actions: `stash.detail` exact `{item_id,page}` with page0..31,
+`market.browse` exact `{page}` with page0..15, and `room.quote` exact
+`{operation:"upgrade",item_ids}`. The first two are read-only with nullable outer
+expected_account_revision; room.quote requires outer revision0..1000000. No
+revision is supplied in payload. Root IDs are1..80 ASCII identifier characters;
+room selectors contain1..16 distinct roots. Native eligibility and required
+5/10/15 workshop parts remain game authority. room.manage remains token-only plus
+quoted outer revision and Discord confirm=true. Native upgrade consumes parts,
+level and original request receipt in one account snapshot, not the shared trade
+journal, preserving trade graph/level conservation.
+
+Detail data is `{account_revision,graph_revision,item_id,total_nodes,nodes,next_page}`;
+both revisions are saved account revision. Up to16 nodes/page expose only index,
+id,type,parent graph index,found_in_raid,condition `{health,maxhealth}`,material_key,
+amount,ammo_refs (contained graph indexes only); unavailable values are null.
+Root observations retain id/secure and add node_count/root compact summary.
+Browse is8 listings/page, at most128 active listings: listing_id/listing_revision,
+price `{currency_id:"civ13.game_credits.v1",amount}`,item_ids,item_count,roots.
+No seller identity, arbitrary saved scalar strings or insurance secret is exposed.
+Quotes revalidate escrow and do not treat browse observations as purchase authority.
+Native rejects `response_too_large` before publishing rather than truncating DTOs.
+
 This pins the DTO agreed with the native owner through the coordinator. Native
 end-to-end bot compatibility remains unverified; this does not enable trades.
 It extends the immutable request and
@@ -129,6 +151,9 @@ manifest with `synthetic:true`, the public signing fixture key, and integer
 
 ```text
 php tests/safehouse/economics-driver.php SPOOL MANIFEST inspect ID ACTOR
+php tests/safehouse/economics-driver.php SPOOL MANIFEST browse ID INSPECT_KEY PAGE
+php tests/safehouse/economics-driver.php SPOOL MANIFEST detail ID INSPECT_KEY ITEM_ID PAGE
+php tests/safehouse/economics-driver.php SPOOL MANIFEST room-quote ID INSPECT_KEY SELECTOR_JSON
 php tests/safehouse/economics-driver.php SPOOL MANIFEST quote ID INSPECT_KEY SALE_KIND SELECTOR_JSON
 php tests/safehouse/economics-driver.php SPOOL MANIFEST confirm ID QUOTE_KEY
 php tests/safehouse/economics-driver.php SPOOL MANIFEST poll FILE_KEY

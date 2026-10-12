@@ -102,5 +102,40 @@
   "table_id": "modern_safehouse_prices_v1",
   "quote_expires_at_type": "canonical-decimal-unix-seconds-string",
   "account_revision_max": 1000000,
-  "not_found_receipt": "null-or-absent"
+  "not_found_receipt": "null-or-absent",
+  "decoded_body_max_bytes": 8192,
+  "wire_max_bytes": 12000,
+  "spool_file_max_bytes": 12001,
+  "additive_actions": [
+    {
+      "payload_fields": [
+        "item_id",
+        "page"
+      ],
+      "nodes_per_page": 16,
+      "action": "stash.detail",
+      "outer_revision": "nullable",
+      "page_max": 31
+    },
+    {
+      "payload_fields": [
+        "page"
+      ],
+      "listings_per_page": 8,
+      "action": "market.browse",
+      "outer_revision": "nullable",
+      "page_max": 15
+    },
+    {
+      "payload_fields": [
+        "item_ids",
+        "operation"
+      ],
+      "confirm_action": "room.manage",
+      "operation": "upgrade",
+      "action": "room.quote",
+      "atomic_receipt": "single-account-snapshot",
+      "outer_revision": "required0..1000000"
+    }
+  ]
 }
