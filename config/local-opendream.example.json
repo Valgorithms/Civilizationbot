@@ -29,5 +29,15 @@
       "gameplay_port": 18132,
       "topic_port": 18142
     }
+  },
+  "controls": {
+    "enabled": false,
+    "python": "/usr/bin/python3",
+    "controller": "/home/LOCALUSER/civ13-local/game/scripts/opendream/control.py",
+    "read_key_file": "/home/LOCALUSER/civ13-local/private/local-control-key",
+    "profiles": {
+      "nomads": "/home/LOCALUSER/civ13-local/private/nomads-controller.json",
+      "tdm": "/home/LOCALUSER/civ13-local/private/tdm-controller.json"
+    }
   }
 }

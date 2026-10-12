@@ -30,16 +30,21 @@ final class OpenDreamControl
     {
         if (!$this->enabled) { throw new \LogicException('Local lifecycle controls disabled'); }
         if (is_link($this->profile) || hash_file('sha256', $this->profile) !== $this->profileDigest) { throw new \LogicException('Controller profile changed; explicit review required'); }
-        if (!in_array($action, ['start', 'stop', 'restart', 'status', 'mapswap'], true) || ($action === 'mapswap' ? !isset($this->maps[$map ?? '']) : $map !== null)) { throw new \InvalidArgumentException('Unsupported lifecycle request'); }
+        if (!in_array($action, ['start', 'stop', 'restart', 'status', 'topic-status', 'mapswap'], true) || ($action === 'mapswap' ? !isset($this->maps[$map ?? '']) : $map !== null)) { throw new \InvalidArgumentException('Unsupported lifecycle request'); }
         $argv = [$this->python, $this->controller, '--profile', $this->profile, $action];
         if ($map !== null) { $argv[] = $map; }
         $promise = ($this->execute)($argv, $action === 'start' ? 25 : 210);
         if (!$promise instanceof PromiseInterface) { throw new \LogicException('Async executor required'); }
-        return $promise->then(function (array $result): array {
+        return $promise->then(function (array $result) use ($action): array {
             if (!is_int($result['exit_code'] ?? null) || !is_string($result['stdout'] ?? null) || strlen($result['stdout']) > 4096) { throw new \UnexpectedValueException('Invalid control transport result'); }
             $data = json_decode($result['stdout'], true, 16, JSON_THROW_ON_ERROR);
             if (!is_array($data) || !is_bool($data['ok'] ?? null)) { throw new \UnexpectedValueException('Invalid control response'); }
             if (!$data['ok']) { if ($result['exit_code'] !== 1 || !is_string($data['error'] ?? null)) { throw new \UnexpectedValueException('Invalid failure response'); } throw new \RuntimeException('Local controller rejected request'); }
+            if ($action === 'topic-status') {
+                $keys = array_keys($data); sort($keys);
+                if ($keys !== ['ok', 'status', 'topic_port'] || $result['exit_code'] !== 0 || $data['topic_port'] !== $this->server['topic_port'] || !is_array($data['status']) || array_is_list($data['status'])) { throw new \UnexpectedValueException('Invalid Topic response'); }
+                return $data;
+            }
             $keys = array_keys($data); sort($keys); $allowed = ['engine', 'game_port', 'id', 'ok', 'running', 'runtime_dir', 'server_pid', 'topic_port'];
             if (array_diff($keys, $allowed) || $result['exit_code'] !== 0 || ($data['engine'] ?? null) !== 'opendream' || !is_bool($data['running'] ?? null) || ($data['game_port'] ?? null) !== $this->server['gameplay_port'] || ($data['topic_port'] ?? null) !== $this->server['topic_port'] || realpath($data['runtime_dir'] ?? '') !== realpath($this->server['runtime_dir']) || !array_key_exists('server_pid', $data) || ($data['server_pid'] !== null && (!is_int($data['server_pid']) || $data['server_pid'] <= 0))) { throw new \UnexpectedValueException('Unbound control response'); }
             if ($data['running'] && $data['server_pid'] === null) { throw new \UnexpectedValueException('Running process requires owned PID'); }

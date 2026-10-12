@@ -27,6 +27,12 @@ try {
     $response['topic_port'] = 9999; $rejected = false;
     $adapter->request('status')->then(null, static function () use (&$rejected) { $rejected = true; });
     if (!$rejected) { throw new RuntimeException('Mismatched response accepted'); }
+    $response = ['ok' => true, 'topic_port' => 18141, 'status' => ['name' => 'synthetic']];
+    $topic = null; $adapter->request('topic-status')->then(static function ($data) use (&$topic) { $topic = $data; });
+    if ($topic !== $response || isset($topic['running'])) { throw new RuntimeException('Topic and process observations confused'); }
+    $response['topic_port'] = 18131; $rejected = false;
+    $adapter->request('topic-status')->then(null, static function () use (&$rejected) { $rejected = true; });
+    if (!$rejected) { throw new RuntimeException('Gameplay port accepted as Topic'); }
     $attempts = 0; $unknown = $make(static function () use (&$attempts) { $attempts++; return reject(new RuntimeException('Timeout unknown outcome')); });
     $unknown->request('restart')->then(null, static function () {});
     if ($attempts !== 1) { throw new RuntimeException('Uncertain mutation replayed'); }

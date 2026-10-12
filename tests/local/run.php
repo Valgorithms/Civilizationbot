@@ -65,6 +65,10 @@ try {
     foreach (['nomads' => [18131, 18141], 'tdm' => [18132, 18142]] as $key => $ports) { $od['servers'][$key] = ['engine' => 'opendream', 'runtime_dir' => $root.'/'.$key, 'host' => '127.0.0.1', 'gameplay_port' => $ports[0], 'topic_port' => $ports[1]]; }
     file_put_contents($root.'/od.json', json_encode($od)); check(Profile::load($root.'/od.json')['servers']['tdm']['topic_port'] === 18142, 'OpenDream ports lost');
     foreach (['engine' => 'unknown', 'topic_port' => 18131, 'runtime_dir' => dirname($root), 'host' => 'civ13.com'] as $key => $value) { $bad = $od; $bad['servers']['nomads'][$key] = $value; file_put_contents($root.'/bad.json', json_encode($bad)); rejects(fn () => Profile::load($root.'/bad.json')); }
+    file_put_contents($root.'/private/control', str_repeat('c', 32));
+    $od['controls'] = ['enabled' => false, 'python' => PHP_BINARY, 'controller' => __FILE__, 'read_key_file' => $root.'/private/control', 'profiles' => ['nomads' => $root.'/od.json', 'tdm' => $root.'/od.json']];
+    file_put_contents($root.'/controls.json', json_encode($od)); check(Profile::load($root.'/controls.json')['controls']['enabled'] === false, 'Disabled control schema failed');
+    $od['controls']['read_key_file'] = $root.'/private/read'; file_put_contents($root.'/bad.json', json_encode($od)); rejects(fn () => Profile::load($root.'/bad.json'));
     file_put_contents($root.'/private/token', base64_encode('222').'.synthetic.token'); rejects(fn () => Profile::token($loaded));
     [$code, $output, $errors] = process([PHP_BINARY, __DIR__.'/../../local-bot.php', '--check', $root.'/profile.json']); check($code === 0 && $errors === '' && str_contains($output, 'No connections'), 'Offline bootstrap connected or failed');
     [$code] = process([PHP_BINARY, __DIR__.'/../../local-bot.php', '--run', $root.'/profile.json']); check($code !== 0, 'Disabled local bootstrap ran');
