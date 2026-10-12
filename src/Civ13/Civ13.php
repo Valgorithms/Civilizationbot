@@ -492,6 +492,7 @@ class Civ13
                 'ooc_badwords',
                 'owner_id',
                 'rules',
+                'restart_mode',
                 'civ13_server_settings',
                 'socket',
                 'stats',
@@ -531,6 +532,7 @@ class Civ13
                 'ooc_badwords' => [],
                 'owner_id' => '196253985072611328',
                 'rules' => 'civ13.com slash rules',
+                'restart_mode' => 'legacy',
                 'civ13_server_settings' => [],
                 'socket' => null,
                 'stats' => null,
@@ -541,6 +543,8 @@ class Civ13
                 'webserver_url' => 'www.valzargaming.com',
             ])
             ->setAllowedTypes('welcome_message', 'string')
+            ->setAllowedTypes('restart_mode', 'string')
+            ->setAllowedValues('restart_mode', ['legacy', 'supervised'])
             ->setAllowedTypes('logger', ['null', Logger::class])
             ->setAllowedTypes('onFulfilledDefault', ['null', 'callable'])
             ->setAllowedTypes('onRejectedDefault', ['null', 'callable'])
