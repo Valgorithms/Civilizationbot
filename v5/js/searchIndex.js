@@ -2246,6 +2246,11 @@ Search.appendIndex(
             "summary": "Decodes\u0020the\u0020\u0027data\u0027\u0020parameter\u0020from\u0020the\u0020query\u0020parameters\u0020of\u0020the\u0020given\u0020server\u0020request.",
             "url": "classes/Civ13-HttpServiceManager.html#method_decodeParamData"
         },                {
+            "fqsen": "\\Civ13\\HttpServiceManager\u003A\u003AhandleOocWebhook\u0028\u0029",
+            "name": "handleOocWebhook",
+            "summary": "Authenticated\u0020structured\u0020OOC\u0020identity,\u0020independent\u0020of\u0020network\u0020whitelist.",
+            "url": "classes/Civ13-HttpServiceManager.html#method_handleOocWebhook"
+        },                {
             "fqsen": "\\Civ13\\HttpServiceManager\u003A\u003AstartSession\u0028\u0029",
             "name": "startSession",
             "summary": "Starts\u0020a\u0020session\u0020for\u0020the\u0020given\u0020IP\u0020address.",
@@ -5243,8 +5248,23 @@ Search.appendIndex(
         },                {
             "fqsen": "\\Civ13\\Server\\FileRelay",
             "name": "FileRelay",
-            "summary": "Bounded\u0020append\u002Dlog\u0020relay.\u0020Advance\u0020only\u0020after\u0020delivery\u003B\u0020never\u0020erase\u0020producer\u0020logs.",
+            "summary": "Bounded\u0020append\u0020relay\u0020with\u0020optional\u0020private\u0020durable\u0020checkpoints\u0020and\u0020writer\u0020exclusion.",
             "url": "classes/Civ13-Server-FileRelay.html"
+        },                {
+            "fqsen": "\\Civ13\\Server\\FileRelay\u003A\u003A__construct\u0028\u0029",
+            "name": "__construct",
+            "summary": "",
+            "url": "classes/Civ13-Server-FileRelay.html#method___construct"
+        },                {
+            "fqsen": "\\Civ13\\Server\\FileRelay\u003A\u003Acheckpoint\u0028\u0029",
+            "name": "checkpoint",
+            "summary": "",
+            "url": "classes/Civ13-Server-FileRelay.html#method_checkpoint"
+        },                {
+            "fqsen": "\\Civ13\\Server\\FileRelay\u003A\u003Asave\u0028\u0029",
+            "name": "save",
+            "summary": "",
+            "url": "classes/Civ13-Server-FileRelay.html#method_save"
         },                {
             "fqsen": "\\Civ13\\Server\\FileRelay\u003A\u003Arelay\u0028\u0029",
             "name": "relay",
@@ -5260,6 +5280,16 @@ Search.appendIndex(
             "name": "busy",
             "summary": "",
             "url": "classes/Civ13-Server-FileRelay.html#property_busy"
+        },                {
+            "fqsen": "\\Civ13\\Server\\FileRelay\u003A\u003A\u0024stateDirectory",
+            "name": "stateDirectory",
+            "summary": "",
+            "url": "classes/Civ13-Server-FileRelay.html#property_stateDirectory"
+        },                {
+            "fqsen": "\\Civ13\\Server\\FileRelay\u003A\u003A\u0024oversized",
+            "name": "oversized",
+            "summary": "",
+            "url": "classes/Civ13-Server-FileRelay.html#property_oversized"
         },                {
             "fqsen": "\\Civ13\\Server\\Ipc",
             "name": "Ipc",
