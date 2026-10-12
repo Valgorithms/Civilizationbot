@@ -35,12 +35,13 @@ final class OocVerifier extends \Civ13\Verifier {
 }
 final class OocServer extends \Civ13\GameServer {
     public array $calls=[];
+    public ?PromiseInterface $relayOutcome=null;
     public array $events=[];
     public function logPlayerLogin(string $ckey,string $time,string $ip='',string $cid=''):PromiseInterface {$this->events[]=['login',$ckey,$ip,$cid]; return resolve(null);}
     public function logPlayerLogout(string $ckey,string $time):PromiseInterface {$this->events[]=['logout',$ckey];$this->players=array_values(array_diff($this->players,[$ckey]));return resolve([]);}
     public function panicCheck(string $ckey):void {$this->events[]=['panic',$ckey];}
     public function gameChatWebhookRelay(string $message,string $channel_id,?string $ckey=null,?bool $ooc=true,?bool $moderate=true): PromiseInterface {
-        $this->calls[]=[$message,$channel_id,$ckey,$ooc,$moderate]; return resolve(null);
+        $this->calls[]=[$message,$channel_id,$ckey,$ooc,$moderate]; return $this->relayOutcome??resolve(null);
     }
 }
 final class OocModerator extends \Civ13\Moderator {
@@ -88,6 +89,7 @@ $manager->httpHandler=$handler; $manager->logger=$handler->logger;
 (new ReflectionMethod($handler,'afterConstruct'))->invoke($handler);
 (new ReflectionMethod($manager,'__generateServerEndpoints'))->invoke($manager);
 $server->ic='123456789012345670';$server->transit='123456789012345671';
+$server->runtime='123456789012345672';$server->adminlog='123456789012345673';$server->attack='123456789012345674';$server->log_attacks=true;
 $civ->moderator=(new ReflectionClass(OocModerator::class))->newInstanceWithoutConstructor();
 foreach(['icmessage','memessage','login','logout'] as $method){
     $route=fn($data,$key='synthetic-ooc-key')=>$request($valid)->withQueryParams(['key'=>$key,'method'=>$method,'data'=>json_encode($data)]);
@@ -107,6 +109,25 @@ foreach(['icmessage','memessage','login','logout'] as $method){
         if(($method==='login')!==in_array('realplayer',$server->players,true)){throw new RuntimeException('Transit player state mismatch');}
     }
 }
+foreach(['runtimemessage','alogmessage','attacklogmessage'] as $method){
+    $route=fn($data,$key='synthetic-ooc-key')=>$request($valid)->withQueryParams(['key'=>$key,'method'=>$method,'data'=>json_encode($data)]);
+    $before=count($server->calls);
+    foreach([null,[],123,'',"bad\0body",str_repeat('é',8193)] as $body){if($handler->handle($route(['message'=>$body]))->getStatusCode()!==400){throw new RuntimeException('Malformed log accepted '.$method);}}
+    if($handler->handle($route(['message'=>'text','ckey'=>[]]))->getStatusCode()!==400){throw new RuntimeException('Nonscalar log actor accepted');}
+    if($handler->handle($route(['message'=>'text'],'wrong'))->getStatusCode()!==403){throw new RuntimeException('Private IP forged log accepted');}
+    if(count($server->calls)!==$before){throw new RuntimeException('Rejected log reached delivery');}
+    if($handler->handle($route(['message'=>'literal %41 + é','ckey'=>'realplayer','ckey2'=>'realplayer']))->getStatusCode()!==202){throw new RuntimeException('Valid log was not queued');}
+    $call=end($server->calls);
+    if($call[2]!==null||$call[4]!==false||!str_contains($call[0],'literal %41 + é')){throw new RuntimeException('Display log changed bytes or enabled moderation');}
+    if(($method==='attacklogmessage')!==str_contains($call[0],'(Self-Attack)')){throw new RuntimeException('Attack annotation mismatch');}
+    $diagnostics=new \Monolog\Handler\TestHandler();$manager->logger=new \Monolog\Logger('offline-log',[$diagnostics]);
+    $server->relayOutcome=\React\Promise\reject(new RuntimeException('synthetic delivery failure'));
+    if($handler->handle($route(['message'=>'retry']))->getStatusCode()!==202||!$diagnostics->hasErrorRecords()){throw new RuntimeException('Queued log hid delivery failure');}
+    $server->relayOutcome=null;$manager->logger=$handler->logger;
+}
+$server->log_attacks=false;
+$disabled=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'attacklogmessage','data'=>json_encode(['message'=>'disabled'])]);
+if($handler->handle($disabled)->getStatusCode()!==403){throw new RuntimeException('Disabled attack log sent');}$server->log_attacks=true;
 $server->asay='123456789012345679';
 $asay=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['ckey'=>'Admin (display)','message'=>'BotName literal %41 + é'])]);
 if($handler->handle($asay)->getStatusCode()!==200 || end($server->calls)[2]!==null || end($server->calls)[4]!==false){throw new RuntimeException('Asay display identity reached account moderation');}
@@ -140,4 +161,4 @@ foreach(['{invalid','null','123','[]',str_repeat('x',65537)] as $raw){
     $bad=$request($valid)->withQueryParams(['data'=>$raw]);
     if($manager->handleOocWebhook($bad,$server)->getStatusCode()!==403){throw new RuntimeException('Malformed raw JSON accepted');}
 }
-echo "PASS actual registered OOC/IC/emote/login/logout routes: independent service authentication, bounded canonical actors/body, rejected requests preserve state, optional parole channel, staff display isolation\n";
+echo "PASS actual registered chat/transit/runtime/admin/attack routes: independent service authentication, bounded canonical actors/body, rejected requests preserve state, optional parole channel, staff display isolation\n";

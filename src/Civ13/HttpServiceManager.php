@@ -176,6 +176,32 @@ class HttpServiceManager
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
+    /** Authenticated bounded display logs; account sanctions never derive from log text. */
+    public function handleLogWebhook(ServerRequestInterface $request, GameServer $gameserver, string $kind): HttpResponse
+    {
+        $routes = ['runtime' => ['runtime', 'RUNTIME'], 'admin' => ['adminlog', 'ADMIN LOG'], 'attack' => ['attack', 'ATTACK LOG']];
+        if (!isset($routes[$kind])) { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        $secret = $this->civ13->options['http_key'] ?? '';
+        $supplied = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($secret) || $secret === '' || !is_string($supplied) || !hash_equals($secret, $supplied)) { return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); }
+        if ($gameserver->legacy_relay || ($kind === 'attack' && !$gameserver->log_attacks)) { return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); }
+        [$property, $label] = $routes[$kind];
+        $channel = $gameserver->$property ?? null;
+        if (!$channel || !$this->discord->getChannel($channel)) { return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE); }
+        $data = self::decodeParamData($request);
+        if (!is_string($data['message'] ?? null) || $data['message'] === '' || strlen($data['message']) > 16384 || str_contains($data['message'], "\0")) { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        foreach (['ckey', 'ckey2'] as $field) {
+            if (array_key_exists($field, $data) && (!is_string($data[$field]) || strlen($data[$field]) > 256 || str_contains($data[$field], "\0"))) { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        }
+        $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message'])));
+        if ($message === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        $message = '**__['.date('H:i:s').'] '.$label.'__:** '.$message;
+        if ($kind === 'attack' && ($first = Civ13::sanitizeInput($data['ckey'] ?? '')) !== '' && $first === Civ13::sanitizeInput($data['ckey2'] ?? '')) { $message .= ' (Self-Attack)'; }
+        $gameserver->gameChatWebhookRelay($message, $channel, null, true, false)
+            ->then(null, fn (\Throwable $error) => $this->logger->error('Game display-log relay failed: '.$error->getMessage()));
+        return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
     /**
      * Starts a session for the given IP address.
      *
@@ -1563,86 +1589,17 @@ class HttpServiceManager
                 )
                 ->offsetSet(
                     $server_endpoint.'/runtimemessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->runtime)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($gameserver->runtime)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        
-                        $time = '['.date('H:i:s', time()).']';
-                        //isset($data, $data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        $message = "**__{$time} RUNTIME__:** $message";
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleLogWebhook($request, $gameserver, 'runtime'),
                     true
                 )
                 ->offsetSet(
                     $server_endpoint.'/alogmessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->adminlog)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->adminlog)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        
-                        $time = '['.date('H:i:s', time()).']';
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        $message = "**__{$time} ADMIN LOG__:** ".$message;
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleLogWebhook($request, $gameserver, 'admin'),
                     true
                 )
                 ->offsetSet(
                     $server_endpoint.'/attacklogmessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! $gameserver->log_attacks) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        } // Disabled on TDM, use manual checking of log files instead
-                        if (! isset($gameserver->attack)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->attack)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        
-                        $time = '['.date('H:i:s', time()).']';
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = null;
-                        isset($data['ckey2']) ? $ckey2 = Civ13::sanitizeInput($data['ckey2']) : $ckey2 = null;
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        $message = "**__{$time} ATTACK LOG__:** ".$message;
-                        if ($ckey && $ckey2) {
-                            if ($ckey === $ckey2) {
-                                $message .= ' (Self-Attack)';
-                            }
-                        }
-                        
-                        $gameserver->gameChatWebhookRelay($message, $channel_id);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleLogWebhook($request, $gameserver, 'attack'),
                     true
                 )
                 ->offsetSets(
