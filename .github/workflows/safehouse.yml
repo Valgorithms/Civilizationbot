@@ -31,6 +31,7 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
       - run: php tests/safehouse/run.php
+      - run: php tests/safehouse/economics-driver-test.php
   discord-routing:
     runs-on: ubuntu-latest
     timeout-minutes: 8

@@ -120,3 +120,27 @@ Duplicate token replay still requires valid fresh IPC bounds; an expired immutab
 economic envelope must recover with fresh read-only status. For not_found the
 operation_receipt is absent or null; other statuses carry the original actor and
 request-digest-bound durable response when available.
+
+## Offline native fixture driver
+
+`tests/safehouse/economics-driver.php` accepts a private temporary spool and a
+manifest with `synthetic:true`, the public signing fixture key, and integer
+`clock`. It never loads bot/bootstrap or production credentials. Invocation:
+
+```text
+php tests/safehouse/economics-driver.php SPOOL MANIFEST inspect ID ACTOR
+php tests/safehouse/economics-driver.php SPOOL MANIFEST quote ID INSPECT_KEY SALE_KIND SELECTOR_JSON
+php tests/safehouse/economics-driver.php SPOOL MANIFEST confirm ID QUOTE_KEY
+php tests/safehouse/economics-driver.php SPOOL MANIFEST poll FILE_KEY
+php tests/safehouse/economics-driver.php SPOOL MANIFEST recover NEW_STATUS_ID ORIGINAL_KEY
+```
+
+Every enqueue prints its SHA256 file key. Quote revision comes from authenticated
+committed inspection `data.revision`. Confirmation action/token/revision/expiry
+come exclusively from the authenticated bound quote. Selectors are JSON root-ID
+arrays for buyback/list and JSON listing-ID strings for purchase/cancel. The
+driver preserves immutable requests through `AsyncSpool`, refuses pending or
+expired quotes, and recovers uncertainty only with read-only status. Change the
+synthetic clock via the manifest to test expiry; original request bytes remain
+unchanged. `economics-driver-test.php` exercises all four actions and meaningful
+negative controls in subprocesses; native economic execution remains separate.
