@@ -61,6 +61,10 @@ try {
     check(Profile::accepts($loaded, '468979034571931648', '333') && !Profile::accepts($loaded, '468979034571931648', '444') && !Profile::accepts($loaded, 'other', '333'), 'Official/nonlocal destination allowed');
     foreach (['bind' => '0.0.0.0', 'application_id' => '222', 'state_directory' => dirname($root), 'allowed_channel_ids' => []] as $key => $value) { $bad = $profile; $bad[$key] = $value; file_put_contents($root.'/bad.json', json_encode($bad)); rejects(fn () => Profile::load($root.'/bad.json')); }
     $bad = $profile; $bad['servers']['nomads']['host'] = 'civ13.com'; file_put_contents($root.'/bad.json', json_encode($bad)); rejects(fn () => Profile::load($root.'/bad.json'));
+    $od = $profile;
+    foreach (['nomads' => [18131, 18141], 'tdm' => [18132, 18142]] as $key => $ports) { $od['servers'][$key] = ['engine' => 'opendream', 'runtime_dir' => $root.'/'.$key, 'host' => '127.0.0.1', 'gameplay_port' => $ports[0], 'topic_port' => $ports[1]]; }
+    file_put_contents($root.'/od.json', json_encode($od)); check(Profile::load($root.'/od.json')['servers']['tdm']['topic_port'] === 18142, 'OpenDream ports lost');
+    foreach (['engine' => 'unknown', 'topic_port' => 18131, 'runtime_dir' => dirname($root), 'host' => 'civ13.com'] as $key => $value) { $bad = $od; $bad['servers']['nomads'][$key] = $value; file_put_contents($root.'/bad.json', json_encode($bad)); rejects(fn () => Profile::load($root.'/bad.json')); }
     file_put_contents($root.'/private/token', base64_encode('222').'.synthetic.token'); rejects(fn () => Profile::token($loaded));
     [$code, $output, $errors] = process([PHP_BINARY, __DIR__.'/../../local-bot.php', '--check', $root.'/profile.json']); check($code === 0 && $errors === '' && str_contains($output, 'No connections'), 'Offline bootstrap connected or failed');
     [$code] = process([PHP_BINARY, __DIR__.'/../../local-bot.php', '--run', $root.'/profile.json']); check($code !== 0, 'Disabled local bootstrap ran');

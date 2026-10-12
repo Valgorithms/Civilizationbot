@@ -25,6 +25,16 @@ final class Profile
         if (!is_array($config['servers']) || array_keys($config['servers']) !== ['nomads', 'tdm']) { throw new \InvalidArgumentException('Only local Nomads/TDM pointers are supported'); }
         $ports = [$config['port']];
         foreach ($config['servers'] as $server) {
+            if (is_array($server) && array_key_exists('engine', $server)) {
+                $keys = array_keys($server); sort($keys);
+                if ($keys !== ['engine', 'gameplay_port', 'host', 'runtime_dir', 'topic_port'] || $server['engine'] !== 'opendream' || $server['host'] !== '127.0.0.1') { throw new \InvalidArgumentException('Unsupported local engine profile'); }
+                self::inside($server['runtime_dir'], $root); self::directory($server['runtime_dir']);
+                foreach (['gameplay_port', 'topic_port'] as $name) {
+                    if (!is_int($server[$name]) || $server[$name] < 1024 || $server[$name] > 65535 || in_array($server[$name], $ports, true)) { throw new \InvalidArgumentException('Distinct local gameplay and Topic ports required'); }
+                    $ports[] = $server[$name];
+                }
+                continue;
+            }
             if (!is_array($server) || array_keys($server) !== ['directory', 'host', 'port'] || $server['host'] !== '127.0.0.1' || !is_int($server['port']) || $server['port'] < 1024 || $server['port'] > 65535 || in_array($server['port'], $ports, true)) { throw new \InvalidArgumentException('Nonlocal/duplicate server destination'); }
             self::inside($server['directory'], $root); self::directory($server['directory']); $ports[] = $server['port'];
         }

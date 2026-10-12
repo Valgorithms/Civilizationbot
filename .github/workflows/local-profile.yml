@@ -40,3 +40,4 @@ jobs:
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: php tests/local/library.php
+      - run: php tests/local/opendream.php
