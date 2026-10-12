@@ -121,6 +121,15 @@ $repeat = function (float $interval, callable $tick) use (&$ticks, &$cancelled):
     $index = count($ticks); $ticks[$index] = $tick;
     return function () use ($index, &$cancelled): void { $cancelled[$index] = true; };
 };
+// Exercise the installed React loop's real addPeriodicTimer/cancelTimer contract
+// in this isolated test process, with no shared bot loop or external effects.
+$loop = new \React\EventLoop\StreamSelectLoop();
+$realTicks = 0; $cancelRealTimer = null;
+$cancelRealTimer = \Civ13\Safehouse\ReactTimer::repeat($loop)(0.001, function () use (&$realTicks, &$cancelRealTimer): void {
+    if (++$realTicks === 3) { $cancelRealTimer(); }
+});
+$loop->run();
+check($realTicks === 3, 'Actual React timer cancellation contract failed');
 try {
     $spool = new AsyncSpool($directory, str_repeat('synthetic-', 4), true);
     $driver = new AsyncDriver($spool, $repeat, 2, 1);
