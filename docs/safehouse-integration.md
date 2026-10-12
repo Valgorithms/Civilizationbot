@@ -1,6 +1,7 @@
 # Discord safehouse integration (provisional, disabled)
 
-This patch provides a pure controller, command schema and durable request client.
+This patch provides a pure controller, command schema, durable request client and
+disabled enqueue/poll authenticated spool primitives.
 It does not register commands, start a bot, read game saves or provide a live
 transport. Compatibility is unaccepted until the game handler executes this
 contract fixture. Existing verifier cache entries provide no trade authority.
@@ -45,6 +46,34 @@ Bound request size, queue count, expiry, polling and timeout before enabling.
 The game owns one bounded queue and idempotency ledger; concurrent/replayed
 requests cannot settle twice. Multi-party settlement requires one durable shared
 transaction receipt and recovery, not separate account-save writes.
+
+`AsyncSpool` publishes and polls without sleeping or launching a process. The
+host must schedule polling with React timers and stop at its own bounded timeout.
+Files are `SHA256(request_id).request` and `.reply`. The private spool directory
+must exist. The game must retain immutable request files; archival is a separate
+operator policy, never deletion during consumption.
+
+The authenticated envelope is `{protocol, issued_at, expires_at, body, mac}`.
+Protocol is `civ13.safehouse.ipc.v1`; body is base64 of the exact UTF-8 JSON
+request/reply bytes. MAC is lowercase hex HMAC-SHA256 of these exact bytes:
+
+```text
+civ13.safehouse.ipc.v1\n<direction>\n<decimal issued_at>\n<decimal expires_at>\n<base64 body>
+```
+
+Each `\n` denotes one literal LF byte; there is no trailing LF. Direction is
+`request` or `reply` and prevents reflection. Validity is at most 120 seconds;
+future issuance skew is at most five seconds. Replies with expired envelopes
+remain pending. The game must reject expired/unlinked/stale requests, enforce
+bounded one-use challenges and validate service authentication before processing
+actor claims. PHP uses built-in `hash_hmac`; game verification requires its pinned
+crypto adapter and must not spawn a process per request. Digest is preserved from
+the trusted bot envelope and is never authentication.
+
+Independent Python-generated signing bytes are pinned in
+`tests/safehouse/signing-fixture.json` with a synthetic public fixture key. No
+real key appears in code, fixtures, arguments or environment examples. This
+fixture is the proposed game compatibility input, not game acceptance evidence.
 
 ## Local operation and limits
 

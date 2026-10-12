@@ -1,12 +1,13 @@
 <?php
 declare(strict_types=1);
 // Deliberately bypass tests/bootstrap.php: it reads the real .env.
-foreach (['Transport', 'Client', 'Controller'] as $class) {
+foreach (['Transport', 'Client', 'Controller', 'AsyncSpool'] as $class) {
     require __DIR__.'/../../src/Civ13/Safehouse/'.$class.'.php';
 }
 use Civ13\Safehouse\Client;
 use Civ13\Safehouse\Controller;
 use Civ13\Safehouse\Transport;
+use Civ13\Safehouse\AsyncSpool;
 function check(bool $ok, string $message): void { if (!$ok) { throw new RuntimeException($message); } }
 function rejects(callable $fn): void { try { $fn(); } catch (LogicException|UnexpectedValueException $e) { return; } throw new RuntimeException('Expected rejection'); }
 $directory = sys_get_temp_dir().'/civ13-safehouse-'.bin2hex(random_bytes(8));
@@ -22,6 +23,8 @@ $transport = new class implements Transport {
     }
 };
 try {
+    $signingFixture = json_decode(file_get_contents(__DIR__.'/signing-fixture.json'), true, 32, JSON_THROW_ON_ERROR);
+    check(AsyncSpool::seal($signingFixture['exact_body'], 'request', 1000, 1120, $signingFixture['synthetic_key']) === $signingFixture['envelope'], 'Independent Python HMAC fixture mismatch');
     rejects(fn () => (new Client($transport, $directory.'/disabled'))->request('i1', '123', 'stash.inspect', [], null));
     check(count($transport->calls) === 0, 'Disabled client sent request');
     $client = new Client($transport, $directory.'/journal', true);
@@ -75,6 +78,46 @@ try {
     check(count(file($directory.'/crash/deliveries')) === 2, 'Crash did not replay');
     check(count(file($directory.'/crash/settlements')) === 1, 'Mock game settled twice');
     check(file($directory.'/crash/deliveries')[0] === file($directory.'/crash/deliveries')[1], 'Crash replay changed bytes');
+    mkdir($directory.'/spool', 0700);
+    $key = str_repeat('synthetic-test-key-', 3);
+    $now = 1000;
+    $spool = new AsyncSpool($directory.'/spool', $key, true, 1, fn () => $now);
+    $request = $original;
+    $fileKey = $spool->enqueue($request);
+    $published = file_get_contents($directory.'/spool/'.$fileKey.'.request');
+    check($spool->enqueue($request) === $fileKey && file_get_contents($directory.'/spool/'.$fileKey.'.request') === $published, 'Spool replay changed bytes/signature');
+    check($spool->poll($fileKey)['status'] === 'pending', 'Missing reply claimed success');
+    rejects(fn () => $spool->enqueue(array_merge($request, ['discord_id' => '999'])));
+    try { $spool->enqueue(array_merge($request, ['request_id' => 'queue-full'])); throw new LogicException('Queue bound missing'); } catch (RuntimeException $e) { check($e->getMessage() === 'Queue capacity reached', 'Unexpected queue exception'); }
+    $reply = array_merge($request, ['status' => 'committed']);
+    $replyPath = $directory.'/spool/'.$fileKey.'.reply';
+    $sealed = AsyncSpool::seal(json_encode($reply), 'reply', 1000, 1120, $key);
+    file_put_contents($replyPath, json_encode($sealed));
+    check($spool->poll($fileKey)['status'] === 'committed', 'Authenticated reply not accepted');
+    $tampered = $sealed; $tampered['mac'] = str_repeat('0', 64);
+    file_put_contents($replyPath, json_encode($tampered));
+    rejects(fn () => $spool->poll($fileKey));
+    $tampered = $sealed; $tampered['body'] = base64_encode(json_encode(array_merge($reply, ['discord_id' => '999'])));
+    file_put_contents($replyPath, json_encode($tampered));
+    rejects(fn () => $spool->poll($fileKey));
+    file_put_contents($replyPath, json_encode(AsyncSpool::seal(json_encode(array_merge($reply, ['discord_id' => '999'])), 'reply', 1000, 1120, $key)));
+    rejects(fn () => $spool->poll($fileKey));
+    file_put_contents($replyPath, json_encode(AsyncSpool::seal(json_encode($reply), 'reply', 800, 920, $key)));
+    check($spool->poll($fileKey)['status'] === 'pending', 'Expired reply claimed success');
+    rejects(fn () => $spool->poll('../escape'));
+    // Linux CI can create symlinks without Windows Developer Mode privileges.
+    if (PHP_OS_FAMILY !== 'Windows') {
+        unlink($replyPath);
+        $linkPath = $replyPath;
+        check(symlink($directory.'/journal', $linkPath), 'Symlink fixture unavailable');
+        try { $spool->poll($fileKey); throw new LogicException('Symlink accepted'); } catch (RuntimeException $e) { check(str_contains($e->getMessage(), 'Symlink'), 'Wrong reply symlink rejection'); }
+        unlink($linkPath);
+        $requestLink = $directory.'/spool/'.str_repeat('b', 64).'.request';
+        check(symlink($directory.'/journal', $requestLink), 'Request symlink fixture unavailable');
+        try { $spool->poll(str_repeat('b', 64)); throw new LogicException('Request symlink accepted'); } catch (RuntimeException $e) { check(str_contains($e->getMessage(), 'Symlink'), 'Wrong symlink rejection'); }
+        unlink($requestLink);
+    }
+    echo "PASS bounded authenticated spool, byte-identical publication/replay, actor/body/MAC negative controls and reply expiry\n";
     echo "PASS disabled default, restart replay, terminal deduplication, actor/payload binding, response negative control, confirmation gates, private schema\n";
     echo "PASS native cross-process lock, crash after game commit, exact replay and mock game single settlement\n";
 } finally {
