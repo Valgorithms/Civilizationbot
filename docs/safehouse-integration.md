@@ -25,6 +25,8 @@ trade.quote {item_ids, sale_kind}; trade.confirm {confirmation_token};
 trade.status {transaction_id}; market.list {confirmation_token}; market.buy
 {confirmation_token}; market.cancel {confirmation_token}. This is a proposal,
 not an implemented game schema. No client price or account identity is accepted.
+The refined economic proposal is in `safehouse-economic-contract.md` and
+`tests/safehouse/economic-contract.json`; native acceptance remains separate.
 Quotes bind actor, item graph IDs, revision, approved game price, action and
 expiry. Listing and room mutations also require game-issued confirmation.
 
