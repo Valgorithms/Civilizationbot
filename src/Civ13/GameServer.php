@@ -149,7 +149,7 @@ class GameServer
                 ['engine' => 'opendream', 'host' => $options['ip'], 'runtime_dir' => $options['basedir'],
                  'gameplay_port' => (int)$options['port'], 'topic_port' => $options['topic_port'] ?? null],
                 $control['python'] ?? '', $control['controller'] ?? '', $control['profile'] ?? '',
-                $executor, $control['enabled'] ?? false
+                $executor, $control['enabled'] ?? false, $control['lifecycle_schema'] ?? null
             );
         }
 

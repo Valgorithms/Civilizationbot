@@ -1,0 +1,40 @@
+{
+  "synthetic": true,
+  "acceptance": "source-contract-only; native timing, transport and player reachability remain unconfirmed",
+  "status": {
+    "schema": "civ13.status.v1",
+    "instance_id": "synthetic-boot-1",
+    "build_id": null,
+    "map_id": null,
+    "map_name": null,
+    "generated_at": "0",
+    "ready": false,
+    "player_count": 0
+  },
+  "challenge_payload": {
+    "challenge_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "completion_payload": {
+    "challenge_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "proof": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "challenge_receipt": {
+    "protocol": "civ13.safehouse.v1",
+    "request_id": "synthetic-link-1",
+    "discord_id": "123",
+    "action": "link.challenge",
+    "request_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "status": "committed",
+    "reason": "challenge_available",
+    "data": {
+      "challenge_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expires": "1300"
+    }
+  },
+  "required_negative_controls": [
+    "unknown schema/capability", "omitted reason", "altered request actor/digest",
+    "missing/noncanonical challenge/proof", "proof already consumed", "expiry boundary",
+    "unknown build cannot verify readiness", "stale/future timestamp", "count overflow",
+    "ready without matching launcher instance/build/map", "bot-only gameplay route"
+  ]
+}
