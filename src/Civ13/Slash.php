@@ -598,9 +598,10 @@ class Slash
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("No gamserver found for `{$interaction->data->options['server']->value}`"));
             }
             $gameserver = &$this->civ13->enabled_gameservers[$interaction->data->options['server']->value];
-            $gameserver->Restart();
-
-            return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("Attempted to kill, update, and bring up `{$gameserver->name}` <byond://{$gameserver->ip}:{$gameserver->port}>"));
+            return $interaction->acknowledge()->then(fn () => $gameserver->Restart())->then(
+                fn ($receipt) => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent("Restart request completed for `{$gameserver->name}`. Engine: {$gameserver->engine}. Process control does not establish gameplay readiness.")),
+                fn (\Throwable $error) => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Restart failed: '.$error->getMessage()))
+            );
         });
         
         $this->discord->listenCommand(
@@ -751,9 +752,11 @@ class Slash
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) {
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true);
             }
-            $this->civ13->unban($item['ss13'], $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'] ?? $interaction->user->username);
-
-            return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`$admin` unbanned `{$item['ss13']}`."));
+            $admin = $this->civ13->verifier->getVerifiedItem($interaction->user->id)['ss13'] ?? $interaction->user->username;
+            return $this->civ13->unban($item['ss13'], $admin)->then(
+                fn () => $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`$admin` queued an unban for `{$item['ss13']}`.")),
+                fn (\Throwable $error) => $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent('Unban failed; some destinations may already have queued the request.'), true)
+            );
         });
 
         $this->discord->listenCommand('parole', function (Interaction $interaction): PromiseInterface {

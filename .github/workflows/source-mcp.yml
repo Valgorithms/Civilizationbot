@@ -1,0 +1,22 @@
+name: Read-only source MCP
+on:
+  pull_request:
+    paths: ['tooling/mcp/**', '.github/workflows/source-mcp.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protocol:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tooling/mcp/package-lock.json
+      - run: npm ci --prefix tooling/mcp --ignore-scripts --no-audit --no-fund
+      - run: npm test --prefix tooling/mcp

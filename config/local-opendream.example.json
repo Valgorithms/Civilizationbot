@@ -32,6 +32,7 @@
   },
   "controls": {
     "enabled": false,
+    "lifecycle_schema": null,
     "python": "/usr/bin/python3",
     "controller": "/home/LOCALUSER/civ13-local/game/scripts/opendream/control.py",
     "read_key_file": "/home/LOCALUSER/civ13-local/private/local-control-key",

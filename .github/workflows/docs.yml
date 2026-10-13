@@ -27,18 +27,29 @@ jobs:
         with:
           php-version: '8.4'
           extensions: iconv, mbstring
-          tools: phive
 
       - name: Install phpDocumentor
-        run: phive install phpDocumentor --trust-gpg-keys 67F861C3D889C656,6DA3ACC4991FFAE5
+        run: |
+          curl --fail --location --output phpDocumentor.phar https://github.com/phpDocumentor/phpDocumentor/releases/download/v3.10.0/phpDocumentor.phar
+          echo 'fe1e7c23ba3329aa6f19ac3c807446159a431a195ec5d9163b0c281a15105207  phpDocumentor.phar' | sha256sum --check
 
       - name: Build class reference
-        run: ./tools/phpDocumentor --config phpdoc.dist.xml --no-interaction
+        run: php phpDocumentor.phar --config phpdoc.dist.xml --no-interaction
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate links, search and source provenance
+        run: |
+          node scripts/docs/finalize.mjs
+          node scripts/docs/verify.mjs "${{ github.sha }}"
 
       - name: Publish to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
-          folder: build
+          folder: build/v5
+          target-folder: v5
           clean: true
