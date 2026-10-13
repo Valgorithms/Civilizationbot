@@ -47,6 +47,8 @@ try {
     $pending=$receipt;unset($pending['launch_identity']);$pending['outcome']='pending';$pending['result']=null;
     $response=['ok'=>false,'error'=>'operation_pending','id'=>'restart-1','receipt'=>$pending];$exit=1;
     check(failed(fn()=>$adapter->request('restart',null,'restart-1')),'Pending mutation acknowledged');
+    $pendingError=null;$adapter->request('restart',null,'restart-1')->then(null,static function($e) use (&$pendingError){$pendingError=$e;});
+    check($pendingError instanceof Throwable && str_contains($pendingError->getMessage(),'restart-1') && str_contains($pendingError->getMessage(),'without replay'),'Uncertain response lost recovery identity');
     foreach(['pending'=>$pending,'committed'=>$receipt,'not_found'=>null] as $status=>$item) {
         $response=['ok'=>true,'schema'=>'civ13.lifecycle.v1','operation_status'=>$status,'receipt'=>$item];$exit=0;
         check(value($adapter->recover('restart-1','restart'))===$response,'Recovery outcome changed');

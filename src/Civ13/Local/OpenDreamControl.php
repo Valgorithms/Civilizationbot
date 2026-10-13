@@ -67,7 +67,7 @@ final class OpenDreamControl
             if (array_diff($keys, $allowed) || $result['exit_code'] !== 0 || ($data['engine'] ?? null) !== 'opendream' || !is_bool($data['running'] ?? null) || ($data['game_port'] ?? null) !== $this->server['gameplay_port'] || ($data['topic_port'] ?? null) !== $this->server['topic_port'] || realpath($data['runtime_dir'] ?? '') !== realpath($this->server['runtime_dir']) || !array_key_exists('server_pid', $data) || ($data['server_pid'] !== null && (!is_int($data['server_pid']) || $data['server_pid'] <= 0))) { throw new \UnexpectedValueException('Unbound control response'); }
             if ($data['running'] && $data['server_pid'] === null) { throw new \UnexpectedValueException('Running process requires owned PID'); }
             return $data; // Process state only, never HTTP/Topic readiness.
-        }, static function (\Throwable $error) use ($operationId): never { throw new \RuntimeException($operationId === null ? 'Control transport failed; outcome unknown' : 'Lifecycle outcome unknown; inspect operation '.$operationId.' without replay', 0, $error); });
+        })->then(null, static function (\Throwable $error) use ($operationId): never { throw new \RuntimeException($operationId === null ? 'Control transport failed; outcome unknown' : 'Lifecycle outcome unknown; inspect operation '.$operationId.' without replay', 0, $error); });
     }
 
     /** Fresh read-only receipt query. not_found and pending never authorize mutation replay. */
