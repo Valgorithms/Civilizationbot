@@ -17,7 +17,7 @@ function reply(string $id, array $data): void {
     global $directory, $key;
     $envelope = json_decode(file_get_contents($directory.'/'.$id.'.request'), true);
     $body = json_decode(base64_decode($envelope['body']), true);
-    $body['status'] = 'committed'; $body['data'] = $data;
+    $body['status'] = 'committed'; $body['reason'] = 'committed'; $body['data'] = $data;
     file_put_contents($directory.'/'.$id.'.reply', json_encode(AsyncSpool::seal(json_encode($body), 'reply', 1000, 1120, $key)));
 }
 try {

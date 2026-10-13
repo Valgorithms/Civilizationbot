@@ -19,7 +19,7 @@ $transport = new class implements Transport {
     public function exchange(array $request): array {
         $this->calls[] = $request;
         if ($this->timeout) { throw new RuntimeException('timeout after possible commit'); }
-        return array_merge($request, ['status' => 'committed', 'request_digest' => $this->mismatch ? 'wrong' : $request['request_digest'], 'data' => ['item_id' => 'nested-1', 'fir' => true, 'condition' => 0.75]]);
+        return array_merge($request, ['status' => 'committed', 'reason' => 'committed', 'request_digest' => $this->mismatch ? 'wrong' : $request['request_digest'], 'data' => ['item_id' => 'nested-1', 'fir' => true, 'condition' => 0.75]]);
     }
 };
 try {
@@ -112,12 +112,23 @@ try {
     check($spool->poll($fileKey)['status'] === 'pending', 'Missing reply claimed success');
     rejects(fn () => $spool->enqueue(array_merge($request, ['discord_id' => '999'])));
     try { $spool->enqueue(array_merge($request, ['request_id' => 'queue-full'])); throw new LogicException('Queue bound missing'); } catch (RuntimeException $e) { check($e->getMessage() === 'Queue capacity reached', 'Unexpected queue exception'); }
-    $reply = array_merge($request, ['status' => 'committed']);
+    $reply = array_merge($request, ['status' => 'committed', 'reason' => 'committed', 'data' => []]);
     $replyPath = $directory.'/spool/'.$fileKey.'.reply';
     $sealed = AsyncSpool::seal(json_encode($reply), 'reply', 1000, 1120, $key);
     check(strlen(AsyncSpool::seal(str_repeat('x', 8192), 'reply', 1000, 1120, $key)['body']) === 10924, 'Exact byte boundary rejected');
     rejects(fn () => AsyncSpool::seal(str_repeat('x', 8193), 'reply', 1000, 1120, $key));
     rejects(fn () => AsyncSpool::seal(str_repeat('🌍', 2049), 'reply', 1000, 1120, $key));
+    foreach (['reason', 'data'] as $field) {
+        foreach (['missing', null, 1, true] as $invalid) {
+            $bad = $reply;
+            if ($invalid === 'missing') { unset($bad[$field]); } else { $bad[$field] = $invalid; }
+            rejects(fn () => Client::validateReply($bad, $request));
+            file_put_contents($replyPath, json_encode(AsyncSpool::seal(json_encode($bad), 'reply', 1000, 1120, $key)));
+            rejects(fn () => $spool->poll($fileKey));
+        }
+    }
+    $bad = $reply; $bad['reason'] = []; rejects(fn () => Client::validateReply($bad, $request));
+    $bad = $reply; $bad['data'] = 'scalar'; rejects(fn () => Client::validateReply($bad, $request));
     file_put_contents($replyPath, json_encode($sealed)."\n");
     check($spool->poll($fileKey)['status'] === 'committed', 'Native single-LF reply rejected');
     file_put_contents($replyPath, json_encode($sealed)."\r\n"); check($spool->poll($fileKey)['status'] === 'committed', 'Bounded historical CRLF rejected');

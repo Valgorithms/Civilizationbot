@@ -22,7 +22,7 @@ $transport = new class($directory, $mode) implements Transport {
             exit(23); // Game committed; bot never records the reply.
         }
         usleep(150000);
-        return array_merge($request, ['status' => 'committed']);
+        return array_merge($request, ['status' => 'committed', 'reason' => 'committed', 'data' => []]);
     }
 };
 $response = (new Client($transport, $directory.'/journal', true))->request('concurrent', '123', 'trade.confirm', ['confirmation_token' => 'game-token'], 4);

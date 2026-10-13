@@ -64,6 +64,7 @@ final class Client
                     throw new \LogicException('Request ID already bound to another request');
                 }
                 if (isset($records[$requestId]['response']) && $records[$requestId]['response']['status'] !== 'pending') {
+                    self::validateReply($records[$requestId]['response'], $request);
                     return $records[$requestId]['response'];
                 }
             } else {
@@ -78,20 +79,29 @@ final class Client
             } catch (\Throwable $error) {
                 return ['protocol' => self::PROTOCOL, 'request_id' => $requestId, 'status' => 'pending', 'reason' => 'transport_unresolved'];
             }
-            foreach (['protocol', 'request_id', 'discord_id', 'action', 'request_digest'] as $key) {
-                if (($response[$key] ?? null) !== $request[$key]) {
-                    throw new \UnexpectedValueException('Game response binding mismatch: '.$key);
-                }
-            }
-            if (!in_array($response['status'] ?? null, ['pending', 'committed', 'rejected'], true)) {
-                throw new \UnexpectedValueException('Unknown game outcome');
-            }
-            if (strlen(json_encode($response, JSON_THROW_ON_ERROR)) > 8192) {
-                throw new \UnexpectedValueException('Game reply exceeds size bound');
-            }
+            self::validateReply($response, $request);
             $records[$requestId]['response'] = $response;
             $this->persist($records);
             return $response;
+    }
+
+    /** Validates game receipts, including cached receipts; local pending notices are separate. */
+    public static function validateReply(array $response, array $request): void
+    {
+        foreach (['protocol', 'request_id', 'discord_id', 'action', 'request_digest'] as $key) {
+            if (($response[$key] ?? null) !== $request[$key]) {
+                throw new \UnexpectedValueException('Game response binding mismatch: '.$key);
+            }
+        }
+        if (!in_array($response['status'] ?? null, ['pending', 'committed', 'rejected'], true)) {
+            throw new \UnexpectedValueException('Unknown game response status');
+        }
+        if (!array_key_exists('reason', $response) || !is_string($response['reason']) || !array_key_exists('data', $response) || !is_array($response['data'])) {
+            throw new \UnexpectedValueException('Invalid game response reason/data');
+        }
+        if (strlen(json_encode($response, JSON_THROW_ON_ERROR)) > 8192) {
+            throw new \UnexpectedValueException('Game response exceeds safehouse size bound');
+        }
     }
 
     private function persist(array $records): void

@@ -81,9 +81,30 @@ $route->handle($confirmed);
 check($gateway->requests[1]['payload'] === ['confirmation_token' => 'game-token'], 'Confirmation changed opaque game token');
 $gateway->deferreds[1]->resolve(['status' => 'committed', 'request_id' => '123457', 'data' => ['nested_id' => 'child', 'fir' => true, 'condition' => 0.75]]);
 check(str_contains($confirmed->messages[1][2]['content'], 'child'), 'Inspection metadata omitted');
+foreach (['trade.confirm','market.list','market.buy','market.cancel','room.manage'] as $action) {
+    foreach ([false, 1, 'true'] as $confirmation) {
+        $candidate=MockInteraction::fixture($action,'{"confirmation_token":"game-token"}',4,true);
+        $candidate->data->options['confirm']->value=$confirmation;
+        $before=count($gateway->requests);$route->handle($candidate);
+        check(count($gateway->requests)===$before && $candidate->messages[0][0]==='initial','Nonboolean/omitted confirmation reached game '.$action);
+    }
+}
+foreach (['unlinked_actor','account_busy','account_in_raid','item_not_owned','stale_revision','quote_expired','quote_actor_mismatch','quote_action_mismatch','listing_changed','account_recovery_required'] as $code) {
+    $denied=MockInteraction::fixture('trade.confirm','{"confirmation_token":"game-token"}',4,true);$denied->id='negative-'.$code;
+    $route->handle($denied);$before=count($gateway->requests);
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status'=>'rejected','request_id'=>$denied->id,'reason'=>$code,'data'=>['code'=>$code]]);
+    check(count($gateway->requests)===$before,'Rejected operation retried '.$code);
+    $content=$denied->messages[1][2]['content'];
+    check(str_contains($content,'rejected') && str_contains($content,$code) && !str_contains($content,'Game confirmed'),'Rejection falsely acknowledged '.$code);
+}
+$nested=MockInteraction::fixture('stash.detail','{"item_id":"root-1","page":0}');$nested->id='nested-preservation';$route->handle($nested);
+$nodes=[['index'=>1,'id'=>'root-1','parent'=>0,'found_in_raid'=>false,'condition'=>['health'=>0,'maxhealth'=>100]],['index'=>2,'id'=>'child-2','parent'=>1,'found_in_raid'=>true,'condition'=>['health'=>17,'maxhealth'=>80]]];
+$gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status'=>'committed','request_id'=>$nested->id,'reason'=>'saved_graph','data'=>['item_id'=>'root-1','nodes'=>$nodes,'next_page'=>null]]);
+$content=$nested->messages[1][2]['content'];
+check(str_contains($content,json_encode($nodes,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)),'Distinct nested identity/FIR/zero condition changed');
 $unicode = MockInteraction::fixture(); $unicode->id = 'unicode';
 $route->handle($unicode);
-$gateway->deferreds[2]->resolve(['status' => 'committed', 'request_id' => 'unicode', 'data' => ['name' => str_repeat('🌍', 2000)]]);
+$gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'committed', 'request_id' => 'unicode', 'data' => ['name' => str_repeat('🌍', 2000)]]);
 check(preg_match('//u', $unicode->messages[1][2]['content']) === 1 && strlen($unicode->messages[1][2]['content']) <= 3600, 'Bounded render split Unicode');
 
 $digest = str_repeat('a', 64);
@@ -93,7 +114,7 @@ foreach (['pending', 'not_found', 'committed', 'rejected', 'wrong_actor'] as $op
     $route->handle($statusInteraction);
     $data = ['operation_status' => $operationStatus === 'wrong_actor' ? 'committed' : $operationStatus];
     if (in_array($operationStatus, ['committed', 'rejected', 'wrong_actor'], true)) { $data['operation_receipt'] = ['request_id' => 'original-operation', 'request_digest' => $digest, 'discord_id' => $operationStatus === 'wrong_actor' ? '999' : '123', 'status' => $data['operation_status']]; }
-    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'committed', 'data' => $data]);
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'committed', 'reason' => 'committed', 'data' => $data]);
     $content = $statusInteraction->messages[1][2]['content'];
     check(!str_contains($content, 'Game confirmed request'), 'Status query misreported original success');
     check(str_contains($content, $operationStatus === 'wrong_actor' ? 'unresolved' : $operationStatus), 'Original operation status omitted');
@@ -103,7 +124,7 @@ foreach ([['stash.detail', '{"item_id":"native-root","page":31}', null], ['marke
     $route->handle($observation);
     check(end($gateway->requests)['action'] === $action && $observation->messages[0] === ['defer', true], 'Additive action not routed ephemerally');
     $data = ['nodes' => [['index' => 1, 'id' => 'native-root', 'parent' => 0, 'found_in_raid' => true, 'condition' => ['health' => 20, 'maxhealth' => 100], 'material_key' => null, 'amount' => null, 'ammo_refs' => []]], 'next_page' => null];
-    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'committed', 'data' => $data]);
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'committed', 'reason' => 'committed', 'data' => $data]);
     check(str_contains($observation->messages[1][2]['content'], 'found_in_raid') && str_contains($observation->messages[1][2]['content'], 'maxhealth'), 'Authoritative node summary omitted');
 }
 $unconfirmedRoom = MockInteraction::fixture('room.manage', '{"confirmation_token":"native-room-token"}', 4);
@@ -187,7 +208,7 @@ try {
     $ticks[0](); check($outcome['status'] === 'pending' && $cancelled[0], 'Timeout did not cancel/preserve pending');
     $request2 = Client::envelope('timer-2', '123', 'stash.inspect', [], null);
     $driver->submit($request2)->then(function ($value) use (&$outcome): void { $outcome = $value; });
-    $response = array_merge($request2, ['status' => 'rejected', 'reason' => 'in_raid']);
+    $response = array_merge($request2, ['status' => 'rejected', 'reason' => 'in_raid', 'data' => ['code' => 'in_raid']]);
     $id = hash('sha256', 'timer-2');
     file_put_contents($directory.'/'.$id.'.reply', json_encode(AsyncSpool::seal(json_encode($response), 'reply', time(), time() + 120, str_repeat('synthetic-', 4))));
     $ticks[1](); check($outcome['status'] === 'rejected' && $cancelled[1], 'Game rejection not terminal');

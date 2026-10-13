@@ -73,10 +73,7 @@ final class AsyncSpool
         $replyEnvelope = $this->read($replyPath, 'reply');
         if ($replyEnvelope['expires_at'] < ($this->clock)()) { return ['status' => 'pending', 'request_id' => $request['request_id'], 'reason' => 'expired_reply']; }
         $reply = json_decode(base64_decode($replyEnvelope['body'], true), true, 32, JSON_THROW_ON_ERROR);
-        foreach (['protocol', 'request_id', 'discord_id', 'action', 'request_digest'] as $field) {
-            if (($reply[$field] ?? null) !== $request[$field]) { throw new \UnexpectedValueException('Reply identity mismatch'); }
-        }
-        if (!in_array($reply['status'] ?? null, ['pending', 'committed', 'rejected'], true)) { throw new \UnexpectedValueException('Unknown reply status'); }
+        Client::validateReply($reply, $request);
         if ($this->replyPending($id)) { return ['status' => 'pending', 'request_id' => $request['request_id'], 'reason' => 'reply_write_pending']; }
         return $reply;
     }
