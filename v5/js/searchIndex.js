@@ -2736,6 +2736,11 @@ Search.appendIndex(
             "summary": "Opt\u002Din\u0020worker\u0020adapter.\u0020No\u0020Discord\u0020routes,\u0020native\u0020fallback,\u0020shell\u0020or\u0020automatic\u0020retry.",
             "url": "classes/Civ13-Local-OpenDreamControl.html"
         },                {
+            "fqsen": "\\Civ13\\Local\\OpenDreamControl\u003A\u003ArequiresOperationId\u0028\u0029",
+            "name": "requiresOperationId",
+            "summary": "",
+            "url": "classes/Civ13-Local-OpenDreamControl.html#method_requiresOperationId"
+        },                {
             "fqsen": "\\Civ13\\Local\\OpenDreamControl\u003A\u003A__construct\u0028\u0029",
             "name": "__construct",
             "summary": "",
@@ -2745,6 +2750,21 @@ Search.appendIndex(
             "name": "request",
             "summary": "Executor\u0020takes\u0020argv\u0020plus\u0020bounded\u0020timeout\u0020seconds,\u0020resolves\u0020\u007Bexit_code,stdout\u007D\u003B\u0020rejection\u0020means\u0020unknown\u0020outcome.",
             "url": "classes/Civ13-Local-OpenDreamControl.html#method_request"
+        },                {
+            "fqsen": "\\Civ13\\Local\\OpenDreamControl\u003A\u003Arecover\u0028\u0029",
+            "name": "recover",
+            "summary": "Fresh\u0020read\u002Donly\u0020receipt\u0020query.\u0020not_found\u0020and\u0020pending\u0020never\u0020authorize\u0020mutation\u0020replay.",
+            "url": "classes/Civ13-Local-OpenDreamControl.html#method_recover"
+        },                {
+            "fqsen": "\\Civ13\\Local\\OpenDreamControl\u003A\u003Aidentity\u0028\u0029",
+            "name": "identity",
+            "summary": "",
+            "url": "classes/Civ13-Local-OpenDreamControl.html#method_identity"
+        },                {
+            "fqsen": "\\Civ13\\Local\\OpenDreamControl\u003A\u003Areceipt\u0028\u0029",
+            "name": "receipt",
+            "summary": "",
+            "url": "classes/Civ13-Local-OpenDreamControl.html#method_receipt"
         },                {
             "fqsen": "\\Civ13\\Local\\OpenDreamControl\u003A\u003Aabsolute\u0028\u0029",
             "name": "absolute",
@@ -2790,6 +2810,11 @@ Search.appendIndex(
             "name": "enabled",
             "summary": "",
             "url": "classes/Civ13-Local-OpenDreamControl.html#property_enabled"
+        },                {
+            "fqsen": "\\Civ13\\Local\\OpenDreamControl\u003A\u003A\u0024lifecycleSchema",
+            "name": "lifecycleSchema",
+            "summary": "",
+            "url": "classes/Civ13-Local-OpenDreamControl.html#property_lifecycleSchema"
         },                {
             "fqsen": "\\Civ13\\Local\\Profile",
             "name": "Profile",
