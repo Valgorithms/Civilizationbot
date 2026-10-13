@@ -64,10 +64,12 @@ final class DiscordRoute
         if ($request['action'] === 'trade.status') {
             $operationStatus = $outcome['data']['operation_status'] ?? null;
             if (!in_array($operationStatus, ['pending', 'committed', 'rejected', 'not_found'], true)) { return 'Status query completed, but the original operation remains unresolved.'; }
+            if (($operationStatus === 'pending' || $operationStatus === 'not_found') && ($outcome['data']['operation_receipt'] ?? null) !== null) { return 'Status query completed, but its original receipt binding is unresolved.'; }
             if ($operationStatus === 'pending' || $operationStatus === 'not_found') { return 'Status query completed. Original operation is '.$operationStatus.'. No completed trade is confirmed. Do not issue another economic operation; retain its original request for recovery.'; }
             $receipt = $outcome['data']['operation_receipt'] ?? null;
             if (!is_array($receipt) || ($receipt['request_id'] ?? null) !== $request['payload']['operation_request_id'] || ($receipt['request_digest'] ?? null) !== $request['payload']['operation_request_digest'] || ($receipt['discord_id'] ?? null) !== $request['discord_id'] || ($receipt['status'] ?? null) !== $operationStatus) { return 'Status query completed, but its original receipt binding is unresolved.'; }
-            return 'Original operation '.$receipt['request_id'].' is '.$operationStatus.'. '.json_encode($receipt['data'] ?? [], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            if (($receipt['protocol'] ?? null) !== Client::PROTOCOL || !in_array($receipt['action'] ?? null, Client::ACTIONS, true) || !is_string($receipt['reason'] ?? null) || strlen($receipt['reason']) < 1 || strlen($receipt['reason']) > 128 || !preg_match('//u', $receipt['reason']) || preg_match('/[\x{0000}-\x{001f}\x{007f}-\x{009f}]/u', $receipt['reason']) || !is_array($receipt['data'] ?? null)) { return 'Status query completed, but its original receipt schema is unresolved.'; }
+            return 'Original operation '.$receipt['request_id'].' is '.$operationStatus.'. '.json_encode($receipt['data'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         }
         return 'Game confirmed request '.$id.'. '.json_encode($outcome['data'] ?? [], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }

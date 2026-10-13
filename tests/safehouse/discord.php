@@ -113,11 +113,43 @@ foreach (['pending', 'not_found', 'committed', 'rejected', 'wrong_actor'] as $op
     $statusInteraction->id = 'status-'.$operationStatus;
     $route->handle($statusInteraction);
     $data = ['operation_status' => $operationStatus === 'wrong_actor' ? 'committed' : $operationStatus];
-    if (in_array($operationStatus, ['committed', 'rejected', 'wrong_actor'], true)) { $data['operation_receipt'] = ['request_id' => 'original-operation', 'request_digest' => $digest, 'discord_id' => $operationStatus === 'wrong_actor' ? '999' : '123', 'status' => $data['operation_status']]; }
+    if (in_array($operationStatus, ['committed', 'rejected', 'wrong_actor'], true)) { $data['operation_receipt'] = ['protocol' => Client::PROTOCOL, 'action' => 'stash.detail', 'reason' => 'committed', 'data' => [], 'request_id' => 'original-operation', 'request_digest' => $digest, 'discord_id' => $operationStatus === 'wrong_actor' ? '999' : '123', 'status' => $data['operation_status']]; }
     $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status' => 'committed', 'reason' => 'committed', 'data' => $data]);
     $content = $statusInteraction->messages[1][2]['content'];
     check(!str_contains($content, 'Game confirmed request'), 'Status query misreported original success');
     check(str_contains($content, $operationStatus === 'wrong_actor' ? 'unresolved' : $operationStatus), 'Original operation status omitted');
+}
+$validReceipt = ['protocol'=>Client::PROTOCOL,'action'=>'link.complete','request_id'=>'original-operation','request_digest'=>$digest,'discord_id'=>'123','status'=>'committed','reason'=>'linked','data'=>[]];
+foreach (Client::ACTIONS as $originalAction) {
+    $receipt=$validReceipt; $receipt['action']=$originalAction;
+    $interaction=MockInteraction::fixture('trade.status',json_encode(['operation_request_id'=>'original-operation','operation_request_digest'=>$digest])); $route->handle($interaction);
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status'=>'committed','data'=>['operation_status'=>'committed','operation_receipt'=>$receipt]]);
+    check(str_contains($interaction->messages[1][2]['content'],'Original operation original-operation is committed'),'Supported non-economic original receipt rejected '.$originalAction);
+}
+foreach (['protocol'=>null,'action'=>'unknown.action','reason'=>null,'data'=>null,'status'=>'rejected','request_digest'=>str_repeat('b',64),'request_id'=>'other','discord_id'=>'999'] as $field=>$invalid) {
+    foreach (['missing','invalid'] as $kind) {
+        $receipt=$validReceipt; if ($kind==='missing') { unset($receipt[$field]); } else { $receipt[$field]=$invalid; }
+        $interaction=MockInteraction::fixture('trade.status',json_encode(['operation_request_id'=>'original-operation','operation_request_digest'=>$digest])); $route->handle($interaction);
+        $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status'=>'committed','data'=>['operation_status'=>'committed','operation_receipt'=>$receipt]]);
+        check(str_contains($interaction->messages[1][2]['content'],'unresolved'),'Malformed original receipt claimed completion '.$field.'/'.$kind);
+    }
+}
+foreach (['',str_repeat('x',129),"bad\nreason","bad\u{0085}reason","bad\u{009f}reason",str_repeat("é",65),[],1,true] as $reason) {
+    $receipt=$validReceipt; $receipt['reason']=$reason;
+    $interaction=MockInteraction::fixture('trade.status',json_encode(['operation_request_id'=>'original-operation','operation_request_digest'=>$digest])); $route->handle($interaction);
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status'=>'committed','data'=>['operation_status'=>'committed','operation_receipt'=>$receipt]]);
+    check(str_contains($interaction->messages[1][2]['content'],'unresolved'),'Invalid reason accepted');
+}
+foreach ([str_repeat('x',128),str_repeat("é",64)] as $reason) {
+    $receipt=$validReceipt; $receipt['reason']=$reason;
+    $interaction=MockInteraction::fixture('trade.status',json_encode(['operation_request_id'=>'original-operation','operation_request_digest'=>$digest])); $route->handle($interaction);
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status'=>'committed','data'=>['operation_status'=>'committed','operation_receipt'=>$receipt]]);
+    check(str_contains($interaction->messages[1][2]['content'],'Original operation original-operation is committed'),'Exact reason byte bound rejected');
+}
+foreach (['pending','not_found'] as $state) {
+    $interaction=MockInteraction::fixture('trade.status',json_encode(['operation_request_id'=>'original-operation','operation_request_digest'=>$digest])); $route->handle($interaction);
+    $gateway->deferreds[array_key_last($gateway->deferreds)]->resolve(['status'=>'committed','data'=>['operation_status'=>$state,'operation_receipt'=>$validReceipt]]);
+    check(str_contains($interaction->messages[1][2]['content'],'unresolved'),'Nonterminal status accepted attached receipt');
 }
 foreach ([['stash.detail', '{"item_id":"native-root","page":31}', null], ['market.browse', '{"page":15}', null], ['room.quote', '{"operation":"upgrade","item_ids":["native-part"]}', 4]] as [$action, $payload, $revision]) {
     $observation = MockInteraction::fixture($action, $payload, $revision); $observation->id = 'addition-'.str_replace('.', '-', $action);
