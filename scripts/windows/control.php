@@ -1,0 +1,22 @@
+<?php
+declare(strict_types=1);
+require __DIR__.'/../../src/Civ13/PortableProfile.php';
+require __DIR__.'/../../src/Civ13/PortableProcess.php';
+use Civ13\PortableProfile;
+use Civ13\PortableProcess;
+try {
+    if (count($argv)!==3 || !in_array($argv[1],['check','start','stop'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop ABSOLUTE_PROFILE'); }
+    $profile=PortableProfile::load($argv[2]);
+    if ($argv[1]==='stop') { PortableProcess::requestStop($profile['state_dir']); exit(0); }
+    $errors=PortableProfile::preflight($profile,extension_loaded(...));
+    if ($errors!==[]) { throw new RuntimeException(implode('; ',$errors)); }
+    if ($argv[1]==='check') { echo "Preflight passed; not started\n"; exit(0); }
+    if (is_file($profile['state_dir'].'/stop.request')) { throw new RuntimeException('Unresolved stop request; inspect previous instance before starting'); }
+    putenv('CIVILIZATIONBOT_PROFILE='.$argv[2]);
+    $pipes=[];
+    $process=PortableProcess::start(PortableProcess::argv(PHP_BINARY,$profile['root']),$profile['state_dir'],static function($args,$descriptors,$cwd,$options) use (&$pipes) { return proc_open($args,$descriptors,$pipes,$cwd,null,$options); });
+    if (!is_resource($process)) { throw new RuntimeException('Child process creation failed'); }
+    fclose($pipes[0]);
+    // Foreground supervision avoids unowned background PHP copies; Ctrl+C is not a game stop.
+    exit(proc_close($process));
+} catch (Throwable $error) { fwrite(STDERR,'Portable control failed: '.$error->getMessage().PHP_EOL); exit(1); }

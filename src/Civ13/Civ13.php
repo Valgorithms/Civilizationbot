@@ -924,6 +924,7 @@ class Civ13
     {
         $this->stop();
 
+        if (getenv('CIVILIZATIONBOT_PROFILE')) { return \React\Promise\resolve(null); } // Supervisor owns relaunch.
         return OSFunctions::restart($file ?? $this->constructed_file);
     }
 
