@@ -248,6 +248,7 @@ class Civ13
     public Message $restart_message;
 
     private string $constructed_file;
+    private RestartPolicy $restartPolicy;
 
     private PromiseMiddleware $then;
 
@@ -275,6 +276,7 @@ class Civ13
 
         // Set the file that the object was constructed in
         $this->constructed_file = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'];
+        $this->restartPolicy = new RestartPolicy($options['restart_mode'] ?? 'legacy');
 
         $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
         $options = $this->resolveOptions($options);
@@ -490,6 +492,7 @@ class Civ13
                 'ooc_badwords',
                 'owner_id',
                 'rules',
+                'restart_mode',
                 'civ13_server_settings',
                 'socket',
                 'stats',
@@ -529,6 +532,7 @@ class Civ13
                 'ooc_badwords' => [],
                 'owner_id' => '196253985072611328',
                 'rules' => 'civ13.com slash rules',
+                'restart_mode' => 'legacy',
                 'civ13_server_settings' => [],
                 'socket' => null,
                 'stats' => null,
@@ -539,6 +543,8 @@ class Civ13
                 'webserver_url' => 'www.valzargaming.com',
             ])
             ->setAllowedTypes('welcome_message', 'string')
+            ->setAllowedTypes('restart_mode', 'string')
+            ->setAllowedValues('restart_mode', ['legacy', 'supervised'])
             ->setAllowedTypes('logger', ['null', Logger::class])
             ->setAllowedTypes('onFulfilledDefault', ['null', 'callable'])
             ->setAllowedTypes('onRejectedDefault', ['null', 'callable'])
@@ -922,10 +928,11 @@ class Civ13
      */
     public function restart(?string $file = null): PromiseInterface
     {
-        $this->stop();
-
-        if (getenv('CIVILIZATIONBOT_PROFILE')) { return \React\Promise\resolve(null); } // Supervisor owns relaunch.
-        return OSFunctions::restart($file ?? $this->constructed_file);
+        if (getenv('CIVILIZATIONBOT_PROFILE')) {
+            $this->stop();
+            return \React\Promise\resolve(null); // Portable supervisor owns relaunch.
+        }
+        return $this->restartPolicy->restart($file, fn () => $this->stop(), fn (?string $entry) => OSFunctions::restart($entry ?? $this->constructed_file));
     }
 
     /** A formatted CPU-usage string for the host OS. */
