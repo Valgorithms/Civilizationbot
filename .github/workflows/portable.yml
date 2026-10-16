@@ -17,6 +17,7 @@ jobs:
       - run: composer install --no-interaction --no-plugins --no-scripts --no-dev
       - run: php tests/windows/constructor.php
       - run: php tests/windows/constructor.php vendor/autoload.php --negative-control
+      - run: php tests/windows/constructor.php vendor/autoload.php --cache-negative-control
       - run: php tests/windows/portable.php
       - run: php -l bot.php
       - run: php -l src/Civ13/Civ13.php

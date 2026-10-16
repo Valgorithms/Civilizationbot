@@ -10,6 +10,8 @@ final class OfflineDiscord extends Discord\Discord {
     public function __construct(private React\EventLoop\LoopInterface $offlineLoop) {}
     public function getLoop(): React\EventLoop\LoopInterface { return $this->offlineLoop; }
 }
+$cacheNegative=($argv[2] ?? null)==='--cache-negative-control';
+if ($cacheNegative && PHP_OS_FAMILY === 'Windows') { echo "SKIP POSIX permission mutation on Windows\n"; return; }
 $dir=sys_get_temp_dir().'/portable-constructor-'.bin2hex(random_bytes(8));mkdir($dir);
 $previous=getcwd();chdir($dir);
 // Runtime warnings must fail this contract instead of passing CI with failed cache writes.
@@ -18,9 +20,9 @@ set_error_handler(static function(int $severity, string $message, string $file, 
     return false;
 });
 $negative=($argv[2] ?? null)==='--negative-control';
-if ($negative) {
+if ($negative || $cacheNegative) {
     $source=file_get_contents(__DIR__.'/../../src/Civ13/Civ13.php');
-    $source=str_replace('if ($this->verifier_server !== null) { new SS14Verifier($this); }','new SS14Verifier($this);',$source,$mutations);
+    $source=$cacheNegative ? str_replace('mkdir($this->filecache_path, 0755, true);','mkdir($this->filecache_path, 0664, true);',$source,$mutations) : str_replace('if ($this->verifier_server !== null) { new SS14Verifier($this); }','new SS14Verifier($this);',$source,$mutations);
     if ($mutations!==1) { throw new RuntimeException('Negative control not applied'); }
     file_put_contents($dir.'/Civ13.php',$source);
     $loader->addClassMap(['Civ13\\Civ13'=>$dir.'/Civ13.php']);
@@ -31,6 +33,10 @@ try {
     $logger=new Monolog\Logger('offline',[new Monolog\Handler\NullHandler()]);
     $options=['discord'=>$discord,'loop'=>$loop,'logger'=>$logger,'stats'=>(new ReflectionClass(Discord\Stats::class))->newInstanceWithoutConstructor(),'browser'=>new React\Http\Browser(new React\Socket\Connector(['dns'=>false],$loop)),'filesystem'=>new React\Filesystem\Fallback\Adapter(),'verify_url'=>'','functions'=>[],'channel_ids'=>[],'role_ids'=>[]];
     try { $bot=new Civ13\Civ13($options,[],[],null); }
+    catch (ErrorException $error) {
+        if ($cacheNegative && str_contains($error->getMessage(),'Permission denied')) { echo "PASS POSIX cache mutation rejects failed production writes\n"; return; }
+        throw $error;
+    }
     catch (RuntimeException $error) {
         if ($negative && $error->getMessage()==='No SS14 verifier server set.') { echo "PASS negative control detects original unconditional service crash\n"; return; }
         throw $error;
@@ -40,6 +46,7 @@ try {
     if (PHP_OS_FAMILY !== 'Windows' && (fileperms($bot->filecache_path) & 0100) === 0) { throw new RuntimeException('Cache lacks owner search permission'); }
     $cachePayload=['portable'=>true,'value'=>'cache round trip'];
     if (!Civ13\OSFunctions::VarSave($bot->filecache_path,'portable-contract.json',$cachePayload,$logger) || Civ13\OSFunctions::VarLoad($bot->filecache_path,'portable-contract.json',$logger)!==$cachePayload) { throw new RuntimeException('Actual cache write/read failed'); }
+    if ($cacheNegative) { throw new RuntimeException('Broken POSIX directory permissions were not detected'); }
     new Civ13\Slash($bot);
     if (isset($discord->commands()['ss14']) || !isset($discord->commands()['ckey'])) { throw new RuntimeException('Dependent registration unavailable-mode mismatch'); }
     (new ReflectionMethod(Civ13\MessageServiceManager::class,'__generateGlobalMessageCommands'))->invoke($bot->messageServiceManager);
