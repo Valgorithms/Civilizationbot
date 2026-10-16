@@ -59,6 +59,14 @@ dependency reporting, exclusive locking, stop replay, shell-free argv and actual
 GameServer entry-point rejection before uninitialized game/Discord dependencies.
 It never loads bot.php, connects Discord or launches a child process.
 
+`php tests/windows/constructor.php [ABSOLUTE_VENDOR_AUTOLOAD]` additionally runs
+actual Civ13 construction through afterConstruct with an injected Discord event
+emitter, non-running loop, temporary state and disabled DNS connector. It verifies
+slash listeners omit unavailable SS14 verification and the registered read route
+returns 503, never a successful empty list. It does not invoke the credential-
+loading test bootstrap or start an event loop. CI installs dependencies with
+Composer plugins/scripts disabled before running this contract.
+
 These tests do not establish live startup, gateway intents, command registration,
 permissions, TEST1714 file IPC, process binding, or delivery. Before an authorized
 activation: review the exact candidate/CI, provision separate credentials and

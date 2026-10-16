@@ -149,7 +149,7 @@ class Civ13
     public Byond $byond;
     public Moderator $moderator;
     public Verifier $verifier;
-    public SS14Verifier $ss14verifier;
+    public ?SS14Verifier $ss14verifier = null;
 
     public string $welcome_message = '';
     
@@ -422,7 +422,7 @@ class Civ13
         $this->__loadOrInitializeVariables();
         new Moderator($this);
         new Verifier($this, $options);
-        new SS14Verifier($this);
+        if ($this->verifier_server !== null) { new SS14Verifier($this); }
         foreach ($civ13_server_settings as $gameserver_options) {
             new GameServer($this, $gameserver_options);
         }

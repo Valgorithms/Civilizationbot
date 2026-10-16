@@ -635,12 +635,15 @@ class Slash
                 : $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true)
         );
 
+        if ($this->civ13->ss14verifier !== null) {
         $this->discord->listenCommand(
             'ss14',
             fn (Interaction $interaction): PromiseInterface => ($item = $this->civ13->ss14verifier->get('discord', $interaction->data->target_id))
                 ? $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss14']}`"), true)
                 : $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with an SS14 account or it does not exist in the cache yet"), true)
         );
+
+        }
 
         $this->discord->listenCommand('bancheck', function (Interaction $interaction): PromiseInterface {
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) {
