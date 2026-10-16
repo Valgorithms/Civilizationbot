@@ -300,7 +300,7 @@ class Civ13
             $this->filecache_path = $options['filecache_path'];
         }
         if (! is_dir($this->filecache_path)) {
-            mkdir($this->filecache_path, 0664, true);
+            mkdir($this->filecache_path, 0755, true);
         }
         
         if (isset($options['command_symbol']) && $options['command_symbol']) {

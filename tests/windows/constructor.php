@@ -12,6 +12,11 @@ final class OfflineDiscord extends Discord\Discord {
 }
 $dir=sys_get_temp_dir().'/portable-constructor-'.bin2hex(random_bytes(8));mkdir($dir);
 $previous=getcwd();chdir($dir);
+// Runtime warnings must fail this contract instead of passing CI with failed cache writes.
+set_error_handler(static function(int $severity, string $message, string $file, int $line): bool {
+    if ($severity === E_WARNING) { throw new ErrorException($message, 0, $severity, $file, $line); }
+    return false;
+});
 $negative=($argv[2] ?? null)==='--negative-control';
 if ($negative) {
     $source=file_get_contents(__DIR__.'/../../src/Civ13/Civ13.php');
@@ -32,6 +37,9 @@ try {
     }
     if ($negative) { throw new RuntimeException('Original service crash was not detected'); }
     if ($bot->ss14verifier!==null || !isset($bot->httpServiceManager,$bot->messageServiceManager)) { throw new RuntimeException('Incomplete no-service construction'); }
+    if (PHP_OS_FAMILY !== 'Windows' && (fileperms($bot->filecache_path) & 0100) === 0) { throw new RuntimeException('Cache lacks owner search permission'); }
+    $cachePayload=['portable'=>true,'value'=>'cache round trip'];
+    if (!Civ13\OSFunctions::VarSave($bot->filecache_path,'portable-contract.json',$cachePayload,$logger) || Civ13\OSFunctions::VarLoad($bot->filecache_path,'portable-contract.json',$logger)!==$cachePayload) { throw new RuntimeException('Actual cache write/read failed'); }
     new Civ13\Slash($bot);
     if (isset($discord->commands()['ss14']) || !isset($discord->commands()['ckey'])) { throw new RuntimeException('Dependent registration unavailable-mode mismatch'); }
     (new ReflectionMethod(Civ13\MessageServiceManager::class,'__generateGlobalMessageCommands'))->invoke($bot->messageServiceManager);
@@ -45,6 +53,7 @@ try {
     if ($response->getStatusCode()!==503 || str_contains((string)$response->getBody(),'[]')) { throw new RuntimeException('Unavailable service reported successful empty data'); }
     echo "PASS actual Civ13 afterConstruct and slash registration without SS14 service; no loop run\n";
 } finally {
+    restore_error_handler();
     chdir($previous);
     $remove=function($path) use (&$remove) { foreach(new DirectoryIterator($path) as $entry) { if($entry->isDot())continue;$entry->isDir()?$remove($entry->getPathname()):unlink($entry->getPathname()); }rmdir($path); };
     $remove($dir);
