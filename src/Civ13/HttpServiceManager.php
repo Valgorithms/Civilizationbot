@@ -888,7 +888,7 @@ class HttpServiceManager
             )
             ->offsetSet(
                 '/ss14verified',
-                fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => HttpResponse::json($this->civ13->ss14verifier->toArray()),
+                fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => ($this->civ13->ss14verifier === null ? HttpResponse::json(['error' => 'SS14 verification unavailable'])->withStatus(503) : HttpResponse::json($this->civ13->ss14verifier->toArray())),
                 false
             )
             ->offsetSet(

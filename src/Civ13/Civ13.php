@@ -149,7 +149,7 @@ class Civ13
     public Byond $byond;
     public Moderator $moderator;
     public Verifier $verifier;
-    public SS14Verifier $ss14verifier;
+    public ?SS14Verifier $ss14verifier = null;
 
     public string $welcome_message = '';
     
@@ -302,7 +302,7 @@ class Civ13
             $this->filecache_path = $options['filecache_path'];
         }
         if (! is_dir($this->filecache_path)) {
-            mkdir($this->filecache_path, 0664, true);
+            mkdir($this->filecache_path, 0755, true);
         }
         
         if (isset($options['command_symbol']) && $options['command_symbol']) {
@@ -424,7 +424,7 @@ class Civ13
         $this->__loadOrInitializeVariables();
         new Moderator($this);
         new Verifier($this, $options);
-        new SS14Verifier($this);
+        if ($this->verifier_server !== null) { new SS14Verifier($this); }
         foreach ($civ13_server_settings as $gameserver_options) {
             new GameServer($this, $gameserver_options);
         }
@@ -928,6 +928,10 @@ class Civ13
      */
     public function restart(?string $file = null): PromiseInterface
     {
+        if (getenv('CIVILIZATIONBOT_PROFILE')) {
+            $this->stop();
+            return \React\Promise\resolve(null); // Portable supervisor owns relaunch.
+        }
         return $this->restartPolicy->restart($file, fn () => $this->stop(), fn (?string $entry) => OSFunctions::restart($entry ?? $this->constructed_file));
     }
 

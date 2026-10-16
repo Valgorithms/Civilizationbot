@@ -34,3 +34,20 @@ assertLocal($resolved['restart_mode'] === 'legacy');
 $options = ['restart_mode' => 'arbitrary'] + $adapters;
 try { $resolver->invokeArgs($instance, [&$options]); throw new RuntimeException('Invalid mode accepted'); } catch (Symfony\Component\OptionsResolver\Exception\InvalidOptionsException) {}
 echo "PASS injected restart policy: graceful-only, duplicate suppression, legacy delegation, failed-stop retry\n";
+
+// Exercise actual merged Civ13 restart dispatch without initializing Discord or IO.
+class PortableRestartProbe extends Civ13\Civ13 {
+    public int $stops = 0;
+    public function stop(bool $closeLoop = true): void { $this->stops++; }
+}
+$portable = (new ReflectionClass(PortableRestartProbe::class))->newInstanceWithoutConstructor();
+$oldProfile = getenv('CIVILIZATIONBOT_PROFILE');
+putenv('CIVILIZATIONBOT_PROFILE=synthetic-local-profile');
+try {
+    // restartPolicy remains deliberately uninitialized: portable must never reach it or OS spawn.
+    $portable->restart()->then(static fn ($result) => assertLocal($result === null));
+    assertLocal($portable->stops === 1);
+} finally {
+    $oldProfile === false ? putenv('CIVILIZATIONBOT_PROFILE') : putenv('CIVILIZATIONBOT_PROFILE='.$oldProfile);
+}
+echo "PASS actual merged portable restart stops without legacy/policy spawn\n";

@@ -1,0 +1,24 @@
+name: Portable startup contracts
+on: [push, pull_request]
+jobs:
+  offline:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        php: ['8.3', '8.4']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, openssl, curl
+          coverage: none
+      - run: composer install --no-interaction --no-plugins --no-scripts --no-dev
+      - run: php tests/windows/constructor.php
+      - run: php tests/windows/constructor.php vendor/autoload.php --negative-control
+      - run: php tests/windows/constructor.php vendor/autoload.php --cache-negative-control
+      - run: php tests/windows/portable.php
+      - run: php -l bot.php
+      - run: php -l src/Civ13/Civ13.php
+      - run: php -l src/Civ13/GameServer.php
