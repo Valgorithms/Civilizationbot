@@ -475,6 +475,8 @@ class Civ13
                 'loop',
                 'browser',
                 'filesystem',
+                'filecache_path',
+                'discover_external_ip',
                 'civ13_guild_id',
                 'civ_token',
                 'command_symbol',
@@ -503,6 +505,7 @@ class Civ13
                 'webserver_url',
             ])
             ->setDefaults([
+                'discover_external_ip' => true,
                 'welcome_message' => '',
                 'logger' => null,
                 'onFulfilledDefault' => null,
@@ -555,6 +558,8 @@ class Civ13
             ->setAllowedTypes('functions', 'array')
             ->setAllowedTypes('loop', LoopInterface::class)
             ->setAllowedTypes('browser', ['null', Browser::class])
+            ->setAllowedTypes('filecache_path', 'string')
+            ->setAllowedTypes('discover_external_ip', 'bool')
             ->setAllowedTypes('filesystem', ['null', AdapterInterface::class])
             ->setAllowedTypes('civ13_guild_id', 'string')
             ->setAllowedTypes('civ_token', 'string')

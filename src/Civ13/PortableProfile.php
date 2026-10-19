@@ -38,7 +38,33 @@ final class PortableProfile
         foreach (['channel_ids', 'role_ids'] as $field) {
             if (!is_array($profile['options'][$field] ?? null)) { throw new \InvalidArgumentException('Explicit destination map required: '.$field); }
         }
+        self::runtimeOptions($profile);
         return $profile;
+    }
+
+    /** Replace privileged production defaults; omitted local identities stay disabled. */
+    public static function runtimeOptions(array $profile): array
+    {
+        $options = $profile['options'];
+        foreach (['owner_id', 'technician_id', 'civ13_guild_id'] as $field) {
+            $value = $options[$field] ?? '';
+            if (!is_string($value) || ($value !== '' && preg_match('/^[0-9]{17,20}$/D', $value) !== 1)) {
+                throw new \InvalidArgumentException('Expected explicit Discord identity: '.$field);
+            }
+            $options[$field] = $value;
+        }
+        $options['gitdir'] = $profile['gitdir'];
+        $options['filecache_path'] = $profile['state_dir'].'/json/';
+        $options['discover_external_ip'] = false;
+        $options['verify_url'] = '';
+        $options['webserver_url'] = '127.0.0.1';
+        return $options;
+    }
+
+    /** An inherited process environment is not an explicit credential source. */
+    public static function environmentValue(string $name, array $loadedNames): string
+    {
+        return in_array($name, $loadedNames, true) ? (getenv($name) ?: '') : '';
     }
 
     public static function assertRoot(array $profile, string $root): void

@@ -106,9 +106,11 @@ if (PHP_OS_FAMILY === 'Windows' && !$portablePath) {
 if ($portablePath) {
     $portable = PortableProfile::load($portablePath);
     PortableProfile::assertRoot($portable, __DIR__);
+    $baseDir = __DIR__;
     $errors = PortableProfile::preflight($portable, extension_loaded(...));
     if ($errors !== []) { throw new \RuntimeException(implode('; ', $errors)); }
     $portableLock = \Civ13\PortableProcess::lock($portable['state_dir']);
+    if (is_file($portable['state_dir'].'/stop.request')) { throw new \RuntimeException('Unresolved stop request; inspect previous instance before starting'); }
     chdir($portable['state_dir']);
 }
 if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : $baseDir.'/vendor/autoload.php') {
@@ -457,8 +459,9 @@ $hidden_options = [
 ];
 if ($portable !== null) {
     // Replace the entire ambient destination/control configuration, never recursively merge it.
-    $options = $portable['options'];
-    $options['gitdir'] = $portable['gitdir'];
+    $options = PortableProfile::runtimeOptions($portable);
+    $hidden_options['http_key'] = PortableProfile::environmentValue('WEBAPI_TOKEN', $loadedNames);
+    $hidden_options['civ_token'] = PortableProfile::environmentValue('CIV_TOKEN', $loadedNames);
     $civ13_server_settings = $portable['servers'];
     $civ14_server_settings = [];
     $hidden_options['civ13_server_settings'] = $civ13_server_settings;
@@ -484,6 +487,7 @@ $global_error_handler = async(function (int $errno, string $errstr, ?string $err
     /** @var ?Civ13 $civ13 */
     if (
         $civ13 && // If the bot is running
+        isset($civ13->channel_ids['staff_bot']) &&
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         // fsockopen
         && ! str_ends_with($errstr, 'Connection timed out')

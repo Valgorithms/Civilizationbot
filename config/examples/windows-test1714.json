@@ -6,7 +6,9 @@
   "gitdir": "D:/GitHub/Civ13",
   "http_port": 25565,
   "options": {
-    "civ13_guild_id": "468979034571931648",
+    "civ13_guild_id": "",
+    "owner_id": "",
+    "technician_id": "",
     "channel_ids": {},
     "role_ids": {},
     "folders": {"json": "json/"},

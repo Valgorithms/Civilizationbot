@@ -14,6 +14,9 @@ $cacheNegative=($argv[2] ?? null)==='--cache-negative-control';
 if ($cacheNegative && PHP_OS_FAMILY === 'Windows') { echo "SKIP POSIX permission mutation on Windows\n"; return; }
 $dir=sys_get_temp_dir().'/portable-constructor-'.bin2hex(random_bytes(8));mkdir($dir);
 $previous=getcwd();chdir($dir);
+// Disallow PHP stream HTTP too: disabling React DNS alone does not prevent it.
+$blockedWrappers=[];
+foreach (['http','https'] as $scheme) { if (in_array($scheme,stream_get_wrappers(),true)) { stream_wrapper_unregister($scheme);$blockedWrappers[]=$scheme; } }
 // Runtime warnings must fail this contract instead of passing CI with failed cache writes.
 set_error_handler(static function(int $severity, string $message, string $file, int $line): bool {
     if ($severity === E_WARNING) { throw new ErrorException($message, 0, $severity, $file, $line); }
@@ -32,6 +35,8 @@ try {
     $discord=new OfflineDiscord($loop);
     $logger=new Monolog\Logger('offline',[new Monolog\Handler\NullHandler()]);
     $options=['discord'=>$discord,'loop'=>$loop,'logger'=>$logger,'stats'=>(new ReflectionClass(Discord\Stats::class))->newInstanceWithoutConstructor(),'browser'=>new React\Http\Browser(new React\Socket\Connector(['dns'=>false],$loop)),'filesystem'=>new React\Filesystem\Fallback\Adapter(),'verify_url'=>'','functions'=>[],'channel_ids'=>[],'role_ids'=>[]];
+    require_once __DIR__.'/../../src/Civ13/PortableProfile.php';
+    $options=array_merge($options, Civ13\PortableProfile::runtimeOptions(['options'=>[], 'gitdir'=>$dir, 'state_dir'=>$dir]));
     try { $bot=new Civ13\Civ13($options,[],[],null); }
     catch (ErrorException $error) {
         if ($cacheNegative && str_contains($error->getMessage(),'Permission denied')) { echo "PASS POSIX cache mutation rejects failed production writes\n"; return; }
@@ -42,6 +47,7 @@ try {
         throw $error;
     }
     if ($negative) { throw new RuntimeException('Original service crash was not detected'); }
+    if ($bot->owner_id!=='' || $bot->technician_id!=='' || $bot->civ13_guild_id!=='' || $bot->filecache_path!==$dir.'/json/') { throw new RuntimeException('Portable privileged identity or state isolation failed'); }
     if ($bot->ss14verifier!==null || !isset($bot->httpServiceManager,$bot->messageServiceManager)) { throw new RuntimeException('Incomplete no-service construction'); }
     if (PHP_OS_FAMILY !== 'Windows' && (fileperms($bot->filecache_path) & 0100) === 0) { throw new RuntimeException('Cache lacks owner search permission'); }
     $cachePayload=['portable'=>true,'value'=>'cache round trip'];
@@ -61,6 +67,7 @@ try {
     echo "PASS actual Civ13 afterConstruct and slash registration without SS14 service; no loop run\n";
 } finally {
     restore_error_handler();
+    foreach ($blockedWrappers as $scheme) { stream_wrapper_restore($scheme); }
     chdir($previous);
     $remove=function($path) use (&$remove) { foreach(new DirectoryIterator($path) as $entry) { if($entry->isDot())continue;$entry->isDir()?$remove($entry->getPathname()):unlink($entry->getPathname()); }rmdir($path); };
     $remove($dir);

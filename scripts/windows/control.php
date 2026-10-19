@@ -7,6 +7,7 @@ use Civ13\PortableProcess;
 try {
     if (count($argv)!==3 || !in_array($argv[1],['check','start','stop'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop ABSOLUTE_PROFILE'); }
     $profile=PortableProfile::load($argv[2]);
+    PortableProfile::assertRoot($profile, dirname(__DIR__, 2));
     if ($argv[1]==='stop') { PortableProcess::requestStop($profile['state_dir']); exit(0); }
     $errors=PortableProfile::preflight($profile,extension_loaded(...));
     if ($errors!==[]) { throw new RuntimeException(implode('; ',$errors)); }
