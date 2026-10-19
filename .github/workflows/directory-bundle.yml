@@ -1,0 +1,42 @@
+name: Isolated directory bundle
+on:
+  push:
+    paths:
+      - 'packaging/directory/**'
+      - 'src/Civ13/ServerDirectory/**'
+      - 'scripts/directory/**'
+      - 'tests/server-directory*.php'
+      - 'tests/fixtures/server-directory*.json'
+      - '.github/workflows/directory-bundle.yml'
+  pull_request:
+    paths:
+      - 'packaging/directory/**'
+      - 'src/Civ13/ServerDirectory/**'
+      - 'scripts/directory/**'
+      - 'tests/server-directory*.php'
+      - 'tests/fixtures/server-directory*.json'
+      - '.github/workflows/directory-bundle.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      # Bootstrap produces only a lock for review, never a deployable bundle.
+      - name: Resolve candidate dependency lock
+        run: composer update --working-dir=packaging/directory --no-dev --no-scripts --no-plugins --prefer-dist --no-interaction
+      - run: composer audit --working-dir=packaging/directory --locked --no-dev
+      - uses: actions/upload-artifact@v4
+        with:
+          name: directory-lock-bootstrap-${{ github.event.pull_request.head.sha || github.sha }}
+          path: packaging/directory/composer.lock
+          if-no-files-found: error
+          retention-days: 7
