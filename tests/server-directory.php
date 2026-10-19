@@ -131,7 +131,7 @@ $probe = static function ($address, $port) use (&$results, &$calls) {
 $clock = static function () use (&$now): int { return $now; };
 $directory = new Directory(['civ13.com' => ['zero', 'offline', 'bad'], 'valzargaming.com' => ['other']], $registry, $probe, $clock);
 $endpoint = new Endpoint($directory);
-$request = static fn ($method = 'GET', $host = 'civ13.com', $suffix = '') => new ServerRequest($method, 'https://'.$host.Directory::PATH.$suffix);
+$request = static fn ($method = 'GET', $host = 'civ13.com', $suffix = '?provider=civ13.com') => new ServerRequest($method, 'https://'.$host.Directory::PATH.$suffix);
 directoryCheck($directory->snapshot('civ13.com') === null && $endpoint->handle($request())->getStatusCode() === 503 && $calls === [], 'Warmup triggered a probe or reported online');
 $directory->refresh();
 $snapshot = $directory->snapshot('civ13.com');
@@ -145,9 +145,20 @@ directoryCheck($response->getStatusCode() === 200 && $response->getHeaderLine('C
 directoryCheck(!str_contains($json, 'private-') && !str_contains($json, '127.0.0.1') && !str_contains($json, '_checked'), 'Private status or internal fields leaked');
 directoryCheck(json_decode($json, true, 16, JSON_THROW_ON_ERROR) === $snapshot && strlen($json) < 65536, 'Invalid/oversized public JSON');
 directoryCheck($snapshot['generated_at'] === gmdate('Y-m-d\TH:i:s\Z', $now) && strtotime($snapshot['expires_at']) === $now + 60, 'Timestamp contract differs');
-foreach ([['POST', 'civ13.com', '', 405], ['GET', 'evil.invalid', '', 404], ['GET', 'civ13.com', '?host=evil.invalid&port=1', 400], ['GET', 'civ13.com', '/extra', 404]] as [$method, $host, $suffix, $expected]) {
+foreach ([['POST', 'civ13.com', '?provider=civ13.com', 405], ['GET', 'evil.invalid', '?provider=civ13.com', 404], ['GET', 'valzargaming.com', '?provider=valzargaming.com', 404], ['GET', 'civ13.com', '?host=evil.invalid&port=1', 400], ['GET', 'civ13.com', '/extra?provider=civ13.com', 404]] as [$method, $host, $suffix, $expected]) {
     directoryCheck($endpoint->handle($request($method, $host, $suffix))->getStatusCode() === $expected, 'Request allowlist failed');
 }
+foreach (['', '?provider=evil.invalid', '?provider=CIV13.COM', '?provider=civ13.com&provider=civ13.com', '?provider=civ13.com&port=1714', '?provider=%63iv13.com', '?provider=civ13%2ecom', '?provider=https://civ13.com', '?provider=civ13.com:1714', '?provider=civ13.com&', '?provider[]=civ13.com', '?provider=civ13.com;port=1714'] as $suffix) {
+    directoryCheck($endpoint->handle($request('GET', 'civ13.com', $suffix))->getStatusCode() === 400, 'Noncanonical provider query was accepted');
+}
+foreach (['', '?provider=unknown'] as $suffix) {
+    $head = $endpoint->handle($request('HEAD', 'civ13.com', $suffix));
+    directoryCheck($head->getStatusCode() === 400 && (string) $head->getBody() === '', 'HEAD query errors returned a body');
+}
+$head = $endpoint->handle($request('HEAD', 'evil.invalid'));
+directoryCheck($head->getStatusCode() === 404 && (string) $head->getBody() === '', 'HEAD authority errors returned a body');
+$remoteResponse = $endpoint->handle($request('GET', 'civ13.com', '?provider=valzargaming.com'));
+directoryCheck($remoteResponse->getStatusCode() === 200 && json_decode((string) $remoteResponse->getBody(), true)['servers'][0]['host'] === 'valzargaming.com', 'Central authority did not select remote provider');
 directoryCheck((string) $endpoint->handle($request('HEAD'))->getBody() === '' && count($calls) === 4, 'HEAD/request handlers performed work or returned a body');
 $now += 59;
 directoryCheck(strtotime($directory->snapshot('civ13.com')['expires_at']) === $now + 1, 'Reading cache extended observation lifetime');
@@ -193,6 +204,8 @@ foreach (['enabled' => false, 'port' => '65536', 'ip' => 'https://evil.invalid/p
 }
 $empty = new Directory(['valzargaming.com' => []], [], $probe, $clock); $empty->refresh();
 directoryCheck($empty->snapshot('valzargaming.com')['servers'] === [], 'Explicitly empty provider did not report zero online servers');
+directoryCheck((new Endpoint($empty))->handle($request('GET', 'civ13.com', '?provider=valzargaming.com'))->getStatusCode() === 200, 'Configured empty provider was unavailable');
+directoryCheck((new Endpoint($empty))->handle($request())->getStatusCode() === 404, 'Unconfigured provider was reported as an empty roster');
 $large = [];
 for ($i = 0; $i < 33; $i++) { $large['server'.$i] = clone $registry['zero']; $large['server'.$i]->port = (string) (13000 + $i); }
 directoryThrows(static fn () => new Directory(['civ13.com' => array_keys($large)], $large, $probe, $clock));

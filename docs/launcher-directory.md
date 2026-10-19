@@ -1,62 +1,97 @@
 # Live launcher server directory
 
-The opt-in read-only endpoint is `GET /.well-known/civ13/servers.json`. It uses the
-bot's existing ReactPHP HTTP listener. It does not create another listener,
-scan ports, start servers, modify server configuration, or expose bot controls.
-It is disabled unless `launcher_directory` is explicitly configured.
+One opt-in read-only HTTPS authority serves both provider menus through the bot's
+existing ReactPHP HTTP listener:
+
+- `https://civ13.com/.well-known/civ13/servers.json?provider=civ13.com`
+- `https://civ13.com/.well-known/civ13/servers.json?provider=valzargaming.com`
+
+Only those exact raw query strings are accepted. Responses remain separate
+schema-1 snapshots, containing only the selected provider's servers. No new HTTPS
+service is needed on valzargaming.com. Both inventories trust civ13.com and both
+menus become unavailable if that authority is unavailable. The directory never
+scans ports, starts games, modifies game configuration, or exposes bot controls.
+Both inventory options default to `[]`; the route is disabled when both are empty.
 
 ## Deployment requirements
 
-Deployment and public reverse-proxy changes are separate operator actions. This
-repository has no game/bot production-deployment workflow; its GitHub Actions
-workflows test contracts and publish documentation only.
+Deployment, production configuration, and public reverse-proxy changes require
+separate operator approval. This repository has no game/bot production-deployment
+workflow; its GitHub Actions workflows test contracts and publish documentation.
 
 1. Install the updated bot code and existing Composer dependencies with PHP 8.3+
-   using the installation's usual process. No additional dependency is needed.
-2. Add a mapping to the bot's `$options`. Each value is a list of keys from that
-   installation's **enabled** Civ13 `GameServer` registry, for example:
+   through the installation's usual process. No new dependency is needed.
+2. Configure only verified inventory in the bot's `$options`. Existing locally
+   managed games use keys from the installation's **enabled** GameServer registry:
 
    ```php
    'launcher_directory' => [
        'civ13.com' => ['tdm', 'nomads'],
-       // Add valzargaming.com only with its verified, enabled production keys.
+   ],
+   'launcher_directory_status_targets' => [],
+   ```
+
+   `tdm` and `nomads` are enabled in checked-in bot.php; that does not establish
+   the actual production roster. The checked-in VZG `pers` game is disabled.
+   Do not enable it just to publish discovery. GameServer construction requires a
+   local basedir and activates other bot behavior, so it is inappropriate for a
+   remote status-only target.
+
+   The separate status-only list permits exactly five fields per row. This is a
+   **synthetic example**, not an approved production target or gameplay port:
+
+   ```php
+   'launcher_directory_status_targets' => [
+       ['id' => 'vzg-fixture', 'name' => 'VZG fixture',
+        'host' => 'valzargaming.com', 'port' => 24017, 'engine' => 'BYOND'],
    ],
    ```
 
-   `tdm` and `nomads` are enabled in the checked-in `bot.php`; the checked-in
-   VZG `pers` entry is disabled. That is not evidence of the current production
-   roster. An operator must inspect the actual installation before enabling the
-   mapping. `['valzargaming.com' => []]` intentionally reports an empty roster;
-   do not use that to claim VZG discovery is deployed or tested. A disabled,
-   duplicate, unknown or invalid key disables the directory and logs a warning.
-   Up to 32 total targets are allowed. A key belongs to only one provider.
-3. Verify that each configured server's existing `ip` and `port` are the desired
-   BYOND Topic target. The public join address is the mapped provider hostname
-   plus that same configured port, so the provider DNS and any existing port
-   forwarding must already route those ports correctly. A server is probed at
-   its configured address, which can be loopback/private for an on-host bot;
-   its internal address is never published. No port is specified in the launcher
-   or repeated in the directory mapping.
-4. The game must answer BYOND Topic `?status=1&format=json` on its configured
+   Operators must verify the real port before adding a row. `host` must be exactly
+   civ13.com or valzargaming.com, `port` an integer 1–65535, and `engine` BYOND.
+   No IP override, URL, basedir, enabled flag, credentials, unknown fields or
+   request-supplied targets are allowed. These rows never construct, start or
+   enable a GameServer. A status-only row makes its provider configured even if
+   every probe fails. An explicit mapping such as `['valzargaming.com' => []]`
+   can intentionally configure an empty provider; it does not prove live discovery.
+
+   Invalid configuration disables the directory and logs a warning. IDs must be
+   globally unique across both sources; host/port pairs must also be unique.
+   The same port on different providers is valid. The limit is **32 total targets
+   across both inventories**, not 32 per provider.
+3. Managed targets are probed at their existing configured `ip` and `port`, which
+   may intentionally be loopback/private for an on-host bot. Internal addresses
+   are never published. Public joins use the mapped provider hostname and that
+   same configured port. Existing provider DNS and port routing must match.
+
+   Status-only targets instead resolve the approved hostname afresh on each
+   probe, using asynchronous system-configured DNS with no application cache or
+   public IP pin. Consistent with the launcher, they require 1–32 IPv4 A answers;
+   the entire answer set must be ordinary public addresses. Private, loopback,
+   shared, link-local, reserved, documentation, benchmark, multicast and other
+   special-purpose answers are rejected. IPv6-only public targets are not
+   supported by this launcher contract. TCP uses the selected validated literal
+   without a second hostname lookup. A DNS change can take effect on the next
+   sweep, subject to the system resolver's normal behavior. Missing system DNS
+   fails closed; no fallback DNS provider is invented.
+4. Each game must answer BYOND Topic `?status=1&format=json` on its configured
    gameplay/Topic port with `players`, `map_name`, `map_gamemode`, and
    `round_duration_in_ticks`. Zero players and a zero-duration lobby are valid.
-   A JSON `game_id` is recommended; if absent, the public round ID is empty.
-   A successful TCP handshake alone is not online evidence.
-5. On each mapped provider, route the **exact** HTTPS path below to the existing
-   bot listener, preserving `Host: civ13.com` or `Host: valzargaming.com`:
-
-   - `https://civ13.com/.well-known/civ13/servers.json`
-   - `https://valzargaming.com/.well-known/civ13/servers.json`
+   `game_id` is recommended; when absent the public round ID is empty. A successful
+   TCP handshake alone is not evidence that the game is online.
+5. Route only `/.well-known/civ13/servers.json` on the existing **civ13.com** HTTPS
+   virtual host to the existing bot listener. Preserve `Host: civ13.com` and the
+   raw query string. The query is only an allowlisted snapshot selector; it never
+   triggers probes or supplies addresses. Repeated/extra parameters, percent
+   encodings, URLs, ports, unknown providers and an absent query return 400.
 
    Use the site's existing TLS certificate and reverse proxy. Serve GET/HEAD
-   without redirects, login pages, bot challenges, CDN caching, or stale-on-error
-   fallback. A normal website redirect to another host must not catch this path.
-   Do not expose the bot listener or proxy other bot API paths as part of this
-   change. The endpoint ignores forwarded-host headers and selects providers
-   only from its actual request URI/Host. An Nginx-style location could be:
+   without redirects, login pages, bot challenges, caching or stale-on-error
+   fallback. Do not expose the bot listener or proxy unrelated bot API paths.
+   The endpoint ignores forwarded-host headers. An example, for operator review:
 
    ```nginx
-   # Inside the existing civ13.com HTTPS virtual host. Adapt only after review.
+   # Inside the existing civ13.com HTTPS virtual host.
    location = /.well-known/civ13/servers.json {
        proxy_pass http://127.0.0.1:55555;
        proxy_set_header Host civ13.com;
@@ -65,22 +100,20 @@ workflows test contracts and publish documentation only.
    }
    ```
 
-   `55555` is the bot's checked-in default HTTP port, not a game-port discovery
-   list. Substitute the verified listener for the installation. Use
-   `Host valzargaming.com` in that provider's virtual host. Do not change
-   listeners, firewalls, TLS/security settings, or existing proxy trust rules
-   without the operator's separate approval. Apply any per-client rate limiting
-   at the trusted public proxy. The existing bot handler also rate-limits this
-   endpoint to 600 requests/minute per observed remote address; behind a proxy,
-   clients may share that budget. Do not trust new forwarded-IP headers merely
-   to bypass that limit.
-6. Restart the bot through its existing approved deployment process. Verify each
-   HTTPS endpoint returns status 200 and `application/json`, contains only the
-   corresponding provider, and has fresh timestamps. Then verify a known live
-   server, a zero-player server, and an offline configured server. Compare counts,
-   map/mode and round duration with the game or `/players`; do not use old bot
-   file-cache data as proof of liveness. Neither code merge nor offline CI proves
-   this live deployment acceptance.
+   `55555` is the checked-in default bot HTTP port, not a game-port discovery
+   list. Substitute the verified existing listener. No VZG HTTPS route is needed.
+   Do not change listeners, firewalls, TLS/security settings or proxy trust rules
+   without separate approval. Apply per-client rate limiting at the trusted
+   public proxy. The bot also limits the endpoint to 600 requests/minute per
+   observed remote address; clients behind a proxy may share that budget. Do not
+   newly trust forwarded-IP headers merely to bypass it.
+6. Restart through the approved deployment process. Verify both exact URLs return
+   status 200, application/json and fresh provider-specific records. A configured
+   provider with no verified online games returns 200 with `servers: []`; an
+   unconfigured provider returns 404. Warmup/stale sweeps return 503. Test a known
+   live, zero-player and offline configured game, and compare counts/map/mode/
+   duration with the actual game or `/players`. Old cached files, merged code,
+   and offline CI do not establish live acceptance.
 
 ## JSON contract (schema 1)
 
@@ -108,12 +141,12 @@ workflows test contracts and publish documentation only.
 }
 ```
 
-The port above is an illustrative response, read from the server registry at
+The port above is illustrative, obtained from explicit operator inventory at
 runtime. All timestamps use UTC `yyyy-MM-ddTHH:mm:ssZ`. The envelope is valid
 for at most 60 seconds and never past the oldest included observation's expiry.
 HTTP reads cannot extend observations' lifetimes. An empty successful sweep
 returns `servers: []`; warmup/stale data returns 503 with Retry-After. Unknown
-provider/path, query parameters, and non-GET/HEAD methods are rejected. Every
+authority/path, noncanonical provider queries, and non-GET/HEAD methods are rejected. Every
 response is `Cache-Control: no-store`; no raw status payload is returned.
 
 Text limits are UTF-8 **bytes**: name 120, map 128, mode 80, round ID 80,
@@ -121,8 +154,8 @@ and optional epoch 32. Well-formed supplementary-plane characters such as
 `🌍` are supported and occupy four bytes. Malformed UTF-8/surrogates, Unicode
 control/format characters, and line/paragraph separators are rejected. IDs use
 1–64 ASCII letters, digits, underscores or hyphens. Players must be an integer
-from 0 to 10,000. The two shared fixtures under `tests/fixtures/` cover ordinary
-and supplementary Unicode output against the launcher's production parser.
+from 0 to 10,000. The shared fixtures under `tests/fixtures/` cover managed, supplementary Unicode,
+and status-only VZG output against the launcher's production parser.
 
 At bot readiness and every 15 seconds, one non-overlapping sweep asynchronously
 probes the configured targets (at most 32 concurrent connections). Each probe
@@ -161,3 +194,11 @@ normalization, and pre-init route registration without probes. A source-order
 guard covers `Civ13::afterConstruct`: the game-server constructor loop runs
 before `HttpServiceManager` construction. This test bypasses bot startup, the
 HTTP handler's external-IP lookup, and live listening.
+
+`php tests/server-directory-remote.php` verifies the strict status-only schema,
+unknown-field rejection, cross-source identity/host-port uniqueness, global
+32-target bounds, slow-peer freshness, overlapping-sweep coalescing, partial
+failures, dynamic DNS and validation before literal TCP connection. Both DNS and
+TCP are injected, so the suite performs no external network I/O. The startup
+suite also checks remote-only registration with empty GameServer registries and
+no added lifecycle callbacks. All three suites run on PHP 8.3, 8.4 and 8.5 in CI.

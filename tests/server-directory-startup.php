@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 // Real GameServer construction and HTTP route registration, with I/O boundaries
-// bypassed. No .env, bot startup, Discord initialization, DNS, sockets or files.
+// bypassed. No .env, bot startup, Discord initialization, DNS queries or sockets.
 require $argv[1] ?? __DIR__.'/../vendor/autoload.php';
 
 use Civ13\Civ13;
@@ -76,7 +76,7 @@ $directory = (new ReflectionProperty(HttpServiceManager::class, 'launcherDirecto
 startupCheck($directory instanceof Directory && $directory->hasProvider('civ13.com'), 'Valid pre-init registry disabled directory registration');
 $handlers = $manager->httpHandler->get('handlers');
 startupCheck(isset($handlers[Directory::PATH]), 'Directory route was not registered');
-$response = $handlers[Directory::PATH](new ServerRequest('GET', 'https://civ13.com'.Directory::PATH), Directory::PATH, false);
+$response = $handlers[Directory::PATH](new ServerRequest('GET', 'https://civ13.com'.Directory::PATH.'?provider=civ13.com'), Directory::PATH, false);
 startupCheck($response->getStatusCode() === 503, 'Registered directory should warm up without probing during construction');
 startupCheck((new ReflectionProperty(HttpServiceManager::class, 'launcherDirectoryTimer'))->getValue($manager) === null, 'Directory timer started before HTTP readiness');
 
@@ -86,5 +86,22 @@ $probe = static fn () => resolve(['players' => 0, 'map_name' => 'Gaia', 'map_gam
 $directory = new Directory($bot->options['launcher_directory'], $bot->enabled_gameservers, $probe, static fn () => 1800000000);
 $directory->refresh();
 startupCheck(array_column($directory->snapshot('civ13.com')['servers'], 'port') === [12345, 12346], 'Real GameServer string ports were not published as integers');
+
+// Status-only inventory must register independently without constructing any
+// GameServer, enabling pers, adding lifecycle callbacks or requiring a basedir.
+$remoteBot = new DirectoryStartupBot();
+$remoteBot->options['launcher_directory_status_targets'] = [
+    ['id' => 'remote-fixture', 'name' => 'Remote fixture', 'host' => 'valzargaming.com', 'port' => 24017, 'engine' => 'BYOND'],
+];
+$remoteManager = (new ReflectionClass(HttpServiceManager::class))->newInstanceWithoutConstructor();
+$remoteManager->civ13 = $remoteBot;
+$remoteManager->logger = $remoteBot->logger;
+$remoteManager->httpHandler = (new ReflectionClass(HttpHandler::class))->newInstanceWithoutConstructor();
+(new ReflectionMethod(HttpServiceManager::class, '__generateLauncherDirectoryEndpoint'))->invoke($remoteManager);
+$remoteDirectory = (new ReflectionProperty(HttpServiceManager::class, 'launcherDirectory'))->getValue($remoteManager);
+startupCheck($remoteDirectory instanceof Directory && $remoteDirectory->hasProvider('valzargaming.com'), 'Status-only inventory required managed GameServer registration');
+startupCheck(!$remoteDirectory->hasProvider('civ13.com'), 'Unconfigured provider was invented');
+startupCheck($remoteBot->gameservers === [] && $remoteBot->enabled_gameservers === [] && $remoteBot->deferred === [], 'Status-only inventory activated a GameServer or lifecycle callback');
+startupCheck((new ReflectionProperty(HttpServiceManager::class, 'launcherDirectoryTimer'))->getValue($remoteManager) === null, 'Status-only probe timer started before readiness');
 
 echo "PASS directory startup: synchronous real GameServer registration, disabled/bad-directory exclusion, production constructor order, real pre-init HTTP registration, deferred probing and string-port normalization.\n";

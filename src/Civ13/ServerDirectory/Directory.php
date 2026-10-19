@@ -14,6 +14,7 @@ use function React\Promise\resolve;
 final class Directory
 {
     public const PATH = '/.well-known/civ13/servers.json';
+    public const AUTHORITY = 'civ13.com';
     public const PROVIDERS = ['civ13.com', 'valzargaming.com'];
     public const MAX_SERVERS = 32;
     public const MAX_AGE_SECONDS = 60;
@@ -27,20 +28,21 @@ final class Directory
     /**
      * @param array<string, list<string>> $providers Explicit provider => configured server keys.
      * @param array<string, object> $registry The bot's enabled_gameservers, not request data.
-     * @param callable(string, int): PromiseInterface $probe
+     * @param callable(string, int, bool): PromiseInterface $probe The third argument requires public-only DNS for status-only rows.
      * @param callable(): int|null $clock Test seam; production uses UTC wall-clock seconds.
+     * @param list<array{id: string, name: string, host: string, port: int, engine: string}> $statusTargets Operator-only, status-only inventory; never constructs GameServer.
      */
-    public function __construct(array $providers, array $registry, private $probe, private $clock = null)
+    public function __construct(array $providers, array $registry, private $probe, private $clock = null, array $statusTargets = [])
     {
         $this->clock ??= time(...);
         $count = 0;
         $seen = [];
+        $ports = [];
         foreach ($providers as $host => $keys) {
             if (!in_array($host, self::PROVIDERS, true) || !is_array($keys) || !array_is_list($keys)) {
                 throw new \InvalidArgumentException('Invalid launcher directory provider configuration');
             }
             $this->targets[$host] = [];
-            $ports = [];
             foreach ($keys as $key) {
                 if (!is_string($key) || !preg_match('/\A[a-zA-Z0-9_-]{1,64}\z/D', $key) || isset($seen[$key]) || !isset($registry[$key])) {
                     throw new \InvalidArgumentException('Directory keys must uniquely name configured enabled servers');
@@ -55,12 +57,33 @@ final class Directory
                 if (!is_string($address) || strlen($address) > 253 || (!filter_var($address, FILTER_VALIDATE_IP) && !preg_match('/\A(?=.{1,253}\z)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\z/D', $address))) {
                     throw new \InvalidArgumentException('Invalid configured probe address');
                 }
-                if ($port === false || isset($ports[$port]) || self::text($server->name ?? null, 120) === null || ++$count > self::MAX_SERVERS) {
+                if ($port === false || isset($ports[$host][$port]) || self::text($server->name ?? null, 120) === null || ++$count > self::MAX_SERVERS) {
                     throw new \InvalidArgumentException('Invalid directory server or too many servers');
                 }
-                $ports[$port] = true;
+                $ports[$host][$port] = true;
                 $this->targets[$host][] = ['id' => $key, 'name' => $server->name, 'host' => $host, 'port' => $port, 'address' => $address];
             }
+        }
+        if (!array_is_list($statusTargets)) {
+            throw new \InvalidArgumentException('Status-only targets must be a list');
+        }
+        foreach ($statusTargets as $target) {
+            // This is deliberately not a GameServer config: no basedir, IP, URL,
+            // lifecycle flag, credentials or other permissive extension fields.
+            if (!is_array($target) || count($target) !== 5 || array_diff(array_keys($target), ['id', 'name', 'host', 'port', 'engine'])) {
+                throw new \InvalidArgumentException('Invalid status-only target fields');
+            }
+            $id = $target['id'];
+            $host = $target['host'];
+            $port = $target['port'];
+            if (!is_string($id) || !preg_match('/\A[a-zA-Z0-9_-]{1,64}\z/D', $id) || isset($seen[$id]) ||
+                !in_array($host, self::PROVIDERS, true) || !is_int($port) || $port < 1 || $port > 65535 ||
+                isset($ports[$host][$port]) || $target['engine'] !== 'BYOND' || self::text($target['name'], 120) === null || ++$count > self::MAX_SERVERS) {
+                throw new \InvalidArgumentException('Invalid or duplicate status-only target');
+            }
+            $seen[$id] = true;
+            $ports[$host][$port] = true;
+            $this->targets[$host][] = ['id' => $id, 'name' => $target['name'], 'host' => $host, 'port' => $port, 'address' => $host, 'public_only' => true];
         }
     }
 
@@ -77,7 +100,7 @@ final class Directory
         foreach ($this->targets as $targets) {
             foreach ($targets as $target) {
                 try {
-                    $request = ($this->probe)($target['address'], $target['port']);
+                    $request = ($this->probe)($target['address'], $target['port'], $target['public_only'] ?? false);
                     $requests[] = $request->then(function ($status) use ($target): ?array {
                         return is_array($status) ? self::entry($target, $status, ($this->clock)()) : null;
                     }, static fn () => null);

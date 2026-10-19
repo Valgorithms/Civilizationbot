@@ -28,7 +28,6 @@ use React\Http\HttpServer;
 use React\Http\Message\Response as HttpResponse;
 use React\Promise\PromiseInterface;
 use React\Socket\SocketServer;
-use React\Socket\Connector;
 
 class HttpServiceManager
 {
@@ -1688,14 +1687,21 @@ class HttpServiceManager
     /** Opt-in public status only. No endpoint input can select a probe address or port. */
     private function __generateLauncherDirectoryEndpoint(): void
     {
-        if (!$providers = $this->civ13->options['launcher_directory'] ?? []) {
+        $providers = $this->civ13->options['launcher_directory'] ?? [];
+        $statusTargets = $this->civ13->options['launcher_directory_status_targets'] ?? [];
+        if (!$providers && !$statusTargets) {
             return;
         }
         try {
             $this->launcherDirectory = new Directory(
                 $providers,
                 $this->civ13->enabled_gameservers,
-                new ByondStatusProbe($this->civ13->loop, new Connector(['timeout' => ByondStatusProbe::TIMEOUT_SECONDS], $this->civ13->loop))
+                new ByondStatusProbe(
+                    $this->civ13->loop,
+                    ByondStatusProbe::createConnector($this->civ13->loop),
+                    ByondStatusProbe::createConnector($this->civ13->loop, publicOnly: true)
+                ),
+                statusTargets: $statusTargets
             );
         } catch (\InvalidArgumentException $error) {
             $this->logger->warning('Launcher directory disabled: '.$error->getMessage());
