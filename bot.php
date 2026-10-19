@@ -207,6 +207,7 @@ $options = [
     //'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
     'verify_url' => getenv('VERIFIER_HOST_ADDR').':'.getenv('VERIFIER_HOST_PORT').'/verified/', // Local/Integrated Verifier Server
     // 'serverinfo_url' => '', // URL of the serverinfo.json file, defaults to the webserver if left blank
+    // 'launcher_directory' => ['civ13.com' => ['tdm', 'nomads']], // Opt-in public status; see docs/launcher-directory.md
     'ooc_badwords' => $ooc_badwords,
     'ic_badwords' => $ic_badwords,
     'folders' => [

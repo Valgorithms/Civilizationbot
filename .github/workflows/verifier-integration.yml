@@ -7,6 +7,8 @@ on:
       - 'src/**'
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
+      - 'tests/server-directory.php'
+      - 'tests/fixtures/server-directory.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
@@ -16,6 +18,8 @@ on:
       - 'src/**'
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
+      - 'tests/server-directory.php'
+      - 'tests/fixtures/server-directory.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
@@ -45,6 +49,7 @@ jobs:
       - run: composer audit --locked
       - run: find src -name '*.php' -print0 | xargs -0 -n1 php -l
       - run: php tests/http-dependency.php
+      - run: php tests/server-directory.php
       - run: php tests/verifier-integration.php
       - run: php tests/economy.php
       - run: php tests/economy-service.php
