@@ -144,3 +144,12 @@ online/offline/zero-player/partial/malformed data, privacy projection, provider
 isolation, HTTP methods, freshness, time rollback, and coalescing. The existing
 dependency workflow runs it on PHP 8.3, 8.4, and 8.5 alongside source lint and
 the other bot regression suites.
+
+`php tests/server-directory-startup.php` additionally constructs real
+`GameServer` objects against an injected in-memory bot boundary and invokes the
+real directory registration method. It verifies synchronous population of the
+enabled registry, exclusion of disabled/invalid-directory servers, string-port
+normalization, and pre-init route registration without probes. A source-order
+guard covers `Civ13::afterConstruct`: the game-server constructor loop runs
+before `HttpServiceManager` construction. This test bypasses bot startup, the
+HTTP handler's external-IP lookup, and live listening.

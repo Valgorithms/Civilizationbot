@@ -8,6 +8,7 @@ on:
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
       - 'tests/server-directory.php'
+      - 'tests/server-directory-startup.php'
       - 'tests/fixtures/server-directory.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
@@ -19,6 +20,7 @@ on:
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
       - 'tests/server-directory.php'
+      - 'tests/server-directory-startup.php'
       - 'tests/fixtures/server-directory.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
@@ -50,6 +52,7 @@ jobs:
       - run: find src -name '*.php' -print0 | xargs -0 -n1 php -l
       - run: php tests/http-dependency.php
       - run: php tests/server-directory.php
+      - run: php tests/server-directory-startup.php
       - run: php tests/verifier-integration.php
       - run: php tests/economy.php
       - run: php tests/economy-service.php
