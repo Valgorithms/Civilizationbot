@@ -22,21 +22,45 @@ permissions:
 jobs:
   bundle:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4', '8.5']
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: ${{ matrix.php }}
           coverage: none
-      # Bootstrap produces only a lock for review, never a deployable bundle.
-      - name: Resolve candidate dependency lock
-        run: composer update --working-dir=packaging/directory --no-dev --no-scripts --no-plugins --prefer-dist --no-interaction
-      - run: composer audit --working-dir=packaging/directory --locked --no-dev
+      - name: Install only the committed directory dependency lock
+        run: |
+          test -f packaging/directory/composer.lock
+          composer install --working-dir=packaging/directory --no-dev --no-scripts --no-plugins --prefer-dist --no-interaction
+          composer validate --working-dir=packaging/directory --no-check-publish
+          composer check-platform-reqs --working-dir=packaging/directory --no-dev
+          composer audit --working-dir=packaging/directory --locked --no-dev
+      - name: Build and verify isolated bundle
+        run: |
+          python3 packaging/directory/test_verify.py
+          python3 packaging/directory/build.py
+          python3 packaging/directory/verify_bundle.py build/directory/civ13-directory-*.tar.gz
+          cd build/directory/civ13-directory
+          sha256sum --check SHA256SUMS > /dev/null
+      - name: Test only the bundled dependency environment
+        run: |
+          find build/directory/civ13-directory/src build/directory/civ13-directory/scripts -name '*.php' -print0 | xargs -0 -n1 php -l
+          php tests/server-directory.php build/directory/civ13-directory/vendor/autoload.php
+          php tests/server-directory-remote.php build/directory/civ13-directory/vendor/autoload.php
+          php tests/server-directory-standalone.php build/directory/civ13-directory/vendor/autoload.php
       - uses: actions/upload-artifact@v4
+        if: matrix.php == '8.4'
         with:
-          name: directory-lock-bootstrap-${{ github.event.pull_request.head.sha || github.sha }}
-          path: packaging/directory/composer.lock
+          name: civ13-directory-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            build/directory/*.tar.gz
+            build/directory/*.sha256
+            build/directory/verify_bundle.py
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14

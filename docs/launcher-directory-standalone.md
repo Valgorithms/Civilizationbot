@@ -23,6 +23,30 @@ so the standalone runtime uses its own pinned directory classes rather than an
 older bot checkout's classes. Bot.php, .env and secret bootstrap files are never
 included. Empty or malformed inventory exits before executing the autoloader.
 
+## Pinned CI bundle
+
+The `Isolated directory bundle` workflow installs only
+`packaging/directory/composer.lock`, with plugins/scripts disabled and Composer
+audit enabled. It builds and tests the minimal dependency environment on PHP
+8.3, 8.4 and 8.5. The artifact from PHP 8.4 includes only directory sources,
+locked dependencies, empty example inventory, documentation and license. It
+contains no bot entrypoint, Discord dependency, credentials or live settings.
+ReactPHP HTTP is pinned to patched 1.11.1; the older live bot's 1.11.0 dependency
+must not be reused for this endpoint.
+
+Before transfer/installation, obtain the artifact from the reviewed exact commit
+and compare its external SHA256 with the trusted CI/download record. Run the
+supplied `verify_bundle.py` against the archive **before extraction**. It checks
+bounded sizes, safe paths/modes, no links/devices, complete file checksums, source
+commit, lock hash, package inventory and empty default inventory. This establishes
+artifact consistency, not independent authenticity: the trusted commit/artifact
+channel and separately communicated outer hash are still required. Source and
+per-file hashes are also stored inside the archive. The build produces no
+production installation or public release.
+
+Extract only into a new versioned directory outside the running bot checkout,
+and use the bundle's own vendor/autoload.php. Do not replace bot dependencies.
+
 ## Configuration and operation
 
 `scripts/directory/inventory.example.json` contains an empty, disabled inventory.
