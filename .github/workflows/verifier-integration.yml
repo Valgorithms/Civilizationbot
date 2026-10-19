@@ -10,6 +10,8 @@ on:
       - 'tests/server-directory.php'
       - 'tests/server-directory-startup.php'
       - 'tests/server-directory-remote.php'
+      - 'tests/server-directory-standalone.php'
+      - 'scripts/directory/**'
       - 'tests/fixtures/server-directory*.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
@@ -23,6 +25,8 @@ on:
       - 'tests/server-directory.php'
       - 'tests/server-directory-startup.php'
       - 'tests/server-directory-remote.php'
+      - 'tests/server-directory-standalone.php'
+      - 'scripts/directory/**'
       - 'tests/fixtures/server-directory*.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
@@ -56,6 +60,8 @@ jobs:
       - run: php tests/server-directory.php
       - run: php tests/server-directory-startup.php
       - run: php tests/server-directory-remote.php
+      - run: php -l scripts/directory/serve.php
+      - run: php tests/server-directory-standalone.php
       - run: php tests/verifier-integration.php
       - run: php tests/economy.php
       - run: php tests/economy-service.php

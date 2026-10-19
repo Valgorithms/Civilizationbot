@@ -13,6 +13,8 @@ menus become unavailable if that authority is unavailable. The directory never
 scans ports, starts games, modifies game configuration, or exposes bot controls.
 Both inventory options default to `[]`; the route is disabled when both are empty.
 
+If restarting the live bot is unsafe, the optional [isolated directory runtime](launcher-directory-standalone.md) reuses this contract without booting the bot or games. Its dependency and host-review gates must be satisfied first.
+
 ## Deployment requirements
 
 Deployment, production configuration, and public reverse-proxy changes require
