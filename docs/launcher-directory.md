@@ -116,6 +116,14 @@ returns `servers: []`; warmup/stale data returns 503 with Retry-After. Unknown
 provider/path, query parameters, and non-GET/HEAD methods are rejected. Every
 response is `Cache-Control: no-store`; no raw status payload is returned.
 
+Text limits are UTF-8 **bytes**: name 120, map 128, mode 80, round ID 80,
+and optional epoch 32. Well-formed supplementary-plane characters such as
+`🌍` are supported and occupy four bytes. Malformed UTF-8/surrogates, Unicode
+control/format characters, and line/paragraph separators are rejected. IDs use
+1–64 ASCII letters, digits, underscores or hyphens. Players must be an integer
+from 0 to 10,000. The two shared fixtures under `tests/fixtures/` cover ordinary
+and supplementary Unicode output against the launcher's production parser.
+
 At bot readiness and every 15 seconds, one non-overlapping sweep asynchronously
 probes the configured targets (at most 32 concurrent connections). Each probe
 has a three-second total DNS/connect/read deadline and 64 KiB framing bound.

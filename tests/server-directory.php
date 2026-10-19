@@ -60,7 +60,7 @@ directoryCheck(ByondStatusProbe::decodePacket($packet) === $status, 'Valid statu
 for ($i = 0; $i < strlen($packet); $i++) {
     directoryCheck(ByondStatusProbe::decodePacket(substr($packet, 0, $i)) === null, 'Fragmented frame did not wait');
 }
-foreach (["\0\x00\0\x04xxxx", "\0\x83\xff\xff", "\0\x83\0\x01x", $packet.'trailing', substr($packet, 0, -1).'x', str_replace("\x06", "\x2a", $packet), statusPacket('false'), statusPacket('[]'), statusPacket('{broken'), statusPacket('{"x":"'.str_repeat('x', 65536).'"}') ] as $bad) {
+foreach (["\0\x00\0\x04xxxx", "\0\x83\xff\xff", "\0\x83\0\x01x", $packet.'trailing', substr($packet, 0, -1).'x', str_replace("\x06", "\x2a", $packet), statusPacket('false'), statusPacket('[]'), statusPacket('{broken'), statusPacket('{"x":"\ud800"}'), statusPacket('{"x":"\udc00"}'), statusPacket('{"x":"'."\xed\xa0\x80".'"}'), statusPacket('{"x":"'.str_repeat('x', 65536).'"}') ] as $bad) {
     directoryThrows(static fn () => ByondStatusProbe::decodePacket($bad));
 }
 
@@ -158,7 +158,7 @@ directoryCheck($directory->snapshot('civ13.com')['servers'] === [], 'Last known 
 directoryCheck($directory->snapshot('valzargaming.com')['servers'][0]['players'] === 7, 'Partial failure lost healthy provider');
 
 // Every malformed mandatory value drops only its server, never invents counts or rounds.
-foreach (['players' => [-1, 1.5, '2', true, 10001, []], 'map_name' => ['', "bad\nmap", "bad\u{202e}map", "bad\u{2028}map", str_repeat('x', 129), "\xff"], 'map_gamemode' => [null, [], str_repeat('x', 81)], 'round_duration_in_ticks' => [-1, INF, NAN, '100', null, 2147483648], 'game_id' => [[], false, str_repeat('x', 81)]] as $field => $values) {
+foreach (['players' => [-1, 1.5, '2', true, 10001, []], 'map_name' => ['', "bad\nmap", "bad\u{202e}map", "bad\u{2028}map", str_repeat('x', 129), "\xff", "\xed\xa0\x80", str_repeat('x', 125).'🌍'], 'map_gamemode' => [null, [], str_repeat('x', 81)], 'round_duration_in_ticks' => [-1, INF, NAN, '100', null, 2147483648], 'game_id' => [[], false, str_repeat('x', 81)]] as $field => $values) {
     foreach ($values as $value) {
         $results[12000] = array_replace($status, [$field => $value]);
         $directory->refresh();
@@ -171,6 +171,8 @@ $results[12000]['game_id'] = 42; $directory->refresh();
 directoryCheck($directory->snapshot('civ13.com')['servers'][0]['round']['id'] === '42', 'Numeric round ID not normalized');
 $results[12000]['round_duration_in_ticks'] = 12345.5; $directory->refresh();
 directoryCheck($directory->snapshot('civ13.com')['servers'][0]['round']['duration_seconds'] === 1234, 'Fractional deciseconds were not converted to whole seconds');
+$results[12000]['map_name'] = str_repeat('x', 124).'🌍'; $directory->refresh();
+directoryCheck($directory->snapshot('civ13.com')['servers'][0]['map'] === str_repeat('x', 124).'🌍', 'Valid supplementary Unicode at UTF-8 byte limit was rejected');
 
 // A timer cannot launch overlapping sweeps, even while clients hammer the endpoint.
 $waiting = new Deferred(); $startedProbes = 0;
@@ -203,5 +205,14 @@ $fixtureServer = (object) ['enabled' => true, 'ip' => '127.0.0.1', 'port' => '17
 $fixtureDirectory = new Directory(['civ13.com' => ['nomads']], ['nomads' => $fixtureServer], static fn () => resolve($status), static fn () => strtotime('2026-10-19T17:00:00Z'));
 $fixtureDirectory->refresh();
 directoryCheck($fixtureDirectory->snapshot('civ13.com') === $fixture, 'Cross-language compatibility fixture differs from backend output');
+$unicodeFixture = json_decode(file_get_contents(__DIR__.'/fixtures/server-directory-unicode.json'), true, 16, JSON_THROW_ON_ERROR);
+$fixtureServer->name = 'Nomads 🌍';
+$unicodeDirectory = new Directory(['civ13.com' => ['nomads']], ['nomads' => $fixtureServer], static fn () => resolve($status), static fn () => strtotime('2026-10-19T17:00:00Z'));
+$unicodeDirectory->refresh();
+directoryCheck($unicodeDirectory->snapshot('civ13.com') === $unicodeFixture, 'Supplementary Unicode fixture differs from backend output');
+$fixtureServer->name = str_repeat('x', 116).'🌍';
+new Directory(['civ13.com' => ['nomads']], ['nomads' => $fixtureServer], $probe, $clock);
+$fixtureServer->name = str_repeat('x', 117).'🌍';
+directoryThrows(static fn () => new Directory(['civ13.com' => ['nomads']], ['nomads' => $fixtureServer], $probe, $clock));
 
 echo "PASS directory: configured targets, online/zero-player/offline, partial failure, malformed JSON/status, privacy allowlist, freshness/clock, atomic coalesced sweeps, provider/method/query isolation, fixed BYOND wire protocol, frame bounds and asynchronous deadlines.\n";
