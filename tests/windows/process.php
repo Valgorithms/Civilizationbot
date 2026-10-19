@@ -14,7 +14,8 @@ try {
     file_put_contents($dir.'/bot.php', '<?php
 require '.$helper.';
 $lock = Civ13\\PortableProcess::lock(getcwd());
-file_put_contents("ready.json", json_encode([getcwd(), $argv[1]]));
+file_put_contents("ready.tmp", json_encode([getcwd(), $argv[1]]));
+rename("ready.tmp", "ready.json");
 fwrite(STDOUT, "stdout fixture\\n");
 fwrite(STDERR, "stderr fixture\\n");
 $deadline = microtime(true) + 15;
