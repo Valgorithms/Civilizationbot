@@ -649,7 +649,7 @@ class Civ13
         $this->then = new PromiseMiddleware($this->onFulfilledDefault, $this->onRejectedDefault);
 
         foreach ($options['folders'] as $key => $value) {
-            if (! is_string($value) || (! is_dir($value) && ! @mkdir($value, 0664, true))) {
+            if (! is_string($value) || (! is_dir($value) && ! @mkdir($value, 0755, true))) {
                 $this->logger->warning("`$value` is not a valid folder path!");
                 unset($options['folders'][$key]);
             }

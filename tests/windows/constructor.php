@@ -36,7 +36,9 @@ try {
     $logger=new Monolog\Logger('offline',[new Monolog\Handler\NullHandler()]);
     $options=['discord'=>$discord,'loop'=>$loop,'logger'=>$logger,'stats'=>(new ReflectionClass(Discord\Stats::class))->newInstanceWithoutConstructor(),'browser'=>new React\Http\Browser(new React\Socket\Connector(['dns'=>false],$loop)),'filesystem'=>new React\Filesystem\Fallback\Adapter(),'verify_url'=>'','functions'=>[],'channel_ids'=>[],'role_ids'=>[]];
     require_once __DIR__.'/../../src/Civ13/PortableProfile.php';
-    $options=array_merge($options, Civ13\PortableProfile::runtimeOptions(['options'=>[], 'gitdir'=>$dir, 'state_dir'=>$dir]));
+    $sample=json_decode(file_get_contents(__DIR__.'/../../config/examples/windows-test1714.json'), true, 16, JSON_THROW_ON_ERROR);
+    $profileOptions=($negative || $cacheNegative) ? [] : $sample['options'];
+    $options=array_merge($options, Civ13\PortableProfile::runtimeOptions(['options'=>$profileOptions, 'gitdir'=>$dir, 'state_dir'=>$dir]));
     try { $bot=new Civ13\Civ13($options,[],[],null); }
     catch (ErrorException $error) {
         if ($cacheNegative && str_contains($error->getMessage(),'Permission denied')) { echo "PASS POSIX cache mutation rejects failed production writes\n"; return; }
