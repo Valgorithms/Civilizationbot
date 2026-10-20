@@ -7,12 +7,9 @@ namespace Civ13 {
     function exec(...$arguments): never { throw new \RuntimeException('Unexpected shell execution'); }
     function shell_exec(...$arguments): never { throw new \RuntimeException('Unexpected shell execution'); }
 
-    function curl_exec($handle): false
+    function curl_exec($handle): never
     {
-        if (\curl_getinfo($handle, CURLINFO_EFFECTIVE_URL) !== '') {
-            throw new \RuntimeException('Offline ready test attempted a verifier request');
-        }
-        return false;
+        throw new \RuntimeException('Offline ready test attempted a verifier request');
     }
 }
 

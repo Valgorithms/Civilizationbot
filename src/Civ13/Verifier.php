@@ -970,6 +970,9 @@ class Verifier
             ];
         }
         
+        if ($this->verify_url === '') {
+            return ['json' => '', 'http_status' => 0];
+        }
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->verify_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
