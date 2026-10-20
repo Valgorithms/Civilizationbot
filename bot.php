@@ -97,6 +97,7 @@ function loadEnv(string $filePath, bool $explicit = false): array
 }
 require_once __DIR__.'/src/Civ13/PortableProfile.php';
 require_once __DIR__.'/src/Civ13/PortableProcess.php';
+require_once __DIR__.'/src/Civ13/DefaultBranchGuard.php';
 $portable = null;
 $portableLock = null;
 $portablePath = getenv('CIVILIZATIONBOT_PROFILE');
@@ -104,6 +105,7 @@ if (PHP_OS_FAMILY === 'Windows' && !$portablePath) {
     throw new \RuntimeException('Windows requires an explicit portable profile; default production configuration is not permitted');
 }
 if ($portablePath) {
+    \Civ13\DefaultBranchGuard::verify(__DIR__); // Before profile credentials, Composer, sockets or Discord.
     $portable = PortableProfile::load($portablePath);
     PortableProfile::assertRoot($portable, __DIR__);
     $baseDir = __DIR__;

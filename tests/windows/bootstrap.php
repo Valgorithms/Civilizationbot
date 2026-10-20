@@ -26,6 +26,9 @@ namespace {
     try {
         file_put_contents($root.'/vendor/autoload.php','<?php return 1;');
         foreach(['PortableProfile','PortableProcess'] as $class) { copy(__DIR__.'/../../src/Civ13/'.$class.'.php',$root.'/src/Civ13/'.$class.'.php'); }
+        // Git/network admission is covered by default-branch.php; this fixture
+        // isolates subsequent bootstrap option assembly with synthetic inputs.
+        file_put_contents($root.'/src/Civ13/DefaultBranchGuard.php', '<?php namespace Civ13; final class DefaultBranchGuard { public static function verify(string $root): array { $GLOBALS["bootstrap_guard_seen"] = true; return []; } }');
         file_put_contents($root.'/variable_functions.php','<?php $status_changer_timer = static function () {}; $status_changer_random = static function () {};');
         file_put_contents($root.'/separate.env',"TOKEN=synthetic-bootstrap-only\n");
         $server=['basedir'=>$root,'ip'=>'127.0.0.1','port'=>1714,'name'=>'fixture','host'=>'fixture','enabled'=>false];
@@ -46,7 +49,7 @@ namespace {
         set_error_handler(static function(int $severity,string $message,string $file,int $line):never{throw new ErrorException($message,0,$severity,$file,$line);});
         try { require $root.'/bot.php'; throw new RuntimeException('Bootstrap boundary not reached'); }
         catch(BootstrapReached){
-            check(!$negative);$options=$GLOBALS['bootstrap_options'];
+            check(!$negative && ($GLOBALS['bootstrap_guard_seen'] ?? false));$options=$GLOBALS['bootstrap_options'];
             check($options['http_whitelist']===['127.0.0.1'] && $options['http_port']===25565);
             check($options['channel_ids']===[] && $options['role_ids']===[] && $options['functions']===[]);
             check($options['http_key']==='' && $options['civ_token']==='' && $options['verify_url']==='');
