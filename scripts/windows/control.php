@@ -2,16 +2,24 @@
 declare(strict_types=1);
 require __DIR__.'/../../src/Civ13/PortableProfile.php';
 require __DIR__.'/../../src/Civ13/PortableProcess.php';
+require __DIR__.'/../../src/Civ13/DefaultBranchGuard.php';
 use Civ13\PortableProfile;
 use Civ13\PortableProcess;
 try {
-    if (count($argv)!==3 || !in_array($argv[1],['check','start','stop'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop ABSOLUTE_PROFILE'); }
+    if (count($argv)!==3 || !in_array($argv[1],['check','start','stop','update'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop|update ABSOLUTE_PROFILE'); }
     $profile=PortableProfile::load($argv[2]);
     PortableProfile::assertRoot($profile, dirname(__DIR__, 2));
     if ($argv[1]==='stop') { PortableProcess::requestStop($profile['state_dir']); exit(0); }
     $errors=PortableProfile::preflight($profile,extension_loaded(...));
     if ($errors!==[]) { throw new RuntimeException(implode('; ',$errors)); }
     if ($argv[1]==='check') { echo "Preflight passed; not started\n"; exit(0); }
+    if ($argv[1]==='update') {
+        $lock=PortableProcess::lock($profile['state_dir']);
+        try { echo json_encode(\Civ13\DefaultBranchGuard::verify($profile['root'],true),JSON_THROW_ON_ERROR)."\n"; }
+        finally { fclose($lock); }
+        exit(0);
+    }
+    \Civ13\DefaultBranchGuard::verify($profile['root']);
     if (is_file($profile['state_dir'].'/stop.request')) { throw new RuntimeException('Unresolved stop request; inspect previous instance before starting'); }
     putenv('CIVILIZATIONBOT_PROFILE='.$argv[2]);
     $pipes=[];

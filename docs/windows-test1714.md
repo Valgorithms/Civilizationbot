@@ -32,6 +32,8 @@ From PowerShell, with explicit executable and profile paths:
 
 ```powershell
 C:/php/php.exe scripts/windows/control.php check D:/Civilizationbot-local/profile.json
+# While stopped, explicitly fetch and fast-forward clean default-branch source:
+C:/php/php.exe scripts/windows/control.php update D:/Civilizationbot-local/profile.json
 # Only after the separate activation gate:
 C:/php/php.exe scripts/windows/control.php start D:/Civilizationbot-local/profile.json
 # From another terminal, requests graceful shutdown of this profile only:
@@ -47,6 +49,23 @@ inspection before restart. A stop request is not evidence that a process exited.
 Only WEBAPI_TOKEN and CIV_TOKEN explicitly present in the separate environment file
 are used; inherited values are ignored. Cache files are pinned under state/json.
 The check/start/stop tools reject a profile belonging to a different checkout.
+
+Portable start and direct portable bot.php startup verify source before loading
+credentials, Composer or Discord. The checkout must be clean, attached to main,
+track origin/main, and use https://github.com/Valgorithms/Civilizationbot.git as
+its sole origin URL. Both cached and freshly advertised remote defaults must be
+main. Each verification fetches main and compares its exact advertised commit;
+offline or inconsistent evidence refuses startup. Detached/feature branches,
+untracked changes, hidden index entries, sparse checkouts, ahead or diverged
+local commits and stale source all refuse without changing working files.
+
+The explicit update command takes the bot's exclusive state lock and permits
+only a clean fast-forward to freshly verified origin/main. It never resets,
+stashes, cleans, switches branches, installs dependencies or restarts the bot.
+Required unmerged local capabilities must land on main before startup can pass;
+attaching an ahead checkout to main alone does not establish remote alignment.
+check remains an offline profile/dependency check, and stop remains available
+to request an owned instance's graceful shutdown regardless of source state.
 
 Logs append to state/output.log, stdout.log and stderr.log. Protect this directory
 with operator-only filesystem permissions and apply an external retention policy.
@@ -101,6 +120,12 @@ checks on Windows and Linux with PHP 8.3, 8.4 and 8.5.
 `php tests/windows/shell-guard.php` installs process-function tripwires and uses
 synthetic messages to prove unsupported maintenance rejects before any shell,
 process inspection, timer-based restart or misleading success reaction.
+
+`php tests/windows/default-branch.php` uses real temporary local Git repositories
+to verify named/default/upstream identity, safe fast-forward, preservation of
+dirty/ahead/diverged source, and fail-closed offline/detached/feature controls.
+It also exercises actual control start/update and direct portable bootstrap
+refusal before environment contents, Composer or a bot process can be loaded.
 
 `php tests/windows/ready.php` emits init and fires the delayed bootstrap with a
 controlled loop and synthetic Discord command repositories. It exercises real
