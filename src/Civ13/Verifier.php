@@ -94,8 +94,7 @@ class Verifier
         if ($this->readOnly) {
             // No role sync, provision replay, registration or member/thread mutation listeners.
             $initialize = function (): void {
-                try { $this->getVerified(); }
-                catch (VerifierException) { $this->logger->warning('Hosted verification unavailable'); }
+                $this->refreshHosted();
                 $this->verifierStatusTimer();
                 $this->setup();
             };
@@ -962,7 +961,7 @@ class Verifier
     public function getVerified(bool $initialize = true): CollectionInterface
     {
         if ($this->readOnly) {
-            if (!$this->refreshHosted()['available']) { throw new VerifierException('Hosted verification unavailable; last valid list retained as stale'); }
+            if (!$this->hostedStatus()['available']) { throw new VerifierException('Hosted verification unavailable; last valid list retained as stale'); }
             return $this->verified;
         }
         $this->logger->debug('Refreshing verified list...');
@@ -1003,7 +1002,10 @@ class Verifier
      */
     public function fetchVerifiedData(): array
     {
-        if (isset($this->readOnly) && $this->readOnly) { return HostedVerificationSource::fetch(); }
+        if (isset($this->readOnly) && $this->readOnly) {
+            return $this->hostedStatus()['available'] ? ['json' => json_encode($this->hosted->records(), JSON_THROW_ON_ERROR), 'http_status' => 200]
+                : ['json' => '', 'http_status' => 0];
+        }
         if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) {
             return [
                 'json' => json_encode($this->civ13->verifier_server->getState()->getVerifyList()),
@@ -1079,6 +1081,7 @@ class Verifier
      */
     public function getVerifiedMemberItems(): CollectionInterface
     {
+        if (isset($this->readOnly) && $this->readOnly && !$this->hostedStatus()['available']) { throw new VerifierException('Hosted verification unavailable'); }
         if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             return $this->verified->filter(function ($v) use ($guild) {
                 return $guild->members->has($v['discord']);
@@ -1154,8 +1157,7 @@ class Verifier
         if (! isset($this->timers['verifier_status_timer'])) {
             $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
                 if ($this->readOnly) {
-                    try { $this->getVerified(false); }
-                    catch (VerifierException) { $this->logger->warning('Hosted verification unavailable'); }
+                    $this->refreshHosted();
                     return;
                 }
                 if (! $status = $this->civ13->verifier_online) {
@@ -1201,6 +1203,7 @@ class Verifier
      */
     public function getIterator(): Traversable
     {
+        if (isset($this->readOnly) && $this->readOnly && !$this->hostedStatus()['available']) { throw new VerifierException('Hosted verification unavailable'); }
         return $this->verified->getIterator();
     }
 
@@ -1212,14 +1215,15 @@ class Verifier
         return $status;
     }
 
-    public function refreshHosted(): array
+    public function refreshHosted(): PromiseInterface
     {
         if (!$this->hosted) { throw new \LogicException('Hosted read-only verification is not configured'); }
-        $status = $this->hosted->refresh(HostedVerificationSource::fetch(...));
-        $this->verified = new Collection($this->hosted->records(), 'discord');
-        $this->civ13->verifier_online = $status['available'];
-        $this->logger->info('Hosted verification refresh', $status);
-        return $status;
+        return $this->hosted->refresh(fn () => HostedVerificationSource::fetch($this->civ13->browser))->then(function (array $status): array {
+            $this->verified = new Collection($this->hosted->records(), 'discord');
+            $this->civ13->verifier_online = $status['available'];
+            $this->logger->info('Hosted verification refresh', $status);
+            return $status;
+        });
     }
     // Magic Methods
     /**

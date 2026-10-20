@@ -17,8 +17,9 @@ sent. Do not configure `CIV_TOKEN`, copy production credentials, run a local
 VerifierServer, or interpret the Desktop instance as a verification authority.
 The separate app's own Discord token remains private and unrelated.
 
-The consumer disables proxies and redirects, bounds connection/response time
-to 2/10 seconds and response bytes to 4 MiB, validates at most 50,000 one-to-one
+The consumer uses the bot's asynchronous ReactPHP HTTP browser without a proxy,
+disables redirects, bounds each request to 10 seconds and response bytes to
+4 MiB, and validates at most 50,000 one-to-one
 `ss13`/`discord` records from the hosted collection (JSON list or keyed object),
 normalizes legacy account display spelling to the bot's existing lookup form,
 rejects normalization collisions, and retains only those fields in memory. It reads at
@@ -35,20 +36,22 @@ Staff may invoke `/refreshverification` in the configured guild. It uses the
 same staff-role/Moderate Members/Administrator/Ban Members check as the staff
 panel, rechecks permission after an ephemeral acknowledgement, and reports
 fresh/unavailable, last successful refresh UTC and retained record count.
-There is one GET plus at most one retry on a transport timeout (20 seconds
+There is one GET plus at most one retry on a transport rejection (20 seconds
 total HTTP deadline); HTTP/schema failures are not retried. Concurrent refreshes and
 queued bursts within ten seconds are coalesced. Failed refresh never advances
 the last-success timestamp; no valid initial list remains unavailable. A view
 older than 30 minutes cannot authorize even if the periodic callback is late.
 
 Read-only mode does not register the legacy verifier's member/thread mutation
-listeners or synchronize Discord roles. Registration, token challenges,
+listeners, approve guild join requests or run verification-driven role/ban
+timers. It does not synchronize Discord roles. Registration, token challenges,
 provisioning and deletion are rejected before local or remote writes. Direct
 users to the primary hosted bot to complete or change verification. Other bot
 commands retain their existing authorization checks; this mode grants none.
 
-`php tests/windows/hosted-verifier.php` uses synthetic records and a mocked
-transport around the real setup/parser/write barriers. It opens no socket,
+`php tests/windows/hosted-verifier.php` uses synthetic records and an injected
+asynchronous browser around the real setup/parser/write barriers. It proves
+unrelated timers progress while refresh is pending. It opens no socket,
 loads no environment/token and makes no Discord or hosted service change.
 Live deployment additionally needs an exact endpoint read and normal runtime
 ownership/activation checks. Never log response bodies or verified identities

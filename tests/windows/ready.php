@@ -7,14 +7,8 @@ namespace Civ13 {
     function exec(...$arguments): never { throw new \RuntimeException('Unexpected shell execution'); }
     function shell_exec(...$arguments): never { throw new \RuntimeException('Unexpected shell execution'); }
 
-    function curl_setopt_array($handle, array $options): bool { $GLOBALS['readyHostedOptions'] = $options; return true; }
-    function curl_getinfo($handle, int $option): int { return 200; }
-    function curl_exec($handle): bool
+    function curl_exec($handle): never
     {
-        if (in_array('--hosted', $_SERVER['argv'], true)) {
-            $GLOBALS['readyHostedCalls'] = ($GLOBALS['readyHostedCalls'] ?? 0) + 1;
-            return ($GLOBALS['readyHostedOptions'][CURLOPT_WRITEFUNCTION])($handle, '[]') === 2;
-        }
         throw new \RuntimeException('Offline ready test attempted a verifier request');
     }
 }
@@ -28,6 +22,18 @@ namespace {
     final class ReadyConnector implements React\Socket\ConnectorInterface
     {
         public function connect($uri) { throw new RuntimeException('Offline test attempted a connection: '.$uri); }
+    }
+    final class ReadyHostedBrowser extends React\Http\Browser {
+        public function __construct() {}
+        public function withTimeout($value) { check($value===10, 'Unbounded hosted timeout'); return $this; }
+        public function withFollowRedirects($value) { check($value===false, 'Hosted redirect enabled'); return $this; }
+        public function withRejectErrorResponse($value) { return $this; }
+        public function withResponseBuffer($value) { check($value===4194304, 'Unbounded hosted body'); return $this; }
+        public function get($url, array $headers = []) {
+            check($url===Civ13\HostedVerificationSource::URL && $headers===['Accept'=>'application/json'], 'Unexpected hosted request');
+            $GLOBALS['readyHostedCalls']=($GLOBALS['readyHostedCalls']??0)+1;
+            return React\Promise\resolve(new React\Http\Message\Response(200,[],'[]'));
+        }
     }
     final class ReadyInteraction extends Discord\Parts\Interactions\Interaction
     {
@@ -179,6 +185,7 @@ namespace {
         if ($hosted) {
             $options['verification_read_only'] = true;
             $options['verify_url'] = Civ13\HostedVerificationSource::URL;
+            $options['browser'] = new ReadyHostedBrowser();
         }
         if ($unconfigured) {
             $options['channel_ids'] = [];
@@ -229,6 +236,13 @@ namespace {
             $read = $bot->httpServiceManager->httpHandler->offsetGet('/verified', 'handlers');
             $response = $read(new React\Http\Message\ServerRequest('GET', 'http://127.0.0.1/verified'), '/verified', false);
             check($response->getStatusCode() === 503 && str_contains((string)$response->getBody(), 'last_success_utc'), 'Unavailable source returned successful empty list');
+            // An uninitialized request would reach transport/error if the readonly early guard regresses.
+            $request = (new ReflectionClass(Discord\Parts\Guild\GuildJoinRequest::class))->newInstanceWithoutConstructor();
+            $discord->emit('GUILD_JOIN_REQUEST_CREATE', [$request]);
+            $discord->emit('GUILD_JOIN_REQUEST_UPDATE', [$request]);
+            $bot->enabled_gameservers = ['synthetic' => (object)[]];
+            check($bot->bancheckTimer() === false, 'Read-only verifier ran role/ban mutation timer');
+            $bot->enabled_gameservers = [];
             echo "HOSTED PASS staff-only refresh registration/action/recheck, source GET and unavailable HTTP503 metadata\n";
         }
         // Synthetic local sentinel only: no environment file is read or loaded.

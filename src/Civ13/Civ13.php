@@ -1409,12 +1409,14 @@ class Civ13
         });
 
         $this->discord->on('GUILD_JOIN_REQUEST_CREATE', function (GuildJoinRequest $request): void {
+            if ($this->verifier->readOnly) { return; }
             if ($this->verifier->getVerifiedMemberItems()->get('discord', $request->user_id)) {
                 $request->approve();
             }
         });
 
         $this->discord->on('GUILD_JOIN_REQUEST_UPDATE', function (GuildJoinRequest $request): void {
+            if ($this->verifier->readOnly) { return; }
             if ($this->verifier->getVerifiedMemberItems()->get('discord', $request->user_id)) {
                 $request->approve();
             }
@@ -1553,6 +1555,7 @@ class Civ13
      */
     public function bancheckTimer(): TimerInterface|false
     {
+        if (isset($this->verifier) && $this->verifier->readOnly) { return false; }
         // We don't want the persistence server to do this function
         if (! $this->enabled_gameservers) {
             return false;

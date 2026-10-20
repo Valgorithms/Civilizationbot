@@ -34,29 +34,23 @@ final class HostedVerificationSource
         return $normalized;
     }
 
-    /** GET only, no credentials, proxy, redirects, persistent cache or raw response logging. */
-    public static function fetch(): array
+    /** Asynchronous GET only; no credentials, redirects, cache or raw response logging. */
+    public static function fetch(\React\Http\Browser $browser): \React\Promise\PromiseInterface
     {
-        $body = ''; $handle = curl_init(self::URL);
-        try {
-            curl_setopt_array($handle, [CURLOPT_HTTPGET => true, CURLOPT_FOLLOWLOCATION => false,
-                CURLOPT_PROXY => '', CURLOPT_CONNECTTIMEOUT => 2, CURLOPT_TIMEOUT => 10,
-                CURLOPT_HTTPHEADER => ['Accept: application/json'], CURLOPT_PROTOCOLS => CURLPROTO_HTTP,
-                CURLOPT_WRITEFUNCTION => static function ($handle, string $chunk) use (&$body): int {
-                    if (strlen($body) + strlen($chunk) > self::MAX_BYTES) { return 0; }
-                    $body .= $chunk; return strlen($chunk);
-                }]);
-            // Retry a transport timeout once; never retry HTTP/schema failures or loop indefinitely.
-            for ($attempt = 0; $attempt < 2; ++$attempt) {
-                $body = '';
-                $success = curl_exec($handle);
-                $status = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-                if ($success !== false || curl_errno($handle) !== CURLE_OPERATION_TIMEDOUT) { break; }
-            }
-            if ($success === false || $status !== 200) { return ['json' => '', 'http_status' => 0, 'failure' => 'transport_or_http', 'transport_errno' => curl_errno($handle)]; }
-            return ['json' => json_encode(self::validate($body), JSON_THROW_ON_ERROR), 'http_status' => 200];
-        } catch (\Throwable $error) {
-            return ['json' => '', 'http_status' => 0, 'failure' => $error instanceof \JsonException ? 'invalid_json' : 'invalid_record_contract'];
-        } finally { $handle = null; }
+        $client = $browser->withTimeout(10)->withFollowRedirects(false)->withRejectErrorResponse(false)->withResponseBuffer(self::MAX_BYTES);
+        $read = static function (int $attempt) use ($client, &$read): \React\Promise\PromiseInterface {
+            return $client->get(self::URL, ['Accept' => 'application/json'])->then(
+                static function (\Psr\Http\Message\ResponseInterface $response): array {
+                    if ($response->getStatusCode() !== 200) { return ['json' => '', 'http_status' => 0]; }
+                    try { return ['json' => json_encode(self::validate((string)$response->getBody()), JSON_THROW_ON_ERROR), 'http_status' => 200]; }
+                    catch (\Throwable) { return ['json' => '', 'http_status' => 0]; }
+                },
+                static function (\Throwable $error) use ($attempt, &$read): mixed {
+                    if ($attempt === 0 && !$error instanceof \OverflowException) { return $read(1); }
+                    return ['json' => '', 'http_status' => 0];
+                }
+            );
+        };
+        return $read(0);
     }
 }

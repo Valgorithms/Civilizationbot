@@ -112,12 +112,13 @@ final class Panels
                 return $i->acknowledgeWithResponse(true)->then(function () use ($i): PromiseInterface {
                     // Recheck staff at execution, after the asynchronous acknowledgement.
                     if (!$this->isStaff($i->member)) { return $i->updateOriginalResponse($this->plain('You no longer have permission.')); }
-                    $status = $this->civ13->verifier->refreshHosted();
+                    return $this->civ13->verifier->refreshHosted()->then(function (array $status) use ($i): PromiseInterface {
                     $message = ($status['available'] ? 'Hosted verification refreshed.' : 'Hosted verification unavailable; retained list is STALE and cannot authorize.')
                         .' Last successful refresh: '.($status['last_success_utc'] ?? 'never')
                         .'; records: '.($status['records'] ?? 'unavailable')
                         .($status['coalesced'] ? '; shared recent/in-progress refresh (10-second limit).' : '');
                     return $i->updateOriginalResponse($this->plain($message));
+                    });
                 });
             });
         }
