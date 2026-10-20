@@ -95,7 +95,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         $this->attributes['ratelimits'] = [];
         //$this->attributes['endpoints'] = [];
 
-        if ($external_ip = @file_get_contents('http://ipecho.net/plain')) {
+        if (($civ13->options['discover_external_ip'] ?? true) && ($external_ip = @file_get_contents('http://ipecho.net/plain'))) {
             $this->external_ip = $external_ip;
         }
         foreach ($whitelist as $ip) {

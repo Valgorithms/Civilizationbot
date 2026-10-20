@@ -27,6 +27,12 @@ use function React\Promise\resolve;
  */
 class OSFunctions
 {
+    /** Legacy shell strings cannot establish ownership of Windows/portable children. */
+    public static function legacyShellAvailable(): bool
+    {
+        return PHP_OS_FAMILY !== 'Windows' && !getenv('CIVILIZATIONBOT_PROFILE');
+    }
+
     public const array DEFAULT_PIPES = [
         0 => ['pipe', 'r'],
         1 => ['pipe', 'w'],
@@ -55,17 +61,17 @@ class OSFunctions
      * Spawns a child process to execute the given command.
      *
      * This function attempts to create a new process to run the specified command.
-     * On Windows systems, it returns null as the POSIX compatibility layer is insufficient.
+     * Windows and portable profiles reject legacy shell commands before any process is created.
      * On other systems, it uses `sudo` and `nohup` to run the command and sets up event listeners
      * to log the process's stdout data, end, error, and close events, as well as the exit event.
      *
      * @param  string                    $cmd The command to be executed in the child process.
-     * @return PromiseInterface<Process> The created Process object, or null if running on Windows.
+     * @return PromiseInterface<Process> The created Process object, or a rejected promise in Windows/portable mode.
      */
     public static function spawnChildProcess(string $cmd): PromiseInterface
     {
-        if (PHP_OS_FAMILY == 'Windows') {
-            return reject(new \Exception('Windows does not support POSIX compatibility layer'));
+        if (!self::legacyShellAvailable()) {
+            return reject(new \RuntimeException('Legacy shell operations are disabled in Windows/portable mode'));
         }
         $process = new Process("sudo nohup $cmd");
         $process->stdout->on('end', static fn () => error_log('ended'.PHP_EOL));
@@ -80,9 +86,8 @@ class OSFunctions
     /**
      * Executes a command in the background.
      *
-     * This function executes a given command in the background, either on Windows or Unix-based systems.
-     * On Windows, it uses `popen` with the `start` command.
-     * On Unix-based systems, it uses `proc_open` with `sudo nohup`.
+     * This function retains the legacy Unix shell path. Windows and portable profiles
+     * reject it; use an explicitly owned argv-based process adapter instead.
      *
      * @param  string                           $cmd The command to execute.
      * @return PromiseInterface<resource>       A promise that resolves with the process resource on success, or rejects with an exception on failure.
@@ -90,12 +95,8 @@ class OSFunctions
      */
     public static function execInBackground(string $cmd): PromiseInterface
     {
-        if (PHP_OS_FAMILY == 'Windows') {
-            if (($p = popen("start {$cmd}", 'r')) === false) {
-                return reject(new MissingSystemPermissionException('popen() failed'));
-            }
-
-            return resolve($p);
+        if (!self::legacyShellAvailable()) {
+            return reject(new \RuntimeException('Legacy shell operations are disabled in Windows/portable mode'));
         }
         if (! $proc = proc_open($cmd, self::DEFAULT_PIPES, $pipes)) {
             return reject(new MissingSystemPermissionException('proc_open() failed'));
@@ -124,8 +125,8 @@ class OSFunctions
     /**
      * Restarts the application by executing an external shell command.
      *
-     * On Windows, it runs a batch file (`run.bat`) located in the current working directory.
-     * On other operating systems, it runs a PHP script (`bot.php`) in the background using `nohup`.
+     * Windows and portable profiles reject self-spawning shell restarts. On other
+     * operating systems, the legacy PHP/nohup restart path is preserved.
      *
      * @return PromiseInterface<resource> A promise that resolves with the process resource on success, or rejects with a MissingSystemPermissionException on failure.
      *
@@ -133,12 +134,8 @@ class OSFunctions
      */
     public static function restart(string $file = 'bot.php'): PromiseInterface
     {
-        if (PHP_OS_FAMILY == 'Windows') {
-            if (($p = popen('cmd /c "'.getcwd().'\run.bat"', 'r')) === false) {
-                return reject(new MissingSystemPermissionException('popen() failed'));
-            }
-
-            return resolve($p);
+        if (!self::legacyShellAvailable()) {
+            return reject(new \RuntimeException('Legacy shell operations are disabled in Windows/portable mode'));
         }
         if (! $proc = proc_open($output = "sudo nohup php \"$file\" &", self::DEFAULT_PIPES, $pipes)) {
             return reject(new MissingSystemPermissionException('proc_open() failed'));
@@ -176,6 +173,9 @@ class OSFunctions
      */
     public static function disown($proc): void
     {
+        if (!self::legacyShellAvailable()) {
+            throw new \RuntimeException('Legacy shell operations are disabled in Windows/portable mode');
+        }
         $proc_details = proc_get_status($proc);
         error_log("Disowning process {$proc_details['pid']}...");
         if (isset($proc_details['pid']) && $proc_details['running']) {
@@ -210,24 +210,15 @@ class OSFunctions
      * @throws \RuntimeException If the command execution fails or no processes are found.
      *
      * Notes:
-     * - On Windows, it uses `netstat` to find processes and `taskkill` to terminate them.
+     * - Windows and portable profiles reject port-based process termination.
      * - On Unix-based systems, it uses `lsof` to find processes and `kill` to terminate them.
      * - Requires appropriate permissions to execute system commands.
      * - Logs the termination of each process using `error_log`.
      */
     public static function killProcessOnPort(int $port): void
     {
-        if (PHP_OS_FAMILY == 'Windows') {
-            exec("netstat -ano | findstr :$port", $output);
-            foreach ($output as $line) {
-                if (preg_match('/\s+(\d+)$/', $line, $matches)) {
-                    $pid = $matches[1];
-                    exec("taskkill /F /PID $pid");
-                    error_log("Terminated process with PID $pid on port $port");
-                }
-            }
-
-            return;
+        if (!self::legacyShellAvailable()) {
+            throw new \RuntimeException('Legacy shell operations are disabled in Windows/portable mode');
         }
         exec("lsof -i :$port -t", $output);
         foreach ($output as $pid) {

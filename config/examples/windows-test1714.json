@@ -1,0 +1,33 @@
+{
+  "schema": "civilizationbot.portable.v1",
+  "root": "D:/GitHub/Civilizationbot",
+  "env_file": "D:/Civilizationbot-local/separate.env",
+  "state_dir": "D:/Civilizationbot-local/state",
+  "gitdir": "D:/GitHub/Civ13",
+  "http_port": 25565,
+  "options": {
+    "civ13_guild_id": "",
+    "owner_id": "",
+    "technician_id": "",
+    "channel_ids": {},
+    "role_ids": {},
+    "folders": {"json": "json/"},
+    "files": {}
+  },
+  "servers": {
+    "test1714": {
+      "basedir": "D:/Civ13-local/TEST1714",
+      "name": "TEST1714",
+      "host": "local operator",
+      "ip": "127.0.0.1",
+      "port": 1714,
+      "enabled": false,
+      "supported": false,
+      "moderate": false,
+      "legacy_relay": false,
+      "discussion": "", "playercount": "", "ooc": "", "lobby": "",
+      "asay": "", "ic": "", "transit": "", "adminlog": "",
+      "debug": "", "garbage": "", "runtime": "", "attack": ""
+    }
+  }
+}

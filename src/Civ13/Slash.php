@@ -398,7 +398,11 @@ class Slash
     /** Freshens the Civ13 guild command list and (re)declares the guild-scoped interaction commands. */
     private function __updateGuildCommands(): void
     {
-        $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands): void {
+        if (!$guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            $this->logger->warning('Configured guild unavailable; guild command registration skipped');
+            return;
+        }
+        $guild->commands->freshen()->then(function (GuildCommandRepository $commands): void {
             if ($names = array_map(fn (Command $command) => $command->name, iterator_to_array($commands))) {
                 $this->logger->debug(sprintf('[GUILD APPLICATION COMMAND LIST] `%s`', implode('`, `', $names)));
             }
@@ -566,6 +570,9 @@ class Slash
     private function __declareListeners(): void
     {
         $this->discord->listenCommand('pull', function (Interaction $interaction): PromiseInterface {
+            if (!OSFunctions::legacyShellAvailable()) {
+                return $this->respondWithMessage($interaction, 'This maintenance command is unavailable in Windows/portable mode.', true);
+            }
             $this->logger->info('[GIT PULL]');
             OSFunctions::execInBackground('git pull');
             $this->civ13->loop->addTimer(5, function () {
@@ -585,6 +592,9 @@ class Slash
         });
         
         $this->discord->listenCommand('update', function (Interaction $interaction): PromiseInterface {
+            if (!OSFunctions::legacyShellAvailable()) {
+                return $this->respondWithMessage($interaction, 'This maintenance command is unavailable in Windows/portable mode.', true);
+            }
             $this->logger->info('[COMPOSER UPDATE]');
             OSFunctions::execInBackground('composer update');
 
@@ -635,12 +645,15 @@ class Slash
                 : $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true)
         );
 
+        if ($this->civ13->ss14verifier !== null) {
         $this->discord->listenCommand(
             'ss14',
             fn (Interaction $interaction): PromiseInterface => ($item = $this->civ13->ss14verifier->get('discord', $interaction->data->target_id))
                 ? $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss14']}`"), true)
                 : $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with an SS14 account or it does not exist in the cache yet"), true)
         );
+
+        }
 
         $this->discord->listenCommand('bancheck', function (Interaction $interaction): PromiseInterface {
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) {

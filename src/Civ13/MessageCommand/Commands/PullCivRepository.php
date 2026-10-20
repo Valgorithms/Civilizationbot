@@ -28,6 +28,9 @@ class PullCivRepository extends Civ13MessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
+        if (!OSFunctions::legacyShellAvailable()) {
+            return $message->reply('This maintenance command is unavailable in Windows/portable mode.');
+        }
         return $message->react(
             (is_dir($fp = $this->civ13->gitdir) && OSFunctions::execInBackground("git -C {$fp} pull"))
             ? '👍'

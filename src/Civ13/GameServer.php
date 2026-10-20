@@ -768,6 +768,7 @@ class GameServer
      */
     public function Host(?Message $message = null): void
     {
+        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
         OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::updateserverabspaths);
         if (file_exists($this->basedir.Civ13::serverdata)) {
             OSFunctions::execInBackground("rm -f {$this->basedir}".Civ13::serverdata);
@@ -789,6 +790,7 @@ class GameServer
     /** Shuts the server down (via `killciv13`), optionally announcing it in OOC first. */
     public function Kill(?Message $message = null, bool $notify = true): void
     {
+        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
         if ($notify) {
             $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
             $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender);
@@ -803,6 +805,7 @@ class GameServer
     /** Kills the server and re-hosts it 20s later, optionally announcing the restart in OOC. */
     public function Restart(?Message $message = null, bool $notify = true): void
     {
+        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
         $this->Kill(null, false);
         $this->civ13->loop->addTimer(20, function () use ($message, &$gameserver): void {
             $this->Host($message);
@@ -820,6 +823,7 @@ class GameServer
      */
     public function MapSwap(string $mapto, string $admin): PromiseInterface
     {
+        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return reject(new \RuntimeException('Native map control is unavailable on Windows')); }
         $mapto = strtoupper($mapto);
         if (! file_exists($fp = $this->civ13->gitdir.Civ13::maps) || ! $file = @fopen($fp, 'r')) {
             $this->logger->error($err = "Unable to open `$fp` for reading.");

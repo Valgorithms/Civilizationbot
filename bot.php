@@ -75,10 +75,7 @@ $baseDir = (static function (): string {
     return \getcwd() ?: __DIR__;
 })();
 
-if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : $baseDir.'/vendor/autoload.php') {
-    throw new \Exception('Composer autoloader not found. Run `composer install`, or keep the binary inside the project directory.');
-}
-function loadEnv(string $filePath): void
+function loadEnv(string $filePath, bool $explicit = false): array
 {
     if (! file_exists($filePath)) {
         throw new Exception('The .env file does not exist.');
@@ -88,17 +85,42 @@ function loadEnv(string $filePath): void
     $trimmedLines = array_map('trim', $lines);
     $filteredLines = array_filter($trimmedLines, fn ($line) => $line && ! str_starts_with($line, '#'));
 
-    array_walk($filteredLines, function ($line) {
+    $names = [];
+    array_walk($filteredLines, function ($line) use ($explicit, &$names) {
         [$name, $value] = array_map('trim', explode('=', $line, 2));
-        if (! array_key_exists($name, $_ENV)) {
+        $names[] = $name;
+        if ($explicit || ! array_key_exists($name, $_ENV)) {
             putenv(sprintf('%s=%s', $name, $value));
         }
     });
+    return $names;
 }
-loadEnv($baseDir.'/.env');
+require_once __DIR__.'/src/Civ13/PortableProfile.php';
+require_once __DIR__.'/src/Civ13/PortableProcess.php';
+$portable = null;
+$portableLock = null;
+$portablePath = getenv('CIVILIZATIONBOT_PROFILE');
+if (PHP_OS_FAMILY === 'Windows' && !$portablePath) {
+    throw new \RuntimeException('Windows requires an explicit portable profile; default production configuration is not permitted');
+}
+if ($portablePath) {
+    $portable = PortableProfile::load($portablePath);
+    PortableProfile::assertRoot($portable, __DIR__);
+    $baseDir = __DIR__;
+    $errors = PortableProfile::preflight($portable, extension_loaded(...));
+    if ($errors !== []) { throw new \RuntimeException(implode('; ', $errors)); }
+    $portableLock = \Civ13\PortableProcess::lock($portable['state_dir']);
+    if (is_file($portable['state_dir'].'/stop.request')) { throw new \RuntimeException('Unresolved stop request; inspect previous instance before starting'); }
+    chdir($portable['state_dir']);
+}
+if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : $baseDir.'/vendor/autoload.php') {
+    throw new \Exception('Composer autoloader not found. Run `composer install`, or keep the binary inside the project directory.');
+}
+$loadedNames = loadEnv($portable['env_file'] ?? $baseDir.'/.env', $portable !== null);
+if ($portable !== null && (!in_array('TOKEN', $loadedNames, true) || !getenv('TOKEN'))) { throw new \RuntimeException('Separate profile environment must explicitly supply TOKEN'); }
 
-file_put_contents($baseDir.'/output.log', ''); // Clear the contents of 'output.log'
-$fileHandler = (new StreamHandler($baseDir.'/output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
+if ($portable === null) { file_put_contents($baseDir.'/output.log', ''); } // Clear the contents of 'output.log'
+$fileHandler = (new StreamHandler(($portable['state_dir'] ?? $baseDir).'/output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
 $stdoutHandler = (new StreamHandler('php://stdout', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$fileHandler, $stdoutHandler]);
 Loop::addPeriodicTimer(60 * 10, fn () => $logger->reset()); // Flush all buffers every 10 minutes
@@ -138,7 +160,7 @@ $browser = new Browser(Loop::get());
 $filesystem = FilesystemFactory::create();
 include $baseDir.'/variable_functions.php';
 
-$http_whitelist = [
+$http_whitelist = $portable !== null ? ['127.0.0.1'] : [
     $civ13_ip = gethostbyname('www.civ13.com'),
     $vzg_ip = gethostbyname('www.valzargaming.com'),
     $val_ip = gethostbyname('www.valgorithms.com'),
@@ -286,6 +308,8 @@ $loadedData = json_decode($json, true);
 foreach ($loadedData as $key => $value) $options[$key] = $value;
 */
 
+// Portable profiles supply their arrays below; never evaluate production defaults.
+if ($portable === null) { // Production server defaults only.
 //TODO: Move this to a separate file, like .env
 $civ13_server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
     'tdm' => [
@@ -408,6 +432,11 @@ foreach ($civ14_server_settings as $key => $value) {
     $civ14_server_settings[$key]['key'] = $key;
 } // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
 
+} else {
+    $civ13_server_settings = [];
+    $civ14_server_settings = [];
+}
+
 $hidden_options = [
     'loop' => Loop::get(),
     'discord' => $discord,
@@ -435,13 +464,37 @@ $hidden_options = [
         ],
     ],
 ];
+if ($portable !== null) {
+    // Replace the entire ambient destination/control configuration, never recursively merge it.
+    $options = PortableProfile::runtimeOptions($portable);
+    $hidden_options['http_key'] = PortableProfile::environmentValue('WEBAPI_TOKEN', $loadedNames);
+    $hidden_options['civ_token'] = PortableProfile::environmentValue('CIV_TOKEN', $loadedNames);
+    $civ13_server_settings = $portable['servers'];
+    $civ14_server_settings = [];
+    $hidden_options['civ13_server_settings'] = $civ13_server_settings;
+    $hidden_options['http_whitelist'] = ['127.0.0.1'];
+    $hidden_options['web_address'] = '127.0.0.1';
+    $hidden_options['http_port'] = $portable['http_port'];
+    $hidden_options['functions'] = []; // No ambient production callbacks.
+    $options['verify_url'] = ''; // No authority writes or fallback to the official verifier.
+    $options['webserver_url'] = '127.0.0.1';
+}
 $options = array_merge($options, $hidden_options);
+if ($portable !== null) {
+    Loop::addPeriodicTimer(1, static function () use (&$civ13, $portable): void {
+        if (is_file($portable['state_dir'].'/stop.request')) {
+            unlink($portable['state_dir'].'/stop.request');
+            if ($civ13 !== null) { $civ13->stop(); } else { Loop::stop(); }
+        }
+    });
+}
 
 $civ13 = null;
 $global_error_handler = async(function (int $errno, string $errstr, ?string $errfile, ?int $errline) use (&$civ13, &$logger, &$testing) {
     /** @var ?Civ13 $civ13 */
     if (
         $civ13 && // If the bot is running
+        isset($civ13->channel_ids['staff_bot']) &&
         ($channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot']))
         // fsockopen
         && ! str_ends_with($errstr, 'Connection timed out')
@@ -484,7 +537,7 @@ use React\Http\Message\Response;
 use Psr\Http\Message\ServerRequestInterface;
 
 $socket = new SocketServer(
-    sprintf('%s:%s', '0.0.0.0', getenv('http_port') ?: 55555),
+    sprintf('%s:%s', $portable !== null ? '127.0.0.1' : '0.0.0.0', $portable['http_port'] ?? (getenv('http_port') ?: 55555)),
     [
         'tcp' => [
             'so_reuseport' => true,
@@ -565,7 +618,9 @@ $webapi->on('error', async(function (Exception $e, ?\Psr\Http\Message\RequestInt
 
 use VerifierServer\Server as VerifierServer;
 
-Loop::futureTick(async(static function () use (&$civ13, &$logger, $options, $civ13_server_settings, $civ14_server_settings) {
+Loop::futureTick(async(static function () use (&$civ13, &$logger, $options, $civ13_server_settings, $civ14_server_settings, $portable) {
+    $verifier_server = null;
+    if ($portable === null) {
     $verifier_server = new VerifierServer(
         getenv('VERIFIER_HOST_ADDR'),
         intval(getenv('VERIFIER_HOST_PORT'))
@@ -591,6 +646,7 @@ Loop::futureTick(async(static function () use (&$civ13, &$logger, $options, $civ
         getenv('dwa_client_secret')
     );
     
+    } // Portable instances do not construct the official verifier service.
     $civ13 = new Civ13(
         $options,
         $civ13_server_settings,

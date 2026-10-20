@@ -149,7 +149,7 @@ class Civ13
     public Byond $byond;
     public Moderator $moderator;
     public Verifier $verifier;
-    public SS14Verifier $ss14verifier;
+    public ?SS14Verifier $ss14verifier = null;
 
     public string $welcome_message = '';
     
@@ -302,7 +302,7 @@ class Civ13
             $this->filecache_path = $options['filecache_path'];
         }
         if (! is_dir($this->filecache_path)) {
-            mkdir($this->filecache_path, 0664, true);
+            mkdir($this->filecache_path, 0755, true);
         }
         
         if (isset($options['command_symbol']) && $options['command_symbol']) {
@@ -424,7 +424,7 @@ class Civ13
         $this->__loadOrInitializeVariables();
         new Moderator($this);
         new Verifier($this, $options);
-        new SS14Verifier($this);
+        if ($this->verifier_server !== null) { new SS14Verifier($this); }
         foreach ($civ13_server_settings as $gameserver_options) {
             new GameServer($this, $gameserver_options);
         }
@@ -475,6 +475,8 @@ class Civ13
                 'loop',
                 'browser',
                 'filesystem',
+                'filecache_path',
+                'discover_external_ip',
                 'civ13_guild_id',
                 'civ_token',
                 'command_symbol',
@@ -503,6 +505,7 @@ class Civ13
                 'webserver_url',
             ])
             ->setDefaults([
+                'discover_external_ip' => true,
                 'welcome_message' => '',
                 'logger' => null,
                 'onFulfilledDefault' => null,
@@ -555,6 +558,8 @@ class Civ13
             ->setAllowedTypes('functions', 'array')
             ->setAllowedTypes('loop', LoopInterface::class)
             ->setAllowedTypes('browser', ['null', Browser::class])
+            ->setAllowedTypes('filecache_path', 'string')
+            ->setAllowedTypes('discover_external_ip', 'bool')
             ->setAllowedTypes('filesystem', ['null', AdapterInterface::class])
             ->setAllowedTypes('civ13_guild_id', 'string')
             ->setAllowedTypes('civ_token', 'string')
@@ -644,7 +649,7 @@ class Civ13
         $this->then = new PromiseMiddleware($this->onFulfilledDefault, $this->onRejectedDefault);
 
         foreach ($options['folders'] as $key => $value) {
-            if (! is_string($value) || (! is_dir($value) && ! @mkdir($value, 0664, true))) {
+            if (! is_string($value) || (! is_dir($value) && ! @mkdir($value, 0755, true))) {
                 $this->logger->warning("`$value` is not a valid folder path!");
                 unset($options['folders'][$key]);
             }
@@ -928,6 +933,10 @@ class Civ13
      */
     public function restart(?string $file = null): PromiseInterface
     {
+        if (getenv('CIVILIZATIONBOT_PROFILE')) {
+            $this->stop();
+            return \React\Promise\resolve(null); // Portable supervisor owns relaunch.
+        }
         return $this->restartPolicy->restart($file, fn () => $this->stop(), fn (?string $entry) => OSFunctions::restart($entry ?? $this->constructed_file));
     }
 
