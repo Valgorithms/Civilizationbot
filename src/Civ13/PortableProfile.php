@@ -63,6 +63,16 @@ final class PortableProfile
         $options['filecache_path'] = $profile['state_dir'].'/json/';
         $options['discover_external_ip'] = false;
         $options['verify_url'] = '';
+        $options['verification_read_only'] = false;
+        if (array_key_exists('verification_source', $profile)) {
+            if (!is_array($profile['verification_source']) || count($profile['verification_source']) !== 2
+                || ($profile['verification_source']['mode'] ?? null) !== 'read-only'
+                || ($profile['verification_source']['url'] ?? null) !== 'http://civ13.com:55555/verified') {
+                throw new \InvalidArgumentException('Expected the explicit hosted read-only verification source');
+            }
+            $options['verify_url'] = $profile['verification_source']['url'];
+            $options['verification_read_only'] = true;
+        }
         $options['webserver_url'] = '127.0.0.1';
         return $options;
     }

@@ -469,7 +469,7 @@ if ($portable !== null) {
     $hidden_options['web_address'] = '127.0.0.1';
     $hidden_options['http_port'] = $portable['http_port'];
     $hidden_options['functions'] = []; // No ambient production callbacks.
-    $options['verify_url'] = ''; // No authority writes or fallback to the official verifier.
+    // runtimeOptions permits only an explicit hosted GET consumer, never authority writes.
     $options['webserver_url'] = '127.0.0.1';
 }
 $options = array_merge($options, $hidden_options);

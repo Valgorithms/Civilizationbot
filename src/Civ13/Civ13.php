@@ -541,6 +541,7 @@ class Civ13
                 'stats' => null,
                 'technician_id' => '116927250145869826',
                 'verify_url' => 'http://valzargaming.com:8080/verified/',
+                'verification_read_only' => false,
                 'web_address' => '',
                 'webapi' => null,
                 'webserver_url' => 'www.valzargaming.com',
@@ -583,6 +584,7 @@ class Civ13
             ->setAllowedTypes('stats', ['null', Stats::class])
             ->setAllowedTypes('technician_id', 'string')
             ->setAllowedTypes('verify_url', 'string')
+            ->setAllowedTypes('verification_read_only', 'bool')
             ->setAllowedTypes('web_address', 'string')
             ->setAllowedTypes('webapi', ['null', 'resource', HttpServer::class])
             ->setAllowedTypes('webserver_url', 'string');

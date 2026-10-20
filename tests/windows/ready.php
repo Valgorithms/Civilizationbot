@@ -7,8 +7,14 @@ namespace Civ13 {
     function exec(...$arguments): never { throw new \RuntimeException('Unexpected shell execution'); }
     function shell_exec(...$arguments): never { throw new \RuntimeException('Unexpected shell execution'); }
 
-    function curl_exec($handle): never
+    function curl_setopt_array($handle, array $options): bool { $GLOBALS['readyHostedOptions'] = $options; return true; }
+    function curl_getinfo($handle, int $option): int { return 200; }
+    function curl_exec($handle): bool
     {
+        if (in_array('--hosted', $_SERVER['argv'], true)) {
+            $GLOBALS['readyHostedCalls'] = ($GLOBALS['readyHostedCalls'] ?? 0) + 1;
+            return ($GLOBALS['readyHostedOptions'][CURLOPT_WRITEFUNCTION])($handle, '[]') === 2;
+        }
         throw new \RuntimeException('Offline ready test attempted a verifier request');
     }
 }
@@ -26,10 +32,27 @@ namespace {
     final class ReadyInteraction extends Discord\Parts\Interactions\Interaction
     {
         public array $responses = [];
-        public function __construct(Discord\Discord $discord, array $attributes = [], bool $created = false) {}
+        public bool $revokeOnAck = false;
+        public function __construct(Discord\Discord $discord, private array $fixtureAttrs = [], bool $created = false) {}
+        public function __get(string $name) { return $this->fixtureAttrs[$name] ?? null; }
+        public function acknowledgeWithResponse(bool $ephemeral = false): React\Promise\PromiseInterface {
+            check($ephemeral, 'Refresh acknowledgement must be private');
+            if ($this->revokeOnAck) { $this->fixtureAttrs['member']->allowed = false; }
+            return React\Promise\resolve(null);
+        }
+        public function updateOriginalResponse(Discord\Builders\MessageBuilder $builder): React\Promise\PromiseInterface {
+            return $this->respondWithMessage($builder, true);
+        }
         public function respondWithMessage(Discord\Builders\MessageBuilder|string $builder, bool $ephemeral = false): React\Promise\PromiseInterface {
             $this->responses[] = [is_string($builder) ? $builder : $builder->getContent(), $ephemeral];
             return React\Promise\resolve(null);
+        }
+    }
+    final class ReadyMember extends Discord\Parts\User\Member {
+        public bool $allowed = false;
+        public function __construct(private Discord\Discord $testDiscord, array $attributes = [], bool $created = false) {}
+        public function getPermissions($channel = null): ?Discord\Parts\Permissions\RolePermission {
+            return new Discord\Parts\Permissions\RolePermission($this->testDiscord, ['moderate_members' => $this->allowed]);
         }
     }
     final class ReadyLoop implements React\EventLoop\LoopInterface
@@ -115,6 +138,7 @@ namespace {
     function check(bool $condition, string $message): void { if (!$condition) { throw new RuntimeException($message); } }
 
     $unconfigured = ($argv[2] ?? null) === '--unconfigured';
+    $hosted = ($argv[2] ?? null) === '--hosted';
     $dir = sys_get_temp_dir().'/portable-ready-'.bin2hex(random_bytes(8));
     mkdir($dir);
     $previous = getcwd();
@@ -152,6 +176,10 @@ namespace {
         $options['civ13_guild_id'] = '100000000000000001';
         $options['owner_id'] = '100000000000000003';
         $options['technician_id'] = '100000000000000004';
+        if ($hosted) {
+            $options['verification_read_only'] = true;
+            $options['verify_url'] = Civ13\HostedVerificationSource::URL;
+        }
         if ($unconfigured) {
             $options['channel_ids'] = [];
             $options['civ13_guild_id'] = $options['owner_id'] = $options['technician_id'] = '';
@@ -182,6 +210,27 @@ namespace {
             check(count($loop->timers) === $timerCount, 'Maintenance command scheduled background work: '.$name);
         }
         (new ReflectionMethod(Civ13\HttpServiceManager::class, '__generateEndpoints'))->invoke($bot->httpServiceManager);
+        if ($hosted) {
+            check(isset($discord->globalCommands->saved['refreshverification'], $discord->commands()['refreshverification']), 'Missing refresh command/listener');
+            $callback = (new ReflectionProperty(Discord\Helpers\RegisteredCommand::class, 'callback'))->getValue($discord->commands()['refreshverification']);
+            $member = new ReadyMember($discord); $calls = $GLOBALS['readyHostedCalls'];
+            $i = new ReadyInteraction($discord, ['guild_id' => $bot->civ13_guild_id, 'member' => $member]);
+            $callback($i); check(count($i->responses) === 1 && $GLOBALS['readyHostedCalls'] === $calls, 'Nonstaff refresh attempted transport');
+            $member->allowed = true;
+            $i = new ReadyInteraction($discord, ['guild_id' => 'wrong', 'member' => $member]);
+            $callback($i); check(count($i->responses) === 1 && $GLOBALS['readyHostedCalls'] === $calls, 'Cross-guild refresh attempted transport');
+            $i = new ReadyInteraction($discord, ['guild_id' => $bot->civ13_guild_id, 'member' => $member]); $i->revokeOnAck = true;
+            $callback($i); check(count($i->responses) === 1 && $GLOBALS['readyHostedCalls'] === $calls, 'Revoked staff refresh attempted transport');
+            $member->allowed = true;
+            (new ReflectionProperty(Civ13\Verifier::class, 'hosted'))->setValue($bot->verifier, new Civ13\HostedVerificationSnapshot());
+            $i = new ReadyInteraction($discord, ['guild_id' => $bot->civ13_guild_id, 'member' => $member]);
+            $callback($i); check(count($i->responses) === 1 && str_contains($i->responses[0][0], 'Last successful refresh:') && $GLOBALS['readyHostedCalls'] === $calls + 1, 'Authorized refresh did not report result');
+            (new ReflectionProperty(Civ13\Verifier::class, 'hosted'))->setValue($bot->verifier, new Civ13\HostedVerificationSnapshot());
+            $read = $bot->httpServiceManager->httpHandler->offsetGet('/verified', 'handlers');
+            $response = $read(new React\Http\Message\ServerRequest('GET', 'http://127.0.0.1/verified'), '/verified', false);
+            check($response->getStatusCode() === 503 && str_contains((string)$response->getBody(), 'last_success_utc'), 'Unavailable source returned successful empty list');
+            echo "HOSTED PASS staff-only refresh registration/action/recheck, source GET and unavailable HTTP503 metadata\n";
+        }
         // Synthetic local sentinel only: no environment file is read or loaded.
         $sentinel = "OFFLINE_TEST_SENTINEL=keep-me\n";
         file_put_contents($dir.'/.env', $sentinel);
