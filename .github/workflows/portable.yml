@@ -22,6 +22,8 @@ jobs:
       - run: php tests/windows/portable.php
       - run: php tests/windows/hosted-verifier.php
       - run: php tests/windows/native-lifecycle.php
+      - run: php tests/windows/bootstrap.php
+      - run: php tests/windows/bootstrap.php --negative-control
       - run: php tests/windows/process.php
       - run: php tests/windows/shell-guard.php
       - run: php tests/windows/ready.php
