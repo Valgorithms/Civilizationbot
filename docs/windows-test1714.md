@@ -59,8 +59,11 @@ The HTTP listener binds 127.0.0.1 on the explicit profile port (distinct from171
 Portable mode removes ambient callback functions, official verifier server
 construction and the official verification URL. Verification integration remains
 unavailable until a separate reviewed authoritative read-only contract is supplied.
-Native Host/Kill/Restart/MapSwap fail closed in portable/Windows mode before game
-messages or timers. This change supplies no game lifecycle replacement.
+Native Host/Kill/Restart/MapSwap fail closed by default in portable/Windows mode
+before game messages or timers. The separately documented
+[native supervisor adapter](windows-native-lifecycle.md) is explicitly disabled
+and requires a compatible reviewed supervisor consumer. It supplies no direct
+game lifecycle replacement; MapSwap and legacy shell operations remain disabled.
 
 Legacy shell maintenance is also unavailable in Windows/portable mode: chat
 updatedeps/pullrepo/ts/ss14 and slash pull/update report unavailable rather than

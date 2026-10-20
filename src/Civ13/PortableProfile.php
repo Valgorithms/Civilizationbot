@@ -25,6 +25,12 @@ final class PortableProfile
                 if (!is_string($server[$field] ?? null) || $server[$field] === '') { throw new \InvalidArgumentException('Explicit server identity required'); }
             }
             if (!is_bool($server['enabled'] ?? null)) { throw new \InvalidArgumentException('Explicit enabled flag required'); }
+            if (isset($server['native_lifecycle'])) {
+                if (!is_array($server['native_lifecycle']) || !is_bool($server['native_lifecycle']['enabled'] ?? null)
+                    || ($server['native_lifecycle']['enabled'] && !$server['enabled'])) {
+                    throw new \InvalidArgumentException('Explicit native lifecycle and server activation flags required');
+                }
+            }
             foreach (['discussion','playercount','ooc','lobby','asay','ic','transit','adminlog','debug','garbage','runtime','attack'] as $field) {
                 if (!is_string($server[$field] ?? null) || ($server[$field] !== '' && !preg_match('/^[0-9]{17,20}$/D', $server[$field]))) { throw new \InvalidArgumentException('Explicit channel string required'); }
             }

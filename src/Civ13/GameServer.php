@@ -67,6 +67,7 @@ class GameServer
     public Logger $logger;
     public StreamSelectLoop $loop;
     public bool $ready = false;
+    private ?NativeLifecycle $nativeLifecycle = null;
 
     // Resolved paths
     private readonly string $serverdata;
@@ -147,6 +148,12 @@ class GameServer
             $this->enabled = false;
         } else {
             $this->enabled = $options['enabled'] ?? false;
+        }
+        if (($options['native_lifecycle']['enabled'] ?? false) === true) {
+            if (PHP_OS_FAMILY !== 'Windows' && !getenv('CIVILIZATIONBOT_PROFILE')) {
+                throw new \RuntimeException('Native supervisor adapter requires an explicit portable profile');
+            }
+            $this->nativeLifecycle = new NativeLifecycle($options['native_lifecycle'], $options, $civ13->gitdir, $this->loop);
         }
         $this->legacy = $options['legacy'] ?? true;
         $this->moderate = $options['moderate'] ?? true;
@@ -766,9 +773,9 @@ class GameServer
      *
      * @param Message|null $message An optional message object that can be used to react to the hosting action.
      */
-    public function Host(?Message $message = null): void
+    public function Host(?Message $message = null): ?PromiseInterface
     {
-        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
+        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('start', $message); }
         OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::updateserverabspaths);
         if (file_exists($this->basedir.Civ13::serverdata)) {
             OSFunctions::execInBackground("rm -f {$this->basedir}".Civ13::serverdata);
@@ -786,11 +793,12 @@ class GameServer
         } else {
             $this->logger->info("Server host timer already exists for {$this->key}.");
         }
+        return null;
     }
     /** Shuts the server down (via `killciv13`), optionally announcing it in OOC first. */
-    public function Kill(?Message $message = null, bool $notify = true): void
+    public function Kill(?Message $message = null, bool $notify = true): ?PromiseInterface
     {
-        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
+        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('save-stop', $message); }
         if ($notify) {
             $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
             $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender);
@@ -801,11 +809,12 @@ class GameServer
                 $message->react('👍');
             }
         });
+        return null;
     }
     /** Kills the server and re-hosts it 20s later, optionally announcing the restart in OOC. */
-    public function Restart(?Message $message = null, bool $notify = true): void
+    public function Restart(?Message $message = null, bool $notify = true): ?PromiseInterface
     {
-        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
+        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('restart', $message); }
         $this->Kill(null, false);
         $this->civ13->loop->addTimer(20, function () use ($message, &$gameserver): void {
             $this->Host($message);
@@ -813,6 +822,16 @@ class GameServer
         if ($notify) {
             $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $message ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username);
         }
+        return null;
+    }
+
+    /** Success is acknowledged only after the supervisor supplies a bound completion result. */
+    private function nativeRequest(string $action, ?Message $message): PromiseInterface
+    {
+        if ($this->nativeLifecycle === null) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
+        return $this->nativeLifecycle->request($action)->then(static function (array $result) use ($message): mixed {
+            return $message ? $message->react('👍')->then(static fn () => $result) : $result;
+        });
     }
     /**
      * Swaps the current map to the specified map.
