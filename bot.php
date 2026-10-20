@@ -310,6 +310,8 @@ $loadedData = json_decode($json, true);
 foreach ($loadedData as $key => $value) $options[$key] = $value;
 */
 
+// Portable profiles supply their arrays below; never evaluate production defaults.
+if ($portable === null) { // Production server defaults only.
 //TODO: Move this to a separate file, like .env
 $civ13_server_settings = [ // Server specific settings, listed in the order in which they appear on the VZG server list.
     'tdm' => [
@@ -431,6 +433,11 @@ $civ14_server_settings = [
 foreach ($civ14_server_settings as $key => $value) {
     $civ14_server_settings[$key]['key'] = $key;
 } // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.
+
+} else {
+    $civ13_server_settings = [];
+    $civ14_server_settings = [];
+}
 
 $hidden_options = [
     'loop' => Loop::get(),
