@@ -25,6 +25,12 @@ final class PortableProfile
                 if (!is_string($server[$field] ?? null) || $server[$field] === '') { throw new \InvalidArgumentException('Explicit server identity required'); }
             }
             if (!is_bool($server['enabled'] ?? null)) { throw new \InvalidArgumentException('Explicit enabled flag required'); }
+            if (isset($server['native_lifecycle'])) {
+                if (!is_array($server['native_lifecycle']) || !is_bool($server['native_lifecycle']['enabled'] ?? null)
+                    || ($server['native_lifecycle']['enabled'] && !$server['enabled'])) {
+                    throw new \InvalidArgumentException('Explicit native lifecycle and server activation flags required');
+                }
+            }
             foreach (['discussion','playercount','ooc','lobby','asay','ic','transit','adminlog','debug','garbage','runtime','attack'] as $field) {
                 if (!is_string($server[$field] ?? null) || ($server[$field] !== '' && !preg_match('/^[0-9]{17,20}$/D', $server[$field]))) { throw new \InvalidArgumentException('Explicit channel string required'); }
             }
@@ -57,6 +63,16 @@ final class PortableProfile
         $options['filecache_path'] = $profile['state_dir'].'/json/';
         $options['discover_external_ip'] = false;
         $options['verify_url'] = '';
+        $options['verification_read_only'] = false;
+        if (array_key_exists('verification_source', $profile)) {
+            if (!is_array($profile['verification_source']) || count($profile['verification_source']) !== 2
+                || ($profile['verification_source']['mode'] ?? null) !== 'read-only'
+                || ($profile['verification_source']['url'] ?? null) !== 'http://civ13.com:55555/verified') {
+                throw new \InvalidArgumentException('Expected the explicit hosted read-only verification source');
+            }
+            $options['verify_url'] = $profile['verification_source']['url'];
+            $options['verification_read_only'] = true;
+        }
         $options['webserver_url'] = '127.0.0.1';
         return $options;
     }

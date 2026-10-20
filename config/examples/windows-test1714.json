@@ -22,6 +22,7 @@
       "ip": "127.0.0.1",
       "port": 1714,
       "enabled": false,
+      "native_lifecycle": {"enabled": false},
       "supported": false,
       "moderate": false,
       "legacy_relay": false,

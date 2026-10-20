@@ -903,8 +903,10 @@ class HttpServiceManager
             )
             ->offsetSet(
                 '/verified',
-                fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => HttpResponse::json(
-                    $this->civ13->verifier->verified
+                fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse =>
+                    (isset($this->civ13->verifier->readOnly) && $this->civ13->verifier->readOnly && !$this->civ13->verifier->hostedStatus()['available'])
+                    ? HttpResponse::json(['error' => 'Hosted verification unavailable', 'source' => $this->civ13->verifier->hostedStatus()])->withStatus(503)
+                    : HttpResponse::json($this->civ13->verifier->verified
                         ->filter(fn ($item) => $item['ss13'] && $item['discord'])
                         ->toArray()
                 ),

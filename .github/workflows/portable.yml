@@ -20,11 +20,14 @@ jobs:
       - run: php tests/windows/constructor.php vendor/autoload.php --negative-control
       - run: php tests/windows/constructor.php vendor/autoload.php --cache-negative-control
       - run: php tests/windows/portable.php
+      - run: php tests/windows/hosted-verifier.php
+      - run: php tests/windows/native-lifecycle.php
       - run: php tests/windows/bootstrap.php
       - run: php tests/windows/bootstrap.php --negative-control
       - run: php tests/windows/process.php
       - run: php tests/windows/shell-guard.php
       - run: php tests/windows/ready.php
+      - run: php tests/windows/ready.php vendor/autoload.php --hosted
       - run: php tests/windows/ready.php vendor/autoload.php --unconfigured
       - run: php -l bot.php
       - run: php -l src/Civ13/Civ13.php

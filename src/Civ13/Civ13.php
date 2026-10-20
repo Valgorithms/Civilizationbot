@@ -541,6 +541,7 @@ class Civ13
                 'stats' => null,
                 'technician_id' => '116927250145869826',
                 'verify_url' => 'http://valzargaming.com:8080/verified/',
+                'verification_read_only' => false,
                 'web_address' => '',
                 'webapi' => null,
                 'webserver_url' => 'www.valzargaming.com',
@@ -583,6 +584,7 @@ class Civ13
             ->setAllowedTypes('stats', ['null', Stats::class])
             ->setAllowedTypes('technician_id', 'string')
             ->setAllowedTypes('verify_url', 'string')
+            ->setAllowedTypes('verification_read_only', 'bool')
             ->setAllowedTypes('web_address', 'string')
             ->setAllowedTypes('webapi', ['null', 'resource', HttpServer::class])
             ->setAllowedTypes('webserver_url', 'string');
@@ -1407,12 +1409,14 @@ class Civ13
         });
 
         $this->discord->on('GUILD_JOIN_REQUEST_CREATE', function (GuildJoinRequest $request): void {
+            if ($this->verifier->readOnly) { return; }
             if ($this->verifier->getVerifiedMemberItems()->get('discord', $request->user_id)) {
                 $request->approve();
             }
         });
 
         $this->discord->on('GUILD_JOIN_REQUEST_UPDATE', function (GuildJoinRequest $request): void {
+            if ($this->verifier->readOnly) { return; }
             if ($this->verifier->getVerifiedMemberItems()->get('discord', $request->user_id)) {
                 $request->approve();
             }
@@ -1551,6 +1555,7 @@ class Civ13
      */
     public function bancheckTimer(): TimerInterface|false
     {
+        if (isset($this->verifier) && $this->verifier->readOnly) { return false; }
         // We don't want the persistence server to do this function
         if (! $this->enabled_gameservers) {
             return false;

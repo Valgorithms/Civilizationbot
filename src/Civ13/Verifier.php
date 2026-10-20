@@ -39,6 +39,9 @@ class Verifier
     public Discord $discord;
     public Logger $logger;
     public readonly string $verify_url;
+    public readonly bool $readOnly;
+    private ?HostedVerificationSnapshot $hosted = null;
+    private const READ_ONLY_MESSAGE = 'Desktop uses the hosted Civilizationbot verification source. Complete verification with the primary bot.';
     public CollectionInterface $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public CollectionInterface $pending;
     public CollectionInterface $provisional; // Allow provisional registration if the website is down, then try to verify when it comes back up
@@ -58,7 +61,18 @@ class Verifier
         $this->logger = &$civ13->logger;
         $this->resolveOptions($options);
         $this->verify_url = $options['verify_url'];
+        $this->readOnly = ($options['verification_read_only'] ?? false) === true;
+        if ($this->readOnly && $this->verify_url !== HostedVerificationSource::URL) {
+            throw new \InvalidArgumentException('Unexpected read-only verification source');
+        }
         $this->pending = new Collection([], 'discord');
+        if ($this->readOnly) {
+            $this->hosted = new HostedVerificationSnapshot();
+            $this->provisional = new Collection([], 'ss13');
+            $this->verified = new Collection([], 'discord');
+            $this->afterConstruct();
+            return;
+        }
         if (! $provisional = $this->civ13->VarLoad('provisional.json')) {
             $provisional = [];
             $this->civ13->VarSave('provisional.json', $provisional);
@@ -77,6 +91,16 @@ class Verifier
     /** Wires up `GUILD_MEMBER_ADD` handling (role sync plus an 8640s verify-or-kick timer) and runs {@see setup()} once the bot is ready. */
     public function afterConstruct(): void
     {
+        if ($this->readOnly) {
+            // No role sync, provision replay, registration or member/thread mutation listeners.
+            $initialize = function (): void {
+                $this->refreshHosted();
+                $this->verifierStatusTimer();
+                $this->setup();
+            };
+            $this->civ13->ready ? $initialize() : $this->discord->once('init', $initialize);
+            return;
+        }
         $this->civ13->discord->on('GUILD_MEMBER_ADD', function (Member $member): void {
             $this->getVerified();
             $this->joinRoles($member);
@@ -275,6 +299,7 @@ class Verifier
      */
     public function joinRoles(Member $member, bool $send_welcome_message = true): ?PromiseInterface
     {
+        if (isset($this->readOnly) && $this->readOnly) { return null; }
         if ($member->guild_id === $this->civ13->civ13_guild_id && $item = $this->get('discord', $member->id)) {
             if (! isset($item['ss13'])) {
                 $this->logger->warning("Verified member `{$member->id}` does not have an SS13 ckey assigned to them.");
@@ -316,6 +341,7 @@ class Verifier
      */
     public function generateToken(string $ckey, string $discord_id, string $charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', int $length = 50): string
     {
+        if (isset($this->readOnly) && $this->readOnly) { throw new \LogicException(self::READ_ONLY_MESSAGE); }
         if ($item = $this->pending->get('ss13', $ckey)) {
             return $item['token'];
         }
@@ -344,6 +370,7 @@ class Verifier
      */
     public function checkToken(string $discord_id): bool
     { // Check if the user set their token
+        if (isset($this->readOnly) && $this->readOnly) { return false; }
         if (! $item = $this->pending->get('discord', $discord_id)) {
             return false;
         } // User is not in pending collection (This should never happen and is probably a programming error)
@@ -368,6 +395,7 @@ class Verifier
      */
     public function process(string $ckey, string $discord_id, ?Member $m = null): string
     {
+        if (isset($this->readOnly) && $this->readOnly) { return self::READ_ONLY_MESSAGE; }
         if (! $ckey = Civ13::sanitizeInput($ckey)) {
             return 'Invalid ckey!';
         }
@@ -460,6 +488,7 @@ class Verifier
      */
     public function new(string $discord_id): array // ['success' => bool, 'error' => string]
     { // Attempt to verify a user
+        if (isset($this->readOnly) && $this->readOnly) { return ['success' => false, 'error' => self::READ_ONLY_MESSAGE]; }
         if (! $item = $this->pending->get('discord', $discord_id)) {
             return ['success' => false, 'error' => "This error should never happen. If this error persists, contact <@{$this->civ13->technician_id}>."];
         }
@@ -488,6 +517,7 @@ class Verifier
      */
     public function register(string $ckey, string $discord_id): array // ['success' => bool, 'error' => string]
     {
+        if (isset($this->readOnly) && $this->readOnly) { return ['success' => false, 'error' => self::READ_ONLY_MESSAGE]; }
         $this->civ13->permitCkey($ckey, true);
 
         return $this->verify($ckey, $discord_id);
@@ -504,6 +534,7 @@ class Verifier
      */
     public function verify(string $ckey, string $discord_id, bool $provisional = false): array // ['success' => bool, 'error' => string]
     { // Send $_POST information to the website. Only call this function after the token verification process has been completed!
+        if (isset($this->readOnly) && $this->readOnly) { return ['success' => false, 'error' => self::READ_ONLY_MESSAGE]; }
         $success = false;
         $error = '';
 
@@ -634,6 +665,7 @@ class Verifier
      */
     public function unverify(string $id): array // ['success' => bool, 'message' => string]
     {
+        if (isset($this->readOnly) && $this->readOnly) { return ['success' => false, 'message' => self::READ_ONLY_MESSAGE]; }
         if (! $verified_array = $this->civ13->VarLoad('verified.json')) {
             $this->logger->warning('Unable to load the verified list.');
 
@@ -744,6 +776,7 @@ class Verifier
      */
     private function __verifyRequest(array $postfields): array
     {
+        if (isset($this->readOnly) && $this->readOnly) { return ['response' => self::READ_ONLY_MESSAGE, 'http_status' => 503]; }
         $postfields['token'] = $this->civ13->civ_token;
         
         if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) { // Mock
@@ -798,6 +831,7 @@ class Verifier
      */
     public function provisionalRegistration(string $ckey, string $discord_id): bool
     {
+        if (isset($this->readOnly) && $this->readOnly) { return false; }
         $provisionalRegistration = function (string $ckey, string $discord_id) use (&$provisionalRegistration) {
             if ($this->verified->get('discord', $discord_id)) { // User already verified, this function shouldn't be called (may happen anyway because of the timer)
                 $this->provisional->pull($ckey);
@@ -876,6 +910,7 @@ class Verifier
      */
     public function provision(?string $ckey = '', ?string $discord_id = ''): PromiseInterface
     {
+        if (isset($this->readOnly) && $this->readOnly) { return reject(new \LogicException(self::READ_ONLY_MESSAGE)); }
         if (! $ckey || ! $discord_id) {
             return reject(new \InvalidArgumentException('Invalid format! Please use the format `provision <byond username>; <discord id>`.'));
         }
@@ -925,6 +960,10 @@ class Verifier
      */
     public function getVerified(bool $initialize = true): CollectionInterface
     {
+        if ($this->readOnly) {
+            if (!$this->hostedStatus()['available']) { throw new VerifierException('Hosted verification unavailable; last valid list retained as stale'); }
+            return $this->verified;
+        }
         $this->logger->debug('Refreshing verified list...');
         ['json' => $json, 'http_status' => $http_status] = $this->fetchVerifiedData();
         
@@ -963,6 +1002,10 @@ class Verifier
      */
     public function fetchVerifiedData(): array
     {
+        if (isset($this->readOnly) && $this->readOnly) {
+            return $this->hostedStatus()['available'] ? ['json' => json_encode($this->hosted->records(), JSON_THROW_ON_ERROR), 'http_status' => 200]
+                : ['json' => '', 'http_status' => 0];
+        }
         if (isset($this->civ13->verifier_server) && $this->civ13->verifier_server !== null) {
             return [
                 'json' => json_encode($this->civ13->verifier_server->getState()->getVerifyList()),
@@ -1038,6 +1081,7 @@ class Verifier
      */
     public function getVerifiedMemberItems(): CollectionInterface
     {
+        if (isset($this->readOnly) && $this->readOnly && !$this->hostedStatus()['available']) { throw new VerifierException('Hosted verification unavailable'); }
         if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             return $this->verified->filter(function ($v) use ($guild) {
                 return $guild->members->has($v['discord']);
@@ -1112,6 +1156,10 @@ class Verifier
     {
         if (! isset($this->timers['verifier_status_timer'])) {
             $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
+                if ($this->readOnly) {
+                    $this->refreshHosted();
+                    return;
+                }
                 if (! $status = $this->civ13->verifier_online) {
                     $this->getVerified(false); // Check if the verifier is back online, but don't try to reload the verified list from the file cache
                     if ($status !== $this->civ13->verifier_online) {
@@ -1135,6 +1183,9 @@ class Verifier
      */
     public function get(string $discrim, $key): mixed
     {
+        if (isset($this->readOnly) && $this->readOnly && !$this->hostedStatus()['available']) {
+            throw new VerifierException('Hosted verification unavailable');
+        }
         if ($item = $this->verified->get($discrim, $key)) {
             return $item;
         }
@@ -1152,7 +1203,27 @@ class Verifier
      */
     public function getIterator(): Traversable
     {
+        if (isset($this->readOnly) && $this->readOnly && !$this->hostedStatus()['available']) { throw new VerifierException('Hosted verification unavailable'); }
         return $this->verified->getIterator();
+    }
+
+    public function hostedStatus(): array
+    {
+        if (!$this->hosted) { throw new \LogicException('Hosted read-only verification is not configured'); }
+        $status = $this->hosted->status();
+        $this->civ13->verifier_online = $status['available'];
+        return $status;
+    }
+
+    public function refreshHosted(): PromiseInterface
+    {
+        if (!$this->hosted) { throw new \LogicException('Hosted read-only verification is not configured'); }
+        return $this->hosted->refresh(fn () => HostedVerificationSource::fetch($this->civ13->browser))->then(function (array $status): array {
+            $this->verified = new Collection($this->hosted->records(), 'discord');
+            $this->civ13->verifier_online = $status['available'];
+            $this->logger->info('Hosted verification refresh', $status);
+            return $status;
+        });
     }
     // Magic Methods
     /**

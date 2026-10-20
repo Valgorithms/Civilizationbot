@@ -608,6 +608,17 @@ class Slash
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("No gamserver found for `{$interaction->data->options['server']->value}`"));
             }
             $gameserver = &$this->civ13->enabled_gameservers[$interaction->data->options['server']->value];
+            if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) {
+                // Acknowledge within Discord's deadline; never equate a queued request with readiness.
+                return $interaction->acknowledgeWithResponse(true)->then(function () use ($interaction, $gameserver): PromiseInterface {
+                    try { $request = $gameserver->Restart(); }
+                    catch (\Throwable) { return $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Native restart is unavailable; inspect the local supervisor profile.')); }
+                    return $request->then(
+                        fn () => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('The local supervisor reports save-safe restart and readiness.')),
+                        fn () => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Native restart rejected or outcome unknown. Inspect the retained supervisor operation before retrying.'))
+                    );
+                });
+            }
             $gameserver->Restart();
 
             return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("Attempted to kill, update, and bring up `{$gameserver->name}` <byond://{$gameserver->ip}:{$gameserver->port}>"));
