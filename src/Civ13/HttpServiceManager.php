@@ -431,6 +431,9 @@ class HttpServiceManager
             ->offsetSet(
                 '/reset',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
+                    if (!OSFunctions::legacyShellAvailable()) {
+                        return HttpResponse::plaintext('Legacy maintenance is unavailable in Windows/portable mode.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+                    }
                     OSFunctions::execInBackground('git reset --hard origin/main');
                     $message = 'Forcefully moving the HEAD back to origin/main...';
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
@@ -444,6 +447,9 @@ class HttpServiceManager
             ->offsetSet(
                 '/githubupdated',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
+                    if (!OSFunctions::legacyShellAvailable()) {
+                        return HttpResponse::plaintext('Legacy maintenance is unavailable in Windows/portable mode.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+                    }
                     $secret = (string) getenv('github_secret');
                     $body = strval($request->getBody());
                     // Prefer the SHA-256 signature GitHub sends; fall back to SHA-1.
@@ -499,6 +505,9 @@ class HttpServiceManager
             ->offsetSet(
                 '/cancelupdaterestart',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
+                    if (!OSFunctions::legacyShellAvailable()) {
+                        return HttpResponse::plaintext('Legacy maintenance is unavailable in Windows/portable mode.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+                    }
                     if (isset($this->civ13->timers['restart_pending']) && $this->civ13->timers['restart_pending'] instanceof TimerInterface) {
                         $this->discord->getLoop()->cancelTimer($this->civ13->timers['restart_pending']);
                         unset($this->civ13->timers['restart_pending']);
@@ -515,6 +524,9 @@ class HttpServiceManager
             ->offsetSet(
                 '/pull',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
+                    if (!OSFunctions::legacyShellAvailable()) {
+                        return HttpResponse::plaintext('Legacy maintenance is unavailable in Windows/portable mode.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+                    }
                     OSFunctions::execInBackground('git pull');
                     $message = 'Updating code from GitHub...';
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
@@ -528,6 +540,9 @@ class HttpServiceManager
             ->offsetSet(
                 '/update',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
+                    if (!OSFunctions::legacyShellAvailable()) {
+                        return HttpResponse::plaintext('Legacy maintenance is unavailable in Windows/portable mode.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+                    }
                     OSFunctions::execInBackground('composer update');
                     $message = 'Updating dependencies...';
                     if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
@@ -541,6 +556,9 @@ class HttpServiceManager
             ->offsetSet(
                 '/restart',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
+                    if (!OSFunctions::legacyShellAvailable()) {
+                        return HttpResponse::plaintext('Legacy maintenance is unavailable in Windows/portable mode.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+                    }
                     $message = 'Manually Restarting...';
                     if (isset($this->civ13->restart_message) && $this->civ13->restart_message instanceof Message) {
                         $this->civ13->restart_message->edit(Civ13::createBuilder()->setContent('Manually Restarting...'))->then(fn () => $this->civ13->restart());
@@ -558,6 +576,9 @@ class HttpServiceManager
             ->offsetSet(
                 '/kill',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
+                    if (!OSFunctions::legacyShellAvailable()) {
+                        return HttpResponse::plaintext('Legacy maintenance is unavailable in Windows/portable mode.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+                    }
                     $message = 'Shutting down...';
                     $this->discord->getLoop()->addTimer(3, fn () => $this->civ13->restart());
 
@@ -568,6 +589,9 @@ class HttpServiceManager
             ->offsetSet(
                 '/clearenv',
                 function (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse {
+                    if (!OSFunctions::legacyShellAvailable()) {
+                        return HttpResponse::plaintext('Legacy maintenance is unavailable in Windows/portable mode.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+                    }
                     $message = 'Clearing .env...';
                     if (file_exists($env = getcwd().'/.env')) {
                         file_put_contents($env, '');

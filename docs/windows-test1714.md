@@ -15,7 +15,11 @@ A separate application/token must be provisioned directly by its operator.
 Copy config/examples/windows-test1714.json to an operator-owned absolute path and
 edit that copy. Set your own civ13_guild_id, owner_id and technician_id explicitly;
 empty identity strings disable those identity matches and never inherit production
-owner/technician IDs. Create the configured state directory and game directory first.
+owner/technician IDs. owner_id must match the target guild owner's Discord ID for
+message commands. The bot must already belong to the configured guild, with the
+required gateway intents enabled for its separate application. Missing optional
+verifier-status channels are ignored; a missing guild skips guild command
+registration with a warning. Create the configured state directory and game directory first.
 root must match this checkout; basedir must be the intended PC TEST1714 runtime
 root (SQL files are relative to it). The game remains independently operated.
 The sample server is disabled and destination maps empty intentionally. Before
@@ -58,6 +62,17 @@ unavailable until a separate reviewed authoritative read-only contract is suppli
 Native Host/Kill/Restart/MapSwap fail closed in portable/Windows mode before game
 messages or timers. This change supplies no game lifecycle replacement.
 
+Legacy shell maintenance is also unavailable in Windows/portable mode: chat
+updatedeps/pullrepo/ts/ss14 and slash pull/update report unavailable rather than
+claiming success; the staff panel omits its Git/Composer buttons. Legacy HTTP
+/reset, /githubupdated, /pull, /update, /restart, /kill, /clearenv and
+/cancelupdaterestart return 503 before any maintenance side effects. Use the
+explicit foreground supervisor and stop marker for local bot lifecycle. The shared OS
+helpers reject shell spawn, self-restart, process disown and port-based killing
+before touching processes. This does not restrict the explicit owned argv-based
+PHP supervisor or the separately configured local OpenDream adapter. Do code and
+dependency maintenance manually while the bot is stopped.
+
 ## Offline verification and activation boundary
 
 `php tests/windows/portable.php` uses temporary storage, synthetic environment
@@ -79,6 +94,16 @@ metacharacters survive as literal arguments, paths containing spaces, separate
 stdout/stderr logs, cross-process lock exclusion, graceful stop marker consumption
 and exit-code propagation. It cannot launch the bot or a game. CI runs these
 checks on Windows and Linux with PHP 8.3, 8.4 and 8.5.
+
+`php tests/windows/shell-guard.php` installs process-function tripwires and uses
+synthetic messages to prove unsupported maintenance rejects before any shell,
+process inspection, timer-based restart or misleading success reaction.
+
+`php tests/windows/ready.php` emits init and fires the delayed bootstrap with a
+controlled loop and synthetic Discord command repositories. It exercises real
+Slash/Panels setup without connecting to Discord, and rejects network attempts.
+The --unconfigured variant covers empty identities/channels and an absent guild;
+both variants verify unsupported slash maintenance responds without adding timers.
 
 These tests do not establish live startup, gateway intents, command registration,
 permissions, TEST1714 file IPC, process binding, or delivery. Before an authorized

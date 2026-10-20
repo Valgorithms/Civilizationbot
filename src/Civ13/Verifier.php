@@ -244,7 +244,7 @@ class Verifier
     /** Renames the `verifier-status` channel to `{name}-online` / `{name}-offline` to match the current verifier state, announcing the change. */
     public function verifierStatusChannelUpdate(bool $status): ?PromiseInterface
     {
-        if (! $channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['verifier-status'])) {
+        if (!isset($this->civ13->channel_ids['verifier-status']) || !($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['verifier-status']))) {
             return null;
         }
         [$verifier_name, $reported_status] = explode('-', $channel->name);

@@ -158,10 +158,12 @@ final class Panels
             }, 'Log cleanup queued.')),
             $this->staffButton(Button::primary(), '↻ Refresh', 'sp_refresh', fn (Interaction $i) => $i->updateMessage($this->staffPanel())),
         ]);
-        $components[] = ActionRow::new()->addComponents([
-            $this->staffButton(Button::secondary(), '⬇️ Git Pull', 'sp_pull', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('git pull'), 'Pulling latest code…')),
-            $this->staffButton(Button::secondary(), '📦 Composer Update', 'sp_composer', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('composer update'), 'Updating dependencies…')),
-        ]);
+        if (OSFunctions::legacyShellAvailable()) {
+            $components[] = ActionRow::new()->addComponents([
+                $this->staffButton(Button::secondary(), '⬇️ Git Pull', 'sp_pull', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('git pull'), 'Pulling latest code…')),
+                $this->staffButton(Button::secondary(), '📦 Composer Update', 'sp_composer', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('composer update'), 'Updating dependencies…')),
+            ]);
+        }
         $components[] = Separator::new();
         $components[] = TextDisplay::new('-# Destructive actions run immediately. Every button re-checks your permission.');
 
