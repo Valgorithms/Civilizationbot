@@ -39,8 +39,7 @@ try {
     $loader->addPsr4('Civ13\\ServerDirectory\\', __DIR__.'/../../src/Civ13/ServerDirectory', true);
     $phase = 'runtime';
     $loop = Loop::get();
-    $connector = ByondStatusProbe::createConnector($loop, publicOnly: true);
-    $service = new Standalone($config, new ByondStatusProbe($loop, $connector, $connector));
+    $service = new Standalone($config, ByondStatusProbe::create($loop));
     $phase = 'bind';
     $socket = new SocketServer($service->address(), [], $loop);
     $server = new HttpServer($loop, $service->handle(...));

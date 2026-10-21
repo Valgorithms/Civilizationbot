@@ -53,6 +53,7 @@ jobs:
           find build/directory/civ13-directory/src build/directory/civ13-directory/scripts -name '*.php' -print0 | xargs -0 -n1 php -l
           php tests/server-directory.php build/directory/civ13-directory/vendor/autoload.php
           php tests/server-directory-remote.php build/directory/civ13-directory/vendor/autoload.php
+          php tests/server-directory-addresses.php build/directory/civ13-directory/vendor/autoload.php
           php tests/server-directory-standalone.php build/directory/civ13-directory/vendor/autoload.php
       - uses: actions/upload-artifact@v4
         if: matrix.php == '8.4'

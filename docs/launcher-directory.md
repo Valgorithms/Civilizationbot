@@ -72,8 +72,16 @@ workflow; its GitHub Actions workflows test contracts and publish documentation.
    the entire answer set must be ordinary public addresses. Private, loopback,
    shared, link-local, reserved, documentation, benchmark, multicast and other
    special-purpose answers are rejected. IPv6-only public targets are not
-   supported by this launcher contract. TCP uses the selected validated literal
-   without a second hostname lookup. A DNS change can take effect on the next
+   supported by this launcher contract. One complete validated A-answer snapshot
+   is deduplicated and tried in deterministic order. Literal status attempts are
+   sequential: each receives an equal share of the remaining three-second total
+   DNS/connect/read deadline. A silent or incomplete first address cannot consume
+   every later address's budget. Only a complete valid status result is selected;
+   TCP success alone is insufficient. There remains at most one active socket
+   per target and 32 across the bounded sweep. No second hostname lookup occurs.
+   Short time slices or an exhausted deadline can still leave a slow service
+   unavailable; this is bounded best-effort selection, not guaranteed failover.
+   A DNS change can take effect on the next
    sweep, subject to the system resolver's normal behavior. Missing system DNS
    fails closed; no fallback DNS provider is invented.
 4. Each game must answer BYOND Topic `?status=1&format=json` on its configured
@@ -204,3 +212,9 @@ failures, dynamic DNS and validation before literal TCP connection. Both DNS and
 TCP are injected, so the suite performs no external network I/O. The startup
 suite also checks remote-only registration with empty GameServer registries and
 no added lifecycle callbacks. All three suites run on PHP 8.3, 8.4 and 8.5 in CI.
+
+`php tests/server-directory-addresses.php` exercises the production probe factory
+with injected DNS/TCP: both answer orders, silent/malformed/incomplete first
+answers, full-set safety validation before TCP, duplicate suppression, one DNS
+snapshot, literal/port binding, shared deadlines, cancellation, late callbacks
+and the 32-active-socket ceiling across concurrent targets. It opens no sockets.

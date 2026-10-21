@@ -60,6 +60,7 @@ jobs:
       - run: php tests/server-directory.php
       - run: php tests/server-directory-startup.php
       - run: php tests/server-directory-remote.php
+      - run: php tests/server-directory-addresses.php
       - run: php -l scripts/directory/serve.php
       - run: php tests/server-directory-standalone.php
       - run: php tests/verifier-integration.php

@@ -156,7 +156,22 @@ final class Directory
         return isset($this->targets[$host]);
     }
 
+    /** Same completeness policy used before selecting a public DNS candidate. */
+    public static function statusIsComplete(array $status): bool
+    {
+        return self::metadata($status) !== null;
+    }
+
     private static function entry(array $target, array $status, int $now): ?array
+    {
+        $metadata = self::metadata($status);
+        return $metadata === null ? null : array_merge([
+            'id' => $target['id'], 'name' => $target['name'], 'host' => $target['host'], 'port' => $target['port'],
+            'engine' => 'BYOND', 'online' => true, 'checked_at' => self::timestamp($now),
+        ], $metadata, ['_checked' => $now]);
+    }
+
+    private static function metadata(array $status): ?array
     {
         $players = $status['players'] ?? null;
         $ticks = $status['round_duration_in_ticks'] ?? null;
@@ -168,9 +183,8 @@ final class Directory
             return null;
         }
         $entry = [
-            'id' => $target['id'], 'name' => $target['name'], 'host' => $target['host'], 'port' => $target['port'],
-            'engine' => 'BYOND', 'online' => true, 'checked_at' => self::timestamp($now), 'players' => $players,
-            'map' => $map, 'mode' => $mode, 'round' => ['id' => $id, 'duration_seconds' => (int) floor($ticks / 10)], '_checked' => $now,
+            'players' => $players, 'map' => $map, 'mode' => $mode,
+            'round' => ['id' => $id, 'duration_seconds' => (int) floor($ticks / 10)],
         ];
         // Explicit allowlist only: never pass through ckeys, IPs, CIDs, admins, or account links.
         $epoch = $status['map_age'] ?? null;

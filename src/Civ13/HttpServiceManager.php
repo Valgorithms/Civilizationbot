@@ -1696,11 +1696,7 @@ class HttpServiceManager
             $this->launcherDirectory = new Directory(
                 $providers,
                 $this->civ13->enabled_gameservers,
-                new ByondStatusProbe(
-                    $this->civ13->loop,
-                    ByondStatusProbe::createConnector($this->civ13->loop),
-                    ByondStatusProbe::createConnector($this->civ13->loop, publicOnly: true)
-                ),
+                ByondStatusProbe::create($this->civ13->loop),
                 statusTargets: $statusTargets
             );
         } catch (\InvalidArgumentException $error) {

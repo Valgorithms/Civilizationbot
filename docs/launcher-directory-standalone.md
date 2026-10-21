@@ -47,6 +47,10 @@ production installation or public release.
 Extract only into a new versioned directory outside the running bot checkout,
 and use the bundle's own vendor/autoload.php. Do not replace bot dependencies.
 
+Use a bundle containing the reviewed multi-address status selection fix when
+an approved hostname has several public A records. The old single-address
+selection can omit a healthy server if another public address is unavailable.
+
 ## Configuration and operation
 
 `scripts/directory/inventory.example.json` contains an empty, disabled inventory.
