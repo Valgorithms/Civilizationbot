@@ -125,6 +125,7 @@ class GameServer
     public array $rounds = [];
 
     public string $bancheck_cache = '';
+    private ?ServerHeartbeat $heartbeat = null;
 
     /**
      * @param Civ13                $civ13   The bot instance (held by reference).
@@ -209,6 +210,7 @@ class GameServer
                 $this->logger->info("Getting player count for GameServer {$this->name}");
                 $this->__updateDiscordVariables();
                 $this->localServerPlayerCount(); // Populates $this->players
+                $this->heartbeatTimer(); // Passive file progress, independent of player activity
                 $this->playercountTimer(); // Update playercount channel every 10 minutes
                 $this->serverinfoTimer(); // Hard check playercount and ckeys to scrutinizeCkey() every 3 minutes
                 $this->relayTimer(); // File chat relay
@@ -293,32 +295,39 @@ class GameServer
      */
     public function localServerPlayerCount(array $players = []): int
     {
-        if (! $this->enabled) {
-            return 0;
-        }
-        if (isset($this->civ13->httpServiceManager) && $this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) {
-            return 0;
-        } // Don't try and access files if the server is not local
-        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) {
-            return 0;
-        }
-        fclose($socket);
-        $playercount = 0;
-        if (! @file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
-            $this->logger->warning("Unable to open `{$this->serverdata}`");
+        $status = $this->refreshLocalServerStatus();
 
-            return 0;
-        }
-        $data = self::explodeServerdata($data);
-        if (isset($data[11])) {
-            $players = array_filter(array_map(fn ($player) => Civ13::sanitizeInput($player), array_filter(explode('&', $data[11]), fn ($player) => $player)));
-        }
-        if (isset($data[4])) {
-            $playercount = (int) $data[4];
-        } // Player count
-        $this->players = $players;
+        return $status['data'] === null ? 0 : (int) self::heartbeatServerdata($status['data'])['playercount'];
+    }
 
-        return $playercount;
+    /** Local evidence only; another host's configured directory must never be read. */
+    private function refreshLocalServerStatus(): array
+    {
+        if (! $this->enabled || $this->ip !== ($this->civ13->httpServiceManager->httpHandler->external_ip ?? null)) {
+            return ['state' => 'unknown', 'reason' => 'No enabled local heartbeat observation', 'age' => null, 'data' => null];
+        }
+        $status = ($this->heartbeat ??= new ServerHeartbeat($this->serverdata))->poll();
+        $this->players = [];
+        if ($status['data'] !== null) {
+            $data = self::heartbeatServerdata($status['data']);
+            $this->players = array_values(array_filter(array_map(
+                fn ($player) => Civ13::sanitizeInput($player), explode('&', $data['ckey_list'])
+            )));
+        }
+
+        return $status;
+    }
+
+    private static function heartbeatServerdata(string $data): array
+    {
+        // Only status readers normalize this optional field; leave other IPC consumers unchanged.
+        return self::explodeServerdata(preg_replace('/;<b>Approved only<\/b>: [^;]*/', '', $data));
+    }
+
+    /** Sample passively every 15 seconds; never connect to BYOND or publish from this timer. */
+    public function heartbeatTimer(): TimerInterface
+    {
+        return $this->timers['heartbeat_timer'] ??= $this->loop->addPeriodicTimer(15, fn () => $this->refreshLocalServerStatus());
     }
     
     /**
@@ -569,15 +578,16 @@ class GameServer
      */
     public function createCurrentRoundEmbedMessageBuilder(): ?MessageBuilder
     {
+        $status = $this->refreshLocalServerStatus();
+        if ($status['data'] === null) {
+            return Civ13::createBuilder()->addEmbed($this->heartbeatEmbed($status));
+        }
         if (! $round = $this->getRound($this->current_round)) {
             return null;
         }
-        $round_embed_builder = function (array $round): ?MessageBuilder {
-            if (! file_exists($this->serverdata) || ! $data = @file_get_contents($this->serverdata)) {
-                return null;
-            }
-            $data = self::explodeServerdata($data);
-            $embed = $this->civ13->createEmbed()
+        $round_embed_builder = function (array $round) use ($status): ?MessageBuilder {
+            $data = self::heartbeatServerdata($status['data']);
+            $embed = $this->heartbeatEmbed($status)
                 ->setTitle($this->name)
                 //->addFieldValues('Game ID', $game_id);
                 ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
@@ -680,7 +690,8 @@ class GameServer
      */
     public function playercountChannelUpdate(): PromiseInterface
     {
-        $count = count($this->players);
+        $status = $this->refreshLocalServerStatus();
+        $count = $status['data'] === null ? 'unknown' : (string) count($this->players);
         if (! $channel = $this->discord->getChannel($this->playercount)) {
             $this->logger->warning($err = "Channel {$this->playercount} doesn't exist!");
 
@@ -692,7 +703,7 @@ class GameServer
             return reject(new PartException($err));
         }
         [$channelPrefix, $existingCount] = explode('-', $channel->name);
-        if ((int) $existingCount !== $count) {
+        if ($existingCount !== $count) {
             $channel->name = "{$channelPrefix}-{$count}";
 
             return $channel->guild->channels->save($channel);
@@ -1825,24 +1836,15 @@ class GameServer
      */
     public function generateServerstatusEmbed(): ?Embed
     {
-        if ($this->ip !== $this->civ13->httpServiceManager->httpHandler->external_ip) {
+        if ($this->ip !== ($this->civ13->httpServiceManager->httpHandler->external_ip ?? null)) {
             return $this->toEmbed();
         } // Don't try and access files if the server is not local
-        if (! @touch($this->basedir.Civ13::serverdata) || ! $data = @file_get_contents($this->basedir.Civ13::serverdata)) {
-            $this->logger->warning("Unable to open `{$this->basedir}".Civ13::serverdata.'`');
-
-            return null;
+        $status = $this->refreshLocalServerStatus();
+        $embed = $this->heartbeatEmbed($status);
+        if ($status['data'] === null) {
+            return $embed;
         }
-        $embed = $this->civ13->createEmbed();
-        if (! is_resource($socket = @fsockopen('localhost', intval($this->port), $errno, $errstr, 1))) {
-            return $embed->addFieldValues($this->name, 'Offline');
-        }
-        fclose($socket);
-        $data = self::explodeServerdata($data);
-        if (isset($data['status'])) {
-            $embed->addFieldValues($this->name, $data['status']);
-        }
-        $embed->addFieldValues('Host', $this->host, true);
+        $data = self::heartbeatServerdata($status['data']);
         if (isset($data['round_timer'])) {
             $embed->addFieldValues('Round Time', $this->parseRoundTime($data['round_timer']), true);
         }
@@ -1868,6 +1870,19 @@ class GameServer
         //if (isset($data[5])) $embed->addFieldValues('Realtime', $data[5], true);
         //if (isset($data[6])) $embed->addFieldValues('IP', $data[6], true);
         return $embed;
+    }
+
+    private function heartbeatEmbed(array $status): Embed
+    {
+        return $this->civ13->createEmbed()
+            ->addFieldValues($this->name, match ($status['state']) {
+                'advancing' => 'Heartbeat advancing',
+                'stale' => 'Stale heartbeat',
+                default => 'Unknown',
+            })
+            ->addFieldValues('Observation', $status['reason'].($status['age'] === null ? '' : ' ('.(int) $status['age'].'s since last observed progress/baseline)'), false)
+            ->addFieldValues('Connectivity', 'Unverified', true)
+            ->addFieldValues('Host', $this->host, true);
     }
     /**
      * Explodes the server data string into an array by removing specific substrings and splitting by semicolon.
@@ -1936,7 +1951,8 @@ class GameServer
             ->setTitle($this->name)
             ->addFieldValues('Server URL', "byond://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->host, true)
-            ->addFieldValues('Players ('.count($this->players).')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
+            ->addFieldValues('Health', 'Unknown (no local heartbeat evidence)', true)
+            ->addFieldValues('Players (cached, unverified)', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
     }
     // Magic Methods
     /**
@@ -1956,7 +1972,7 @@ class GameServer
     public function __toArray(): array
     {
         $array = get_object_vars($this);
-        unset($array['civ13']);
+        unset($array['civ13'], $array['heartbeat']);
 
         return $array;
     }
