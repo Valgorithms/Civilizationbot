@@ -163,10 +163,14 @@ $browser = new Browser(Loop::get());
 $filesystem = FilesystemFactory::create();
 include $baseDir.'/variable_functions.php';
 
+$civ13_ip = gethostbyname('www.civ13.com');
+$vzg_ip = gethostbyname('www.valzargaming.com');
+$val_ip = gethostbyname('www.valgorithms.com');
+
 $http_whitelist = $portable !== null ? ['127.0.0.1'] : [
-    $civ13_ip = gethostbyname('www.civ13.com'),
-    $vzg_ip = gethostbyname('www.valzargaming.com'),
-    $val_ip = gethostbyname('www.valgorithms.com'),
+    $civ13_ip,
+    $vzg_ip,
+    $val_ip
 ];
 
 $webapi = null;
