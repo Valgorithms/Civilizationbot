@@ -153,6 +153,7 @@ $discord = new Discord([
     'loadAllMembers' => true,
     'storeMessages' => true, // Because why not?
     'intents' => Intents::getAllIntents(),
+    'disableVoiceClient' => true,
     'useTransportCompression' => false, // Disable zlib-stream
     'usePayloadCompression' => true,
 ]);
