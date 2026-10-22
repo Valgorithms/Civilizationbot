@@ -9,6 +9,7 @@ Civilizationbot is [Civ13](https://civ13.com)'s official Discord bot designed to
 - Chat moderation and relay
 - Interaction commands and slash commands
 - Automated status updates
+- Opt-in, fresh online-only [launcher server directory](docs/launcher-directory.md)
 
 ## Installation
 

@@ -28,3 +28,8 @@ test.php
 /tools/
 /phive.xml
 /.phive/
+
+# Standalone directory dependencies are CI-built; its minimal lock is reviewed.
+/packaging/directory/vendor/
+/packaging/directory/__pycache__/
+!packaging/directory/composer.lock

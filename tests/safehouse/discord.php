@@ -185,13 +185,21 @@ require __DIR__.'/../../src/Civ13/Slash.php';
 // This catches either side of the main/safehouse defaults merge being dropped.
 $optionsBot = (new ReflectionClass(\Civ13\Civ13::class))->newInstanceWithoutConstructor();
 $resolveOptions = new ReflectionMethod(\Civ13\Civ13::class, 'resolveOptions');
-$options = [];
+$optionsBase = [
+    'loop' => new \React\EventLoop\StreamSelectLoop(),
+    'browser' => (new ReflectionClass(\React\Http\Browser::class))->newInstanceWithoutConstructor(),
+    'filesystem' => (new ReflectionClass(\React\Filesystem\Fallback\Adapter::class))->newInstanceWithoutConstructor(),
+    'logger' => new \Monolog\Logger('offline-options', [new \Monolog\Handler\NullHandler()]),
+];
+$options = $optionsBase;
 $resolved = $resolveOptions->invokeArgs($optionsBot, [&$options]);
 check($resolved['safehouse_enabled'] === false && $resolved['safehouse_gateway'] === null, 'Safehouse defaults activated integration');
 check($resolved['restart_mode'] === 'legacy' && $resolved['discover_external_ip'] === true, 'Main startup defaults lost');
-$options = ['safehouse_enabled' => true, 'safehouse_gateway' => $gateway, 'restart_mode' => 'supervised', 'discover_external_ip' => false];
+check($resolved['launcher_directory'] === [] && $resolved['launcher_directory_status_targets'] === [], 'Directory defaults activated a status inventory');
+$options = $optionsBase + ['safehouse_enabled' => true, 'safehouse_gateway' => $gateway, 'restart_mode' => 'supervised', 'discover_external_ip' => false, 'launcher_directory' => ['civ13.com' => []]];
 $resolved = $resolveOptions->invokeArgs($optionsBot, [&$options]);
 check($resolved['safehouse_gateway'] === $gateway && $resolved['restart_mode'] === 'supervised' && $resolved['discover_external_ip'] === false, 'Injected safehouse options conflict with portable startup');
+check($resolved['launcher_directory'] === ['civ13.com' => []] && $resolved['launcher_directory_status_targets'] === [], 'Safehouse options dropped the independent directory configuration');
 class MockDiscord extends \Discord\Discord
 {
     public array $bound = [];
