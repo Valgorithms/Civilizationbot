@@ -5,6 +5,7 @@ on:
       - 'composer.json'
       - 'composer.lock'
       - 'src/Civ13/Local/**'
+      - 'src/Civ13/Server/**'
       - 'src/Civ13/RestartPolicy.php'
       - 'src/Civ13/Civ13.php'
       - 'src/Civ13/GameServer.php'
@@ -56,7 +57,9 @@ jobs:
       - run: php tests/local/lifecycle.php vendor/autoload.php
       - run: php tests/local/controls.php
       - run: php tests/local/server-compatibility.php vendor/autoload.php
+        timeout-minutes: 2
       - run: php tests/local/relay.php vendor/autoload.php
+        timeout-minutes: 2
       - run: php tests/local/message-delivery.php vendor/autoload.php
       - run: php tests/local/ooc-webhook.php vendor/autoload.php
       - run: php tests/local/unban-commands.php vendor/autoload.php

@@ -136,7 +136,21 @@ try {
   check(file_get_contents($root.'/'.$name) === str_repeat(implode(':::',$fields)."\n",2), 'wire framing '.$name);
   foreach (["bad\nrecord", 'bad:::field', "bad\0field"] as $bad) { check(!Ipc::append($root.'/'.$name,[$bad]), 'injection accepted'); }
  }
- Ipc::replace($root.'/roles','old permission'); Ipc::replace($root.'/roles',''); check(file_get_contents($root.'/roles') === '', 'stale membership');
+ $rolePath=$root.'/roles';file_put_contents($rolePath,'old permission');
+ if(PHP_OS_FAMILY!=='Windows'){check(chmod($rolePath,0640),'fixture role mode');}
+ clearstatcache(true,$rolePath);$roleMetadata=stat($rolePath);$roleReader=fopen($rolePath,'rb');
+ try{
+  Ipc::replace($rolePath,'new');rewind($roleReader);
+  check(stream_get_contents($roleReader)==='new','replacement changed the existing role file object');
+  clearstatcache(true,$rolePath);$newMetadata=stat($rolePath);
+  if(PHP_OS_FAMILY!=='Windows'){
+   foreach(['ino','uid','gid','mode'] as $field){check($newMetadata[$field]===$roleMetadata[$field],'replacement changed role metadata '.$field);}
+  }
+  Ipc::replace($rolePath,'');rewind($roleReader);clearstatcache(true,$rolePath);
+  check(stream_get_contents($roleReader)===''&&filesize($rolePath)===0,'stale membership');
+ }finally{fclose($roleReader);}
+ $replaceFailed=false;try{Ipc::replace($root.'/missing/roles','new');}catch(RuntimeException){$replaceFailed=true;}
+ check($replaceFailed,'unavailable role destination acknowledged');
  $log=$root.'/chat'; file_put_contents($log,"first\npartial"); $relay=new FileRelay(); $sent=[];
  $send=function($line) use (&$sent) { $sent[]=$line; return resolve(null); };
  $relay->relay($log,$send); $relay->relay($log,$send); check($sent === ['first'], 'partial/duplicate relay');

@@ -19,15 +19,22 @@ final class Ipc
         } finally { flock($file, LOCK_UN); fclose($file); }
     }
 
-    /** Empty membership is meaningful: revoke the previous list. */
+    /** Preserve the existing file's access metadata; empty membership revokes it. */
     public static function replace(string $path, string $contents): void
     {
-        $temporary = tempnam(dirname($path), '.bot-list-');
-        if ($temporary === false) { throw new \RuntimeException('Cannot stage server membership list'); }
+        // Replacing the inode with tempnam()+rename() loses its mode/owner/ACL.
+        // Native readers do not take our lock: this is an in-place update, not
+        // a transaction or a promise of crash/power-loss atomicity.
+        $file = @fopen($path, 'c+b');
+        if ($file === false) { throw new \RuntimeException('Cannot open server membership list'); }
         try {
-            if (file_put_contents($temporary, $contents, LOCK_EX) !== strlen($contents) || !rename($temporary, $path)) {
-                throw new \RuntimeException('Cannot replace server membership list');
+            if (!flock($file, LOCK_EX) || !rewind($file)) { throw new \RuntimeException('Cannot lock server membership list'); }
+            $length = strlen($contents);
+            for ($offset = 0; $offset < $length; $offset += $written) {
+                $written = fwrite($file, substr($contents, $offset));
+                if ($written === false || $written === 0) { throw new \RuntimeException('Cannot write server membership list'); }
             }
-        } finally { if (is_file($temporary)) { unlink($temporary); } }
+            if (!ftruncate($file, $length) || !fflush($file)) { throw new \RuntimeException('Cannot finish server membership list'); }
+        } finally { flock($file, LOCK_UN); fclose($file); }
     }
 }
