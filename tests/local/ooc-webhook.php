@@ -86,7 +86,7 @@ $nested=$request($valid)->withQueryParams(['method'=>'oocmessage','data'=>urlenc
 if($manager->handleOocWebhook($nested,$server)->getStatusCode()!==403){throw new RuntimeException('Nested-only key accepted');}
 $handler->logger=new \Monolog\Logger('offline-ooc',[new \Monolog\Handler\NullHandler()]);
 $manager->httpHandler=$handler; $manager->logger=$handler->logger;
-(new ReflectionProperty($server,'key'))->setValue($server,'test'); $civ->enabled_gameservers=['test'=>$server];
+(new ReflectionProperty(\Civ13\GameServer::class,'key'))->setValue($server,'test'); $civ->enabled_gameservers=['test'=>$server];
 (new ReflectionProperty($handler,'attributes'))->setValue($handler,['handlers'=>[],'whitelisted'=>[],'match_methods'=>[],'descriptions'=>[],'whitelist'=>[],'ratelimits'=>[]]);
 (new ReflectionMethod($handler,'afterConstruct'))->invoke($handler);
 (new ReflectionMethod($manager,'__generateServerEndpoints'))->invoke($manager);
@@ -148,7 +148,7 @@ if($handler->handle($asay)->getStatusCode()!==202 || end($server->calls)[2]!==nu
 if(!str_contains(end($server->calls)[0],'BotName literal %41 + é')){throw new RuntimeException('Asay display content lost');}
 if($handler->handle($asay->withQueryParams(['key'=>'wrong','method'=>'asaymessage','data'=>json_encode(['message'=>'forged'])]))->getStatusCode()!==403){throw new RuntimeException('Trusted IP forged asay accepted');}
 $civ->channel_ids=['staff_bot'=>'staff-channel']; $civ->role_ids=['Admin'=>'admin-role'];
-(new ReflectionProperty($server,'name'))->setValue($server,'Synthetic server');
+(new ReflectionProperty(\Civ13\GameServer::class,'name'))->setValue($server,'Synthetic server');
 $members=new class {public array $list=[];public function filter($callback){return array_filter($this->list,$callback);}};
 $manager->discord->guildFixture=(object)['members'=>$members];
 $handler->handle($asay);

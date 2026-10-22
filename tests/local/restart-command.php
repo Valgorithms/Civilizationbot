@@ -69,7 +69,7 @@ try {
     foreach (['byond', 'opendream'] as $engine) {
         foreach (['success', 'rejected', 'unavailable'] as $outcome) {
             $server = (new ReflectionClass(RestartServerFixture::class))->newInstanceWithoutConstructor();
-            (new ReflectionProperty($server, 'name'))->setValue($server, 'Fixture');
+            (new ReflectionProperty(\Civ13\GameServer::class, 'name'))->setValue($server, 'Fixture');
             $server->engine = $engine; $server->operation = new Deferred(); $server->unavailable = $outcome === 'unavailable';
             $bot->enabled_gameservers = ['fixture' => $server];
             $interaction = (new ReflectionClass(RestartInteractionFixture::class))->newInstanceWithoutConstructor();

@@ -79,7 +79,7 @@ $bot->role_ids = ['Admin' => 'synthetic-staff'];
 $panel = (new ReflectionClass(\Civ13\Panels::class))->newInstanceWithoutConstructor();
 $panel->civ13 = $bot; $panel->discord = $bot->discord; $panel->logger = $bot->logger;
 $server = (new ReflectionClass(LifecycleConsumerServer::class))->newInstanceWithoutConstructor();
-(new ReflectionProperty($server, 'name'))->setValue($server, 'Synthetic server');
+(new ReflectionProperty(\Civ13\GameServer::class, 'name'))->setValue($server, 'Synthetic server');
 $bot->enabled_gameservers = ['fixture' => $server];
 $member = (new ReflectionClass(LifecycleConsumerMember::class))->newInstanceWithoutConstructor();
 $interaction = static function () use ($member): LifecycleConsumerInteraction {
@@ -125,7 +125,7 @@ lifecycleConsumerCheck($failed && $server->requests === [] && $i->replies === []
 $temporary = sys_get_temp_dir().'/bot-lifecycle-consumers-'.bin2hex(random_bytes(8));
 mkdir($temporary); mkdir($temporary.'/code'); mkdir($temporary.'/code/__defines');
 $mapsPath = $temporary.'/code/__defines/maps.dm'; file_put_contents($mapsPath, "TEST\n");
-(new ReflectionProperty($bot, 'gitdir'))->setValue($bot, $temporary);
+(new ReflectionProperty(\Civ13\Civ13::class, 'gitdir'))->setValue($bot, $temporary);
 try {
     $prompt = $interaction();
     (new ReflectionMethod($panel, 'promptMapSwap'))->invoke($panel, $prompt, 'fixture');
