@@ -28,6 +28,9 @@ class Civ14Host extends Civ13MessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
+        if (!OSFunctions::legacyShellAvailable()) {
+            return $message->reply('This maintenance command is unavailable in Windows/portable mode.');
+        }
         if (! $state = trim(substr($message_filtered['message_content_lower'], strlen($command)))) {
             return $this->civ13->reply($message, 'Wrong format. Please try `ss14 on` or `ss14 off`.');
         }

@@ -1,0 +1,34 @@
+name: Passive status heartbeat contracts
+
+on:
+  push:
+  pull_request:
+    paths:
+      - 'src/Civ13/GameServer.php'
+      - 'src/Civ13/ServerHeartbeat.php'
+      - 'tests/local/heartbeat*.php'
+      - '.github/workflows/status-heartbeat.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        php: ['8.3', '8.4', '8.5']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, openssl, curl
+          coverage: none
+      - run: composer install --no-interaction --no-plugins --no-scripts --no-dev
+      - run: php -l src/Civ13/GameServer.php
+      - run: php -l src/Civ13/ServerHeartbeat.php
+      - run: php tests/local/heartbeat.php
+      - run: php tests/local/heartbeat-integration.php
