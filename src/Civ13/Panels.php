@@ -79,6 +79,13 @@ final class Panels
         $this->setup = true;
 
         $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void {
+            if ($this->civ13->verifier->readOnly && !$commands->get('name', 'refreshverification')) {
+                $commands->save(new Command($this->discord, [
+                    'name' => 'refreshverification', 'description' => 'Refresh Desktop verification from the primary hosted bot.',
+                    'contexts' => [Interaction::CONTEXT_TYPE_GUILD],
+                    'default_member_permissions' => (string) new RolePermission($this->discord, ['moderate_members' => true]),
+                ]));
+            }
             if (! $commands->get('name', 'staffpanel')) {
                 $commands->save(new Command($this->discord, [
                     'name' => 'staffpanel',
@@ -99,6 +106,22 @@ final class Panels
 
     private function registerListeners(): void
     {
+        if ($this->civ13->verifier->readOnly) {
+            $this->discord->listenCommand('refreshverification', function (Interaction $i): PromiseInterface {
+                if ($i->guild_id !== $this->civ13->civ13_guild_id || !$this->isStaff($i->member)) { return $this->deny($i); }
+                return $i->acknowledgeWithResponse(true)->then(function () use ($i): PromiseInterface {
+                    // Recheck staff at execution, after the asynchronous acknowledgement.
+                    if (!$this->isStaff($i->member)) { return $i->updateOriginalResponse($this->plain('You no longer have permission.')); }
+                    return $this->civ13->verifier->refreshHosted()->then(function (array $status) use ($i): PromiseInterface {
+                    $message = ($status['available'] ? 'Hosted verification refreshed.' : 'Hosted verification unavailable; retained list is STALE and cannot authorize.')
+                        .' Last successful refresh: '.($status['last_success_utc'] ?? 'never')
+                        .'; records: '.($status['records'] ?? 'unavailable')
+                        .($status['coalesced'] ? '; shared recent/in-progress refresh (10-second limit).' : '');
+                    return $i->updateOriginalResponse($this->plain($message));
+                    });
+                });
+            });
+        }
         $this->discord->listenCommand('staffpanel', function (Interaction $i): PromiseInterface {
             if (! $this->isStaff($i->member)) {
                 return $i->respondWithMessage($this->plain('You need a staff role or `Moderate Members` to open this.'), true);
@@ -158,10 +181,12 @@ final class Panels
             }, 'Log cleanup queued.')),
             $this->staffButton(Button::primary(), '↻ Refresh', 'sp_refresh', fn (Interaction $i) => $i->updateMessage($this->staffPanel())),
         ]);
-        $components[] = ActionRow::new()->addComponents([
-            $this->staffButton(Button::secondary(), '⬇️ Git Pull', 'sp_pull', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('git pull'), 'Pulling latest code…')),
-            $this->staffButton(Button::secondary(), '📦 Composer Update', 'sp_composer', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('composer update'), 'Updating dependencies…')),
-        ]);
+        if (OSFunctions::legacyShellAvailable()) {
+            $components[] = ActionRow::new()->addComponents([
+                $this->staffButton(Button::secondary(), '⬇️ Git Pull', 'sp_pull', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('git pull'), 'Pulling latest code…')),
+                $this->staffButton(Button::secondary(), '📦 Composer Update', 'sp_composer', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('composer update'), 'Updating dependencies…')),
+            ]);
+        }
         $components[] = Separator::new();
         $components[] = TextDisplay::new('-# Destructive actions run immediately. Every button re-checks your permission.');
 

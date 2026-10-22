@@ -132,9 +132,7 @@ class MessageServiceManager
             ->offsetSet('cleanupgamelogs', new Commands\Civ13CleanupGameLogs($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('playerlist', new Commands\Civ13PlayerList($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ13register', new Commands\Civ13Register($this->civ13), ['Chief Technical Officer'])
-            ->offsetSet('civ14register', new Commands\Civ14Register($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('civ13unverify', new Commands\Civ13UnVerify($this->civ13), ['Chief Technical Officer'])
-            ->offsetSet('civ14unverify', new Commands\Civ14UnVerify($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('dumpappcommands', new Commands\DumpAppCommands($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('ages', new Commands\Ages($this->civ13), ['Chief Technical Officer'])
             ->offsetSet('cv2poll', new Commands\CV2Poll($this->civ13), ['Ambassador'])
@@ -226,6 +224,10 @@ class MessageServiceManager
                     },
                     ['Admin']
                 );
+        }
+        if ($this->civ13->ss14verifier !== null) {
+            $this->messageHandler->offsetSet('civ14register', new Commands\Civ14Register($this->civ13), ['Chief Technical Officer']);
+            $this->messageHandler->offsetSet('civ14unverify', new Commands\Civ14UnVerify($this->civ13), ['Chief Technical Officer']);
         }
         if (isset($this->civ13->ss14verifier, $this->civ13->role_ids['SS14 Verified'])) {
             $this->messageHandler->offsetSet('verifyme', new Commands\Civ14Verify($this->civ13));

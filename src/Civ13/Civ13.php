@@ -149,7 +149,7 @@ class Civ13
     public Byond $byond;
     public Moderator $moderator;
     public Verifier $verifier;
-    public SS14Verifier $ss14verifier;
+    public ?SS14Verifier $ss14verifier = null;
 
     public string $welcome_message = '';
     
@@ -248,6 +248,7 @@ class Civ13
     public Message $restart_message;
 
     private string $constructed_file;
+    private RestartPolicy $restartPolicy;
 
     private PromiseMiddleware $then;
 
@@ -275,6 +276,7 @@ class Civ13
 
         // Set the file that the object was constructed in
         $this->constructed_file = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'];
+        $this->restartPolicy = new RestartPolicy($options['restart_mode'] ?? 'legacy');
 
         $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
         $options = $this->resolveOptions($options);
@@ -300,7 +302,7 @@ class Civ13
             $this->filecache_path = $options['filecache_path'];
         }
         if (! is_dir($this->filecache_path)) {
-            mkdir($this->filecache_path, 0664, true);
+            mkdir($this->filecache_path, 0755, true);
         }
         
         if (isset($options['command_symbol']) && $options['command_symbol']) {
@@ -422,7 +424,7 @@ class Civ13
         $this->__loadOrInitializeVariables();
         new Moderator($this);
         new Verifier($this, $options);
-        new SS14Verifier($this);
+        if ($this->verifier_server !== null) { new SS14Verifier($this); }
         foreach ($civ13_server_settings as $gameserver_options) {
             new GameServer($this, $gameserver_options);
         }
@@ -475,6 +477,8 @@ class Civ13
                 'loop',
                 'browser',
                 'filesystem',
+                'filecache_path',
+                'discover_external_ip',
                 'civ13_guild_id',
                 'civ_token',
                 'command_symbol',
@@ -492,6 +496,7 @@ class Civ13
                 'ooc_badwords',
                 'owner_id',
                 'rules',
+                'restart_mode',
                 'civ13_server_settings',
                 'socket',
                 'stats',
@@ -504,6 +509,7 @@ class Civ13
             ->setDefaults([
                 'safehouse_enabled' => false,
                 'safehouse_gateway' => null,
+                'discover_external_ip' => true,
                 'welcome_message' => '',
                 'logger' => null,
                 'onFulfilledDefault' => null,
@@ -533,11 +539,13 @@ class Civ13
                 'ooc_badwords' => [],
                 'owner_id' => '196253985072611328',
                 'rules' => 'civ13.com slash rules',
+                'restart_mode' => 'legacy',
                 'civ13_server_settings' => [],
                 'socket' => null,
                 'stats' => null,
                 'technician_id' => '116927250145869826',
                 'verify_url' => 'http://valzargaming.com:8080/verified/',
+                'verification_read_only' => false,
                 'web_address' => '',
                 'webapi' => null,
                 'webserver_url' => 'www.valzargaming.com',
@@ -545,6 +553,8 @@ class Civ13
             ->setAllowedTypes('welcome_message', 'string')
             ->setAllowedTypes('safehouse_enabled', 'bool')
             ->setAllowedTypes('safehouse_gateway', ['null', \Civ13\Safehouse\AsyncGateway::class])
+            ->setAllowedTypes('restart_mode', 'string')
+            ->setAllowedValues('restart_mode', ['legacy', 'supervised'])
             ->setAllowedTypes('logger', ['null', Logger::class])
             ->setAllowedTypes('onFulfilledDefault', ['null', 'callable'])
             ->setAllowedTypes('onRejectedDefault', ['null', 'callable'])
@@ -555,6 +565,8 @@ class Civ13
             ->setAllowedTypes('functions', 'array')
             ->setAllowedTypes('loop', LoopInterface::class)
             ->setAllowedTypes('browser', ['null', Browser::class])
+            ->setAllowedTypes('filecache_path', 'string')
+            ->setAllowedTypes('discover_external_ip', 'bool')
             ->setAllowedTypes('filesystem', ['null', AdapterInterface::class])
             ->setAllowedTypes('civ13_guild_id', 'string')
             ->setAllowedTypes('civ_token', 'string')
@@ -578,6 +590,7 @@ class Civ13
             ->setAllowedTypes('stats', ['null', Stats::class])
             ->setAllowedTypes('technician_id', 'string')
             ->setAllowedTypes('verify_url', 'string')
+            ->setAllowedTypes('verification_read_only', 'bool')
             ->setAllowedTypes('web_address', 'string')
             ->setAllowedTypes('webapi', ['null', 'resource', HttpServer::class])
             ->setAllowedTypes('webserver_url', 'string');
@@ -644,7 +657,7 @@ class Civ13
         $this->then = new PromiseMiddleware($this->onFulfilledDefault, $this->onRejectedDefault);
 
         foreach ($options['folders'] as $key => $value) {
-            if (! is_string($value) || (! is_dir($value) && ! @mkdir($value, 0664, true))) {
+            if (! is_string($value) || (! is_dir($value) && ! @mkdir($value, 0755, true))) {
                 $this->logger->warning("`$value` is not a valid folder path!");
                 unset($options['folders'][$key]);
             }
@@ -928,9 +941,11 @@ class Civ13
      */
     public function restart(?string $file = null): PromiseInterface
     {
-        $this->stop();
-
-        return OSFunctions::restart($file ?? $this->constructed_file);
+        if (getenv('CIVILIZATIONBOT_PROFILE')) {
+            $this->stop();
+            return \React\Promise\resolve(null); // Portable supervisor owns relaunch.
+        }
+        return $this->restartPolicy->restart($file, fn () => $this->stop(), fn (?string $entry) => OSFunctions::restart($entry ?? $this->constructed_file));
     }
 
     /** A formatted CPU-usage string for the host OS. */
@@ -1400,12 +1415,14 @@ class Civ13
         });
 
         $this->discord->on('GUILD_JOIN_REQUEST_CREATE', function (GuildJoinRequest $request): void {
+            if ($this->verifier->readOnly) { return; }
             if ($this->verifier->getVerifiedMemberItems()->get('discord', $request->user_id)) {
                 $request->approve();
             }
         });
 
         $this->discord->on('GUILD_JOIN_REQUEST_UPDATE', function (GuildJoinRequest $request): void {
+            if ($this->verifier->readOnly) { return; }
             if ($this->verifier->getVerifiedMemberItems()->get('discord', $request->user_id)) {
                 $request->approve();
             }
@@ -1544,6 +1561,7 @@ class Civ13
      */
     public function bancheckTimer(): TimerInterface|false
     {
+        if (isset($this->verifier) && $this->verifier->readOnly) { return false; }
         // We don't want the persistence server to do this function
         if (! $this->enabled_gameservers) {
             return false;

@@ -181,6 +181,17 @@ foreach (['pending', 'eligible', 'invalid', 'stale_cursor'] as $case) {
 // No Civ13/Discord constructor, token, init event or remote command save runs.
 require __DIR__.'/../../src/Civ13/Civ13.php';
 require __DIR__.'/../../src/Civ13/Slash.php';
+// Exercise the combined production options contract without constructing the bot.
+// This catches either side of the main/safehouse defaults merge being dropped.
+$optionsBot = (new ReflectionClass(\Civ13\Civ13::class))->newInstanceWithoutConstructor();
+$resolveOptions = new ReflectionMethod(\Civ13\Civ13::class, 'resolveOptions');
+$options = [];
+$resolved = $resolveOptions->invokeArgs($optionsBot, [&$options]);
+check($resolved['safehouse_enabled'] === false && $resolved['safehouse_gateway'] === null, 'Safehouse defaults activated integration');
+check($resolved['restart_mode'] === 'legacy' && $resolved['discover_external_ip'] === true, 'Main startup defaults lost');
+$options = ['safehouse_enabled' => true, 'safehouse_gateway' => $gateway, 'restart_mode' => 'supervised', 'discover_external_ip' => false];
+$resolved = $resolveOptions->invokeArgs($optionsBot, [&$options]);
+check($resolved['safehouse_gateway'] === $gateway && $resolved['restart_mode'] === 'supervised' && $resolved['discover_external_ip'] === false, 'Injected safehouse options conflict with portable startup');
 class MockDiscord extends \Discord\Discord
 {
     public array $bound = [];

@@ -1,0 +1,44 @@
+name: Local profile offline contracts
+on:
+  pull_request:
+    paths:
+      - 'src/Civ13/Local/**'
+      - 'src/Civ13/RestartPolicy.php'
+      - 'src/Civ13/Civ13.php'
+      - 'src/Civ13/HttpServiceManager.php'
+      - 'local-bot.php'
+      - 'tests/local/**'
+      - 'scripts/local/**'
+      - '.github/workflows/local-profile.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replica:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        php: ['8.3', '8.4']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: sodium
+          coverage: none
+      - run: php tests/local/run.php
+      - run: php -l local-bot.php
+  supervision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: php tests/local/library.php
+      - run: php tests/local/opendream.php
+      - run: php tests/local/controls.php
