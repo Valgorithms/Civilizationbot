@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
-require $argv[1] ?? __DIR__.'/../../vendor/autoload.php';
+$loader = require $argv[1] ?? __DIR__.'/../../vendor/autoload.php';
+$loader->addPsr4('Civ13\\', __DIR__.'/../../src/Civ13/', true);
 require __DIR__.'/../../src/Civ13/Local/OpenDreamControl.php';
 use Civ13\Local\OpenDreamControl;
 use function React\Promise\resolve;
@@ -21,6 +22,32 @@ try {
     foreach (['start', 'stop', 'restart', 'status'] as $action) { $adapter->request($action)->then(static function ($data) { if ($data['running'] !== false) { throw new RuntimeException('Process status upgraded to readiness'); } }); }
     $adapter->request('mapswap', 'TEST');
     if ($calls[4][0] !== [$root.'/python', $root.'/control.py', '--profile', $root.'/profile.json', 'mapswap', 'TEST']) { throw new RuntimeException('CLI contract differs'); }
+    // Exercise normal production controls in portable mode: engine dispatch must
+    // precede the native supervisor route and must never schedule legacy effects.
+    $previousProfile = getenv('CIVILIZATIONBOT_PROFILE');
+    putenv('CIVILIZATIONBOT_PROFILE=offline-engine-routing');
+    try {
+        $gameserver = (new ReflectionClass(\Civ13\GameServer::class))->newInstanceWithoutConstructor();
+        $gameserver->engine = 'opendream'; $gameserver->enabled = true;
+        (new ReflectionProperty($gameserver, 'engineControl'))->setValue($gameserver, $adapter);
+        $before = count($calls);
+        foreach (['Host'=>'start', 'Kill'=>'stop', 'Restart'=>'restart', 'MapSwap'=>'mapswap'] as $method=>$action) {
+            $observed = null; $failed = null;
+            ($method === 'MapSwap' ? $gameserver->$method('TEST', 'synthetic-admin') : $gameserver->$method())->then(
+                static function ($value) use (&$observed) { $observed = $value; },
+                static function ($error) use (&$failed) { $failed = $error; }
+            );
+            if ($failed !== null || $observed !== $response || $calls[array_key_last($calls)][0][4] !== $action) { throw new RuntimeException('Normal control did not select its OpenDream engine'); }
+        }
+        $gameserver->enabled = false; $failed = false;
+        $gameserver->Restart()->then(null, static function () use (&$failed) { $failed = true; });
+        if (!$failed || count($calls) !== $before + 4) { throw new RuntimeException('Disabled normal control reached an adapter'); }
+        $gameserver->enabled = true;
+        (new ReflectionProperty($gameserver, 'engineControl'))->setValue($gameserver, null);
+        $failed = false;
+        $gameserver->Restart()->then(null, static function () use (&$failed) { $failed = true; });
+        if (!$failed || count($calls) !== $before + 4) { throw new RuntimeException('Unavailable OpenDream adapter fell back to native control'); }
+    } finally { $previousProfile === false ? putenv('CIVILIZATIONBOT_PROFILE') : putenv('CIVILIZATIONBOT_PROFILE='.$previousProfile); }
     expectReject(fn () => $adapter->request('supervise'));
     expectReject(fn () => $adapter->request('mapswap', '../outside'));
     expectReject(fn () => $adapter->request('status', 'TEST'));
@@ -38,5 +65,5 @@ try {
     if ($attempts !== 1) { throw new RuntimeException('Uncertain mutation replayed'); }
     file_put_contents($root.'/profile.json', json_encode($native + ['changed' => true]));
     expectReject(fn () => $adapter->request('status'));
-    echo "PASS OpenDream fixed argv, disabled/unsupported controls, map allowlist, response bindings, timeout no replay, changed profile\n";
+    echo "PASS OpenDream fixed argv, engine-first normal controls, disabled/unsupported controls, map allowlist, response bindings, timeout no replay, changed profile\n";
 } finally { foreach (glob($root.'/*') ?: [] as $file) { unlink($file); } rmdir($root); }

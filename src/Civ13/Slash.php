@@ -398,7 +398,11 @@ class Slash
     /** Freshens the Civ13 guild command list and (re)declares the guild-scoped interaction commands. */
     private function __updateGuildCommands(): void
     {
-        $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)->commands->freshen()->then(function (GuildCommandRepository $commands): void {
+        if (!$guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
+            $this->logger->warning('Configured guild unavailable; guild command registration skipped');
+            return;
+        }
+        $guild->commands->freshen()->then(function (GuildCommandRepository $commands): void {
             if ($names = array_map(fn (Command $command) => $command->name, iterator_to_array($commands))) {
                 $this->logger->debug(sprintf('[GUILD APPLICATION COMMAND LIST] `%s`', implode('`, `', $names)));
             }
@@ -566,6 +570,9 @@ class Slash
     private function __declareListeners(): void
     {
         $this->discord->listenCommand('pull', function (Interaction $interaction): PromiseInterface {
+            if (!OSFunctions::legacyShellAvailable()) {
+                return $this->respondWithMessage($interaction, 'This maintenance command is unavailable in Windows/portable mode.', true);
+            }
             $this->logger->info('[GIT PULL]');
             OSFunctions::execInBackground('git pull');
             $this->civ13->loop->addTimer(5, function () {
@@ -585,6 +592,9 @@ class Slash
         });
         
         $this->discord->listenCommand('update', function (Interaction $interaction): PromiseInterface {
+            if (!OSFunctions::legacyShellAvailable()) {
+                return $this->respondWithMessage($interaction, 'This maintenance command is unavailable in Windows/portable mode.', true);
+            }
             $this->logger->info('[COMPOSER UPDATE]');
             OSFunctions::execInBackground('composer update');
 
@@ -598,8 +608,23 @@ class Slash
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("No gamserver found for `{$interaction->data->options['server']->value}`"));
             }
             $gameserver = &$this->civ13->enabled_gameservers[$interaction->data->options['server']->value];
-            return $interaction->acknowledge()->then(fn () => $gameserver->Restart())->then(
-                fn ($receipt) => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent("Restart request completed for `{$gameserver->name}`. Engine: {$gameserver->engine}. Process control does not establish gameplay readiness.")),
+            if ($gameserver->engine === 'byond' && (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE'))) {
+                // Acknowledge within Discord's deadline; never equate a queued request with readiness.
+                return $interaction->acknowledgeWithResponse(true)->then(function () use ($interaction, $gameserver): PromiseInterface {
+                    try { $request = $gameserver->Restart(); }
+                    catch (\Throwable) { return $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Native restart is unavailable; inspect the local supervisor profile.')); }
+                    return $request->then(
+                        fn () => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('The local supervisor reports save-safe restart and readiness.')),
+                        fn () => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Native restart rejected or outcome unknown. Inspect the retained supervisor operation before retrying.'))
+                    );
+                });
+            }
+            return $interaction->acknowledgeWithResponse(true)->then(fn () => $gameserver->Restart())->then(
+                fn ($receipt) => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent(
+                    $gameserver->engine === 'opendream'
+                        ? "Restart request completed for `{$gameserver->name}`. Engine: opendream. Process control does not establish gameplay readiness."
+                        : "Legacy restart scheduled for `{$gameserver->name}`. Completion and gameplay readiness have not been observed."
+                )),
                 fn (\Throwable $error) => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Restart failed: '.$error->getMessage()))
             );
         });
@@ -636,12 +661,15 @@ class Slash
                 : $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with a byond username or it does not exist in the cache yet"), true)
         );
 
+        if ($this->civ13->ss14verifier !== null) {
         $this->discord->listenCommand(
             'ss14',
             fn (Interaction $interaction): PromiseInterface => ($item = $this->civ13->ss14verifier->get('discord', $interaction->data->target_id))
                 ? $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("`{$interaction->data->target_id}` is registered to `{$item['ss14']}`"), true)
                 : $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent("<@{$interaction->data->target_id}> is not currently verified with an SS14 account or it does not exist in the cache yet"), true)
         );
+
+        }
 
         $this->discord->listenCommand('bancheck', function (Interaction $interaction): PromiseInterface {
             if (! $item = $this->civ13->verifier->get('discord', $interaction->data->target_id)) {

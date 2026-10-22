@@ -5,6 +5,8 @@ on:
       - 'src/Civ13/Local/**'
       - 'src/Civ13/RestartPolicy.php'
       - 'src/Civ13/Civ13.php'
+      - 'src/Civ13/GameServer.php'
+      - 'src/Civ13/Slash.php'
       - 'src/Civ13/HttpServiceManager.php'
       - 'local-bot.php'
       - 'tests/local/**'
@@ -41,6 +43,7 @@ jobs:
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: php tests/local/library.php
       - run: php tests/local/opendream.php
+      - run: php tests/local/restart-command.php vendor/autoload.php
       - run: php tests/local/lifecycle.php vendor/autoload.php
       - run: php tests/local/controls.php
       - run: php tests/local/server-compatibility.php vendor/autoload.php
