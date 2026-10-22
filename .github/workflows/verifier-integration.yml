@@ -7,6 +7,12 @@ on:
       - 'src/**'
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
+      - 'tests/server-directory.php'
+      - 'tests/server-directory-startup.php'
+      - 'tests/server-directory-remote.php'
+      - 'tests/server-directory-standalone.php'
+      - 'scripts/directory/**'
+      - 'tests/fixtures/server-directory*.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
@@ -16,6 +22,12 @@ on:
       - 'src/**'
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
+      - 'tests/server-directory.php'
+      - 'tests/server-directory-startup.php'
+      - 'tests/server-directory-remote.php'
+      - 'tests/server-directory-standalone.php'
+      - 'scripts/directory/**'
+      - 'tests/fixtures/server-directory*.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
@@ -45,6 +57,12 @@ jobs:
       - run: composer audit --locked
       - run: find src -name '*.php' -print0 | xargs -0 -n1 php -l
       - run: php tests/http-dependency.php
+      - run: php tests/server-directory.php
+      - run: php tests/server-directory-startup.php
+      - run: php tests/server-directory-remote.php
+      - run: php tests/server-directory-addresses.php
+      - run: php -l scripts/directory/serve.php
+      - run: php tests/server-directory-standalone.php
       - run: php tests/verifier-integration.php
       - run: php tests/economy.php
       - run: php tests/economy-service.php

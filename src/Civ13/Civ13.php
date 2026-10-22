@@ -488,6 +488,8 @@ class Civ13
                 'http_key',
                 'http_port',
                 'http_whitelist',
+                'launcher_directory',
+                'launcher_directory_status_targets',
                 'ic_badwords',
                 'legacy',
                 'moderate',
@@ -529,6 +531,8 @@ class Civ13
                 'http_key' => '',
                 'http_port' => 0,
                 'http_whitelist' => [],
+                'launcher_directory' => [],
+                'launcher_directory_status_targets' => [],
                 'ic_badwords' => [],
                 'legacy' => true,
                 'moderate' => true,
@@ -573,6 +577,8 @@ class Civ13
             ->setAllowedTypes('http_key', 'string')
             ->setAllowedTypes('http_port', 'int')
             ->setAllowedTypes('http_whitelist', 'array')
+            ->setAllowedTypes('launcher_directory', 'array')
+            ->setAllowedTypes('launcher_directory_status_targets', 'array')
             ->setAllowedTypes('ic_badwords', 'array')
             ->setAllowedTypes('legacy', 'bool')
             ->setAllowedTypes('moderate', 'bool')

@@ -163,15 +163,14 @@ $browser = new Browser(Loop::get());
 $filesystem = FilesystemFactory::create();
 include $baseDir.'/variable_functions.php';
 
-$civ13_ip = gethostbyname('www.civ13.com');
-$vzg_ip = gethostbyname('www.valzargaming.com');
-$val_ip = gethostbyname('www.valgorithms.com');
-
-$http_whitelist = $portable !== null ? ['127.0.0.1'] : [
-    $civ13_ip,
-    $vzg_ip,
-    $val_ip
-];
+if ($portable === null) {
+    $civ13_ip = gethostbyname('www.civ13.com');
+    $vzg_ip = gethostbyname('www.valzargaming.com');
+    $val_ip = gethostbyname('www.valgorithms.com');
+    $http_whitelist = [$civ13_ip, $vzg_ip, $val_ip];
+} else {
+    $http_whitelist = ['127.0.0.1'];
+}
 
 $webapi = null;
 $socket = null;
@@ -236,6 +235,8 @@ $options = [
     //'verify_url' => 'http://valzargaming.com:8080/verified/', // Leave this blank if you do not want to use the webserver, ckeys will be stored locally as provisional
     'verify_url' => getenv('VERIFIER_HOST_ADDR').':'.getenv('VERIFIER_HOST_PORT').'/verified/', // Local/Integrated Verifier Server
     // 'serverinfo_url' => '', // URL of the serverinfo.json file, defaults to the webserver if left blank
+    // 'launcher_directory' => ['civ13.com' => ['tdm', 'nomads']], // Opt-in public status; see docs/launcher-directory.md
+    // 'launcher_directory_status_targets' => [], // Separate opt-in status-only inventory; never enables GameServer/pers
     'ooc_badwords' => $ooc_badwords,
     'ic_badwords' => $ic_badwords,
     'folders' => [
