@@ -8,6 +8,7 @@ on:
       - 'src/Civ13/Slash.php'
       - 'src/Civ13/Civ13.php'
       - 'tests/safehouse/**'
+      - 'docs/safehouse-acceptance.md'
       - '.github/workflows/safehouse.yml'
   push:
     paths:
@@ -17,6 +18,7 @@ on:
       - 'src/Civ13/Slash.php'
       - 'src/Civ13/Civ13.php'
       - 'tests/safehouse/**'
+      - 'docs/safehouse-acceptance.md'
       - '.github/workflows/safehouse.yml'
 permissions:
   contents: read

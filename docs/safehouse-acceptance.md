@@ -4,6 +4,16 @@ The safehouse integration remains disabled by default. Local mocks, native fixtu
 are separate from command registration, live Discord delivery and host activation.
 Ordinary tests/bootstrap.php loads .env; safehouse runners deliberately bypass it.
 
+## Source review versus activation
+
+This PR supplies an optional, disabled source package. Source acceptance requires
+reviewed defaults and migration behavior, the strict DTO/registration boundaries,
+and passing exact-head offline CI. Existing installations need no configuration
+change to retain disabled behavior. Final submitted PR review is a merge gate.
+The native compatibility, host, Discord usability and gameplay evidence below
+remains required for the corresponding compatibility or activation claim; it is
+not a requirement to activate a host before reviewing or merging disabled code.
+
 ## Evidence and remaining scope
 
 | Scope | Evidence | Remaining gate |
@@ -42,11 +52,44 @@ To close the remaining native integration evidence gate, supply a synthetic
 artifact that names the exact native and bot commits, the DTO/crypto contract,
 request/reply digests, and observed room quote/manage, market browse and stash
 detail results. Include revision/actor rejection and replay/recovery controls.
-Review that artifact through the existing offline compatibility runners before
-claiming compatibility; an older paired receipt cannot silently cover newer
-contracts. Connected raid/long-term recovery and host activation gates below
+The existing `native-compatibility.php` checker accepts only the fixed
+`inspect-1`/`link-1` fixture, synthetic clock 1000 and its before/after restart
+layout. It cannot certify arbitrary room/browse/detail artifacts. Those newer
+contracts need a reviewed native producer and an appropriate offline checker;
+the synthetic PHP economics-driver test is not native evidence. Record the
+producer's exact commit separately because the older fixture manifest has no
+source-head field. An older paired receipt cannot silently cover newer contracts.
+Connected raid/long-term recovery and host activation gates below
 remain separate. This bot-only review does not authorize generating a new game
 fixture, accessing game saves, enabling integration or running a live operation.
+
+## Bounded evidence plan
+
+- Repeat the existing public CI commands at the reviewed bot head:
+  `php tests/safehouse/run.php` and
+  `php tests/safehouse/economics-driver-test.php` in the three-minute job;
+  `php tests/safehouse/discord.php` and `php tests/safehouse/schema.php` in
+  the eight-minute dependency job. Effects are temporary files, synthetic PHP
+  workers and injected Discord transports; no registration or game starts.
+- Given a reviewed synthetic inspect/link artifact, run
+  `php tests/safehouse/native-compatibility.php <fixture-directory>` in an
+  isolated job capped at three minutes. It copies only the two named fixture
+  sets into temporary storage and removes that copy. Retain the native/bot SHAs,
+  artifact digest, command and result. This consumes evidence without a game.
+- Later native DTO acceptance must first name the producer's actual command and
+  fixture. The bot-side `economics-driver.php SPOOL MANIFEST` operations are
+  `inspect`, `browse`, `detail`, `room-quote`, `quote`, `confirm`, `poll` and
+  `recover`; their detailed arguments are in the
+  [offline fixture driver contract](safehouse-economic-contract.md#offline-native-fixture-driver).
+  Bound an approved run to
+  one synthetic actor, the existing public synthetic key, a new temporary spool,
+  at most 32 requests and five minutes. Advance only the synthetic clock for
+  expiry controls. Retain request/reply digests and reject/replay/recovery
+  observations. No native producer command or execution is authorized here.
+- Connected gameplay and live registration require a separate concrete fixture,
+  ownership/resource window and authorization. Keep them pending until their
+  observed receipts exist; neither a source merge nor offline artifacts supply
+  them.
 
 ## Explicit host activation requirements
 
