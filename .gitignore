@@ -10,7 +10,6 @@ token.php
 /json
 botlog.txt
 .env
-composer.lock
 /html
 output.log
 ranking.txt
@@ -28,6 +27,7 @@ test.php
 /tools/
 /phive.xml
 /.phive/
+/tooling/mcp/node_modules/
 
 # Standalone directory dependencies are CI-built; its minimal lock is reviewed.
 /packaging/directory/vendor/

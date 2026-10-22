@@ -34,19 +34,15 @@ class Civ13GameServerUnBan extends Civ13GameServerMessageCommand
             if (! $item = $this->civ13->verifier->getVerifiedItem($ckey)) {
                 return $this->civ13->reply($message, "No data found for Discord ID `$ckey`.");
             }
-            if (! $ckey = $item['ckey'] ?? null) {
+            if (! $ckey = $item['ss13'] ?? null) {
                 return $this->civ13->reply($message, "No ckey found for Discord ID `$ckey`.");
             }
         }
 
-        $this->civ13->unban($ckey, $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $this->gameserver->key);
-        $result = "`$admin` unbanned `$ckey` from `{$this->gameserver->name}`";
-        if ($member = $this->civ13->verifier->getVerifiedMember('id', $ckey)) {
-            if ($member->roles->has($this->civ13->role_ids['Banished'])) {
-                $member->removeRole($this->civ13->role_ids['Banished'], $result);
-            }
-        }
-
-        return $this->civ13->reply($message, $result);
+        $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username;
+        return $this->civ13->unban($ckey, $admin, $this->gameserver->key)->then(
+            fn () => $this->civ13->reply($message, "`$admin` queued an unban for `$ckey` from `{$this->gameserver->name}`."),
+            fn (\Throwable $error) => $this->civ13->reply($message, 'Unban failed; inspect the server request before retrying.')
+        );
     }
 }

@@ -565,6 +565,12 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
      */
     public function __isWhitelisted(ServerRequestInterface $request, string $ip): bool
     {
+        // Native webhook_send places its secret beside method/data, not inside JSON.
+        $outerKey = $request->getQueryParams()['key'] ?? null;
+        if (str_starts_with($request->getUri()->getPath(), '/webhook/')) {
+            // A trusted network address is not authentication of a game event.
+            return $this->key !== '' && is_string($outerKey) && hash_equals($this->key, $outerKey);
+        }
         if ($this->key) {
             $data = [];
             if ($params = $request->getQueryParams()) {

@@ -30,6 +30,14 @@ jobs:
       - run: php tests/windows/ready.php
       - run: php tests/windows/ready.php vendor/autoload.php --hosted
       - run: php tests/windows/ready.php vendor/autoload.php --unconfigured
+      - name: Windows file IPC and role-list contracts
+        if: runner.os == 'Windows'
+        timeout-minutes: 2
+        run: php tests/local/server-compatibility.php vendor/autoload.php
+      - name: Windows durable relay contracts
+        if: runner.os == 'Windows'
+        timeout-minutes: 2
+        run: php tests/local/relay.php vendor/autoload.php
       - run: php -l bot.php
       - run: php -l src/Civ13/Civ13.php
       - run: php -l src/Civ13/GameServer.php

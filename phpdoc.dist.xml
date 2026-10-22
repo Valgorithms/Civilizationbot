@@ -5,11 +5,11 @@
         xmlns="https://www.phpdoc.org"
         xsi:noNamespaceSchemaLocation="https://docs.phpdoc.org/latest/phpdoc.xsd"
 >
-    <title>Civilizationbot Documentation</title>
+    <title>CivilizationBot v5 development API</title>
     <paths>
-        <output>build</output>
+        <output>build/v5</output>
     </paths>
-    <version number="latest">
+    <version number="5.0.0-dev">
         <api>
             <source dsn=".">
                 <path>src</path>

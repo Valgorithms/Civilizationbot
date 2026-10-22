@@ -41,7 +41,9 @@ final class Profile
         }
         if (isset($config['controls'])) {
             $control = $config['controls']; $keys = is_array($control) ? array_keys($control) : []; sort($keys);
-            if ($keys !== ['controller', 'enabled', 'profiles', 'python', 'read_key_file'] || !is_bool($control['enabled']) || !is_array($control['profiles']) || array_keys($control['profiles']) !== ['nomads', 'tdm']) { throw new \InvalidArgumentException('Exact control configuration required'); }
+            $expected = ['controller', 'enabled', 'profiles', 'python', 'read_key_file'];
+            if (array_key_exists('lifecycle_schema', $control)) { $expected[] = 'lifecycle_schema'; sort($expected); if ($control['lifecycle_schema'] !== null && $control['lifecycle_schema'] !== 'civ13.lifecycle.v1') { throw new \InvalidArgumentException('Unsupported lifecycle schema'); } }
+            if ($keys !== $expected || !is_bool($control['enabled']) || !is_array($control['profiles']) || array_keys($control['profiles']) !== ['nomads', 'tdm']) { throw new \InvalidArgumentException('Exact control configuration required'); }
             self::inside($control['read_key_file'], $root);
             if ($control['read_key_file'] === $config['read_key_file'] || $control['read_key_file'] === $config['token_file'] || filesize($control['read_key_file']) > 4096 || strlen(trim(file_get_contents($control['read_key_file']) ?: '')) < 32) { throw new \InvalidArgumentException('Separate bounded control credential required'); }
             foreach (['python', 'controller'] as $key) { if (!is_string($control[$key]) || !is_file($control[$key]) || !(str_starts_with($control[$key], '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $control[$key]))) { throw new \InvalidArgumentException('Absolute existing adapter path required'); } self::noLinks($control[$key]); }

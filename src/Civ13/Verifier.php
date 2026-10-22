@@ -127,10 +127,10 @@ class Verifier
         });
         $this->civ13->discord->on('GUILD_MEMBER_REMOVE', function (Member $member): void {
             $this->getVerified();
-            $this->civ13->whitelistUpdate();
+            $this->civ13->whitelistUpdate()->then(null, $this->civ13->onRejectedDefault);
             foreach (Civ13::faction_teams as $faction_name) {
                 if ($member->roles->has($this->civ13->role_ids[$faction_name])) {
-                    $this->civ13->factionlistUpdate();
+                    $this->civ13->factionlistUpdate()->then(null, $this->civ13->onRejectedDefault);
                     break;
                 }
             }
@@ -150,7 +150,7 @@ class Verifier
             ];
             foreach ($roles as $role_name) {
                 if ($member->roles->has($this->civ13->role_ids[$role_name])) {
-                    $this->civ13->adminlistUpdate();
+                    $this->civ13->adminlistUpdate()->then(null, $this->civ13->onRejectedDefault);
                     break;
                 }
             }
@@ -158,19 +158,19 @@ class Verifier
         $this->civ13->discord->on('GUILD_MEMBER_UPDATE', function (Member $member, Discord $discord, ?Member $member_old): void {
             if (! $member_old) { // Not enough information is known about the change, so we will update everything
                 $this->getVerified();
-                $this->civ13->whitelistUpdate();
-                $this->civ13->factionlistUpdate();
-                $this->civ13->adminlistUpdate();
+                $this->civ13->whitelistUpdate()->then(null, $this->civ13->onRejectedDefault);
+                $this->civ13->factionlistUpdate()->then(null, $this->civ13->onRejectedDefault);
+                $this->civ13->adminlistUpdate()->then(null, $this->civ13->onRejectedDefault);
 
                 return;
             }
             if ($member->roles->has($this->civ13->role_ids['Verified']) !== $member_old->roles->has($this->civ13->role_ids['Verified'])) {
                 $this->getVerified();
-                $this->civ13->whitelistUpdate();
+                $this->civ13->whitelistUpdate()->then(null, $this->civ13->onRejectedDefault);
             }
             foreach (Civ13::faction_teams as $role_name) {
                 if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name])) {
-                    $this->civ13->factionlistUpdate();
+                    $this->civ13->factionlistUpdate()->then(null, $this->civ13->onRejectedDefault);
                     break;
                 }
             }
@@ -190,7 +190,7 @@ class Verifier
             ];
             foreach ($roles as $role_name) {
                 if ($member->roles->has($this->civ13->role_ids[$role_name]) !== $member_old->roles->has($this->civ13->role_ids[$role_name])) {
-                    $this->civ13->adminlistUpdate();
+                    $this->civ13->adminlistUpdate()->then(null, $this->civ13->onRejectedDefault);
                     break;
                 }
             }

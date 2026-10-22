@@ -28,7 +28,7 @@ try {
         $settings = $profile['controls']; $adapters = [];
         if ($settings['enabled']) {
             $execute = new Civ13\Local\AsyncProcess(Loop::get(), $profile['state_directory']);
-            foreach ($settings['profiles'] as $name => $path) { $adapters[$name] = new Civ13\Local\OpenDreamControl($profile['servers'][$name], $settings['python'], $settings['controller'], $path, $execute, true); }
+            foreach ($settings['profiles'] as $name => $path) { $adapters[$name] = new Civ13\Local\OpenDreamControl($profile['servers'][$name], $settings['python'], $settings['controller'], $path, $execute, true, $settings['lifecycle_schema'] ?? null); }
         }
         $controls = new Civ13\Local\ControlEndpoint($adapters, trim(file_get_contents($settings['read_key_file']) ?: ''), $settings['enabled']);
     }
