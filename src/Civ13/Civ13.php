@@ -466,6 +466,8 @@ class Civ13
 
         $resolver
             ->setDefined([
+                'safehouse_enabled',
+                'safehouse_gateway',
                 'welcome_message',
                 'logger',
                 'onFulfilledDefault',
@@ -510,6 +512,8 @@ class Civ13
                 'webserver_url',
             ])
             ->setDefaults([
+                'safehouse_enabled' => false,
+                'safehouse_gateway' => null,
                 'discover_external_ip' => true,
                 'welcome_message' => '',
                 'logger' => null,
@@ -554,6 +558,8 @@ class Civ13
                 'webserver_url' => 'www.valzargaming.com',
             ])
             ->setAllowedTypes('welcome_message', 'string')
+            ->setAllowedTypes('safehouse_enabled', 'bool')
+            ->setAllowedTypes('safehouse_gateway', ['null', \Civ13\Safehouse\AsyncGateway::class])
             ->setAllowedTypes('restart_mode', 'string')
             ->setAllowedValues('restart_mode', ['legacy', 'supervised'])
             ->setAllowedTypes('logger', ['null', Logger::class])

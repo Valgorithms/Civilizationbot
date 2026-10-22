@@ -39,6 +39,7 @@ class Slash
     public Discord $discord;
     public Logger $logger;
     private bool $setup = false;
+    private ?\Civ13\Safehouse\DiscordRoute $safehouseRoute = null;
 
     /** @param Civ13 $civ13 The bot instance; its `discord` and `logger` are bound by reference. */
     public function __construct(Civ13 &$civ13)
@@ -54,6 +55,14 @@ class Slash
     */
     protected function afterConstruct(): void
     {
+        if (($this->civ13->options['safehouse_enabled'] ?? false) === true) {
+            $gateway = $this->civ13->options['safehouse_gateway'] ?? null;
+            if (!$gateway instanceof \Civ13\Safehouse\AsyncGateway || $this->civ13->civ13_guild_id === '') {
+                throw new \LogicException('Enabled safehouse requires an injected async gateway and configured guild');
+            }
+            $this->safehouseRoute = new \Civ13\Safehouse\DiscordRoute($gateway, $this->civ13->civ13_guild_id, true);
+            $this->discord->listenCommand('safehouse', fn (Interaction $interaction): PromiseInterface => $this->safehouseRoute->handle($interaction));
+        }
         $this->__declareListeners();
         $fn = function () {
             $this->logger->info('Setting up Interaction commands...');
@@ -132,6 +141,14 @@ class Slash
     private function __updateCommands(): void
     {
         $this->discord->application->commands->freshen()->then(function (GlobalCommandRepository $commands): void {
+            if ($this->safehouseRoute !== null) {
+                $schema = \Civ13\Safehouse\Controller::schema();
+                if ($existing = $commands->get('name', 'safehouse')) {
+                    $schema['id'] = $existing->id;
+                }
+                // Reconcile only this named command; never bulk overwrite.
+                $this->save($commands, new Command($this->discord, $schema));
+            }
             if ($names = array_map(fn (Command $command) => $command->name, iterator_to_array($commands))) {
                 $this->logger->debug(sprintf('[GLOBAL APPLICATION COMMAND LIST] `%s`', implode('`, `', $names)));
             }
