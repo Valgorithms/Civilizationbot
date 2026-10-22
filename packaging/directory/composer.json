@@ -1,0 +1,21 @@
+{
+  "name": "civ13/launcher-directory-runtime",
+  "description": "Isolated read-only Civ13 launcher directory; no bot bootstrap",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.3",
+    "react/http": "1.11.1",
+    "react/socket": "1.17.0",
+    "react/dns": "1.14.0",
+    "react/event-loop": "1.6.0",
+    "react/promise": "3.3.0",
+    "react/stream": "1.4.0",
+    "evenement/evenement": "3.0.2",
+    "psr/http-message": "1.1"
+  },
+  "autoload": {"psr-4": {"Civ13\\ServerDirectory\\": "src/Civ13/ServerDirectory/"}},
+  "config": {"allow-plugins": false, "sort-packages": true, "platform": {"php": "8.3.0"}},
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

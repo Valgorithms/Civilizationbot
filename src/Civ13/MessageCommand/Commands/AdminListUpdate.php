@@ -27,10 +27,9 @@ class AdminListUpdate extends Civ13MessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $message->react(
-            ($this->civ13->adminlistUpdate())
-            ? '👍'
-            : '🔥'
+        return \React\Promise\resolve(null)->then(fn () => $this->civ13->adminlistUpdate())->then(
+            fn () => $message->react('👍'),
+            fn (\Throwable $error) => $message->react('❌')
         );
     }
 }

@@ -2,11 +2,16 @@ name: Local profile offline contracts
 on:
   pull_request:
     paths:
+      - 'composer.json'
+      - 'composer.lock'
       - 'src/Civ13/Local/**'
       - 'src/Civ13/RestartPolicy.php'
       - 'src/Civ13/Civ13.php'
       - 'src/Civ13/GameServer.php'
       - 'src/Civ13/Slash.php'
+      - 'src/Civ13/Panels.php'
+      - 'src/Civ13/MessageCommand/Commands/AdminListUpdate.php'
+      - 'src/Civ13/MessageCommand/Commands/Civ13GameServerMapSwap.php'
       - 'src/Civ13/HttpServiceManager.php'
       - 'local-bot.php'
       - 'tests/local/**'
@@ -32,12 +37,16 @@ jobs:
       - run: php tests/local/run.php
       - run: php -l local-bot.php
   supervision:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4', '8.5']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: ${{ matrix.php }}
           tools: composer
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
@@ -51,3 +60,5 @@ jobs:
       - run: php tests/local/message-delivery.php vendor/autoload.php
       - run: php tests/local/ooc-webhook.php vendor/autoload.php
       - run: php tests/local/unban-commands.php vendor/autoload.php
+      - run: php tests/local/adminlist-consumers.php vendor/autoload.php
+      - run: php tests/local/lifecycle-consumers.php vendor/autoload.php

@@ -4,18 +4,32 @@ on:
   push:
     paths:
       - 'composer.json'
+      - 'composer.lock'
       - 'src/**'
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
+      - 'tests/server-directory.php'
+      - 'tests/server-directory-startup.php'
+      - 'tests/server-directory-remote.php'
+      - 'tests/server-directory-standalone.php'
+      - 'scripts/directory/**'
+      - 'tests/fixtures/server-directory*.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
   pull_request:
     paths:
       - 'composer.json'
+      - 'composer.lock'
       - 'src/**'
       - 'tests/verifier-integration.php'
       - 'tests/http-dependency.php'
+      - 'tests/server-directory.php'
+      - 'tests/server-directory-startup.php'
+      - 'tests/server-directory-remote.php'
+      - 'tests/server-directory-standalone.php'
+      - 'scripts/directory/**'
+      - 'tests/fixtures/server-directory*.json'
       - 'tests/economy.php'
       - 'tests/economy-service.php'
       - '.github/workflows/verifier-integration.yml'
@@ -37,14 +51,20 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: mbstring, pdo_sqlite
           coverage: none
-      # composer.lock is intentionally ignored here. Resolve dependencies for
-      # each supported PHP runtime while retaining the explicit verifier pin.
+      # Install the reviewed lock on each supported PHP runtime. Dependency
+      # updates require an explicit manifest/lock change and fresh CI evidence.
       - run: composer install --no-scripts --no-plugins --prefer-dist --no-interaction
       - run: composer validate --no-check-publish
       - run: composer check-platform-reqs
       - run: composer audit --locked
       - run: find src -name '*.php' -print0 | xargs -0 -n1 php -l
       - run: php tests/http-dependency.php
+      - run: php tests/server-directory.php
+      - run: php tests/server-directory-startup.php
+      - run: php tests/server-directory-remote.php
+      - run: php tests/server-directory-addresses.php
+      - run: php -l scripts/directory/serve.php
+      - run: php tests/server-directory-standalone.php
       - run: php tests/verifier-integration.php
       - run: php tests/economy.php
       - run: php tests/economy-service.php

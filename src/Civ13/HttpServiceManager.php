@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Civ13;
 
 use Byond\Byond;
+use Civ13\ServerDirectory\ByondStatusProbe;
+use Civ13\ServerDirectory\Directory;
+use Civ13\ServerDirectory\Endpoint as DirectoryEndpoint;
 use Discord\Discord;
 use Discord\DiscordWebAuth;
 use Discord\Parts\Channel\Message;
@@ -42,6 +45,8 @@ class HttpServiceManager
     protected array $dwa_sessions = [];
     protected array $dwa_timers = [];
     protected array $dwa_discord_ids = [];
+    private ?Directory $launcherDirectory = null;
+    private ?TimerInterface $launcherDirectoryTimer = null;
 
     /** @param Civ13 $civ13 The bot instance; builds the {@see HttpHandler} and binds `discord`/`logger` by reference. */
     public function __construct(public Civ13 &$civ13)
@@ -56,6 +61,9 @@ class HttpServiceManager
     /** Closes the listening socket, if one is open. */
     public function __destruct()
     {
+        if ($this->launcherDirectoryTimer !== null) {
+            $this->civ13->loop->cancelTimer($this->launcherDirectoryTimer);
+        }
         if (isset($this->socket)) {
             $this->socket->close();
         }
@@ -83,6 +91,11 @@ class HttpServiceManager
             //$this->logger->info('Populating HttpServer API whitelist...');
             //$this->__populateWhitelist(); // This is disabled for now because it takes >20 seconds.
             $this->webapi->listen($this->socket);
+            if ($this->launcherDirectory !== null) {
+                $refresh = fn () => $this->launcherDirectory->refresh()->then(null, fn (\Throwable $error) => $this->logger->warning('Launcher directory refresh failed'));
+                $refresh();
+                $this->launcherDirectoryTimer = $this->civ13->loop->addPeriodicTimer(Directory::REFRESH_SECONDS, $refresh);
+            }
             $this->logger->info("HttpServer API is now listening on port {$this->http_port}");
             $this->logger->debug('[HTTP COMMAND LIST] '.PHP_EOL.$this->httpHandler->generateHelp());
         };
@@ -381,6 +394,7 @@ class HttpServiceManager
     /** Registers the core web-API routes (channel browser, message/embed senders, admin actions), then delegates to the per-server and website route generators. */
     protected function __generateEndpoints()
     {
+        $this->__generateLauncherDirectoryEndpoint();
         $this->httpHandler
             ->offsetSet(
                 '/get-channels',
@@ -763,9 +777,7 @@ class HttpServiceManager
             )
             ->offsetSet(
                 '/updateadmins',
-                fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->civ13->adminlistUpdate()
-                        ? HttpResponse::plaintext('Admin lists updated')->withStatus(HttpResponse::STATUS_OK)
-                        : HttpResponse::plaintext('Unable to update admin lists')->withStatus(HttpResponse::STATUS_OK),
+                fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->queueAdminListUpdate(),
                 true
             )
             ->offsetSet(
@@ -1553,6 +1565,61 @@ class HttpServiceManager
                 }), true);
                 */;
         }
+    }
+
+    /** The synchronous HTTP router acknowledges queueing; failures remain observable. */
+    private function queueAdminListUpdate(): HttpResponse
+    {
+        $completed = false;
+        $failed = false;
+        try {
+            $this->civ13->adminlistUpdate()->then(
+                static function () use (&$completed): void { $completed = true; },
+                function (\Throwable $error) use (&$failed): void {
+                    $failed = true;
+                    $this->logger->error('Admin list refresh failed; some destinations may already have changed: '.$error->getMessage());
+                }
+            );
+        } catch (\Throwable $error) {
+            $this->logger->error('Admin list refresh could not be queued: '.$error->getMessage());
+            return HttpResponse::plaintext('Unable to queue admin list refresh')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        if ($failed) {
+            return HttpResponse::plaintext('Admin list refresh failed; some destinations may already have changed.')->withStatus(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        if ($completed) {
+            return HttpResponse::plaintext('Admin lists updated.')->withStatus(HttpResponse::STATUS_OK);
+        }
+        return HttpResponse::plaintext('Admin list refresh queued; completion has not been observed.')->withStatus(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /** Opt-in public status only. No endpoint input can select a probe address or port. */
+    private function __generateLauncherDirectoryEndpoint(): void
+    {
+        $providers = $this->civ13->options['launcher_directory'] ?? [];
+        $statusTargets = $this->civ13->options['launcher_directory_status_targets'] ?? [];
+        if (!$providers && !$statusTargets) {
+            return;
+        }
+        try {
+            $this->launcherDirectory = new Directory(
+                $providers,
+                $this->civ13->enabled_gameservers,
+                ByondStatusProbe::create($this->civ13->loop),
+                statusTargets: $statusTargets
+            );
+        } catch (\InvalidArgumentException $error) {
+            $this->logger->warning('Launcher directory disabled: '.$error->getMessage());
+            return;
+        }
+        $endpoint = new DirectoryEndpoint($this->launcherDirectory);
+        $this->httpHandler->offsetSet(
+            Directory::PATH,
+            static fn (ServerRequestInterface $request, string $path, bool $whitelisted): HttpResponse => $endpoint->handle($request),
+            false,
+            'exact',
+            'Read-only, online-only launcher server directory'
+        )->setRateLimit(Directory::PATH, 600, 60);
     }
 
     /** Serves every `*.html` file under the `/html` directory as its own web-API route, creating the directory if missing. */

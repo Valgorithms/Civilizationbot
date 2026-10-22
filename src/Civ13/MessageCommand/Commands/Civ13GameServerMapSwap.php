@@ -18,6 +18,8 @@ use Civ13\MessageCommand\Civ13GameServerMessageCommand;
 use Discord\Parts\Channel\Message;
 use React\Promise\PromiseInterface;
 
+use function React\Promise\resolve;
+
 /**
  * Handles the "MapSwap" command.
  */
@@ -32,8 +34,12 @@ class Civ13GameServerMapSwap extends Civ13GameServerMessageCommand
             return $message->react('❌')->then(fn () => $this->civ13->reply($message, 'You need to include the name of the map.'));
         }
 
-        return $this->gameserver->MapSwap($map, (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username)->then(
-            fn ($result) => $message->react('👍')->then(fn () => $this->civ13->reply($message, $result)),
+        return resolve(null)->then(fn () => $this->gameserver->MapSwap($map, (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username))->then(
+            fn () => $message->react('👍')->then(fn () => $this->civ13->reply($message,
+                $this->gameserver->engine === 'opendream'
+                    ? "OpenDream map-swap process control completed for `{$this->gameserver->name}` and `{$map}`. Gameplay readiness has not been observed."
+                    : "Legacy map swap scheduled for `{$this->gameserver->name}` and `{$map}`. Completion and gameplay readiness have not been observed."
+            )),
             fn (\Throwable $error) => $message->react($error instanceof FileNotFoundException ? '🔥' : '👎')->then(fn () => $this->civ13->reply($message, $error->getMessage()))
         );
     }

@@ -169,11 +169,7 @@ final class Panels
                     $s->updateBanCache();
                 }
             }, 'Ban cache refresh queued.')),
-            $this->staffButton(Button::secondary(), '👮 Update Admins', 'sp_admins', fn (Interaction $i) => $this->bg($i, function () {
-                foreach ($this->civ13->enabled_gameservers as $s) {
-                    $s->adminlistUpdate();
-                }
-            }, 'Admin list refresh queued.')),
+            $this->staffButton(Button::secondary(), '👮 Update Admins', 'sp_admins', fn (Interaction $i) => $this->updateAdmins($i)),
             $this->staffButton(Button::secondary(), '🧹 Cleanup Logs', 'sp_logs', fn (Interaction $i) => $this->bg($i, function () {
                 foreach ($this->civ13->enabled_gameservers as $s) {
                     $s->cleanupLogs();
@@ -193,7 +189,7 @@ final class Panels
         return $this->container($components);
     }
 
-    /** Host / Restart / Kill one game server, then refresh the panel. */
+    /** Keep the private response open until the selected control settles. */
     private function serverAction(Interaction $i, string $key, string $method): PromiseInterface
     {
         if (! $this->isStaff($i->member)) {
@@ -204,10 +200,28 @@ final class Panels
             return $i->respondWithMessage($this->plain("No enabled server `{$key}`."), true);
         }
 
-        $server->{$method}(null, true);
-        $this->logger->info("[panels] {$method} {$key} by {$i->user->id}");
-
-        return $i->respondWithMessage($this->plain("`{$method}` sent to **{$server->name}** (`{$key}`)."), true);
+        return $i->acknowledgeWithResponse(true)->then(function () use ($i, $server, $key, $method): PromiseInterface {
+            return resolve(null)->then(fn () => $server->{$method}(null, true))->then(
+                function ($result) use ($i, $server, $key, $method): PromiseInterface {
+                    $this->logger->info("[panels] {$method} {$key} by {$i->user->id}");
+                    if ($server->engine === 'opendream') {
+                        $status = 'OpenDream process control completed; gameplay readiness has not been observed.';
+                    } elseif (is_array($result) && ($result['accepted'] ?? false) === true) {
+                        $status = 'Legacy control scheduled; completion and gameplay readiness have not been observed.';
+                    } elseif (is_array($result) && ($result['outcome'] ?? null) === 'complete') {
+                        $status = 'The local supervisor reports control completion.';
+                        $status .= ($result['ready'] ?? false) === true ? ' Bound readiness reported.' : ' No running-game readiness is reported.';
+                    } else {
+                        $status = 'Control request settled; gameplay readiness has not been observed.';
+                    }
+                    return $i->updateOriginalResponse($this->plain("`{$method}` for **{$server->name}** (`{$key}`): {$status}"));
+                },
+                function (\Throwable $error) use ($i, $method): PromiseInterface {
+                    $this->logger->warning('[panels] '.$method.' failed: '.$error->getMessage());
+                    return $i->updateOriginalResponse($this->plain("`{$method}` failed or its outcome is unknown. Inspect the retained control state before retrying."));
+                }
+            );
+        });
     }
 
     private function promptMapSwap(Interaction $i, string $key): PromiseInterface
@@ -232,9 +246,19 @@ final class Panels
                 if ($server === null || $map === '') {
                     return $si->respondWithMessage($this->plain('Could not swap map.'), true);
                 }
-                $server->MapSwap($map, (string) ($si->user->username ?? $si->user->id));
-
-                return $si->respondWithMessage($this->plain("Queued a map swap on **{$server->name}** to `{$map}`."), true);
+                return $si->acknowledgeWithResponse(true)->then(function () use ($si, $server, $map): PromiseInterface {
+                    return resolve(null)->then(fn () => $server->MapSwap($map, (string) ($si->user->username ?? $si->user->id)))->then(
+                        fn () => $si->updateOriginalResponse($this->plain(
+                            $server->engine === 'opendream'
+                                ? "OpenDream map-swap process control completed on **{$server->name}** for `{$map}`. Gameplay readiness has not been observed."
+                                : "Legacy map swap scheduled on **{$server->name}** for `{$map}`. Completion and gameplay readiness have not been observed."
+                        )),
+                        function (\Throwable $error) use ($si): PromiseInterface {
+                            $this->logger->warning('[panels] map swap failed: '.$error->getMessage());
+                            return $si->updateOriginalResponse($this->plain('Map swap failed or its outcome is unknown. Inspect the retained control state before retrying.'));
+                        }
+                    );
+                });
             }, $this->discord);
 
         foreach (array_slice($maps, 0, 25) as $map) {
@@ -407,6 +431,20 @@ final class Panels
         return $button->setCustomId($customId)->setLabel($label)->setListener(function (Interaction $i) use ($handler): PromiseInterface {
             return $this->isStaff($i->member) ? $handler($i) : $this->deny($i);
         }, $this->discord);
+    }
+
+    /** Keep the private interaction open until all selected replacements settle. */
+    private function updateAdmins(Interaction $i): PromiseInterface
+    {
+        return $i->acknowledgeWithResponse(true)->then(function () use ($i): PromiseInterface {
+            return resolve(null)->then(fn () => $this->civ13->adminlistUpdate())->then(
+                fn () => $i->updateOriginalResponse($this->plain('Admin lists updated.')),
+                function (\Throwable $error) use ($i): PromiseInterface {
+                    $this->logger->warning('[panels] admin list refresh failed: '.$error->getMessage());
+                    return $i->updateOriginalResponse($this->plain('Admin list refresh failed; some destinations may already have changed.'));
+                }
+            );
+        });
     }
 
     /** Fire a side-effect on the loop and answer immediately. */
