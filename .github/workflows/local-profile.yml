@@ -19,10 +19,16 @@ on:
       - 'scripts/local/**'
       - '.github/workflows/local-profile.yml'
   workflow_dispatch:
+    inputs:
+      native_smoke:
+        description: 'Authorize pinned PHPacker build and nonconnecting EXE smoke on one isolated CI runner'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   replica:
+    if: github.event_name != 'workflow_dispatch' || !inputs.native_smoke
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -38,6 +44,7 @@ jobs:
       - run: php tests/local/run.php
       - run: php -l local-bot.php
   supervision:
+    if: github.event_name != 'workflow_dispatch' || !inputs.native_smoke
     strategy:
       fail-fast: false
       matrix:
@@ -65,3 +72,34 @@ jobs:
       - run: php tests/local/unban-commands.php vendor/autoload.php
       - run: php tests/local/adminlist-consumers.php vendor/autoload.php
       - run: php tests/local/lifecycle-consumers.php vendor/autoload.php
+  windows-exe-smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.native_smoke
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      COMPOSER_MEMORY_LIMIT: '512M'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: phar, zip, mbstring, openssl, curl
+          coverage: none
+          tools: composer:v2
+      - run: composer install --no-plugins --no-scripts --prefer-dist --no-interaction --no-progress
+      - run: composer phpacker
+        id: package
+        timeout-minutes: 8
+      - run: php tests/windows/packaged-exe-smoke.php bin/build/bot/windows/windows-x64.exe bin/build/bot/windows/source.json
+        timeout-minutes: 1
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
+        with:
+          name: civilizationbot-windows-${{ github.sha }}
+          path: |
+            bin/build/bot/windows/windows-x64.exe
+            bin/build/bot/windows/source.json
+          retention-days: 1
+          if-no-files-found: error
