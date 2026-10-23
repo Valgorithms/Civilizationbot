@@ -132,7 +132,9 @@ final class Builder
             self::regular($file->getPathname(), $stage);
             $phar->addFile($file->getPathname(), $path);
         }
-        $phar->setStub("<?php Phar::mapPhar('civilizationbot.phar'); require 'phar://civilizationbot.phar/packaging/windows/entry.php'; __HALT_COMPILER();");
+        // micro hooks phar://<physical self path> streams to account for the SFX prefix.
+        // An alias URI misses that hook and reads PE bytes at PHAR-relative offsets.
+        $phar->setStub("<?php Phar::mapPhar('civilizationbot.phar'); require 'phar://'.__FILE__.'/packaging/windows/entry.php'; __HALT_COMPILER();");
         $phar->setSignatureAlgorithm(\Phar::SHA256);
         $phar->stopBuffering();
     }

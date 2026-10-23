@@ -43,6 +43,9 @@ cache and verifies the complete EXE equals the verified runtime plus PHAR.
 It does not invoke PHPacker's CLI: that CLI loads cwd `.env`, and its build
 command automatically queries/downloads latest runtimes. No global tool install
 or shared PHPacker cache change is needed. `phpacker:bot` remains an alias.
+The PHAR entry uses `phar://` plus the physical executable's `__FILE__`, rather
+than the archive alias: micro's stream hook recognizes the physical self path
+when adding the runtime prefix offset to internal file reads.
 The PHAR and EXE are generated build output; signing/release/deployment is separate.
 Run one build at a time per feature checkout. Previous owned staging trees and
 PHARs are retained under ignored `build/phpacker` paths instead of recursively
@@ -130,3 +133,5 @@ Official references: [dependency/PHAR considerations](https://phpacker.dev/docs/
 [pinned PHPacker implementation](https://github.com/phpacker/phpacker/tree/c26b7def6578e5a35d4a99dfbb5f4c552bf4f42b),
 [pinned runtime tree](https://github.com/phpacker/php-bin/tree/0c75828a74a42068581520a10694ce9a425465e3),
 and [micro self-path implementation](https://github.com/easysoft/phpmicro/blob/e4ecbc0a520bcd0c44be5f2e6cad9ede3766c4fe/php_micro.c).
+The [micro stream hook](https://github.com/easysoft/phpmicro/blob/e4ecbc0a520bcd0c44be5f2e6cad9ede3766c4fe/php_micro_hooks.c#L399-L416)
+shows why the physical executable path is used for PHAR entries.
