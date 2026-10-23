@@ -34,4 +34,5 @@ jobs:
           extensions: phar, mbstring, openssl, curl
           coverage: none
       - run: php -d phar.readonly=0 tests/windows/packaging.php
+      - run: php -d phar.readonly=0 tests/windows/phar-lifetime.php
       - run: php -l scripts/phpacker.php

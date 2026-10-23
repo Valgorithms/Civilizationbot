@@ -132,9 +132,11 @@ final class Builder
             self::regular($file->getPathname(), $stage);
             $phar->addFile($file->getPathname(), $path);
         }
-        // micro hooks phar://<physical self path> streams to account for the SFX prefix.
-        // An alias URI misses that hook and reads PE bytes at PHAR-relative offsets.
-        $phar->setStub("<?php Phar::mapPhar('civilizationbot.phar'); require 'phar://'.__FILE__.'/packaging/windows/entry.php'; __HALT_COMPILER();");
+        // PHP closes the backing stream at zero archive references, before executing a member.
+        // Keep micro's offset-aware self stream: a canonical-path reopen can miss its exact-path hook.
+        $phar->setStub("<?php Phar::mapPhar('civilizationbot.phar'); "
+            ."\$GLOBALS['__civilizationbotExecutableArchive'] = new Phar(__FILE__); "
+            ."require 'phar://'.__FILE__.'/packaging/windows/entry.php'; __HALT_COMPILER();");
         $phar->setSignatureAlgorithm(\Phar::SHA256);
         $phar->stopBuffering();
     }

@@ -43,9 +43,13 @@ cache and verifies the complete EXE equals the verified runtime plus PHAR.
 It does not invoke PHPacker's CLI: that CLI loads cwd `.env`, and its build
 command automatically queries/downloads latest runtimes. No global tool install
 or shared PHPacker cache change is needed. `phpacker:bot` remains an alias.
-The PHAR entry uses `phar://` plus the physical executable's `__FILE__`, rather
-than the archive alias: micro's stream hook recognizes the physical self path
-when adding the runtime prefix offset to internal file reads.
+The stub retains a `Phar` object for the process lifetime before loading the entry.
+PHP can close an uncompressed archive's backing stream when its last member stream
+is released after compilation, then reopen the canonical filename for nested
+reads. Micro adds the SFX offset only to a matching self-file stream. Retaining
+the archive keeps that already mapped stream instead of relying on a reopen's
+filename spelling. The physical `phar://` URI selects the bundle; changing an
+alias URI alone does not preserve this backing stream or repair a lost offset.
 The PHAR and EXE are generated build output; signing/release/deployment is separate.
 Run one build at a time per feature checkout. Previous owned staging trees and
 PHARs are retained under ignored `build/phpacker` paths instead of recursively
@@ -86,6 +90,7 @@ Only the EXE and public `source.json` belong in a CI artifact.
 
 ```text
 php -d phar.readonly=0 tests/windows/packaging.php
+php -d phar.readonly=0 tests/windows/phar-lifetime.php
 ```
 
 This dependency-free fixture packages synthetic code and runs the real PHAR entry
@@ -95,6 +100,14 @@ config, inherited profile/token exclusion, rejected admission/source/lock/runtim
 artifact inventory and absence of credential/bootstrap/state effects. It does
 not download or run a Windows binary. The PR workflow runs this small fixture on
 Windows/Linux PHP 8.3 and 8.4. Existing portable/bootstrap contracts remain required.
+
+The lifetime regression uses the real generated stub and synthetic PHP/JSON
+members. It replaces only its own temporary backing pathname with a fake SFX
+prefix after the entry is compiled. A retained archive still reads its original
+members; dropping that handle in the synthetic entry reproduces raw prefix output
+and JSON `Syntax error`. Each child is bounded to five seconds. The `.exe` fixture
+contains only a PHAR and is read by the existing PHP CLI, never launched as a
+native executable. No operator configuration, credentials, bot or network is used.
 
 The existing `Local profile offline contracts` workflow has an explicit manual
 `native_smoke=true` input, usable on the feature ref before merge. It is not run
@@ -133,5 +146,7 @@ Official references: [dependency/PHAR considerations](https://phpacker.dev/docs/
 [pinned PHPacker implementation](https://github.com/phpacker/phpacker/tree/c26b7def6578e5a35d4a99dfbb5f4c552bf4f42b),
 [pinned runtime tree](https://github.com/phpacker/php-bin/tree/0c75828a74a42068581520a10694ce9a425465e3),
 and [micro self-path implementation](https://github.com/easysoft/phpmicro/blob/e4ecbc0a520bcd0c44be5f2e6cad9ede3766c4fe/php_micro.c).
-The [micro stream hook](https://github.com/easysoft/phpmicro/blob/e4ecbc0a520bcd0c44be5f2e6cad9ede3766c4fe/php_micro_hooks.c#L399-L416)
-shows why the physical executable path is used for PHAR entries.
+The [micro self-file hook](https://github.com/static-php/phpmicro/blob/c4fc1357a55b846b1af732d16a8ebf5ee0bcb7ba/php_micro_hooks.c#L324-L349),
+[PHP archive reference lifecycle](https://github.com/php/php-src/blob/php-8.4.15/ext/phar/phar.c#L246-L272)
+and [backing-stream reopen](https://github.com/php/php-src/blob/php-8.4.15/ext/phar/util.c#L752-L769)
+explain why the loader keeps an archive handle alive.
