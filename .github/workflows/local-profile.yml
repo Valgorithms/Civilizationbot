@@ -90,10 +90,12 @@ jobs:
           tools: composer:v2
       - run: composer install --no-plugins --no-scripts --prefer-dist --no-interaction --no-progress
       - run: composer phpacker
+        id: package
         timeout-minutes: 8
       - run: php tests/windows/packaged-exe-smoke.php bin/build/bot/windows/windows-x64.exe bin/build/bot/windows/source.json
         timeout-minutes: 1
       - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         with:
           name: civilizationbot-windows-${{ github.sha }}
           path: |

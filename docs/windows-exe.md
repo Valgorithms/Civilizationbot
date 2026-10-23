@@ -117,9 +117,12 @@ The unrelated replica/supervision matrices are skipped only for this native-only
 manual dispatch; normal PR checks remain unchanged.
 It downloads public locked dependencies and the 9.6MB pinned runtime ZIP; it does
 not use the Desktop, bot/Gaia checkout, game saves, credentials, listeners or
-services. It uploads only EXE/source.json for one day. Native execution is pending
-until an explicitly authorized run supplies an exact-head receipt; source-fixture
-success alone does not establish it.
+services. It uploads only EXE/source.json for one day. Native acceptance is pending
+until an explicitly authorized run supplies an exact-head receipt and passing
+smoke; source-fixture success alone does not establish it. When a completed build's
+smoke fails, the same two public artifacts are retained for diagnosis, but the job
+still fails and the EXE is not accepted for activation. Failed probes report only
+bounded output from the harness's synthetic, nonconnecting child environment.
 
 Official references: [dependency/PHAR considerations](https://phpacker.dev/docs/app-considerations/),
 [build/configuration](https://phpacker.dev/docs/configuration/),

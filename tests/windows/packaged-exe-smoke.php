@@ -2,6 +2,10 @@
 declare(strict_types=1);
 // Explicit opt-in only: runs a copied EXE in CHECK_ONLY against a synthetic profile, never bot.php.
 function check(bool $ok,string $message):void{if(!$ok){throw new RuntimeException($message);}}
+// Only this harness's bounded, synthetic child output is recorded; no real profile/token is supplied.
+function probeEvidence(int $exit,string $out,string $err):string{
+ return json_encode(['exit'=>$exit,'stdout'=>substr($out,0,8192),'stderr'=>substr($err,0,8192)],JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR);
+}
 function probe(string $exe,string $cwd):array{
  $pipes=[];$environment=['CIVILIZATIONBOT_CHECK_ONLY'=>'1','TOKEN'=>'synthetic-inherited-only','CIVILIZATIONBOT_PROFILE'=>'/do-not-use.json'];
  foreach(['SystemRoot','PATH','TEMP','TMP']as$key){if(getenv($key)!==false){$environment[$key]=getenv($key);}}
@@ -26,9 +30,9 @@ try{
  foreach(['root'=>'admission','gitdir'=>'admission','state_dir'=>'state','env_file'=>'separate.env']as$key=>$path){$profile[$key]=$root.'/'.$path;}
  $profile['servers']['test1714']['basedir']=$root.'/state';
  file_put_contents($root.'/caller/civilizationbot.json',json_encode($profile,JSON_THROW_ON_ERROR));
- [$exit,$out,$err]=probe($exe,$root.'/caller');check($exit===1&&str_contains($err,'civilizationbot.json beside'),'missing adjacent profile did not fail closed');
+ [$exit,$out,$err]=probe($exe,$root.'/caller');check($exit===1&&str_contains($err,'civilizationbot.json beside'),'missing adjacent profile did not fail closed: '.probeEvidence($exit,$out,$err));
  file_put_contents($root.'/exe/civilizationbot.json',json_encode($profile,JSON_THROW_ON_ERROR));
- foreach([$root.'/caller',$root.'/exe']as$cwd){[$exit,$out,$err]=probe($exe,$cwd);check($exit===0&&$err===''&&str_contains($out,'self-path=micro')&&str_contains($out,$receipt['source_commit']),'zero-argument native discovery/extension check failed');}
+ foreach([$root.'/caller',$root.'/exe']as$cwd){[$exit,$out,$err]=probe($exe,$cwd);check($exit===0&&$err===''&&str_contains($out,'self-path=micro')&&str_contains($out,$receipt['source_commit']),'zero-argument native discovery/extension check failed: '.probeEvidence($exit,$out,$err));}
  check(glob($root.'/state/*')===[],'EXE diagnostic wrote runtime state');
  echo "PASS pinned Windows EXE, zero arguments, executable-relative config from two cwd values, missing config and no bot/state effects\n";
 }finally{
