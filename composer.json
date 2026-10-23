@@ -39,9 +39,12 @@
             "./vendor/bin/phpunit --testdox"
         ],
         "phpacker": [
-            "@phpacker:bot"
+            "@php scripts/phpacker.php prepare",
+            "@composer install --working-dir=build/phpacker/app --no-dev --no-plugins --no-scripts --prefer-dist --no-interaction --no-progress",
+            "@php scripts/phpacker.php seal",
+            "@php -d phar.readonly=0 -d memory_limit=512M scripts/phpacker.php build"
         ],
-        "phpacker:bot": "phpacker build --src=bot.php --dest=bin/build/bot"
+        "phpacker:bot": "@phpacker"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
@@ -61,7 +64,7 @@
         }
     },
     "scripts-descriptions": {
-        "phpacker": "Build a standalone binary for bot.php (all platforms).",
-        "phpacker:bot": "Build a standalone binary for bot.php into bin/build/bot."
+        "phpacker": "Build a Windows EXE with bundled code/dependencies and external local configuration.",
+        "phpacker:bot": "Alias for the reviewed Windows PHPacker build."
     }
 }

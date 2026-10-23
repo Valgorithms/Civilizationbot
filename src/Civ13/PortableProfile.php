@@ -94,14 +94,14 @@ final class PortableProfile
     }
 
     /** No bootstrap, environment load, sockets or external effects. */
-    public static function preflight(array $profile, callable $extension, string $version = PHP_VERSION): array
+    public static function preflight(array $profile, callable $extension, string $version = PHP_VERSION, ?string $dependencyRoot = null): array
     {
         $errors = [];
         if (version_compare($version, '8.3', '<')) { $errors[] = 'PHP 8.3 or newer required (typed class constants)'; }
         foreach (['json', 'mbstring', 'openssl', 'filter', 'zlib', 'curl'] as $name) {
             if (!$extension($name)) { $errors[] = 'Missing extension: '.$name; }
         }
-        if (!is_file($profile['root'].'/vendor/autoload.php')) { $errors[] = 'Composer dependencies missing'; }
+        if (!is_file(($dependencyRoot ?? $profile['root']).'/vendor/autoload.php')) { $errors[] = 'Composer dependencies missing'; }
         if (!is_file($profile['env_file'])) { $errors[] = 'Operator-provisioned separate environment file missing'; }
         return $errors;
     }

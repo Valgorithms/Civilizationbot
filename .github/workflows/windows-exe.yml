@@ -1,0 +1,37 @@
+name: Windows EXE packaging
+on:
+  pull_request:
+    paths:
+      - 'bot.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'phpacker.json'
+      - 'src/Civ13/ExecutableProfile.php'
+      - 'src/Civ13/PortableProfile.php'
+      - 'src/Civ13/DefaultBranchGuard.php'
+      - 'packaging/windows/**'
+      - 'scripts/phpacker.php'
+      - 'tests/windows/**'
+      - '.github/workflows/windows-exe.yml'
+permissions:
+  contents: read
+jobs:
+  offline:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        php: ['8.3', '8.4']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: phar, mbstring, openssl, curl
+          coverage: none
+      - run: php -d phar.readonly=0 tests/windows/packaging.php
+      - run: php -l scripts/phpacker.php

@@ -10,6 +10,9 @@ token.php
 /json
 botlog.txt
 .env
+.env.*
+*.env
+/civilizationbot.json
 /html
 output.log
 ranking.txt

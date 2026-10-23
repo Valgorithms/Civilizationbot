@@ -105,11 +105,17 @@ if (PHP_OS_FAMILY === 'Windows' && !$portablePath) {
     throw new \RuntimeException('Windows requires an explicit portable profile; default production configuration is not permitted');
 }
 if ($portablePath) {
-    \Civ13\DefaultBranchGuard::verify(__DIR__); // Before profile credentials, Composer, sockets or Discord.
-    $portable = PortableProfile::load($portablePath);
-    PortableProfile::assertRoot($portable, __DIR__);
+    if (defined('CIVILIZATIONBOT_PACKAGED_PROFILE')) {
+        // The immutable entry already verified fresh main and exact source/lock binding.
+        $portable = CIVILIZATIONBOT_PACKAGED_PROFILE;
+        PortableProfile::assertRoot($portable, CIVILIZATIONBOT_PACKAGED_SOURCE_ROOT);
+    } else {
+        \Civ13\DefaultBranchGuard::verify(__DIR__); // Before profile credentials, Composer, sockets or Discord.
+        $portable = PortableProfile::load($portablePath);
+        PortableProfile::assertRoot($portable, __DIR__);
+    }
     $baseDir = __DIR__;
-    $errors = PortableProfile::preflight($portable, extension_loaded(...));
+    $errors = PortableProfile::preflight($portable, extension_loaded(...), PHP_VERSION, __DIR__);
     if ($errors !== []) { throw new \RuntimeException(implode('; ', $errors)); }
     $portableLock = \Civ13\PortableProcess::lock($portable['state_dir']);
     if (is_file($portable['state_dir'].'/stop.request')) { throw new \RuntimeException('Unresolved stop request; inspect previous instance before starting'); }

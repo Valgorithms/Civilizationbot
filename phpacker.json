@@ -1,7 +1,7 @@
 {
-    "src": "bot.php",
+    "src": "build/phpacker/app.phar",
     "dest": "bin/build/bot",
-    "ini": "phpacker.ini",
-    "platform": "all",
+    "ini": false,
+    "platform": "windows",
     "php": "8.4"
 }

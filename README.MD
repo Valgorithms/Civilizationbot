@@ -40,6 +40,12 @@ To run the bot, use the following command:
 php bot.php
 ```
 
+For the Windows executable, use `composer phpacker` in a clean build checkout.
+The EXE discovers an external `civilizationbot.json` beside itself and takes no
+arguments. See [Windows EXE builds and local configuration](docs/windows-exe.md)
+for dependency provenance, build exclusions, admission checks and offline tests.
+The Debian `php bot.php` entry point retains its existing configuration behavior.
+
 ## Status Changer
 
 The bot includes a feature to automatically change its status on Discord. This is handled by the `$status_changer_random` function.
