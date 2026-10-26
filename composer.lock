@@ -4501,23 +4501,23 @@
         },
         {
             "name": "spatie/once",
-            "version": "3.1.2",
+            "version": "3.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/once.git",
-                "reference": "54c9908aff00913e82422da6938fba7bd2bf6c08"
+                "reference": "03cf6bb8711c67f9d7ee10a5cf581b80c5474e5a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/once/zipball/54c9908aff00913e82422da6938fba7bd2bf6c08",
-                "reference": "54c9908aff00913e82422da6938fba7bd2bf6c08",
+                "url": "https://api.github.com/repos/spatie/once/zipball/03cf6bb8711c67f9d7ee10a5cf581b80c5474e5a",
+                "reference": "03cf6bb8711c67f9d7ee10a5cf581b80c5474e5a",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.0"
+                "php": "^8.2"
             },
             "require-dev": {
-                "pestphp/pest": "^1.21",
+                "pestphp/pest": "^3.8|^4.0|^5.0",
                 "symfony/var-dumper": "^5.1|^6.0|^7.0|^8.0"
             },
             "type": "library",
@@ -4551,7 +4551,7 @@
                 "spatie"
             ],
             "support": {
-                "source": "https://github.com/spatie/once/tree/3.1.2"
+                "source": "https://github.com/spatie/once/tree/3.1.3"
             },
             "funding": [
                 {
@@ -4559,7 +4559,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2025-11-25T15:44:06+00:00"
+            "time": "2026-10-19T16:13:42+00:00"
         },
         {
             "name": "symfony/console",
