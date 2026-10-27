@@ -50,7 +50,7 @@ final class AdminSyncCoordinator
     {
         if (!$this->enabled) {
             return resolve(['state'=>'disabled','generation'=>$this->generation,'passes'=>0,'writes'=>0,
-                'last_written_generation'=>null,'retry_required'=>false,'integrity_uncertain'=>false,'phase'=>'disabled']);
+                'last_written_generation'=>null,'retry_required'=>false,'integrity_uncertain'=>false,'continuation_required'=>false,'phase'=>'disabled']);
         }
         ++$this->generation;
         if ($this->pending !== null) { $this->dirty = true; return $this->pending; }
@@ -122,17 +122,18 @@ final class AdminSyncCoordinator
     {
         if ($this->dirty) {
             if ($this->passes < $this->maxPasses) { $this->startPass(); return; }
-            $this->finish('superseded',$phase); return;
+            // Only an already-received dirty request exhausted this burst's budget.
+            $this->finish('superseded',$phase,false,true); return;
         }
         $this->finish($state,$phase);
     }
 
-    private function finish(string $state, string $phase, bool $integrityUncertain = false): void
+    private function finish(string $state, string $phase, bool $integrityUncertain = false, bool $continuationRequired = false): void
     {
         $deferred = $this->deferred;
         $result = ['state'=>$state,'generation'=>$this->generation,'passes'=>$this->passes,'writes'=>$this->writes,
             'last_written_generation'=>$this->lastWrittenGeneration,'retry_required'=>$this->dirty || $state === 'superseded',
-            'integrity_uncertain'=>$integrityUncertain,'phase'=>$phase];
+            'integrity_uncertain'=>$integrityUncertain,'continuation_required'=>$continuationRequired,'phase'=>$phase];
         // Clear before resolving: subscribers may synchronously request a new burst.
         $this->pending = null; $this->deferred = null; $this->dirty = false;
         $deferred?->resolve($result);

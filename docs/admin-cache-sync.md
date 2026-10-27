@@ -45,3 +45,9 @@ php tests/local/admin-cache-sync.php vendor/autoload.php
 ```
 
 Existing dependency-installed supervision runs synthetic cache/event tests on PHP 8.3/8.4/8.5. Tests use injected cache state, timers, refresh promises and a memory-only writer—not a live bot or admin file.
+
+## Dirty-work continuation
+
+A coordinator burst still has a finite pass budget. If an already-received event dirties its final pass, the terminal outcome explicitly sets `continuation_required=true`. The cache trigger preserves this one coalesced intent, including synchronous request reentrancy, and services it through the normal debounce only after pending work drains and readiness permits. This is continuation of received work, not periodic polling or an error retry. New requests consume older continuation intent. Stop, reconnect and invalid configuration still fence writes.
+
+Generic writer `superseded`/`blocked`, failed or integrity-uncertain outcomes do not request continuation. `retry_required` alone is not an automatic-retry instruction. A successful continuation does not schedule another unless a new event dirties that burst too; sustained real event traffic is paced by the debounce. The injected one-shot scheduler must defer callbacks until after it returns; a synchronous callback is rejected instead of creating a recursive busy loop.

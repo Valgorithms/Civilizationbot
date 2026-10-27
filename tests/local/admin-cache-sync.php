@@ -207,4 +207,84 @@ $f->refreshHook=static function () use ($f,$first,$second): PromiseInterface { r
 $f->availableHook=static function () use ($t,$f): bool { $f->availableHook=null; ($t->listeners()['reconnected'])(); return true; }; $first->resolve(null);
 cacheCheck(!$t->isReady() && $f->refreshes===2 && $f->requests===0,'Availability reentrancy blessed obsolete reconnect');
 $second->resolve(null); cacheTick($f); cacheCheck($t->isReady(),'Availability-reentrant pending reconnect lost');
+// Pass-budget exhaustion preserves a received event without waiting for another gateway event.
+foreach (['remove','add'] as $change) {
+    [$t,$f]=cacheFixture(true,1);
+    if ($change==='add') { $f->members=[]; }
+    $t->bootstrapReady(); cacheTick($f); $before=$f->file;
+    $pending=new Deferred(); $f->memberHook=static fn()=>$pending->promise();
+    cacheEvent($t,$f); cacheTick($f);
+    $f->members=$change==='remove'?[]:[['id'=>$f->user,'roles'=>[$f->role]]];
+    cacheEvent($t,$f,$change==='remove'?'GUILD_MEMBER_REMOVE':'GUILD_MEMBER_UPDATE');
+    cacheEvent($t,$f); // Repeated dirty notifications still produce one continuation timer.
+    $f->memberHook=null; $pending->resolve([]);
+    $outcome=end($f->reports);
+    cacheCheck($outcome['state']==='superseded' && $outcome['continuation_required']===true
+        && $outcome['passes']===1 && $f->file===$before,'Dirty budget exhaustion lost explicit continuation or mutated obsolete cache');
+    $active=array_filter($f->timers,static fn($timer)=>$timer->active && $timer->delay===0.25);
+    cacheCheck(count($active)===1,'Dirty burst did not coalesce exactly one deferred continuation');
+    $requests=$f->requests; cacheTick($f);
+    cacheCheck($f->requests===$requests+1 && $f->file===($change==='remove'?'':$admin)
+        && end($f->reports)['continuation_required']===false,'Deferred continuation did not project final cached membership');
+    cacheCheck(count(array_filter($f->timers,static fn($timer)=>$timer->active))===0,'Successful continuation scheduled itself again');
+}
+// Nested synchronous dirty requests can settle while the outer dispatch is still unwinding.
+[$t,$f]=cacheFixture(true,1);
+$f->memberHook=static function () use ($t,$f): array {
+    $f->memberHook=null; $f->members=[]; cacheEvent($t,$f); return [];
+};
+$t->bootstrapReady(); cacheTick($f);
+cacheCheck(end($f->reports)['continuation_required']===true && $f->writes===[], 'Synchronous dirty burst claimed a write');
+cacheTick($f);
+cacheCheck($f->file==='' && count($f->writes)===1, 'Outermost dispatch unwind lost synchronous dirty continuation');
+// Writer refusal without dirty work and uncertain failures must never silently retry.
+foreach (['superseded','blocked','failed-dirty'] as $mode) {
+    [$t,$f]=cacheFixture(true,1);
+    $f->writeHook=static function () use ($t,$f,$mode): array {
+        if ($mode==='failed-dirty') { cacheEvent($t,$f); throw new RuntimeException('synthetic uncertain writer'); }
+        return ['state'=>$mode];
+    };
+    $t->bootstrapReady(); cacheTick($f); $outcome=end($f->reports);
+    cacheCheck($outcome['continuation_required']===false
+        && count(array_filter($f->timers,static fn($timer)=>$timer->active))===0,
+        'Generic writer refusal or failed dirty write silently retried');
+    if ($mode==='failed-dirty') { cacheCheck($outcome['state']==='failed' && $outcome['integrity_uncertain']===true,'Failed dirty write lost uncertainty'); }
+}
+// A queued continuation stays behind stop, reconnect and failed-configuration barriers.
+foreach (['stop','reconnect','config'] as $barrier) {
+    [$t,$f]=cacheFixture(true,1); $pending=new Deferred(); $f->memberHook=static fn()=>$pending->promise();
+    $t->bootstrapReady(); cacheTick($f); $f->members=[]; cacheEvent($t,$f);
+    $f->memberHook=null; $pending->resolve([]); $requests=$f->requests;
+    $active=array_values(array_filter($f->timers,static fn($timer)=>$timer->active && $timer->delay===0.25));
+    $late=$active[0]->callback;
+    if ($barrier==='stop') { $t->stop(); }
+    elseif ($barrier==='reconnect') { $refresh=new Deferred(); $f->refreshHook=static fn()=>$refresh->promise(); ($t->listeners()['reconnected'])(); }
+    else {
+        $f->configHook=static function (): void { throw new RuntimeException('synthetic config barrier'); };
+        try { $t->configurationChanged(); } catch (RuntimeException $expected) {}
+    }
+    $late();
+    cacheCheck(!$t->isReady() && $f->requests===$requests && $f->writes===[], 'Queued dirty continuation bypassed lifecycle barrier');
+}
+// Report observers can stop the feature after continuation scheduling; no later callback may run.
+[$t,$f]=cacheFixture(true,1); $pending=new Deferred(); $f->memberHook=static fn()=>$pending->promise();
+$t->bootstrapReady(); cacheTick($f); cacheEvent($t,$f);
+$f->reportHook=static function () use ($t): void { $t->stop(); }; $pending->resolve([]);
+cacheCheck(!$t->isReady() && count(array_filter($f->timers,static fn($timer)=>$timer->active))===0,'Reentrant report stop left continuation armed');
+// A report observer may service a newer event immediately; old cleanup must not enqueue again.
+[$t,$f]=cacheFixture(true,1); $pending=new Deferred(); $f->memberHook=static fn()=>$pending->promise();
+$t->bootstrapReady(); cacheTick($f); cacheEvent($t,$f); $f->memberHook=null;
+$f->reportHook=static function () use ($t,$f): void {
+    $f->reportHook=null; $f->members=[]; cacheEvent($t,$f); cacheTick($f);
+};
+$pending->resolve([]);
+cacheCheck($f->file==='' && count($f->writes)===1
+    && count(array_filter($f->timers,static fn($timer)=>$timer->active))===0,
+    'Old completion scheduled redundant work over newer report-triggered request');
+// A broken synchronous scheduler cannot turn dirty continuation into a recursive busy loop.
+[$t,$f]=cacheFixture(true,1); $pending=new Deferred(); $f->memberHook=static fn()=>$pending->promise();
+$t->bootstrapReady(); cacheTick($f); cacheEvent($t,$f); $requests=$f->requests;
+$f->scheduleHook=static function (float $delay,callable $callback): callable { $callback(); return static function (): void {}; };
+$pending->resolve([]);
+cacheCheck($f->requests===$requests && $f->writes===[],'Synchronous continuation timer recursively dispatched work');
 echo "PASS cache sync ({$checks} assertions): initialized cache, event projection, refresh barrier, epochs and retained-file failures\n";

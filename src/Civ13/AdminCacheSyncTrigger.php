@@ -24,6 +24,7 @@ final class AdminCacheSyncTrigger
     private ?object $refresh = null;
     private bool $pendingReconnect = false;
     private int $requestDepth = 0;
+    private bool $continuationPending = false;
     private int $pendingCount = 0;
     private \WeakMap $observed;
     private ?array $listeners = null;
@@ -224,15 +225,17 @@ final class AdminCacheSyncTrigger
         if (!$this->enabled || $this->stopped) { return; }
         if ($this->requestDepth>0 || $this->pendingCount>0) { $this->dispatch(); return; }
         if (!$this->isReady() || $this->debounce!==null) { return; }
-        $slot=(object)['cancel'=>null]; $this->debounce=$slot;
+        $slot=(object)['cancel'=>null,'armed'=>false]; $this->debounce=$slot;
         try {
             $cancel=($this->schedule)($this->debounceSeconds,function () use ($slot): void {
                 if ($this->debounce!==$slot) { return; }
                 $this->debounce=null;
+                // A scheduler must yield; synchronous callbacks must not spin dirty continuations.
+                if (!$slot->armed) { $this->status('debounce-timer'); return; }
                 if ($this->isReady()) { $this->dispatch(); }
             });
             if (!is_callable($cancel)) { throw new \RuntimeException('Timer cancellation required'); }
-            $slot->cancel=\Closure::fromCallable($cancel);
+            $slot->cancel=\Closure::fromCallable($cancel); $slot->armed=true;
             if ($this->debounce!==$slot) { $this->cancelTimer($slot); }
         } catch (\Throwable) {
             if ($this->debounce===$slot) { $this->debounce=null; }
@@ -243,18 +246,38 @@ final class AdminCacheSyncTrigger
     private function dispatch(): void
     {
         if ($this->stopped) { return; }
+        $this->continuationPending=false; // A new request consumes any older continuation intent.
         ++$this->requestDepth;
         try {
             $promise=($this->request)();
             if (!$promise instanceof PromiseInterface) { throw new \RuntimeException('Coordinator promise required'); }
         } catch (\Throwable) { $this->status('coordinator-request'); return; }
-        finally { --$this->requestDepth; }
+        finally { --$this->requestDepth; $this->continueDirty(); }
         if (isset($this->observed[$promise])) { return; }
         $this->observed[$promise]=true; ++$this->pendingCount;
         $promise->then(function (mixed $outcome): void {
             --$this->pendingCount;
-            if (is_array($outcome)) { $this->publish($outcome); } else { $this->status('coordinator-outcome'); }
+            if (is_array($outcome)) {
+                // Consume only explicit unserved dirty work, never a guard refusal or failed write.
+                // Schedule before publishing: reentrant observers can coalesce or cancel this timer.
+                if (($outcome['continuation_required'] ?? null) === true
+                    && ($outcome['state'] ?? null) === 'superseded'
+                    && ($outcome['retry_required'] ?? null) === true
+                    && ($outcome['integrity_uncertain'] ?? null) === false
+                    && $this->pendingCount===0) {
+                    $this->continuationPending=true;
+                    $this->continueDirty();
+                }
+                $this->publish($outcome);
+            } else { $this->status('coordinator-outcome'); }
         },function (\Throwable $error): void { --$this->pendingCount; $this->status('coordinator-request'); });
+    }
+
+    private function continueDirty(): void
+    {
+        if (!$this->continuationPending || $this->pendingCount>0 || $this->requestDepth>0) { return; }
+        $this->continuationPending=false;
+        if ($this->isReady()) { $this->signal(); }
     }
 
     private function cancelDebounce(): void
