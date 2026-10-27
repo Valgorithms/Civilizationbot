@@ -1,6 +1,6 @@
 # Admin synchronization foundation
 
-`AdminListRenderer`, `AdminSyncSnapshotGate` and `AdminSyncCoordinator` provide an offline-testable foundation for authoritative admin-file synchronization. They are **not wired into production**: no complete-members provider, file writer, Discord listener, HTTP client, configuration switch or game integration is supplied. Adding these classes does not activate synchronization or change the portable profile's single-server restriction.
+`AdminListRenderer`, `AdminSyncSnapshotGate` and `AdminSyncCoordinator` provide an offline-testable foundation for authoritative admin-file synchronization. They are **not wired into production**: no production membership or file adapter is wired, and no Discord listener, HTTP client, configuration switch or game integration is supplied. The injected membership provider and the explicit existing-file writer are separately testable foundations, not activated services. Adding these classes does not activate synchronization or change the portable profile's single-server restriction.
 
 ## Projection and snapshot gate
 
@@ -17,7 +17,7 @@ The coordinator accepts an explicit immutable enabled flag and four callbacks; n
 - `refresh()` returns `{status, records}` or a promise for that snapshot.
 - `members(generation)` returns the complete guild snapshot or a promise for it.
 - `project(snapshot, membership, generation)` synchronously returns bytes after all policy and snapshot checks. It must be pure and use the current clock on **every** call, including precommit checks. `AdminSyncSnapshotGate` supplies the validation boundary, not the membership-fetch mechanism.
-- `write(bytes, generation, canCommit)` returns `{state: updated|unchanged|superseded}` or a promise. Immediately before mutation, check `canCommit()` and perform **no asynchronous wait between that check and mutation**. If false, return `superseded` without changing the target. `unchanged` means the target was actually checked, not that work was skipped.
+- `write(bytes, generation, canCommit)` returns `{state: updated|unchanged|superseded|blocked}` or a promise. Immediately before mutation, check `canCommit()` and perform **no asynchronous wait between that check and mutation**. If false, return `superseded` without changing the target. `unchanged` means the target was actually checked, not that work was skipped. `blocked` is reserved for a known pre-mutation refusal, such as lock contention; it must not conceal a possible partial write.
 
 `canCommit()` checks the current generation, reruns projection to check freshness, requires identical bytes and checks generation again. A writer must honor this contract; the coordinator cannot prevent a dishonest callback from writing or falsely claiming success.
 
@@ -55,3 +55,5 @@ php tests/local/admin-sync-coordinator.php vendor/autoload.php
 Fixtures cover valid empty versus unavailable/incomplete snapshots, rank precedence, unsafe selected identities, shared promises, generation invalidation, freshness at delayed commit, bounded churn, failed writers, earlier writes followed by a blocked pass, and reentrant subscribers. No bot bootstrap, `.env`, live identities, game process or real admin file is used.
 
 The existing offline workflow runs projection on Ubuntu/Windows PHP 8.3/8.4 and coordinator tests in the dependency-installed Ubuntu PHP 8.3/8.4/8.5 supervision job. Workflow coverage is not evidence that a production provider or writer has been implemented or verified.
+
+The dedicated existing-file filesystem adapter and its platform limits are described in [Admin file writer](admin-file-writer.md). The legacy `Server/Ipc` writer is unchanged.

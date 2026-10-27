@@ -134,6 +134,10 @@ coordinatorCheck($r['state']==='superseded' && $r['retry_required'] && $r['write
 $f->writeHook=static fn()=> $f->calls['write']===1?$write->promise():['state'=>'updated'];
 $p=$c->request(); $c->request(); $write->resolve(['state'=>'updated']); $r=coordinatorOutcome($p);
 coordinatorCheck($r['writes']===2 && $r['last_written_generation']===2,'Committed older write was hidden');
+// A known pre-mutation writer refusal is blocked, not integrity-uncertain.
+[$c,$f] = coordinatorFixture(); $f->writeHook=static fn()=>['state'=>'blocked','reason'=>'lock-busy'];
+$r=coordinatorOutcome($c->request());
+coordinatorCheck($r['state']==='blocked' && $r['phase']==='write' && $r['writes']===0 && !$r['integrity_uncertain'],'Known writer refusal lost no-mutation status');
 // A later blocked pass must expose an earlier committed update in the same burst.
 [$c,$f] = coordinatorFixture(); $write=new Deferred(); $f->writeHook=static fn()=>$write->promise();
 $f->refreshHook=static function () use ($f): array {

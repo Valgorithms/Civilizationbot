@@ -49,6 +49,8 @@ jobs:
           coverage: none
       - run: php tests/local/run.php
       - run: php tests/local/admin-sync-projection.php
+      - run: php tests/local/admin-file-writer.php
+        timeout-minutes: 2
       - run: php -l local-bot.php
   supervision:
     if: github.event_name != 'workflow_dispatch' || !inputs.native_smoke

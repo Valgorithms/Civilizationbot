@@ -26,7 +26,7 @@ final class AdminSyncCoordinator
      * members(generation): array|PromiseInterface (complete guild snapshot, never a cache guess)
      * project(snapshot,membership,generation): string (must perform all snapshot/policy gates)
      * write(bytes,generation,canCommit): array{state:string}|PromiseInterface
-     *   state must be updated, unchanged or superseded; check canCommit immediately before committing; no await between check and mutation.
+     *   state must be updated, unchanged, superseded or blocked (known no-mutation refusal); check canCommit immediately before committing; no await between check and mutation.
      * Each asynchronous adapter must enforce its own deadline. This class bounds concurrent
      * calls and retry passes, not wall time; it cannot cancel/undo an entered file write.
      */
@@ -93,7 +93,7 @@ final class AdminSyncCoordinator
                 };
                 $this->call($this->write, $bytes, $generation, $canCommit)->then(function (mixed $result) use ($generation): void {
                     $state = is_array($result) ? ($result['state'] ?? null) : null;
-                    if (!in_array($state, ['updated','unchanged','superseded'], true)) {
+                    if (!in_array($state, ['updated','unchanged','superseded','blocked'], true)) {
                         $this->finish('failed','write',true); return;
                     }
                     if ($state === 'updated') { ++$this->writes; $this->lastWrittenGeneration = $generation; }
