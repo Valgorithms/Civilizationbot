@@ -20,6 +20,15 @@ namespace {
     final class BootstrapReached extends RuntimeException {}
     function check(bool $ok): void { if (!$ok) { throw new RuntimeException('Bootstrap fixture assertion failed'); } }
     $negative=in_array('--negative-control',$argv,true);
+    // Disabled admin sync must not require or autoload its optional implementation.
+    $adminSyncAutoloads=0;
+    $rejectAdminSync=static function(string $class) use (&$adminSyncAutoloads): void {
+        if ($class === 'Civ13\\AdminFileSync') {
+            ++$adminSyncAutoloads;
+            throw new RuntimeException('Disabled admin sync attempted autoload');
+        }
+    };
+    spl_autoload_register($rejectAdminSync);
     $root=sys_get_temp_dir().'/portable-bootstrap-'.bin2hex(random_bytes(8));
     mkdir($root);mkdir($root.'/vendor');mkdir($root.'/src');mkdir($root.'/src/Civ13');
     $previous=getcwd();$previousProfile=getenv('CIVILIZATIONBOT_PROFILE');
@@ -50,6 +59,8 @@ namespace {
         try { require $root.'/bot.php'; throw new RuntimeException('Bootstrap boundary not reached'); }
         catch(BootstrapReached){
             check(!$negative && ($GLOBALS['bootstrap_guard_seen'] ?? false));$options=$GLOBALS['bootstrap_options'];
+            check($adminSyncAutoloads===0 && !class_exists('Civ13\\AdminFileSync',false));
+            check($options['admin_file_sync']===['enabled'=>false]);
             check($options['http_whitelist']===['127.0.0.1'] && $options['http_port']===25565);
             check($options['channel_ids']===[] && $options['role_ids']===[] && $options['functions']===[]);
             check($options['http_key']==='' && $options['civ_token']==='' && $options['verify_url']==='');
@@ -61,6 +72,7 @@ namespace {
             echo "PASS negative control detects original portable production-IP warning before options replacement\n";
         }
     } finally {
+        spl_autoload_unregister($rejectAdminSync);
         restore_error_handler();chdir($previous);
         putenv($previousProfile===false?'CIVILIZATIONBOT_PROFILE':'CIVILIZATIONBOT_PROFILE='.$previousProfile);
         if(isset($portableLock)&&is_resource($portableLock)){fclose($portableLock);}

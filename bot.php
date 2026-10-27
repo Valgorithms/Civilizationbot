@@ -128,8 +128,10 @@ if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR_
 if ($portable !== null) {
     $adminSyncOptions = PortableProfile::runtimeOptions($portable);
     $adminSyncSettings = $adminSyncOptions['admin_file_sync'];
-    \Civ13\AdminFileSync::validateConfiguration($adminSyncSettings, $adminSyncSettings['admin_file'] ?? '',
-        $adminSyncOptions['civ13_guild_id'], $adminSyncOptions['role_ids']);
+    if ($adminSyncSettings['enabled'] === true) {
+        \Civ13\AdminFileSync::validateConfiguration($adminSyncSettings, $adminSyncSettings['admin_file'] ?? '',
+            $adminSyncOptions['civ13_guild_id'], $adminSyncOptions['role_ids']);
+    }
     unset($adminSyncOptions, $adminSyncSettings);
 }
 $loadedNames = loadEnv($portable['env_file'] ?? $baseDir.'/.env', $portable !== null);
