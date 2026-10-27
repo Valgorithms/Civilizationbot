@@ -99,10 +99,17 @@ try {
     $missing = $root.'/missing/admins.txt'; $bad = $make(['admin_file' => $missing]); $bad->enabled = true;
     fileCheck($bad->listadmins() === false && !file_exists($missing), 'Listing created a missing file');
     fileCheck(fileOutcome($bad->adminlistUpdate($permissions)) === 'failure' && file_get_contents($external) === 'preserve-baseline', 'Missing parent failure lost preservation');
-    foreach (['relative/admins.txt','D:admins.txt','https://example.invalid/admins.txt',"D:/admin\0.txt",'',null,17] as $invalid) {
+    $invalidPaths = ['relative/admins.txt','D:admins.txt','https://example.invalid/admins.txt',"D:/admin\0.txt",'',null,17];
+    if (PHP_OS_FAMILY === 'Windows') {
+        $invalidPaths = array_merge($invalidPaths, ['/admins.txt','\\admins.txt','//server/share/admins.txt','\\\\server\\share\\admins.txt','//?/C:/admins.txt','\\\\?\\C:\\admins.txt']);
+    } else { $invalidPaths[] = 'C:/fixtures/admins.txt'; }
+    foreach ($invalidPaths as $invalid) {
         try { $make(['admin_file' => $invalid]); throw new LogicException('Invalid override accepted'); }
         catch (\Civ13\Exceptions\InvalidConfigException $error) {}
     }
+    // Constructor validation only: no drive/share existence or file operations.
+    $validPaths = PHP_OS_FAMILY === 'Windows' ? ['C:/fixtures/admins.txt','Z:\\fixtures\\admins.txt'] : ['/admins.txt','/var/lib/fixtures/admins.txt'];
+    foreach ($validPaths as $valid) { $make(['admin_file' => $valid]); }
     echo "PASS configured/default admin paths from arbitrary cwd; LF/DM-cleanup regression and CRLF negative control; role/removal/empty; file identity; refused writes preserve baseline; listing has no creation effect\n";
 } finally {
     if (is_resource($reader)) { fclose($reader); }

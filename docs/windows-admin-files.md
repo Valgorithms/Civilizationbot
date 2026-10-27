@@ -10,6 +10,9 @@ behavior. Both admin replacement and `listadmins()` use the selected file.
 Listing reads without creating a missing file. Relative paths, drive-relative
 Windows paths, stream URLs, null values and NUL bytes are refused. The writer
 does not create missing parent directories or manage links/permissions.
+On Windows the override requires a drive-qualified path such as `C:/data/admins.txt`
+or `Z:\data\admins.txt`; `/admins.txt`, UNC and device paths are refused.
+On Unix it accepts Unix absolute paths. Other profile path rules are unchanged.
 
 Keep permanent Windows configuration on D:. For example, an operator can select
 `D:/Civilizationbot-local/config/civ13/servers/gaia/admins.txt` **only after the

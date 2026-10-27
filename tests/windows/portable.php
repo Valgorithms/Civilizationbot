@@ -14,8 +14,17 @@ try {
  check($loaded['servers']['test']['port']==='1714');
  $explicit=$profile;$explicit['servers']['test']['admin_file']=$dir.'/external-admins.txt';file_put_contents($file,json_encode($explicit));
  check(PortableProfile::load($file)['servers']['test']['admin_file']===$dir.'/external-admins.txt');
- foreach (['relative/admins.txt','D:admins.txt','https://example.invalid/admins.txt',"D:/admins\0.txt",'',null,17] as $path) {
+ $invalidAdminPaths=['relative/admins.txt','D:admins.txt','https://example.invalid/admins.txt',"D:/admins\0.txt",'',null,17];
+ if (PHP_OS_FAMILY==='Windows') {
+  $invalidAdminPaths=array_merge($invalidAdminPaths,['/admins.txt','\\admins.txt','//server/share/admins.txt','\\\\server\\share\\admins.txt','//?/C:/admins.txt','\\\\?\\C:\\admins.txt']);
+ } else { $invalidAdminPaths[]='C:/fixtures/admins.txt'; }
+ foreach ($invalidAdminPaths as $path) {
   $bad=$profile;$bad['servers']['test']['admin_file']=$path;file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file));
+ }
+ // Validate strings only; do not open these admin paths or probe drives/shares.
+ $validAdminPaths=PHP_OS_FAMILY==='Windows'?['C:/fixtures/admins.txt','Z:\\fixtures\\admins.txt']:['/admins.txt','/var/lib/fixtures/admins.txt'];
+ foreach ($validAdminPaths as $path) {
+  $valid=$profile;$valid['servers']['test']['admin_file']=$path;file_put_contents($file,json_encode($valid));check(PortableProfile::load($file)['servers']['test']['admin_file']===$path);
  }
  $options=PortableProfile::runtimeOptions($loaded);
  foreach (['owner_id','technician_id','civ13_guild_id','verify_url'] as $field) { check($options[$field]===''); }

@@ -285,9 +285,7 @@ class GameServer
                 throw new \RuntimeException("GameServer missing required property: $property");
             }
         }
-        if (array_key_exists('admin_file', $options)
-            && (!is_string($options['admin_file']) || str_contains($options['admin_file'], "\0")
-                || !PortableProfile::absolute($options['admin_file']))) {
+        if (array_key_exists('admin_file', $options) && !PortableProfile::absoluteAdminFile($options['admin_file'])) {
             throw new InvalidConfigException('admin_file must be an explicit absolute filesystem path');
         }
         $optionalProperties = [
