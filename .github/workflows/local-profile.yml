@@ -14,6 +14,8 @@ on:
       - 'src/Civ13/AdminSyncCoordinator.php'
       - 'src/Civ13/AdminMemberSnapshotProvider.php'
       - 'src/Civ13/AdminCacheSyncTrigger.php'
+      - 'src/Civ13/AdminFileSync.php'
+      - 'src/Civ13/PortableProfile.php'
       - 'src/Civ13/HostedVerificationSource.php'
       - 'src/Civ13/HostedVerificationSnapshot.php'
       - 'src/Civ13/Slash.php'
@@ -22,6 +24,7 @@ on:
       - 'src/Civ13/MessageCommand/Commands/Civ13GameServerMapSwap.php'
       - 'src/Civ13/HttpServiceManager.php'
       - 'local-bot.php'
+      - 'bot.php'
       - 'tests/local/**'
       - 'scripts/local/**'
       - '.github/workflows/local-profile.yml'
@@ -50,6 +53,7 @@ jobs:
           coverage: none
       - run: php tests/local/run.php
       - run: php tests/local/admin-sync-projection.php
+      - run: php tests/local/admin-file-sync-profile.php
       - run: php tests/local/admin-file-writer.php
         timeout-minutes: 2
       - run: php -l local-bot.php
@@ -72,6 +76,8 @@ jobs:
       - run: php tests/local/admin-sync-coordinator.php vendor/autoload.php
       - run: php tests/local/admin-member-snapshot.php vendor/autoload.php
       - run: php tests/local/admin-cache-sync.php vendor/autoload.php
+        timeout-minutes: 2
+      - run: php tests/local/admin-file-sync.php vendor/autoload.php
         timeout-minutes: 2
       - run: php tests/local/opendream.php
       - run: php tests/local/restart-command.php vendor/autoload.php

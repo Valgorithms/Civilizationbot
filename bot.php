@@ -124,6 +124,14 @@ if ($portablePath) {
 if (! $autoloader = require file_exists(__DIR__.'/vendor/autoload.php') ? __DIR__.'/vendor/autoload.php' : $baseDir.'/vendor/autoload.php') {
     throw new \Exception('Composer autoloader not found. Run `composer install`, or keep the binary inside the project directory.');
 }
+// Pure admin-sync preflight uses existing GameServer rank keys after Composer is available.
+if ($portable !== null) {
+    $adminSyncOptions = PortableProfile::runtimeOptions($portable);
+    $adminSyncSettings = $adminSyncOptions['admin_file_sync'];
+    \Civ13\AdminFileSync::validateConfiguration($adminSyncSettings, $adminSyncSettings['admin_file'] ?? '',
+        $adminSyncOptions['civ13_guild_id'], $adminSyncOptions['role_ids']);
+    unset($adminSyncOptions, $adminSyncSettings);
+}
 $loadedNames = loadEnv($portable['env_file'] ?? $baseDir.'/.env', $portable !== null);
 if ($portable !== null && (!in_array('TOKEN', $loadedNames, true) || !getenv('TOKEN'))) { throw new \RuntimeException('Separate profile environment must explicitly supply TOKEN'); }
 

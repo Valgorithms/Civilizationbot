@@ -76,8 +76,47 @@ final class PortableProfile
             $options['verify_url'] = $profile['verification_source']['url'];
             $options['verification_read_only'] = true;
         }
+        // Admin-file authority is opt-in here, never inherited through ambient options.
+        $options['admin_file_sync'] = self::adminFileSyncOptions($profile, $options);
         $options['webserver_url'] = '127.0.0.1';
         return $options;
+    }
+
+    /** Pure configuration mapping; never opens the admin destination. */
+    private static function adminFileSyncOptions(array $profile, array $options): array
+    {
+        $settings = array_key_exists('admin_file_sync', $profile) ? $profile['admin_file_sync'] : ['enabled' => false];
+        if (!is_array($settings) || !is_bool($settings['enabled'] ?? null)) {
+            throw new \InvalidArgumentException('Explicit admin file sync enabled flag required');
+        }
+        $keys = array_keys($settings); sort($keys);
+        if (!$settings['enabled']) {
+            if ($keys !== ['enabled']) { throw new \InvalidArgumentException('Disabled admin file sync accepts only enabled=false'); }
+            return ['enabled' => false];
+        }
+        if ($keys !== ['debounce_seconds', 'enabled', 'max_bytes', 'refresh_timeout_seconds']
+            || !is_int($settings['max_bytes']) || $settings['max_bytes'] < 1 || $settings['max_bytes'] > 16777216) {
+            throw new \InvalidArgumentException('Explicit bounded admin file sync configuration required');
+        }
+        foreach (['debounce_seconds' => 5, 'refresh_timeout_seconds' => 300] as $field => $maximum) {
+            $value = $settings[$field];
+            if ((!is_int($value) && !is_float($value)) || !is_finite((float)$value) || $value <= 0 || $value > $maximum) {
+                throw new \InvalidArgumentException('Invalid admin file sync timing limit');
+            }
+            $settings[$field] = (float)$value;
+        }
+        if (($options['verification_read_only'] ?? null) !== true
+            || ($options['civ13_guild_id'] ?? '') === ''
+            || !is_array($options['role_ids'] ?? null) || $options['role_ids'] === []
+            || !is_array($profile['servers'] ?? null) || count($profile['servers']) !== 1) {
+            throw new \InvalidArgumentException('Admin file sync requires explicit read-only verifier, guild, roles and one server');
+        }
+        $server = reset($profile['servers']);
+        if (!is_array($server) || !self::absoluteAdminFile($server['admin_file'] ?? null)) {
+            throw new \InvalidArgumentException('Admin file sync requires the existing explicit admin_file destination');
+        }
+        $settings['admin_file'] = $server['admin_file'];
+        return $settings;
     }
 
     /** An inherited process environment is not an explicit credential source. */
