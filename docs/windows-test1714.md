@@ -1,5 +1,7 @@
 # Windows TEST1714 startup (stable branch)
 
+For separate admin-file storage, see [Windows admin-list files](windows-admin-files.md).
+
 This profile is an explicit opt-in to the stable bootstrap. It does not import V5,
 install a service, run a game server, or share the Debian bot environment file.
 Windows refuses the ambient production bootstrap without a profile. Linux without

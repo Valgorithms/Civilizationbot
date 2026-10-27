@@ -17,6 +17,7 @@
   "servers": {
     "test1714": {
       "basedir": "D:/Civ13-local/TEST1714",
+      "admin_file": "D:/Civ13-local/TEST1714/SQL/admins.txt",
       "name": "TEST1714",
       "host": "local operator",
       "ip": "127.0.0.1",

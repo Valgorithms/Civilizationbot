@@ -25,6 +25,9 @@ final class PortableProfile
                 if (!is_string($server[$field] ?? null) || $server[$field] === '') { throw new \InvalidArgumentException('Explicit server identity required'); }
             }
             if (!is_bool($server['enabled'] ?? null)) { throw new \InvalidArgumentException('Explicit enabled flag required'); }
+            if (array_key_exists('admin_file', $server) && !self::absoluteAdminFile($server['admin_file'])) {
+                throw new \InvalidArgumentException('admin_file must be an explicit absolute filesystem path');
+            }
             if (isset($server['native_lifecycle'])) {
                 if (!is_array($server['native_lifecycle']) || !is_bool($server['native_lifecycle']['enabled'] ?? null)
                     || ($server['native_lifecycle']['enabled'] && !$server['enabled'])) {
@@ -91,6 +94,17 @@ final class PortableProfile
     public static function absolute(string $path): bool
     {
         return str_starts_with($path, '/') || preg_match('~^[A-Za-z]:[\\\\/]~D', $path) === 1;
+    }
+
+    /** admin_file only: string validation without opening a path or share. */
+    public static function absoluteAdminFile(mixed $path): bool
+    {
+        if (!is_string($path) || str_contains($path, "\0")) { return false; }
+        // Windows /foo is current-drive relative; //host/share is UNC.
+        // Require a drive-qualified local path rather than either form.
+        return PHP_OS_FAMILY === 'Windows'
+            ? preg_match('~^[A-Za-z]:[\\\\/]~D', $path) === 1
+            : str_starts_with($path, '/');
     }
 
     /** No bootstrap, environment load, sockets or external effects. */

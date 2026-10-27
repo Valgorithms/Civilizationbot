@@ -36,6 +36,8 @@ try{
  $profile=json_decode(file_get_contents(__DIR__.'/../../config/examples/windows-test1714.json'),true,16,JSON_THROW_ON_ERROR);
  foreach(['root'=>'admission','gitdir'=>'admission','state_dir'=>'state','env_file'=>'separate.env'] as $key=>$path){$profile[$key]=$root.'/'.$path;}
  $profile['servers']['test1714']['basedir']=$root.'/state';
+ // Override the example's Windows admin path for this platform-local fixture too.
+ $profile['servers']['test1714']['admin_file']=$root.'/state/admins.txt';
  $exe=$root.'/out/synthetic.exe';file_put_contents($exe,'MZ-not-an-executable');
  // Poison caller/ancestor config never supplies a profile or credentials.
  file_put_contents($root.'/civilizationbot.json',json_encode($profile));file_put_contents($root.'/elsewhere/civilizationbot.json',json_encode($profile));

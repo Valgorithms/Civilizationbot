@@ -210,7 +210,7 @@ class GameServer
         $this->serverdata = $this->basedir.Civ13::serverdata;
         $this->discord2unban = $this->basedir.Civ13::discord2unban;
         $this->discord2ban = $this->basedir.Civ13::discord2ban;
-        $this->admins = $this->basedir.Civ13::admins;
+        $this->admins = $options['admin_file'] ?? $this->basedir.Civ13::admins;
         $this->whitelist = $this->basedir.Civ13::whitelist;
         $this->factionlist = $this->basedir.Civ13::factionlist;
         $this->ranking_path = $this->basedir.Civ13::ranking_path;
@@ -284,6 +284,9 @@ class GameServer
             if (! isset($options[$property])) {
                 throw new \RuntimeException("GameServer missing required property: $property");
             }
+        }
+        if (array_key_exists('admin_file', $options) && !PortableProfile::absoluteAdminFile($options['admin_file'])) {
+            throw new InvalidConfigException('admin_file must be an explicit absolute filesystem path');
         }
         $optionalProperties = [
             'discussion',
@@ -1809,7 +1812,8 @@ class GameServer
             foreach (array_keys($required_roles) as $role) {
                 if ($member->roles->has($this->civ13->role_ids[$role])) {
                     if (! in_array($member->id, $checked_ids)) {
-                        $string .= "{$item['ss13']};{$required_roles[$role][0]};{$required_roles[$role][1]}|||".PHP_EOL;
+                        // The DM loader splits on "|||\n", including on Windows.
+                        $string .= "{$item['ss13']};{$required_roles[$role][0]};{$required_roles[$role][1]}|||\n";
                         $checked_ids[] = $member->id;
                     }
                 }
@@ -1823,13 +1827,8 @@ class GameServer
     /** The raw contents of this server's admins file, or false when it cannot be read. */
     public function listadmins(): string|false
     {
-        if (! @touch($fp = $this->basedir.Civ13::admins)) {
-            $this->logger->warning("Unable to open `$fp`");
-
-            return false;
-        }
-        if (! $admins = @file_get_contents($fp)) {
-            $this->logger->warning("Unable to read `$fp`");
+        if (($admins = @file_get_contents($this->admins)) === false) {
+            $this->logger->warning("Unable to read `{$this->admins}`");
 
             return false;
         }
