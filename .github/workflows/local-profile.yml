@@ -9,6 +9,10 @@ on:
       - 'src/Civ13/RestartPolicy.php'
       - 'src/Civ13/Civ13.php'
       - 'src/Civ13/GameServer.php'
+      - 'src/Civ13/AdminListRenderer.php'
+      - 'src/Civ13/AdminSyncSnapshotGate.php'
+      - 'src/Civ13/HostedVerificationSource.php'
+      - 'src/Civ13/HostedVerificationSnapshot.php'
       - 'src/Civ13/Slash.php'
       - 'src/Civ13/Panels.php'
       - 'src/Civ13/MessageCommand/Commands/AdminListUpdate.php'
@@ -42,6 +46,7 @@ jobs:
           extensions: sodium
           coverage: none
       - run: php tests/local/run.php
+      - run: php tests/local/admin-sync-projection.php
       - run: php -l local-bot.php
   supervision:
     if: github.event_name != 'workflow_dispatch' || !inputs.native_smoke
