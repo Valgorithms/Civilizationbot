@@ -12,6 +12,11 @@ try {
  $profile=['http_port'=>25565,'schema'=>'civilizationbot.portable.v1','root'=>$dir,'state_dir'=>$dir,'env_file'=>$dir.'/separate.env','gitdir'=>$dir,'options'=>['channel_ids'=>[],'role_ids'=>[]],'servers'=>['test'=>['basedir'=>$dir,'ip'=>'127.0.0.1','port'=>1714,'name'=>'TEST1714','host'=>'fixture','enabled'=>false,'discussion'=>'','playercount'=>'','ooc'=>'','lobby'=>'','asay'=>'','ic'=>'','transit'=>'','adminlog'=>'','debug'=>'','garbage'=>'','runtime'=>'','attack'=>'']]];
  $file=$dir.'/profile.json';file_put_contents($file,json_encode($profile));$loaded=PortableProfile::load($file);
  check($loaded['servers']['test']['port']==='1714');
+ $explicit=$profile;$explicit['servers']['test']['admin_file']=$dir.'/external-admins.txt';file_put_contents($file,json_encode($explicit));
+ check(PortableProfile::load($file)['servers']['test']['admin_file']===$dir.'/external-admins.txt');
+ foreach (['relative/admins.txt','D:admins.txt','https://example.invalid/admins.txt',"D:/admins\0.txt",'',null,17] as $path) {
+  $bad=$profile;$bad['servers']['test']['admin_file']=$path;file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file));
+ }
  $options=PortableProfile::runtimeOptions($loaded);
  foreach (['owner_id','technician_id','civ13_guild_id','verify_url'] as $field) { check($options[$field]===''); }
  check($options['filecache_path']===$dir.'/json/');

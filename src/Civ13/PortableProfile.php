@@ -25,6 +25,11 @@ final class PortableProfile
                 if (!is_string($server[$field] ?? null) || $server[$field] === '') { throw new \InvalidArgumentException('Explicit server identity required'); }
             }
             if (!is_bool($server['enabled'] ?? null)) { throw new \InvalidArgumentException('Explicit enabled flag required'); }
+            if (array_key_exists('admin_file', $server)
+                && (!is_string($server['admin_file']) || str_contains($server['admin_file'], "\0")
+                    || !self::absolute($server['admin_file']))) {
+                throw new \InvalidArgumentException('admin_file must be an explicit absolute filesystem path');
+            }
             if (isset($server['native_lifecycle'])) {
                 if (!is_array($server['native_lifecycle']) || !is_bool($server['native_lifecycle']['enabled'] ?? null)
                     || ($server['native_lifecycle']['enabled'] && !$server['enabled'])) {
