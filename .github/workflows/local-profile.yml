@@ -13,6 +13,7 @@ on:
       - 'src/Civ13/AdminSyncSnapshotGate.php'
       - 'src/Civ13/AdminSyncCoordinator.php'
       - 'src/Civ13/AdminMemberSnapshotProvider.php'
+      - 'src/Civ13/AdminCacheSyncTrigger.php'
       - 'src/Civ13/HostedVerificationSource.php'
       - 'src/Civ13/HostedVerificationSnapshot.php'
       - 'src/Civ13/Slash.php'
@@ -70,6 +71,8 @@ jobs:
       - run: php tests/local/library.php
       - run: php tests/local/admin-sync-coordinator.php vendor/autoload.php
       - run: php tests/local/admin-member-snapshot.php vendor/autoload.php
+      - run: php tests/local/admin-cache-sync.php vendor/autoload.php
+        timeout-minutes: 2
       - run: php tests/local/opendream.php
       - run: php tests/local/restart-command.php vendor/autoload.php
       - run: php tests/local/lifecycle.php vendor/autoload.php

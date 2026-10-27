@@ -26,21 +26,7 @@ final class AdminSyncSnapshotGate
         array $roleIds,
         array $permissions
     ): string {
-        $success = $verificationStatus['last_success_utc'] ?? null;
-        $date = is_string($success)
-            ? \DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s\Z', $success, new \DateTimeZone('UTC'))
-            : false;
-        $age = $verificationStatus['age_seconds'] ?? null;
-        if (($verificationStatus['available'] ?? null) !== true
-            || ($verificationStatus['stale'] ?? null) !== false
-            || ($verificationStatus['has_valid_list'] ?? null) !== true
-            || ($verificationStatus['refresh_in_progress'] ?? null) !== false
-            || ($verificationStatus['records'] ?? null) !== count($verified)
-            || !is_int($age) || $age < 0 || $age >= HostedVerificationSnapshot::FRESH_SECONDS
-            || $date === false || $date->format('Y-m-d\TH:i:s\Z') !== $success
-            || $now < $date->getTimestamp() || $now - $date->getTimestamp() >= HostedVerificationSnapshot::FRESH_SECONDS) {
-            throw new \RuntimeException('Admin sync requires a fresh successful verification snapshot');
-        }
+        self::assertVerification($verificationStatus, $verified, $now);
         if (preg_match('/^[0-9]{17,20}$/D', $guildId) !== 1
             || ($membership['guild_id'] ?? null) !== $guildId
             || ($membership['complete'] ?? null) !== true
@@ -62,4 +48,65 @@ final class AdminSyncSnapshotGate
         }
         return AdminListRenderer::render($verified, $membership['members'], $roleIds, $permissions);
     }
+
+    /**
+     * Event-maintained cache path: no Gateway attestation and no membership TTL.
+     * $cacheState is freshly read from the application readiness barrier at EVERY precommit.
+     * $membership is a value projection of the existing target-guild cache, tagged when captured.
+     * A valid cache may yield no admins; not-ready/refresh-failed cache must never revoke them.
+     */
+    public static function renderCached(
+        array $verificationStatus,
+        array $verified,
+        array $membership,
+        string $guildId,
+        int $currentGeneration,
+        int $now,
+        array $roleIds,
+        array $permissions,
+        array $cacheState
+    ): string {
+        self::assertVerification($verificationStatus, $verified, $now);
+        if (preg_match('/^[1-9][0-9]{16,19}$/D', $guildId) !== 1
+            || ($membership['guild_id'] ?? null) !== $guildId
+            || ($cacheState['ready'] ?? null) !== true
+            || !is_int($cacheState['epoch'] ?? null) || $cacheState['epoch'] < 0
+            || ($membership['cache_epoch'] ?? null) !== $cacheState['epoch']
+            || $currentGeneration < 0 || ($membership['generation'] ?? null) !== $currentGeneration
+            || !is_array($membership['roles'] ?? null) || !array_is_list($membership['roles'])
+            || !is_array($membership['members'] ?? null)) {
+            throw new \RuntimeException('Admin sync requires an initialized current member cache');
+        }
+        foreach ($membership['roles'] as $role) {
+            if (!is_string($role) || preg_match('/^[1-9][0-9]{16,19}$/D', $role) !== 1) {
+                throw new \RuntimeException('Invalid cached guild role');
+            }
+        }
+        foreach ($permissions as $name => $_) {
+            if (!in_array($roleIds[$name] ?? null, $membership['roles'], true)) {
+                throw new \RuntimeException('Required admin role is absent from the guild cache');
+            }
+        }
+        return AdminListRenderer::render($verified, $membership['members'], $roleIds, $permissions);
+    }
+
+    private static function assertVerification(array $verificationStatus, array $verified, int $now): void
+    {
+        $success = $verificationStatus['last_success_utc'] ?? null;
+        $date = is_string($success)
+            ? \DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s\Z', $success, new \DateTimeZone('UTC'))
+            : false;
+        $age = $verificationStatus['age_seconds'] ?? null;
+        if (($verificationStatus['available'] ?? null) !== true
+            || ($verificationStatus['stale'] ?? null) !== false
+            || ($verificationStatus['has_valid_list'] ?? null) !== true
+            || ($verificationStatus['refresh_in_progress'] ?? null) !== false
+            || ($verificationStatus['records'] ?? null) !== count($verified)
+            || !is_int($age) || $age < 0 || $age >= HostedVerificationSnapshot::FRESH_SECONDS
+            || $date === false || $date->format('Y-m-d\TH:i:s\Z') !== $success
+            || $now < $date->getTimestamp() || $now - $date->getTimestamp() >= HostedVerificationSnapshot::FRESH_SECONDS) {
+            throw new \RuntimeException('Admin sync requires a fresh successful verification snapshot');
+        }
+    }
+
 }
