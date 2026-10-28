@@ -64,6 +64,14 @@ jobs:
       - name: Dependency-free command preparation contracts
         timeout-minutes: 2
         run: php tests/admin-console/command-intent.php
+      - name: Lint inert operation admission contract
+        run: |
+          php -l src/Civ13/AdminConsole/OperationAdmissionStore.php
+          php -l src/Civ13/AdminConsole/OperationAdmission.php
+          php -l tests/admin-console/operation-admission.php
+      - name: Serial fake admission API contracts
+        timeout-minutes: 2
+        run: php tests/admin-console/operation-admission.php
       - name: Dependency-free projection contracts
         timeout-minutes: 2
         run: php tests/admin-console/projection.php
