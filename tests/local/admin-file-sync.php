@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-// Inert facade, maintained cache, timers and memory writer. No real clients/files/bootstrap.
+// Inert facade, cache, timers and memory writer; owned reload marker only. No clients/admin files/bootstrap.
 require $argv[1] ?? __DIR__.'/../../vendor/autoload.php';
 foreach (['HostedVerificationSource','HostedVerificationSnapshot','AdminListRenderer','AdminSyncSnapshotGate','AdminSyncCoordinator','AdminCacheSyncTrigger','AdminFileSync'] as $class) {
     require_once __DIR__.'/../../src/Civ13/'.$class.'.php';
@@ -227,4 +227,99 @@ $core=file_get_contents(__DIR__.'/../../src/Civ13/Civ13.php');
 compositionCheck(str_contains($core,'Admin file synchronization inactive: runtime attachment failed')
     && str_contains($core,'catch (\\Throwable)'), 'Core feature-only attachment failure guard missing');
 
-echo "PASS portable admin composition ({$checks} assertions): disabled effects, cached join, existing refresh, paired identities and owned cleanup\n";
+// Reload command -> real Civ13::stop -> replacement composition, while an old write waits.
+// Constructorless owner and existing inert facade only; no Discord client, loop run,
+// supervisor child, profile load/edit or real admin file. Only an owned temporary marker.
+final class SyncReloadOwner extends \Civ13\Civ13 {
+    public Deferred $replyPending;
+    public array $replyTexts=[];
+    public function reply(\Discord\Parts\Channel\Message|\Discord\Parts\Thread\Thread $message,
+        string $content,string $file_name='message.txt',bool $prevent_mentions=false): PromiseInterface {
+        $this->replyTexts[]=$content; return $this->replyPending->promise();
+    }
+}
+final class SyncShutdownLogger extends \Psr\Log\AbstractLogger {
+    public array $guardAtShutdown=[];
+    public function __construct(private \Closure $guard) {}
+    public function log($level,string|\Stringable $message,array $context=[]): void {
+        if ((string)$message==='Shutting down') { $this->guardAtShutdown[]=($this->guard)(); }
+    }
+}
+foreach (['same-target','changed-target'] as $targetChange) {
+    foreach (['resolved','rejected'] as $replyOutcome) {
+        $state=sys_get_temp_dir().'/admin-reload-fence-'.bin2hex(random_bytes(8));
+        if (!mkdir($state)) { throw new RuntimeException('Could not create isolated reload marker directory'); }
+        $oldSync=null; $newSync=null; $owner=null;
+        try {
+            [$oldApp,$oldF,$unusedWriter]=syncFixture(true);
+            $oldTarget='/inert/old-admins.txt';
+            $newTarget=$targetChange==='same-target'?$oldTarget:'/inert/new-admins.txt';
+            $files=[$oldTarget=>'previous old file'];
+            if ($newTarget!==$oldTarget) { $files[$newTarget]='previous new file'; }
+            $commits=[]; $pendingWrite=null; $oldWrite=new Deferred();
+            $oldWriter=static function (string $bytes,int $generation,callable $guard) use (&$pendingWrite,$oldWrite): PromiseInterface {
+                $pendingWrite=['bytes'=>$bytes,'guard'=>$guard]; return $oldWrite->promise();
+            };
+            $oldSync=AdminFileSync::attach($oldApp,syncSettings(),$oldTarget,$oldWriter,static fn()=>$oldF->now);
+            syncTick($oldF);
+            compositionCheck($pendingWrite!==null && ($pendingWrite['guard'])(),'Old write did not reach a live precommit barrier');
+
+            // Keep actual stop() inherited: an override would hide the integration under test.
+            $owner=(new ReflectionClass(SyncReloadOwner::class))->newInstanceWithoutConstructor();
+            $owner->portable_state_dir=$state; $owner->replyPending=new Deferred();
+            $owner->logger=new SyncShutdownLogger(\Closure::fromCallable($pendingWrite['guard']));
+            $owner->loop=new \React\EventLoop\StreamSelectLoop(); // never run
+            (new ReflectionProperty(\Civ13\Civ13::class,'adminFileSync'))->setValue($owner,$oldSync);
+            $command=new \Civ13\MessageCommand\Commands\ReloadConfig($owner);
+            $message=(new ReflectionClass(\Discord\Parts\Channel\Message::class))->newInstanceWithoutConstructor();
+            $replyState='pending';
+            $command($message,'reloadconfig',[])->then(
+                static function () use (&$replyState): void { $replyState='resolved'; },
+                static function (\Throwable $error) use (&$replyState): void { $replyState='rejected'; });
+            compositionCheck(is_file($state.'/reload.request') && count($owner->replyTexts)===1,'Actual reload command did not request one relaunch');
+            compositionCheck($replyState==='pending' && ($pendingWrite['guard'])(),'Fixture confused reload acknowledgement with completed shutdown');
+            if ($replyOutcome==='resolved') { $owner->replyPending->resolve(null); }
+            else { $owner->replyPending->reject(new RuntimeException('Synthetic reload reply failure')); }
+            compositionCheck($replyState===$replyOutcome,'Reload reply outcome lost');
+            compositionCheck($owner->logger->guardAtShutdown===[false],'Pending old write remained valid at first shutdown side effect');
+            compositionCheck(!($pendingWrite['guard'])() && $oldApp->discord->removes===8,'Actual shutdown did not revoke old write/listeners');
+            compositionCheck(\Civ13\PortableProcess::consumeReload($state) && !\Civ13\PortableProcess::consumeReload($state),'Reload marker was not consumed once');
+
+            [$newApp,$newF,$unusedWriter]=syncFixture(true);
+            $guild=$newApp->discord->guilds->get('id',$newF->guild);
+            $newF->guild='770000000000000002'; $newApp->civ13_guild_id=$newF->guild;
+            $newApp->discord->guilds->items=[$newF->guild=>$guild];
+            foreach ($newApp->role_ids as $name=>$role) { $newApp->role_ids[$name]='89'.substr($role,2); }
+            $guild->roles->items=array_fill_keys(array_values($newApp->role_ids),(object)['present'=>true]);
+            $guild->members->items[$newF->user]->roles=new SyncRepository([$newApp->role_ids['Owner']=>true]);
+            $newApp->verifier->verified=[['discord'=>$newF->user,'ss13'=>'Reloaded.Admin']];
+            $newWriter=static function (string $bytes,int $generation,callable $guard) use (&$files,&$commits,$newTarget): array {
+                if (!$guard()) { return ['state'=>'superseded']; }
+                $files[$newTarget]=$bytes; $commits[]=$newTarget; return ['state'=>'updated'];
+            };
+            $newSync=AdminFileSync::attach($newApp,syncSettings(),$newTarget,$newWriter,static fn()=>$newF->now);
+            syncTick($newF);
+            compositionCheck($newApp->verifier!==$oldApp->verifier && $newApp->role_ids!==$oldApp->role_ids,'Replacement did not change source and role authority');
+            compositionCheck($files[$newTarget]==="reloadedadmin;Host;65535|||\n" && $commits===[$newTarget],'Replacement failed to commit its new source/role/target projection');
+            $afterReplacement=$files;
+            // Drain the real old coordinator's delayed adapter only after the new write.
+            // The adapter honors its final guard immediately before the memory mutation.
+            $oldResult='superseded';
+            if (($pendingWrite['guard'])()) {
+                $files[$oldTarget]=$pendingWrite['bytes']; $commits[]=$oldTarget; $oldResult='updated';
+            }
+            $oldWrite->resolve(['state'=>$oldResult]);
+            compositionCheck($oldResult==='superseded' && $files===$afterReplacement && $commits===[$newTarget],'Late old write overwrote replacement or retired target');
+            compositionCheck($newTarget===$oldTarget || $files[$oldTarget]==='previous old file','Changed target incorrectly cleared or rewrote old destination');
+            $oldEffects=[$oldF->timerCalls,$oldApp->verifier->refreshes,count($commits)];
+            $oldApp->discord->emit('init'); $oldApp->discord->emit('reconnected'); syncEvent($oldApp,$oldF);
+            compositionCheck([$oldF->timerCalls,$oldApp->verifier->refreshes,count($commits)]===$oldEffects,'Old callbacks regained authority after replacement');
+        } finally {
+            $oldSync?->stop(); $newSync?->stop(); unset($owner);
+            if (is_file($state.'/reload.request')) { unlink($state.'/reload.request'); }
+            rmdir($state);
+        }
+    }
+}
+
+echo "PASS portable admin composition ({$checks} assertions): disabled effects, cached join, existing refresh, paired identities, owned cleanup and reload fencing\n";
