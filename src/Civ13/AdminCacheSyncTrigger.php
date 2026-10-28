@@ -67,6 +67,14 @@ final class AdminCacheSyncTrigger
     public function epoch(): int { return $this->cacheEpoch; }
     public function state(): array { return ['ready'=>$this->isReady(),'epoch'=>$this->cacheEpoch]; }
 
+    /** Application-owned verified-cache replacement; reuse the existing dirty/debounce path. */
+    public function verificationChanged(): void
+    {
+        if (!$this->enabled || $this->stopped) { return; }
+        ++$this->cacheEpoch;
+        $this->signal();
+    }
+
     /** Exact stable closures for caller-owned registration/removal. Cached prior roles never suppress events. */
     public function listeners(): array
     {

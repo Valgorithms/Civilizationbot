@@ -27,6 +27,10 @@ Verification status and records are copied together, checking status consistency
 
 The service stores its exact listener closures. Stop fences commits first, then removes only those listeners and cancels owned trigger timers. Core bot shutdown continues if listener cleanup fails; no cleanup exception is allowed to escape the added destructor path. Existing client, other listeners, game instances and shared IPC behavior are not replaced.
 
+Optional synchronization notification failures are isolated after successful verification-cache replacement. They emit a fixed feature warning without exception details; even failure of that warning logger cannot reject the otherwise successful core refresh or suppress its ordinary status log. Actual source failures retain their existing unavailable status and do not invoke this notification or retry.
+
+The already-existing verifier refresh completion also notifies the optional composition after a successful non-coalesced cache replacement, including unchanged identities: the new success timestamp can invalidate an older pending write. Failed and coalesced refresh completions do not schedule new work. This application-owned hook reuses the existing debounce and immediately invalidates a pending stale write; its next snapshot acquisition consumes the already-replaced verification cache without calling `refreshHosted()` again. When the coordinator is already acquiring that verifier refresh, it consumes the completion itself and the notification does not dirty another pass. No polling interval, HTTP request, DiscordPHP change or second identity/member store is introduced. Disabled/unattached, retired-verifier and stopped owners remain inert. Required-role deletion policy is unchanged.
+
 ## Existing source policy
 
 The composition uses `Verifier::refreshHosted()` and `hostedStatus()` with the explicitly configured read-only endpoint `http://civ13.com:55555/verified`. It does not fetch public verifier data during offline tests, change endpoint configuration, mutate verification records remotely, or remove the verifier's read-only guard. The owner's decision to retain this feed does not authorize starting the bot, enabling file writes or changing local configuration. Future source replacement remains an explicit configuration/review task rather than silent discovery.
@@ -40,6 +44,7 @@ Writing the single canonical file does not prove Nomads and TDM consume it. Insp
 ```sh
 php tests/local/admin-file-sync-profile.php
 php tests/local/admin-file-sync.php vendor/autoload.php
+php tests/local/admin-verification-refresh.php vendor/autoload.php
 ```
 
 The first test uses synthetic arrays only and runs in the existing Ubuntu/Windows PHP 8.3/8.4 replica matrix. The composition test uses an inert application/cache/emitter, injected clock and memory-only writer in the dependency-installed supervision PHP 8.3/8.4/8.5 matrix. No test loads bot.php, credentials, live Discord, actual admin files or game servers.

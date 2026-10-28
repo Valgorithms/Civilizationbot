@@ -963,6 +963,13 @@ class Civ13
             $this->loop->stop();
         }
     }
+    /** Successful replacement from the current verifier only; disabled/unattached is inert. */
+    public function hostedVerificationRefreshed(Verifier $verifier): void
+    {
+        if ($this->adminFileSync === null || !isset($this->verifier) || $this->verifier !== $verifier) { return; }
+        $this->adminFileSync->verificationChanged();
+    }
+
     /** Cleanup failure must not prevent the existing bot shutdown or escape our destructor. */
     private function stopAdminFileSync(): void
     {

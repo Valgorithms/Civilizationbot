@@ -227,6 +227,87 @@ $core=file_get_contents(__DIR__.'/../../src/Civ13/Civ13.php');
 compositionCheck(str_contains($core,'Admin file synchronization inactive: runtime attachment failed')
     && str_contains($core,'catch (\\Throwable)'), 'Core feature-only attachment failure guard missing');
 
+// An external verifier completion consumes its already-replaced cache, not another refresh.
+[$app,$f,$writer]=syncFixture(true); $sync=syncAttach($app,$f,$writer); syncTick($f);
+$refreshes=$app->verifier->refreshes;
+$app->verifier->verified=[]; $f->status['records']=0;
+$sync->verificationChanged(); syncTick($f);
+compositionCheck($f->file==='' && $app->verifier->refreshes===$refreshes,'Verifier-only removal refetched or retained old authority');
+$app->verifier->verified=[['discord'=>$f->user,'ss13'=>'newidentity']]; $f->status['records']=1;
+$sync->verificationChanged(); $sync->verificationChanged(); syncTick($f);
+compositionCheck($f->file==="newidentity;Admin;16254|||\n" && $app->verifier->refreshes===$refreshes,'Verifier-only addition refetched or failed to coalesce');
+compositionCheck(count(array_filter($f->timers,static fn($timer)=>$timer->active))===0,'Verifier projection scheduled another burst');
+$sync->stop(); $effects=[$f->timerCalls,$app->verifier->refreshes,count($f->writes)];
+$sync->verificationChanged();
+compositionCheck([$f->timerCalls,$app->verifier->refreshes,count($f->writes)]===$effects,'Stopped verifier hook caused effects');
+
+// Recovery from unavailable verification serves the current cache with no extra source call.
+[$app,$f,$writer]=syncFixture(true); $f->status['available']=false; $f->status['stale']=true;
+$sync=syncAttach($app,$f,$writer); syncTick($f); $refreshes=$app->verifier->refreshes;
+$f->status['available']=true; $f->status['stale']=false; $sync->verificationChanged(); syncTick($f);
+compositionCheck($f->file===$expected && $app->verifier->refreshes===$refreshes,'Verifier recovery refetched or remained blocked'); $sync->stop();
+
+// Coordinator-owned completion is already consumed, including synchronous callback reentrancy.
+foreach (['synchronous','pending'] as $completion) {
+    [$app,$f,$writer]=syncFixture(true); $sync=syncAttach($app,$f,$writer); $pending=new Deferred();
+    $replace=static function () use ($app,$f,$sync): void {
+        $app->verifier->verified=[]; $f->status['records']=0; $sync->verificationChanged();
+    };
+    $app->verifier->refreshHook=static function () use ($completion,$replace,$pending): PromiseInterface {
+        if ($completion==='synchronous') { $replace(); return resolve(null); }
+        return $pending->promise();
+    };
+    syncTick($f);
+    if ($completion==='pending') { $replace(); $pending->resolve(null); }
+    compositionCheck($f->file==='' && $app->verifier->refreshes===1 && count($f->writes)===1,
+        'Already-consumed verifier completion self-dirtied or refetched');
+    compositionCheck(count(array_filter($f->timers,static fn($timer)=>$timer->active))===0,'Already-consumed completion scheduled itself');
+    $sync->stop();
+}
+
+// External completion fences a delayed writer even when only the success timestamp changes.
+foreach (['removed','unchanged'] as $replacement) {
+    [$app,$f,$writer]=syncFixture(true); $pending=new Deferred(); $guard=null;
+    $f->writerHook=static function (string $bytes,int $generation,callable $canCommit) use ($pending,&$guard): PromiseInterface {
+        $guard=$canCommit; return $pending->promise();
+    };
+    $sync=syncAttach($app,$f,$writer); syncTick($f); $refreshes=$app->verifier->refreshes;
+    compositionCheck($guard(),'Pending initial verifier projection had no authority');
+    if ($replacement==='removed') { $app->verifier->verified=[]; $f->status['records']=0; }
+    ++$f->now; $f->status['last_success_utc']=gmdate('Y-m-d\\TH:i:s\\Z',$f->now);
+    $sync->verificationChanged();
+    compositionCheck(!$guard(),'Verifier replacement left a stale writer authorized');
+    $f->writerHook=null; $pending->resolve(['state'=>'superseded']);
+    compositionCheck($f->file===($replacement==='removed'?'':$expected)
+        && $app->verifier->refreshes===$refreshes && count($f->writes)===1,
+        'Dirty verifier-only continuation refetched or lost latest cache'); $sync->stop();
+}
+
+// The real owner bridge rejects retired verifiers and leaves stopped owners inert.
+[$app,$f,$writer]=syncFixture(true); $sync=syncAttach($app,$f,$writer); syncTick($f);
+$owner=(new ReflectionClass(\Civ13\Civ13::class))->newInstanceWithoutConstructor();
+$currentVerifier=(new ReflectionClass(\Civ13\Verifier::class))->newInstanceWithoutConstructor();
+$retiredVerifier=(new ReflectionClass(\Civ13\Verifier::class))->newInstanceWithoutConstructor();
+$owner->verifier=$currentVerifier;
+(new ReflectionProperty(\Civ13\Civ13::class,'adminFileSync'))->setValue($owner,$sync);
+$effects=[$f->timerCalls,$app->verifier->refreshes,count($f->writes)];
+$owner->hostedVerificationRefreshed($retiredVerifier);
+compositionCheck([$f->timerCalls,$app->verifier->refreshes,count($f->writes)]===$effects,'Retired verifier notified current composition');
+$owner->hostedVerificationRefreshed($currentVerifier); syncTick($f);
+compositionCheck($app->verifier->refreshes===$effects[1] && count($f->writes)===$effects[2]+1,'Current owner bridge did not serve the cache-only projection');
+$sync->stop(); $effects=[$f->timerCalls,$app->verifier->refreshes,count($f->writes)];
+$owner->hostedVerificationRefreshed($currentVerifier);
+compositionCheck([$f->timerCalls,$app->verifier->refreshes,count($f->writes)]===$effects,'Stopped owner completion caused effects');
+unset($owner,$currentVerifier,$retiredVerifier);
+
+// A completion during reconnect remains behind the existing cache-readiness barrier.
+[$app,$f,$writer]=syncFixture(true); $sync=syncAttach($app,$f,$writer); syncTick($f); $refreshes=$app->verifier->refreshes;
+$guild=$app->discord->guilds->get('id',$f->guild); $pending=new Deferred(); $guild->members->hook=static fn()=>$pending->promise();
+$app->discord->emit('reconnected'); $app->verifier->verified=[]; $f->status['records']=0; $sync->verificationChanged();
+compositionCheck($f->file===$expected,'Verifier completion bypassed reconnect barrier');
+$pending->resolve(null); syncTick($f);
+compositionCheck($f->file==='' && $app->verifier->refreshes===$refreshes,'Reconnect discarded cache-only projection or refetched'); $sync->stop();
+
 // Reload command -> real Civ13::stop -> replacement composition, while an old write waits.
 // Constructorless owner and existing inert facade only; no Discord client, loop run,
 // supervisor child, profile load/edit or real admin file. Only an owned temporary marker.

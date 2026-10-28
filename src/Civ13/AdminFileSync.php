@@ -14,6 +14,8 @@ final class AdminFileSync
     private AdminSyncCoordinator $coordinator;
     private array $listeners = [];
     private bool $stopped = false;
+    private bool $acquiringVerification = false;
+    private bool $verificationProjectionPending = false;
     private array $capturedRecords = [];
     private \Closure $clock;
     private \Closure $writer;
@@ -71,11 +73,18 @@ final class AdminFileSync
         $this->coordinator=new AdminSyncCoordinator(true,
             function (): PromiseInterface {
                 if (!$this->configurationCurrent()) { throw new \RuntimeException('Admin file configuration changed before verification refresh'); }
-                return $this->verifier->refreshHosted()->then(function (mixed $unused): array {
-                    $snapshot=$this->verification();
-                    $this->capturedRecords=$snapshot['records'];
-                    return $snapshot;
-                });
+                if ($this->verificationProjectionPending) {
+                    $this->verificationProjectionPending=false;
+                    return resolve($this->captureVerification());
+                }
+                $this->acquiringVerification=true;
+                try {
+                    return $this->verifier->refreshHosted()->then(fn (mixed $unused): array => $this->captureVerification())
+                        ->finally(function (): void { $this->acquiringVerification=false; });
+                } catch (\Throwable $error) {
+                    $this->acquiringVerification=false;
+                    throw $error;
+                }
             },
             fn (int $generation): array => $this->members($generation),
             function (array $snapshot,array $membership,int $generation): string {
@@ -137,6 +146,21 @@ final class AdminFileSync
     private readonly object $loop;
     private readonly string $guildId;
     private readonly array $roleIds;
+
+    /** The existing verifier already replaced its cache; do not fetch it again. */
+    public function verificationChanged(): void
+    {
+        if (!$this->configurationCurrent() || $this->acquiringVerification) { return; }
+        $this->verificationProjectionPending=true;
+        $this->trigger->verificationChanged();
+    }
+
+    private function captureVerification(): array
+    {
+        $snapshot=$this->verification();
+        $this->capturedRecords=$snapshot['records'];
+        return $snapshot;
+    }
 
     /** Call before releasing the owner or changing destination/role/source configuration. */
     public function stop(): void

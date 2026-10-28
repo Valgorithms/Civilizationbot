@@ -1221,6 +1221,15 @@ class Verifier
         return $this->hosted->refresh(fn () => HostedVerificationSource::fetch($this->civ13->browser))->then(function (array $status): array {
             $this->verified = new Collection($this->hosted->records(), 'discord');
             $this->civ13->verifier_online = $status['available'];
+            // Existing successful refresh only. Coalesced callers must not duplicate the notification.
+            if ($status['available'] === true && ($status['coalesced'] ?? true) === false) {
+                try { $this->civ13->hostedVerificationRefreshed($this); }
+                catch (\Throwable) {
+                    // Optional synchronization must not invalidate a successful core refresh.
+                    try { $this->logger->warning('Admin file synchronization notification failed'); }
+                    catch (\Throwable) {}
+                }
+            }
             $this->logger->info('Hosted verification refresh', $status);
             return $status;
         });

@@ -18,6 +18,7 @@ on:
       - 'src/Civ13/PortableProfile.php'
       - 'src/Civ13/HostedVerificationSource.php'
       - 'src/Civ13/HostedVerificationSnapshot.php'
+      - 'src/Civ13/Verifier.php'
       - 'src/Civ13/Slash.php'
       - 'src/Civ13/Panels.php'
       - 'src/Civ13/MessageCommand/Commands/AdminListUpdate.php'
@@ -78,6 +79,8 @@ jobs:
       - run: php tests/local/admin-cache-sync.php vendor/autoload.php
         timeout-minutes: 2
       - run: php tests/local/admin-file-sync.php vendor/autoload.php
+        timeout-minutes: 2
+      - run: php tests/local/admin-verification-refresh.php vendor/autoload.php
         timeout-minutes: 2
       - run: php tests/local/opendream.php
       - run: php tests/local/restart-command.php vendor/autoload.php
