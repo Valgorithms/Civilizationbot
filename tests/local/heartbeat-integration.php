@@ -105,6 +105,11 @@ namespace {
         check(file_get_contents($hostPath) === "  AlphaHost \r\n" && file_get_contents($otherHostPath) === "BetaHost\n", 'Status rendering modified a host file');
         file_put_contents($hostPath, " ChangedHost \n");
         check(fields($server->toEmbed())['Host'] === 'ChangedHost' && fields($other->toEmbed())['Host'] === 'BetaHost', 'Host file changes did not stay per-server');
+        file_put_contents($hostPath, " \xC3\x89lodie\r\n");
+        check(fields($server->toEmbed())['Host'] === "\xC3\x89lodie" && fields($server->generateServerstatusEmbed())['Host'] === "\xC3\x89lodie", 'Valid non-ASCII host was not preserved');
+        $invalidHost = "Bad\xC3\x28";
+        file_put_contents($hostPath, $invalidHost);
+        check(fields($server->toEmbed())['Host'] === 'Unavailable' && fields($server->generateServerstatusEmbed())['Host'] === 'Unavailable' && file_get_contents($hostPath) === $invalidHost, 'Invalid UTF-8 was not rejected unchanged');
         $GLOBALS['host_read_failure'] = $hostPath;
         check(fields($server->toEmbed())['Host'] === 'Unavailable' && fields($server->generateServerstatusEmbed())['Host'] === 'Unavailable', 'Unreadable host file used a fallback');
         unset($GLOBALS['host_read_failure']);

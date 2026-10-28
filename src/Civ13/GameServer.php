@@ -1911,7 +1911,8 @@ class GameServer
             return 'Unavailable';
         }
         $path = rtrim($this->basedir, '/\\').'/config/host.txt';
-        if (! @is_file($path) || ($value = @file_get_contents($path, false, null, 0, 1025)) === false || strlen($value) > 1024) {
+        if (! @is_file($path) || ($value = @file_get_contents($path, false, null, 0, 1025)) === false
+            || strlen($value) > 1024 || preg_match('//u', $value) !== 1) {
             return 'Unavailable';
         }
         return trim($value) === '' ? 'Unavailable' : trim($value);
