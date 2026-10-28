@@ -21,7 +21,11 @@ try {
     }
     \Civ13\DefaultBranchGuard::verify($profile['root']);
     if (is_file($profile['state_dir'].'/stop.request')) { throw new RuntimeException('Unresolved stop request; inspect previous instance before starting'); }
-    PortableProcess::consumeReload($profile['state_dir']); // A stale request must not cause a later relaunch.
+    // Clear a stale reload request only when no instance holds the lock; a live
+    // instance's pending reload must survive a second start attempt.
+    $lock=PortableProcess::lock($profile['state_dir']);
+    PortableProcess::consumeReload($profile['state_dir']);
+    fclose($lock);
     putenv('CIVILIZATIONBOT_PROFILE='.$argv[2]);
     do {
         $pipes=[];

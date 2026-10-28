@@ -34,13 +34,17 @@ class ReloadConfig extends Civ13MessageCommand
         if ($this->civ13->portable_state_dir === '') {
             return $this->civ13->reply($message, 'Configuration reload is only available for portable profiles.');
         }
+        if (is_file($this->civ13->portable_state_dir.'/stop.request')) {
+            return $this->civ13->reply($message, 'A stop is pending; configuration reload was not requested.');
+        }
         try {
             PortableProcess::requestReload($this->civ13->portable_state_dir);
         } catch (\Throwable $error) {
             return $this->civ13->reply($message, 'Configuration reload could not be requested: '.$error->getMessage());
         }
 
+        // Stop even if the reply fails, so the reload marker never outlives this request.
         return $this->civ13->reply($message, 'Reloading configuration; the bot will reconnect shortly.')
-            ->then(fn () => $this->civ13->stop());
+            ->finally(fn () => $this->civ13->stop());
     }
 }

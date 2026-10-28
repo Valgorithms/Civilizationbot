@@ -497,6 +497,8 @@ $options = array_merge($options, $hidden_options);
 if ($portable !== null) {
     Loop::addPeriodicTimer(1, static function () use (&$civ13, $portable): void {
         if (is_file($portable['state_dir'].'/stop.request')) {
+            // A stop cancels any pending reloadconfig, so the supervisor does not relaunch.
+            \Civ13\PortableProcess::consumeReload($portable['state_dir']);
             unlink($portable['state_dir'].'/stop.request');
             if ($civ13 !== null) { $civ13->stop(); } else { Loop::stop(); }
         }
