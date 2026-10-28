@@ -93,3 +93,29 @@ jobs:
       - name: Actual PSR and React HTTP boundary contracts (offline)
         timeout-minutes: 2
         run: php tests/admin-console/status-http.php
+
+  browser-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require the existing vendor browser (no installation)
+        run: test -x /usr/bin/google-chrome
+      - name: Real DOM and phone/desktop layout on local fixtures
+        timeout-minutes: 1
+        env:
+          CHROMIUM_BIN: /usr/bin/google-chrome
+        run: node tests/admin-console/ui.mjs
+      - name: Retain internal fixture QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-console-browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/admin-console-browser/
+          if-no-files-found: warn
+          retention-days: 7

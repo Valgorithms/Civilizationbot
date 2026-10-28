@@ -43,14 +43,28 @@ script as `tests/admin-console/ui.html`. It is **not** a browser engine and does
 not validate CSS, CSP loading, real DOM compatibility or accessibility behavior.
 The admin-console workflow includes these Node 22 checks without npm installation.
 
-On a supported executor with an existing Chromium installation, optional browser
-execution is `CHROMIUM_BIN=/path/to/chromium node tests/admin-console/ui.mjs` (set
-the equivalent environment variable on Windows), or open `tests/admin-console/ui.html`
-in a local browser. It uses local files and a temporary profile; no server or
-browser download is required. The runner does not disable Chromium's sandbox.
-Browser availability/environment errors are failures, never reported as a pass.
-Also inspect index.html at 320/390/768px, keyboard navigation, text zoom and denied,
-stale, failed/recovered and repeated reload flows before claiming visual acceptance.
+The separate `browser-contracts` CI job uses an existing vendor Google Chrome on
+Ubuntu 24.04. It explicitly fails if `/usr/bin/google-chrome` is absent; no browser
+or driver is installed/downloaded. It retains the browser sandbox and opens no
+debug listener: the dependency-free Node runner communicates over a private
+DevTools pipe to its own child process. Run on a supported Linux executor with
+`CHROMIUM_BIN=/path/to/existing/chrome node tests/admin-console/ui.mjs`.
+
+The runner executes the existing ui.html tests on a real DOM, then navigates the
+unchanged index.html with its real CSP/styles/scripts at 320/390/1280px. Checks
+cover overflow, grid columns, labels/landmarks/focus, 44px control targets,
+zero-player state, unavailable actions, timestamps, filtering and reloading.
+Each navigation waits for its matching loader's load event. These are basic
+checks, not a screen-reader audit or proof of a live app. Content HTTP(S)/WebSocket
+requests are blocked, browser background networking is disabled, and all test
+pages/resources are local fixture files. No real credentials or server data.
+
+One owned browser/process group has a 20-second total deadline and is cleaned up
+on success/failure. A missing browser or timeout fails explicitly. Results, bounded
+stderr and 390/1280px fixture screenshots are retained as internal CI QA artifacts
+for seven days, not published as a Site or delivered to the user. Browser/visual
+acceptance remains unverified until the new job actually executes successfully;
+manual screenshot/accessibility review is separate from passing DOM assertions.
 
 Preparation verification: Node syntax and the 32 DOM-double assertions passed.
 Real Chromium did not run successfully: local process-socket creation was denied;
