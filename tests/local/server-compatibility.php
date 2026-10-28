@@ -41,7 +41,7 @@ $root = sys_get_temp_dir().'/bot-v5-'.bin2hex(random_bytes(6)); mkdir($root);
 try {
  $server=(new ReflectionClass(\Civ13\GameServer::class))->newInstanceWithoutConstructor();
  $server->civ13=(new ReflectionClass(StatusCivFixture::class))->newInstanceWithoutConstructor();
- foreach (['name'=>'Fixture','ip'=>'127.0.0.1','port'=>'18452','host'=>'Local'] as $property=>$value) {(new ReflectionProperty($server,$property))->setValue($server,$value);}
+ foreach (['name'=>'Fixture','ip'=>'127.0.0.1','port'=>'18452','host'=>'Local','basedir'=>$root.'/'] as $property=>$value) {(new ReflectionProperty($server,$property))->setValue($server,$value);}
  $server->players=['player'];
  foreach (['byond','opendream'] as $engine) {
   $server->engine=$engine; $embed=json_decode(json_encode($server->toEmbed()),true);
@@ -50,7 +50,7 @@ try {
   check($field['name']===($engine==='byond'?'Server URL':'OpenDream gameplay endpoint'),'engine-specific endpoint label');
   check(!str_contains($field['value'],'18462'),'Topic port exposed as gameplay');
  }
- $server->enabled=true; (new ReflectionProperty($server, 'basedir'))->setValue($server,$root.'/'); mkdir($root.'/SQL');
+ $server->enabled=true; mkdir($root.'/SQL');
  check($server->OOCMessage('hello','admin'),'production OOC');
  check($server->AdminMessage('notice','admin') === true,'production admin');
  check($server->DirectMessage('hello','admin','player'),'production DM');
