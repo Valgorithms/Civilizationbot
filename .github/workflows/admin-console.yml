@@ -56,6 +56,14 @@ jobs:
       - name: Dependency-free status service contracts
         timeout-minutes: 2
         run: php tests/admin-console/status-service.php
+      - name: Lint inert command intent types
+        run: |
+          php -l src/Civ13/AdminConsole/PreparedCommandIntent.php
+          php -l src/Civ13/AdminConsole/CommandIntentPreparer.php
+          php -l tests/admin-console/command-intent.php
+      - name: Dependency-free command preparation contracts
+        timeout-minutes: 2
+        run: php tests/admin-console/command-intent.php
       - name: Dependency-free projection contracts
         timeout-minutes: 2
         run: php tests/admin-console/projection.php
