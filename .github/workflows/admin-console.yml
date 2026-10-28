@@ -38,6 +38,13 @@ jobs:
         run: php -l src/Civ13/AdminConsole/AdminServerProjection.php
       - name: Lint offline test
         run: php -l tests/admin-console/projection.php
+      - name: Lint cached observation adapter
+        run: php -l src/Civ13/AdminConsole/CachedObservationAdapter.php
+      - name: Lint cached observation tests
+        run: php -l tests/admin-console/cached-observation.php
+      - name: Cached observation contracts
+        timeout-minutes: 2
+        run: php tests/admin-console/cached-observation.php
       - name: Dependency-free projection contracts
         timeout-minutes: 2
         run: php tests/admin-console/projection.php

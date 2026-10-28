@@ -55,6 +55,9 @@ final class AdminServerProjection
             'reason' => 'observation_unavailable',
             'age_seconds' => null,
             'ready' => null,
+            'evidence' => ['reachability' => ['state' => 'unknown', 'age_seconds' => null],
+                'heartbeat' => ['state' => 'unknown', 'age_seconds' => null],
+                'readiness' => ['state' => 'unknown', 'age_seconds' => null]],
             'metrics' => ['players' => null, 'map' => null, 'mode' => null,
                 'round_id' => null, 'round_duration_seconds' => null,
                 'generation' => null, 'save_load_phase' => null],
@@ -71,9 +74,15 @@ final class AdminServerProjection
             || ($sample['clock_scope'] ?? null) !== $this->clockScope) {
             return $view;
         }
+        $view['evidence'] = self::evidence($sample['evidence'] ?? null, $now);
         $observed = $sample['observed_at'] ?? null;
         $expires = $sample['expires_at'] ?? null;
+        $collected = $sample['collected_at'] ?? $observed;
+        if (($sample['state'] ?? null) === 'unknown' && $observed === null && $expires === null) {
+            return $view; // Never observed is unknown, not an artificially expiring sample.
+        }
         if (! self::number($now) || ! self::number($observed) || ! self::number($expires)
+            || !self::number($collected) || $collected < $observed || $collected > $now
             || $observed > $now || $expires <= $observed
             || $expires - $observed > self::MAX_AGE_SECONDS) {
             $view['reason'] = 'invalid_observation_time';
@@ -116,7 +125,7 @@ final class AdminServerProjection
             $value = $data[$key] ?? null;
             if (is_string($value) && strlen($value) <= $limit
                 && preg_match('//u', $value) === 1
-                && preg_match('/[\p{C}\p{Zl}\p{Zp}]/u', $value) === 0) {
+                && preg_match('/[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u', $value) === 0) {
                 $view['metrics'][$key] = $value;
             }
         }
@@ -124,7 +133,34 @@ final class AdminServerProjection
         if (in_array($phase, ['idle', 'saving', 'loading', 'restoring_players'], true)) {
             $view['metrics']['save_load_phase'] = $phase;
         }
+        if (is_bool($view['ready'])) {
+            $view['evidence']['readiness'] = ['state' => $view['ready'] ? 'ready' : 'not_ready',
+                'age_seconds' => $view['age_seconds']];
+        }
         return $view;
+    }
+
+    /** Independent source freshness; this display evidence cannot grant controls. */
+    private static function evidence(mixed $sources, mixed $now): array
+    {
+        $result = ['reachability' => ['state' => 'unknown', 'age_seconds' => null],
+            'heartbeat' => ['state' => 'unknown', 'age_seconds' => null],
+            'readiness' => ['state' => 'unknown', 'age_seconds' => null]];
+        if (!is_array($sources) || !self::number($now)) { return $result; }
+        foreach (['reachability' => ['reachable', 'unknown'], 'heartbeat' => ['advancing', 'stale', 'unknown']] as $key => $states) {
+            $source = $sources[$key] ?? null;
+            if (!is_array($source) || !in_array($source['state'] ?? null, $states, true)) { continue; }
+            $observed = $source['observed_at'] ?? null;
+            $expires = $source['expires_at'] ?? null;
+            $collected = $source['collected_at'] ?? $observed;
+            if (!self::number($observed) || !self::number($expires) || !self::number($collected)
+                || $collected < $observed || $collected > $now || $observed > $now
+                || $expires <= $observed || $expires - $observed > self::MAX_AGE_SECONDS) { continue; }
+            $result[$key] = ['state' => $now >= $expires ? 'stale' : $source['state'],
+                'age_seconds' => (float) ($now - $observed)];
+        }
+        // Directory and passive heartbeat never prove application readiness.
+        return $result;
     }
 
     private static function number(mixed $value): bool
