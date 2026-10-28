@@ -5,6 +5,15 @@ declare(strict_types=1);
 namespace Civ13 {
     function fsockopen(...$arguments): never { throw new \RuntimeException('Status attempted a network probe'); }
     function touch(...$arguments): never { throw new \RuntimeException('Status attempted to touch game data'); }
+    function file_get_contents($filename, ...$arguments): string|false {
+        if (($GLOBALS['host_read_forbidden'] ?? null) === $filename) { throw new \RuntimeException('Remote host file was read'); }
+        if (($GLOBALS['host_read_failure'] ?? null) === $filename) { return false; }
+        return \file_get_contents($filename, ...$arguments);
+    }
+    function is_file($filename): bool {
+        if (str_starts_with(str_replace('\\', '/', $filename), '//')) { throw new \RuntimeException('UNC path was probed'); }
+        return \is_file($filename);
+    }
 }
 
 namespace {
@@ -79,9 +88,35 @@ namespace {
     $clock = static function () use (&$now): float { return $now; };
     try {
         $path = $root.'/serverdata.txt';
+        mkdir($root.'/config');
+        $hostPath = $root.'/config/host.txt';
+        file_put_contents($hostPath, "  AlphaHost \r\n");
+        mkdir($root.'/other'); mkdir($root.'/other/config');
+        $otherHostPath = $root.'/other/config/host.txt';
+        file_put_contents($otherHostPath, "BetaHost\n");
         file_put_contents($path, record('100', 'player', true));
         touch($path, 1000000000);
         $server = server($path, $clock);
+        $other = server($root.'/other/serverdata.txt', $clock);
+        foreach ([[$server, 'AlphaHost'], [$other, 'BetaHost']] as [$fixtureServer, $expectedHost]) {
+            check(fields($fixtureServer->generateServerstatusEmbed())['Host'] === $expectedHost, 'Heartbeat used another server or configured host');
+            check(fields($fixtureServer->toEmbed())['Host'] === $expectedHost, 'Status embed used another server or configured host');
+        }
+        check(file_get_contents($hostPath) === "  AlphaHost \r\n" && file_get_contents($otherHostPath) === "BetaHost\n", 'Status rendering modified a host file');
+        file_put_contents($hostPath, " ChangedHost \n");
+        check(fields($server->toEmbed())['Host'] === 'ChangedHost' && fields($other->toEmbed())['Host'] === 'BetaHost', 'Host file changes did not stay per-server');
+        $GLOBALS['host_read_failure'] = $hostPath;
+        check(fields($server->toEmbed())['Host'] === 'Unavailable' && fields($server->generateServerstatusEmbed())['Host'] === 'Unavailable', 'Unreadable host file used a fallback');
+        unset($GLOBALS['host_read_failure']);
+        file_put_contents($hostPath, " \r\n\t");
+        check(fields($server->toEmbed())['Host'] === 'Unavailable' && fields($server->generateServerstatusEmbed())['Host'] === 'Unavailable', 'Empty host file used a fallback');
+        file_put_contents($hostPath, str_repeat('x', 1025));
+        check(fields($server->toEmbed())['Host'] === 'Unavailable', 'Oversized host file produced an invalid embed');
+        unlink($hostPath);
+        check(fields($server->toEmbed())['Host'] === 'Unavailable' && fields($server->generateServerstatusEmbed())['Host'] === 'Unavailable' && fields($other->toEmbed())['Host'] === 'BetaHost', 'Missing host file used another server or placeholder');
+        file_put_contents($hostPath, "AlphaHost\n");
+        $unc = server('//server/share/serverdata.txt', $clock);
+        check(fields($unc->toEmbed())['Host'] === 'Unavailable', 'UNC host path should not be probed');
         $server->players = ['cached'];
         $initial = fields($server->generateServerstatusEmbed());
         check($initial['Nomads'] === 'Unknown' && ! isset($initial['Players (1)']), 'Old literal Online leaked into initial status');
@@ -91,7 +126,7 @@ namespace {
         $now = 15;
         file_put_contents($path, record('200', 'player', true));
         $active = fields($server->generateServerstatusEmbed());
-        check($active['Nomads'] === 'Heartbeat advancing' && $active['Connectivity'] === 'Unverified', 'Heartbeat was represented as connection readiness');
+        check($active['Nomads'] === 'Heartbeat advancing' && ! array_key_exists('Connectivity', $active), 'Heartbeat or removed connectivity field is incorrect');
         check($active['Players (1)'] === 'player' && $server->localServerPlayerCount() === 1, 'Optional Approved field corrupted player metadata');
         check($server->players === ['player'], 'Confirmed player cache not populated');
         $server->current_round = 'fixture';
@@ -129,12 +164,19 @@ namespace {
         check($server->players === [], 'Missing data retained players');
         $remote = server($root.'/never-created', $clock, '192.0.2.1');
         (new ReflectionProperty($remote, 'heartbeat'))->setValue($remote, new Civ13\ServerHeartbeat('unused', $clock, static function (): never { throw new RuntimeException('Remote directory was read'); }));
+        $GLOBALS['host_read_forbidden'] = $hostPath;
+        check(fields($remote->toEmbed())['Host'] === 'Unavailable', 'Remote status used a local or configured host');
         check(fields($remote->generateServerstatusEmbed())['Health'] === 'Unknown (no local heartbeat evidence)', 'Remote server inferred health');
+        unset($GLOBALS['host_read_forbidden']);
         check($remote->localServerPlayerCount() === 0, 'Remote server tried local player read');
         check(! array_key_exists('heartbeat', $server->__toArray()), 'Ephemeral observation leaked into serialization');
         echo "Production heartbeat renderer/cache/timer contracts passed\n";
     } finally {
+        unset($GLOBALS['host_read_forbidden'], $GLOBALS['host_read_failure']);
         if (is_file($root.'/serverdata.txt')) { unlink($root.'/serverdata.txt'); }
+        if (is_file($root.'/config/host.txt')) { unlink($root.'/config/host.txt'); }
+        if (is_file($root.'/other/config/host.txt')) { unlink($root.'/other/config/host.txt'); }
+        rmdir($root.'/config'); rmdir($root.'/other/config'); rmdir($root.'/other');
         rmdir($root);
     }
 }
