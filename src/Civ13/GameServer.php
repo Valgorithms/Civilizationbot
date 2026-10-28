@@ -1899,8 +1899,23 @@ class GameServer
                 default => 'Unknown',
             })
             ->addFieldValues('Observation', $status['reason'].($status['age'] === null ? '' : ' ('.(int) $status['age'].'s since last observed progress/baseline)'), false)
-            ->addFieldValues('Connectivity', 'Unverified', true)
-            ->addFieldValues('Host', $this->host, true);
+            ->addFieldValues('Host', $this->displayHost(), true);
+    }
+
+    /** Read only this locally configured server's host file; do not infer a fallback. */
+    private function displayHost(): string
+    {
+        $base = str_replace('\\', '/', $this->basedir);
+        if ($this->ip !== ($this->civ13->httpServiceManager->httpHandler->external_ip ?? null)
+            || $base === '' || str_starts_with($base, '//') || str_contains($base, '://')) {
+            return 'Unavailable';
+        }
+        $path = rtrim($this->basedir, '/\\').'/config/host.txt';
+        if (! @is_file($path) || ($value = @file_get_contents($path, false, null, 0, 1025)) === false
+            || strlen($value) > 1024 || preg_match('//u', $value) !== 1) {
+            return 'Unavailable';
+        }
+        return trim($value) === '' ? 'Unavailable' : trim($value);
     }
     /**
      * Explodes the server data string into an array by removing specific substrings and splitting by semicolon.
@@ -1968,7 +1983,7 @@ class GameServer
         return $this->civ13->createEmbed()
             ->setTitle($this->name)
             ->addFieldValues($this->engine === 'opendream' ? 'OpenDream gameplay endpoint' : 'Server URL', $this->engine === 'opendream' ? "{$this->ip}:{$this->port}" : "byond://{$this->ip}:{$this->port}", false)
-            ->addFieldValues('Host', $this->host, true)
+            ->addFieldValues('Host', $this->displayHost(), true)
             ->addFieldValues('Health', 'Unknown (no local heartbeat evidence)', true)
             ->addFieldValues('Players (cached, unverified)', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
     }
