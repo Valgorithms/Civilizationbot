@@ -143,6 +143,8 @@ class Civ13
     public const array faction_admins = ['Faction Organizer'];
     
     public readonly string $gitdir;
+    /** Portable profile state directory; empty outside portable mode. */
+    public string $portable_state_dir = '';
     /** @var array<string|null> */
     public readonly array $faction_ids;
 
@@ -280,6 +282,7 @@ class Civ13
         // Set the file that the object was constructed in
         $this->constructed_file = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'];
         $this->restartPolicy = new RestartPolicy($options['restart_mode'] ?? 'legacy');
+        $this->portable_state_dir = $options['portable_state_dir'] ?? '';
 
         $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
         $options = $this->resolveOptions($options);
@@ -500,6 +503,7 @@ class Civ13
                 'moderate',
                 'ooc_badwords',
                 'owner_id',
+                'portable_state_dir',
                 'rules',
                 'restart_mode',
                 'civ13_server_settings',
@@ -545,6 +549,7 @@ class Civ13
                 'moderate' => true,
                 'ooc_badwords' => [],
                 'owner_id' => '196253985072611328',
+                'portable_state_dir' => '',
                 'rules' => 'civ13.com slash rules',
                 'restart_mode' => 'legacy',
                 'civ13_server_settings' => [],
@@ -560,6 +565,7 @@ class Civ13
             ->setAllowedTypes('welcome_message', 'string')
             ->setAllowedTypes('safehouse_enabled', 'bool')
             ->setAllowedTypes('safehouse_gateway', ['null', \Civ13\Safehouse\AsyncGateway::class])
+            ->setAllowedTypes('portable_state_dir', 'string')
             ->setAllowedTypes('restart_mode', 'string')
             ->setAllowedValues('restart_mode', ['legacy', 'supervised'])
             ->setAllowedTypes('logger', ['null', Logger::class])
