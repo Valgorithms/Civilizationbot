@@ -45,6 +45,17 @@ jobs:
       - name: Cached observation contracts
         timeout-minutes: 2
         run: php tests/admin-console/cached-observation.php
+      - name: Lint status service
+        run: php -l src/Civ13/AdminConsole/ReadOnlyStatusService.php
+      - name: Lint unregistered HTTP endpoint
+        run: php -l src/Civ13/AdminConsole/StatusEndpoint.php
+      - name: Lint status service tests
+        run: php -l tests/admin-console/status-service.php
+      - name: Lint HTTP boundary tests
+        run: php -l tests/admin-console/status-http.php
+      - name: Dependency-free status service contracts
+        timeout-minutes: 2
+        run: php tests/admin-console/status-service.php
       - name: Dependency-free projection contracts
         timeout-minutes: 2
         run: php tests/admin-console/projection.php
@@ -64,3 +75,21 @@ jobs:
       - run: node --check web/admin-console/demo.js
       - name: Dependency-free DOM contracts (not browser/layout acceptance)
         run: node tests/admin-console/ui-dom.mjs
+
+  http-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, openssl, curl
+          coverage: none
+      - name: Install existing application dependencies without scripts/plugins
+        run: composer install --no-interaction --no-plugins --no-scripts --no-dev
+      - name: Actual PSR and React HTTP boundary contracts (offline)
+        timeout-minutes: 2
+        run: php tests/admin-console/status-http.php
