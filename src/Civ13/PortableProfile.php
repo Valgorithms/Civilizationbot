@@ -64,6 +64,7 @@ final class PortableProfile
         }
         $options['gitdir'] = $profile['gitdir'];
         $options['filecache_path'] = $profile['state_dir'].'/json/';
+        $options['portable_state_dir'] = $profile['state_dir'];
         $options['discover_external_ip'] = false;
         $options['verify_url'] = '';
         $options['verification_read_only'] = false;
