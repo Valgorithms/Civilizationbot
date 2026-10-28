@@ -147,6 +147,7 @@ class MessageServiceManager
             ->offsetSet('togglerelaymethod', new Commands\RelayMethodToggle($this->civ13), ['Ambassador'])
             ->offsetSet('listrounds', new Commands\ListRounds($this->civ13), ['Ambassador'])
             ->offsetSet('updateadmins', new Commands\AdminListUpdate($this->civ13), ['Ambassador'])
+            ->offsetSet('reloadconfig', new Commands\ReloadConfig($this->civ13), ['Ambassador'])
             ->offsetSet('pullrepo', new Commands\PullCivRepository($this->civ13), ['Ambassador'])
             ->offsetSet('byondage', new Commands\ByondAge($this->civ13), ['Ambassador'])
             ->offsetSet('listverified', new Commands\ListVerified($this->civ13), ['Admin'])

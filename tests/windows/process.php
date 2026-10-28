@@ -48,7 +48,12 @@ exit(23);
     if ($exit !== 23 || is_file($dir.'/stop.request')) { throw new RuntimeException('Child exit/stop marker mismatch'); }
     if (!str_contains(file_get_contents($dir.'/stdout.log'), 'stdout fixture') || !str_contains(file_get_contents($dir.'/stderr.log'), 'stderr fixture')) { throw new RuntimeException('Child log redirection failed'); }
     $lock = PortableProcess::lock($dir); fclose($lock);
-    echo "PASS real PHP child: literal argv, spaced path, log redirection, cross-process locking, stop and exit status\n";
+    if (PortableProcess::consumeReload($dir)) { throw new RuntimeException('Reload consumed without a request'); }
+    PortableProcess::requestReload($dir);
+    try { PortableProcess::requestReload($dir); throw new LogicException('Duplicate reload request accepted'); }
+    catch (RuntimeException $error) { if ($error->getMessage() !== 'Reload already requested or state unavailable') { throw $error; } }
+    if (!PortableProcess::consumeReload($dir) || PortableProcess::consumeReload($dir) || is_file($dir.'/reload.request')) { throw new RuntimeException('Reload marker is not one-use'); }
+    echo "PASS real PHP child: literal argv, spaced path, log redirection, cross-process locking, stop, one-use reload marker and exit status\n";
 } finally {
     // Only the exact child handle created by this test can be terminated on failure.
     if (is_resource($process)) { proc_terminate($process); proc_close($process); }

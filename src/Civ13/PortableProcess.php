@@ -34,4 +34,18 @@ final class PortableProcess
         if ($stream === false) { throw new \RuntimeException('Stop already requested or state unavailable'); }
         fclose($stream);
     }
+
+    /** Ask the foreground supervisor to relaunch after this child exits, rereading the profile. */
+    public static function requestReload(string $state): void
+    {
+        $stream = @fopen($state.'/reload.request', 'x');
+        if ($stream === false) { throw new \RuntimeException('Reload already requested or state unavailable'); }
+        fclose($stream);
+    }
+
+    /** One-use: true only if a reload was requested and the marker was removed. */
+    public static function consumeReload(string $state): bool
+    {
+        return is_file($state.'/reload.request') && unlink($state.'/reload.request');
+    }
 }

@@ -73,6 +73,10 @@ Logs append to state/output.log, stdout.log and stderr.log. Protect this directo
 with operator-only filesystem permissions and apply an external retention policy.
 Restart commands exit gracefully in portable mode; the operator relaunches the
 foreground supervisor. No self-spawning sudo/nohup path is used.
+The Ambassador `reloadconfig` chat command writes a one-use `reload.request`
+marker and stops the bot; `control.php start` then relaunches it, rereading the
+profile and environment file after rechecking the profile and source. A stale
+marker is cleared at start, and a pending stop request takes precedence.
 
 Portable construction skips public-IP discovery, so startup does not depend on
 ipecho.net or grant that discovered address local trust. Linux defaults are unchanged.
