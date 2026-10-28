@@ -1,0 +1,41 @@
+name: Read-only admin console contracts
+
+on:
+  push:
+    paths:
+      - 'src/Civ13/AdminConsole/**'
+      - 'tests/admin-console/**'
+      - '.github/workflows/admin-console.yml'
+  pull_request:
+    paths:
+      - 'src/Civ13/AdminConsole/**'
+      - 'tests/admin-console/**'
+      - '.github/workflows/admin-console.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  projection:
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        php: ['8.3', '8.4', '8.5']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Lint display contract
+        run: php -l src/Civ13/AdminConsole/AdminServerProjection.php
+      - name: Lint offline test
+        run: php -l tests/admin-console/projection.php
+      - name: Dependency-free projection contracts
+        timeout-minutes: 2
+        run: php tests/admin-console/projection.php
