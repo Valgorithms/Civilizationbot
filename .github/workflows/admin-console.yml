@@ -5,11 +5,13 @@ on:
     paths:
       - 'src/Civ13/AdminConsole/**'
       - 'tests/admin-console/**'
+      - 'web/admin-console/**'
       - '.github/workflows/admin-console.yml'
   pull_request:
     paths:
       - 'src/Civ13/AdminConsole/**'
       - 'tests/admin-console/**'
+      - 'web/admin-console/**'
       - '.github/workflows/admin-console.yml'
 
 permissions:
@@ -39,3 +41,19 @@ jobs:
       - name: Dependency-free projection contracts
         timeout-minutes: 2
         run: php tests/admin-console/projection.php
+
+  ui-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check web/admin-console/console.js
+      - run: node --check web/admin-console/fixtures.js
+      - run: node --check web/admin-console/demo.js
+      - name: Dependency-free DOM contracts (not browser/layout acceptance)
+        run: node tests/admin-console/ui-dom.mjs
