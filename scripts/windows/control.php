@@ -34,9 +34,13 @@ try {
         fclose($pipes[0]);
         // Foreground supervision avoids unowned background PHP copies; Ctrl+C is not a game stop.
         $exit=proc_close($process);
-        // reloadconfig: relaunch so the child rereads the profile and environment. Recheck
-        // the profile and source first, so a broken edit stops here instead of looping.
-        $reload=PortableProcess::consumeReload($profile['state_dir']) && !is_file($profile['state_dir'].'/stop.request');
+        // reloadconfig: relaunch so the child rereads the profile and environment. Hold the
+        // instance lock while deciding, so a concurrent start cannot take the marker; if
+        // another instance already owns the lock, it is the live bot and this one stands down.
+        try { $lock=PortableProcess::lock($profile['state_dir']); } catch (RuntimeException) { $lock=null; }
+        $reload=$lock!==null && PortableProcess::consumeReload($profile['state_dir']) && !is_file($profile['state_dir'].'/stop.request');
+        if ($lock!==null) { fclose($lock); }
+        // Recheck the profile and source first, so a broken edit stops here instead of looping.
         if ($reload) {
             $profile=PortableProfile::load($argv[2]);
             PortableProfile::assertRoot($profile, dirname(__DIR__, 2));
