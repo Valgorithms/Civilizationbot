@@ -507,7 +507,11 @@ class GameServer
                         continue;
                     }
                     if (isset($this->civ13->moderator)) {
-                        $this->civ13->moderator->scrutinizeCkey($ckey);
+                        try {
+                            $this->civ13->moderator->scrutinizeCkey($ckey);
+                        } catch (\Throwable $e) { // A plain loop timer has no promise to reject; an escaping throw is a fatal error
+                            $this->logger->warning("Skipped scrutinizing `$ckey`: {$e->getMessage()}");
+                        }
                     }
                 }
             });
@@ -638,7 +642,12 @@ class GameServer
                         : substr($participating_players, 0, 1021).'...')
                     : 'None'
             );
-            if ($discord_ids = array_filter(array_map(fn ($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, $players))) {
+            try {
+                $discord_ids = array_filter(array_map(fn ($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, $players));
+            } catch (VerifierException $e) { // Hosted verification is unavailable; keep the round embed without its verified list
+                $discord_ids = [];
+            }
+            if ($discord_ids) {
                 $embed->addFieldValues(
                     'Verified Players ('.count($discord_ids).')',
                     strlen($verified_players = implode(', ', $discord_ids)) <= 1024
