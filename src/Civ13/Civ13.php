@@ -154,6 +154,7 @@ class Civ13
     public Byond $byond;
     public Moderator $moderator;
     public Verifier $verifier;
+    private ?AdminFileSync $adminFileSync = null;
     public ?SS14Verifier $ss14verifier = null;
 
     public string $welcome_message = '';
@@ -440,8 +441,19 @@ class Civ13
         $this->byond = new Byond();
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
-        $this->discord->on('init', function (Discord $discord) {
+        $adminSync = $options['admin_file_sync'];
+        $this->discord->on('init', function (Discord $discord) use ($adminSync) {
             $this->ready = true;
+            // Verifier's earlier init listener has assigned the read-only verifier by now.
+            // Uses the existing configured read-only verification feed; activation remains explicit.
+            if (($adminSync['enabled'] ?? false) !== false) {
+                try { $this->adminFileSync = AdminFileSync::attach($this, $adminSync, $adminSync['admin_file'] ?? ''); }
+                catch (\Throwable) {
+                    $this->adminFileSync = null;
+                    try { $this->logger->warning('Admin file synchronization inactive: runtime attachment failed'); }
+                    catch (\Throwable) {}
+                }
+            }
             $this->logger->info("Logged in as {$this->discord->username} {$this->discord->user}");
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
@@ -558,6 +570,7 @@ class Civ13
                 'technician_id' => '116927250145869826',
                 'verify_url' => 'http://valzargaming.com:8080/verified/',
                 'verification_read_only' => false,
+                'admin_file_sync' => ['enabled' => false],
                 'web_address' => '',
                 'webapi' => null,
                 'webserver_url' => 'www.valzargaming.com',
@@ -606,6 +619,7 @@ class Civ13
             ->setAllowedTypes('technician_id', 'string')
             ->setAllowedTypes('verify_url', 'string')
             ->setAllowedTypes('verification_read_only', 'bool')
+            ->setAllowedTypes('admin_file_sync', 'array')
             ->setAllowedTypes('web_address', 'string')
             ->setAllowedTypes('webapi', ['null', 'resource', HttpServer::class])
             ->setAllowedTypes('webserver_url', 'string');
@@ -934,6 +948,7 @@ class Civ13
      */
     public function stop(bool $closeLoop = true): void
     {
+        $this->stopAdminFileSync();
         $this->logger->info('Shutting down');
         if (isset($this->httpServiceManager->socket)) {
             $this->httpServiceManager->socket->close();
@@ -948,6 +963,23 @@ class Civ13
             $this->loop->stop();
         }
     }
+    /** Successful replacement from the current verifier only; disabled/unattached is inert. */
+    public function hostedVerificationRefreshed(Verifier $verifier): void
+    {
+        if ($this->adminFileSync === null || !isset($this->verifier) || $this->verifier !== $verifier) { return; }
+        $this->adminFileSync->verificationChanged();
+    }
+
+    /** Cleanup failure must not prevent the existing bot shutdown or escape our destructor. */
+    private function stopAdminFileSync(): void
+    {
+        try { $this->adminFileSync?->stop(); }
+        catch (\Throwable) {
+            try { if (isset($this->logger)) { $this->logger->warning('Admin file synchronization listener cleanup failed'); } }
+            catch (\Throwable) {}
+        }
+    }
+
     /**
      * Restarts the application by first stopping it and then calling the OS restart function.
      *
@@ -2276,6 +2308,7 @@ class Civ13
     /** Cancels every timer the bot registered. */
     public function __destruct()
     {
+        $this->stopAdminFileSync();
         foreach ($this->timers as $timer) {
             $this->loop->cancelTimer($timer);
         }

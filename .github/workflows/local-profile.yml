@@ -9,12 +9,23 @@ on:
       - 'src/Civ13/RestartPolicy.php'
       - 'src/Civ13/Civ13.php'
       - 'src/Civ13/GameServer.php'
+      - 'src/Civ13/AdminListRenderer.php'
+      - 'src/Civ13/AdminSyncSnapshotGate.php'
+      - 'src/Civ13/AdminSyncCoordinator.php'
+      - 'src/Civ13/AdminMemberSnapshotProvider.php'
+      - 'src/Civ13/AdminCacheSyncTrigger.php'
+      - 'src/Civ13/AdminFileSync.php'
+      - 'src/Civ13/PortableProfile.php'
+      - 'src/Civ13/HostedVerificationSource.php'
+      - 'src/Civ13/HostedVerificationSnapshot.php'
+      - 'src/Civ13/Verifier.php'
       - 'src/Civ13/Slash.php'
       - 'src/Civ13/Panels.php'
       - 'src/Civ13/MessageCommand/Commands/AdminListUpdate.php'
       - 'src/Civ13/MessageCommand/Commands/Civ13GameServerMapSwap.php'
       - 'src/Civ13/HttpServiceManager.php'
       - 'local-bot.php'
+      - 'bot.php'
       - 'tests/local/**'
       - 'scripts/local/**'
       - '.github/workflows/local-profile.yml'
@@ -42,6 +53,10 @@ jobs:
           extensions: sodium
           coverage: none
       - run: php tests/local/run.php
+      - run: php tests/local/admin-sync-projection.php
+      - run: php tests/local/admin-file-sync-profile.php
+      - run: php tests/local/admin-file-writer.php
+        timeout-minutes: 2
       - run: php -l local-bot.php
   supervision:
     if: github.event_name != 'workflow_dispatch' || !inputs.native_smoke
@@ -59,6 +74,14 @@ jobs:
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: php tests/local/library.php
+      - run: php tests/local/admin-sync-coordinator.php vendor/autoload.php
+      - run: php tests/local/admin-member-snapshot.php vendor/autoload.php
+      - run: php tests/local/admin-cache-sync.php vendor/autoload.php
+        timeout-minutes: 2
+      - run: php tests/local/admin-file-sync.php vendor/autoload.php
+        timeout-minutes: 2
+      - run: php tests/local/admin-verification-refresh.php vendor/autoload.php
+        timeout-minutes: 2
       - run: php tests/local/opendream.php
       - run: php tests/local/restart-command.php vendor/autoload.php
       - run: php tests/local/lifecycle.php vendor/autoload.php
@@ -72,6 +95,25 @@ jobs:
       - run: php tests/local/unban-commands.php vendor/autoload.php
       - run: php tests/local/adminlist-consumers.php vendor/autoload.php
       - run: php tests/local/lifecycle-consumers.php vendor/autoload.php
+  admin-sync-windows:
+    if: github.event_name != 'workflow_dispatch' || !inputs.native_smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4', '8.5']
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+      - run: composer install --no-interaction --no-plugins --no-scripts --no-dev --prefer-dist --no-progress
+      - run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/admin-cache-sync.php vendor/autoload.php
+      - run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/admin-file-sync.php vendor/autoload.php
+      - run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/admin-verification-refresh.php vendor/autoload.php
   windows-exe-smoke:
     if: github.event_name == 'workflow_dispatch' && inputs.native_smoke
     runs-on: windows-latest
