@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Civ13 · Admin console demo</title>
+  <link rel="stylesheet" href="console.css">
+  <script defer src="console.js"></script>
+  <script defer src="fixtures.js"></script>
+  <script defer src="demo.js"></script>
+</head>
+<body>
+  <a class="skip" href="#servers">Skip to servers</a>
+  <div class="shell">
+    <header class="masthead"><a class="brand" href="#">CIV<span>13</span><small>OPERATIONS</small></a><span class="demo-tag">FIXTURE DEMO</span></header>
+    <main>
+      <div class="intro"><p class="eyebrow">ADMINISTRATION / OVERVIEW</p><h1>Your worlds,<br><span>at a glance.</span></h1><p class="lede">Read-only server health. Know what is happening before you act.</p></div>
+      <aside class="notice"><strong>No live connection</strong><p>These are synthetic examples, not your servers. Discord sign-in, live telemetry and commands are not connected.</p></aside>
+      <div class="toolbar"><div><label for="state-filter">Show servers</label><select id="state-filter"><option value="all">All states</option><option value="online">Online</option><option value="busy">Busy</option><option value="recovery_hold">Recovery hold</option><option value="stale">Stale</option><option value="offline">Unreachable</option><option value="unknown">Unknown</option></select></div><button id="reload" type="button">Reload demo</button></div>
+      <p id="summary" class="summary" role="status" aria-live="polite"></p>
+      <section id="servers" class="servers" aria-label="Server overview" tabindex="-1"></section>
+      <footer>READ-ONLY BY DESIGN <span>·</span> No commands are sent. No actions are queued.</footer>
+    </main>
+  </div>
+</body>
+</html>
