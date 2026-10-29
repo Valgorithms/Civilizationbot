@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Civ13;
 
+use Civ13\Exceptions\VerifierException;
 use Discord\Discord;
 use Monolog\Logger;
 use React\Promise\PromiseInterface;
@@ -169,9 +170,15 @@ class Moderator
                 }
             }
         }
-        if ($this->civ13->verifier->get('ss13', $ckey)) {
+        try {
+            if ($this->civ13->verifier->get('ss13', $ckey)) {
+                return;
+            } // Verified users are exempt from further checks
+        } catch (VerifierException $e) { // Verification status is unknown, so never treat the user as unverified
+            $this->logger->warning("Skipped new-account checks for `$ckey`: {$e->getMessage()}");
+
             return;
-        } // Verified users are exempt from further checks
+        }
         if (! isset($this->civ13->permitted[$ckey]) && ! isset($this->civ13->ages[$ckey]) && ($age = $this->civ13->getByondAge($ckey)) && ! $this->civ13->checkByondAge($age)) { // Force new accounts to register in Discord
             $ban = ['ckey' => $ckey, 'duration' => '999 years', 'reason' => "Byond account `$ckey` must register and be approved to play. ($age) Verify at {$this->civ13->discord_formatted}"];
             if (isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
@@ -235,7 +242,14 @@ class Moderator
 
         if (isset($this->civ13->verifier)) {
             if ($guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
-                if ($item = $this->civ13->verifier->get('ss13', $ckey)) {
+                try {
+                    $item = $this->civ13->verifier->get('ss13', $ckey);
+                } catch (VerifierException $e) { // Admin status is unknown; warn only rather than risk banning staff
+                    $this->logger->warning("Skipped chat-moderation ban for `$ckey`: {$e->getMessage()}");
+
+                    return false;
+                }
+                if ($item) {
                     if (isset($item['discord']) && $member = $guild->members->get('id', $item['discord'])) {
                         if ($member->roles->has($this->civ13->role_ids['Admin'])) {
                             return false;
