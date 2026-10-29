@@ -74,8 +74,10 @@ function syncFixture(bool $alreadyReady=false): array {
     return [$app,$f,$writer];
 }
 function syncSettings(): array { return ['enabled'=>true,'max_bytes'=>4096,'debounce_seconds'=>0.25,'refresh_timeout_seconds'=>5.0]; }
+// Synthetic keys only: every enabled attachment below injects a memory writer.
+function syncInertPath(string $file): string { return (PHP_OS_FAMILY === 'Windows' ? 'C:/inert/' : '/inert/').$file; }
 function syncAttach(object $app,object $f,callable $writer): AdminFileSync {
-    $sync=AdminFileSync::attach($app,syncSettings(),'/inert/admins.txt',$writer,static fn()=>$f->now);
+    $sync=AdminFileSync::attach($app,syncSettings(),syncInertPath('admins.txt'),$writer,static fn()=>$f->now);
     compositionCheck($sync instanceof AdminFileSync,'Enabled composition missing'); return $sync;
 }
 function syncTick(object $f,float $delay=0.25): void {
@@ -90,16 +92,16 @@ compositionCheck(AdminFileSync::attach($untouchable,[],'',$effect,$effect)===nul
 compositionCheck(AdminFileSync::attach($untouchable,['enabled'=>false],'',$effect,$effect)===null,'Disabled option had effects');
 // Shared pure preflight rejects complete-map errors before any bootstrap/client effects.
 [$app,$f,$writer]=syncFixture();
-AdminFileSync::validateConfiguration(syncSettings(),'/inert/admins.txt',$f->guild,$app->role_ids);
+AdminFileSync::validateConfiguration(syncSettings(),syncInertPath('admins.txt'),$f->guild,$app->role_ids);
 compositionCheck($app->discord->adds===0 && $f->timerCalls===0 && $app->verifier->refreshes===0,'Configuration preflight had runtime effects');
 foreach (array_keys(GameServer::ADMIN_PERMISSIONS) as $name) {
     $roles=$app->role_ids; unset($roles[$name]);
-    try { AdminFileSync::validateConfiguration(syncSettings(),'/inert/admins.txt',$f->guild,$roles); throw new RuntimeException('Missing full-map role accepted'); }
+    try { AdminFileSync::validateConfiguration(syncSettings(),syncInertPath('admins.txt'),$f->guild,$roles); throw new RuntimeException('Missing full-map role accepted'); }
     catch (InvalidArgumentException $expectedError) { compositionCheck(true,'Missing role rejected before init'); }
 }
 foreach (['duplicate','malformed'] as $bad) {
     $roles=$app->role_ids; $roles['Admin']=$bad==='duplicate'?$roles['Owner']:'not-a-role';
-    try { AdminFileSync::validateConfiguration(syncSettings(),'/inert/admins.txt',$f->guild,$roles); throw new RuntimeException('Invalid role map accepted'); }
+    try { AdminFileSync::validateConfiguration(syncSettings(),syncInertPath('admins.txt'),$f->guild,$roles); throw new RuntimeException('Invalid role map accepted'); }
     catch (InvalidArgumentException $expectedError) { compositionCheck(true,'Invalid role map rejected before init'); }
 }
 $bootstrap=file_get_contents(__DIR__.'/../../bot.php');
@@ -333,8 +335,8 @@ foreach (['same-target','changed-target'] as $targetChange) {
         $oldSync=null; $newSync=null; $owner=null;
         try {
             [$oldApp,$oldF,$unusedWriter]=syncFixture(true);
-            $oldTarget='/inert/old-admins.txt';
-            $newTarget=$targetChange==='same-target'?$oldTarget:'/inert/new-admins.txt';
+            $oldTarget=syncInertPath('old-admins.txt');
+            $newTarget=$targetChange==='same-target'?$oldTarget:syncInertPath('new-admins.txt');
             $files=[$oldTarget=>'previous old file'];
             if ($newTarget!==$oldTarget) { $files[$newTarget]='previous new file'; }
             $commits=[]; $pendingWrite=null; $oldWrite=new Deferred();
