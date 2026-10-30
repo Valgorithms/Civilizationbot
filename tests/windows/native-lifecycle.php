@@ -153,7 +153,9 @@ namespace {
         $f=$fixture();$cap=$f['capability'];$cap['process']=$f['process'];writeRecord($f['dir'].'/bot-control/capability.json',$cap);$promise=$f['adapter']->request('restart');$result=$complete($f,'restart');$result['after']=$f['process'];$publishResult($f,$result);$success=null;$failure=null;$await($promise,$f,$success,$failure);check($failure!==null,'Same-process restart accepted');++$cases;
         $f=$fixture();$promise=$f['adapter']->request('start');$result=$complete($f,'start');$publishResult($f,$result,false);$success=null;$failure=null;$await($promise,$f,$success,$failure);check($failure!==null,'Unconsumed request accepted');++$cases;
         $f=$fixture();$promise=$f['adapter']->request('start');$f['clock']->now=601*1000000000;$success=null;$failure=null;$await($promise,$f,$success,$failure);check($failure!==null&&is_file($f['dir'].'/bot-control/pending.json')&&is_file($f['dir'].'/bot-control/request.json'),'Timeout retried, killed, or lost evidence');++$cases;
-        $f=$fixture();$promise=$f['adapter']->request('start');$result=$complete($f,'start');$f['wall']->now+=301;$publishResult($f,$result);$success=null;$failure=null;$await($promise,$f,$success,$failure);check($failure===null&&$success===$result,'Expiry interrupted an already accepted operation');++$cases;
+        // This synthetic matching receipt checks only the producer's response policy;
+        // it does not establish when a real consumer admitted the operation.
+        $f=$fixture();$promise=$f['adapter']->request('start');$result=$complete($f,'start');$f['wall']->now+=301;$publishResult($f,$result);$success=null;$failure=null;$await($promise,$f,$success,$failure);check($failure===null&&$success===$result,'Matching late receipt rejected as expired');++$cases;
         foreach ([-1, 'invalid', PHP_INT_MAX] as $badClock) {
             $f=$fixture();$f['wall']->now=$badClock;refuses(fn()=>$f['adapter']->request('start'));
             check(!file_exists($f['dir'].'/bot-control/request.json'),'Invalid wall clock published request');++$cases;
@@ -163,6 +165,32 @@ namespace {
             static function()use(&$reads,$issued){return $issued+(++$reads>2?11:0);});
         refuses(fn()=>$delayed->request('start'));
         check(!file_exists($f['dir'].'/bot-control/pending.json'),'Expired capability published a packet');++$cases;
+        // The clock advances only after both durable records are written,
+        // modeling delayed file IO before the exclusive hard link.
+        $f=$fixture();$reads=0;$issued=$f['wall']->now;
+        $delayed=new NativeLifecycle($f['settings'],$f['server'],$f['repository'],$f['loop'],null,
+            static function()use(&$reads,$issued){return $issued+(++$reads>3?11:0);});
+        refuses(fn()=>$delayed->request('start'));
+        check(is_file($f['dir'].'/bot-control/pending.json')&&!file_exists($f['dir'].'/bot-control/request.json')&&count(glob($f['dir'].'/bot-control/request-*.tmp'))===1,'Delayed publication lost evidence or linked stale request');++$cases;
+        // Even if the capability refreshed during IO, the original request's
+        // own timestamp must still be checked immediately before publication.
+        $f=$fixture();$reads=0;$issued=$f['wall']->now;$cap=$f['capability'];
+        $delayed=new NativeLifecycle($f['settings'],$f['server'],$f['repository'],$f['loop'],null,
+            static function()use(&$reads,$issued,$cap,$f){
+                ++$reads;
+                if($reads===3){$cap['heartbeat_unix']=$issued+301;writeRecord($f['dir'].'/bot-control/capability.json',$cap);}
+                return $issued+($reads>3?301:0);
+            });
+        refuses(fn()=>$delayed->request('start'));
+        check(is_file($f['dir'].'/bot-control/pending.json')&&!file_exists($f['dir'].'/bot-control/request.json')&&count(glob($f['dir'].'/bot-control/request-*.tmp'))===1,'Expired request was published or lost evidence');++$cases;
+        $f=$fixture();$reads=0;$issued=$f['wall']->now;$cap=$f['capability'];
+        $delayed=new NativeLifecycle($f['settings'],$f['server'],$f['repository'],$f['loop'],null,
+            static function()use(&$reads,$issued,$cap,$f){
+                if(++$reads===3){$cap['epoch']=str_repeat('f',32);writeRecord($f['dir'].'/bot-control/capability.json',$cap);}
+                return $issued;
+            });
+        refuses(fn()=>$delayed->request('start'));
+        check(is_file($f['dir'].'/bot-control/pending.json')&&!file_exists($f['dir'].'/bot-control/request.json'),'Changed capability was published or lost evidence');++$cases;
         $f=$fixture();$promise=$f['adapter']->request('start');$result=$complete($f,'start');$publishResult($f,$result);file_put_contents($f['dir'].'/runs/owned/civ13.dmb','changed after request');$success=null;$failure=null;$await($promise,$f,$success,$failure);check($failure!==null,'Build replacement during operation accepted');++$cases;
         $f=$fixture();$promise=$f['adapter']->request('start');$request=json_decode(file_get_contents($f['dir'].'/bot-control/request.json'),true);unlink($f['dir'].'/bot-control/request.json');file_put_contents($f['dir'].'/bot-control/result-'.$request['operation'].'.json','malformed');$success=null;$failure=null;$await($promise,$f,$success,$failure);check($failure!==null,'Malformed result accepted');++$cases;
         $f=$fixture();file_put_contents($f['dir'].'/bot-control/pending.json','interrupted-before-publication');refuses(fn()=>$f['adapter']->request('start'));check(!file_exists($f['dir'].'/bot-control/request.json'),'Interrupted publication was replayed');++$cases;

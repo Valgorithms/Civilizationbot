@@ -91,6 +91,11 @@ not a port label, filename, stale PID or intended command line.
 The adapter briefly holds a nonblocking exclusive `adapter.lock`, persists `pending.json`,
 then publishes `request.json` using an exclusive hard link to a flushed temporary
 file. A filesystem without the required hard-link/fsync behavior fails closed.
+After durable writes, the producer rechecks capability identity, freshness and
+request expiry immediately before attempting the link. If this check fails,
+the pending and temporary records remain for reconciliation. A blocking link or
+clock change can still occur after that check; the consumer independently checks
+expiry at admission and before the first native effect.
 The packet contains only protocol, random operation ID, fixed action,
 epoch/sequence, binding hash, complete binding, the observed `before` process,
 and integer `issued_unix` and `expires_unix` seconds. The lifetime is five

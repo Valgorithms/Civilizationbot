@@ -143,6 +143,17 @@ final class NativeLifecycle
             $bytes = json_encode($packet, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
             self::create($pending, $bytes);
             self::create($temporary, $bytes);
+            // Durable writes may block. Recheck as close to publication as
+            // possible; on failure keep both records for reconciliation.
+            $current = $this->inspect();
+            if ($current['epoch'] !== $capability['epoch'] || $current['sequence'] !== $capability['sequence'] || $current['process'] !== $capability['process']) {
+                throw new \RuntimeException('Supervisor epoch or owned process changed before publication');
+            }
+            $publicationTime = $this->wallTime();
+            if ($current['heartbeat_unix'] < $publicationTime - 10 || $current['heartbeat_unix'] > $publicationTime + 2
+                || $issued > $publicationTime + 2 || $publicationTime > $packet['expires_unix']) {
+                throw new \RuntimeException('Native request expired before publication');
+            }
             // Hard-link publication is exclusive: it cannot replace a concurrent request.
             if (!link($temporary, $request)) { throw new \RuntimeException('Native request publication uncertain; inspect pending operation'); }
             unlink($temporary);
