@@ -11,18 +11,20 @@ use React\Promise\PromiseInterface;
 /** Fixed requests to an independently owned supervisor. Never executes or kills a process. */
 final class NativeLifecycle
 {
-    public const PROTOCOL = 'civilizationbot.native-supervisor.v1';
+    public const PROTOCOL = 'civilizationbot.native-supervisor.v2';
+    public const REQUEST_LIFETIME_SECONDS = 300;
     private array $binding;
     private array $pins;
     private string $directory;
     private string $bindingHash;
 
-    public function __construct(private array $settings, array $server, string $repository, private LoopInterface $loop, private $clock = null)
+    public function __construct(private array $settings, array $server, string $repository, private LoopInterface $loop, private $clock = null, private $wallClock = null)
     {
         if (($settings['enabled'] ?? false) !== true) {
             throw new \LogicException('Native lifecycle adapter is disabled');
         }
         $this->clock ??= static fn () => hrtime(true);
+        $this->wallClock ??= static fn () => time();
         if (($server['enabled'] ?? null) !== true || ($server['ip'] ?? null) !== '127.0.0.1' || (string) ($server['port'] ?? '') !== '1714') {
             throw new \InvalidArgumentException('Native lifecycle requires loopback TEST1714');
         }
@@ -90,9 +92,10 @@ final class NativeLifecycle
             throw new \RuntimeException('Saved generation advanced; reconcile the explicit profile before another operation');
         }
         $capability = self::read($this->directory.'/capability.json');
+        $now = $this->wallTime();
         if (($capability['protocol'] ?? null) !== self::PROTOCOL || ($capability['binding_sha256'] ?? null) !== $this->bindingHash
-            || !is_int($capability['heartbeat_unix'] ?? null) || $capability['heartbeat_unix'] < time() - 10
-            || $capability['heartbeat_unix'] > time() + 2
+            || !is_int($capability['heartbeat_unix'] ?? null) || $capability['heartbeat_unix'] < $now - 10
+            || $capability['heartbeat_unix'] > $now + 2
             || !is_int($capability['sequence'] ?? null) || $capability['sequence'] < 0
             || !is_string($capability['epoch'] ?? null) || !preg_match('/^[a-f0-9]{32}$/D', $capability['epoch'])
             || ($capability['master_verified'] ?? null) !== true || ($capability['busy'] ?? null) !== false) {
@@ -129,9 +132,14 @@ final class NativeLifecycle
             // Recheck after serialization, before creating any request.
             $current = $this->inspect();
             if ($current['epoch'] !== $capability['epoch'] || $current['sequence'] !== $capability['sequence'] || $current['process'] !== $capability['process']) { throw new \RuntimeException('Supervisor epoch or owned process changed'); }
+            $issued = $this->wallTime();
+            if ($current['heartbeat_unix'] < $issued - 10 || $current['heartbeat_unix'] > $issued + 2) {
+                throw new \RuntimeException('Supervisor capability expired before publication');
+            }
             $packet = ['protocol' => self::PROTOCOL, 'operation' => $operation, 'action' => $action,
                 'epoch' => $capability['epoch'], 'sequence' => $capability['sequence'], 'binding_sha256' => $this->bindingHash,
-                'binding' => $this->binding, 'before' => $capability['process']];
+                'binding' => $this->binding, 'before' => $capability['process'],
+                'issued_unix' => $issued, 'expires_unix' => $issued + self::REQUEST_LIFETIME_SECONDS];
             $bytes = json_encode($packet, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
             self::create($pending, $bytes);
             self::create($temporary, $bytes);
@@ -198,7 +206,7 @@ final class NativeLifecycle
 
     private function result(array $result, array $packet): array
     {
-        foreach (['protocol', 'operation', 'action', 'epoch', 'sequence', 'binding_sha256', 'before'] as $key) {
+        foreach (['protocol', 'operation', 'action', 'epoch', 'sequence', 'binding_sha256', 'before', 'issued_unix', 'expires_unix'] as $key) {
             if (!array_key_exists($key, $result) || $result[$key] !== $packet[$key]) { throw new \UnexpectedValueException('Unbound native supervisor result'); }
         }
         if (($result['outcome'] ?? null) !== 'complete' || ($result['master_verified'] ?? null) !== true
@@ -223,6 +231,15 @@ final class NativeLifecycle
             throw new \UnexpectedValueException('Replacement did not restore the intended save');
         }
         return $result;
+    }
+
+    private function wallTime(): int
+    {
+        $now = ($this->wallClock)();
+        if (!is_int($now) || $now < 0 || $now > PHP_INT_MAX - self::REQUEST_LIFETIME_SECONDS) {
+            throw new \RuntimeException('Invalid native request clock');
+        }
+        return $now;
     }
 
     private function process(mixed $process): void
