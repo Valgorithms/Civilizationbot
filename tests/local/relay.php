@@ -12,6 +12,8 @@ use Civ13\Server\FileRelay;
 use React\Promise\Deferred;
 use function React\Promise\resolve;
 use function React\Promise\reject;
+// Keep the finite diagnostic contract selected by the existing relay CI step.
+(static function(): void { require __DIR__.'/relay-contender-contract.php'; })();
 function relayCheck(bool $ok, string $reason): void { if (!$ok) { throw new RuntimeException($reason); } }
 function relayResult($promise) { $value=null; $error=null; $promise->then(function($v)use(&$value){$value=$v;},function($e)use(&$error){$error=$e;}); if($error){throw $error;} return $value; }
 $root=sys_get_temp_dir().'/bot-relay-'.bin2hex(random_bytes(8)); mkdir($root,0700); mkdir($root.'/state',0700);
@@ -32,12 +34,17 @@ try {
     relayResult((new FileRelay($root.'/state',$audit))->relay($log,$send));
     relayCheck(end($sent)==='retry','Failed delivery advanced durable cursor');
     file_put_contents($log,"locked\n",FILE_APPEND); $deferred=new Deferred();
-    $relay=new FileRelay($root.'/state',$audit); $relay->relay($log,fn()=>$deferred->promise());
-    $p=proc_open([PHP_BINARY,__FILE__,'--contender',$log,$root.'/state',realpath($argv[1]??__DIR__.'/../../vendor/autoload.php')],[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,null,[]);
-    if(!is_resource($p)){throw new RuntimeException('Cannot launch isolated contender');}
-    fclose($pipes[0]); $out=stream_get_contents($pipes[1]); $err=stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]);
-    relayCheck(proc_close($p)===0 && $out==='BUSY' && $err==='','Cross-process exclusion failed');
-    $deferred->resolve(null);
+    try {
+        $pending=false;
+        $relay=new FileRelay($root.'/state',$audit);
+        $relay->relay($log,function()use($deferred,&$pending){$pending=true; return $deferred->promise();});
+        relayCheck($pending,'Parent relay did not enter pending send');
+        $observed=relayContenderObserve([PHP_BINARY,__FILE__,'--contender',$log,$root.'/state',realpath($argv[1]??__DIR__.'/../../vendor/autoload.php')],$root);
+        relayContenderCheck($observed);
+    } finally {
+        // Settle the held send before outer cleanup even when launch/check fails.
+        $deferred->resolve(null);
+    }
     // Truncate and regrow beyond old cursor: tail binding must still detect replacement.
     file_put_contents($log,"rotated\n".str_repeat("new\n",20)); $sent=[];
     relayResult((new FileRelay($root.'/state',$audit))->relay($log,$send));
