@@ -1,5 +1,6 @@
 {
   "enabled": false,
+  "target_type": "prepared",
   "supervisor_root": "D:/Civ13-local/TEST1714-supervisor",
   "supervisor_sha256": "REPLACE_WITH_REVIEWED_SUPERVISOR_SHA256",
   "guard_sha256": "REPLACE_WITH_REVIEWED_MASTER_GUARD_SHA256",

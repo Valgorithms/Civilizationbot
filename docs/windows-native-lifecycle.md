@@ -3,8 +3,10 @@
 This adds a bot-side adapter and a versioned supervisor spool contract. It does
 **not** add a game supervisor consumer, upgrade an installed supervisor, install
 dependencies, provision credentials, launch a game or remove a halt latch.
-The installed Desktop supervisor does not implement this protocol. Keep the
-adapter disabled until a separately reviewed compatible consumer exists.
+The installed Desktop supervisor does not implement this protocol. This v2
+source contract is incompatible with v1 consumers. Keep the adapter disabled
+until a separately reviewed compatible consumer exists and actual local access
+and process ownership have been verified.
 
 The native bot entry points retain their default rejection. An explicitly enabled
 `servers.<key>.native_lifecycle` object in a portable profile allows `Host` to
@@ -45,11 +47,41 @@ Activation requires all of the following:
   existing resolved paths are readonly.
 - Supervisor config fields `root`, `repository`, `branch: "master"`,
   `bind: "127.0.0.1"`, `port: 1714`, the exact `map` and `daemon`, and
-  `bot_control_protocol: "civilizationbot.native-supervisor.v1"`.
+  `bot_control_protocol: "civilizationbot.native-supervisor.v2"`.
+
+The default `target_type: "prepared"` keeps the existing run-directory rule.
+The separately proposed `target_type: "canonical"` binds `basedir` and `gitdir`
+to the same exact canonical checkout and the supervisor root to its fixed
+`data/desktop-supervisor` directory. The pinned supervisor config must explicitly
+enable both `canonical_bot_enabled` and `canonical_update_enabled`, with its
+`canonical_game_directory` and `config_directory` matching that checkout. Both
+target types remain disabled by default. A separately reviewed consumer pins
+its canonical backend, and its current spool-writer guard denies activation.
+For initial start, the consumer additionally requires an explicit initial-start
+flag and the exact existing saved generation; it never invents a fresh save.
+Requests do not select or change the target type or path.
+
+For review only, the canonical selection inside an otherwise complete portable
+server entry has this disabled shape; the normal example remains `prepared`:
+
+```json
+{
+  "enabled": false,
+  "target_type": "canonical",
+  "supervisor_root": "D:/Civ13-example/master/data/desktop-supervisor"
+}
+```
+
+It still needs all source, config, daemon, revision, map, save and binary pins
+from the full example. The server's `basedir` and portable `gitdir` must both
+name `D:/Civ13-example/master`; placeholders do not authorize activation.
 
 Changing a pinned source/config/build requires explicit profile review and bot
 restart. The adapter never updates a checkout, compiles, selects an old save,
 substitutes a fresh round or silently relaxes save validation.
+Canonical v2 restart retains the pinned binaries; it is not a canonical update.
+A separate canonical update first blocks the old capability, and changed
+revision, binaries or saved generation require reconciliation and repinning.
 
 ## Supervisor consumer contract
 
@@ -66,7 +98,7 @@ publishes `capability.json` atomically with:
 
 ```json
 {
-  "protocol": "civilizationbot.native-supervisor.v1",
+  "protocol": "civilizationbot.native-supervisor.v2",
   "binding_sha256": "64 lowercase hex characters",
   "heartbeat_unix": 0,
   "epoch": "32 lowercase hex characters",
@@ -89,8 +121,21 @@ not a port label, filename, stale PID or intended command line.
 The adapter briefly holds a nonblocking exclusive `adapter.lock`, persists `pending.json`,
 then publishes `request.json` using an exclusive hard link to a flushed temporary
 file. A filesystem without the required hard-link/fsync behavior fails closed.
+After durable writes, the producer rechecks capability identity, freshness and
+request expiry immediately before attempting the link. If this check fails,
+the pending and temporary records remain for reconciliation. A blocking link or
+clock change can still occur after that check; the consumer independently checks
+expiry at admission and before the first native effect.
 The packet contains only protocol, random operation ID, fixed action,
-epoch/sequence, binding hash, complete binding, and the observed `before` process.
+epoch/sequence, binding hash, complete binding, the observed `before` process,
+and integer `issued_unix` and `expires_unix` seconds. The lifetime is five
+minutes; this is an admission bound, not a deadline for completing a save or
+restart. The consumer checks age before acceptance and again at the first
+native effect, allowing at most two seconds future clock skew. Once an effect
+starts, expiration must not interrupt its save/restart transaction. Both sides
+require a sufficiently accurate, non-rolled-back system clock; an authorized
+spool writer can forge timestamps. A delayed verification may expire a request
+and leave accepted evidence requiring reconciliation.
 An existing request/pending record or consumed epoch/sequence refuses submission.
 The publication lock is released before waiting; completion reacquires it only
 for its short verification/acknowledgement transition. A separate process can
@@ -115,7 +160,7 @@ On accepting an operation the consumer must:
    reconcile durable pending/result/state rather than replay a request.
 
 Completion results must echo protocol, operation, action, epoch, sequence,
-binding hash and exact `before`; set `outcome: "complete"`,
+binding hash, exact `before`, `issued_unix` and `expires_unix`; set `outcome: "complete"`,
 `master_verified: true`, `ready` (false for save-stop, true otherwise), and
 `after` (null only for save-stop). A running `after` uses the process schema
 above. Restart must establish a different creation identity. Save-stop/restart
@@ -135,6 +180,10 @@ completion retains the result plus a consumed epoch/sequence marker before
 clearing only the exact pending record. No automatic retry or recovery clearing
 is provided; an operator must reconcile evidence before changing those records.
 Longer game operations can finish independently after the bot timeout.
+Before migration, stop submitting v1 requests and reconcile surviving v1
+pending/request/inflight and receipts without replay or deletion. Update and
+review both pinned producer and consumer together. V1 records are never
+reinterpreted with newly invented timestamps.
 If save-stop/restart advances the generation, a durable marker blocks subsequent
 operations using the original binding. The operator must review the newly saved
 generation, update the explicit profile and supervisor capability binding, and
