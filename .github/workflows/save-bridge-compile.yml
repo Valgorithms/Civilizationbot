@@ -1,0 +1,54 @@
+{
+  "name": "Manual synthetic save bridge compile",
+  "on": {
+    "workflow_dispatch": {
+      "inputs": {
+        "approved_revision": {
+          "description": "Exact reviewed source commit SHA",
+          "required": true,
+          "type": "string"
+        },
+        "public_compile_approved": {
+          "description": "Approve this source revision and public compile logs; zero daemon runs",
+          "required": true,
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "concurrency": {
+    "group": "save-bridge-compile-${{ github.ref }}",
+    "cancel-in-progress": false
+  },
+  "jobs": {
+    "compile": {
+      "if": "${{ github.repository == 'Valgorithms/Civilizationbot' && github.event_name == 'workflow_dispatch' && inputs.approved_revision == github.sha && inputs.public_compile_approved }}",
+      "runs-on": "ubuntu-22.04",
+      "timeout-minutes": 10,
+      "steps": [
+        {
+          "uses": "actions/checkout@v4",
+          "with": {
+            "ref": "${{ github.sha }}",
+            "persist-credentials": false,
+            "fetch-depth": 1
+          }
+        },
+        {
+          "name": "Provision public 32-bit compiler libraries",
+          "timeout-minutes": 5,
+          "run": "sudo dpkg --add-architecture i386\nsudo timeout 120 apt-get update\nsudo timeout 120 apt-get install -y --no-install-recommends libstdc++6:i386 libgcc-s1:i386 libc6-i386 libcurl4:i386 lib32z1 libncurses6:i386"
+        },
+        {
+          "name": "One bounded DreamMaker compile; no daemon",
+          "timeout-minutes": 3,
+          "run": "PY=$(command -v python3)\n\"$PY\" -I -B native/compile_bridge_only.py --source-root \"$GITHUB_WORKSPACE\" --revision \"$GITHUB_SHA\" --work-root \"$RUNNER_TEMP/save-bridge-compile\" --execute"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,2 @@
+// Standalone synthetic bridge only. Do not include Civ13 or bot startup.
+#include "save_bridge.dm"
