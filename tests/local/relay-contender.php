@@ -10,8 +10,15 @@ function relayContenderObserve(array $command, string $directory): array
     $stdout = $directory.'/contender.stdout';
     $stderr = $directory.'/contender.stderr';
     try {
+        $environment = [];
+        if (PHP_OS_FAMILY === 'Windows') {
+            // Preserve the Windows runtime directory for PHP extension startup.
+            $systemRoot = getenv('SystemRoot');
+            if ($systemRoot === false || $systemRoot === '') { throw new RuntimeException('SystemRoot required for isolated Windows contender'); }
+            $environment['SystemRoot'] = $systemRoot;
+        }
         // File-backed output avoids a full stderr pipe blocking the stdout read.
-        $process = proc_open($command, [0=>['pipe', 'r'], 1=>['file', $stdout, 'w'], 2=>['file', $stderr, 'w']], $pipes, null, []);
+        $process = proc_open($command, [0=>['pipe', 'r'], 1=>['file', $stdout, 'w'], 2=>['file', $stderr, 'w']], $pipes, null, $environment);
         if (!is_resource($process)) { throw new RuntimeException('Cannot launch isolated contender'); }
         fclose($pipes[0]);
         unset($pipes[0]);
