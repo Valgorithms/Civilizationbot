@@ -31,8 +31,15 @@ final class NativeLifecycle
         $root = self::directory($settings['supervisor_root'] ?? '');
         $runtime = self::directory($server['basedir'] ?? '');
         $repository = self::directory($repository);
-        if (!str_starts_with($runtime, $root.DIRECTORY_SEPARATOR.'runs'.DIRECTORY_SEPARATOR)) {
+        $targetType = $settings['target_type'] ?? 'prepared';
+        if ($targetType === 'prepared' && !str_starts_with($runtime, $root.DIRECTORY_SEPARATOR.'runs'.DIRECTORY_SEPARATOR)) {
             throw new \InvalidArgumentException('Explicit supervisor-owned run directory required');
+        }
+        if ($targetType === 'canonical' && ($runtime !== $repository || $root !== self::directory($repository.'/data/desktop-supervisor'))) {
+            throw new \InvalidArgumentException('Explicit canonical target does not match its fixed root');
+        }
+        if (!in_array($targetType, ['prepared', 'canonical'], true)) {
+            throw new \InvalidArgumentException('Unsupported native target type');
         }
         $this->directory = self::directory($root.'/bot-control');
         $expected = $settings['expected'] ?? [];
@@ -63,6 +70,7 @@ final class NativeLifecycle
             'supervisor_sha256' => $settings['supervisor_sha256'],
             'guard_sha256' => $settings['guard_sha256'], 'config_sha256' => $settings['config_sha256'],
         ];
+        if ($targetType === 'canonical') { $this->binding['target_type'] = 'canonical'; }
         $this->bindingHash = hash('sha256', json_encode($this->binding, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
         $this->verifyPins();
         $config = self::read($root.'/supervisor.json');
@@ -71,6 +79,16 @@ final class NativeLifecycle
             || ($config['port'] ?? null) !== 1714 || ($config['map'] ?? null) !== $expected['map']
             || self::file($config['daemon'] ?? '') !== $daemon || ($config['bot_control_protocol'] ?? null) !== self::PROTOCOL) {
             throw new \InvalidArgumentException('Supervisor does not implement the reviewed loopback native contract');
+        }
+        if ($targetType === 'canonical' && (($config['canonical_bot_enabled'] ?? false) !== true
+            || ($config['canonical_update_enabled'] ?? false) !== true
+            || self::directory($config['canonical_game_directory'] ?? '') !== $repository
+            || self::directory($config['config_directory'] ?? '') !== self::directory($repository.'/config'))) {
+            throw new \InvalidArgumentException('Explicit canonical bot target is disabled or mismatched');
+        }
+        if ($targetType === 'prepared' && (($config['canonical_game_directory'] ?? null) !== null
+            || ($config['canonical_bot_enabled'] ?? false) === true)) {
+            throw new \InvalidArgumentException('Canonical configuration cannot use the prepared backend');
         }
     }
 

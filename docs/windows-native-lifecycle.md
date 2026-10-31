@@ -49,9 +49,39 @@ Activation requires all of the following:
   `bind: "127.0.0.1"`, `port: 1714`, the exact `map` and `daemon`, and
   `bot_control_protocol: "civilizationbot.native-supervisor.v2"`.
 
+The default `target_type: "prepared"` keeps the existing run-directory rule.
+The separately proposed `target_type: "canonical"` binds `basedir` and `gitdir`
+to the same exact canonical checkout and the supervisor root to its fixed
+`data/desktop-supervisor` directory. The pinned supervisor config must explicitly
+enable both `canonical_bot_enabled` and `canonical_update_enabled`, with its
+`canonical_game_directory` and `config_directory` matching that checkout. Both
+target types remain disabled by default. A separately reviewed consumer pins
+its canonical backend, and its current spool-writer guard denies activation.
+For initial start, the consumer additionally requires an explicit initial-start
+flag and the exact existing saved generation; it never invents a fresh save.
+Requests do not select or change the target type or path.
+
+For review only, the canonical selection inside an otherwise complete portable
+server entry has this disabled shape; the normal example remains `prepared`:
+
+```json
+{
+  "enabled": false,
+  "target_type": "canonical",
+  "supervisor_root": "D:/Civ13-example/master/data/desktop-supervisor"
+}
+```
+
+It still needs all source, config, daemon, revision, map, save and binary pins
+from the full example. The server's `basedir` and portable `gitdir` must both
+name `D:/Civ13-example/master`; placeholders do not authorize activation.
+
 Changing a pinned source/config/build requires explicit profile review and bot
 restart. The adapter never updates a checkout, compiles, selects an old save,
 substitutes a fresh round or silently relaxes save validation.
+Canonical v2 restart retains the pinned binaries; it is not a canonical update.
+A separate canonical update first blocks the old capability, and changed
+revision, binaries or saved generation require reconciliation and repinning.
 
 ## Supervisor consumer contract
 
