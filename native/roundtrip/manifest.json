@@ -75,15 +75,15 @@
     },
     "source-bindings.json": {
       "bytes": 668,
-      "sha256": "99475d120d42d40eb56cc9feba58eef033838662309f081423d913604175574e"
+      "sha256": "fd7476cd4d1608b7845d3b2890841b9eaac4e9daade321786cae642ed5694045"
     },
     "startup_guard.dm": {
-      "bytes": 2472,
-      "sha256": "6fc44b5d93ed6950c9f75f5f31c38d190e42e859f91935cd3a901537ac5b0c03"
+      "bytes": 2473,
+      "sha256": "8c6f2952712c16cd67aa14cb9a9e7d5461229ffd30443567efc3c98077d64192"
     },
     "startup_watchdog.py": {
-      "bytes": 15073,
-      "sha256": "6b978936999a3f17642a986a13b7a4aac2323e0fb9733e808519c6b5bce88864"
+      "bytes": 15416,
+      "sha256": "fdd0176ea61aebdbb12720faee3823733c755921d72f2891c0500ded158cc8f5"
     },
     "suite.py": {
       "bytes": 10997,
@@ -98,8 +98,8 @@
       "sha256": "d0411d59bf03ba11f0d360097ac8c61126e59cbddd40aa8c9c6ac31f446029d0"
     },
     "test_startup_watchdog.py": {
-      "bytes": 24819,
-      "sha256": "6cee5c48667bf8361cf60f0c025aa7bd7fc1ab72d3831a454e56371e2acdfe8b"
+      "bytes": 27274,
+      "sha256": "31ff53b107f6b358dcc31b1dcfa641bd24c734f822c8e7af015b1f74a9422ebf"
     },
     "test_suite.py": {
       "bytes": 9151,

@@ -2,8 +2,10 @@
 import copy
 import hashlib
 import json
+import math
 from pathlib import Path
 import stat
+import re
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -271,6 +273,41 @@ class WatchdogTests(unittest.TestCase):
             self.assertEqual(derivative.count(b'\tfixture()'), 1)
             with self.assertRaises(ValueError): startup.instrument(derivative, image)
         with self.assertRaisesRegex(ValueError, 'source_shape'): startup.instrument(original + original, 'save_bridge')
+
+    def test_nonce_regex_is_a_literal_raw_dm_pattern_with_closed_language(self):
+        source = Path(__file__).with_name('startup_guard.dm').read_text()
+        match = re.findall(r'var/regex/R = regex\(@"([^"\n]*)"\)', source)
+        self.assertEqual(match, ['^[a-f0-9]{32}$'])
+        self.assertNotIn('regex("^[a-f0-9]', source)  # Historical broken expression.
+        for nonce, valid in [('a' * 32, True), ('0123456789abcdef' * 2, True), ('A' * 32, False),
+                             ('a' * 31, False), ('a' * 33, False), ('g' * 32, False), ('a' * 31 + '\n', False)]:
+            with self.subTest(nonce=repr(nonce)):
+                self.assertEqual(re.fullmatch(match[0], nonce) is not None, valid)
+
+    def test_original_deadline_accepts_power_of_two_rounding_without_extension(self):
+        started = math.nextafter(1024.0, 0.0)
+        deadline = started + 10
+        self.assertNotEqual(deadline - started, 10)  # Previous check rejected.
+        stage = self.stage / 'power-two'; stage.mkdir()
+        observer = startup.StartupObserver(stage, '/unqueried/mock/DreamDaemon', 'fixture_generator', 'a' * 64, proc=FakeProc(), nonce='a' * 32)
+        observer.attach(SimpleNamespace(pid=817263), 817263, started, deadline, 'owned-child-3')
+        self.assertEqual(observer.deadline, deadline)
+        self.assertEqual(observer.close_deadline, min(deadline - .75, started + 1))
+
+    def test_original_deadline_rejects_any_change_and_nonfinite_or_boolean_inputs(self):
+        started = math.nextafter(1024.0, 0.0)
+        deadline = started + 10
+        cases = [(started, math.nextafter(deadline, math.inf)), (started, math.nextafter(deadline, 0)),
+                 (started, deadline + 1e-6), (0, 9), (0, 11), (float('nan'), 10),
+                 (0, float('inf')), (float('inf'), float('inf')), (False, 10), (0, True)]
+        for index, (begin, end) in enumerate(cases):
+            with self.subTest(begin=begin, end=end):
+                stage = self.stage / ('bad-time-' + str(index)); stage.mkdir()
+                proc = FakeProc()
+                observer = startup.StartupObserver(stage, '/unqueried/mock/DreamDaemon', 'fixture_generator', 'a' * 64, proc=proc, nonce='a' * 32)
+                with self.assertRaisesRegex(ValueError, 'original_deadline'):
+                    observer.attach(SimpleNamespace(pid=817263), 817263, begin, end, 'owned-child-3')
+                self.assertEqual(proc.calls, [])
 
     def test_scope_cannot_claim_os_egress_containment(self):
         record = verified_evidence()

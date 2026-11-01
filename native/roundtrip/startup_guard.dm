@@ -44,7 +44,7 @@
 	if(!istype(config, /list) || config.len != 4 || config["schema"] != SS_SCHEMA || config["image"] != image || config["port"] != 25444) return 0
 	var/nonce = config["nonce"]
 	if(!istext(nonce) || length(nonce) != 32) return 0
-	var/regex/R = regex("^[a-f0-9]{32}$")
+	var/regex/R = regex(@"^[a-f0-9]{32}$")
 	if(!R.Find(nonce)) return 0
 	if(!ss_emit("ready", nonce, image) || !ss_wait("close", nonce, image)) return 0
 	world.OpenPort("none")

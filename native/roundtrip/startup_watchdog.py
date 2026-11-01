@@ -6,6 +6,7 @@ authority remains with owned_process and its exact Popen handle.
 """
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -186,7 +187,11 @@ class StartupObserver:
 
     def attach(self, child, pid, started, deadline, owner_token):
         check(self.phase == 'prepared' and child.pid == pid and type(pid) is int and pid > 0, 'startup_owned_handle')
-        check(deadline - started == 10, 'startup_original_deadline')
+        # Use the same addition that created the original deadline. Subtraction
+        # can round differently near powers of two; never widen the budget.
+        check(type(started) in (int, float) and type(deadline) in (int, float)
+              and math.isfinite(started) and math.isfinite(deadline)
+              and deadline == started + 10 and deadline > started, 'startup_original_deadline')
         self.pid, self.started, self.deadline = pid, started, deadline
         self.close_deadline = min(deadline - .75, started + 1)
         self.record.update(owner_token=owner_token, pid=pid)
