@@ -42,7 +42,7 @@ final class Visibility
     {
         try {
             if (($channel['guild_id'] ?? null) !== $guild || ($channel['type'] ?? null) !== $type || !is_array($channel['permission_overwrites'] ?? null)) { return null; }
-            if (($channel['nsfw'] ?? false) !== false) { return null; } // Baseline carries no age assertion.
+            if (!array_key_exists('nsfw', $channel) || $channel['nsfw'] !== false) { return null; } // Only explicit known false establishes eligibility.
             $everyone = null; $allow = $deny = false; $seen = [];
             foreach ($channel['permission_overwrites'] as $overwrite) {
                 $o = (array)$overwrite;

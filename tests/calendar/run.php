@@ -14,7 +14,7 @@ const GUILD = '900000000000000001'; const ROLE = '900000000000000002'; const CHA
 const NOW = 1793577600;
 function input(): array {
     return ['roles' => [['id' => GUILD, 'permissions' => '1024', 'managed' => false], ['id' => ROLE, 'permissions' => '0', 'managed' => false]],
-        'channels' => [['id' => CHANNEL, 'guild_id' => GUILD, 'type' => 2, 'permission_overwrites' => []]],
+        'channels' => [['id' => CHANNEL, 'guild_id' => GUILD, 'type' => 2, 'permission_overwrites' => [], 'nsfw' => false]],
         'events' => [['id' => EVENT, 'guild_id' => GUILD, 'channel_id' => CHANNEL, 'entity_type' => 2, 'privacy_level' => 2, 'status' => 1,
             'name' => 'Synthetic community round', 'description' => 'Fixture only <script>ignored</script> <@123456789012345678>',
             'scheduled_start_time' => '2026-11-01T01:30:00-04:00', 'scheduled_end_time' => null, 'recurrence_rule' => null,
@@ -52,6 +52,30 @@ check(project($bad)['events'] === [] && project($bad)['notes'] !== [], 'Invalid 
 rejects(fn () => Projection::instant('2026-11-01T01:30:00')); rejects(fn () => Projection::instant('2026-11-01T01:30:00-00:00'));
 rejects(fn () => Projection::instant('2026-11-01T24:00:00Z')); rejects(fn () => Projection::instant('2026-11-01T01:30:00+99:00'));
 $age = $base['channels'][0]; $age['nsfw'] = true; check(Visibility::channel($age, GUILD, 2, $baseline) === null, 'Age restriction assumed satisfied');
+
+// Unknown age metadata must withdraw a previously public voice or stage event.
+foreach ([2 => 2, 13 => 1] as $channelType => $entityType) {
+    $known = input(); $known['channels'][0]['type'] = $channelType; $known['events'][0]['entity_type'] = $entityType;
+    check(count(project($known)['events']) === 1, 'Explicit false age metadata did not retain eligible event');
+    foreach (['missing', 'null', 'zero', 'one', 'string', 'array', 'restricted'] as $case) {
+        $unknown = $known;
+        if ($case === 'missing') { unset($unknown['channels'][0]['nsfw']); }
+        else { $unknown['channels'][0]['nsfw'] = ['null' => null, 'zero' => 0, 'one' => 1, 'string' => 'false', 'array' => [], 'restricted' => true][$case]; }
+        check(Visibility::channel($unknown['channels'][0], GUILD, $channelType, $baseline) === null, 'Unknown age metadata authorized channel: '.$case);
+        $unavailable = project($unknown);
+        check($unavailable === ['events' => [], 'notes' => ['visibility_unknown']], 'Unknown age metadata exported details or complete coverage: '.$case);
+        $ageLedger = new Ledger(GUILD, [], static fn () => null);
+        $ageLedger->replace(project($known), NOW);
+        $ageLedger->replace($unavailable, NOW + 1);
+        $withdrawn = $ageLedger->snapshot(NOW + 1);
+        check($withdrawn['state'] === 'degraded' && count($withdrawn['events']) === 1 && $withdrawn['events'][0]['status'] === 'withdrawn'
+            && $withdrawn['events'][0]['sequence'] === 1 && $withdrawn['events'][0]['start_at'] === $withdrawn['events'][0]['updated_at'], 'Unknown age state did not withdraw existing event: '.$case);
+        $public = json_encode($withdrawn, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        check(!str_contains($public, 'Synthetic community round') && !str_contains($public, 'Fixture only')
+            && !str_contains($public, '2026-11-01T05:30:00Z') && !str_contains($public, 'Discord voice or stage')
+            && !str_contains($public, 'https://discord.com/events/'), 'Withdrawal retained former public details: '.$case);
+    }
+}
 
 $durable = []; $ledger = new Ledger(GUILD, [], function (array $state) use (&$durable): void { $durable = $state; });
 $ledger->replace($projection, NOW); $first = $ledger->snapshot(NOW); $uid = $first['events'][0]['uid'];

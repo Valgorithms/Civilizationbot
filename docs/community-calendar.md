@@ -26,6 +26,9 @@ overwrites are not applied to an invented member identity. Category overwrites
 are not separately inherited; Discord supplies the child's actual overwrites.
 Missing/obfuscated metadata and age-gated channels fail closed with degraded
 coverage. Unknown event visibility never reveals titles, locations, links or IDs.
+Channel age metadata must be present as the literal boolean `false`; missing,
+null, nonboolean or restricted values cannot authorize export. Loss of that
+known state also withdraws details of an event that was previously public.
 
 The public row selects title, description, public external location or a generic
 Discord voice/stage label, start/end times, status, stable event identity and the
