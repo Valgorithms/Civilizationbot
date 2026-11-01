@@ -76,3 +76,27 @@ change invalidates capture, and capture failures record only the error type.
 Unknown exits never trigger this final diagnostic read. Diagnostics cannot
 admit a receipt, overwrite the original failure, extend a deadline or release
 fixture I/O. Existing limits, workflow, listener contract and cleanup remain.
+
+## Decision-point diagnostic proposal after run 41356319315
+
+That run accepted an exact32-byte ready marker, then failed its one-socket
+cardinality rule. Its actual inode count/inventory was not retained, so the
+cause of that rejection is unknown and the run remains failed.
+
+Rejections now freeze the latest bounded observer/procfs inputs in memory
+before cleanup. Evidence includes owned PID/starttime/executable identity,
+partial FD scan progress, exact observed socket count/inodes, matching table
+rows and owned/prior inode join inputs, receipt validation and deadline stage.
+Raw namespace rows for unrelated inodes are not retained. Table reads remain
+bounded and fixed to the same owned PID. Up to64 socket FD observations,
+four matching input rows per table and16 parsed decision rows are retained;
+truncation and partial/unreadable samples are explicit. The rejection snapshot
+is capped at32KiB, with a small count/reason summary if capture cannot complete.
+No extra procfs read is made after a failure to reconstruct lost live state.
+
+This is a diagnostic-only source proposal. Socket/cardinality/endpoint rules,
+nonce admission, listener, deadlines, cleanup and workflow remain unchanged.
+Zero/multiple sockets, unreadable data, missing/duplicate joins, mismatched
+identity/endpoints and incomplete closure remain failures. Original exceptions
+are preserved. Frozen inputs survive unknown cleanup without final live-output
+reads. No native retry or successful roundtrip is claimed by offline controls.
