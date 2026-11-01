@@ -153,6 +153,10 @@ var/sb_work
 	var/list/records = G["lists"]
 	var/list/roots = G["roots"]
 	sb_check(islist(records) && records.len <= 4096 && islist(roots) && roots.len <= 4096)
+	for(var/record_index = 1, record_index <= records.len, record_index++)
+		sb_check(istype(records[record_index], /list))
+	for(var/root_index = 1, root_index <= roots.len, root_index++)
+		sb_check(istype(roots[root_index], /list))
 	for(var/list/R in records)
 		sb_check(R["kind"] == "list" && istext(R["id"]) && !lists.Find(R["id"]))
 		lists[R["id"]] = list()
@@ -160,6 +164,8 @@ var/sb_work
 		var/list/L = lists[R["id"]]
 		var/list/items = R["items"]
 		sb_check(islist(items) && items.len <= 65536)
+		for(var/item_index = 1, item_index <= items.len, item_index++)
+			sb_check(istype(items[item_index], /list))
 		for(var/list/item in items)
 			var/key = sb_decode_value(item["key"], lists)
 			var/value = sb_decode_value(item["value"], lists)
@@ -191,6 +197,8 @@ var/sb_work
 		sb_check(istext(request_text) && length(request_text) <= 1048576)
 		var/list/request = json_decode(request_text)
 		sb_check(islist(request) && request["protocol"] == SB_PROTOCOL && request["profile"] == SB_PROFILE && request["source"] == SB_SOURCE)
+		sb_check(istext(request["operation"]))
+		sb_check(request["operation"] == "decode" || request["operation"] == "encode")
 		operation = request["operation"]
 		if(operation == "decode")
 			sb_check(request.len == 4)
@@ -210,5 +218,9 @@ var/sb_work
 		graph = list()
 	var/list/receipt = list("protocol" = SB_PROTOCOL, "profile" = SB_PROFILE, "source" = SB_SOURCE, "operation" = operation, "runtime" = "[world.byond_version].[world.byond_build]", "status" = status, "graph" = graph)
 	var/response = json_encode(receipt)
+	if(length(response) > 1048576)
+		receipt["status"] = "rejected"
+		receipt["graph"] = list()
+		response = json_encode(receipt)
 	if(length(response) <= 1048576) text2file(response, "response.json")
 	shutdown()

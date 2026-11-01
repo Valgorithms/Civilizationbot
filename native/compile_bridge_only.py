@@ -96,53 +96,128 @@ def snapshot(path):
             'kind': 'bounded_prefix' if len(raw) > LOG_CAP else 'complete_snapshot'}, data
 
 
+def finish_owned_compiler(child, deadline):
+    """Signal only this Popen child, with no new wait allowance or PID search."""
+    first_error = None
+
+    def remember(error):
+        nonlocal first_error
+        if first_error is None:
+            first_error = error
+
+    def poll():
+        try:
+            return child.poll()
+        except BaseException as error:
+            remember(error)
+            return None
+
+    def now():
+        try:
+            return time.monotonic()
+        except BaseException as error:
+            remember(error)
+            return deadline
+
+    code = poll()
+    if code is not None:
+        return code, first_error
+    for signal, until in (('terminate', min(deadline, now()+.25)), ('kill', deadline)):
+        try:
+            getattr(child, signal)()
+        except BaseException as error:
+            remember(error)
+        while True:
+            code = poll()
+            if code is not None:
+                return code, first_error
+            remaining = until-now()
+            if remaining <= 0:
+                break
+            try:
+                time.sleep(min(.005, remaining))
+            except BaseException as error:
+                remember(error)
+                break
+    return None, first_error
+
+
 def compile_once(compiler, stage):
+    if PENDING:
+        raise RuntimeError('Owned compiler exit remains unconfirmed')
     deadline = time.monotonic()+60
     reserve = .75
     fault = None
+    original_error = None
     env = {'PATH': os.defpath, 'HOME': str(stage), 'TMPDIR': str(stage),
            'LD_LIBRARY_PATH': str(compiler.parent)}
     argv = [str(compiler), '-max_errors', '0', 'save_bridge.dme']
     with (stage/'compiler.stdout').open('xb') as out, (stage/'compiler.stderr').open('xb') as err:
         child = subprocess.Popen(argv, cwd=stage, stdin=subprocess.DEVNULL, stdout=out, stderr=err, env=env)
-        while child.poll() is None:
-            if any((stage/name).stat().st_size > LOG_CAP for name in ('compiler.stdout', 'compiler.stderr')) or any(p.stat().st_size > IMAGE_CAP for p in stage.glob('save_bridge.*') if p.suffix in ('.dmb', '.rsc')) or sum(p.stat().st_size for p in stage.rglob('*') if p.is_file() and not p.is_symlink()) > 33554432:
-                fault = 'output_limit'
-                break
-            if time.monotonic() >= deadline-reserve:
-                fault = 'timeout'
-                break
-            time.sleep(.005)
-        if child.poll() is None:
-            child.terminate()
-            grace = min(deadline, time.monotonic()+.25)
-            while child.poll() is None and time.monotonic() < grace:
+        PENDING.append(child)
+        try:
+            while child.poll() is None:
+                if any((stage/name).stat().st_size > LOG_CAP for name in ('compiler.stdout', 'compiler.stderr')) or any(p.stat().st_size > IMAGE_CAP for p in stage.glob('save_bridge.*') if p.suffix in ('.dmb', '.rsc')) or sum(p.stat().st_size for p in stage.rglob('*') if p.is_file() and not p.is_symlink()) > 33554432:
+                    fault = 'output_limit'
+                    break
+                if time.monotonic() >= deadline-reserve:
+                    fault = 'timeout'
+                    break
                 time.sleep(.005)
-            if child.poll() is None:
-                child.kill()
-            while child.poll() is None and time.monotonic() < deadline:
-                time.sleep(.005)
-        code = child.poll()
+        except BaseException as error:
+            original_error = error
+            fault = 'supervision_error'
+        finally:
+            code, cleanup_error = finish_owned_compiler(child, deadline)
+            if original_error is None and cleanup_error is not None:
+                original_error = cleanup_error
+                fault = fault or 'cleanup_error'
+            if code is not None:
+                PENDING.remove(child)
         record = {'compiler_processes': 1, 'daemon_processes': 0, 'exit_code': code,
                   'exit_confirmed': code is not None, 'fault': fault, 'logs': {}}
         captured = {}
         if code is None:
-            PENDING.append(child)
             record['fault'] = 'owned_compiler_exit_unconfirmed'
             for name in ('compiler.stdout', 'compiler.stderr'):
                 record['logs'][name] = {'kind': 'unavailable_unconfirmed_exit', 'sha256_snapshot': None, 'path': name}
         else:
             for name in ('compiler.stdout', 'compiler.stderr'):
-                record['logs'][name], captured[name] = snapshot(stage/name)
-                if record['logs'][name]['kind'] == 'bounded_prefix':
-                    record['fault'] = record['fault'] or 'output_limit'
+                try:
+                    record['logs'][name], captured[name] = snapshot(stage/name)
+                    if record['logs'][name]['kind'] == 'bounded_prefix':
+                        record['fault'] = record['fault'] or 'output_limit'
+                except BaseException as error:
+                    record['logs'][name] = {'kind': 'unavailable_snapshot_failed', 'sha256_snapshot': None, 'path': name}
+                    record['fault'] = record['fault'] or 'log_snapshot_error'
+                    if original_error is None:
+                        original_error = error
     log = b''.join(captured.values()).decode(errors='replace')
     image = stage/'save_bridge.dmb'
-    passed = record['fault'] is None and code == 0 and VERSION in log and '0 errors, 0 warnings' in log and image.is_file() and not image.is_symlink() and 0 < image.stat().st_size <= IMAGE_CAP
+    passed = False
+    try:
+        passed = record['fault'] is None and code == 0 and VERSION in log and '0 errors, 0 warnings' in log and image.is_file() and not image.is_symlink() and 0 < image.stat().st_size <= IMAGE_CAP
+        if passed:
+            with image.open('rb') as stream:
+                data = stream.read(IMAGE_CAP+1)
+            passed = 0 < len(data) <= IMAGE_CAP
+            if passed:
+                record['dmb_sha256'] = sha(data)
+            else:
+                record['fault'] = 'output_limit'
+    except BaseException as error:
+        record['fault'] = record['fault'] or 'output_check_error'
+        passed = False
+        if original_error is None:
+            original_error = error
     record['status'] = 'compile_passed' if passed else 'compile_failed'
-    if passed:
-        record['dmb_sha256'] = sha(image.read_bytes())
-    (stage/'compile-result.json').write_text(json.dumps(record, indent=2))
+    try:
+        (stage/'compile-result.json').write_text(json.dumps(record, indent=2))
+    except BaseException as error:
+        if original_error is None:
+            original_error = error
+    if original_error is not None:
+        raise original_error
     if not passed:
         for data in captured.values():
             print(data[:4096].decode(errors='replace'))

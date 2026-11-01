@@ -1,0 +1,42 @@
+{
+  "schema": "civilizationbot.native-refusal-cases.v1",
+  "execution": "not_run_native; recipes only, no savefile bytes",
+  "receipt_oracle": {"max_bytes": 1048576, "rejection_graph": [], "status": "rejected"},
+  "valid_graph": {
+    "schema": "civilizationbot.save-graph.v1",
+    "objects": [],
+    "lists": [{"id": "fixture:list1", "kind": "list", "items": [{"key": {"tag": "text", "value": "one"}, "associated": false, "value": {"tag": "null"}}]}],
+    "roots": [{"name": "/entries/1/1/shared", "value": {"tag": "list", "id": "fixture:list1"}}]
+  },
+  "positive_control": {"operation": "encode", "expected_status": "ok", "oracle": "same graph semantics; list IDs may differ"},
+  "element_cases": [
+    {"target": "lists", "name": "null", "append": null, "expected_status": "rejected"},
+    {"target": "lists", "name": "number", "append": 7, "expected_status": "rejected"},
+    {"target": "lists", "name": "text", "append": "invalid", "expected_status": "rejected"},
+    {"target": "roots", "name": "null", "append": null, "expected_status": "rejected"},
+    {"target": "roots", "name": "number", "append": 7, "expected_status": "rejected"},
+    {"target": "roots", "name": "text", "append": "invalid", "expected_status": "rejected"},
+    {"target": "items", "name": "null", "append": null, "expected_status": "rejected"},
+    {"target": "items", "name": "number", "append": 7, "expected_status": "rejected"},
+    {"target": "items", "name": "text", "append": "invalid", "expected_status": "rejected"}
+  ],
+  "operation_cases": [
+    {"name": "null", "value": null, "expected_operation": "unknown", "expected_status": "rejected"},
+    {"name": "number", "value": 7, "expected_operation": "unknown", "expected_status": "rejected"},
+    {"name": "list", "value": [], "expected_operation": "unknown", "expected_status": "rejected"},
+    {"name": "object", "value": {"payload": "invalid"}, "expected_operation": "unknown", "expected_status": "rejected"},
+    {"name": "unknown", "value": "unexpected", "expected_operation": "unknown", "expected_status": "rejected"},
+    {"name": "uppercase", "value": "DECODE", "expected_operation": "unknown", "expected_status": "rejected"},
+    {"name": "long_text", "repeat": "x", "characters": 131072, "expected_operation": "unknown", "expected_status": "rejected"},
+    {"name": "oversized_request", "repeat": "x", "characters": 1048577, "expected_operation": "unknown", "expected_status": "rejected"}
+  ],
+  "oversized_decode": {
+    "native_leaf_paths": ["/entries/1/1/label", "/entries/1/2/label", "/entries/1/3/label"],
+    "text_codepoint": 1,
+    "text_characters": 65536,
+    "preparation": "Separately authorized independent native fixture writer must save these three bounded text leaves. Decode via input.sav; do not send a greater-than-cap encode request.",
+    "expected_operation": "decode",
+    "expected_status": "rejected",
+    "expected_graph": []
+  }
+}

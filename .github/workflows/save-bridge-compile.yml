@@ -1,6 +1,12 @@
 {
   "name": "Manual synthetic save bridge compile",
   "on": {
+    "pull_request": {
+      "paths": [
+        "native/**",
+        ".github/workflows/save-bridge-compile.yml"
+      ]
+    },
     "workflow_dispatch": {
       "inputs": {
         "approved_revision": {
@@ -25,6 +31,30 @@
     "cancel-in-progress": false
   },
   "jobs": {
+    "offline": {
+      "name": "Mocked compiler supervision contracts",
+      "if": "${{ github.event_name == 'pull_request' }}",
+      "runs-on": "ubuntu-22.04",
+      "permissions": {
+        "contents": "read"
+      },
+      "timeout-minutes": 2,
+      "steps": [
+        {
+          "uses": "actions/checkout@v4",
+          "with": {
+            "ref": "${{ github.event.pull_request.head.sha }}",
+            "persist-credentials": false,
+            "fetch-depth": 1
+          }
+        },
+        {
+          "name": "Fourteen offline contracts; no SDK or native child",
+          "timeout-minutes": 1,
+          "run": "PY=$(command -v python3)\n\"$PY\" -I -B -m unittest discover -s native/tests -p 'test_*.py' -v"
+        }
+      ]
+    },
     "compile": {
       "if": "${{ github.repository == 'Valgorithms/Civilizationbot' && github.event_name == 'workflow_dispatch' && inputs.approved_revision == github.sha && inputs.public_compile_approved }}",
       "runs-on": "ubuntu-22.04",
@@ -37,6 +67,11 @@
             "persist-credentials": false,
             "fetch-depth": 1
           }
+        },
+        {
+          "name": "Offline compiler supervision contracts; no native processes",
+          "timeout-minutes": 1,
+          "run": "PY=$(command -v python3)\n\"$PY\" -I -B -m unittest discover -s native/tests -p 'test_*.py' -v"
         },
         {
           "name": "Provision public 32-bit compiler libraries",
