@@ -294,6 +294,79 @@ class WatchdogTests(unittest.TestCase):
         self.assertEqual(observer.deadline, deadline)
         self.assertEqual(observer.close_deadline, min(deadline - .75, started + 1))
 
+    def test_marker_writer_explicitly_suppresses_implicit_output_newline(self):
+        source = Path(__file__).with_name('startup_guard.dm').read_text()
+        self.assertIn('return text2file("[nonce]\\...", "[name].done")', source)
+        self.assertNotIn('return text2file(nonce,', source)
+
+    def test_marker_admission_remains_exact_32_bytes_without_trimming(self):
+        publish(self.stage, 'ready')
+        marker = self.stage / 'startup-ready.done'
+        for raw in [b'a' * 32 + b'\n', b'a' * 32 + b'\r\n', b'a' * 32 + b' ',
+                    b' ' + b'a' * 32, b'a' * 31, b'A' * 32, b'a' * 31 + b'\0',
+                    b'a' * 32 + b'x', b'\xef\xbb\xbf' + b'a' * 32, b'a' * 32 * 2]:
+            with self.subTest(raw=raw):
+                marker.write_bytes(raw)
+                with self.assertRaises(ValueError): self.observer.receipt('ready')
+                self.assertFalse((self.stage / 'startup-close.ack').exists())
+        marker.write_bytes(b'a' * 32)
+        self.assertEqual(self.observer.receipt('ready')['nonce'], 'a' * 32)
+
+    def test_failed_marker_capture_records_exact_synthetic_newline_bytes(self):
+        publish(self.stage, 'ready')
+        raw = b'a' * 32 + b'\n'  # Explicit offline counterexample, not run41354035997 bytes.
+        (self.stage / 'startup-ready.done').write_bytes(raw)
+        with self.assertRaisesRegex(ValueError, 'file_type_or_size'): self.observer.receipt('ready')
+        self.observer.capture_failed_marker()
+        record = self.observer.evidence()['failed_marker']
+        self.assertEqual(record['kind'], 'complete_snapshot')
+        self.assertEqual((record['size'], record['captured_bytes'], record['bytes_hex']), (33, 33, raw.hex()))
+        self.assertEqual(record['sha256_snapshot'], hashlib.sha256(raw).hexdigest())
+        self.assertEqual(self.observer.phase, 'waiting_ready')
+
+    def test_failed_marker_capture_is_bounded_and_hash_is_only_prefix(self):
+        path = self.stage / 'startup-ready.done'
+        path.write_bytes(b'x' * 4096)
+        record = startup.closed_marker_snapshot(path)
+        self.assertEqual((record['kind'], record['size'], record['captured_bytes']), ('bounded_prefix', 4096, 64))
+        self.assertEqual(record['bytes_hex'], (b'x' * 64).hex())
+        self.assertEqual(record['sha256_snapshot'], hashlib.sha256(b'x' * 64).hexdigest())
+        self.assertNotIn('sha256_file', record)
+
+    def test_failed_marker_nonregular_is_never_opened(self):
+        path = self.stage / 'startup-ready.done'; path.mkdir()
+        with patch.object(startup.os, 'open', side_effect=AssertionError('No nonregular open')):
+            self.assertEqual(startup.closed_marker_snapshot(path)['kind'], 'nonregular_not_read')
+            info = path.lstat()
+            for mode in [stat.S_IFLNK, stat.S_IFIFO, stat.S_IFSOCK]:
+                fields = dict(st_mode=mode, st_size=33, st_dev=info.st_dev, st_ino=info.st_ino,
+                              st_mtime_ns=info.st_mtime_ns, st_ctime_ns=info.st_ctime_ns)
+                with patch.object(Path, 'lstat', return_value=SimpleNamespace(**fields)):
+                    self.assertEqual(startup.closed_marker_snapshot(path)['kind'], 'nonregular_not_read')
+
+    def test_failed_marker_changed_or_replaced_snapshot_is_rejected(self):
+        path = self.stage / 'startup-ready.done'; path.write_bytes(b'a' * 33)
+        original = path.lstat()
+        fields = {key: getattr(original, key) for key in ['st_mode', 'st_size', 'st_dev', 'st_ino', 'st_mtime_ns', 'st_ctime_ns']}
+        changed = SimpleNamespace(**dict(fields, st_size=34))
+        with patch.object(Path, 'lstat', side_effect=[original, changed]):
+            with self.assertRaisesRegex(ValueError, 'diagnostic_changed'): startup.closed_marker_snapshot(path)
+        replaced = SimpleNamespace(**dict(fields, st_ino=original.st_ino + 1))
+        with patch.object(startup.os, 'fstat', return_value=replaced):
+            with self.assertRaisesRegex(ValueError, 'diagnostic_replaced'): startup.closed_marker_snapshot(path)
+
+    def test_failed_marker_capture_errors_are_typed_and_do_not_escape(self):
+        self.observer.marker_phase = 'ready'
+        for error in [PermissionError('secret path omitted'), FileNotFoundError(), ValueError('changed')]:
+            with self.subTest(error=type(error).__name__), patch.object(startup, 'closed_marker_snapshot', side_effect=error):
+                self.observer.capture_failed_marker()
+                self.assertEqual(self.observer.evidence()['failed_marker'], {'kind': 'unavailable_capture_failed', 'error': type(error).__name__})
+
+    def test_failed_marker_no_receipt_attempt_never_reads(self):
+        with patch.object(startup, 'closed_marker_snapshot', side_effect=AssertionError('No unattempted read')):
+            self.observer.capture_failed_marker()
+        self.assertEqual(self.observer.evidence()['failed_marker']['kind'], 'unavailable_no_receipt_attempt')
+
     def test_original_deadline_rejects_any_change_and_nonfinite_or_boolean_inputs(self):
         started = math.nextafter(1024.0, 0.0)
         deadline = started + 10
@@ -381,7 +454,9 @@ class ObserverCleanupTests(unittest.TestCase):
                            self.root, {'HOME': str(self.stage)}, 8, observer=self.observer)
 
     def test_actual_adapter_completes_with_fake_listener_handshake(self):
-        result = self.run_child()
+        with patch.object(self.observer, 'capture_failed_marker', side_effect=AssertionError('No success capture')) as capture:
+            result = self.run_child()
+        capture.assert_not_called()
         self.assertEqual(result['record']['startup']['status'], 'verified')
         self.assertEqual(result['record']['ownership'], 'reaped')
         self.assertEqual(self.child.signals, [])
@@ -450,10 +525,10 @@ class ObserverCleanupTests(unittest.TestCase):
     def test_unconfirmed_cleanup_keeps_identity_and_reads_no_final_receipt_or_log(self):
         self.child.term_exits = self.child.kill_exits = False
         primary = OSError('injected proc error')
-        with patch.object(self.proc, 'census', side_effect=primary), patch.object(self.observer, 'finish') as finish, patch.object(own, 'snapshot') as snap:
+        with patch.object(self.proc, 'census', side_effect=primary), patch.object(self.observer, 'finish') as finish, patch.object(own, 'snapshot') as snap, patch.object(self.observer, 'capture_failed_marker') as capture:
             with self.assertRaises(OSError) as caught: self.run_child()
         self.assertIs(caught.exception, primary)
-        finish.assert_not_called(); snap.assert_not_called()
+        finish.assert_not_called(); snap.assert_not_called(); capture.assert_not_called()
         self.assertIs(own.ACTIVE, self.child)
         record = json.loads((self.stage / 'process.json').read_text())
         self.assertEqual(record['ownership'], 'retained')
@@ -474,6 +549,37 @@ class ObserverCleanupTests(unittest.TestCase):
         self.assertEqual(record['ownership'], 'reaped')
         self.assertEqual(record['fault'], 'startup_evidence_error')
         self.assertEqual(record['status'], 'process_failed')
+
+    def test_bad_marker_is_captured_only_after_confirmed_owned_cleanup(self):
+        original_launch = self.launch
+        raw = b'a' * 32 + b'\n'
+        def launch(*args, **kwargs):
+            child = original_launch(*args, **kwargs)
+            (self.stage / 'startup-ready.done').write_bytes(raw)
+            return child
+        original_snapshot = startup.closed_marker_snapshot
+        def closed_snapshot(path):
+            self.assertIsNotNone(self.child.code)
+            self.assertIsNone(own.ACTIVE)
+            self.assertNotIn(self.child, own.PENDING)
+            return original_snapshot(path)
+        self.popen.side_effect = launch
+        with patch.object(startup, 'closed_marker_snapshot', side_effect=closed_snapshot) as capture:
+            with self.assertRaisesRegex(ValueError, 'file_type_or_size'): self.run_child()
+        capture.assert_called_once()
+        record = json.loads((self.stage / 'process.json').read_text())
+        self.assertEqual(record['startup']['failed_marker']['bytes_hex'], raw.hex())
+        self.assertEqual((record['ownership'], record['exit_code'], record['fault']), ('reaped', -15, 'supervision_error'))
+        self.assertFalse((self.stage / 'startup-close.ack').exists())
+
+    def test_capture_failure_preserves_original_error_and_reaped_state(self):
+        primary = OSError('injected proc error')
+        with patch.object(self.proc, 'census', side_effect=primary), patch.object(self.observer, 'capture_failed_marker', side_effect=RuntimeError('capture failed')):
+            with self.assertRaises(OSError) as caught: self.run_child()
+        self.assertIs(caught.exception, primary)
+        record = json.loads((self.stage / 'process.json').read_text())
+        self.assertEqual(record['failed_marker_capture_error'], 'RuntimeError')
+        self.assertEqual(record['ownership'], 'reaped')
 
 
 if __name__ == '__main__': unittest.main()

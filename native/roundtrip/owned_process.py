@@ -177,6 +177,13 @@ def bounded(argv, stage, seconds, log_cap, evidence_root, env, cpu_seconds, obse
             if primary is None:
                 primary = error
                 record['fault'] = record['fault'] or 'startup_evidence_error'
+        if code is not None and (primary is not None or record['fault'] is not None):
+            try:
+                # Fixed-name, bounded diagnostics ONLY after confirmed reap.
+                # Never replace the original failure or admit a startup receipt.
+                observer.capture_failed_marker()
+            except BaseException as error:
+                record['failed_marker_capture_error'] = type(error).__name__
         try:
             record['startup'] = observer.evidence()  # Pure in-memory snapshot.
         except BaseException as error:

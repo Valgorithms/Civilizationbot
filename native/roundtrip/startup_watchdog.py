@@ -76,6 +76,34 @@ def atomic_bytes(path, raw):
     os.replace(partial, path)
 
 
+def closed_marker_snapshot(path):
+    """After confirmed owned exit only: fixed marker stat and at most64 bytes.
+
+    This diagnostic never admits a receipt or follows a nonregular file.
+    Truncated prefixes have explicitly scoped hashes, never full-file hashes.
+    """
+    cap = 64
+    before = path.lstat()
+    result = {'file': path.name, 'mode': before.st_mode, 'size': before.st_size,
+              'device': before.st_dev, 'inode': before.st_ino,
+              'mtime_ns': before.st_mtime_ns, 'ctime_ns': before.st_ctime_ns}
+    if not stat.S_ISREG(before.st_mode):
+        return dict(result, kind='nonregular_not_read')
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+    with os.fdopen(descriptor, 'rb') as stream:
+        opened = os.fstat(stream.fileno())
+        check(stat.S_ISREG(opened.st_mode) and (opened.st_dev, opened.st_ino) == (before.st_dev, before.st_ino), 'startup_diagnostic_replaced')
+        raw = stream.read(cap)
+        after = os.fstat(stream.fileno())
+    current = path.lstat()
+    identity = lambda info: (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    check(identity(before) == identity(opened) == identity(after) == identity(current)
+          and before.st_ctime_ns == current.st_ctime_ns and opened.st_ctime_ns == after.st_ctime_ns
+          and len(raw) == min(before.st_size, cap), 'startup_diagnostic_changed')
+    return dict(result, kind='complete_snapshot' if before.st_size <= cap else 'bounded_prefix',
+                captured_bytes=len(raw), bytes_hex=raw.hex(), sha256_snapshot=hashlib.sha256(raw).hexdigest())
+
+
 def instrument(source, image):
     """Derivative of the hash-verified original; no edit to public root bridge."""
     check(image in IMAGES and type(source) is bytes, 'startup_source_binding')
@@ -171,6 +199,7 @@ class StartupObserver:
         self.phase = 'prepared'
         self.pid = self.starttime = self.started = self.deadline = self.close_deadline = None
         self.inode = None
+        self.marker_phase = None
         self.record = {'schema': SCHEMA, 'status': 'incomplete', 'image': image, 'image_sha256': image_sha256,
                        'executable_sha256': DAEMON_SHA256, 'address': ADDRESS, 'port': PORT, 'protocol': 'TCP',
                        'os_egress_containment': False, 'network_intent': 'temporary loopback listener; no intended outbound activity',
@@ -204,6 +233,8 @@ class StartupObserver:
         check(self.proc.identity(self.pid) == self.starttime, 'startup_owned_identity_changed')
 
     def receipt(self, phase):
+        check(phase in ('ready', 'closed', 'started'), 'startup_receipt_phase')
+        self.marker_phase = phase
         marker = self.stage / ('startup-' + phase + '.done')
         try:
             data = regular_bytes(marker, 32)
@@ -262,6 +293,20 @@ class StartupObserver:
     def evidence(self):
         # Pure in-memory snapshot: safe even if child exit is unconfirmed.
         return dict(self.record)
+
+    def capture_failed_marker(self):
+        """Called by owned_process only after confirmed exit on failed runs.
+
+        Preserve primary errors, do not retry reads or inspect arbitrary paths.
+        Successful and unconfirmed children never enter this diagnostic path.
+        """
+        if self.marker_phase is None:
+            self.record['failed_marker'] = {'kind': 'unavailable_no_receipt_attempt'}
+            return
+        try:
+            self.record['failed_marker'] = closed_marker_snapshot(self.stage / ('startup-' + self.marker_phase + '.done'))
+        except Exception as error:
+            self.record['failed_marker'] = {'kind': 'unavailable_capture_failed', 'error': type(error).__name__}
 
 
 def validate_evidence(value, image):
