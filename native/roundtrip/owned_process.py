@@ -92,7 +92,7 @@ def snapshot(path, cap):
             'sha256_snapshot': hashlib.sha256(data).hexdigest(), 'captured_bytes': len(data)}, data
 
 
-def bounded(argv, stage, seconds, log_cap, evidence_root, env, cpu_seconds):
+def bounded(argv, stage, seconds, log_cap, evidence_root, env, cpu_seconds, observer=None):
     """One owned Popen handle; original deadline governs cleanup and observation.
 
     Popen constructor failure acquires no handle here; no PID search is attempted.
@@ -131,7 +131,13 @@ def bounded(argv, stage, seconds, log_cap, evidence_root, env, cpu_seconds):
                                                   env=env, preexec_fn=lambda: limits_for_child(cpu_seconds))
                 PENDING.append(child)
                 pid = child.pid
+                if observer is not None:
+                    if seconds != 10:
+                        raise ValueError('Runtime startup observer cannot supervise a compiler')
+                    observer.attach(child, pid, started, deadline, owner_token)
                 while child.poll() is None:
+                    if observer is not None:
+                        observer.tick()
                     check_outputs(stage, evidence_root, log_cap)
                     if time.monotonic() >= deadline - .75:
                         fault = 'timeout'
@@ -161,6 +167,23 @@ def bounded(argv, stage, seconds, log_cap, evidence_root, env, cpu_seconds):
                   original_error=type(primary).__name__ if primary is not None else None,
                   cleanup_error=type(cleanup_error).__name__ if cleanup_error is not None else None,
                   ownership='not_acquired' if child is None else ('reaped' if code is not None else 'retained'))
+    if observer is not None:
+        try:
+            # Only a confirmed exit may read final native-written receipts.
+            # A failing startup/cleanup keeps its original exception instead.
+            if code is not None and primary is None:
+                observer.finish(code)
+        except BaseException as error:
+            if primary is None:
+                primary = error
+                record['fault'] = record['fault'] or 'startup_evidence_error'
+        try:
+            record['startup'] = observer.evidence()  # Pure in-memory snapshot.
+        except BaseException as error:
+            record['startup'] = {'status': 'unavailable'}
+            if primary is None:
+                primary = error
+                record['fault'] = record['fault'] or 'startup_snapshot_error'
     if child is not None and code is None:
         record['fault'] = 'owned_child_exit_unconfirmed'
         # No stat/scan/open/read/hash of any possible live child output.

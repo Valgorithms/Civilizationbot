@@ -9,6 +9,7 @@ from unittest.mock import Mock
 from types import SimpleNamespace
 import tempfile
 import time
+from test_startup_watchdog import verified_evidence, runtime_logs
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import suite
 import negative_oracles
@@ -22,7 +23,7 @@ class FakeTransport:
     def __call__(self, name, image, request, inputs):
         self.jobs.append((name, image, copy.deepcopy(request), inputs))
         result = {'exit_confirmed': True, 'exit_code': 0, 'input_unchanged': True, 'files': {},
-                  'logs': {n: {'text': '', 'truncated': False} for n in ['stdout', 'stderr', 'native.log']}}
+                  'logs': runtime_logs(), 'startup': verified_evidence(image)}
         fixture = {'schema': 'civilizationbot.fixture-receipt.v1', 'status': 'ok', 'runtime': suite.RUNTIME}
         if name == 'generate':
             result['receipt'] = fixture

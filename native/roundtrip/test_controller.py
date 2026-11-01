@@ -23,29 +23,33 @@ class ControllerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.transport = controller.NativeTransport(self.root, self.root / 'pinned-bin', 1000000)
         self.transport.images = {'save_bridge': {'save_bridge.dmb': b'FAKE IMAGE'}, 'fixture_generator': {'fixture_generator.dmb': b'FAKE IMAGE', 'fixture_generator.rsc': b'FAKE RESOURCE'}}
+        self.transport.image_hashes = {image: {name: hashlib.sha256(raw).hexdigest() for name, raw in files.items()} for image, files in self.transport.images.items()}
         self.fake = FakeTransport()
         guard = patch.object(controller.owned.subprocess, 'Popen', side_effect=AssertionError('Popen must remain mocked at transport boundary'))
         guard.start(); self.addCleanup(guard.stop)
 
-    def observed(self, argv, stage, seconds, cap, cpu):
+    def observed(self, argv, stage, seconds, cap, cpu, observer=None):
         self.assertEqual((seconds, cap, cpu), (10, 4096, 8))
         self.assertIn('-safe', argv); self.assertNotIn('-trusted', argv)
         self.assertEqual(argv[0], str(self.root / 'pinned-bin/DreamDaemon'))
         self.assertEqual(argv[-2:], ['-log', 'native.log'])
+        self.assertEqual(argv[2:8], ['-port', '25444', '-ports', '25444', '-ip', '127.0.0.1'])
+        self.assertIsInstance(observer, controller.startup.StartupObserver)
         image = 'save_bridge' if argv[1] == 'save_bridge.dmb' else 'fixture_generator'
         request = json.loads((stage / ('request.json' if image == 'save_bridge' else 'fixture-request.json')).read_text())
         inputs = {name: (stage / name).read_bytes() for name in ['input.sav', 'candidate.sav'] if (stage / name).exists()}
         result = self.fake(stage.name.removeprefix('case-'), image, request, inputs)
+        result['startup']['image_sha256'] = self.transport.image_hashes[image][image + '.dmb']
         for name, raw in result['files'].items(): (stage / name).write_bytes(raw)
         (stage / ('response.json' if image == 'save_bridge' else 'fixture-receipt.json')).write_text(json.dumps(result['receipt']))
         report = self.root / 'safe-reports' / stage.name
         report.mkdir(parents=True)
-        record = {'exit_code': 0, 'exit_confirmed': True, 'seconds_limit': 10, 'pid': 817263, 'identity': 'mock-only', 'safe_report_directory': str(report)}
+        record = {'exit_code': 0, 'exit_confirmed': True, 'seconds_limit': 10, 'pid': 817263, 'identity': 'mock-only', 'safe_report_directory': str(report), 'startup': result['startup']}
         self.transport.processes.append(record)
-        return {'record': record, 'captured_logs': {'stdout.log': b'', 'stderr.log': b'', 'native.log': b''}}
+        return {'record': record, 'captured_logs': {'stdout.log': b'', 'stderr.log': b'', 'native.log': result['logs']['native.log']['text'].encode()}}
 
     def test_case_harness_uses_adapter_twenty_five_exact_safe_jobs(self):
-        with patch.object(self.transport, 'process', side_effect=self.observed):
+        with patch.object(self.transport, 'process', side_effect=self.observed), patch.object(controller.startup, 'ProcReader'):
             result = suite.run_suite(self.transport)
         self.assertEqual(len(result['jobs']), 25)
         self.assertEqual(len(self.transport.processes), 25)
@@ -68,7 +72,7 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(set(self.transport.images), {'save_bridge', 'fixture_generator'})
 
     def test_unconfirmed_failure_never_reads_receipt_or_native_output(self):
-        with patch.object(self.transport, 'process', side_effect=RuntimeError('owned_child_exit_unconfirmed')), patch.object(controller, 'closed_bytes') as read:
+        with patch.object(self.transport, 'process', side_effect=RuntimeError('owned_child_exit_unconfirmed')), patch.object(controller, 'closed_bytes') as read, patch.object(controller.startup, 'ProcReader'):
             with self.assertRaisesRegex(RuntimeError, 'unconfirmed'):
                 self.transport('v2-decode', 'save_bridge', suite.bridge_request('decode'), {'input.sav': b'FAKE ONLY'})
         read.assert_not_called()

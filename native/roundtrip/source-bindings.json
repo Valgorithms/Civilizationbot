@@ -4,5 +4,10 @@
     "save_bridge.dm": "6d6c872ab934f16d9f312bef3b36f0f94bed97a43362c9b2f6262e9758d56e77",
     "save_bridge.dme": "8fd6d58affa16bb5143672499939a0f7aaf3f7d5699c5e6ff87feab9f1e50b1c",
     "compile_bridge_only.py": "d223a6f11987d9cfec22c941df8b8f099aae2f8d0facd3155f63c82dd3bbe6e3"
-  }
+  },
+  "startup_derivatives": {
+    "save_bridge": "39dd69c50dfdcfa2f01cbe5afaa13bb7353ca003ea7d6c1bd98af6c84952c0b9",
+    "fixture_generator": "d2b4ac759093614b4c401496cb91c701459bde05ef55951a0e727d99b6256450"
+  },
+  "startup_guard_sha256": "6fc44b5d93ed6950c9f75f5f31c38d190e42e859f91935cd3a901537ac5b0c03"
 }

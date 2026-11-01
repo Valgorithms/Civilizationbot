@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 import owned_process as owned
 import suite
+import startup_watchdog as startup
 
 
 def digest(data): return hashlib.sha256(data).hexdigest()
@@ -100,10 +101,10 @@ class NativeTransport:
         for name in ['home', 'tmp']: (stage / name).mkdir(mode=0o700)
         return {'PATH': os.defpath, 'HOME': str(stage / 'home'), 'TMPDIR': str(stage / 'tmp'), 'LD_LIBRARY_PATH': str(self.bin)}
 
-    def process(self, argv, stage, seconds, cap, cpu):
+    def process(self, argv, stage, seconds, cap, cpu, observer=None):
         if time.monotonic() + seconds + 1 > self.stop_at:
             raise RuntimeError('Controller budget cannot cover next child')
-        result = owned.bounded(argv, stage, seconds, cap, self.work, self.env(stage), cpu)
+        result = owned.bounded(argv, stage, seconds, cap, self.work, self.env(stage), cpu, observer=observer)
         self.processes.append(result['record'])
         return result
 
@@ -111,14 +112,22 @@ class NativeTransport:
         source = ROOT / 'generator' if name == 'fixture_generator' else ROOT / 'merged'
         if name == 'save_bridge' and not source.is_dir(): source = ROOT.parent
         names = ['fixture_generator.dm', 'fixture_generator.dme', 'production_procedures.dm', 'fixture-resource.txt'] if name == 'fixture_generator' else ['save_bridge.dm', 'save_bridge.dme']
+        binding = suite.parse_json(closed_bytes(ROOT / 'source-bindings.json', 1048576))
         stage = self.work / ('compile-' + name)
         stage.mkdir(mode=0o700)
         for item in names:
             raw = closed_bytes(source / item, 1048576)
             if name == 'save_bridge':
-                binding = suite.parse_json(closed_bytes(ROOT / 'source-bindings.json', 1048576))
                 if digest(raw) != binding['bridge'][item]: raise ValueError('Merged bridge source pin mismatch')
+            if item == name + '.dm':
+                # Stage a derivative: the root bridge and compile-only workflow
+                # remain unchanged. The exact guard/derived bytes are reported.
+                raw = startup.instrument(raw, name)
+                if digest(raw) != binding['startup_derivatives'][name]: raise ValueError('Startup derivative source pin mismatch')
             with (stage / item).open('xb') as file: file.write(raw)
+        guard = closed_bytes(ROOT / 'startup_guard.dm', 1048576)
+        if digest(guard) != binding['startup_guard_sha256']: raise ValueError('Startup guard source pin mismatch')
+        with (stage / 'startup_guard.dm').open('xb') as file: file.write(guard)
         observed = self.process([str(self.bin / 'DreamMaker'), '-max_errors', '0', name + '.dme'], stage, 60, 1048576, 55)
         text = (observed['captured_logs']['stdout.log'] + observed['captured_logs']['stderr.log']).decode('utf-8', errors='strict')
         if '516.1688' not in text or '0 errors, 0 warnings' not in text:
@@ -134,6 +143,7 @@ class NativeTransport:
         self.image_hashes[name] = {file: digest(raw) for file, raw in files.items()}
         report = Path(observed['record']['safe_report_directory'])
         (report / 'compiled-image-hashes.json').write_text(json.dumps(self.image_hashes[name], indent=2) + '\n')
+        (report / 'derived-source-hashes.json').write_text(json.dumps({item: digest(closed_bytes(stage / item, 1048576)) for item in [*names, 'startup_guard.dm']}, indent=2) + '\n')
 
     def __call__(self, name, image, request, inputs):
         if len([p for p in self.processes if p['seconds_limit'] == 10]) >= 25:
@@ -151,8 +161,12 @@ class NativeTransport:
         raw_request = json.dumps(request, separators=(',', ':'), ensure_ascii=True).encode()
         if len(raw_request) > 1048576: raise ValueError('Native request byte limit')
         with (stage / request_name).open('xb') as output: output.write(raw_request)
-        argv = [str(self.bin / 'DreamDaemon'), image + '.dmb', '-ip', '127.0.0.1', '-nowebclient', '-invisible', '-close', '-safe', '-nologdates', '-log', 'native.log']
-        observed = self.process(argv, stage, 10, 4096, 8)
+        argv = [str(self.bin / 'DreamDaemon'), image + '.dmb', '-port', '25444', '-ports', '25444', '-ip', '127.0.0.1', '-nowebclient', '-invisible', '-close', '-safe', '-nologdates', '-log', 'native.log']
+        observer = startup.StartupObserver(stage, self.bin / 'DreamDaemon', image, self.image_hashes[image][image + '.dmb'])
+        observed = self.process(argv, stage, 10, 4096, 8, observer=observer)
+        startup.validate_evidence(observed['record'].get('startup'), image)
+        if observed['record']['startup']['image_sha256'] != self.image_hashes[image][image + '.dmb'] or observed['record']['startup']['pid'] != observed['record']['pid']:
+            raise ValueError('Startup observation differs from owned process/image')
         # These reads happen only after the shared supervisor confirmed exit.
         unchanged = all(closed_bytes(stage / file, 8388608) == raw for file, raw in inputs.items())
         if any(closed_bytes(stage / file, 8388608) != raw for file, raw in self.images[image].items()):
@@ -180,7 +194,7 @@ class NativeTransport:
                                                                   'outputs': {n: digest(v) for n, v in files.items()},
                                                                   'inputs_unchanged': unchanged}, indent=2) + '\n')
         return {'exit_confirmed': True, 'exit_code': observed['record']['exit_code'], 'input_unchanged': unchanged,
-                'logs': logs, 'receipt': receipt, 'files': files}
+                'logs': logs, 'receipt': receipt, 'files': files, 'startup': observed['record']['startup']}
 
 
 def main():
@@ -221,6 +235,9 @@ def main():
     summary = {'state': 'failed', 'source_revision': args.approved_revision, 'packet_manifest_sha256': packet_sha,
                'runtime': '516.1688', 'php_part': 'private/unmerged; not exercised', 'owned_exit_unconfirmed': False,
                'archive_sha256': pin['archive_sha256'], 'toolchain_members': pin['members'], 'toolchain_verified': False}
+    summary['network_envelope'] = {'listener': '127.0.0.1:25444 TCP; one owned listener; closes before fixture I/O within1s',
+                                   'intended_outbound_activity': False, 'os_egress_containment': False,
+                                   'scope': 'trusted synthetic sources and public fixtures only; sampled checks do not prove absence of transient connections'}
     primary = None
     try:
         archive = work / 'pinned-byond.zip'
