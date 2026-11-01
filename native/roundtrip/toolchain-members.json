@@ -1,0 +1,31 @@
+{
+  "schema": "civilizationbot.pinned-native-members.v1",
+  "runtime": "516.1688",
+  "archive_url": "https://github.com/Civ13/Civ13/releases/download/byond-toolchain-cache-516.1688-linux-16278f318cde/516.1688_byond_linux.zip",
+  "archive_sha256": "16278f318cdeb4b77c57868dd7135032fde717ea6226269d22b2a1a50968e7f9",
+  "archive_bytes": 4887281,
+  "members": {
+    "byond/bin/DreamMaker": {
+      "bytes": 43552,
+      "sha256": "5c7d95f6a5f6f6b096409794446416e006503005996ef37dd52f48fdcf59bfa9",
+      "elf_class": 32
+    },
+    "byond/bin/DreamDaemon": {
+      "bytes": 72288,
+      "sha256": "0047b52e042647ea3a496b368ab829672917052a130cb67646c515a01c20188a",
+      "elf_class": 32
+    },
+    "byond/bin/libext.so": {
+      "bytes": 2414088,
+      "sha256": "825d6455eee7e3410a6fabcb1abd874a02b5a7a9641286928196823468edcbf6",
+      "elf_class": 32
+    },
+    "byond/bin/libbyond.so": {
+      "bytes": 8341064,
+      "sha256": "bcee0bdbc5e3bd96da1eef99ec71de97a5143fc3a54893c97e4806ac88b2a33a",
+      "elf_class": 32
+    }
+  },
+  "inspection": "downloaded exact pinned public bytes; inspected ZIP streams only; no extraction/native execution",
+  "provenance": "exact-byte pin observed in prior approved compiler; not a vendor signature"
+}

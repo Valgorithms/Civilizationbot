@@ -1,0 +1,105 @@
+{
+  "schema": "civilizationbot.public-synthetic-roundtrip.v1",
+  "files": {
+    "cases.json": {
+      "bytes": 2646,
+      "sha256": "feb0dbd0f05ec53f8c28c0c1c2dedc5376452ef08cc94372087c5b2746c62213"
+    },
+    "diagnostics.json": {
+      "bytes": 733,
+      "sha256": "bc57ec26c60130e3015ed4b6be6c520c9a3cab33320bb0c6a772ac5d45c293e3"
+    },
+    "diagnostics.py": {
+      "bytes": 1826,
+      "sha256": "a6571387f24dd34f44b77ed248571f7e7f60d83aa08107ee8413b0fe4aae41d8"
+    },
+    "generator/fixture-resource.txt": {
+      "bytes": 72,
+      "sha256": "54cd54f2eb94e873c67be753ef238594244c5bb1dbf637d1b3515bb6ffc594f1"
+    },
+    "generator/fixture_generator.dm": {
+      "bytes": 8812,
+      "sha256": "e17ffa45565e58aa6fdfd80d1de5f3dfb79c4f5b34634b38e4463e9ab3c863f4"
+    },
+    "generator/fixture_generator.dme": {
+      "bytes": 32,
+      "sha256": "f68582b3ac0f205f125af7d31bd6828f7df69c006a2245052c4bf40a17628404"
+    },
+    "generator/production_procedures.dm": {
+      "bytes": 2064,
+      "sha256": "05f67dd318dfeca08b7a735e029a242fc0c621c63e859e78930ac5b154272dfe"
+    },
+    "historical_poll_failure.py.txt": {
+      "bytes": 3293,
+      "sha256": "2b10a58ad7a61308bd0ed79d9aeec6e62d62cd1a183a33e8eb8060ba99a86f2d"
+    },
+    "native_controller.py": {
+      "bytes": 15008,
+      "sha256": "23133611fca91ed631b60b99d151a465e60d855b273fbdcfabaaef1c5e7a1fbe"
+    },
+    "negative_oracles.py": {
+      "bytes": 1920,
+      "sha256": "63b455393ce8641d17437ebefbda00359b519b6d2fa423b6feb3198851834a33"
+    },
+    "oracle-source/expected.py": {
+      "bytes": 3152,
+      "sha256": "e227faac30af6cf87256f8acb73a4c835fa8ffb983e495fc4bc5dd5f85d13d69"
+    },
+    "oracles/expected-v2-score5.json": {
+      "bytes": 53148,
+      "sha256": "c4e077eaaf275797f2cd9b4d69b18ad187a79d1a030236cf4e70acfe42058968"
+    },
+    "oracles/expected-v2-score6.json": {
+      "bytes": 53148,
+      "sha256": "dc21231dc3a51e34098ff09d1692c5c2871b76c928add3f29ebfc8e55fa7e19e"
+    },
+    "oracles/expected-v3-score5.json": {
+      "bytes": 55290,
+      "sha256": "10ab652a1a2ed121a82eaad6abc6aabebe947bbb0df89a8985838182ef731465"
+    },
+    "oracles/expected-v3-score6.json": {
+      "bytes": 55290,
+      "sha256": "9c731096b70cd0ca50e2985b5a41548b264466e5096a6d24528724bf9a470bef"
+    },
+    "owned_process.py": {
+      "bytes": 9932,
+      "sha256": "0db113b60dc44bafefbe647b1f2abafa66b9710d2c942df198b0adbbeebc9a26"
+    },
+    "provenance.json": {
+      "bytes": 1031,
+      "sha256": "0285b3b6b754fabc118445f463646790a59c4c5e2d28915844234a49427baa0f"
+    },
+    "README.md": {
+      "bytes": 2828,
+      "sha256": "34b13a5d07f7a85dceac5a1b91a792e7cdc05e0bc89b415042b54cbc6f5cd901"
+    },
+    "source-bindings.json": {
+      "bytes": 363,
+      "sha256": "f331b8f274c61c9010344198fa7ae2b59a09f01a128b8b5f6f040681b28a8570"
+    },
+    "suite.py": {
+      "bytes": 10849,
+      "sha256": "6ab251a847d93f0e1f6d8b36f3c358b779ff6db71364442f72c9f6ae05a88ffd"
+    },
+    "test_controller.py": {
+      "bytes": 8202,
+      "sha256": "e53ef9a9bf679cd0d72484b9aac4bd42cd571b44f29e56d6f30756b2351961c3"
+    },
+    "test_owned_process.py": {
+      "bytes": 13419,
+      "sha256": "d0411d59bf03ba11f0d360097ac8c61126e59cbddd40aa8c9c6ac31f446029d0"
+    },
+    "test_suite.py": {
+      "bytes": 9115,
+      "sha256": "b7edfd69e6ed33f6f59880dfc09780d7e09c7a3b136bb5ab90b07f8f8dfae2d4"
+    },
+    "toolchain-members.json": {
+      "bytes": 1238,
+      "sha256": "2da125e959dc4034e69a6edbf74cede1a9c4ae19feda1f3feafa498567c99d8d"
+    },
+    "UPSTREAM-LICENSE": {
+      "bytes": 34520,
+      "sha256": "57c8ff33c9c0cfc3ef00e650a1cc910d7ee479a8bc509f6c9209a7c2a11399d6"
+    }
+  }
+}

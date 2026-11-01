@@ -1,0 +1,18 @@
+{
+  "civ13_source": "75e381e0d72211e923bffd8893bdd786c0f6d392",
+  "upstream_files": {
+    "code/modules/persistence/saving.dm": "15b14379b967cd13d1f1974ebe6762227aa8ec83314542298e1d3010e297e04c",
+    "code/modules/persistence/loading.dm": "39547fbb24f597d90dd5caf82671887cc61eed0bc950988e723ce8de419e3799"
+  },
+  "procedures": {
+    "encode_saved_value": "8227fe01381147ca288540944994a672adcfe95b86f6dbe4598e2498c21bffd6",
+    "encode_saved_contents": "8b53bba7aab617908d9560eaab81d8bc1ac762fdcaa4321cb1438a5b82b9377b",
+    "entry_path": "2aa2a7b0abe70972312a9b1db60756be4390b6eb61bb7a8ea0da8ff2372e5f45"
+  },
+  "adapters": "fixed two-object ID adapter; bounded work checks; no production discovery/startup",
+  "public_copy_normalization": {
+    "line_endings": "LF only; no procedure token/body changes",
+    "extracted_procedure_file_original_sha256": "5f4fcd5d3d608ef8dde02a289238a5f2dda80b2ece6813e8af6d12bb65c62420",
+    "public_procedure_file_sha256": "05f67dd318dfeca08b7a735e029a242fc0c621c63e859e78930ac5b154272dfe"
+  }
+}

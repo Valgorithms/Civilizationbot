@@ -1,0 +1,1 @@
+Synthetic public canary for unsupported-resource refusal. No user data.

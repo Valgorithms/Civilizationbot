@@ -1,0 +1,71 @@
+name: Manual synthetic save round trip
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved_revision:
+        description: Exact reviewed merged source SHA
+        required: true
+        type: string
+      approved_manifest_sha256:
+        description: SHA256 of the reviewed native/roundtrip/manifest.json
+        required: true
+        type: string
+      public_synthetic_runtime_approved:
+        description: Approve two compiles and 25 synthetic runtimes with public evidence
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: synthetic-save-roundtrip-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  synthetic:
+    if: ${{ github.repository == 'Valgorithms/Civilizationbot' && github.event_name == 'workflow_dispatch' && github.run_attempt == 1 && inputs.approved_revision == github.sha && inputs.public_synthetic_runtime_approved }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Verify remaining authorization window
+        run: |
+          PY=$(command -v python3)
+          "$PY" -I -B -c 'from datetime import datetime, timezone; assert datetime.now(timezone.utc).timestamp()+900 <= datetime(2026,11,1,23,46,26,tzinfo=timezone.utc).timestamp(), "Approved window cannot cover this job"'
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Source-only and mocked preflight
+        timeout-minutes: 1
+        run: |
+          PY=$(command -v python3)
+          "$PY" -I -B -m unittest discover -s native/tests -p 'test_*.py' -v
+      - name: Provision existing 32-bit compiler/runtime dependencies
+        timeout-minutes: 5
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo timeout 120 apt-get update
+          sudo timeout 120 apt-get install -y --no-install-recommends libstdc++6:i386 libgcc-s1:i386 libc6-i386 libcurl4:i386 lib32z1 libncurses6:i386
+          dpkg-query -W libstdc++6:i386 libgcc-s1:i386 libc6-i386 libcurl4:i386 lib32z1 libncurses6:i386
+      - name: Bounded synthetic packet, no bot or real save
+        timeout-minutes: 10
+        env:
+          APPROVED_REVISION: ${{ inputs.approved_revision }}
+          APPROVED_MANIFEST_SHA256: ${{ inputs.approved_manifest_sha256 }}
+        run: |
+          PY=$(command -v python3)
+          "$PY" -I -B native/roundtrip/native_controller.py --execute --approved-revision "$APPROVED_REVISION" --approved-manifest-sha256 "$APPROVED_MANIFEST_SHA256" --work-root "$RUNNER_TEMP/civilizationbot-save-roundtrip-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+      - name: Retain only bounded closed observations or unknown-exit metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-save-roundtrip-${{ github.sha }}
+          path: ${{ runner.temp }}/civilizationbot-save-roundtrip-${{ github.run_id }}-${{ github.run_attempt }}/safe-evidence.zip
+          if-no-files-found: warn
+          retention-days: 1
