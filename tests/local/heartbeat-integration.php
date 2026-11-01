@@ -82,6 +82,55 @@ namespace {
         return array_column(json_decode(json_encode($embed, JSON_THROW_ON_ERROR), true)['fields'], 'value', 'name');
     }
 
+    function checkRoundStartTimestamps(): void {
+        $utc = new DateTimeZone('UTC');
+        $expected = '<t:1700000000:F>';
+        $valid = [
+            1700000000, '1700000000', '1700000000000', '1700000000999',
+            '22:13:20 11/14/2023', '2023-11-14T22:13:20Z',
+            '2023-11-15T00:13:20+02:00', '2023-11-14T17:13:20-05:00',
+            '2023-11-14T22:13:20.987Z', '2023-11-14T22:13:20.000001+00:00',
+            new DateTimeImmutable('2023-11-15T00:13:20+02:00'),
+        ];
+        if (PHP_INT_SIZE >= 8) { $valid[] = 1700000000999; }
+        foreach ($valid as $value) {
+            check(Civ13\RoundStartTimestamp::format($value, $utc) === $expected, 'Valid round start lost its instant or Discord full-date style');
+        }
+        foreach ([0, '0', '00:00:00 01/01/1970'] as $value) {
+            check(Civ13\RoundStartTimestamp::format($value, $utc) === '<t:0:F>', 'Epoch zero was replaced by missing/current time');
+        }
+        $invalid = [null, '', ' ', false, true, -1, 0.0, 1700000000.5, INF, NAN, [], new stdClass(),
+            'Unknown', '22:13:20', 'tomorrow', '2023-11-14', '25:13:20 11/14/2023',
+            '22:13:20 02/30/2023', '2023-02-30T22:13:20Z', '2023-11-14T22:13:20',
+            '2023-11-14T22:13:20+25:00', '2023-11-14T22:13:20-00:00',
+            '170000000000', '10000000000', '1.7e9', '01700000000', '17000000000000',
+            str_repeat('x', 65), '<t:1700000000:F>'];
+        foreach ($invalid as $value) {
+            check(Civ13\RoundStartTimestamp::format($value, $utc) === 'Unknown', 'Invalid or ambiguous round start was guessed or echoed');
+        }
+        $ny = new DateTimeZone('America/New_York');
+        check(Civ13\RoundStartTimestamp::format('01:30:00 11/05/2023', $ny) === 'Unknown', 'Repeated DST wall time invented an instant');
+        check(Civ13\RoundStartTimestamp::format('02:30:00 03/12/2023', $ny) === 'Unknown', 'Nonexistent DST wall time was normalized');
+        check(Civ13\RoundStartTimestamp::format('2023-11-05T01:30:00-04:00', $ny) === '<t:1699162200:F>', 'Explicit daylight offset was ignored');
+        check(Civ13\RoundStartTimestamp::format('2023-11-05T01:30:00-05:00', $ny) === '<t:1699165800:F>', 'Explicit standard offset was ignored');
+        $mutable = new DateTime('2023-11-15T00:13:20+02:00');
+        $before = $mutable->format('c');
+        check(Civ13\RoundStartTimestamp::format($mutable, $utc) === $expected && $mutable->format('c') === $before, 'Formatter mutated a date object');
+        $originalTimezone = date_default_timezone_get();
+        try {
+            date_default_timezone_set('America/New_York');
+            check(Civ13\RoundStartTimestamp::format('17:13:20 11/14/2023') === $expected, 'Legacy start did not use producer PHP timezone');
+            date_default_timezone_set('Asia/Tokyo');
+            check(Civ13\RoundStartTimestamp::format('07:13:20 11/15/2023') === $expected, 'Legacy timezone conversion changed the recorded instant');
+            check(Civ13\RoundStartTimestamp::format('2023-11-14T22:13:20Z') === $expected, 'ISO offset depended on PHP default timezone');
+        } finally {
+            date_default_timezone_set($originalTimezone);
+        }
+        echo "Round-start timestamp normalization contracts passed\n";
+    }
+
+    checkRoundStartTimestamps();
+
     $root = sys_get_temp_dir().'/bot-heartbeat-integration-'.bin2hex(random_bytes(8));
     mkdir($root, 0700);
     $now = 0.0;
@@ -137,6 +186,29 @@ namespace {
         $server->current_round = 'fixture';
         $server->rounds = ['fixture' => ['start' => 'fixture', 'players' => [], 'log' => '/fixture']];
         check(str_contains(json_encode($server->createCurrentRoundEmbedMessageBuilder()), 'Heartbeat advancing'), 'Current-round renderer bypassed health state');
+        $originalTimezone = date_default_timezone_get();
+        try {
+            date_default_timezone_set('UTC');
+            foreach ([
+                ['22:13:20 11/14/2023', '<t:1700000000:F>'],
+                ['1700000000999', '<t:1700000000:F>'],
+                ['2023-11-15T00:13:20+02:00', '<t:1700000000:F>'],
+                ['', 'Unknown'], ['invalid', 'Unknown'],
+            ] as [$start, $expected]) {
+                $server->rounds['fixture']['start'] = $start;
+                $before = $server->rounds;
+                $payload = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+                $roundFields = array_column($payload['embeds'][0]['fields'], 'value', 'name');
+                check($roundFields['Start'] === $expected, 'Production round embed did not serialize the timestamp/fallback');
+                check($roundFields['End'] === 'Ongoing/Unknown', 'Start formatting changed the End field');
+                check($server->rounds === $before, 'Display formatting rewrote recorded round metadata');
+            }
+            unset($server->rounds['fixture']['start']);
+            $payload = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+            check(array_column($payload['embeds'][0]['fields'], 'value', 'name')['Start'] === 'Unknown', 'Missing Start did not render Unknown');
+        } finally {
+            date_default_timezone_set($originalTimezone);
+        }
         $timer = $server->heartbeatTimer();
         check($timer === $server->heartbeatTimer() && $timer->getInterval() === 15.0, 'Passive timer duplicated or has wrong interval');
         foreach ([45, 75, 105, 135] as $now) { ($timer->getCallback())(); }

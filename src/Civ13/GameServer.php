@@ -617,7 +617,7 @@ class GameServer
             $embed = $this->heartbeatEmbed($status)
                 ->setTitle($this->name)
                 //->addFieldValues('Game ID', $game_id);
-                ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
+                ->addFieldValues('Start', RoundStartTimestamp::format($round['start'] ?? null), true)
                 ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
             if (isset($data[7])) {
                 $embed->addFieldValues('Round Time', $this->parseRoundTime($data[7]), true);
