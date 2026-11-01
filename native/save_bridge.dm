@@ -212,7 +212,7 @@ var/sb_work
 		else
 			sb_check(0)
 		status = "ok"
-	catch(var/exception/E)
+	catch
 		// Fixed errors only. No saved values or native exception details leave.
 		status = "rejected"
 		graph = list()
