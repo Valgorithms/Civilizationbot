@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from diagnostics import classify_logs
 import negative_oracles
+import startup_watchdog as startup
 
 PROTOCOL = 'civilizationbot.native-save-bridge.v1'
 PROFILE = 'civ13-synthetic-level.v1'
@@ -151,7 +152,8 @@ def run_suite(transport):
         check(isinstance(result, dict) and result.get('exit_confirmed') is True and result.get('exit_code') == 0)
         logs = result.get('logs')
         check(isinstance(logs, dict) and set(logs) == {'stdout', 'stderr', 'native.log'}, 'native_diagnostic_evidence_missing')
-        classify_logs(logs, parse_json((ROOT / 'diagnostics.json').read_bytes()))
+        startup.validate_evidence(result.get('startup'), image)
+        classify_logs(logs, parse_json((ROOT / 'diagnostics.json').read_bytes()), startup_evidence=result['startup'], image=image)
         check(result.get('input_unchanged') is True, 'native_input_modified')
         return result
     generated = call('generate', 'fixture_generator', {'schema': 'civilizationbot.fixture-request.v1', 'operation': 'generate'})
