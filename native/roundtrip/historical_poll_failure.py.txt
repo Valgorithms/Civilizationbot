@@ -1,0 +1,55 @@
+# Historical negative control only. Never call with a real Popen factory.
+def bounded(argv, cwd, seconds, cap, evidence_root, env):
+    if PENDING:
+        raise RuntimeError('Previous owned child exit unresolved')
+    started = time.monotonic()
+    deadline = started+seconds
+    reserve = min(.75, seconds/2)
+    fault = None
+    with (cwd/'stdout.log').open('xb') as out, (cwd/'stderr.log').open('xb') as err:
+        child = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.DEVNULL, stdout=out, stderr=err, env=env)
+        while child.poll() is None:
+            limits = {'stdout.log': cap, 'stderr.log': cap, 'native.log': 4096, 'fixture-receipt.json': 1048576}
+            if any((cwd/name).is_file() and (cwd/name).stat().st_size > limit for name, limit in limits.items()) or any(p.stat().st_size > 8388608 for p in cwd.glob('*.sav')) or disk_bytes(evidence_root) > 33554432:
+                fault = 'output_limit'
+                break
+            if time.monotonic() >= deadline-reserve:
+                fault = 'timeout'
+                break
+            time.sleep(.005)
+        if child.poll() is None:
+            child.terminate()
+            grace = min(deadline, time.monotonic()+reserve/3)
+            while child.poll() is None and time.monotonic() < grace:
+                time.sleep(.005)
+            if child.poll() is None:
+                child.kill()
+            while child.poll() is None and time.monotonic() < deadline:
+                time.sleep(.005)
+            if child.poll() is None:
+                PENDING.append(child)
+                fault = 'owned_child_exit_unconfirmed'
+        exit_code = child.poll()
+        confirmed = exit_code is not None
+        snapshots = {}
+        captured = {}
+        for name in ('stdout.log', 'stderr.log'):
+            if confirmed:
+                snapshots[name], captured[name] = log_snapshot(cwd/name, cap)
+                if snapshots[name]['oversized'] and fault is None:
+                    fault = 'output_limit'
+            else:
+                # No stat, open, read or hash of possibly growing logs here.
+                snapshots[name] = {'path': str(cwd/name), 'snapshot_path': None,
+                    'hash_status': 'unavailable_unconfirmed_exit', 'sha256_snapshot': None,
+                    'captured_bytes': None, 'oversized': None}
+        record = {'argv': list(map(str, argv)), 'seconds': time.monotonic()-started,
+                  'returncode': exit_code, 'exit_confirmed': confirmed, 'fault': fault,
+                  'log_snapshots': snapshots}
+        (cwd/'process.json').write_text(json.dumps(record, indent=2))
+    if fault or not confirmed or exit_code != 0:
+        raise RuntimeError('Native packet process failed; inspect private evidence')
+    # Recheck writers which completed between the final poll and byte sample.
+    if any((cwd/name).is_file() and (cwd/name).stat().st_size > limit for name, limit in {'stdout.log': cap, 'stderr.log': cap, 'native.log': 4096, 'fixture-receipt.json': 1048576}.items()) or any(p.stat().st_size > 8388608 for p in cwd.glob('*.sav')) or disk_bytes(evidence_root) > 33554432:
+        raise RuntimeError('Final packet output limit exceeded')
+    return captured['stdout.log'].decode(errors='replace')+captured['stderr.log'].decode(errors='replace')

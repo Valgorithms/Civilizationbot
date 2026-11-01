@@ -1,0 +1,8 @@
+{
+  "base_revision": "544a33be388b63fe2299127eefa7df340d90667c",
+  "bridge": {
+    "save_bridge.dm": "6d6c872ab934f16d9f312bef3b36f0f94bed97a43362c9b2f6262e9758d56e77",
+    "save_bridge.dme": "8fd6d58affa16bb5143672499939a0f7aaf3f7d5699c5e6ff87feab9f1e50b1c",
+    "compile_bridge_only.py": "d223a6f11987d9cfec22c941df8b8f099aae2f8d0facd3155f63c82dd3bbe6e3"
+  }
+}

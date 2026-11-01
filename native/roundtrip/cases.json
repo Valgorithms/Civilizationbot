@@ -1,0 +1,70 @@
+{
+  "schema": "civilizationbot.native-roundtrip-review.v3",
+  "state": "source-only; execution held",
+  "bot_revision": "544a33be388b63fe2299127eefa7df340d90667c",
+  "serializer_revision": "75e381e0d72211e923bffd8893bdd786c0f6d392",
+  "runtime": "516.1688",
+  "archive_sha256": "16278f318cdeb4b77c57868dd7135032fde717ea6226269d22b2a1a50968e7f9",
+  "archive_bytes": 4887281,
+  "native_accounting": {
+    "generate_all_fixtures": 1,
+    "two_positive_versions_decode_encode_fresh_decode": 6,
+    "independent_native_oracle_readers": 2,
+    "malformed_native_fixture_reads": 8,
+    "null_record_root_item_requests": 3,
+    "invalid_operation_requests": 5
+  },
+  "native_structural_refusals": [
+    "unknown-field",
+    "extra-buffer",
+    "resource",
+    "instance"
+  ],
+  "unsupported": [
+    "arbitrary native inputs",
+    "production type catalogs",
+    "resources",
+    "native datum/atom instances",
+    "alist",
+    "fractional/out-of-profile numbers",
+    "area/zone/map/level links",
+    "coherent complete generations",
+    "production gameplay loading"
+  ],
+  "php_part_codec": "private and unpublished; not exercised by this merged-bridge packet",
+  "automatic_retry": false,
+  "publication_or_dispatch": "none; Main review and safe executor/destination required",
+  "supervision_adapter": "implemented using pinned merged cleanup helper; mocked tests; pending independent review and real Linux validation",
+  "exact_negative_graph_controls_raw_bridge_may_decode": [
+    "wrong-version",
+    "missing-type",
+    "bad-ref",
+    "unknown-kind"
+  ],
+  "execution_binding": "proposed manual GitHub Actions Valgorithms/Civilizationbot ubuntu-22.04; no local fallback",
+  "hosted_job_seconds": 900,
+  "limits_enforced_in_source_runtime_unverified": {
+    "compiler_processes": 2,
+    "compiler_wall_seconds_each_including_cleanup": 60,
+    "compiler_cpu_seconds_each": 55,
+    "native_processes": 25,
+    "native_wall_seconds_each_including_cleanup": 10,
+    "native_cpu_seconds_each": 8,
+    "max_concurrent_owned_native_or_compiler_children": 1,
+    "child_virtual_address_space_bytes": 1073741824,
+    "child_file_size_rlimit_bytes": 8388608,
+    "child_open_fds": 64,
+    "child_core_bytes": 0,
+    "compiler_stdout_stderr_bytes_each": 1048576,
+    "native_stdout_stderr_log_bytes_each": 4096,
+    "protocol_json_bytes_each": 1048576,
+    "native_save_and_image_bytes_each": 8388608,
+    "job_stage_bytes": 33554432,
+    "all_evidence_bytes": 67108864,
+    "file_inventory_entries": 4096,
+    "controller_wall_seconds": 600,
+    "toolchain_download_seconds": 60,
+    "toolchain_unpack_bytes": 134217728,
+    "toolchain_members": 1000
+  }
+}
