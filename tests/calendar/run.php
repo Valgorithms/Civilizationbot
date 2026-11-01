@@ -155,6 +155,12 @@ try {
     $recovered = new Ledger(GUILD, $file->read(), fn ($state) => $file->write($state)); $recovered->invalidate(NOW + 6);
     check($recovered->snapshot(NOW + 6)['events'] === [], 'Process startup reused old lease');
     unset($recovered, $file);
+    $child = proc_open([PHP_BINARY, __DIR__.'/recover.php', $root.'/ledger.json'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+    check(is_resource($child), 'Fresh-process recovery worker unavailable');
+    fclose($pipes[0]); $output = stream_get_contents($pipes[1]); $errors = stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]);
+    check(proc_close($child) === 0 && $errors === '', 'Fresh-process recovery did not exit cleanly');
+    $restarted = json_decode($output, true, 32, JSON_THROW_ON_ERROR);
+    check($restarted['events'][0]['uid'] === $uid && $restarted['events'][0]['sequence'] === 4 && $restarted['events'][0]['status'] === 'withdrawn', 'Fresh process reset identity or cancellation revision');
 } finally { foreach (glob($root.'/*') as $path) { unlink($path); } rmdir($root); }
 
 $fixture = new Ledger(GUILD, [], static fn () => null); $fixture->replace(project($base), NOW);
