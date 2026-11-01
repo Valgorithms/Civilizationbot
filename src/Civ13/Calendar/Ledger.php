@@ -49,7 +49,7 @@ final class Ledger
             if ($entry['sequence'] > 2147483647) { throw new \RuntimeException('Event revision exhausted'); }
             if ($now - $entry['changed'] <= 30 * 86400) {
                 $events[] = ['event_id' => (string)$id, 'uid' => 'discord-'.$this->guild.'-'.$id.'@civ13.github.io', 'sequence' => $entry['sequence'],
-                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z', $entry['changed']), 'start_at' => $entry['start_at'], 'end_at' => null,
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z', $entry['changed']), 'start_at' => gmdate('Y-m-d\TH:i:s\Z', $entry['changed']), 'end_at' => null,
                     'title' => 'Event no longer listed', 'description' => 'Details withdrawn; check Discord for current information.',
                     'location' => '', 'url' => '', 'status' => 'withdrawn', 'recurrence' => 'none'];
             }

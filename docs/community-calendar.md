@@ -60,6 +60,10 @@ content/status changes, withdrawal and reappearance and survives restart. The
 ledger stores only identity, hash, sequence, public flag and timing per event;
 old public titles/descriptions are absent after withdrawal. Generic cancellation
 records remove previously listed events without retaining now-restricted details.
+Their timestamp is the withdrawal observation time, not the former event start;
+only the previously public UID/revision is retained for reconciliation. The
+consumer must label it as a removal time. Native calendar-client reconciliation
+of these cancellation imports is not claimed as tested.
 They are exported for 30 days; minimal revision history remains durable. Bounds
 (10,000 historical IDs, 1,000 exported rows, 8 MiB private state/2 MiB public body)
 fail closed and require review instead of silently truncating or resetting history.

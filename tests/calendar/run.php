@@ -63,6 +63,7 @@ $ledger = new Ledger(GUILD, $durable, function (array $state) use (&$durable): v
 $ledger->replace(project($hidden), NOW + 3); $withdrawal = $ledger->snapshot(NOW + 3)['events'][0];
 check($withdrawal['uid'] === $uid && $withdrawal['sequence'] === 2 && $withdrawal['status'] === 'withdrawn', 'UID/revision/withdrawal lost on recovery');
 check(!str_contains(json_encode($durable), 'Changed public name') && !str_contains(json_encode($withdrawal), 'Synthetic community'), 'Restricted historical details retained');
+check($withdrawal['start_at'] === $withdrawal['updated_at'] && $withdrawal['start_at'] !== $row['start_at'], 'Withdrawal republished the former event schedule');
 $ledger->replace(project($base), NOW + 4); check($ledger->snapshot(NOW + 4)['events'][0]['sequence'] === 3, 'Reappearance reused old revision');
 check($ledger->snapshot(NOW + 124)['events'] === [] && $ledger->snapshot(NOW - 1)['events'] === [], 'Expired or future snapshot served');
 $ledger->invalidate(NOW + 5); $ledger->renew(NOW + 6); check($ledger->snapshot(NOW + 6)['events'] === [], 'Heartbeat revived invalidated details');
