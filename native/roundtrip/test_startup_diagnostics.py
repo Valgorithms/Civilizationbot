@@ -283,5 +283,36 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(report['startup']['rejection']['decision']['socket_count'], 0)
         self.assertIs(own.ACTIVE, child)
 
+    def test_later_deadline_failure_does_not_reuse_prior_socket_decision(self):
+        base.publish(self.stage, 'ready'); self.observer.tick()
+        self.assertEqual(self.observer.decision['socket_count'], 1)
+        self.clock.value = 1
+        record = self.reject('close_timeout')
+        self.assertEqual(record['tick_index'], 2)
+        self.assertEqual(record['decision']['tick_index'], 2)
+        self.assertNotIn('socket_count', record['decision'])
+        self.assertNotIn('matching_rows_count', record['decision'])
+
+    def test_later_identity_failure_does_not_reuse_prior_socket_decision(self):
+        base.publish(self.stage, 'ready'); self.observer.tick()
+        self.proc.starttime = 901
+        record = self.reject('owned_identity_changed')
+        self.assertEqual(record['decision']['tick_index'], 2)
+        self.assertEqual(record['decision']['observed_starttime_ticks'], 901)
+        self.assertNotIn('socket_count', record['decision'])
+
+    def test_fallback_labels_prior_census_and_drops_stale_flat_count(self):
+        base.publish(self.stage, 'ready'); self.observer.tick()
+        self.proc.last_census = {'status': 'complete', 'socket_count': 1, 'fd_scan_complete': True,
+                                 'observer_context': {'tick_index': 1}, 'padding': 'x' * 40000}
+        self.clock.value = 1
+        record = self.reject('close_timeout')
+        self.assertEqual(record['capture_scope'], 'summary_only')
+        self.assertEqual(record['decision_tick_index'], 2)
+        self.assertEqual(record['proc_census_tick_index'], 1)
+        self.assertFalse(record['proc_census_current_tick'])
+        self.assertIsNone(record['proc_socket_count'])
+        self.assertIsNone(record['socket_count'])
+
 
 if __name__ == '__main__': unittest.main()

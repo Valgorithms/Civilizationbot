@@ -55,13 +55,18 @@ def retain_fault(attribute):
                     if attribute is None:
                         partial = getattr(self.proc, 'last_census', None)
                         partial = partial if type(partial) is dict else {}
+                        context = partial.get('observer_context')
+                        partial_tick = context.get('tick_index') if type(context) is dict else None
+                        current_census = type(partial_tick) is int and partial_tick == self.tick_index
                         self.record['rejection'] = {'operation': method.__name__, 'point': self.point,
                                                     'phase': self.phase, **error_summary(error),
                                                     'pid': self.pid, 'owner_token': self.record.get('owner_token'),
                                                     'expected_starttime_ticks': self.starttime, 'capture_scope': 'summary_only',
                                                     'proc_census_status': partial.get('status'),
-                                                    'proc_socket_count': partial.get('socket_count'),
-                                                    'fd_scan_complete': partial.get('fd_scan_complete'),
+                                                    'proc_census_tick_index': partial_tick, 'proc_census_current_tick': current_census,
+                                                    'proc_socket_count': partial.get('socket_count') if current_census else None,
+                                                    'fd_scan_complete': partial.get('fd_scan_complete') if current_census else None,
+                                                    'decision_tick_index': self.decision.get('tick_index'),
                                                     'socket_count': self.decision.get('socket_count'),
                                                     'matching_rows_count': self.decision.get('matching_rows_count')}
                         snapshot = {'operation': method.__name__, 'point': self.point, 'phase': self.phase, 'capture_scope': 'bounded_decision_snapshot',
@@ -423,6 +428,7 @@ class StartupObserver:
         if self.phase == 'released':
             return
         self.tick_index += 1
+        self.decision = {'tick_index': self.tick_index}
         self.point = 'tick_phase_validate'
         check(self.phase in ('waiting_ready', 'waiting_closed'), 'startup_observer_phase')
         self.point = 'tick_close_deadline'

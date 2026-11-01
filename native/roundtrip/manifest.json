@@ -2,8 +2,8 @@
   "schema": "civilizationbot.public-synthetic-roundtrip.v1",
   "files": {
     "README.md": {
-      "bytes": 8442,
-      "sha256": "5ed449a7bf76295a8de9eceab34d59be3bd6f6d8064966734f34fd6743e4a05a"
+      "bytes": 8443,
+      "sha256": "04f269c16b4780b8b2696700c67c3f0f95d4111d04007be66d59018ec00e07b2"
     },
     "UPSTREAM-LICENSE": {
       "bytes": 34520,
@@ -86,8 +86,8 @@
       "sha256": "aaa8677bfaa8ba8cb151f197d3103680fc8e71209ba8d9354c127a55b1d1eee5"
     },
     "startup_watchdog.py": {
-      "bytes": 31949,
-      "sha256": "e69b1609efbc27515459aa9664c6c9e07e513aa28faae767b95c767b9b096a25"
+      "bytes": 32574,
+      "sha256": "0a60026b7641a13119025061e5856dd600b87b923b368cbc1385fe6e22c09a76"
     },
     "suite.py": {
       "bytes": 10997,
@@ -102,8 +102,8 @@
       "sha256": "d0411d59bf03ba11f0d360097ac8c61126e59cbddd40aa8c9c6ac31f446029d0"
     },
     "test_startup_diagnostics.py": {
-      "bytes": 17798,
-      "sha256": "59a9a8df41449ca0965423bda9da28e7d932021041c6171fa584c42a22cf98a5"
+      "bytes": 19527,
+      "sha256": "0476a31e58d737c830de8e23d7878fce7ccce62ff3c4d90c3a457ce992fdb5da"
     },
     "test_startup_watchdog.py": {
       "bytes": 34315,

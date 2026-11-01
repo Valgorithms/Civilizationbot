@@ -77,7 +77,7 @@ Unknown exits never trigger this final diagnostic read. Diagnostics cannot
 admit a receipt, overwrite the original failure, extend a deadline or release
 fixture I/O. Existing limits, workflow, listener contract and cleanup remain.
 
-## Decision-point diagnostic proposal after run41356319315
+## Decision-point diagnostic proposal after run 41356319315
 
 That run accepted an exact32-byte ready marker, then failed its one-socket
 cardinality rule. Its actual inode count/inventory was not retained, so the
