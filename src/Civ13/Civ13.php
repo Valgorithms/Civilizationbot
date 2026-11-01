@@ -955,6 +955,7 @@ class Civ13
     public function stop(bool $closeLoop = true): void
     {
         $this->stopAdminFileSync();
+        $this->stopCalendarSync();
         $this->logger->info('Shutting down');
         if (isset($this->httpServiceManager->socket)) {
             $this->httpServiceManager->socket->close();
@@ -982,6 +983,16 @@ class Civ13
         try { $this->adminFileSync?->stop(); }
         catch (\Throwable) {
             try { if (isset($this->logger)) { $this->logger->warning('Admin file synchronization listener cleanup failed'); } }
+            catch (\Throwable) {}
+        }
+    }
+
+    /** Release calendar listeners and the ledger lock before a replacement process starts. */
+    private function stopCalendarSync(): void
+    {
+        try { $this->calendarSync?->stop(); }
+        catch (\Throwable) {
+            try { if (isset($this->logger)) { $this->logger->warning('Calendar synchronization cleanup failed'); } }
             catch (\Throwable) {}
         }
     }
@@ -2315,6 +2326,7 @@ class Civ13
     public function __destruct()
     {
         $this->stopAdminFileSync();
+        $this->stopCalendarSync();
         foreach ($this->timers as $timer) {
             $this->loop->cancelTimer($timer);
         }

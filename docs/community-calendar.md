@@ -54,6 +54,11 @@ contract, not an instantaneous recall promise for previously delivered data.
 
 The private ledger atomically commits revisions and sanitized output before it
 becomes visible. A lifetime file lock rejects another writer using that ledger.
+Shutdown/destruction explicitly removes listeners and releases the lock before
+relaunch. File contents are synced before rename; POSIX additionally attempts a
+directory sync afterward. The Linux matrix probes that filesystem capability.
+Windows and filesystems without directory fsync have a weaker power-loss boundary;
+fresh-process tests establish restart recovery, not simulated power-loss recovery.
 Never reset/delete a production ledger to fix startup: preserve it and recover.
 UID is `discord-{guild}-{event}@civ13.github.io`; SEQUENCE increases on public
 content/status changes, withdrawal and reappearance and survives restart. The

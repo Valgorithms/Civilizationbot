@@ -36,6 +36,9 @@ final class FileState
                 if (fwrite($file, $json) !== strlen($json) || !fflush($file) || (function_exists('fsync') && !fsync($file))) { throw new \RuntimeException('Calendar write incomplete'); }
             } finally { fclose($file); }
             if (!rename($temp, $this->path)) { throw new \RuntimeException('Calendar commit unavailable'); }
+            if (DIRECTORY_SEPARATOR === '/' && function_exists('fsync') && ($directory = @fopen(dirname($this->path), 'r')) !== false) {
+                try { @fsync($directory); } finally { fclose($directory); }
+            }
         } finally { if (file_exists($temp)) { unlink($temp); } }
     }
     public function close(): void { if (is_resource($this->lock)) { flock($this->lock, LOCK_UN); fclose($this->lock); } }

@@ -150,6 +150,24 @@ try {
     check($composition->snapshot()['events'] === [], 'Request-time config mutation retained details');
     check(array_sum(array_map('count', $client->handlers)) === 0, 'Config invalidation retained source listeners');
     $composition->stop(); unset($composition);
+    $app->role_ids['Verified'] = ROLE;
+    $probe = (new ReflectionClass(\Civ13\Civ13::class))->newInstanceWithoutConstructor();
+    $probe->logger = new \Psr\Log\NullLogger();
+    $probe->calendarSync = PublicCalendar::attach($app, $settings);
+    $probe->stop(false); // Actual Civ13 shutdown on an inert facade, no Discord/client/socket/loop.
+    check(array_sum(array_map('count', $client->handlers)) === 0, 'Actual Civ13 stop retained calendar listeners');
+    $witness = new FileState($settings['state_file']); $witness->close();
+    check($probe->calendarSync->snapshot()['events'] === [], 'Actual Civ13 stop retained active calendar data');
+    $probe->calendarSync = PublicCalendar::attach($app, $settings);
+    $probe->__destruct();
+    check(array_sum(array_map('count', $client->handlers)) === 0, 'Actual Civ13 destructor retained listeners');
+    $witness = new FileState($settings['state_file']); $witness->close();
+    check($probe->calendarSync->snapshot()['events'] === [], 'Actual Civ13 destructor retained active data');
+    if (DIRECTORY_SEPARATOR === '/' && function_exists('fsync')) {
+        $directory = fopen($root, 'r');
+        try { check(is_resource($directory) && fsync($directory), 'POSIX directory sync unsupported on this test filesystem'); }
+        finally { fclose($directory); }
+    }
     $file = new FileState($root.'/ledger.json'); $file->write($durable); check($file->read() === $durable, 'File transaction changed durable state');
     rejects(fn () => new FileState($root.'/ledger.json'));
     unset($file); $file = new FileState($root.'/ledger.json');
