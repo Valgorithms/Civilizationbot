@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - 'src/Civ13/GameServer.php'
+      - 'src/Civ13/RoundStartTimestamp.php'
       - 'src/Civ13/ServerHeartbeat.php'
       - 'tests/local/heartbeat*.php'
       - '.github/workflows/status-heartbeat.yml'
