@@ -145,3 +145,41 @@ jobs:
             bin/build/bot/windows/source.json
           retention-days: 1
           if-no-files-found: error
+  php8512-relay:
+    name: Windows PHP 8.5.12 relay acceptance
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 41
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
+        timeout-minutes: 5
+        with:
+          php-version: '8.5'
+          extensions: mbstring, openssl, curl
+          coverage: none
+        env:
+          update: 'true'
+          fail-fast: 'true'
+      - name: Require exact configured Windows PHP 8.5.12
+        timeout-minutes: 1
+        shell: php {0}
+        run: |
+          <?php
+          $curl = extension_loaded('curl') ? curl_version() : [];
+          echo json_encode(['php'=>PHP_VERSION, 'os'=>PHP_OS_FAMILY, 'curl'=>extension_loaded('curl'), 'libcurl'=>$curl['version'] ?? null, 'ssl'=>$curl['ssl_version'] ?? null], JSON_THROW_ON_ERROR), PHP_EOL;
+          if (PHP_OS_FAMILY !== 'Windows' || PHP_VERSION !== '8.5.12' || !extension_loaded('curl')) {
+              fwrite(STDERR, "Expected configured Windows PHP 8.5.12 with curl\n");
+              exit(1);
+          }
+      - name: Install locked offline-test dependencies
+        timeout-minutes: 3
+        run: composer install --no-interaction --no-plugins --no-scripts --no-dev
+      - name: Seven diagnostic cases and unchanged strict relay test
+        timeout-minutes: 2
+        run: php tests/local/relay.php vendor/autoload.php
