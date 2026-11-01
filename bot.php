@@ -253,6 +253,7 @@ $options = [
     // 'serverinfo_url' => '', // URL of the serverinfo.json file, defaults to the webserver if left blank
     // 'launcher_directory' => ['civ13.com' => ['tdm', 'nomads']], // Opt-in public status; see docs/launcher-directory.md
     // 'launcher_directory_status_targets' => [], // Separate opt-in status-only inventory; never enables GameServer/pers
+    // 'calendar_sync' => require $baseDir.'/config/calendar.example.php', // Inactive example; see docs/community-calendar.md
     'ooc_badwords' => $ooc_badwords,
     'ic_badwords' => $ic_badwords,
     'folders' => [

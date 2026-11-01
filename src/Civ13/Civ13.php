@@ -149,6 +149,7 @@ class Civ13
     public readonly array $faction_ids;
 
     public bool $ready = false;
+    public ?\Civ13\Calendar\PublicCalendar $calendarSync = null;
     public array $options = [];
     
     public Byond $byond;
@@ -439,6 +440,8 @@ class Civ13
             new SS14GameServer($this, $gameserver_options);
         }
         $this->byond = new Byond();
+        try { $this->calendarSync = \Civ13\Calendar\PublicCalendar::attach($this, $options['calendar_sync']); }
+        catch (\Throwable) { $this->logger->warning('Public calendar synchronization inactive: configuration or storage unavailable'); }
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
         $adminSync = $options['admin_file_sync'];
@@ -509,6 +512,7 @@ class Civ13
                 'http_port',
                 'http_whitelist',
                 'launcher_directory',
+                'calendar_sync',
                 'launcher_directory_status_targets',
                 'ic_badwords',
                 'legacy',
@@ -555,6 +559,7 @@ class Civ13
                 'http_port' => 0,
                 'http_whitelist' => [],
                 'launcher_directory' => [],
+                'calendar_sync' => ['enabled' => false],
                 'launcher_directory_status_targets' => [],
                 'ic_badwords' => [],
                 'legacy' => true,
@@ -606,6 +611,7 @@ class Civ13
             ->setAllowedTypes('http_port', 'int')
             ->setAllowedTypes('http_whitelist', 'array')
             ->setAllowedTypes('launcher_directory', 'array')
+            ->setAllowedTypes('calendar_sync', 'array')
             ->setAllowedTypes('launcher_directory_status_targets', 'array')
             ->setAllowedTypes('ic_badwords', 'array')
             ->setAllowedTypes('legacy', 'bool')
