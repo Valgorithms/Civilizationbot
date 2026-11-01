@@ -163,7 +163,13 @@ class CompilerContract(unittest.TestCase):
 
     def test_unconfirmed_exit_retains_child_and_never_reads_live_logs(self):
         self.child.term_exits = self.child.kill_exits = False
-        with patch.object(bridge, 'snapshot') as snapshot:
+
+        def active_size_check(stage):
+            self.assertEqual(self.child.signals, [], 'Final size scan attempted after unconfirmed cleanup')
+            return False
+
+        with patch.object(bridge, 'snapshot') as snapshot, \
+             patch.object(bridge, 'output_limit_exceeded', side_effect=active_size_check):
             result = self.run_compile()
         snapshot.assert_not_called()
         self.assertEqual(result['fault'], 'owned_compiler_exit_unconfirmed')
@@ -252,6 +258,81 @@ class CompilerContract(unittest.TestCase):
         self.assertEqual(result['fault'], 'output_limit')
         self.assertTrue(result['exit_confirmed'])
         self.assertEqual(self.child.signals[0][0], 'terminate')
+
+    def test_completed_child_over_limit_resource_is_rejected(self):
+        self.child.code = 0
+        launch = self.launch
+
+        def final_resource(*args, **kwargs):
+            result = launch(*args, **kwargs)
+            (self.stage/'save_bridge.rsc').write_bytes(b'x' * 33)
+            return result
+
+        with patch.object(bridge, 'IMAGE_CAP', 32), \
+             patch.object(bridge.subprocess, 'Popen', side_effect=final_resource):
+            result = self.run_compile()
+        self.assertEqual(result['status'], 'compile_failed')
+        self.assertEqual(result['fault'], 'output_limit')
+        self.assertEqual(result['exit_code'], 0)
+        self.assertNotIn('dmb_sha256', result)
+        self.assertEqual(self.child.signals, [])
+
+    def test_completed_child_over_limit_stage_is_rejected(self):
+        self.child.code = 0
+        launch = self.launch
+        original_stat = Path.stat
+
+        def final_stage(*args, **kwargs):
+            result = launch(*args, **kwargs)
+            (self.stage/'oversize-placeholder').write_bytes(b'x')
+            return result
+
+        def final_stat(path, *args, **kwargs):
+            value = original_stat(path, *args, **kwargs)
+            if path.name == 'oversize-placeholder':
+                values = list(value)
+                values[6] = 33554433  # Simulated size; only one actual byte.
+                return type(value)(values)
+            return value
+
+        with patch.object(Path, 'stat', final_stat), \
+             patch.object(bridge.subprocess, 'Popen', side_effect=final_stage):
+            result = self.run_compile()
+        self.assertEqual(result['status'], 'compile_failed')
+        self.assertEqual(result['fault'], 'output_limit')
+        self.assertEqual(result['exit_code'], 0)
+        self.assertNotIn('dmb_sha256', result)
+        self.assertEqual(self.child.signals, [])
+
+    def test_completed_child_within_limits_resource_and_stage_pass(self):
+        self.child.code = 0
+        launch = self.launch
+
+        def final_resource(*args, **kwargs):
+            result = launch(*args, **kwargs)
+            (self.stage/'save_bridge.rsc').write_bytes(b'x' * 32)
+            return result
+
+        with patch.object(bridge, 'IMAGE_CAP', 32), \
+             patch.object(bridge.subprocess, 'Popen', side_effect=final_resource):
+            result = self.run_compile()
+        self.assertEqual(result['status'], 'compile_passed')
+        self.assertIsNone(result['fault'])
+        self.assertIn('dmb_sha256', result)
+        self.assertEqual(self.child.signals, [])
+
+    def test_final_size_scan_error_is_fail_closed(self):
+        self.child.code = 0
+        error = OSError('synthetic final stage scan error')
+        with patch.object(Path, 'rglob', side_effect=error):
+            with self.assertRaises(OSError) as caught:
+                self.run_compile()
+        self.assertIs(caught.exception, error)
+        self.assertEqual(self.record()['status'], 'compile_failed')
+        self.assertEqual(self.record()['fault'], 'output_check_error')
+        self.assertTrue(self.record()['exit_confirmed'])
+        self.assertNotIn('dmb_sha256', self.record())
+        self.assertEqual(self.child.signals, [])
 
 
 class RefusalFixtureContract(unittest.TestCase):

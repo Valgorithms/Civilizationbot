@@ -49,7 +49,7 @@
           }
         },
         {
-          "name": "Fourteen offline contracts; no SDK or native child",
+          "name": "Offline contracts; no SDK or native child",
           "timeout-minutes": 1,
           "run": "PY=$(command -v python3)\n\"$PY\" -I -B -m unittest discover -s native/tests -p 'test_*.py' -v"
         }

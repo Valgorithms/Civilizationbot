@@ -96,6 +96,12 @@ def snapshot(path):
             'kind': 'bounded_prefix' if len(raw) > LOG_CAP else 'complete_snapshot'}, data
 
 
+def output_limit_exceeded(stage):
+    return (any((stage/name).stat().st_size > LOG_CAP for name in ('compiler.stdout', 'compiler.stderr'))
+            or any(p.stat().st_size > IMAGE_CAP for p in stage.glob('save_bridge.*') if p.suffix in ('.dmb', '.rsc'))
+            or sum(p.stat().st_size for p in stage.rglob('*') if p.is_file() and not p.is_symlink()) > 33554432)
+
+
 def finish_owned_compiler(child, deadline):
     """Signal only this Popen child, with no new wait allowance or PID search."""
     first_error = None
@@ -157,7 +163,7 @@ def compile_once(compiler, stage):
         PENDING.append(child)
         try:
             while child.poll() is None:
-                if any((stage/name).stat().st_size > LOG_CAP for name in ('compiler.stdout', 'compiler.stderr')) or any(p.stat().st_size > IMAGE_CAP for p in stage.glob('save_bridge.*') if p.suffix in ('.dmb', '.rsc')) or sum(p.stat().st_size for p in stage.rglob('*') if p.is_file() and not p.is_symlink()) > 33554432:
+                if output_limit_exceeded(stage):
                     fault = 'output_limit'
                     break
                 if time.monotonic() >= deadline-reserve:
@@ -196,6 +202,8 @@ def compile_once(compiler, stage):
     image = stage/'save_bridge.dmb'
     passed = False
     try:
+        if code is not None and output_limit_exceeded(stage):
+            record['fault'] = record['fault'] or 'output_limit'
         passed = record['fault'] is None and code == 0 and VERSION in log and '0 errors, 0 warnings' in log and image.is_file() and not image.is_symlink() and 0 < image.stat().st_size <= IMAGE_CAP
         if passed:
             with image.open('rb') as stream:
