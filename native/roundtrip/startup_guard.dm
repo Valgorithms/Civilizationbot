@@ -17,7 +17,8 @@
 	if(!text2file(json_encode(receipt), "[name].json")) return 0
 	// Marker is written last. The parent bounds and validates both files;
 	// partial/change/error evidence never releases fixture work.
-	return text2file(nonce, "[name].done")
+	// Suppress DM's implicit output newline: marker protocol is32 ASCII bytes.
+	return text2file("[nonce]\...", "[name].done")
 
 /proc/ss_ack(phase, nonce, image)
 	var/name = "startup-[phase].ack"

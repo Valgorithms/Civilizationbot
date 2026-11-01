@@ -46,3 +46,33 @@ and run through a separately accepted manual dispatch. The runtime/compile
 counts, image/member pins, CPU/memory/file/output limits, workflow triggers,
 permissions and expiry remain unchanged. The600s controller budget remains
 admission accounting; the outer10min step supplies the end-to-end bound.
+
+## Marker correction proposed after run41354035997
+
+Run41354035997 remains failed: both compiles passed with zero warnings, then
+the first generator failed `startup_file_type_or_size` while reading its
+ready marker with the32-byte cap. All three owned children were reaped;
+no roundtrip case completed. The marker bytes/stat were not retained, so an
+implicit output newline is a documented, source-backed hypothesis rather
+than a measured cause of that run.
+
+The official [DM guide, text macros](https://www.byond.com/docs/guide/chap11.html)
+describes implicit output newlines and the `\...` suppression macro. The
+[file operations guide](https://www.byond.com/docs/guide/chap17.html) relates
+file output to `text2file`. The public reference documents appending text,
+but does not specify a byte-exact terminator contract. These are accessible
+official web documents, not a verified versioned516.1688 SDK manual.
+The previously denied SDK documentation read has not been retried.
+
+The marker writer now explicitly suppresses the implicit newline. Receipt
+admission remains exactly32 ASCII nonce bytes with no trimming or alternate
+terminators; LF, CRLF, spaces, NUL, BOM, repetition and trailing data fail.
+This source correction still needs reviewed native validation on516.1688.
+
+Failed children with confirmed exit retain a fixed-name marker stat and at
+most64 bytes as hex in their safe process receipt. A prefix is labeled and
+hashed only as a prefix. Nonregular files are never opened, replacement or
+change invalidates capture, and capture failures record only the error type.
+Unknown exits never trigger this final diagnostic read. Diagnostics cannot
+admit a receipt, overwrite the original failure, extend a deadline or release
+fixture I/O. Existing limits, workflow, listener contract and cleanup remain.
