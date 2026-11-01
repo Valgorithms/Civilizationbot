@@ -395,6 +395,14 @@ class HttpServiceManager
     protected function __generateEndpoints()
     {
         $this->__generateLauncherDirectoryEndpoint();
+        if ($this->civ13->calendarSync !== null && $this->civ13->calendarSync->exposesHttp()) {
+            $calendar = $this->civ13->calendarSync;
+            $endpoint = new \Civ13\Calendar\Endpoint($calendar->authority(), fn () => $calendar->snapshot());
+            $this->httpHandler->offsetSet(\Civ13\Calendar\Endpoint::PATH,
+                static fn (ServerRequestInterface $request, string $path, bool $whitelisted): HttpResponse => $endpoint->handle($request),
+                false, 'exact', 'Read-only sanitized community event snapshot')
+                ->setRateLimit(\Civ13\Calendar\Endpoint::PATH, 120, 60);
+        }
         $this->httpHandler
             ->offsetSet(
                 '/get-channels',

@@ -1,0 +1,25 @@
+{
+    "schema": "civ13.discord-calendar.v1",
+    "guild_id": "900000000000000001",
+    "revision": 1,
+    "generated_at": "2026-11-02T00:00:00Z",
+    "expires_at": "2026-11-02T00:02:00Z",
+    "state": "complete",
+    "notes": [],
+    "events": [
+        {
+            "event_id": "900000000000000004",
+            "start_at": "2026-11-01T05:30:00Z",
+            "end_at": null,
+            "title": "Synthetic community round",
+            "description": "Fixture only <script>ignored</script> [mention]",
+            "location": "Discord voice or stage",
+            "url": "https://discord.com/events/900000000000000001/900000000000000004",
+            "status": "confirmed",
+            "recurrence": "none",
+            "uid": "discord-900000000000000001-900000000000000004@civ13.github.io",
+            "sequence": 0,
+            "updated_at": "2026-11-02T00:00:00Z"
+        }
+    ]
+}
