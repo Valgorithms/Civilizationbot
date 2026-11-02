@@ -147,7 +147,11 @@ final class AccessFileSync
                 $preview=AccessListProjection::preview($wire);
                 foreach ($preview['targets'] as $target) { if ($target['bytes']>$this->settings['max_bytes']) { throw new \RuntimeException('Access output exceeds budget'); } }
                 $preview['authenticated_mapping']=$current['authority'];
-                $preview['publication_authorized']=$current['authority'] && $preview['publishable_mapping'];
+                $emptyAllowed=true;
+                foreach ($preview['targets'] as $kind=>$target) {
+                    if ($target['records']===0 && $this->settings['targets'][$kind]['allow_empty']!==true) { $emptyAllowed=false; }
+                }
+                $preview['publication_authorized']=$current['authority'] && $preview['publishable_mapping'] && $emptyAllowed;
                 $this->preview=$preview;
                 $this->previewEpoch=$this->trigger->epoch();
                 $this->previewSuccess=$current['status']['last_success_utc'];

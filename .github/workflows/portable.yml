@@ -25,6 +25,22 @@ jobs:
         timeout-minutes: 2
       - run: php tests/windows/default-branch.php
       - run: php tests/windows/hosted-verifier.php
+      - name: Synthetic authenticated mapping TLS
+        if: runner.os == 'Linux'
+        timeout-minutes: 2
+        run: python3 tests/local/verification-tls-runner.py --repo . --evidence "$RUNNER_TEMP/civ13-mapping-tls"
+      - name: Preserve bounded synthetic TLS receipts
+        if: always() && runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-tls-${{ matrix.php }}-${{ github.event_name }}-${{ github.run_attempt }}
+          retention-days: 1
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/civ13-mapping-tls/public-receipt.json
+            ${{ runner.temp }}/civ13-mapping-tls/safe-reports/**/process.json
+            ${{ runner.temp }}/civ13-mapping-tls/safe-reports/**/stdout.log.snapshot
+            ${{ runner.temp }}/civ13-mapping-tls/safe-reports/**/stderr.log.snapshot
       - run: php tests/windows/native-lifecycle.php
       - run: php tests/windows/bootstrap.php
       - run: php tests/windows/bootstrap.php --negative-control

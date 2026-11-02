@@ -8,8 +8,11 @@ namespace Civ13 {
     {
         public static \Closure $fetch;
         public static array $transports=[];
+        public static int $factories=0;
         public static function fetch(mixed $unused): \React\Promise\PromiseInterface { self::$transports[]="http"; return (self::$fetch)(); }
-        public static function fetchAuthenticated(\React\EventLoop\LoopInterface $loop,string $url): \React\Promise\PromiseInterface { self::$transports[]=$url; return (self::$fetch)(); }
+        public static function fetchAuthenticated(\React\EventLoop\LoopInterface $loop,string $url): \React\Promise\PromiseInterface { ++self::$factories; return self::secureRequest($url); }
+        public static function authenticatedFetcher(\React\EventLoop\LoopInterface $loop,string $url): \Closure { ++self::$factories; return static fn():\React\Promise\PromiseInterface=>self::secureRequest($url); }
+        private static function secureRequest(string $url): \React\Promise\PromiseInterface { self::$transports[]=$url; return (self::$fetch)(); }
         public static function validate(string $json): array { return json_decode($json,true,32,JSON_THROW_ON_ERROR); }
     }
 }
@@ -167,5 +170,13 @@ namespace {
     refreshResult($secure->refreshHosted());
     refreshCheck(HostedVerificationSource::$transports===['https://civ13.com:55555/verified'],'HTTPS selection fell back to shared HTTP adapter');
     refreshCheck(!$secure->hostedAccessAuthority([]),'Adapter data without a genuine transport receipt became authority');
+    refreshCheck(HostedVerificationSource::$factories===1,'Initial HTTPS refresh did not construct exactly one owner transport');
+    $f->now+=11;refreshResult($secure->refreshHosted());
+    refreshCheck(HostedVerificationSource::$factories===1 && count(HostedVerificationSource::$transports)===2,'Settled HTTPS refresh rebuilt its connector/resolver');
+    refreshResult($secure->refreshHosted());
+    refreshCheck(HostedVerificationSource::$factories===1 && count(HostedVerificationSource::$transports)===2,'Coalesced refresh rebuilt/fetched transport');
+    $owner->loop=new \React\EventLoop\StreamSelectLoop();$f->now+=11;
+    $changedLoop=refreshResult($secure->refreshHosted());
+    refreshCheck(!$changedLoop['available'] && HostedVerificationSource::$factories===1 && count(HostedVerificationSource::$transports)===2,'Changed loop reused an old owner transport or silently created a replacement');
     echo "PASS verifier completion hook ({$checks} assertions): actual replacement, changed/recovered success, failures, coalescing and disabled bridge\n";
 }

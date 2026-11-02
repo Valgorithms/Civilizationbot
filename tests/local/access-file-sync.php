@@ -102,6 +102,18 @@ check($f->writes===[] && $service->lastPreview()['targets']['approved']['records
 [$app,$settings,$f,$write]=fixture();$guardResult=null;$f->writerHook=function($wire,$generation,$guard)use($f,&$guardResult){$f->authenticated=false;$guardResult=$guard();return ['state'=>'superseded'];};
 $service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);
 check($guardResult===false && $f->writes===[] && $service->lastPreview()['state']==='unavailable','Provenance loss before final commit refuses publication and invalidates preview');$service->stop();
+// The preview source/policy flag must include both independent empty-output policies.
+foreach([[false,false],[false,true],[true,false],[true,true]] as [$approvedEmpty,$whitelistEmpty]){
+    [$app,$settings,$f,$write]=fixture('preview');
+    $settings['targets']['approved']['allow_empty']=$approvedEmpty;$settings['targets']['whitelist']['allow_empty']=$whitelistEmpty;
+    $app->options['access_file_sync']=$settings;$f->guild->members->items['990000000000000001']->roles->items=[];
+    $service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);$preview=$service->lastPreview();
+    check($preview['authenticated_mapping']===true && $preview['publishable_mapping']===true && $preview['publication_authorized']===($approvedEmpty&&$whitelistEmpty) && $f->writes===[],'Empty preview requires both explicit policies without probing/writing');$service->stop();
+}
+[$app,$settings,$f,$write]=fixture('preview');
+foreach($settings['targets'] as &$target){$target['allow_empty']=false;}unset($target);$app->options['access_file_sync']=$settings;
+$service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);
+check($service->lastPreview()['publication_authorized']===true && $f->writes===[],'Nonempty authenticated proposal remains authorized when empty output is disallowed');$service->stop();
 // Actual application notification method, still with a fake service owner/cache.
 [$app,$settings,$f,$write]=fixture();$service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);
 $owner=(new ReflectionClass(Civ13\Civ13::class))->newInstanceWithoutConstructor();

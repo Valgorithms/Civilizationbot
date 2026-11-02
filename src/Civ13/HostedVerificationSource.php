@@ -20,8 +20,15 @@ final class HostedVerificationSource
     /** Dedicated transport ignores injected shared Browser/connector/proxy/TLS options. No request until called. */
     public static function fetchAuthenticated(\React\EventLoop\LoopInterface $loop, string $url): \React\Promise\PromiseInterface
     {
+        return (self::authenticatedFetcher($loop, $url))();
+    }
+
+    /** A long-lived owner retains this closure; no static/WeakMap cache retains the loop. */
+    public static function authenticatedFetcher(\React\EventLoop\LoopInterface $loop, string $url): \Closure
+    {
         if (!PortableProfile::hostedVerificationUrl($url, true)) { throw new \InvalidArgumentException('Explicit hosted HTTPS endpoint required'); }
-        return self::read(self::authenticatedBrowser($loop), $url, true);
+        $browser = self::authenticatedBrowser($loop);
+        return static fn (): \React\Promise\PromiseInterface => self::read($browser, $url, true);
     }
 
     private static function authenticatedBrowser(\React\EventLoop\LoopInterface $loop): \React\Http\Browser
