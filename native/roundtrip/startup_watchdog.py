@@ -44,7 +44,7 @@ def diagnostic_scalar(value):
 
 
 def retain_fault(attribute):
-    """Freeze existing in-memory inputs on failure; no diagnostic I/O/retry."""
+    """Freeze original inputs before one optional bounded failure diagnostic."""
     def decorate(method):
         @wraps(method)
         def wrapped(self, *args, **kwargs):
@@ -85,6 +85,11 @@ def retain_fault(attribute):
                 except BaseException as diagnostic_error:
                     if attribute is None:
                         self.record['rejection_capture_error'] = type(diagnostic_error).__name__
+                if attribute is None:
+                    try:
+                        self.capture_family_diagnostic(error)
+                    except BaseException as family_error:
+                        self.record['family_diagnostic'] = {'status':'unavailable', 'error_type':type(family_error).__name__}
                 raise  # Always retain the original exception identity.
         return wrapped
     return decorate
@@ -321,7 +326,7 @@ class ProcReader:
 
 
 class StartupObserver:
-    def __init__(self, stage, executable, image, image_sha256, *, proc=None, nonce=None):
+    def __init__(self, stage, executable, image, image_sha256, *, proc=None, nonce=None, family_sampler=None):
         check(image in IMAGES and re.fullmatch('[a-f0-9]{64}', image_sha256) is not None, 'startup_image_binding')
         self.stage, self.image = Path(stage), image
         self.nonce = nonce if nonce is not None else secrets.token_hex(16)
@@ -333,6 +338,7 @@ class StartupObserver:
         self.marker_phase = None
         self.point, self.decision, self.last_receipt = 'prepared', {}, None
         self.tick_index = 0
+        self.family_sampler, self.family_diagnostic_attempted = family_sampler, False
         self.record = {'schema': SCHEMA, 'status': 'incomplete', 'image': image, 'image_sha256': image_sha256,
                        'executable_sha256': DAEMON_SHA256, 'address': ADDRESS, 'port': PORT, 'protocol': 'TCP',
                        'os_egress_containment': False, 'network_intent': 'temporary loopback listener; no intended outbound activity',
@@ -496,6 +502,64 @@ class StartupObserver:
     def evidence(self):
         # Pure in-memory snapshot: safe even if child exit is unconfirmed.
         return dict(self.record)
+
+    def capture_family_diagnostic(self, primary):
+        """One optional later family sample; never changes startup admission."""
+        if self.family_sampler is None or self.family_diagnostic_attempted:
+            return
+        reason = error_summary(primary)['reason']
+        if reason not in ('startup_owned_socket_count', 'startup_owned_socket_unmapped_or_duplicate',
+                          'startup_unexpected_endpoint_or_connection', 'startup_listener_closure_unconfirmed'):
+            return
+        self.family_diagnostic_attempted = True
+        frozen = self.record.get('rejection', {})
+        census = frozen.get('proc_census')
+        context = census.get('observer_context') if type(census) is dict else None
+        eligible = (frozen.get('capture_scope') == 'bounded_decision_snapshot'
+                    and frozen.get('tick_index') == self.tick_index
+                    and type(census) is dict and census.get('pid') == self.pid
+                    and census.get('status') == 'complete' and census.get('fd_scan_complete') is True
+                    and type(context) is dict and context.get('tick_index') == self.tick_index)
+        if not eligible:
+            self.record['family_diagnostic'] = {'status':'skipped', 'reason':'no_current_complete_census'}
+            return
+        if not census.get('socket_fds'):
+            self.record['family_diagnostic'] = {'status':'skipped', 'reason':'no_owned_socket_fds'}
+            return
+        now = time.monotonic()
+        limit = min(self.close_deadline, self.deadline - .75, now + .05)
+        if not now < limit:
+            self.record['family_diagnostic'] = {'status':'skipped', 'reason':'original_budget_unavailable'}
+            return
+        report = self.record['family_diagnostic'] = {
+            'status':'sampling', 'source':'after_rejection_before_cleanup',
+            'original_reason':reason, 'decision_tick_index':self.tick_index, 'pid':self.pid,
+            'sample_deadline_hex':float(limit).hex(), 'original_close_deadline_hex':float(self.close_deadline).hex(),
+            'original_child_deadline_hex':float(self.deadline).hex(),
+            'policy_effect':'none; original rejection preserved'}
+        previous_context = getattr(self.proc, 'trace_context', None)
+        try:
+            self.proc.trace_context = {'tick_index':self.tick_index, 'phase':self.phase,
+                                       'point':'later_family_failure_diagnostic'}
+            sample = self.family_sampler(self.proc, self.pid, self.starttime, census['socket_fds'], limit,
+                                         clock=time.monotonic, readlink=os.readlink)
+            if time.monotonic() >= limit:
+                raise ValueError('family_hook_budget_exhausted')
+            if (type(sample) is not dict or sample.get('schema') != 'civilizationbot.socket-family-diagnostic.v1'
+                    or sample.get('pid') != self.pid):
+                raise ValueError('family_report_binding')
+            raw = json.dumps(sample, allow_nan=False, separators=(',', ':')).encode('utf-8')
+            if len(raw) > 32768:
+                raise ValueError('family_report_bound')
+            if time.monotonic() >= limit:
+                raise ValueError('family_hook_budget_exhausted')
+            report.update(status='captured', sample=json.loads(raw))
+        except BaseException as error:
+            text = str(error) if type(error) is ValueError else ''
+            report.update(status='unavailable', error_type=type(error).__name__,
+                          reason=text if re.fullmatch('family_[a-z_]{1,64}', text) else None)
+        finally:
+            self.proc.trace_context = previous_context
 
     def capture_failed_marker(self):
         """Called by owned_process only after confirmed exit on failed runs.

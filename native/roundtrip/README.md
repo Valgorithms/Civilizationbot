@@ -6,7 +6,7 @@ The independent generator creates v2/v3 fields,513 entries spanning the512/513 s
 
 The reviewed merged compile supervisor's exact cleanup helper is reused through a hash-verified import. Ownership is registered before polling; every post-launch error uses the original deadline and signals only the returned handle. Unknown exits block later jobs and prohibit live-log reads. Bounded closed snapshots and unknown-exit metadata go to a separate report directory; raw stages are never uploaded. The pinned archive and all four executable/library member digests are verified before extraction. Child-only limits restrict CPU, address space, file size, descriptors and core dumps. These are source/test contracts; actual native behavior requires a reviewed manual run.
 
-Only the manual workflow_dispatch route is proposed. It requires the exact merged revision, reviewed manifest SHA, explicit public synthetic-runtime approval, attempt1 and sufficient time before the current authorization expiry2026-11-01T23:46:26Z. The GitHub-hosted runner is ubuntu-22.04 with contents:read and unpersisted checkout credentials. Native children receive only PATH/HOME/TMPDIR/LD_LIBRARY_PATH, with fresh HOME/TMP directories. No trusted-mode, credential, deployment or persistent privileged-access configuration is used. The runtime command uses -safe; this is not a claim of an OS network/descendant sandbox. Existing compiler-only workflow code remains unchanged.
+Only the manual workflow_dispatch route is proposed. It requires the exact merged revision, reviewed manifest SHA, explicit public synthetic-runtime approval, attempt1 and sufficient time before the current authorization expiry2026-11-02T05:44:00Z. The GitHub-hosted runner is ubuntu-22.04 with contents:read and unpersisted checkout credentials. Native children receive only PATH/HOME/TMPDIR/LD_LIBRARY_PATH, with fresh HOME/TMP directories. No trusted-mode, credential, deployment or persistent privileged-access configuration is used. The runtime command uses -safe; this is not a claim of an OS network/descendant sandbox. Existing compiler-only workflow code remains unchanged.
 
 Normal CI discovers the mocked tests through native/tests/test_roundtrip_contracts.py. Offline tests never download, compile or launch native binaries. A future manual run retains a bounded synthetic evidence archive for1day. No production compatibility, complete-generation load/save, arbitrary resource/type support or live bot activation should be inferred from tiny synthetic acceptance.
 
@@ -100,3 +100,33 @@ Zero/multiple sockets, unreadable data, missing/duplicate joins, mismatched
 identity/endpoints and incomplete closure remain failures. Original exceptions
 are preserved. Frozen inputs survive unknown cleanup without final live-output
 reads. No native retry or successful roundtrip is claimed by offline controls.
+
+## Reviewed-source proposal: later socket-family failure sample
+
+This proposal adds an opt-in failure hook in NativeTransport/StartupObserver.
+The original bounded rejection is frozen first. Only a current, complete
+owned-FD census and a socket-related rejection can admit one later diagnostic
+sample, before cleanup. Default observers and successful startups do not call
+the classifier. The sample cannot release fixtures, change the primary error,
+alter the socket rule, or change the owned cleanup deadline.
+
+The supplied budget is min(original startup close deadline, original child
+deadline-.75, current monotonic+.05). The classifier checks its budget after
+both identity calls, including the final one. The hook also rejects a late
+return and over-limit report. These are cooperative checks, not preemption of
+a stalled kernel read. Two fixed owned-PID namespace tables, unix/netlink,
+are read through the existing bounded ProcReader; selected FD links and
+identity are bracketed. Unsupported/incomplete/changed/ambiguous evidence
+remains unknown. Family names are observations, never harmlessness or an
+allowance. The original rejection and later sample are separate records.
+
+The earlier diagnostic run remains failed with four unknown families. There
+is no retained unix/netlink data to reclassify that run. The -close lifecycle
+discussion remains in the private review notes; this proposal changes no
+native flag, guard timing, readiness condition or wait count.
+
+The human renewed testing/diagnostics through2026-11-02T05:44:00Z. Only the
+existing controller/workflow expiry constants are proposed to match that
+conservative window. The full15-minute reservation, attempt1/manual gates,
+process/resource/output limits and contents:read permission remain unchanged.
+This source proposal does not authorize publication, merge or native dispatch.
