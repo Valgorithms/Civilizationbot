@@ -46,6 +46,7 @@ class HttpServiceManager
     protected array $dwa_timers = [];
     protected array $dwa_discord_ids = [];
     private ?Directory $launcherDirectory = null;
+    private ?GameReady $gameReady = null;
     private ?TimerInterface $launcherDirectoryTimer = null;
 
     /** @param Civ13 $civ13 The bot instance; builds the {@see HttpHandler} and binds `discord`/`logger` by reference. */
@@ -187,6 +188,39 @@ class HttpServiceManager
         $gameserver->gameChatWebhookRelay($message, $channel, $ckey, $kind === 'ooc')
             ->then(null, fn (\Throwable $error) => $this->logger->error('Structured chat relay failed: '.$error->getMessage()));
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /** Existing keyed bridge only. Observations never upgrade lifecycle/Topic readiness. */
+    public function handleGameReadyWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $params = $request->getQueryParams();
+        $secret = $this->civ13->options['http_key'] ?? '';
+        if (!is_string($secret) || $secret === '' || !is_string($params['key'] ?? null) || !hash_equals($secret, $params['key'])) {
+            return new HttpResponse(403);
+        }
+        if ($request->getMethod() !== 'GET') { return new HttpResponse(405, ['Allow'=>'GET']); }
+        $root = '/webhook/'.$gameserver->key;
+        $path = $request->getUri()->getPath();
+        if (!in_array($path, [$root, $root.'/game_ready'], true)
+            || ($path === $root && ($params['method'] ?? null) !== 'game_ready')
+            || ($path !== $root && isset($params['method']) && $params['method'] !== 'game_ready')) { return new HttpResponse(400); }
+        $settings = $this->civ13->options['game_ready_events'] ?? ['enabled'=>false];
+        if (!is_array($settings) || array_keys($settings) !== ['enabled'] || ($settings['enabled'] ?? null) !== true
+            || ($gameserver->enabled ?? false) !== true
+            || ($this->civ13->enabled_gameservers[$gameserver->key] ?? null) !== $gameserver) { return new HttpResponse(503); }
+        if (!is_string($params['data'] ?? null) || strlen($params['data']) > GameReady::MAX_BYTES) { return new HttpResponse(400); }
+        try {
+            // No legacy second URL decode; native query parsing already decoded data once.
+            GameReady::decode($params['data'], $gameserver->key);
+            $this->gameReady ??= new GameReady();
+            $result = $this->gameReady->receive($params['data'], $gameserver->key);
+        } catch (\JsonException|\InvalidArgumentException) { return new HttpResponse(400); }
+        catch (\Throwable) { return new HttpResponse(503); }
+        if (!isset($result['body'])) { return new HttpResponse($result['status'], ['Cache-Control'=>'no-store']); }
+        try { $this->logger->info('Game ready observation', ['server'=>$gameserver->key, 'event_id'=>$result['body']['event_id'], 'state'=>$result['body']['state']]); }
+        catch (\Throwable) {} // Optional logging cannot undo a reserved observation.
+        return new HttpResponse($result['status'], ['Content-Type'=>'application/json', 'Cache-Control'=>'no-store',
+            'X-Civ13-Game-Ready'=>$result['ack']], json_encode($result['body'], JSON_THROW_ON_ERROR));
     }
 
     /** Round identity is authenticated; a channel name is not a player-count source. */
@@ -1428,6 +1462,11 @@ class HttpServiceManager
 
                         return new HttpResponse(HttpResponse::STATUS_OK);
                     },
+                    true
+                )
+                ->offsetSet(
+                    $server_endpoint.'/game_ready',
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleGameReadyWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(

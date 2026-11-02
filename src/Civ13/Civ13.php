@@ -513,6 +513,7 @@ class Civ13
                 'http_whitelist',
                 'launcher_directory',
                 'calendar_sync',
+                'game_ready_events',
                 'launcher_directory_status_targets',
                 'ic_badwords',
                 'legacy',
@@ -560,6 +561,7 @@ class Civ13
                 'http_whitelist' => [],
                 'launcher_directory' => [],
                 'calendar_sync' => ['enabled' => false],
+                'game_ready_events' => ['enabled' => false],
                 'launcher_directory_status_targets' => [],
                 'ic_badwords' => [],
                 'legacy' => true,
@@ -608,6 +610,7 @@ class Civ13
             ->setAllowedTypes('gitdir', 'string')
             ->setAllowedTypes('github', 'string')
             ->setAllowedTypes('http_key', 'string')
+            ->setAllowedTypes('game_ready_events', 'array')
             ->setAllowedTypes('http_port', 'int')
             ->setAllowedTypes('http_whitelist', 'array')
             ->setAllowedTypes('launcher_directory', 'array')
