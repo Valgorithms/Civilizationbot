@@ -90,7 +90,7 @@ $owner->hostedVerificationRefreshed($current);fire($f);check(count($f->writes)==
 $f->now+=1800;check($owner->accessFileSyncPreview()['state']==='unavailable','Preview expires even if status age is stale');
 $service->stop();(new ReflectionProperty($owner,'accessFileSync'))->setValue($owner,null);
 // End-to-end composition uses the real publisher only in this owned synthetic directory.
-[$app,$settings,$f,$write]=fixture();$tmp=rtrim($argv[2]??sys_get_temp_dir(),'/\\').'/access-composition-'.bin2hex(random_bytes(8));mkdir($tmp);mkdir($tmp.'/SQL');
+[$app,$settings,$f,$write]=fixture();$base=realpath($argv[2]??sys_get_temp_dir());if($base===false){throw new RuntimeException('Owned temp base unavailable');}$tmp=$base.'/access-composition-'.bin2hex(random_bytes(8));mkdir($tmp);$tmp=realpath($tmp);if($tmp===false){throw new RuntimeException('Owned temp root unavailable');}mkdir($tmp.'/SQL');
 $settings['server_basedir']=$tmp;$app->enabled_gameservers['test1714']->basedir=$tmp;
 foreach($settings['targets'] as $kind=>&$target){$target['path']=$tmp.'/SQL/'.$kind.'.txt';$target['allow_creation']=true;}unset($target);
 $app->options['access_file_sync']=$settings;$service=null;$reader=null;

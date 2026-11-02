@@ -63,7 +63,8 @@ final class FaultWriter extends AccessListWriter {
     }
     protected function removeStage(string $path): bool { return $this->fault!=='cleanup' && parent::removeStage($path); }
 }
-$root=rtrim($argv[2]??sys_get_temp_dir(),'/\\').'/access-sync-'.bin2hex(random_bytes(8)); mkdir($root);
+$base=realpath($argv[2]??sys_get_temp_dir());if($base===false){throw new RuntimeException('Owned temp base unavailable');}
+$root=$base.'/access-sync-'.bin2hex(random_bytes(8));mkdir($root);$root=realpath($root);if($root===false){throw new RuntimeException('Owned temp root unavailable');}
 $targets=[];foreach(['approved','whitelist'] as $kind){$targets[$kind]=['path'=>$root.'/'.$kind.'.txt','required_roles'=>['Verified'],'allow_creation'=>false,'allow_empty'=>true,'metadata_policy'=>'inherit-parent'];}
 $unmappedWire=$wire;$wire=json_encode(array_replace(AccessListProjection::decode($wire),['unmapped_role_holders'=>0]),JSON_THROW_ON_ERROR);
 $read=fn()=>array_map(fn($t)=>file_get_contents($t['path']),$targets);
