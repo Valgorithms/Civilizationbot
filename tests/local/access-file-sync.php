@@ -79,6 +79,20 @@ $reordered=$profile;foreach($reordered['access_file_sync']['targets'] as &$targe
 $bad=$profile;$bad['access_file_sync']['targets']['approved']['path']=$settings['server_basedir'].'/SQL/admins.txt';try{Civ13\PortableProfile::runtimeOptions($bad);check(false,'Wrong target accepted');}catch(InvalidArgumentException){check(true,'Independent destination binding');}
 check(!str_contains(json_encode($f->reports),'Fake.Test'),'Reports contain no selected identity');
 [$app,$settings,$f,$write]=fixture('preview');$settings['max_bytes']=1;$app->options['access_file_sync']=$settings;$service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);check($service->lastPreview()['state']==='unavailable' && $f->writes===[],'Oversize proposal is not a current preview');$service->stop();
+// Default-on migration is intent only until explicit targets/source/roles are valid.
+$omitted=$profile;unset($omitted['access_file_sync']);$omittedOptions=Civ13\PortableProfile::runtimeOptions($omitted);
+check($omittedOptions['access_file_sync']===['enabled'=>true] && $omittedOptions['verification_read_only']===true && $omittedOptions['admin_file_sync']===['enabled'=>false],'Omitted section defaults on without unrelated authority');
+$optout=$profile;$optout['access_file_sync']['enabled']=false;$optout['access_file_sync']['targets']='retained-invalid-inert';
+check(Civ13\PortableProfile::runtimeOptions($optout)['access_file_sync']===['enabled'=>false],'Explicit false preserves inert opt-out even with retained settings');
+$bound=$profile;unset($bound['access_file_sync']['enabled']);$boundOptions=Civ13\PortableProfile::runtimeOptions($bound);
+check($boundOptions['access_file_sync']['enabled']===true && $boundOptions['access_file_sync']['targets']===$profile['access_file_sync']['targets'],'Configured targets need no redundant enable flag');
+[$app,$settings,$f,$write]=fixture();unset($settings['enabled']);$app->options['access_file_sync']=$settings;$service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);check(count($f->writes)===1,'Bound runtime settings default on');$service->stop();
+[$app,$settings,$f,$write]=fixture();$unconfigured=false;try{AccessFileSync::attach($app,['enabled'=>true],$write);}catch(InvalidArgumentException){$unconfigured=true;}check($unconfigured && $app->discord->listeners===[] && $f->writes===[],'Default-on intent cannot guess targets or install a partial owner');
+check(AccessFileSync::attach(new stdClass(),['enabled'=>false,'targets'=>'ignored'])===null,'Explicit opt-out has no prerequisite reads');
+foreach([null,'true',0] as $invalid){$bad=$profile;$bad['access_file_sync']['enabled']=$invalid;try{Civ13\PortableProfile::runtimeOptions($bad);check(false,'Invalid flag accepted');}catch(InvalidArgumentException){check(true,'Invalid flag not coerced into enablement');}}
+$emptyOwner=(new ReflectionClass(Civ13\Civ13::class))->newInstanceWithoutConstructor();$emptyOwner->options=['access_file_sync'=>['enabled'=>true]];
+check($emptyOwner->accessFileSyncPreview()===['state'=>'unavailable','reason'=>'not-configured-or-not-ready','enabled'=>true],'Default-on unconfigured status is honest');
+$emptyOwner->options=['access_file_sync'=>['enabled'=>false]];check($emptyOwner->accessFileSyncPreview()===['state'=>'disabled','enabled'=>false],'Explicit opt-out status is inert');
 // Actual application notification method, still with a fake service owner/cache.
 [$app,$settings,$f,$write]=fixture();$service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);
 $owner=(new ReflectionClass(Civ13\Civ13::class))->newInstanceWithoutConstructor();

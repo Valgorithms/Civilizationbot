@@ -124,12 +124,15 @@ final class PortableProfile
     /** Explicit separate targets; no filesystem reads or access changes in this mapping. */
     private static function accessFileSyncOptions(array $profile, array $options): array
     {
-        $settings = $profile['access_file_sync'] ?? ['enabled' => false];
-        if (!is_array($settings) || !is_bool($settings['enabled'] ?? null)) { throw new \InvalidArgumentException('Explicit access sync flag required'); }
-        if (!$settings['enabled']) {
-            if (array_keys($settings) !== ['enabled']) { throw new \InvalidArgumentException('Disabled access sync accepts only enabled=false'); }
-            return ['enabled' => false];
-        }
+        $settings = array_key_exists('access_file_sync',$profile) ? $profile['access_file_sync'] : ['enabled' => true];
+        if (!is_array($settings)) { throw new \InvalidArgumentException('Access sync settings must be an object'); }
+        if (!array_key_exists('enabled',$settings)) { $settings['enabled']=true; }
+        if (!is_bool($settings['enabled'])) { throw new \InvalidArgumentException('Boolean access sync flag required'); }
+        // Keep a retained configuration inert when the operator explicitly opts out.
+        if (!$settings['enabled']) { return ['enabled' => false]; }
+        // Default-on intent never invents missing target paths or changes verifier mode.
+        // An unconfigured existing profile may boot; attach refuses before any listener/I/O.
+        if (array_keys($settings) === ['enabled']) { return ['enabled' => true]; }
         $keys = array_keys($settings); sort($keys);
         if ($keys !== ['debounce_seconds','enabled','max_bytes','mode','refresh_timeout_seconds','targets']
             || ($options['verification_read_only'] ?? null) !== true || count($profile['servers'] ?? []) !== 1) {

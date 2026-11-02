@@ -35,16 +35,24 @@ final class AccessFileSync
      */
     public static function attach(object $app, array $settings, ?callable $writer = null, ?callable $clock = null): ?self
     {
-        if (($settings['enabled'] ?? false) === false) { return null; }
+        if (!self::enabled($settings)) { return null; }
         self::validateConfiguration($settings, $app->civ13_guild_id, $app->role_ids, ($app->options['admin_file_sync']['enabled'] ?? false));
         return new self($app, $settings, $writer, $clock);
+    }
+
+    /** Omitted means on; explicit boolean false is an inert opt-out. */
+    public static function enabled(array $settings): bool
+    {
+        if (!array_key_exists('enabled',$settings)) { return true; }
+        if (!is_bool($settings['enabled'])) { throw new \InvalidArgumentException('Boolean access sync flag required'); }
+        return $settings['enabled'];
     }
 
     /** Pure preflight; no destination or cache access. Both policies were explicitly selected. */
     public static function validateConfiguration(array $settings, string $guildId, array $roleIds, bool $adminOwner = false): void
     {
-        if (($settings['enabled'] ?? false) === false) { return; }
-        if ($adminOwner || ($settings['enabled'] ?? null) !== true
+        if (!self::enabled($settings)) { return; }
+        if ($adminOwner
             || !in_array($settings['mode'] ?? null, ['preview', 'publish'], true)
             || !is_int($settings['max_bytes'] ?? null) || $settings['max_bytes'] < 1 || $settings['max_bytes'] > 4194304
             || !self::seconds($settings['debounce_seconds'] ?? null, 5) || !self::seconds($settings['refresh_timeout_seconds'] ?? null, 300)

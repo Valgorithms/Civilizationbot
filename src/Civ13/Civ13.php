@@ -459,11 +459,11 @@ class Civ13
                     catch (\Throwable) {}
                 }
             }
-            if (($accessSync['enabled'] ?? false) === true) {
+            if (($accessSync['enabled'] ?? true) === true) {
                 try { $this->accessFileSync = AccessFileSync::attach($this, $accessSync); }
                 catch (\Throwable) {
                     $this->accessFileSync = null;
-                    try { $this->logger->warning('Access file synchronization inactive: runtime attachment failed'); } catch (\Throwable) {}
+                    try { $this->logger->warning('Access file synchronization unavailable: configuration or readiness prerequisites missing'); } catch (\Throwable) {}
                 }
             }
             $this->logger->info("Logged in as {$this->discord->username} {$this->discord->user}");
@@ -585,7 +585,7 @@ class Civ13
                 'verify_url' => 'http://valzargaming.com:8080/verified/',
                 'verification_read_only' => false,
                 'admin_file_sync' => ['enabled' => false],
-                'access_file_sync' => ['enabled' => false],
+                'access_file_sync' => ['enabled' => true],
                 'web_address' => '',
                 'webapi' => null,
                 'webserver_url' => 'www.valzargaming.com',
@@ -1009,7 +1009,13 @@ class Civ13
         }
     }
 
-    public function accessFileSyncPreview(): array { return $this->accessFileSync?->lastPreview() ?? ['state'=>'unavailable']; }
+    public function accessFileSyncPreview(): array
+    {
+        try { $enabled=AccessFileSync::enabled($this->options['access_file_sync'] ?? []); }
+        catch (\Throwable) { return ['state'=>'unavailable','reason'=>'invalid-configuration']; }
+        if (!$enabled) { return ['state'=>'disabled','enabled'=>false]; }
+        return ($this->accessFileSync?->lastPreview() ?? ['state'=>'unavailable','reason'=>'not-configured-or-not-ready']) + ['enabled'=>true];
+    }
 
     /** Release calendar listeners and the ledger lock before a replacement process starts. */
     private function stopCalendarSync(): void

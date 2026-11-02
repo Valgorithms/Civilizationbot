@@ -2,7 +2,18 @@
 
 This optional producer fills **both** approved-player and job/customization lists from the configured Discord Verified role plus the existing authoritative ckey mapping. Verification remains read-only. It does not register accounts, write the verifier database, change roles, enable game restrictions, reload the world or start another Discord client.
 
-`access_file_sync` defaults to `{"enabled":false}`. Disabled constructs no owner/listener/timer/writer and does not inspect destinations. Publication and live activation require separate review of exact configuration and current preview; merging this source does not activate it.
+`access_file_sync` defaults to enabled intent. A complete configured target policy may omit `enabled`; explicit `"enabled": false` opts out and constructs no owner/listener/timer/writer or destination probes. Missing target bindings never become guessed paths: an existing profile with the section omitted remains **enabled but unavailable/unconfigured**, and startup reports that its prerequisites are missing. Verification mode, roles and access files are not changed to satisfy those prerequisites. Publication and live activation still require review of exact deployment configuration and current preview; merging this source does not activate or restart the live bot.
+
+Migration:
+
+| Existing configuration | New behavior |
+| --- | --- |
+| Section omitted, or only `enabled: true` | Enabled intent; no owner or writes until both explicit target bindings, role/source/cache prerequisites are supplied. |
+| Complete target settings, `enabled` omitted | Enabled using the unchanged explicit paths/policies and existing mode. |
+| Explicit `enabled: false` | Fully inert opt-out; retained settings are ignored, not activated. |
+| Null/string/numeric flag, or explicitly partial/malformed target configuration | Rejected; never coerced or completed with guessed destinations. |
+
+This source default applies only through a configured enabled server binding. It does not broaden admin/faction synchronization, turn on verifier/database writes, change game restrictions, or grant live activation. Existing profiles do not acquire new destination paths merely by upgrading.
 
 The two targets are explicit independent policies, currently each `required_roles: ["Verified"]`. A role holder without an unambiguous authoritative ckey mapping cannot be inferred: the preview counts it and publication refuses the entire proposal for both files. This also delays pending revocations for other members; existing entries remain until that mapping blocker is resolved and a fresh complete proposal succeeds. The producer never silently skips the unmapped holder or applies a partial membership set. Missing/unknown/stale source or partial member cache preserves existing files. Admin and faction files are never targets.
 
