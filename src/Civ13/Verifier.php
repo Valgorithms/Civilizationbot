@@ -41,6 +41,8 @@ class Verifier
     public readonly string $verify_url;
     public readonly bool $readOnly;
     private ?HostedVerificationSnapshot $hosted = null;
+    private ?\Closure $hostedTransportFetch = null;
+    private ?\React\EventLoop\LoopInterface $hostedTransportLoop = null;
     private const READ_ONLY_MESSAGE = 'Desktop uses the hosted Civilizationbot verification source. Complete verification with the primary bot.';
     public CollectionInterface $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public CollectionInterface $pending;
@@ -62,7 +64,7 @@ class Verifier
         $this->resolveOptions($options);
         $this->verify_url = $options['verify_url'];
         $this->readOnly = ($options['verification_read_only'] ?? false) === true;
-        if ($this->readOnly && $this->verify_url !== HostedVerificationSource::URL) {
+        if ($this->readOnly && !PortableProfile::hostedVerificationUrl($this->verify_url)) {
             throw new \InvalidArgumentException('Unexpected read-only verification source');
         }
         $this->pending = new Collection([], 'discord');
@@ -1215,10 +1217,32 @@ class Verifier
         return $status;
     }
 
+    /** Current exact mapping must carry a receipt from the dedicated authenticated transport. */
+    public function hostedAccessAuthority(array $records): bool
+    {
+        return $this->readOnly && $this->hosted !== null && $this->hosted->accessAuthority($records, $this->verify_url);
+    }
+
+    private function refreshAuthenticatedHosted(): PromiseInterface
+    {
+        if ($this->hostedTransportFetch === null) {
+            $loop = $this->civ13->loop;
+            $fetch = HostedVerificationSource::authenticatedFetcher($loop, $this->verify_url);
+            $this->hostedTransportLoop = $loop;
+            $this->hostedTransportFetch = $fetch;
+        }
+        if ($this->hostedTransportLoop !== $this->civ13->loop) {
+            throw new \LogicException('Recreate the verifier after event-loop replacement');
+        }
+        return ($this->hostedTransportFetch)();
+    }
+
     public function refreshHosted(): PromiseInterface
     {
         if (!$this->hosted) { throw new \LogicException('Hosted read-only verification is not configured'); }
-        return $this->hosted->refresh(fn () => HostedVerificationSource::fetch($this->civ13->browser))->then(function (array $status): array {
+        return $this->hosted->refresh(fn () => PortableProfile::hostedVerificationUrl($this->verify_url, true)
+            ? $this->refreshAuthenticatedHosted()
+            : HostedVerificationSource::fetch($this->civ13->browser))->then(function (array $status): array {
             $this->verified = new Collection($this->hosted->records(), 'discord');
             $this->civ13->verifier_online = $status['available'];
             // Existing successful refresh only. Coalesced callers must not duplicate the notification.
@@ -1240,6 +1264,8 @@ class Verifier
      */
     public function __destruct()
     {
+        $this->hostedTransportFetch = null;
+        $this->hostedTransportLoop = null;
         foreach ($this->timers as $timer) {
             $this->civ13->loop->cancelTimer($timer);
         }

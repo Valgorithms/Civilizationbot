@@ -19,8 +19,8 @@ final class Ipc
         } finally { flock($file, LOCK_UN); fclose($file); }
     }
 
-    /** Preserve the existing file's access metadata; empty membership revokes it. */
-    public static function replace(string $path, string $contents): void
+    /** Preserve access metadata. The optional guard throws to refuse after lock, before content mutation. */
+    public static function replace(string $path, string $contents, ?callable $beforeWrite = null): void
     {
         // Replacing the inode with tempnam()+rename() loses its mode/owner/ACL.
         // Native readers do not take our lock: this is an in-place update, not
@@ -29,6 +29,7 @@ final class Ipc
         if ($file === false) { throw new \RuntimeException('Cannot open server membership list'); }
         try {
             if (!flock($file, LOCK_EX) || !rewind($file)) { throw new \RuntimeException('Cannot lock server membership list'); }
+            if ($beforeWrite !== null) { $beforeWrite(); } // May throw; no content mutation has happened.
             $length = strlen($contents);
             for ($offset = 0; $offset < $length; $offset += $written) {
                 $written = fwrite($file, substr($contents, $offset));

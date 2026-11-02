@@ -81,3 +81,4 @@ $profile=['options'=>['role_ids'=>[],'channel_ids'=>[]],'gitdir'=>__DIR__,'state
 check(Civ13\PortableProfile::runtimeOptions($profile)['verification_read_only']);
 foreach(['http://localhost/verified','http://civ13.com:55555/verified?token=x','https://other.invalid/verified'] as $url) { $profile['verification_source']['url']=$url;rejects(fn()=>Civ13\PortableProfile::runtimeOptions($profile)); }
 echo "PASS asynchronous hosted GET, real setup, legacy write/listener barriers, stale lookup/role-timer denial, concurrent coalescing and unrelated timer progress, bounded retry, schema/size/identity/removal/empty contracts\n";
+require __DIR__.'/../local/verification-authority.php';

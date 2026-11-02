@@ -71,7 +71,7 @@ final class PortableProfile
         if (array_key_exists('verification_source', $profile)) {
             if (!is_array($profile['verification_source']) || count($profile['verification_source']) !== 2
                 || ($profile['verification_source']['mode'] ?? null) !== 'read-only'
-                || ($profile['verification_source']['url'] ?? null) !== 'http://civ13.com:55555/verified') {
+                || !self::hostedVerificationUrl($profile['verification_source']['url'] ?? null)) {
                 throw new \InvalidArgumentException('Expected the explicit hosted read-only verification source');
             }
             $options['verify_url'] = $profile['verification_source']['url'];
@@ -79,8 +79,17 @@ final class PortableProfile
         }
         // Admin-file authority is opt-in here, never inherited through ambient options.
         $options['admin_file_sync'] = self::adminFileSyncOptions($profile, $options);
+        $options['access_file_sync'] = self::accessFileSyncOptions($profile, $options);
         $options['webserver_url'] = '127.0.0.1';
         return $options;
+    }
+
+    /** Existing HTTP is preview-only. HTTPS must be explicitly selected, never guessed or probed. */
+    public static function hostedVerificationUrl(mixed $url, bool $httpsOnly = false): bool
+    {
+        if (!$httpsOnly && $url === 'http://civ13.com:55555/verified') { return true; }
+        if (!is_string($url) || preg_match('~^https://civ13[.]com(?::([1-9][0-9]{0,4}))?/verified$~D', $url, $match) !== 1) { return false; }
+        return !isset($match[1]) || (int)$match[1] <= 65535;
     }
 
     /** Pure configuration mapping; never opens the admin destination. */
@@ -117,6 +126,30 @@ final class PortableProfile
             throw new \InvalidArgumentException('Admin file sync requires the existing explicit admin_file destination');
         }
         $settings['admin_file'] = $server['admin_file'];
+        return $settings;
+    }
+
+    /** Explicit separate targets; no filesystem reads or access changes in this mapping. */
+    private static function accessFileSyncOptions(array $profile, array $options): array
+    {
+        $settings = array_key_exists('access_file_sync',$profile) ? $profile['access_file_sync'] : ['enabled' => true];
+        if (!is_array($settings)) { throw new \InvalidArgumentException('Access sync settings must be an object'); }
+        if (!array_key_exists('enabled',$settings)) { $settings['enabled']=true; }
+        if (!is_bool($settings['enabled'])) { throw new \InvalidArgumentException('Boolean access sync flag required'); }
+        // Keep a retained configuration inert when the operator explicitly opts out.
+        if (!$settings['enabled']) { return ['enabled' => false]; }
+        // Default-on intent never invents missing target paths or changes verifier mode.
+        // An unconfigured existing profile may boot; attach refuses before any listener/I/O.
+        if (array_keys($settings) === ['enabled']) { return ['enabled' => true]; }
+        $keys = array_keys($settings); sort($keys);
+        if ($keys !== ['debounce_seconds','enabled','max_bytes','mode','refresh_timeout_seconds','targets']
+            || ($options['verification_read_only'] ?? null) !== true || count($profile['servers'] ?? []) !== 1) {
+            throw new \InvalidArgumentException('Explicit bounded read-only access synchronization required');
+        }
+        $key = array_key_first($profile['servers']); $server = $profile['servers'][$key];
+        if (($server['enabled'] ?? null) !== true) { throw new \InvalidArgumentException('Access server must be explicitly enabled'); }
+        $settings['server_key'] = $key; $settings['server_basedir'] = $server['basedir'];
+        AccessFileSync::validateConfiguration($settings, $options['civ13_guild_id'] ?? '', $options['role_ids'] ?? [], $options['admin_file_sync']['enabled'] ?? false);
         return $settings;
     }
 

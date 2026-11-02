@@ -1709,6 +1709,7 @@ class GameServer
 
             return reject(new VerifierException($err));
         }
+        $beforeReplace = $callback instanceof \Civ13\Server\GuardedRoleFormatter ? $callback->beforeWrite(...) : null;
         $file_contents = '';
         foreach ($this->civ13->verifier->verified as $item) {
             if ($member = $this->civ13->verifier->getVerifiedMember($item)) {
@@ -1716,7 +1717,7 @@ class GameServer
             }
         }
         try {
-            foreach ($file_paths as $fp) { \Civ13\Server\Ipc::replace($fp, $file_contents); }
+            foreach ($file_paths as $fp) { \Civ13\Server\Ipc::replace($fp, $file_contents, $beforeReplace); }
         } catch (\Throwable $error) { return reject($error); }
         return resolve(null);
     }
@@ -1734,6 +1735,20 @@ class GameServer
         }
         if (! $this->enabled) {
             return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
+        }
+        $beforeReplace = null;
+        // Read-only hosted mappings may not bypass AccessFileSync's transport authority gate.
+        if (($this->civ13->verifier->readOnly ?? false) === true) {
+            $records = iterator_to_array($this->civ13->verifier->verified, false);
+            if (!$this->civ13->verifier->hostedAccessAuthority($records)) {
+                return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
+            }
+            $beforeReplace = function () use ($records): void {
+                $current = iterator_to_array($this->civ13->verifier->verified, false);
+                if ($current !== $records || !$this->civ13->verifier->hostedAccessAuthority($current)) {
+                    throw new \RuntimeException('Role list update unavailable or inaccessible.');
+                }
+            };
         }
         if (! @touch($this->whitelist)) {
             $this->logger->warning("Unable to open `{$this->whitelist}`");
@@ -1753,6 +1768,7 @@ class GameServer
 
             return $string;
         };
+        if ($beforeReplace !== null) { $callback = new \Civ13\Server\GuardedRoleFormatter($callback, $beforeReplace); }
         return $this->updateFilesFromMemberRoles($callback, $file_paths, $required_roles);
     }
     /**

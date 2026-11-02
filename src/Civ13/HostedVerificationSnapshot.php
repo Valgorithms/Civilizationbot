@@ -8,6 +8,7 @@ final class HostedVerificationSnapshot
     public const FRESH_SECONDS = 1800;
     public const COALESCE_SECONDS = 10;
     private ?array $records = null;
+    private ?HostedVerificationSource $authority = null;
     private ?int $success = null;
     private ?int $attempt = null;
     private bool $failed = true;
@@ -28,6 +29,13 @@ final class HostedVerificationSnapshot
             'refresh_in_progress' => $this->busy];
     }
 
+    /** Authority is a local transport receipt, never a remote JSON flag or a freshness claim. */
+    public function accessAuthority(array $records, string $source): bool
+    {
+        return $this->status()['available'] === true && !$this->busy && $records === $this->records
+            && $this->authority !== null && $this->authority->matches($source, $records);
+    }
+
     /** One bounded GET per attempt; overlapping and queued bursts share the prior result. */
     public function refresh(callable $fetch): \React\Promise\PromiseInterface
     {
@@ -38,8 +46,8 @@ final class HostedVerificationSnapshot
         }
         $this->busy = true; $this->attempt = $now;
         $deferred = new \React\Promise\Deferred(); $this->pending = $deferred->promise(); $pending = $this->pending;
-        $finish = function (bool $valid, ?array $records = null) use ($deferred): void {
-            if ($valid) { $this->records = $records; $this->success = ($this->clock)(); }
+        $finish = function (bool $valid, ?array $records = null, ?HostedVerificationSource $authority = null) use ($deferred): void {
+            if ($valid) { $this->records = $records; $this->authority = $authority; $this->success = ($this->clock)(); }
             $this->failed = !$valid; $this->busy = false; $this->pending = null;
             $deferred->resolve($this->status() + ['coalesced' => false]);
         };
@@ -48,7 +56,8 @@ final class HostedVerificationSnapshot
         $response->then(function (array $response) use ($finish): void {
             try {
                 if (($response['http_status'] ?? null) !== 200 || !is_string($response['json'] ?? null)) { throw new \RuntimeException('Unavailable'); }
-                $finish(true, HostedVerificationSource::validate($response['json']));
+                $finish(true, HostedVerificationSource::validate($response['json']),
+                    ($response['authority'] ?? null) instanceof HostedVerificationSource ? $response['authority'] : null);
             } catch (\Throwable) { $finish(false); }
         }, static function () use ($finish): void { $finish(false); });
         return $pending;

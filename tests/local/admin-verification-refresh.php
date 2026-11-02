@@ -7,7 +7,12 @@ namespace Civ13 {
     final class HostedVerificationSource
     {
         public static \Closure $fetch;
-        public static function fetch(mixed $unused): \React\Promise\PromiseInterface { return (self::$fetch)(); }
+        public static array $transports=[];
+        public static int $factories=0;
+        public static function fetch(mixed $unused): \React\Promise\PromiseInterface { self::$transports[]="http"; return (self::$fetch)(); }
+        public static function fetchAuthenticated(\React\EventLoop\LoopInterface $loop,string $url): \React\Promise\PromiseInterface { ++self::$factories; return self::secureRequest($url); }
+        public static function authenticatedFetcher(\React\EventLoop\LoopInterface $loop,string $url): \Closure { ++self::$factories; return static fn():\React\Promise\PromiseInterface=>self::secureRequest($url); }
+        private static function secureRequest(string $url): \React\Promise\PromiseInterface { self::$transports[]=$url; return (self::$fetch)(); }
         public static function validate(string $json): array { return json_decode($json,true,32,JSON_THROW_ON_ERROR); }
     }
 }
@@ -69,6 +74,8 @@ namespace {
     $owner->browser=(new \ReflectionClass(\React\Http\Browser::class))->newInstanceWithoutConstructor();
     $verifier=(new \ReflectionClass(Verifier::class))->newInstanceWithoutConstructor();
     $verifier->civ13=$owner; $owner->verifier=$verifier;
+    (new \ReflectionProperty($verifier,'verify_url'))->setValue($verifier,'http://civ13.com:55555/verified');
+    (new \ReflectionProperty($verifier,'readOnly'))->setValue($verifier,true);
     $verifier->logger=$logger=new RefreshLogger('offline-verifier');
     $verifier->verified=new Collection([], 'discord');
     $snapshot=new HostedVerificationSnapshot(static fn()=>$f->now);
@@ -152,5 +159,24 @@ namespace {
     finally { spl_autoload_unregister($trap); }
     refreshCheck($autoloads===0 && !class_exists('Civ13\\AdminFileSync',false),'Disabled completion loaded optional implementation');
 
+    // Exact HTTPS selection uses its dedicated adapter, never the injected shared HTTP browser.
+    $owner->loop=new \React\EventLoop\StreamSelectLoop();
+    $secure=(new \ReflectionClass(Verifier::class))->newInstanceWithoutConstructor();
+    $secure->civ13=$owner;$secure->logger=$logger;$secure->verified=new Collection([], 'discord');
+    (new \ReflectionProperty($secure,'verify_url'))->setValue($secure,'https://civ13.com:55555/verified');
+    (new \ReflectionProperty($secure,'readOnly'))->setValue($secure,true);
+    (new \ReflectionProperty($secure,'hosted'))->setValue($secure,new HostedVerificationSnapshot(static fn()=>$f->now));
+    $f->pending=null;$f->reply=['http_status'=>200,'json'=>'[]'];HostedVerificationSource::$transports=[];
+    refreshResult($secure->refreshHosted());
+    refreshCheck(HostedVerificationSource::$transports===['https://civ13.com:55555/verified'],'HTTPS selection fell back to shared HTTP adapter');
+    refreshCheck(!$secure->hostedAccessAuthority([]),'Adapter data without a genuine transport receipt became authority');
+    refreshCheck(HostedVerificationSource::$factories===1,'Initial HTTPS refresh did not construct exactly one owner transport');
+    $f->now+=11;refreshResult($secure->refreshHosted());
+    refreshCheck(HostedVerificationSource::$factories===1 && count(HostedVerificationSource::$transports)===2,'Settled HTTPS refresh rebuilt its connector/resolver');
+    refreshResult($secure->refreshHosted());
+    refreshCheck(HostedVerificationSource::$factories===1 && count(HostedVerificationSource::$transports)===2,'Coalesced refresh rebuilt/fetched transport');
+    $owner->loop=new \React\EventLoop\StreamSelectLoop();$f->now+=11;
+    $changedLoop=refreshResult($secure->refreshHosted());
+    refreshCheck(!$changedLoop['available'] && HostedVerificationSource::$factories===1 && count(HostedVerificationSource::$transports)===2,'Changed loop reused an old owner transport or silently created a replacement');
     echo "PASS verifier completion hook ({$checks} assertions): actual replacement, changed/recovered success, failures, coalescing and disabled bridge\n";
 }

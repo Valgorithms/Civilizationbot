@@ -71,7 +71,7 @@ foreach (['debounce_seconds'=>5.0,'refresh_timeout_seconds'=>300.0] as $key=>$ma
     }
 }
 foreach ([null,[],['mode'=>'read-write','url'=>'http://civ13.com:55555/verified'],
-    ['mode'=>'read-only','url'=>'https://civ13.com:55555/verified'],
+    ['mode'=>'read-only','url'=>'https://other.invalid/verified'],
     ['mode'=>'read-only','url'=>'http://example.invalid/verified'],
     ['mode'=>'read-only','url'=>'http://civ13.com:55555/verified','extra'=>true]] as $source) {
     $p=profileSyncFixture(); $p['verification_source']=$source;
