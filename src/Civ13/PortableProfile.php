@@ -79,6 +79,7 @@ final class PortableProfile
         }
         // Admin-file authority is opt-in here, never inherited through ambient options.
         $options['admin_file_sync'] = self::adminFileSyncOptions($profile, $options);
+        $options['access_file_sync'] = self::accessFileSyncOptions($profile, $options);
         $options['webserver_url'] = '127.0.0.1';
         return $options;
     }
@@ -117,6 +118,27 @@ final class PortableProfile
             throw new \InvalidArgumentException('Admin file sync requires the existing explicit admin_file destination');
         }
         $settings['admin_file'] = $server['admin_file'];
+        return $settings;
+    }
+
+    /** Explicit separate targets; no filesystem reads or access changes in this mapping. */
+    private static function accessFileSyncOptions(array $profile, array $options): array
+    {
+        $settings = $profile['access_file_sync'] ?? ['enabled' => false];
+        if (!is_array($settings) || !is_bool($settings['enabled'] ?? null)) { throw new \InvalidArgumentException('Explicit access sync flag required'); }
+        if (!$settings['enabled']) {
+            if (array_keys($settings) !== ['enabled']) { throw new \InvalidArgumentException('Disabled access sync accepts only enabled=false'); }
+            return ['enabled' => false];
+        }
+        $keys = array_keys($settings); sort($keys);
+        if ($keys !== ['debounce_seconds','enabled','max_bytes','mode','refresh_timeout_seconds','targets']
+            || ($options['verification_read_only'] ?? null) !== true || count($profile['servers'] ?? []) !== 1) {
+            throw new \InvalidArgumentException('Explicit bounded read-only access synchronization required');
+        }
+        $key = array_key_first($profile['servers']); $server = $profile['servers'][$key];
+        if (($server['enabled'] ?? null) !== true) { throw new \InvalidArgumentException('Access server must be explicitly enabled'); }
+        $settings['server_key'] = $key; $settings['server_basedir'] = $server['basedir'];
+        AccessFileSync::validateConfiguration($settings, $options['civ13_guild_id'] ?? '', $options['role_ids'] ?? [], $options['admin_file_sync']['enabled'] ?? false);
         return $settings;
     }
 

@@ -21,6 +21,8 @@ jobs:
       - run: php tests/windows/constructor.php vendor/autoload.php --cache-negative-control
       - run: php tests/windows/portable.php
       - run: php tests/local/adminlist-files.php vendor/autoload.php
+      - run: php tests/local/access-list-sync.php
+        timeout-minutes: 2
       - run: php tests/windows/default-branch.php
       - run: php tests/windows/hosted-verifier.php
       - run: php tests/windows/native-lifecycle.php

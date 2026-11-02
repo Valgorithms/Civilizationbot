@@ -156,6 +156,7 @@ class Civ13
     public Moderator $moderator;
     public Verifier $verifier;
     private ?AdminFileSync $adminFileSync = null;
+    private ?AccessFileSync $accessFileSync = null;
     public ?SS14Verifier $ss14verifier = null;
 
     public string $welcome_message = '';
@@ -445,7 +446,8 @@ class Civ13
         $this->httpServiceManager = new HttpServiceManager($this);
         $this->messageServiceManager = new MessageServiceManager($this);
         $adminSync = $options['admin_file_sync'];
-        $this->discord->on('init', function (Discord $discord) use ($adminSync) {
+        $accessSync = $options['access_file_sync'];
+        $this->discord->on('init', function (Discord $discord) use ($adminSync, $accessSync) {
             $this->ready = true;
             // Verifier's earlier init listener has assigned the read-only verifier by now.
             // Uses the existing configured read-only verification feed; activation remains explicit.
@@ -455,6 +457,13 @@ class Civ13
                     $this->adminFileSync = null;
                     try { $this->logger->warning('Admin file synchronization inactive: runtime attachment failed'); }
                     catch (\Throwable) {}
+                }
+            }
+            if (($accessSync['enabled'] ?? false) === true) {
+                try { $this->accessFileSync = AccessFileSync::attach($this, $accessSync); }
+                catch (\Throwable) {
+                    $this->accessFileSync = null;
+                    try { $this->logger->warning('Access file synchronization inactive: runtime attachment failed'); } catch (\Throwable) {}
                 }
             }
             $this->logger->info("Logged in as {$this->discord->username} {$this->discord->user}");
@@ -576,6 +585,7 @@ class Civ13
                 'verify_url' => 'http://valzargaming.com:8080/verified/',
                 'verification_read_only' => false,
                 'admin_file_sync' => ['enabled' => false],
+                'access_file_sync' => ['enabled' => false],
                 'web_address' => '',
                 'webapi' => null,
                 'webserver_url' => 'www.valzargaming.com',
@@ -626,6 +636,7 @@ class Civ13
             ->setAllowedTypes('verify_url', 'string')
             ->setAllowedTypes('verification_read_only', 'bool')
             ->setAllowedTypes('admin_file_sync', 'array')
+            ->setAllowedTypes('access_file_sync', 'array')
             ->setAllowedTypes('web_address', 'string')
             ->setAllowedTypes('webapi', ['null', 'resource', HttpServer::class])
             ->setAllowedTypes('webserver_url', 'string');
@@ -955,6 +966,7 @@ class Civ13
     public function stop(bool $closeLoop = true): void
     {
         $this->stopAdminFileSync();
+        $this->stopAccessFileSync();
         $this->stopCalendarSync();
         $this->logger->info('Shutting down');
         if (isset($this->httpServiceManager->socket)) {
@@ -973,8 +985,9 @@ class Civ13
     /** Successful replacement from the current verifier only; disabled/unattached is inert. */
     public function hostedVerificationRefreshed(Verifier $verifier): void
     {
-        if ($this->adminFileSync === null || !isset($this->verifier) || $this->verifier !== $verifier) { return; }
-        $this->adminFileSync->verificationChanged();
+        if (!isset($this->verifier) || $this->verifier !== $verifier) { return; }
+        $this->adminFileSync?->verificationChanged();
+        $this->accessFileSync?->verificationChanged();
     }
 
     /** Cleanup failure must not prevent the existing bot shutdown or escape our destructor. */
@@ -986,6 +999,17 @@ class Civ13
             catch (\Throwable) {}
         }
     }
+
+    /** Stop only the optional access owner; fixed warnings contain no member data. */
+    private function stopAccessFileSync(): void
+    {
+        try { $this->accessFileSync?->stop(); }
+        catch (\Throwable) {
+            try { if (isset($this->logger)) { $this->logger->warning('Access file synchronization cleanup failed'); } } catch (\Throwable) {}
+        }
+    }
+
+    public function accessFileSyncPreview(): array { return $this->accessFileSync?->lastPreview() ?? ['state'=>'unavailable']; }
 
     /** Release calendar listeners and the ledger lock before a replacement process starts. */
     private function stopCalendarSync(): void
@@ -2326,6 +2350,7 @@ class Civ13
     public function __destruct()
     {
         $this->stopAdminFileSync();
+        $this->stopAccessFileSync();
         $this->stopCalendarSync();
         foreach ($this->timers as $timer) {
             $this->loop->cancelTimer($timer);
