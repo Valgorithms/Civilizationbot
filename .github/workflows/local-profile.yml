@@ -87,6 +87,8 @@ jobs:
         timeout-minutes: 2
       - run: php tests/local/access-file-sync.php vendor/autoload.php
         timeout-minutes: 2
+      - run: php -d memory_limit=128M tests/local/access-admission.php vendor/autoload.php
+        timeout-minutes: 2
       - run: php tests/local/admin-verification-refresh.php vendor/autoload.php
         timeout-minutes: 2
       - run: php tests/local/opendream.php
@@ -125,6 +127,8 @@ jobs:
       - run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/admin-cache-sync.php vendor/autoload.php
       - run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/admin-file-sync.php vendor/autoload.php
       - run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/access-file-sync.php vendor/autoload.php
+      - run: php -d memory_limit=128M -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,stream_socket_server,stream_socket_accept,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/access-admission.php vendor/autoload.php
+        timeout-minutes: 2
       - run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/admin-verification-refresh.php vendor/autoload.php
       - run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/game-ready.php vendor/autoload.php
         timeout-minutes: 2

@@ -96,3 +96,11 @@ php tests/local/verification-authority.php vendor/autoload.php
 ```
 
 The first is dependency-free and tests actual owned temporary-file publication plus pure projection/framing. The second uses fake caches/timers/verification, an injected memory writer and an owned synthetic end-to-end publisher. It never loads bot.php, .env, a real profile, Discord or a game. Existing portable CI selects the file tests on Ubuntu/Windows PHP 8.3/8.4/8.5; the existing supervision matrix runs lifecycle tests, including its effects-disabled variant. The existing portable hosted-verifier entrypoint also selects the deterministic transport/provenance controls. No workflow trigger, permission, job or native test is added.
+
+## Admission checks at the final write
+
+Direct runtime access-sync configuration uses the same strict boolean validation as profiles: omitted means enabled intent, false is inert, and nonboolean values produce a fixed unavailable diagnostic. Missing bindings still prevent attachment. Admin and faction policy is unchanged.
+
+The legacy read-only whitelist path checks the current exact mapping and hosted authority both at entry and after acquiring the file lock, immediately before each replacement. Expiry or mapping replacement refuses the write and preserves existing content bytes. This does not bound the legacy blocking lock wait, change its in-place write semantics, provide a multi-file transaction, or promise power-loss safety. The initial touch can still update metadata; the final refusal promises no content mutation.
+
+`php tests/local/access-admission.php vendor/autoload.php` uses synthetic mappings and owned temporary files. Its namespaced lock adapter delegates to the real file lock and advances a fake clock or changes the mapping only after acquisition succeeds. It proves the final guard sees the post-lock state; it does not create real cross-process lock contention or contact an endpoint. It also checks strict flags, diagnostic sanitization, released locks, fresh/local compatibility and per-file failure. Existing Linux and effects-disabled Windows PHP matrix steps select it.

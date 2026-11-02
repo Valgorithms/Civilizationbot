@@ -459,13 +459,7 @@ class Civ13
                     catch (\Throwable) {}
                 }
             }
-            if (($accessSync['enabled'] ?? true) === true) {
-                try { $this->accessFileSync = AccessFileSync::attach($this, $accessSync); }
-                catch (\Throwable) {
-                    $this->accessFileSync = null;
-                    try { $this->logger->warning('Access file synchronization unavailable: configuration or readiness prerequisites missing'); } catch (\Throwable) {}
-                }
-            }
+            $this->initializeAccessFileSync($accessSync);
             $this->logger->info("Logged in as {$this->discord->username} {$this->discord->user}");
             $this->logger->info('------');
             //$this->commandServiceManager = new CommandServiceManager($this->discord, $this->httpServiceManager, $this->messageServiceManager, $this);
@@ -481,6 +475,17 @@ class Civ13
             }
         });
     }
+    /** Strict flag validation reports direct-config mistakes; false remains inert. */
+    private function initializeAccessFileSync(array $settings): void
+    {
+        try {
+            if (AccessFileSync::enabled($settings)) { $this->accessFileSync = AccessFileSync::attach($this, $settings); }
+        } catch (\Throwable) {
+            $this->accessFileSync = null;
+            try { $this->logger->warning('Access file synchronization unavailable: configuration or readiness prerequisites missing'); } catch (\Throwable) {}
+        }
+    }
+
     /**
      * Resolves the given options array by validating and setting default values for each option.
      *
