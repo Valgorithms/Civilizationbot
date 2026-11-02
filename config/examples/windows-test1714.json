@@ -12,7 +12,8 @@
     "channel_ids": {},
     "role_ids": {},
     "folders": {"json": "json/"},
-    "files": {}
+    "files": {},
+    "game_ready_events": {"enabled": false}
   },
   "servers": {
     "test1714": {
