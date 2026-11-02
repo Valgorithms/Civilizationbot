@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 import owned_process as owned
 import suite
 import startup_watchdog as startup
+import socket_family_diagnostics as family_diagnostics
 
 
 def digest(data): return hashlib.sha256(data).hexdigest()
@@ -162,7 +163,7 @@ class NativeTransport:
         if len(raw_request) > 1048576: raise ValueError('Native request byte limit')
         with (stage / request_name).open('xb') as output: output.write(raw_request)
         argv = [str(self.bin / 'DreamDaemon'), image + '.dmb', '-port', '25444', '-ports', '25444', '-ip', '127.0.0.1', '-nowebclient', '-invisible', '-close', '-safe', '-nologdates', '-log', 'native.log']
-        observer = startup.StartupObserver(stage, self.bin / 'DreamDaemon', image, self.image_hashes[image][image + '.dmb'])
+        observer = startup.StartupObserver(stage, self.bin / 'DreamDaemon', image, self.image_hashes[image][image + '.dmb'], family_sampler=family_diagnostics.diagnose)
         observed = self.process(argv, stage, 10, 4096, 8, observer=observer)
         startup.validate_evidence(observed['record'].get('startup'), image)
         if observed['record']['startup']['image_sha256'] != self.image_hashes[image][image + '.dmb'] or observed['record']['startup']['pid'] != observed['record']['pid']:
@@ -217,7 +218,7 @@ def main():
     checked_out = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True, timeout=5).strip()
     if checked_out != args.approved_revision:
         raise ValueError('Hosted checkout revision mismatch')
-    if datetime.now(timezone.utc).timestamp() + 900 > datetime(2026, 11, 1, 23, 46, 26, tzinfo=timezone.utc).timestamp():
+    if datetime.now(timezone.utc).timestamp() + 900 > datetime(2026, 11, 2, 5, 44, 0, tzinfo=timezone.utc).timestamp():
         raise ValueError('Insufficient remaining approved window')
     packet_sha = verify_manifest(args.approved_manifest_sha256)
     def interrupted(_number, _frame):

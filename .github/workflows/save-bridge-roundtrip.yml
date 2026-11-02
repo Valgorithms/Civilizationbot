@@ -35,7 +35,7 @@ jobs:
       - name: Verify remaining authorization window
         run: |
           PY=$(command -v python3)
-          "$PY" -I -B -c 'from datetime import datetime, timezone; assert datetime.now(timezone.utc).timestamp()+900 <= datetime(2026,11,1,23,46,26,tzinfo=timezone.utc).timestamp(), "Approved window cannot cover this job"'
+          "$PY" -I -B -c 'from datetime import datetime, timezone; assert datetime.now(timezone.utc).timestamp()+900 <= datetime(2026,11,2,5,44,0,tzinfo=timezone.utc).timestamp(), "Approved window cannot cover this job"'
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}

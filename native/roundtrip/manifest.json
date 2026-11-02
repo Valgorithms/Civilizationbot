@@ -2,8 +2,8 @@
   "schema": "civilizationbot.public-synthetic-roundtrip.v1",
   "files": {
     "README.md": {
-      "bytes": 8443,
-      "sha256": "04f269c16b4780b8b2696700c67c3f0f95d4111d04007be66d59018ec00e07b2"
+      "bytes": 10300,
+      "sha256": "70a7f78b5fbf7bc763ba0d8f881713292bac526fbbcfedeac4d337e559b802bc"
     },
     "UPSTREAM-LICENSE": {
       "bytes": 34520,
@@ -42,8 +42,8 @@
       "sha256": "2b10a58ad7a61308bd0ed79d9aeec6e62d62cd1a183a33e8eb8060ba99a86f2d"
     },
     "native_controller.py": {
-      "bytes": 16836,
-      "sha256": "e15446b3065a84cd4a51b612764e6dade7abf66ce07607697573bdd6c96dd9a9"
+      "bytes": 16933,
+      "sha256": "8f853368df479c5f9b93c1e8b85cb9fc2352d0727532438c55a31533e55c8cdd"
     },
     "negative_oracles.py": {
       "bytes": 1920,
@@ -77,6 +77,10 @@
       "bytes": 1031,
       "sha256": "0285b3b6b754fabc118445f463646790a59c4c5e2d28915844234a49427baa0f"
     },
+    "socket_family_diagnostics.py": {
+      "bytes": 7366,
+      "sha256": "63d808d9a2aa608c52c587588197108336e4a17e9eda59964bc1c1d00fcf048e"
+    },
     "source-bindings.json": {
       "bytes": 668,
       "sha256": "7e8a261e1a87c30230c5b43ef27b603518ecd72f752e9fee075fe03d2d34b90e"
@@ -86,8 +90,8 @@
       "sha256": "aaa8677bfaa8ba8cb151f197d3103680fc8e71209ba8d9354c127a55b1d1eee5"
     },
     "startup_watchdog.py": {
-      "bytes": 32574,
-      "sha256": "0a60026b7641a13119025061e5856dd600b87b923b368cbc1385fe6e22c09a76"
+      "bytes": 36686,
+      "sha256": "904928b3ceba8ba134377d51fa9062159796e997646a0e4d0c61cc7597c030fd"
     },
     "suite.py": {
       "bytes": 10997,
@@ -97,9 +101,17 @@
       "bytes": 8819,
       "sha256": "2ab29e635af12ace76c194487585bb5c0478920d0701c95e75f985ba334c118d"
     },
+    "test_family_hook.py": {
+      "bytes": 11167,
+      "sha256": "64b3e001972c3d19b375cd1272636be32bcfc21fb9b288a8e958828514613214"
+    },
     "test_owned_process.py": {
       "bytes": 13419,
       "sha256": "d0411d59bf03ba11f0d360097ac8c61126e59cbddd40aa8c9c6ac31f446029d0"
+    },
+    "test_socket_family_diagnostics.py": {
+      "bytes": 7369,
+      "sha256": "7e5ced7360063146928d381618b281b880175328b0547905b4c8e65767b9948c"
     },
     "test_startup_diagnostics.py": {
       "bytes": 19527,
