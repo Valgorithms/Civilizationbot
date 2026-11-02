@@ -25,7 +25,7 @@ final class AccessEmitter {
     public function emit(string $event,array $args=[]):void{foreach($this->listeners[$event]??[] as $listener){$listener(...$args);}}
 }
 function fixture(string $mode='publish',bool $ready=true):array{
-    $f=(object)['now'=>1700000000,'timers'=>[],'writes'=>[],'reports'=>[],'refreshes'=>0,'writerHook'=>null];
+    $f=(object)['now'=>1700000000,'timers'=>[],'writes'=>[],'reports'=>[],'refreshes'=>0,'writerHook'=>null,'authenticated'=>true];
     $gid='770000000000000001';$rid='880000000000000001';$uid='990000000000000001';
     $base=PHP_OS_FAMILY==='Windows'?'D:/synthetic-access-never-opened':'/synthetic-access-never-opened';
     $targets=[];foreach(['approved','whitelist'] as $kind){$targets[$kind]=['path'=>$base.'/SQL/'.$kind.'.txt','required_roles'=>['Verified'],'allow_creation'=>false,'allow_empty'=>true,'metadata_policy'=>'inherit-parent'];}
@@ -38,6 +38,7 @@ function fixture(string $mode='publish',bool $ready=true):array{
         public bool $readOnly=true;public array $verified;public mixed $hook=null;
         public function __construct(public object $f,string $uid){$this->verified=[['ss13'=>'Fake.Test','discord'=>$uid]];}
         public function hostedStatus():array{return $this->f->status;}
+        public function hostedAccessAuthority(array $records):bool{return $this->f->authenticated && $records===$this->verified;}
         public function refreshHosted():PromiseInterface{++$this->f->refreshes;return $this->hook!==null?($this->hook)():resolve($this->f->status);}
     };
     $loop=new class($f){
@@ -93,6 +94,14 @@ foreach([null,'true',0] as $invalid){$bad=$profile;$bad['access_file_sync']['ena
 $emptyOwner=(new ReflectionClass(Civ13\Civ13::class))->newInstanceWithoutConstructor();$emptyOwner->options=['access_file_sync'=>['enabled'=>true]];
 check($emptyOwner->accessFileSyncPreview()===['state'=>'unavailable','reason'=>'not-configured-or-not-ready','enabled'=>true],'Default-on unconfigured status is honest');
 $emptyOwner->options=['access_file_sync'=>['enabled'=>false]];check($emptyOwner->accessFileSyncPreview()===['state'=>'disabled','enabled'=>false],'Explicit opt-out status is inert');
+// Synthetic authority seam: no remote HTTP/JSON scalar can authorize the real verifier.
+[$app,$settings,$f,$write]=fixture();$f->authenticated=false;$service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);
+check($f->writes===[] && $service->lastPreview()['authenticated_mapping']===false && $service->lastPreview()['publication_authorized']===false,'HTTP mapping remains preview-only before entering writer');
+$app->verifier->verified=[['ss13'=>'fakeintruder','discord'=>'990000000000000001']];$service->verificationChanged();fire($f);
+check($f->writes===[] && $service->lastPreview()['targets']['approved']['records']===1,'Tampered ckey with eligible ID cannot authorize HTTP publication');$service->stop();
+[$app,$settings,$f,$write]=fixture();$guardResult=null;$f->writerHook=function($wire,$generation,$guard)use($f,&$guardResult){$f->authenticated=false;$guardResult=$guard();return ['state'=>'superseded'];};
+$service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);
+check($guardResult===false && $f->writes===[] && $service->lastPreview()['state']==='unavailable','Provenance loss before final commit refuses publication and invalidates preview');$service->stop();
 // Actual application notification method, still with a fake service owner/cache.
 [$app,$settings,$f,$write]=fixture();$service=AccessFileSync::attach($app,$settings,$write,fn()=>$f->now);fire($f);
 $owner=(new ReflectionClass(Civ13\Civ13::class))->newInstanceWithoutConstructor();

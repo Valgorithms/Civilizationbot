@@ -30,7 +30,7 @@ final class AccessFileSync
     /**
      * $app is the existing Civ13 instance (or an inert facade in tests), never a new client.
      * Optional writer/clock are explicit test seams; constructor never opens a target.
-     * Uses the explicitly configured existing read-only verification feed; no transport authentication claim.
+     * HTTP supports preview only; publication requires a current transport-minted HTTPS receipt.
      * Disabled returns before reading app state or creating any listener/timer/writer.
      */
     public static function attach(object $app, array $settings, ?callable $writer = null, ?callable $clock = null): ?self
@@ -78,10 +78,13 @@ final class AccessFileSync
     {
         try {
             $status=$this->verifier->hostedStatus(); $now=($this->clock)(); $guild=$this->guild();
+            $current=$this->verification();
             $success=$status['last_success_utc'] ?? null;
             $date=is_string($success) ? \DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s\Z',$success,new \DateTimeZone('UTC')) : false;
             if (!$this->configurationCurrent() || !$this->trigger->isReady() || $this->previewEpoch!==$this->trigger->epoch()
                 || ($status['available'] ?? null)!==true || ($status['stale'] ?? null)!==false || ($status['refresh_in_progress'] ?? null)!==false
+                || $current['records']!==$this->capturedRecords
+                || ($this->preview['authenticated_mapping'] ?? false)!==$current['authority']
                 || $success!==$this->previewSuccess || !is_int($now) || $date===false || $now<$date->getTimestamp()
                 || $now-$date->getTimestamp()>=HostedVerificationSnapshot::FRESH_SECONDS || $guild===null || $guild->member_count!==$this->previewMembers) {
                 return ['state'=>'unavailable'];
@@ -130,7 +133,8 @@ final class AccessFileSync
                 if (!$this->configurationCurrent()) { throw new \RuntimeException('Access file configuration changed'); }
                 $current=$this->verification();
                 if ($current['records']!==$snapshot['records']
-                    || ($current['status']['last_success_utc'] ?? null)!==($snapshot['status']['last_success_utc'] ?? null)) {
+                    || ($current['status']['last_success_utc'] ?? null)!==($snapshot['status']['last_success_utc'] ?? null)
+                    || $current['authority']!==$snapshot['authority']) {
                     throw new \RuntimeException('Verification identity snapshot changed');
                 }
                 $now=($this->clock)();
@@ -142,13 +146,19 @@ final class AccessFileSync
                     $this->guildId,$generation,$now,$this->roleIds,$this->settings['targets'],$this->trigger->state());
                 $preview=AccessListProjection::preview($wire);
                 foreach ($preview['targets'] as $target) { if ($target['bytes']>$this->settings['max_bytes']) { throw new \RuntimeException('Access output exceeds budget'); } }
+                $preview['authenticated_mapping']=$current['authority'];
+                $preview['publication_authorized']=$current['authority'] && $preview['publishable_mapping'];
                 $this->preview=$preview;
                 $this->previewEpoch=$this->trigger->epoch();
                 $this->previewSuccess=$current['status']['last_success_utc'];
                 $this->previewMembers=$membership['expected_members'];
                 return $wire;
             },
-            fn (string $bytes,int $generation,callable $guard): mixed => $this->settings['mode']==='preview' ? ($guard() ? ['state'=>'blocked','reason'=>'preview-only'] : ['state'=>'superseded']) : ($this->writer)($bytes,$generation,$guard));
+            function (string $bytes,int $generation,callable $guard): mixed {
+                if ($this->settings['mode']==='preview') { return $guard() ? ['state'=>'blocked','reason'=>'preview-only'] : ['state'=>'superseded']; }
+                if (!$this->verification()['authority']) { return ['state'=>'blocked','reason'=>'unauthenticated-mapping']; }
+                return ($this->writer)($bytes,$generation,fn (): bool => $guard() && $this->verification()['authority']);
+            });
         $this->trigger=new AdminCacheSyncTrigger(true,$this->guildId,function (): PromiseInterface { $this->preview=['state'=>'unavailable']; return $this->coordinator->request(); },
             fn (): bool => $this->configurationCurrent() && $this->guild()!==null,
             function (): PromiseInterface {
@@ -248,7 +258,7 @@ final class AccessFileSync
         if ($before!==$after || ($after['records'] ?? null)!==count($records)) {
             throw new \RuntimeException('Verification snapshot changed during capture');
         }
-        $snapshot=['status'=>$after,'records'=>$records];
+        $snapshot=['status'=>$after,'records'=>$records,'authority'=>$this->verifier->hostedAccessAuthority($records)];
         return $snapshot;
     }
 

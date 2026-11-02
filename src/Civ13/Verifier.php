@@ -62,7 +62,7 @@ class Verifier
         $this->resolveOptions($options);
         $this->verify_url = $options['verify_url'];
         $this->readOnly = ($options['verification_read_only'] ?? false) === true;
-        if ($this->readOnly && $this->verify_url !== HostedVerificationSource::URL) {
+        if ($this->readOnly && !PortableProfile::hostedVerificationUrl($this->verify_url)) {
             throw new \InvalidArgumentException('Unexpected read-only verification source');
         }
         $this->pending = new Collection([], 'discord');
@@ -1215,10 +1215,18 @@ class Verifier
         return $status;
     }
 
+    /** Current exact mapping must carry a receipt from the dedicated authenticated transport. */
+    public function hostedAccessAuthority(array $records): bool
+    {
+        return $this->readOnly && $this->hosted !== null && $this->hosted->accessAuthority($records, $this->verify_url);
+    }
+
     public function refreshHosted(): PromiseInterface
     {
         if (!$this->hosted) { throw new \LogicException('Hosted read-only verification is not configured'); }
-        return $this->hosted->refresh(fn () => HostedVerificationSource::fetch($this->civ13->browser))->then(function (array $status): array {
+        return $this->hosted->refresh(fn () => PortableProfile::hostedVerificationUrl($this->verify_url, true)
+            ? HostedVerificationSource::fetchAuthenticated($this->civ13->loop, $this->verify_url)
+            : HostedVerificationSource::fetch($this->civ13->browser))->then(function (array $status): array {
             $this->verified = new Collection($this->hosted->records(), 'discord');
             $this->civ13->verifier_online = $status['available'];
             // Existing successful refresh only. Coalesced callers must not duplicate the notification.

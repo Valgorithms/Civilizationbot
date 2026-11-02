@@ -71,7 +71,7 @@ final class PortableProfile
         if (array_key_exists('verification_source', $profile)) {
             if (!is_array($profile['verification_source']) || count($profile['verification_source']) !== 2
                 || ($profile['verification_source']['mode'] ?? null) !== 'read-only'
-                || ($profile['verification_source']['url'] ?? null) !== 'http://civ13.com:55555/verified') {
+                || !self::hostedVerificationUrl($profile['verification_source']['url'] ?? null)) {
                 throw new \InvalidArgumentException('Expected the explicit hosted read-only verification source');
             }
             $options['verify_url'] = $profile['verification_source']['url'];
@@ -82,6 +82,14 @@ final class PortableProfile
         $options['access_file_sync'] = self::accessFileSyncOptions($profile, $options);
         $options['webserver_url'] = '127.0.0.1';
         return $options;
+    }
+
+    /** Existing HTTP is preview-only. HTTPS must be explicitly selected, never guessed or probed. */
+    public static function hostedVerificationUrl(mixed $url, bool $httpsOnly = false): bool
+    {
+        if (!$httpsOnly && $url === 'http://civ13.com:55555/verified') { return true; }
+        if (!is_string($url) || preg_match('~^https://civ13[.]com(?::([1-9][0-9]{0,4}))?/verified$~D', $url, $match) !== 1) { return false; }
+        return !isset($match[1]) || (int)$match[1] <= 65535;
     }
 
     /** Pure configuration mapping; never opens the admin destination. */

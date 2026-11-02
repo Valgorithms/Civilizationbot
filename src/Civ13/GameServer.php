@@ -1735,6 +1735,13 @@ class GameServer
         if (! $this->enabled) {
             return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
         }
+        // Read-only hosted mappings may not bypass AccessFileSync's transport authority gate.
+        if (($this->civ13->verifier->readOnly ?? false) === true) {
+            $records = iterator_to_array($this->civ13->verifier->verified, false);
+            if (!$this->civ13->verifier->hostedAccessAuthority($records)) {
+                return reject(new \RuntimeException('Role list update unavailable or inaccessible.'));
+            }
+        }
         if (! @touch($this->whitelist)) {
             $this->logger->warning("Unable to open `{$this->whitelist}`");
 
