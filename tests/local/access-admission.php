@@ -73,8 +73,8 @@ namespace {
         $owner->logger = new Monolog\Logger('synthetic-admission', [new Monolog\Handler\NullHandler()]);
         $verifier = new AdmissionVerifier(); $verifier->civ13 = $owner;
         $verifier->clock = static function () use (&$now): int { return $now; };
-        (new ReflectionProperty($verifier, 'readOnly'))->setValue($verifier, $readOnly);
-        (new ReflectionProperty($verifier, 'verify_url'))->setValue($verifier, $url);
+        (new ReflectionProperty(Verifier::class, 'readOnly'))->setValue($verifier, $readOnly);
+        (new ReflectionProperty(Verifier::class, 'verify_url'))->setValue($verifier, $url);
         (new ReflectionProperty(Verifier::class, 'hosted'))->setValue($verifier, $snapshot);
         $verifier->verified = new Collection($snapshot->records(), 'discord'); $owner->verifier = $verifier;
         $server = (new ReflectionClass(GameServer::class))->newInstanceWithoutConstructor(); $server->civ13 = $owner; $server->enabled = true;
