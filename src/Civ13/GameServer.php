@@ -477,7 +477,7 @@ class GameServer
             $item = null;
         }
         if (! $item) {
-            return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false);
+            return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', true);
         }
         $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);
         if ($user = $this->discord->users->get('id', $item['discord'])) {

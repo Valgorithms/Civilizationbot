@@ -17,7 +17,24 @@ final class OocDiscord extends \Discord\Discord {
     public $guildFixture=null;
     public function __get(string $name) {
         if($name==='guilds'){return new class($this->guildFixture){public function __construct(private $guild){} public function get(...$args){return $this->guild;}};}
+        if($name==='users'){return new class {public function get(...$args){return null;}};}
         return parent::__get($name);
+    }
+}
+final class OocRelayChannel extends \Discord\Parts\Channel\Channel {
+    public array $builders=[];
+    public function sendMessage($message,bool $tts=false,$embed=null,$allowed_mentions=null,?\Discord\Parts\Channel\Message $replyTo=null): PromiseInterface {
+        $this->builders[]=$message;
+        return resolve(null);
+    }
+}
+final class OocRelayCiv extends \Civ13\Civ13 {
+    public function createEmbed(?bool $footer=true,int $color=0xE1452D): \Discord\Parts\Embed\Embed {
+        $discord=(new ReflectionClass(\Discord\Discord::class))->newInstanceWithoutConstructor();
+        (new ReflectionProperty($discord,'collectionClass'))->setValue($discord,\Discord\Helpers\Collection::class);
+        $embed=(new ReflectionClass(\Discord\Parts\Embed\Embed::class))->newInstanceWithoutConstructor();
+        (new ReflectionProperty($embed,'discord'))->setValue($embed,$discord);
+        return $embed;
     }
 }
 final class OocCiv extends \Civ13\Civ13 {
@@ -32,7 +49,8 @@ final class OocMember extends \Discord\Parts\User\Member {
 final class OocVerifier extends \Civ13\Verifier {
     public array $lookups=[];
     public ?\Throwable $failure=null;
-    public function get(string $discrim,$key):mixed {$this->lookups[]=[$discrim,$key]; if($this->failure){throw $this->failure;} return ['ss13'=>'onlineadmin'];}
+    public mixed $result=['ss13'=>'onlineadmin'];
+    public function get(string $discrim,$key):mixed {$this->lookups[]=[$discrim,$key]; if($this->failure){throw $this->failure;} return $this->result;}
 }
 final class OocServer extends \Civ13\GameServer {
     public bool $denyRound=false;
@@ -194,29 +212,59 @@ foreach(['{invalid','null','123','[]',str_repeat('x',65537)] as $raw){
     $bad=$request($valid)->withQueryParams(['data'=>$raw]);
     if($manager->handleOocWebhook($bad,$server)->getStatusCode()!==403){throw new RuntimeException('Malformed raw JSON accepted');}
 }
-// Exercise the real server relay, not OocServer's recording override. A stale
-// read-only verifier must not prevent display chat or confer account identity.
-$manager->discord->channel=(new ReflectionClass(\Discord\Parts\Channel\Channel::class))->newInstanceWithoutConstructor();
+// Exercise the real server relay and Civ13::sendMessage through the outgoing
+// Discord builder. Untrusted game text must not create Discord mentions.
+$manager->discord->channel=(new ReflectionClass(OocRelayChannel::class))->newInstanceWithoutConstructor();
+$relayCiv=(new ReflectionClass(OocRelayCiv::class))->newInstanceWithoutConstructor();
+$relayCiv->options=['http_key'=>'synthetic-ooc-key'];
+$relayCiv->ready=true;
+$relayCiv->onFulfilledDefault=fn()=>null;
+$relayCiv->onRejectedDefault=fn()=>null;
+$relayCiv->verifier=(new ReflectionClass(OocVerifier::class))->newInstanceWithoutConstructor();
+$manager->civ13=$relayCiv;
 $displayServer=(new ReflectionClass(\Civ13\GameServer::class))->newInstanceWithoutConstructor();
-$displayServer->civ13=$civ; $displayServer->discord=$manager->discord;
+$displayServer->civ13=$relayCiv; $displayServer->discord=$manager->discord;
 $displayServer->logger=new \Monolog\Logger('offline-chat',[new \Monolog\Handler\NullHandler()]);
 $displayServer->ready=true; $displayServer->legacy_relay=false; $displayServer->moderate=false;
 $displayServer->ooc=$server->ooc;
 (new ReflectionProperty(\Civ13\GameServer::class,'key'))->setValue($displayServer,'test');
-$civ->ready=true; $civ->staffMessages=[];
-$civ->verifier=(new ReflectionClass(OocVerifier::class))->newInstanceWithoutConstructor();
-$civ->verifier->failure=new \Civ13\Exceptions\VerifierException('Hosted verification unavailable');
-if($manager->handleOocWebhook($request($valid),$displayServer)->getStatusCode()!==202
-    || count($civ->staffMessages)!==1 || $civ->staffMessages[0][1]!==$valid['message']
-    || $civ->verifier->lookups!==[['ss13','realplayer']]) {
-    throw new RuntimeException('Unavailable hosted identity blocked plain OOC delivery or used stale attribution');
+$relayText='@everyone @here untrusted OOC';
+$relayRequest=$request(array_replace($valid,['message'=>$relayText]));
+$assertWire=function(bool $embedded,int $expectedCount)use($manager,$displayServer,$relayRequest,$relayText){
+    if($manager->handleOocWebhook($relayRequest,$displayServer)->getStatusCode()!==202
+        || count($manager->discord->channel->builders)!==$expectedCount){
+        throw new RuntimeException('Actual OOC relay did not send exactly one message');
+    }
+    $wire=json_decode(json_encode(end($manager->discord->channel->builders),JSON_THROW_ON_ERROR),true,32,JSON_THROW_ON_ERROR);
+    if(($wire['allowed_mentions']['parse']??null)!==[]
+        || ($wire['allowed_mentions']['users']??[])!==[]
+        || ($wire['allowed_mentions']['roles']??[])!==[]){
+        throw new RuntimeException('Actual OOC builder permits Discord mentions');
+    }
+    if($embedded){
+        if(($wire['embeds'][0]['description']??null)!==$relayText || isset($wire['content'])){
+            throw new RuntimeException('Verified OOC builder lost embed display');
+        }
+    }elseif(($wire['content']??null)!==$relayText || !empty($wire['embeds'])){
+        throw new RuntimeException('Unverified OOC builder changed text or attribution');
+    }
+};
+$relayCiv->verifier->result=null;
+$assertWire(false,1);
+$relayCiv->verifier->failure=new \Civ13\Exceptions\VerifierException('Hosted verification unavailable');
+$assertWire(false,2);
+if($relayCiv->verifier->lookups!==[['ss13','realplayer'],['ss13','realplayer']]) {
+    throw new RuntimeException('Unverified OOC lookup binding changed');
 }
-$civ->verifier->failure=new RuntimeException('synthetic unexpected lookup failure');
+$relayCiv->verifier->failure=null;
+$relayCiv->verifier->result=['discord'=>'123456789012345679'];
+$assertWire(true,3);
+$relayCiv->verifier->failure=new RuntimeException('synthetic unexpected lookup failure');
 try {
-    $manager->handleOocWebhook($request($valid),$displayServer);
+    $manager->handleOocWebhook($relayRequest,$displayServer);
     throw new RuntimeException('Unexpected verifier error was swallowed');
 } catch (RuntimeException $error) {
     if($error->getMessage()!=='synthetic unexpected lookup failure'){throw $error;}
 }
-if(count($civ->staffMessages)!==1){throw new RuntimeException('Unexpected verifier error sent OOC');}
+if(count($manager->discord->channel->builders)!==3){throw new RuntimeException('Unexpected verifier error sent OOC');}
 echo "PASS actual registered chat/transit/runtime/admin/attack routes: independent service authentication, bounded canonical actors/body, rejected requests preserve state, optional parole channel, staff display isolation\n";
