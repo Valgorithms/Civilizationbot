@@ -24,6 +24,17 @@ try {
     file_put_contents($repo.'/composer.lock', '{"fixture":"local path override"}');
     $lockStart=$verify();check($lockStart['local_dependency_lock_edit']===true);
     refused(fn()=>$verify(true));
+    git($repo,'add','composer.lock');check($verify()['local_dependency_lock_edit']===true);
+    file_put_contents($repo.'/composer.lock', '{"fixture":"working after stage"}');
+    check($verify()['local_dependency_lock_edit']===true);
+    $lockState=new ReflectionMethod(DefaultBranchGuard::class,'lockState');
+    $beforeIndex=$lockState->invoke(null,'git',$repo);
+    file_put_contents($repo.'/composer.lock', '{"fixture":"new staged value"}');git($repo,'add','composer.lock');
+    file_put_contents($repo.'/composer.lock', '{"fixture":"working after stage"}');
+    check($lockState->invoke(null,'git',$repo)!==$beforeIndex);
+    check($verify()['local_dependency_lock_edit']===true);
+    file_put_contents($repo.'/other.php', '<?php // simultaneous source edit');refused(fn()=>$verify());unlink($repo.'/other.php');
+    git($repo,'reset','--','composer.lock');
     file_put_contents($repo.'/composer.lock', '{"fixture":"local dependency"}');
     check($verify()['local_dependency_lock_edit']===false);
     file_put_contents($repo.'/other.php', '<?php // local source edit');refused(fn()=>$verify());unlink($repo.'/other.php');
