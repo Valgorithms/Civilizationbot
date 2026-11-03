@@ -17,7 +17,13 @@ final class DefaultBranchGuard
         $require($command(['symbolic-ref','--quiet','--short','HEAD']) === self::BRANCH, 'named branch main required');
         $require($command(['rev-parse','--abbrev-ref','--symbolic-full-name','@{upstream}']) === 'origin/main', 'upstream origin/main required');
         $require($command(['symbolic-ref','--quiet','refs/remotes/origin/HEAD']) === 'refs/remotes/origin/main', 'local origin default main required');
-        $require($command(['status','--porcelain=v1','--untracked-files=all']) === '', 'local source edits retained');
+        $sourceStatus = $command(['status','--porcelain=v1','--untracked-files=all']);
+        // composer.lock is not loaded at runtime. A local dependency lock may be
+        // retained for start on a current main, but update must still be clean.
+        $localLockEdit = !$update && in_array($sourceStatus, ['M composer.lock','M  composer.lock','MM composer.lock'], true);
+        $require($sourceStatus === '' || $localLockEdit, 'local source edits retained');
+        $lockHash = $localLockEdit ? hash_file('sha256', $root.'/composer.lock') : null;
+        $require(!$localLockEdit || $lockHash !== false, 'local dependency lock unavailable');
         $require($command(['remote','get-url','--all','origin']) === $origin, 'unexpected origin retained');
         foreach (explode("\n", $command(['ls-files','-v'])) as $line) {
             $require(!preg_match('/^[a-z]|^S /', $line), 'hidden index state retained');
@@ -44,8 +50,12 @@ final class DefaultBranchGuard
             $command(['merge','--ff-only',$target]);
         }
         $require($command(['symbolic-ref','--quiet','--short','HEAD']) === 'main'
-            && $command(['rev-parse','HEAD']) === $target && $command(['status','--porcelain=v1','--untracked-files=all']) === '', 'final source identity changed');
-        return ['branch'=>'main','upstream'=>'origin/main','commit'=>$target,'before'=>$before,'fresh_remote_verified'=>true];
+            && $command(['rev-parse','HEAD']) === $target
+            && $command(['status','--porcelain=v1','--untracked-files=all']) === $sourceStatus
+            && (!$localLockEdit || hash_file('sha256', $root.'/composer.lock') === $lockHash),
+            'final source identity changed');
+        return ['branch'=>'main','upstream'=>'origin/main','commit'=>$target,'before'=>$before,
+                'fresh_remote_verified'=>true,'local_dependency_lock_edit'=>$localLockEdit];
     }
 
     private static function command(string $git, string $root, array $arguments, array $allowed = [0], ?int &$code = null): string
