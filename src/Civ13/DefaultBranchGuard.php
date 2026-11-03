@@ -17,7 +17,12 @@ final class DefaultBranchGuard
         $require($command(['symbolic-ref','--quiet','--short','HEAD']) === self::BRANCH, 'named branch main required');
         $require($command(['rev-parse','--abbrev-ref','--symbolic-full-name','@{upstream}']) === 'origin/main', 'upstream origin/main required');
         $require($command(['symbolic-ref','--quiet','refs/remotes/origin/HEAD']) === 'refs/remotes/origin/main', 'local origin default main required');
-        $require($command(['status','--porcelain=v1','--untracked-files=all']) === '', 'local source edits retained');
+        $sourceStatus = $command(['status','--porcelain=v1','--untracked-files=all']);
+        // composer.lock is not loaded at runtime. A local dependency lock may be
+        // retained for start on a current main, but update must still be clean.
+        $localLockEdit = !$update && in_array($sourceStatus, ['M composer.lock','M  composer.lock','MM composer.lock'], true);
+        $require($sourceStatus === '' || $localLockEdit, 'local source edits retained');
+        $lockState = $localLockEdit ? self::lockState($git, $root) : null;
         $require($command(['remote','get-url','--all','origin']) === $origin, 'unexpected origin retained');
         foreach (explode("\n", $command(['ls-files','-v'])) as $line) {
             $require(!preg_match('/^[a-z]|^S /', $line), 'hidden index state retained');
@@ -44,8 +49,24 @@ final class DefaultBranchGuard
             $command(['merge','--ff-only',$target]);
         }
         $require($command(['symbolic-ref','--quiet','--short','HEAD']) === 'main'
-            && $command(['rev-parse','HEAD']) === $target && $command(['status','--porcelain=v1','--untracked-files=all']) === '', 'final source identity changed');
-        return ['branch'=>'main','upstream'=>'origin/main','commit'=>$target,'before'=>$before,'fresh_remote_verified'=>true];
+            && $command(['rev-parse','HEAD']) === $target
+            && $command(['status','--porcelain=v1','--untracked-files=all']) === $sourceStatus
+            && (!$localLockEdit || self::lockState($git, $root) === $lockState),
+            'final source identity changed');
+        return ['branch'=>'main','upstream'=>'origin/main','commit'=>$target,'before'=>$before,
+                'fresh_remote_verified'=>true,'local_dependency_lock_edit'=>$localLockEdit];
+    }
+
+    /** Bind working bytes and the staged index mode/blob; porcelain alone is insufficient. */
+    private static function lockState(string $git, string $root): array
+    {
+        $working = hash_file('sha256', $root.'/composer.lock');
+        if ($working === false) { throw new \RuntimeException('Default branch guard refused: local dependency lock unavailable'); }
+        $staged = self::command($git, $root, ['ls-files','--stage','--','composer.lock']);
+        if (!preg_match('/^100644 [0-9a-f]{40} 0\tcomposer\.lock$/D', $staged)) {
+            throw new \RuntimeException('Default branch guard refused: local dependency lock index unavailable');
+        }
+        return [$working, $staged];
     }
 
     private static function command(string $git, string $root, array $arguments, array $allowed = [0], ?int &$code = null): string
