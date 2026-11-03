@@ -468,7 +468,15 @@ class GameServer
                 $badword_warnings
             );
         }
-        if (! $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']))) {
+        try {
+            $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']));
+        } catch (VerifierException) {
+            // The hosted list is not a current identity proof. Keep chat visible
+            // as plain text without using retained or stale verification data.
+            $this->logger->warning('Chat relay identity lookup unavailable; sending unverified display text');
+            $item = null;
+        }
+        if (! $item) {
             return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', false);
         }
         $embed = $this->civ13->createEmbed(false)->setDescription($array['message']);

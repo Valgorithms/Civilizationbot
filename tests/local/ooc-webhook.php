@@ -31,7 +31,8 @@ final class OocMember extends \Discord\Parts\User\Member {
 }
 final class OocVerifier extends \Civ13\Verifier {
     public array $lookups=[];
-    public function get(string $discrim,$key):mixed {$this->lookups[]=[$discrim,$key]; return ['ss13'=>'onlineadmin'];}
+    public ?\Throwable $failure=null;
+    public function get(string $discrim,$key):mixed {$this->lookups[]=[$discrim,$key]; if($this->failure){throw $this->failure;} return ['ss13'=>'onlineadmin'];}
 }
 final class OocServer extends \Civ13\GameServer {
     public bool $denyRound=false;
@@ -193,4 +194,29 @@ foreach(['{invalid','null','123','[]',str_repeat('x',65537)] as $raw){
     $bad=$request($valid)->withQueryParams(['data'=>$raw]);
     if($manager->handleOocWebhook($bad,$server)->getStatusCode()!==403){throw new RuntimeException('Malformed raw JSON accepted');}
 }
+// Exercise the real server relay, not OocServer's recording override. A stale
+// read-only verifier must not prevent display chat or confer account identity.
+$manager->discord->channel=(new ReflectionClass(\Discord\Parts\Channel\Channel::class))->newInstanceWithoutConstructor();
+$displayServer=(new ReflectionClass(\Civ13\GameServer::class))->newInstanceWithoutConstructor();
+$displayServer->civ13=$civ; $displayServer->discord=$manager->discord;
+$displayServer->logger=new \Monolog\Logger('offline-chat',[new \Monolog\Handler\NullHandler()]);
+$displayServer->ready=true; $displayServer->legacy_relay=false; $displayServer->moderate=false;
+$displayServer->ooc=$server->ooc;
+(new ReflectionProperty(\Civ13\GameServer::class,'key'))->setValue($displayServer,'test');
+$civ->ready=true; $civ->staffMessages=[];
+$civ->verifier=(new ReflectionClass(OocVerifier::class))->newInstanceWithoutConstructor();
+$civ->verifier->failure=new \Civ13\Exceptions\VerifierException('Hosted verification unavailable');
+if($manager->handleOocWebhook($request($valid),$displayServer)->getStatusCode()!==202
+    || count($civ->staffMessages)!==1 || $civ->staffMessages[0][1]!==$valid['message']
+    || $civ->verifier->lookups!==[['ss13','realplayer']]) {
+    throw new RuntimeException('Unavailable hosted identity blocked plain OOC delivery or used stale attribution');
+}
+$civ->verifier->failure=new RuntimeException('synthetic unexpected lookup failure');
+try {
+    $manager->handleOocWebhook($request($valid),$displayServer);
+    throw new RuntimeException('Unexpected verifier error was swallowed');
+} catch (RuntimeException $error) {
+    if($error->getMessage()!=='synthetic unexpected lookup failure'){throw $error;}
+}
+if(count($civ->staffMessages)!==1){throw new RuntimeException('Unexpected verifier error sent OOC');}
 echo "PASS actual registered chat/transit/runtime/admin/attack routes: independent service authentication, bounded canonical actors/body, rejected requests preserve state, optional parole channel, staff display isolation\n";
