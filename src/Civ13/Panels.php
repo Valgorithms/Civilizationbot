@@ -218,8 +218,11 @@ final class Panels
                     }
                     return $i->updateOriginalResponse($this->plain("`{$method}` for **{$server->name}** (`{$key}`): {$status}"));
                 },
-                function (\Throwable $error) use ($i, $method): PromiseInterface {
+                function (\Throwable $error) use ($i, $server, $method): PromiseInterface {
                     $this->logger->warning('[panels] '.$method.' failed: '.$error->getMessage());
+                    if ($server->hasGaiaHost() && str_starts_with($error->getMessage(), 'Refused: ')) {
+                        return $i->updateOriginalResponse($this->plain("`{$method}` not started: ".mb_substr($error->getMessage(), 0, 300)));
+                    }
                     return $i->updateOriginalResponse($this->plain("`{$method}` failed or its outcome is unknown. Inspect the retained control state before retrying."));
                 }
             );

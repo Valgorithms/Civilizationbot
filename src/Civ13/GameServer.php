@@ -880,7 +880,9 @@ class GameServer
     {
         return $this->gaiaHost->request($action)->then(static function (array $result) use ($message): mixed {
             $result['outcome'] = 'accepted';
-            return $message ? $message->react('👍')->then(static fn () => $result) : $result;
+            // The action is already accepted; a failed reaction must not report it as failed.
+            $message?->react('👍')->then(null, static fn (): null => null);
+            return $result;
         });
     }
 
@@ -889,7 +891,9 @@ class GameServer
     {
         if ($this->nativeLifecycle === null) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
         return $this->nativeLifecycle->request($action)->then(static function (array $result) use ($message): mixed {
-            return $message ? $message->react('👍')->then(static fn () => $result) : $result;
+            // The action is already accepted; a failed reaction must not report it as failed.
+            $message?->react('👍')->then(null, static fn (): null => null);
+            return $result;
         });
     }
     /**
