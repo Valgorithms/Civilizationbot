@@ -117,6 +117,10 @@ foreach([[],['round'=>null],['round'=>[]],['round'=>''],['round'=>str_repeat('a'
 }
 if($handler->handle($roundRequest(['round'=>'round-1'],'wrong'))->getStatusCode()!==403){throw new RuntimeException('Unauthenticated round accepted');}
 if($handler->handle($roundRequest(['round'=>'round-1']))->getStatusCode()!==202||end($server->events)!==['round','round-1']||!str_contains(end($civ->staffMessages)[1],'round-1')){throw new RuntimeException('Registered round route not queued');}
+$civ->role_ids['round_start']='123456789012345676';
+if($handler->handle($roundRequest(['round'=>'round-1','resumed'=>1]))->getStatusCode()!==202||end($server->events)!==['round','round-1']||!str_contains($resumed=end($civ->staffMessages)[1],'has resumed')||str_contains($resumed,'<@&')){throw new RuntimeException('Resumed round pinged or was not announced');}
+if($handler->handle($roundRequest(['round'=>'round-1','resumed'=>0]))->getStatusCode()!==202||!str_contains($fresh=end($civ->staffMessages)[1],'<@&123456789012345676>')||!str_contains($fresh,'New round')){throw new RuntimeException('Fresh round lost its ping');}
+unset($civ->role_ids['round_start']);
 $messages=count($civ->staffMessages);$server->denyRound=true;
 if($handler->handle($roundRequest(['round'=>'round-2']))->getStatusCode()!==503||count($civ->staffMessages)!==$messages){throw new RuntimeException('Failed round storage falsely notified');}
 $server->denyRound=false;$civ->staffMessages=[];
