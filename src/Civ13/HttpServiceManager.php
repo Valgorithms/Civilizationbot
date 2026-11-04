@@ -296,13 +296,20 @@ class HttpServiceManager
                         if ($admins = $guild->members->filter(function (Member $member) {
                             return $member->roles->has($this->civ13->role_ids['Admin']);
                         })) {
-                            foreach ($admins as $member) {
-                                if ($item = $this->civ13->verifier->get('discord', $member->id)) {
-                                    if (in_array($item['ss13'], $playerlist)) {
-                                        $urgent = false;
-                                        break;
+                            try {
+                                foreach ($admins as $member) {
+                                    if ($item = $this->civ13->verifier->get('discord', $member->id)) {
+                                        if (in_array($item['ss13'], $playerlist)) {
+                                            $urgent = false;
+                                            break;
+                                        }
                                     }
                                 }
+                            } catch (\Civ13\Exceptions\VerifierException $e) {
+                                // Online staff cannot be proven, so notify rather than fail the
+                                // already-relayed message with a 500.
+                                $this->logger->warning("Staff presence lookup unavailable for {$kind}: {$e->getMessage()}");
+                                $urgent = true;
                             }
                         }
                     }
