@@ -317,11 +317,13 @@ class HttpServiceManager
             }
             if ($urgent && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
                 // Keep the ping in plain content: sendMessage() moves content over 2000 bytes into an embed/file, which never pings.
+                $prefix = "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `";
                 $excerpt = $message;
-                if (strlen($excerpt) > 1500) { // Byte cut without ext-mbstring; drop any split trailing UTF-8 sequence.
-                    $excerpt = preg_replace('/[\xC0-\xFF][\x80-\xBF]*$/', '', substr($excerpt, 0, 1500)).'...';
+                $budget = max(0, 2000 - strlen($prefix) - 4); // closing backtick and '...'
+                if (strlen($excerpt) > $budget) { // Byte cut without ext-mbstring; drop any split trailing UTF-8 sequence.
+                    $excerpt = preg_replace('/[\xC0-\xFF][\x80-\xBF]*$/', '', substr($excerpt, 0, $budget)).'...';
                 }
-                $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$excerpt`");
+                $this->civ13->sendMessage($channel, $prefix.$excerpt.'`');
             }
         }
 
