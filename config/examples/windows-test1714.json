@@ -25,6 +25,7 @@
       "port": 1714,
       "enabled": false,
       "native_lifecycle": {"enabled": false},
+      "gaia_host": {"enabled": false, "python": "C:/Users/OPERATOR/AppData/Local/Programs/Python/Python312/python.exe", "script": "D:/GitHub/Civ13/scripts/gaia-host/gaia_host.py", "config": "D:/Civilizationbot-local/gaia-host.json"},
       "supported": false,
       "moderate": false,
       "legacy_relay": false,

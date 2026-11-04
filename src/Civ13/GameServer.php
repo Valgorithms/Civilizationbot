@@ -68,6 +68,7 @@ class GameServer
     public StreamSelectLoop $loop;
     public bool $ready = false;
     private ?NativeLifecycle $nativeLifecycle = null;
+    private ?\Civ13\Local\GaiaHostControl $gaiaHost = null;
 
     // Resolved paths
     private readonly string $serverdata;
@@ -167,6 +168,12 @@ class GameServer
             $this->enabled = false;
         } else {
             $this->enabled = $options['enabled'] ?? false;
+        }
+        if (($options['gaia_host']['enabled'] ?? false) === true) {
+            // Windows scheduled-task host driven by Civ13's scripts/gaia-host/gaia_host.py.
+            $gaia = $options['gaia_host'];
+            $this->gaiaHost = new \Civ13\Local\GaiaHostControl($gaia['python'] ?? '', $gaia['script'] ?? '', $gaia['config'] ?? '',
+                new \Civ13\Local\AsyncProcess($this->loop, $gaia['temporary_directory'] ?? sys_get_temp_dir()));
         }
         if (($options['native_lifecycle']['enabled'] ?? false) === true) {
             if (PHP_OS_FAMILY !== 'Windows' && !getenv('CIVILIZATIONBOT_PROFILE')) {
@@ -794,6 +801,7 @@ class GameServer
     public function Host(?Message $message = null): PromiseInterface
     {
         if ($this->engine === 'opendream') { return $this->requestEngineControl('start'); }
+        if ($this->gaiaHost !== null) { return $this->gaiaHostRequest('start', $message); }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('start', $message); }
         OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::updateserverabspaths);
         if (file_exists($this->basedir.Civ13::serverdata)) {
@@ -818,6 +826,10 @@ class GameServer
     public function Kill(?Message $message = null, bool $notify = true): PromiseInterface
     {
         if ($this->engine === 'opendream') { return $this->requestEngineControl('stop'); }
+        if ($this->gaiaHost !== null) {
+            if ($notify) { $this->OOCMessage('The server is saving and shutting down. Your character will be here when it comes back.', $this->civ13->discord->username ?? 'Server'); }
+            return $this->gaiaHostRequest('stop', $message);
+        }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('save-stop', $message); }
         if ($notify) {
             $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
@@ -835,6 +847,10 @@ class GameServer
     public function Restart(?Message $message = null, bool $notify = true): PromiseInterface
     {
         if ($this->engine === 'opendream') { return $this->requestEngineControl('restart'); }
+        if ($this->gaiaHost !== null) {
+            if ($notify) { $this->OOCMessage('The server is saving and restarting. Your character will be here when it comes back.', $this->civ13->discord->username ?? 'Server'); }
+            return $this->gaiaHostRequest('restart', $message);
+        }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('restart', $message); }
         $this->Kill(null, false);
         $this->civ13->loop->addTimer(20, function () use ($message): void {
@@ -844,6 +860,28 @@ class GameServer
             $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $message ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username);
         }
         return resolve(['accepted' => true, 'engine' => 'byond', 'state' => 'legacy operation scheduled']);
+    }
+
+    /** Pulls and compiles master while the server is stopped (scheduled-task hosts only). */
+    public function Update(?Message $message = null): PromiseInterface
+    {
+        if ($this->gaiaHost === null) { return reject(new \RuntimeException('Updating is only available for a gaia_host server')); }
+        return $this->gaiaHostRequest('update', $message);
+    }
+    /** Read-only host status line (scheduled-task hosts only). */
+    public function HostStatus(): PromiseInterface
+    {
+        if ($this->gaiaHost === null) { return reject(new \RuntimeException('Host status is only available for a gaia_host server')); }
+        return $this->gaiaHost->request('status')->then(static fn (array $status): string => \Civ13\Local\GaiaHostControl::describe($status));
+    }
+    public function hasGaiaHost(): bool { return $this->gaiaHost !== null; }
+    /** Accepted means the host script took the action; it finishes in the background. */
+    private function gaiaHostRequest(string $action, ?Message $message): PromiseInterface
+    {
+        return $this->gaiaHost->request($action)->then(static function (array $result) use ($message): mixed {
+            $result['outcome'] = 'accepted';
+            return $message ? $message->react('👍')->then(static fn () => $result) : $result;
+        });
     }
 
     /** Success is acknowledged only after the supervisor supplies a bound completion result. */
