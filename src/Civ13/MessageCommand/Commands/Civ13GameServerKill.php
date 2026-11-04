@@ -27,6 +27,9 @@ class Civ13GameServerKill extends Civ13GameServerMessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $message->react('⏱️')->then(fn () => $this->gameserver->Kill($message));
+        return $message->react('⏱️')->then(fn () => $this->gameserver->Kill($message))->then(
+            null,
+            fn (\Throwable $error): PromiseInterface => $this->civ13->reply($message, $error->getMessage())
+        );
     }
 }

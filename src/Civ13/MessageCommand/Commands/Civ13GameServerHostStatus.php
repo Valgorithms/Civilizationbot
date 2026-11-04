@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is a part of the Civilizationbot project.
+ *
+ * Copyright (c) 2021-present Valithor Obsidion <valithor@civ13.org>
+ *
+ * This file is subject to the MIT license that is bundled
+ * with this source code in the LICENSE.md file.
+ */
+
+namespace Civ13\MessageCommand\Commands;
+
+use Civ13\MessageCommand\Civ13GameServerMessageCommand;
+use Discord\Parts\Channel\Message;
+use React\Promise\PromiseInterface;
+
+/**
+ * Handles the "HostStatus" command: the host script's read-only status line.
+ */
+class Civ13GameServerHostStatus extends Civ13GameServerMessageCommand
+{
+    /**
+     * @inheritDoc
+     */
+    public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
+    {
+        return $this->gameserver->HostStatus()->then(
+            fn (string $line): PromiseInterface => $this->civ13->reply($message, $line),
+            fn (\Throwable $error): PromiseInterface => $this->civ13->reply($message, $error->getMessage())
+        );
+    }
+}

@@ -34,6 +34,18 @@ final class PortableProfile
                     throw new \InvalidArgumentException('Explicit native lifecycle and server activation flags required');
                 }
             }
+            if (isset($server['gaia_host'])) {
+                $gaia = $server['gaia_host'];
+                if (!is_array($gaia) || !is_bool($gaia['enabled'] ?? null) || ($gaia['enabled'] && !$server['enabled'])) {
+                    throw new \InvalidArgumentException('Explicit gaia_host and server activation flags required');
+                }
+                if ($gaia['enabled']) {
+                    if (($server['native_lifecycle']['enabled'] ?? false) === true) { throw new \InvalidArgumentException('Enable either gaia_host or native_lifecycle, not both'); }
+                    foreach (['python', 'script', 'config'] as $field) {
+                        if (!is_string($gaia[$field] ?? null) || !self::absolute($gaia[$field]) || !is_file($gaia[$field])) { throw new \InvalidArgumentException('gaia_host needs an existing absolute '.$field.' path'); }
+                    }
+                }
+            }
             foreach (['discussion','playercount','ooc','lobby','asay','ic','transit','adminlog','debug','garbage','runtime','attack'] as $field) {
                 if (!is_string($server[$field] ?? null) || ($server[$field] !== '' && !preg_match('/^[0-9]{17,20}$/D', $server[$field]))) { throw new \InvalidArgumentException('Explicit channel string required'); }
             }

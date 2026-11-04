@@ -630,6 +630,12 @@ class Slash
                 return $interaction->acknowledgeWithResponse(true)->then(function () use ($interaction, $gameserver): PromiseInterface {
                     try { $request = $gameserver->Restart(); }
                     catch (\Throwable) { return $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Native restart is unavailable; inspect the local supervisor profile.')); }
+                    if ($gameserver->hasGaiaHost()) {
+                        return $request->then(
+                            fn () => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent("Restart accepted: the server is saving, then starting again. Use `{$gameserver->key}hoststatus` to follow it.")),
+                            fn (\Throwable $error) => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Restart not started: '.substr($error->getMessage(), 0, 300)))
+                        );
+                    }
                     return $request->then(
                         fn () => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('The local supervisor reports save-safe restart and readiness.')),
                         fn () => $interaction->updateOriginalResponse(Civ13::createBuilder()->setContent('Native restart rejected or outcome unknown. Inspect the retained supervisor operation before retrying.'))

@@ -27,6 +27,9 @@ class Civ13GameServerHost extends Civ13GameServerMessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $message->react('⏱️')->then(fn () => $this->gameserver->Host($message));
+        return $message->react('⏱️')->then(fn () => $this->gameserver->Host($message))->then(
+            null,
+            fn (\Throwable $error): PromiseInterface => $this->civ13->reply($message, $error->getMessage())
+        );
     }
 }
