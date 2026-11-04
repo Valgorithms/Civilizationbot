@@ -176,6 +176,15 @@ $civ->verifier=(new ReflectionClass(OocVerifier::class))->newInstanceWithoutCons
 $members->list=[(new ReflectionClass(OocMember::class))->newInstanceWithoutConstructor()]; $server->players=['onlineadmin'];
 $handler->handle($asay);
 if(count($civ->staffMessages)!==1 || $civ->verifier->lookups!==[['discord','staff-member']]){throw new RuntimeException('Online staff suppression or actor isolation lost');}
+// Hosted verification outage: staff presence is unknown, so the asay is still
+// accepted and staff are notified instead of the endpoint failing with a 500.
+$civ->verifier->failure=new \Civ13\Exceptions\VerifierException('Hosted verification unavailable');
+$relayed=count($server->calls);
+if($handler->handle($asay)->getStatusCode()!==202||count($server->calls)!==$relayed+1){throw new RuntimeException('Verifier outage failed staff webhook');}
+if(count($civ->staffMessages)!==2||!str_contains($civ->staffMessages[1][1],'<@&admin-role>')){throw new RuntimeException('Verifier outage suppressed staff notification');}
+$long=$asay->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['message'=>str_repeat('é',4000)])]);
+if($handler->handle($long)->getStatusCode()!==202||!isset($civ->staffMessages[2][1])||strlen($civ->staffMessages[2][1])>2000||!str_contains($civ->staffMessages[2][1],'<@&admin-role>')||!preg_match('//u',$civ->staffMessages[2][1])){throw new RuntimeException('Long asay notification exceeds plain-content limit');}
+$civ->verifier->failure=null;array_pop($civ->staffMessages);array_pop($civ->staffMessages);$civ->verifier->lookups=[['discord','staff-member']];
 foreach(['ahelpmessage','urgentasaymessage'] as $method){
     $staff=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>$method,'data'=>json_encode(['ckey'=>['untrusted'=>'identity'],'message'=>'display %41 + é'])]);
     $lookups=count($civ->verifier->lookups);
