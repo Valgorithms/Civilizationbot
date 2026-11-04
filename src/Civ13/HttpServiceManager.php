@@ -243,8 +243,13 @@ class HttpServiceManager
             $this->logger->error('Round persistence failed', ['exception' => $error]);
             return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
         }
-        $role = $this->civ13->role_ids['round_start'] ?? null;
-        $message = ($role ? "<@&$role>, " : '').'New round `'.$data['round'].'` has started!';
+        // A round reloaded from a save keeps its identity; announce it without the ping.
+        if (in_array($data['resumed'] ?? false, [true, 1, '1'], true)) {
+            $message = 'Round `'.$data['round'].'` has resumed from a save.';
+        } else {
+            $role = $this->civ13->role_ids['round_start'] ?? null;
+            $message = ($role ? "<@&$role>, " : '').'New round `'.$data['round'].'` has started!';
+        }
         $this->civ13->sendMessage($channel, $message)->then(null, function (\Throwable $error): void {
             $this->logger->error('Queued round notification failed', ['exception' => $error]);
         });
