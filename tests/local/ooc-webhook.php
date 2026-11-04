@@ -182,7 +182,9 @@ $civ->verifier->failure=new \Civ13\Exceptions\VerifierException('Hosted verifica
 $relayed=count($server->calls);
 if($handler->handle($asay)->getStatusCode()!==202||count($server->calls)!==$relayed+1){throw new RuntimeException('Verifier outage failed staff webhook');}
 if(count($civ->staffMessages)!==2||!str_contains($civ->staffMessages[1][1],'<@&admin-role>')){throw new RuntimeException('Verifier outage suppressed staff notification');}
-$civ->verifier->failure=null;array_pop($civ->staffMessages);$civ->verifier->lookups=[['discord','staff-member']];
+$long=$asay->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['message'=>str_repeat('é',4000)])]);
+if($handler->handle($long)->getStatusCode()!==202||strlen($civ->staffMessages[2][1]??'')>2000){throw new RuntimeException('Long asay notification exceeds plain-content limit');}
+$civ->verifier->failure=null;array_pop($civ->staffMessages);array_pop($civ->staffMessages);$civ->verifier->lookups=[['discord','staff-member']];
 foreach(['ahelpmessage','urgentasaymessage'] as $method){
     $staff=$request($valid)->withQueryParams(['key'=>'synthetic-ooc-key','method'=>$method,'data'=>json_encode(['ckey'=>['untrusted'=>'identity'],'message'=>'display %41 + é'])]);
     $lookups=count($civ->verifier->lookups);

@@ -316,7 +316,9 @@ class HttpServiceManager
                 }
             }
             if ($urgent && isset($this->civ13->channel_ids['staff_bot']) && $channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$message`");
+                // Keep the ping in plain content: sendMessage() moves content over 2000 bytes into an embed/file, which never pings.
+                $excerpt = strlen($message) > 1500 ? mb_strcut($message, 0, 1500, 'UTF-8').'...' : $message;
+                $this->civ13->sendMessage($channel, "<@&{$this->civ13->role_ids['Admin']}>, an urgent asay message has been received in the {$gameserver->name} server. Please see the relevant message in <#{$gameserver->asay}>: `$excerpt`");
             }
         }
 
