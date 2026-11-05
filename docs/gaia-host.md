@@ -28,8 +28,9 @@ names the game folder, scheduled task, git and compiler.
 | `<key>hoststatus` | `status` | One line: port, world ready, players, last action and phase. |
 
 Text commands need the Ambassador role. The staff panel's Host, Kill and Restart
-buttons need the Admin, Chief Technical Officer or Ambassador role; moderation
-permissions alone open the panel but not these buttons. Actions are accepted within
+buttons need the Admin, Chief Technical Officer or Ambassador role. `/staffpanel`
+needs Moderate Members by default (command permission overrides can grant it to
+others); that permission alone does not unlock these buttons. Actions are accepted within
 seconds and finish in the script's detached worker; `hoststatus` shows progress
 and errors. Only one action runs at a time.
 
