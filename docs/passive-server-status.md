@@ -23,9 +23,22 @@ heartbeat may reflect a long save or pause rather than a crash. No recovery,
 restart or game command is triggered.
 
 Unknown/stale observations clear the current player cache and omit current game
-metadata from status and current-round embeds. The player-count channel uses
-`unknown` rather than zero; its existing ten-minute Discord update cadence is
-unchanged. The current-round embed retains its existing one-minute update
+metadata from status and current-round embeds. The player-count channel
+(`<prefix>-<count>`, renamed every ten minutes) shows `offline` once the
+heartbeat is stale or `serverdata.txt` has been missing for 120 seconds (the
+game deletes and rewrites it, so a brief absence is ignored), rather than zero or
+`unknown`. While a fresh baseline is still being observed, after an
+unreadable or malformed read, and for remote/unobserved servers, it keeps its
+current name.
+
+A server that heads a Civ13 region group (`scripts/shard-group` in Civ13) lists
+the other regions' worktree directories in `shards`, for example
+`"shards": ["D:/Civ13Regions/nomads/surface", "D:/Civ13Regions/nomads/caves"]`.
+Each region's `serverdata.txt` gets its own heartbeat, sampled on the same
+15-second timer, and the channel shows the distinct ckeys across every advancing
+world, so a traveller seen in two regions counts once. It reads `offline` only
+when every world is stale or missing. The status and round embeds still describe
+the server's own world. The current-round embed retains its existing one-minute update
 cadence. Remote/unobserved servers explicitly show unknown health and label
 cached players unverified. This does not change the separate legacy serverinfo
 web-service or verification-API indicators.

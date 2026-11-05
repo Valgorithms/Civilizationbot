@@ -227,14 +227,30 @@ namespace {
         $server->discord = $discord;
         $server->playercount = 'fixture';
         $server->playercountChannelUpdate();
-        check($channel->name === 'nomads-unknown' && $repository->saves === 1, 'Unknown count was rendered as zero/current');
+        check($channel->name === 'nomads-offline' && $repository->saves === 1, 'Stale world was not shown as offline');
         $server->playercountChannelUpdate();
-        check($repository->saves === 1, 'Unchanged unknown count repeatedly saved');
+        check($repository->saves === 1, 'Unchanged offline name repeatedly saved');
 
         $now = 150;
         file_put_contents($path, record('300'));
         $server->playercountChannelUpdate();
-        check($channel->name === 'nomads-0', 'Healthy zero-player world was not distinguished from unknown');
+        check($channel->name === 'nomads-0', 'Healthy zero-player world was not distinguished from offline');
+        // A shard region of the same group adds its players; a ckey seen in both worlds counts once.
+        mkdir($root.'/region');
+        $shards = new ReflectionProperty($server, 'shardHeartbeats');
+        $shards->setValue($server, [$root.'/region' => new Civ13\ServerHeartbeat($root.'/region/serverdata.txt', $clock)]);
+        file_put_contents($root.'/region/serverdata.txt', record('10', 'b&c'));
+        $server->playercountChannelUpdate();
+        check($channel->name === 'nomads-0', 'A region still being baselined changed the count');
+        $now = 165;
+        file_put_contents($path, record('301', 'c'));
+        file_put_contents($root.'/region/serverdata.txt', record('11', 'b&c'));
+        $server->playercountChannelUpdate();
+        check($channel->name === 'nomads-2' && $server->players === ['c'], 'Shard players were not added to the group count');
+        unlink($root.'/region/serverdata.txt');
+        rmdir($root.'/region');
+        $shards->setValue($server, []);
+        check(! array_key_exists('shardHeartbeats', $server->__toArray()) && ! array_key_exists('worlds', $server->__toArray()), 'Shard observation leaked into serialization');
         check(fields($server->generateServerstatusEmbed())['Nomads'] === 'Heartbeat advancing', 'Recovery not reflected in renderer');
         unlink($path);
         check(fields($server->generateServerstatusEmbed())['Nomads'] === 'Unknown' && ! file_exists($path), 'Missing data failed closed or was recreated');

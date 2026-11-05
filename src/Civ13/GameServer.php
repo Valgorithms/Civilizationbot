@@ -132,6 +132,10 @@ class GameServer
 
     public string $bancheck_cache = '';
     private ?ServerHeartbeat $heartbeat = null;
+    /** @var array<string, ServerHeartbeat> Shard region directory => its heartbeat. */
+    private array $shardHeartbeats = [];
+    /** @var list<array{state:string, reason:string, players:list<string>}> Last local observation of every world in the group. */
+    private array $worlds = [];
 
     /**
      * @param Civ13                $civ13   The bot instance (held by reference).
@@ -215,6 +219,13 @@ class GameServer
             }
         }
         $this->serverdata = $this->basedir.Civ13::serverdata;
+        // Other region worlds of this server's shard group (Civ13 scripts/shard-group), counted in the player-count channel.
+        foreach (is_array($options['shards'] ?? null) ? $options['shards'] : [] as $shard) {
+            if (! is_string($shard) || $shard === '') {
+                continue;
+            }
+            $this->shardHeartbeats[rtrim($shard, '/\\')] = new ServerHeartbeat(rtrim($shard, '/\\').Civ13::serverdata);
+        }
         $this->discord2unban = $this->basedir.Civ13::discord2unban;
         $this->discord2ban = $this->basedir.Civ13::discord2ban;
         $this->admins = $options['admin_file'] ?? $this->basedir.Civ13::admins;
@@ -332,18 +343,32 @@ class GameServer
     private function refreshLocalServerStatus(): array
     {
         if (! $this->enabled || $this->ip !== ($this->civ13->httpServiceManager->httpHandler->external_ip ?? null)) {
+            $this->worlds = [];
+
             return ['state' => 'unknown', 'reason' => 'No enabled local heartbeat observation', 'age' => null, 'data' => null];
         }
         $status = ($this->heartbeat ??= new ServerHeartbeat($this->serverdata))->poll();
-        $this->players = [];
-        if ($status['data'] !== null) {
-            $data = self::heartbeatServerdata($status['data']);
-            $this->players = array_values(array_filter(array_map(
-                fn ($player) => Civ13::sanitizeInput($player), explode('&', $data['ckey_list'])
-            )));
+        $this->players = self::heartbeatPlayers($status);
+        $this->worlds = [['state' => $status['state'], 'reason' => $status['reason'], 'players' => $this->players]];
+        // Shards share the 15-second poll so each heartbeat keeps its own progress evidence.
+        foreach ($this->shardHeartbeats as $heartbeat) {
+            $shard = $heartbeat->poll();
+            $this->worlds[] = ['state' => $shard['state'], 'reason' => $shard['reason'], 'players' => self::heartbeatPlayers($shard)];
         }
 
         return $status;
+    }
+
+    /** @return list<string> */
+    private static function heartbeatPlayers(array $status): array
+    {
+        if ($status['data'] === null) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            fn ($player) => Civ13::sanitizeInput($player), explode('&', self::heartbeatServerdata($status['data'])['ckey_list'])
+        )));
     }
 
     private static function heartbeatServerdata(string $data): array
@@ -720,7 +745,7 @@ class GameServer
     public function playercountTimer(): TimerInterface
     {
         // Update playercount channel every 10 minutes
-        if (! isset($this->timers['playercount_timer]'])) {
+        if (! isset($this->timers['playercount_timer'])) {
             $this->timers['playercount_timer'] = $this->loop->addPeriodicTimer(600, fn () => $this->playercountChannelUpdate());
         }
 
@@ -737,8 +762,11 @@ class GameServer
      */
     public function playercountChannelUpdate(): PromiseInterface
     {
-        $status = $this->refreshLocalServerStatus();
-        $count = $status['data'] === null ? 'unknown' : (string) count($this->players);
+        $this->refreshLocalServerStatus();
+        // Players across the whole shard group, "offline" when no world is running, unchanged while unobserved.
+        if (($label = PlayercountChannel::label($this->worlds)) === null) {
+            return resolve(null);
+        }
         if (! $channel = $this->discord->getChannel($this->playercount)) {
             $this->logger->warning($err = "Channel {$this->playercount} doesn't exist!");
 
@@ -749,9 +777,8 @@ class GameServer
 
             return reject(new PartException($err));
         }
-        [$channelPrefix, $existingCount] = explode('-', $channel->name);
-        if ($existingCount !== $count) {
-            $channel->name = "{$channelPrefix}-{$count}";
+        if (($name = PlayercountChannel::rename($channel->name, $label)) !== null) {
+            $channel->name = $name;
 
             return $channel->guild->channels->save($channel);
         }
@@ -2080,7 +2107,7 @@ class GameServer
     public function __toArray(): array
     {
         $array = get_object_vars($this);
-        unset($array['civ13'], $array['heartbeat']);
+        unset($array['civ13'], $array['heartbeat'], $array['shardHeartbeats'], $array['worlds']);
 
         return $array;
     }
