@@ -20,11 +20,25 @@ $up = fn (string ...$players): array => ['state' => 'advancing', 'reason' => 'He
 $stale = ['state' => 'stale', 'reason' => 'No heartbeat progress observed for at least 120 seconds', 'players' => []];
 $missing = ['state' => 'unknown', 'reason' => ServerHeartbeat::MISSING, 'players' => []];
 $waiting = ['state' => 'unknown', 'reason' => 'Waiting to observe heartbeat progress', 'players' => []];
+$torn = ['state' => 'unknown', 'reason' => ServerHeartbeat::MALFORMED, 'players' => []];
 
 check(PlayercountChannel::label([]) === null, 'An unobserved (remote or disabled) server must keep its name');
 check(PlayercountChannel::label([$stale]) === 'offline', 'A stale heartbeat must read offline, not unknown');
 check(PlayercountChannel::label([$missing]) === 'offline', 'A missing serverdata.txt must read offline');
 check(PlayercountChannel::label([$waiting]) === null, 'A baseline read must not rename the channel');
+check(PlayercountChannel::label([$torn]) === null, 'A torn or unreadable read must not claim offline');
+
+// Only an absent file reports MISSING; an existing but malformed file reports MALFORMED.
+$root = sys_get_temp_dir().'/bot-playercount-'.bin2hex(random_bytes(8));
+mkdir($root, 0700);
+try {
+    check((new ServerHeartbeat($root.'/serverdata.txt'))->poll()['reason'] === ServerHeartbeat::MISSING, 'Absent file must read as missing');
+    file_put_contents($root.'/serverdata.txt', '<b>Server Status</b>: Onl');
+    check((new ServerHeartbeat($root.'/serverdata.txt'))->poll()['reason'] === ServerHeartbeat::MALFORMED, 'Torn file must read as malformed');
+} finally {
+    if (is_file($root.'/serverdata.txt')) { unlink($root.'/serverdata.txt'); }
+    rmdir($root);
+}
 check(PlayercountChannel::label([$up()]) === '0', 'A running empty world must read 0');
 check(PlayercountChannel::label([$up('a', 'b')]) === '2', 'A running world must read its player count');
 check(PlayercountChannel::label([$up('a'), $up('b', 'c'), $stale]) === '3', 'Shard regions must add up');

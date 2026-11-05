@@ -8,7 +8,8 @@ namespace Civ13;
 final class ServerHeartbeat
 {
     public const STALE_SECONDS = 120.0;
-    public const MISSING = 'Heartbeat missing, unreadable or malformed';
+    public const MISSING = 'Heartbeat file missing';
+    public const MALFORMED = 'Heartbeat unreadable or malformed';
     private ?string $previous = null;
     private ?float $lastPoll = null;
     private ?float $lastProgress = null;
@@ -35,7 +36,8 @@ final class ServerHeartbeat
             $this->previous = $this->lastPoll = $this->lastProgress = null;
             $this->confirmed = false;
 
-            return ['state' => 'unknown', 'reason' => self::MISSING, 'age' => null, 'data' => null];
+            // Only an absent file means the writer is gone; a torn or unreadable read may be a world mid-rewrite.
+            return ['state' => 'unknown', 'reason' => $data === null ? self::MISSING : self::MALFORMED, 'age' => null, 'data' => null];
         }
         $token = ltrim($matches[1][0], '0');
         $reset = $this->lastPoll === null || $now < $this->lastPoll
@@ -65,10 +67,14 @@ final class ServerHeartbeat
         ];
     }
 
-    private function read(): string|false
+    /** @return string|false|null Null when no file exists at the path. */
+    private function read(): string|false|null
     {
         // No touch(), stat-based freshness or socket probe. Bound reads and reject special files.
         clearstatcache(true, $this->path);
+        if (! file_exists($this->path)) {
+            return null;
+        }
         if (! is_file($this->path) || ! is_readable($this->path)) {
             return false;
         }

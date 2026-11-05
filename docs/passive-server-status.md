@@ -26,8 +26,9 @@ Unknown/stale observations clear the current player cache and omit current game
 metadata from status and current-round embeds. The player-count channel
 (`<prefix>-<count>`, renamed every ten minutes) shows `offline` once the
 heartbeat is stale or `serverdata.txt` is missing, rather than zero or
-`unknown`. While a fresh baseline is still being observed, and for
-remote/unobserved servers, it keeps its current name.
+`unknown`. While a fresh baseline is still being observed, after an
+unreadable or malformed read, and for remote/unobserved servers, it keeps its
+current name.
 
 A server that heads a Civ13 region group (`scripts/shard-group` in Civ13) lists
 the other regions' worktree directories in `shards`, for example
