@@ -42,11 +42,13 @@ final class PlayercountChannel
         return $waiting ? null : self::OFFLINE;
     }
 
-    /** The new channel name, or null when it already shows $label. The prefix is everything before the last "-". */
+    /**
+     * The new channel name, or null when it already shows $label. A trailing count, "offline" or
+     * "unknown" is replaced; any other name is kept whole as the prefix.
+     */
     public static function rename(string $current, string $label): ?string
     {
-        $cut = strrpos($current, '-');
-        $prefix = $cut === false ? $current : substr($current, 0, $cut);
+        $prefix = preg_match('/^(.*)-(?:[0-9]+|offline|unknown)$/sD', $current, $match) === 1 ? $match[1] : $current;
         $name = "{$prefix}-{$label}";
 
         return $name === $current ? null : $name;

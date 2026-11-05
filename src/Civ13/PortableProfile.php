@@ -46,11 +46,11 @@ final class PortableProfile
                     }
                 }
             }
-            if (isset($server['shards'])) {
+            if (array_key_exists('shards', $server)) {
                 // Other region worlds of the same shard group, each a directory holding its own serverdata.txt.
                 if (!is_array($server['shards']) || !array_is_list($server['shards']) || count($server['shards']) > 16) { throw new \InvalidArgumentException('shards must be a list of at most 16 region directories'); }
                 foreach ($server['shards'] as $shard) {
-                    if (!is_string($shard) || !self::absolute($shard) || str_contains($shard, "\0")) { throw new \InvalidArgumentException('shards needs absolute region directory paths'); }
+                    if (!self::absoluteAdminFile($shard)) { throw new \InvalidArgumentException('shards needs absolute region directory paths'); }
                 }
             }
             foreach (['discussion','playercount','ooc','lobby','asay','ic','transit','adminlog','debug','garbage','runtime','attack'] as $field) {

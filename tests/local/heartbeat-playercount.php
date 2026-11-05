@@ -38,5 +38,6 @@ check(PlayercountChannel::rename('pers-offline', 'offline') === null, 'An unchan
 check(PlayercountChannel::rename('pers-offline', '4') === 'pers-4', 'Coming back up must show the count');
 check(PlayercountChannel::rename('nomads-eu-12', '13') === 'nomads-eu-13', 'A hyphenated prefix must survive');
 check(PlayercountChannel::rename('pers', '2') === 'pers-2', 'A bare prefix gains a count');
+check(PlayercountChannel::rename('nomads-eu', '2') === 'nomads-eu-2', 'A hyphenated prefix without a count is kept whole');
 
 echo "Player-count channel contracts passed\n";
