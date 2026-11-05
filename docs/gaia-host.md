@@ -27,8 +27,10 @@ names the game folder, scheduled task, git and compiler.
 | `<key>update` | `update`: pull and compile while stopped | Accepted or refused. |
 | `<key>hoststatus` | `status` | One line: port, world ready, players, last action and phase. |
 
-Permissions are unchanged: text commands need the Ambassador role, and the
-staff panel buttons keep the panel's existing staff check. Actions are accepted within
+Text commands need the Ambassador role. The staff panel's Host, Kill and Restart
+buttons need the Admin, Chief Technical Officer or Ambassador role. `/staffpanel`
+needs Moderate Members by default (command permission overrides can grant it to
+others); that permission alone does not unlock these buttons. Actions are accepted within
 seconds and finish in the script's detached worker; `hoststatus` shows progress
 and errors. Only one action runs at a time.
 

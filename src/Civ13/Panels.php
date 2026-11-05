@@ -192,7 +192,8 @@ final class Panels
     /** Keep the private response open until the selected control settles. */
     private function serverAction(Interaction $i, string $key, string $method): PromiseInterface
     {
-        if (! $this->isStaff($i->member)) {
+        // Starting, stopping and restarting a server affects every player, so these need a role.
+        if (! $this->hasServerRole($i->member)) {
             return $this->deny($i);
         }
         $server = $this->civ13->enabled_gameservers[$key] ?? null;
@@ -416,7 +417,7 @@ final class Panels
 
     // --- helpers -------------------------------------------------
 
-    private function isStaff(?Member $member): bool
+    private function hasServerRole(?Member $member): bool
     {
         if ($member === null) {
             return false;
@@ -425,6 +426,17 @@ final class Panels
             if (isset($this->civ13->role_ids[$roleName]) && $member->roles->has($this->civ13->role_ids[$roleName])) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    private function isStaff(?Member $member): bool
+    {
+        if ($member === null) {
+            return false;
+        }
+        if ($this->hasServerRole($member)) {
+            return true;
         }
         $perms = $member->getPermissions();
 
