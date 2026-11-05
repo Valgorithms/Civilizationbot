@@ -20,12 +20,32 @@ final class PortableProcess
     /** Hold the returned handle for the lifetime of the child. */
     public static function lock(string $state): mixed
     {
-        $handle = fopen($state.'/bot.lock', 'c+');
-        if (!$handle || !flock($handle, LOCK_EX | LOCK_NB)) {
-            if (is_resource($handle)) { fclose($handle); }
-            throw new \RuntimeException('Portable instance already running');
+        $handle = @fopen($state.'/bot.lock', 'c+');
+        if (!$handle) { throw new \RuntimeException('Portable state lock unavailable'); }
+        // status() holds the lock for a moment to probe it; retry briefly so a probe never
+        // makes a starting bot or a reloading supervisor think another instance owns it.
+        for ($attempt = 0; !flock($handle, LOCK_EX | LOCK_NB); $attempt++) {
+            if ($attempt >= 10) { fclose($handle); throw new \RuntimeException('Portable instance already running'); }
+            usleep(25000);
         }
         return $handle;
+    }
+
+    /**
+     * Read-only state for the launcher. running probes the instance lock (held by the live bot
+     * for its lifetime) and releases it at once; the markers say what the supervisor will do next.
+     * A state directory whose lock file cannot be opened is an error, not a running bot.
+     */
+    public static function status(string $state): array
+    {
+        $handle = @fopen($state.'/bot.lock', 'c+');
+        if (!$handle) { throw new \RuntimeException('Portable state lock unavailable'); }
+        // Single non-blocking attempt, released at once; lock() retries around this window.
+        $running = !flock($handle, LOCK_EX | LOCK_NB);
+        if (!$running) { flock($handle, LOCK_UN); }
+        fclose($handle);
+        return ['running'=>$running,'stop_pending'=>is_file($state.'/stop.request'),'reload_pending'=>is_file($state.'/reload.request'),
+                'state_dir'=>$state,'stdout_log'=>$state.'/stdout.log','stderr_log'=>$state.'/stderr.log'];
     }
 
     public static function requestStop(string $state): void
