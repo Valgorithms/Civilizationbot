@@ -42,6 +42,10 @@ try {
     [$status, $error] = $run('status');
     gaiaCheck($error === null && $status['world']['clients'] === 3, 'status answer');
     gaiaCheck(GaiaHostControl::describe($status) === 'Server port is open. World ready. 3 players. Last action: stop (done).', 'status line: '.GaiaHostControl::describe($status));
+    $region = ['listening' => true, 'state' => 'awake', 'world' => ['ready' => true, 'clients' => 2],
+        'regions' => [['id' => 'gaia', 'name' => 'Gaia', 'state' => 'awake', 'players' => 2], ['id' => 'deep', 'name' => 'The Deep <@&1>', 'state' => 'asleep', 'players' => null], 'junk']];
+    gaiaCheck(GaiaHostControl::describe($region) === "Server port is open. World ready. 2 players.\nRegions: Gaia: awake, 2 players; The Deep 1: asleep.", 'region line: '.GaiaHostControl::describe($region));
+    gaiaCheck(str_starts_with(GaiaHostControl::describe(['state' => 'cold', 'listening' => false]), 'Server is asleep (stopped'), 'cold line');
     [$value, $error] = $run('start');
     gaiaCheck($value === null && $error instanceof RuntimeException && $error->getMessage() === 'Refused: the server is already running', 'refusal text');
     [$value, $error] = $run('stop');

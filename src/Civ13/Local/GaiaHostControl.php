@@ -44,7 +44,11 @@ final class GaiaHostControl
     /** One line for Discord from a status answer. */
     public static function describe(array $status): string
     {
-        $parts = [($status['listening'] ?? false) ? 'Server port is open.' : 'Server is not running.'];
+        $parts = [match ($status['state'] ?? null) {
+            'asleep' => 'Server is asleep (frozen in memory; a join or travel wakes it).',
+            'cold' => 'Server is asleep (stopped after its last save; a join or travel starts it).',
+            default => ($status['listening'] ?? false) ? 'Server port is open.' : 'Server is not running.',
+        }];
         $world = $status['world'] ?? null;
         if (is_array($world)) {
             $parts[] = ($world['ready'] ?? false) ? 'World ready' : 'World not ready';
@@ -57,7 +61,16 @@ final class GaiaHostControl
             if (is_string($operation['error'] ?? null) && $operation['error'] !== '') { $line .= ': '.substr($operation['error'], 0, 200); }
             $parts[] = $line;
         }
-        return implode(' ', array_map(static fn ($part) => str_ends_with($part, '.') ? $part : $part.'.', $parts));
+        $line = implode(' ', array_map(static fn ($part) => str_ends_with($part, '.') ? $part : $part.'.', $parts));
+        // A region host (Civ13 scripts/shard-group) also lists every region of its group.
+        $regions = [];
+        foreach (is_array($status['regions'] ?? null) ? array_slice($status['regions'], 0, 16) : [] as $region) {
+            if (!is_array($region) || !is_string($region['name'] ?? null) || !is_string($region['state'] ?? null)) { continue; }
+            $name = substr(preg_replace('/[^\w \-\'().]/u', '', $region['name']) ?? '', 0, 64);
+            $state = preg_replace('/[^a-z]/', '', $region['state']) ?? '';
+            $regions[] = "{$name}: {$state}".(is_int($region['players'] ?? null) ? ", {$region['players']} players" : '');
+        }
+        return $regions === [] ? $line : $line."\nRegions: ".implode('; ', $regions).'.';
     }
 
     private static function absolute(string $path): bool { return str_starts_with($path, '/') || (bool) preg_match('/^[A-Za-z]:[\\\\\/]/', $path); }
