@@ -28,6 +28,18 @@ final class LifecycleConsumerMember extends \Discord\Parts\User\Member
 {
     public function __get(string $name) { return new class { public function has($id): bool { return $id === 'synthetic-staff'; } }; }
 }
+final class LifecycleConsumerModeration extends \Discord\Parts\Permissions\RolePermission
+{
+    public function __get(string $key): mixed { return $key === 'moderate_members'; }
+}
+final class LifecycleConsumerModerator extends \Discord\Parts\User\Member
+{
+    public function __get(string $name) { return new class { public function has($id): bool { return false; } }; }
+    public function getPermissions($channel = null): ?\Discord\Parts\Permissions\RolePermission
+    {
+        return (new ReflectionClass(LifecycleConsumerModeration::class))->newInstanceWithoutConstructor();
+    }
+}
 final class LifecycleConsumerServer extends \Civ13\GameServer
 {
     public Deferred $operation;
@@ -117,6 +129,14 @@ foreach (['opendream', 'legacy', 'native'] as $mode) {
 $reset('opendream', 'success'); $i = $interaction(); $i->fixtureMember = null;
 $action->invoke($panel, $i, 'fixture', 'Restart');
 lifecycleConsumerCheck($server->requests === [] && $i->privateAcks === [] && $i->initial[0][1] === true, 'Revoked staff member controlled a server');
+// Moderation permissions open the staff panel but do not start, stop or restart a server.
+$moderator = (new ReflectionClass(LifecycleConsumerModerator::class))->newInstanceWithoutConstructor();
+lifecycleConsumerCheck((new ReflectionMethod($panel, 'isStaff'))->invoke($panel, $moderator) === true, 'Moderator lost staff panel access');
+foreach (['Host', 'Kill', 'Restart'] as $method) {
+    $reset('native', 'success'); $i = $interaction(); $i->fixtureMember = $moderator;
+    $action->invoke($panel, $i, 'fixture', $method);
+    lifecycleConsumerCheck($server->requests === [] && $i->privateAcks === [] && $i->initial[0][1] === true, 'Moderator without a server role ran '.$method);
+}
 $i = $interaction(); $failed = false;
 $action->invoke($panel, $i, 'fixture', 'Restart')->then(null, static function () use (&$failed) { $failed = true; });
 $i->ack->reject(new RuntimeException('Synthetic expired interaction'));
