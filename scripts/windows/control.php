@@ -6,8 +6,8 @@ require __DIR__.'/../../src/Civ13/DefaultBranchGuard.php';
 use Civ13\PortableProfile;
 use Civ13\PortableProcess;
 try {
+    $json=in_array($argv[1] ?? '',['status','check-update'],true);
     if (count($argv)!==3 || !in_array($argv[1],['check','start','stop','update','status','check-update'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop|update|status|check-update ABSOLUTE_PROFILE'); }
-    $json=in_array($argv[1],['status','check-update'],true);
     $profile=PortableProfile::load($argv[2]);
     PortableProfile::assertRoot($profile, dirname(__DIR__, 2));
     if ($argv[1]==='stop') { PortableProcess::requestStop($profile['state_dir']); exit(0); }

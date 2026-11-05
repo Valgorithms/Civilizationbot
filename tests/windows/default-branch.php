@@ -90,6 +90,14 @@ try {
     finally { fclose($lock); }
     [$code,$out]=command([PHP_BINARY,$app.'/scripts/windows/control.php','status',$root.'/profile.json']);check(json_decode($out,true,8,JSON_THROW_ON_ERROR)['running']===false);
     [$code,$out]=command([PHP_BINARY,$app.'/scripts/windows/control.php','status',$root.'/missing.json'],false);check($code!==0&&json_decode($out,true,8,JSON_THROW_ON_ERROR)['ok']===false);
+    [$code,$out]=command([PHP_BINARY,$app.'/scripts/windows/control.php','check-update'],false);check($code!==0&&str_starts_with(json_decode($out,true,8,JSON_THROW_ON_ERROR)['error'],'Usage:'));
+    // A probe holding the lock for a moment must not make a starting instance give up.
+    $holder='$h=fopen($argv[1]."/bot.lock","c+");flock($h,LOCK_EX);file_put_contents($argv[1]."/held","1");usleep(100000);flock($h,LOCK_UN);fclose($h);';
+    $pipes=[];$child=proc_open([PHP_BINARY,'-r',$holder,$state],[0=>['pipe','r']],$pipes,null,null,['bypass_shell'=>true]);fclose($pipes[0]);
+    $deadline=microtime(true)+10;while(!is_file($state.'/held')&&microtime(true)<$deadline){usleep(5000);}check(is_file($state.'/held'));
+    $owner=\Civ13\PortableProcess::lock($state);fclose($owner);proc_close($child);unlink($state.'/held');
+    check(\Civ13\PortableProcess::status($state)['running']===false);
+    try { \Civ13\PortableProcess::status($root.'/no-such-state'); check(false); } catch (RuntimeException $error) { check($error->getMessage()==='Portable state lock unavailable'); }
     putenv('CIVILIZATIONBOT_PROFILE='.$root.'/profile.json');[$code,$out,$err]=command([PHP_BINARY,$app.'/bot.php'],false);check($code!==0&&str_contains($err,'Default branch guard refused')&&!str_contains($err,'Composer must not load'));
     echo "PASS real Git default/main/upstream/origin, detached/PR/dirty/hidden/ahead/diverged/offline controls, safe FF, read-only check-update and status JSON, and actual start/update/bootstrap precredential denial\n";
 } finally {
