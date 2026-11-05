@@ -357,6 +357,7 @@ class MessageServiceManager
                 return;
             } // Ignore bots and webhooks (including slash commands) to prevent infinite loops and other issues
             if (! $this->handle($message)) { // This section will be deprecated in the future
+                $this->relayOocMessage($message);
                 $message_filtered = $this->civ13->filterMessage($message);
                 if (! empty($this->civ13->functions['message'])) {
                     foreach ($this->civ13->functions['message'] as $func) {
@@ -366,6 +367,70 @@ class MessageServiceManager
                 //else $this->logger->debug('No message variable functions found!');
             }
         });
+    }
+
+    /**
+     * Relays a plain (non-command) message posted in a server's #ooc channel to that server's in-game OOC.
+     * Only verified, non-banished members are relayed; badword matches and empty messages are dropped.
+     * A failed IPC write is marked with a 🔥 reaction; successful relays stay quiet.
+     */
+    public function relayOocMessage(Message $message): ?PromiseInterface
+    {
+        $gameserver = null;
+        foreach ($this->civ13->enabled_gameservers as $candidate) {
+            if ($candidate->ooc !== '' && $candidate->ooc === $message->channel_id) {
+                $gameserver = $candidate;
+                break;
+            }
+        }
+        if (! $gameserver) {
+            return null;
+        }
+        $own_guild = $message->guild && $message->guild->owner_id === $this->civ13->owner_id;
+        $is_bot = (bool) ($message->author->bot ?? false) || (bool) $message->webhook_id;
+        $is_command = $this->civ13->filterMessage($message)['called'];
+        $ckey = null;
+        $banished = false;
+        if ($own_guild && ! $is_bot && ! $is_command && isset($this->civ13->verifier)) {
+            $ckey = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? null;
+            $banished = isset($this->civ13->role_ids['Banished']) && $message->member && $message->member->roles->has($this->civ13->role_ids['Banished']);
+            if ($ckey && ! $banished) {
+                $banished = $this->civ13->bancheck($ckey, true, true);
+            }
+        }
+        if (! OocAutoRelay::eligible($own_guild, $is_bot, $is_command, $ckey, $banished)) {
+            return null;
+        }
+        $users = [];
+        foreach ($message->mentions ?? [] as $user) {
+            $users[$user->id] = $message->guild->members->get('id', $user->id)?->nick ?? $user->global_name ?? $user->username;
+        }
+        $roles = [];
+        foreach ($message->mention_roles ?? [] as $id => $role) {
+            if ($role) {
+                $roles[$role->id] = $role->name;
+            }
+        }
+        $channels = [];
+        if (preg_match_all('/<#(\d+)>/', $message->content, $matches)) {
+            foreach ($matches[1] as $id) {
+                if ($channel = $message->guild->channels->get('id', $id)) {
+                    $channels[$id] = $channel->name;
+                }
+            }
+        }
+        $attachments = count($message->attachments ?? []) + count($message->sticker_items ?? []);
+        if (($text = OocAutoRelay::format($message->content, $users, $roles, $channels, $attachments)) === null) {
+            return null;
+        }
+        if (OocAutoRelay::blocked($text, $this->civ13->ooc_badwords)) {
+            return null;
+        }
+        if ($gameserver->OOCMessage($text, $ckey)) {
+            return null;
+        }
+
+        return $message->react('🔥');
     }
 
     /**

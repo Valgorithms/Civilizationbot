@@ -56,12 +56,8 @@ enum ModerationMethod: string
      */
     public static function matches(string $lower, array $badwords): int|bool
     {
-        $method = $badwords['method'] ?? self::STR_CONTAINS;
-        try {
-            $moderationMethod = self::from($method);
-        } catch (\UnhandledMatchError $e) {
-            $moderationMethod = self::STR_CONTAINS;
-        }
+        $method = $badwords['method'] ?? null;
+        $moderationMethod = (is_string($method) ? self::tryFrom($method) : null) ?? self::STR_CONTAINS;
 
         return match ($moderationMethod) {
             self::EXACT => preg_match('/\b'.preg_quote($badwords['word'], '/').'\b/i', $lower),
