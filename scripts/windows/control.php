@@ -6,10 +6,18 @@ require __DIR__.'/../../src/Civ13/DefaultBranchGuard.php';
 use Civ13\PortableProfile;
 use Civ13\PortableProcess;
 try {
-    if (count($argv)!==3 || !in_array($argv[1],['check','start','stop','update'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop|update ABSOLUTE_PROFILE'); }
+    if (count($argv)!==3 || !in_array($argv[1],['check','start','stop','update','status','check-update'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop|update|status|check-update ABSOLUTE_PROFILE'); }
+    $json=in_array($argv[1],['status','check-update'],true);
     $profile=PortableProfile::load($argv[2]);
     PortableProfile::assertRoot($profile, dirname(__DIR__, 2));
     if ($argv[1]==='stop') { PortableProcess::requestStop($profile['state_dir']); exit(0); }
+    // status and check-update print one JSON line for the Civ13 launcher; neither starts, stops or merges.
+    if ($argv[1]==='status') { echo json_encode(['ok'=>true]+PortableProcess::status($profile['state_dir']),JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES)."\n"; exit(0); }
+    if ($argv[1]==='check-update') {
+        $running=PortableProcess::status($profile['state_dir'])['running'];
+        echo json_encode(['ok'=>true]+\Civ13\DefaultBranchGuard::check($profile['root'])+['running'=>$running],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES)."\n";
+        exit(0);
+    }
     $errors=PortableProfile::preflight($profile,extension_loaded(...));
     if ($errors!==[]) { throw new RuntimeException(implode('; ',$errors)); }
     if ($argv[1]==='check') { echo "Preflight passed; not started\n"; exit(0); }
@@ -50,4 +58,7 @@ try {
         }
     } while ($reload);
     exit($exit);
-} catch (Throwable $error) { fwrite(STDERR,'Portable control failed: '.$error->getMessage().PHP_EOL); exit(1); }
+} catch (Throwable $error) {
+    if ($json ?? false) { echo json_encode(['ok'=>false,'error'=>$error->getMessage()],JSON_UNESCAPED_SLASHES)."\n"; }
+    fwrite(STDERR,'Portable control failed: '.$error->getMessage().PHP_EOL); exit(1);
+}

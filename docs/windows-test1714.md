@@ -40,7 +40,17 @@ C:/php/php.exe scripts/windows/control.php update D:/Civilizationbot-local/profi
 C:/php/php.exe scripts/windows/control.php start D:/Civilizationbot-local/profile.json
 # From another terminal, requests graceful shutdown of this profile only:
 C:/php/php.exe scripts/windows/control.php stop D:/Civilizationbot-local/profile.json
+# Read-only, one JSON line each (used by the Civ13 launcher):
+C:/php/php.exe scripts/windows/control.php status D:/Civilizationbot-local/profile.json
+C:/php/php.exe scripts/windows/control.php check-update D:/Civilizationbot-local/profile.json
 ```
+
+status reports whether the state lock is held (running), any pending stop or
+reload marker, and the stdout/stderr log paths. check-update fetches origin/main
+like start does and reports current, available, behind, can_update and reason;
+it never merges, so a running bot is unaffected. can_update is true only when
+update would fast-forward a clean checkout. Both print {"ok":false,"error":...}
+and exit 1 on failure.
 
 check reads profile metadata and file presence only, never the environment contents
 or Discord. start runs one shell-free foreground PHP child; the bot holds an

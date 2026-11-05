@@ -18,6 +18,8 @@ try {
     file_put_contents($seed.'/source.txt','first');file_put_contents($seed.'/composer.lock', '{"fixture":"local dependency"}');git($seed,'add','source.txt','composer.lock');git($seed,'commit','-m','first');git($seed,'push','origin','main');command(['git','clone',$origin,$repo]);
     $verify=static fn(bool $update=false)=>DefaultBranchGuard::verify($repo,$update,'git',$origin);
     $first=git($repo,'rev-parse','HEAD');check($verify()['commit']===$first);
+    $checkUpdate=static fn()=>DefaultBranchGuard::check($repo,'git',$origin);
+    $state=$checkUpdate();check($state['current']===$first&&$state['available']===$first&&$state['behind']===0&&$state['can_update']===false&&$state['reason']==='already up to date'&&$state['fresh']===true);
     file_put_contents($repo.'/source.txt','user edit');refused(fn()=>$verify(true));check(file_get_contents($repo.'/source.txt')==='user edit');file_put_contents($repo.'/source.txt','first');
     file_put_contents($repo.'/notes.txt','unrelated');refused(fn()=>$verify(true));check(file_get_contents($repo.'/notes.txt')==='unrelated');unlink($repo.'/notes.txt');
     // Only a retained composer.lock edit may coexist with start on current main.
@@ -52,14 +54,19 @@ try {
     file_put_contents($seed.'/source.txt','second');git($seed,'add','source.txt');git($seed,'commit','-m','second');git($seed,'push','origin','main');
     file_put_contents($repo.'/composer.lock', '{"fixture":"still local"}');
     refused(fn()=>$verify());refused(fn()=>$verify(true));
+    $second=git($seed,'rev-parse','HEAD');
+    // Behind with a local lock edit: the check reports the new commit but cannot update.
+    $state=$checkUpdate();check($state['current']===$first&&$state['available']===$second&&$state['behind']===1&&$state['can_update']===false&&str_contains($state['reason'],'composer.lock')&&$state['fresh']===true);
     check(git($repo,'rev-parse','HEAD')===$first&&file_get_contents($repo.'/composer.lock')==='{"fixture":"still local"}');
     file_put_contents($repo.'/composer.lock', '{"fixture":"local dependency"}');
     refused(fn()=>$verify());check(git($repo,'rev-parse','HEAD')===$first);
-    $second=git($seed,'rev-parse','HEAD');check($verify(true)['commit']===$second&&git($repo,'symbolic-ref','--short','HEAD')==='main');
+    $state=$checkUpdate();check($state['behind']===1&&$state['can_update']===true&&$state['reason']===''&&git($repo,'rev-parse','HEAD')===$first);
+    check($verify(true)['commit']===$second&&git($repo,'symbolic-ref','--short','HEAD')==='main');
     file_put_contents($repo.'/source.txt','reviewed local code');git($repo,'add','source.txt');git($repo,'commit','-m','preserve local');$ahead=git($repo,'rev-parse','HEAD');
     refused(fn()=>$verify(true));check(git($repo,'rev-parse','HEAD')===$ahead&&file_get_contents($repo.'/source.txt')==='reviewed local code');
     file_put_contents($seed.'/source.txt','remote third');git($seed,'add','source.txt');git($seed,'commit','-m','remote third');git($seed,'push','origin','main');
     refused(fn()=>$verify(true));check(git($repo,'rev-parse','HEAD')===$ahead);
+    $state=$checkUpdate();check($state['can_update']===false&&str_contains($state['reason'],'diverged')&&$state['behind']===1&&git($repo,'rev-parse','HEAD')===$ahead);
     check(str_starts_with(str_replace('\\','/',realpath($origin)),str_replace('\\','/',realpath($root)).'/'));rename($origin,$root.'/offline.git');
     refused(fn()=>$verify());check(git($repo,'rev-parse','HEAD')===$ahead);
 
@@ -74,10 +81,17 @@ try {
     foreach(['start','update']as$action){[$code,$out,$err]=command([PHP_BINARY,$app.'/scripts/windows/control.php',$action,$root.'/profile.json'],false);check($code!==0&&str_contains($err,'Default branch guard refused'));}
     require_once __DIR__.'/../../src/Civ13/PortableProcess.php';
     $lock=\Civ13\PortableProcess::lock($state);
-    try { [$code,$out,$err]=command([PHP_BINARY,$app.'/scripts/windows/control.php','update',$root.'/profile.json'],false);check($code!==0&&str_contains($err,'Portable instance already running')); }
+    try { [$code,$out,$err]=command([PHP_BINARY,$app.'/scripts/windows/control.php','update',$root.'/profile.json'],false);check($code!==0&&str_contains($err,'Portable instance already running'));
+        // Launcher JSON: status sees the held lock; check-update reports the detached refusal without failing.
+        [$code,$out]=command([PHP_BINARY,$app.'/scripts/windows/control.php','status',$root.'/profile.json']);$status=json_decode($out,true,8,JSON_THROW_ON_ERROR);
+        check($status['ok']===true&&$status['running']===true&&$status['stop_pending']===false&&$status['stdout_log']===$state.'/stdout.log');
+        [$code,$out]=command([PHP_BINARY,$app.'/scripts/windows/control.php','check-update',$root.'/profile.json']);$update=json_decode($out,true,8,JSON_THROW_ON_ERROR);
+        check($update['ok']===true&&$update['component']==='bot'&&$update['running']===true&&$update['can_update']===false&&$update['reason']!==''&&$update['fresh']===false); }
     finally { fclose($lock); }
+    [$code,$out]=command([PHP_BINARY,$app.'/scripts/windows/control.php','status',$root.'/profile.json']);check(json_decode($out,true,8,JSON_THROW_ON_ERROR)['running']===false);
+    [$code,$out]=command([PHP_BINARY,$app.'/scripts/windows/control.php','status',$root.'/missing.json'],false);check($code!==0&&json_decode($out,true,8,JSON_THROW_ON_ERROR)['ok']===false);
     putenv('CIVILIZATIONBOT_PROFILE='.$root.'/profile.json');[$code,$out,$err]=command([PHP_BINARY,$app.'/bot.php'],false);check($code!==0&&str_contains($err,'Default branch guard refused')&&!str_contains($err,'Composer must not load'));
-    echo "PASS real Git default/main/upstream/origin, detached/PR/dirty/hidden/ahead/diverged/offline controls, safe FF and actual start/update/bootstrap precredential denial\n";
+    echo "PASS real Git default/main/upstream/origin, detached/PR/dirty/hidden/ahead/diverged/offline controls, safe FF, read-only check-update and status JSON, and actual start/update/bootstrap precredential denial\n";
 } finally {
     putenv($previousProfile===false?'CIVILIZATIONBOT_PROFILE':'CIVILIZATIONBOT_PROFILE='.$previousProfile);
     $resolved=str_replace('\\','/',realpath($root));

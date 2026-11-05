@@ -57,6 +57,34 @@ final class DefaultBranchGuard
                 'fresh_remote_verified'=>true,'local_dependency_lock_edit'=>$localLockEdit];
     }
 
+    /**
+     * Read-only update check for the launcher: fetches origin/main like verify(), never merges.
+     * can_update says whether `control.php update` would fast-forward; reason explains a no.
+     */
+    public static function check(string $repository, string $git = 'git', string $origin = self::ORIGIN): array
+    {
+        $root = realpath($repository);
+        if ($root === false) { throw new \RuntimeException('Default branch guard refused: repository unavailable'); }
+        $current = self::command($git, $root, ['rev-parse','--verify','HEAD^{commit}']);
+        $reason = '';
+        try { self::verify($root, false, $git, $origin); }
+        catch (\RuntimeException $error) { $reason = preg_replace('/^Default branch guard refused: /', '', $error->getMessage()); }
+        $behindOnly = $reason === 'main behind; explicit safe update required';
+        $fresh = $reason === '' || $behindOnly;
+        $available = self::command($git, $root, ['rev-parse','--verify','refs/remotes/origin/main^{commit}'], [0,128]);
+        if (preg_match('/^[a-f0-9]{40}$/D', $available) !== 1) { $available = ''; }
+        $behind = $available === '' ? 0 : (int) self::command($git, $root, ['rev-list','--count',$current.'..'.$available]);
+        $canUpdate = false;
+        if ($reason === '') { $reason = 'already up to date'; }
+        elseif ($behindOnly) {
+            $dirty = self::command($git, $root, ['status','--porcelain=v1','--untracked-files=all']);
+            $canUpdate = $dirty === '';
+            $reason = $canUpdate ? '' : 'local edits retained (update needs a clean checkout): '.str_replace("\n", ', ', $dirty);
+        }
+        return ['component'=>'bot','current'=>$current,'available'=>$available,'behind'=>$behind,
+                'can_update'=>$canUpdate,'reason'=>$reason,'fresh'=>$fresh];
+    }
+
     /** Bind working bytes and the staged index mode/blob; porcelain alone is insufficient. */
     private static function lockState(string $git, string $root): array
     {

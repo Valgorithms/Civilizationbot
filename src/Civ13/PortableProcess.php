@@ -28,6 +28,19 @@ final class PortableProcess
         return $handle;
     }
 
+    /**
+     * Read-only state for the launcher. running probes the instance lock (held by the live bot
+     * for its lifetime) and releases it at once; the markers say what the supervisor will do next.
+     */
+    public static function status(string $state): array
+    {
+        $running = false;
+        try { fclose(self::lock($state)); }
+        catch (\RuntimeException) { $running = true; }
+        return ['running'=>$running,'stop_pending'=>is_file($state.'/stop.request'),'reload_pending'=>is_file($state.'/reload.request'),
+                'state_dir'=>$state,'stdout_log'=>$state.'/stdout.log','stderr_log'=>$state.'/stderr.log'];
+    }
+
     public static function requestStop(string $state): void
     {
         $stream = @fopen($state.'/stop.request', 'x');
