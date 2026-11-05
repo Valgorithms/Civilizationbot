@@ -26,6 +26,9 @@ on:
       - 'src/Civ13/MessageCommand/Commands/AdminListUpdate.php'
       - 'src/Civ13/MessageCommand/Commands/Civ13GameServerMapSwap.php'
       - 'src/Civ13/HttpServiceManager.php'
+      - 'src/Civ13/MessageServiceManager.php'
+      - 'src/Civ13/OocAutoRelay.php'
+      - 'src/Civ13/Moderator.php'
       - 'src/Civ13/GameReady.php'
       - 'local-bot.php'
       - 'bot.php'
@@ -102,6 +105,7 @@ jobs:
         timeout-minutes: 2
       - run: php tests/local/message-delivery.php vendor/autoload.php
       - run: php tests/local/ooc-webhook.php vendor/autoload.php
+      - run: php tests/local/ooc-auto-relay.php vendor/autoload.php
       - run: php tests/local/game-ready.php vendor/autoload.php
         timeout-minutes: 2
       - run: php -d memory_limit=128M tests/local/game-ready-http.php vendor/autoload.php
