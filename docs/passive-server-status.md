@@ -25,7 +25,8 @@ restart or game command is triggered.
 Unknown/stale observations clear the current player cache and omit current game
 metadata from status and current-round embeds. The player-count channel
 (`<prefix>-<count>`, renamed every ten minutes) shows `offline` once the
-heartbeat is stale or `serverdata.txt` is missing, rather than zero or
+heartbeat is stale or `serverdata.txt` has been missing for 120 seconds (the
+game deletes and rewrites it, so a brief absence is ignored), rather than zero or
 `unknown`. While a fresh baseline is still being observed, after an
 unreadable or malformed read, and for remote/unobserved servers, it keeps its
 current name.

@@ -14,6 +14,7 @@ final class ServerHeartbeat
     private ?float $lastPoll = null;
     private ?float $lastProgress = null;
     private bool $confirmed = false;
+    private ?float $missingSince = null;
 
     public function __construct(private string $path, private ?\Closure $clock = null, private ?\Closure $reader = null)
     {
@@ -36,9 +37,19 @@ final class ServerHeartbeat
             $this->previous = $this->lastPoll = $this->lastProgress = null;
             $this->confirmed = false;
 
-            // Only an absent file means the writer is gone; a torn or unreadable read may be a world mid-rewrite.
-            return ['state' => 'unknown', 'reason' => $data === null ? self::MISSING : self::MALFORMED, 'age' => null, 'data' => null];
+            // The game deletes and rewrites the file, so only an absence that persists for the stale
+            // window means the writer is gone; a torn, unreadable or brief absence may be a rewrite.
+            if ($data !== null || ($this->missingSince !== null && $now < $this->missingSince)) {
+                $this->missingSince = null;
+            }
+            if ($data === null) {
+                $this->missingSince ??= $now;
+            }
+            $missing = $data === null && $now - $this->missingSince >= self::STALE_SECONDS;
+
+            return ['state' => 'unknown', 'reason' => $missing ? self::MISSING : self::MALFORMED, 'age' => null, 'data' => null];
         }
+        $this->missingSince = null;
         $token = ltrim($matches[1][0], '0');
         $reset = $this->lastPoll === null || $now < $this->lastPoll
             || $now - $this->lastPoll > self::STALE_SECONDS;
@@ -73,7 +84,10 @@ final class ServerHeartbeat
         // No touch(), stat-based freshness or socket probe. Bound reads and reject special files.
         clearstatcache(true, $this->path);
         if (! file_exists($this->path)) {
-            return null;
+            // An unreadable parent directory hides the file; that is not evidence it is absent.
+            $parent = dirname($this->path);
+
+            return is_dir($parent) && ! is_readable($parent) ? false : null;
         }
         if (! is_file($this->path) || ! is_readable($this->path)) {
             return false;

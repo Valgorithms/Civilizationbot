@@ -32,7 +32,19 @@ check(PlayercountChannel::label([$torn]) === null, 'A torn or unreadable read mu
 $root = sys_get_temp_dir().'/bot-playercount-'.bin2hex(random_bytes(8));
 mkdir($root, 0700);
 try {
-    check((new ServerHeartbeat($root.'/serverdata.txt'))->poll()['reason'] === ServerHeartbeat::MISSING, 'Absent file must read as missing');
+    $now = 0.0;
+    $clock = static function () use (&$now): float { return $now; };
+    $absent = new ServerHeartbeat($root.'/serverdata.txt', $clock);
+    check($absent->poll()['reason'] === ServerHeartbeat::MALFORMED, 'A file deleted mid-rewrite must not read as missing at once');
+    $now = 60.0;
+    check($absent->poll()['reason'] === ServerHeartbeat::MALFORMED, 'A short absence must not read as missing');
+    $now = 120.0;
+    check($absent->poll()['reason'] === ServerHeartbeat::MISSING, 'A file absent for the stale window must read as missing');
+    file_put_contents($root.'/serverdata.txt', '<b>Server Status</b>: Onl');
+    $absent->poll();
+    unlink($root.'/serverdata.txt');
+    $now = 135.0;
+    check($absent->poll()['reason'] === ServerHeartbeat::MALFORMED, 'The file reappearing must restart the absence window');
     file_put_contents($root.'/serverdata.txt', '<b>Server Status</b>: Onl');
     check((new ServerHeartbeat($root.'/serverdata.txt'))->poll()['reason'] === ServerHeartbeat::MALFORMED, 'Torn file must read as malformed');
 } finally {
