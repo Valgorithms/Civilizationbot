@@ -34,6 +34,7 @@ check(OocAutoRelay::format('<@789>') === '@unknown-user', 'Unknown mention not n
 check(OocAutoRelay::format('ping <@&42>', [], ['42' => 'Admin']) === 'ping @Admin', 'Role mention not resolved');
 check(OocAutoRelay::format('see <#77>', [], [], ['77' => 'rules']) === 'see #rules', 'Channel mention not resolved');
 check(OocAutoRelay::format('nice <:pog:1234> <a:dance:5678>') === 'nice :pog: :dance:', 'Custom emoji not shortened');
+check(OocAutoRelay::format('0') === '0', 'Message "0" dropped');
 check(OocAutoRelay::format('') === null && OocAutoRelay::format(" \n ") === null, 'Empty message relayed');
 check(OocAutoRelay::format('', [], [], [], 1) === '[attachment]', 'Attachment-only message dropped');
 check(OocAutoRelay::format('look', [], [], [], 3) === 'look [3 attachments]', 'Attachment count missing');
@@ -50,6 +51,8 @@ check(OocAutoRelay::blocked('you BADWORD', $rules), 'Exact badword not blocked')
 check(OocAutoRelay::blocked('join discord.gg/xyz', $rules), 'Advertisement not blocked');
 check(!OocAutoRelay::blocked('badwords are fine as a substring', $rules), 'Exact rule matched a substring');
 check(!OocAutoRelay::blocked('anything', []), 'Empty rule list blocked');
+check(OocAutoRelay::blocked('no method word', [['word' => 'word', 'category' => 'x']]), 'Missing method did not fall back to str_contains');
+check(OocAutoRelay::blocked('odd method word', [['word' => 'word', 'method' => 'nonsense', 'category' => 'x']]), 'Unknown method did not fall back to str_contains');
 
 // Every formatted line is a valid discord2ooc IPC record the game splits into exactly two fields.
 $dir = sys_get_temp_dir().'/civilizationbot-ooc-'.bin2hex(random_bytes(6)); mkdir($dir, 0700);
@@ -106,7 +109,9 @@ $message = static function (array $over = []) use ($guild): RelayMessage {
     return RelayMessage::with($over + ['channel_id' => 'ooc-nomads', 'guild' => $guild, 'author' => $author, 'member' => (object) ['roles' => new RelayLookup([])], 'webhook_id' => null, 'content' => 'hello', 'mentions' => [], 'mention_roles' => [], 'attachments' => [], 'sticker_items' => []]);
 };
 $manager->relayOocMessage($message(['content' => "hi <@20>\nsee <#77>", 'mentions' => [RelayUser::with('20')]]));
-check($nomads->sent === [['valckey', 'hi @Taislin see #rules']] && $tdm->sent === [], 'Plain #ooc message not relayed to its own server');
+check($nomads->sent[0] === ['valckey', 'hi @Taislin see #rules'] && $tdm->sent === [], 'Plain #ooc message not relayed to its own server');
+$manager->relayOocMessage($message(['content' => '0']));
+check(end($nomads->sent) === ['valckey', '0'], 'Listener dropped a message of "0"');
 $manager->relayOocMessage($message(['channel_id' => 'ooc-tdm', 'content' => 'tdm chat']));
 check($tdm->sent === [['valckey', 'tdm chat']], 'Second server channel not routed');
 $nomads->sent = [];

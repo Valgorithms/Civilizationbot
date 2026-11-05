@@ -420,7 +420,7 @@ class MessageServiceManager
             }
         }
         $attachments = count($message->attachments ?? []) + count($message->sticker_items ?? []);
-        if (! $text = OocAutoRelay::format($message->content, $users, $roles, $channels, $attachments)) {
+        if (($text = OocAutoRelay::format($message->content, $users, $roles, $channels, $attachments)) === null) {
             return null;
         }
         if (OocAutoRelay::blocked($text, $this->civ13->ooc_badwords)) {
