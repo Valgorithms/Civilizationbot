@@ -46,7 +46,7 @@ final class GaiaHostControl
     {
         $parts = [match ($status['state'] ?? null) {
             'asleep' => 'Server is asleep (frozen in memory; a join or travel wakes it).',
-            'cold' => 'Server is asleep (stopped after its last save; a join or travel starts it).',
+            'cold' => 'Server is asleep (stopped after its last save; a launcher wake or travel starts it).',
             default => ($status['listening'] ?? false) ? 'Server port is open.' : 'Server is not running.',
         }];
         $world = $status['world'] ?? null;
@@ -66,7 +66,8 @@ final class GaiaHostControl
         $regions = [];
         foreach (is_array($status['regions'] ?? null) ? array_slice($status['regions'], 0, 16) : [] as $region) {
             if (!is_array($region) || !is_string($region['name'] ?? null) || !is_string($region['state'] ?? null)) { continue; }
-            $name = substr(preg_replace('/[^\w \-\'().]/u', '', $region['name']) ?? '', 0, 64);
+            // Letters, marks and digits in any script, cut to 64 characters, never mid-character.
+            $name = preg_replace('/^(.{0,64}).*$/us', '$1', preg_replace('/[^\p{L}\p{M}\p{N} \-\'().]/u', '', $region['name']) ?? '') ?? '';
             $state = preg_replace('/[^a-z]/', '', $region['state']) ?? '';
             $regions[] = "{$name}: {$state}".(is_int($region['players'] ?? null) ? ", {$region['players']} players" : '');
         }

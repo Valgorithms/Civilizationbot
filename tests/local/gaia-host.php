@@ -46,6 +46,8 @@ try {
         'regions' => [['id' => 'gaia', 'name' => 'Gaia', 'state' => 'awake', 'players' => 2], ['id' => 'deep', 'name' => 'The Deep <@&1>', 'state' => 'asleep', 'players' => null], 'junk']];
     gaiaCheck(GaiaHostControl::describe($region) === "Server port is open. World ready. 2 players.\nRegions: Gaia: awake, 2 players; The Deep 1: asleep.", 'region line: '.GaiaHostControl::describe($region));
     gaiaCheck(str_starts_with(GaiaHostControl::describe(['state' => 'cold', 'listening' => false]), 'Server is asleep (stopped'), 'cold line');
+    $long = GaiaHostControl::describe(['regions' => [['name' => 'की'.str_repeat('北', 70), 'state' => 'awake']]]);
+    gaiaCheck(mb_check_encoding($long, 'UTF-8') && str_contains($long, 'Regions: की'.str_repeat('北', 62).': awake.'), 'unicode region name: '.$long);
     [$value, $error] = $run('start');
     gaiaCheck($value === null && $error instanceof RuntimeException && $error->getMessage() === 'Refused: the server is already running', 'refusal text');
     [$value, $error] = $run('stop');
