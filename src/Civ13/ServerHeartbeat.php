@@ -8,6 +8,7 @@ namespace Civ13;
 final class ServerHeartbeat
 {
     public const STALE_SECONDS = 120.0;
+    public const MISSING = 'Heartbeat missing, unreadable or malformed';
     private ?string $previous = null;
     private ?float $lastPoll = null;
     private ?float $lastProgress = null;
@@ -34,7 +35,7 @@ final class ServerHeartbeat
             $this->previous = $this->lastPoll = $this->lastProgress = null;
             $this->confirmed = false;
 
-            return ['state' => 'unknown', 'reason' => 'Heartbeat missing, unreadable or malformed', 'age' => null, 'data' => null];
+            return ['state' => 'unknown', 'reason' => self::MISSING, 'age' => null, 'data' => null];
         }
         $token = ltrim($matches[1][0], '0');
         $reset = $this->lastPoll === null || $now < $this->lastPoll

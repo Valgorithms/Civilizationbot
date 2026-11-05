@@ -7,6 +7,8 @@ on:
       - 'src/Civ13/GameServer.php'
       - 'src/Civ13/RoundStartTimestamp.php'
       - 'src/Civ13/ServerHeartbeat.php'
+      - 'src/Civ13/PlayercountChannel.php'
+      - 'src/Civ13/PortableProfile.php'
       - 'tests/local/heartbeat*.php'
       - '.github/workflows/status-heartbeat.yml'
 
@@ -31,5 +33,7 @@ jobs:
       - run: composer install --no-interaction --no-plugins --no-scripts --no-dev
       - run: php -l src/Civ13/GameServer.php
       - run: php -l src/Civ13/ServerHeartbeat.php
+      - run: php -l src/Civ13/PlayercountChannel.php
       - run: php tests/local/heartbeat.php
       - run: php tests/local/heartbeat-integration.php
+      - run: php tests/local/heartbeat-playercount.php
