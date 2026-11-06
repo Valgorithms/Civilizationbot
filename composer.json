@@ -19,7 +19,7 @@
         "react/http": "^1.11.1",
         "valzargaming/byond": "dev-main",
         "valzargaming/handler": "dev-main",
-        "vzgcoders/verifier-server": "dev-main#838750d11353a8223c652f678bfdfee32b40edb3",
+        "vzgcoders/verifier-server": "dev-main#05ddbc1ae91cc28215fd682f045353c3f51ff6a7",
         "wyrihaximus/react-cache-redis": "^4.5"
     },
     "require-dev": {
