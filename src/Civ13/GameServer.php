@@ -182,11 +182,12 @@ class GameServer
                 new \Civ13\Local\AsyncProcess($this->loop, $gaia['temporary_directory'] ?? sys_get_temp_dir()));
         }
         if (($options['systemd']['enabled'] ?? false) === true) {
-            // Linux server owned by a systemd user unit running as the bot's user.
+            // Linux server owned by a systemd unit (Civ13 scripts/README.md, "Supervised hosting").
             $systemd = $options['systemd'];
             try {
-                $this->systemdUnit = new \Civ13\Local\SystemdUnitControl($systemd['unit'] ?? '', $systemd['runtime_dir'] ?? \Civ13\Local\SystemdUnitControl::defaultRuntimeDir(),
-                    new \Civ13\Local\AsyncProcess($this->loop, $systemd['temporary_directory'] ?? sys_get_temp_dir()), $systemd['systemctl'] ?? '/usr/bin/systemctl');
+                $this->systemdUnit = new \Civ13\Local\SystemdUnitControl($systemd['unit'] ?? '',
+                    new \Civ13\Local\AsyncProcess($this->loop, $systemd['temporary_directory'] ?? sys_get_temp_dir()),
+                    $systemd['scope'] ?? 'system', $systemd['runtime_dir'] ?? null, $systemd['sudo'] ?? null);
             } catch (\InvalidArgumentException $error) {
                 // Never fall back to launching DreamDaemon beside the unit: refuse host controls instead.
                 $this->logger->error("GameServer {$this->key} systemd control unavailable: {$error->getMessage()}");

@@ -4,36 +4,53 @@ namespace Civ13\Local;
 use React\Promise\PromiseInterface;
 
 /**
- * Starts, stops and restarts a Linux game server that a systemd user unit owns
- * (see Civ13 scripts/README.md, "Supervised hosting"). The bot must run as the
- * unit's user. Only a fixed verb and the configured unit name reach systemctl;
- * start, stop and restart are queued with --no-block, so success means
- * "accepted" and status reports what systemd sees.
+ * Starts, stops and restarts a Linux game server that a systemd unit owns
+ * (see Civ13 scripts/README.md, "Supervised hosting"). Only a fixed verb and
+ * the configured unit name reach systemctl; start, stop and restart are queued
+ * with --no-block, so success means "accepted" and status reports what systemd
+ * sees.
+ *
+ * scope "system" (default) controls a system unit. A bot that is not root runs
+ * the three verbs through `sudo -n`, which needs a sudoers rule naming exactly
+ * those commands; status never uses sudo. scope "user" controls a unit of the
+ * bot user's own manager, found through runtime_dir.
  */
 final class SystemdUnitControl
 {
     public const ACTIONS = ['status', 'start', 'stop', 'restart'];
 
-    public function __construct(private string $unit, private string $runtimeDir, private $execute, private string $systemctl = '/usr/bin/systemctl')
-    {
+    public function __construct(
+        private string $unit,
+        private $execute,
+        private string $scope = 'system',
+        private ?string $runtimeDir = null,
+        private ?bool $sudo = null,
+        private string $systemctl = '/usr/bin/systemctl',
+        private string $sudoPath = '/usr/bin/sudo',
+    ) {
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9_.@-]{0,80}\.service$/D', $unit)) { throw new \InvalidArgumentException('systemd unit must be a plain *.service name'); }
-        if (!str_starts_with($runtimeDir, '/') || !is_dir($runtimeDir)) { throw new \InvalidArgumentException('systemd runtime_dir must be an existing absolute directory'); }
-        if (!str_starts_with($systemctl, '/')) { throw new \InvalidArgumentException('systemctl path must be absolute'); }
+        if (!in_array($scope, ['system', 'user'], true)) { throw new \InvalidArgumentException('systemd scope must be system or user'); }
+        if (!str_starts_with($systemctl, '/') || !str_starts_with($sudoPath, '/')) { throw new \InvalidArgumentException('systemctl and sudo paths must be absolute'); }
+        if ($scope === 'user') {
+            $this->runtimeDir ??= '/run/user/'.self::uid();
+            if (!str_starts_with($this->runtimeDir, '/') || !is_dir($this->runtimeDir)) { throw new \InvalidArgumentException('systemd runtime_dir must be an existing absolute directory'); }
+        }
+        $this->sudo ??= $scope === 'system' && self::uid() !== 0;
         if (!is_callable($execute)) { throw new \InvalidArgumentException('Async executor required'); }
     }
 
-    /** The user manager's runtime directory for the current process user. */
-    public static function defaultRuntimeDir(): string
-    {
-        return '/run/user/'.(function_exists('posix_geteuid') ? posix_geteuid() : getmyuid());
-    }
+    private static function uid(): int { return function_exists('posix_geteuid') ? posix_geteuid() : getmyuid(); }
 
     /** @return string[] */
     public function argv(string $action): array
     {
         if (!in_array($action, self::ACTIONS, true)) { throw new \InvalidArgumentException('Unsupported systemd action'); }
-        // AsyncProcess passes only PATH; the user bus is found through XDG_RUNTIME_DIR.
-        $prefix = ['/usr/bin/env', 'XDG_RUNTIME_DIR='.$this->runtimeDir, $this->systemctl, '--user'];
+        if ($this->scope === 'user') {
+            // AsyncProcess passes only PATH; the user bus is found through XDG_RUNTIME_DIR.
+            $prefix = ['/usr/bin/env', 'XDG_RUNTIME_DIR='.$this->runtimeDir, $this->systemctl, '--user'];
+        } else {
+            $prefix = ($this->sudo && $action !== 'status') ? [$this->sudoPath, '-n', $this->systemctl] : [$this->systemctl];
+        }
         return $action === 'status'
             ? array_merge($prefix, ['show', '--property=ActiveState,SubState,MainPID', $this->unit])
             : array_merge($prefix, ['--no-block', $action, $this->unit]);
