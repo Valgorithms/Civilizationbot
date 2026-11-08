@@ -68,7 +68,18 @@ class GameServer
     public StreamSelectLoop $loop;
     public bool $ready = false;
     private ?NativeLifecycle $nativeLifecycle = null;
-    private ?\Civ13\Local\GaiaHostControl $gaiaHost = null;
+    /** Host script control: gaia_host.py for a scheduled-task host, or shard_group.py for one region of a shard group. */
+    private \Civ13\Local\GaiaHostControl|\Civ13\Local\ShardRegionControl|null $gaiaHost = null;
+    /** Set when shard_group is configured but unusable: host controls then refuse instead of launching DreamDaemon. */
+    private ?string $hostUnavailable = null;
+    /** shard_group "kill" action for Kill: "stop" (save if the world saves, then stop) or "kill" (forced, no save). */
+    private string $shardKillAction = 'stop';
+    /**
+     * Key of the server whose shard group this world belongs to, when this world is a secondary region of it
+     * (for example the TDM battle world of the TDM Barracks). The parent counts this world in its player-count
+     * channel (its `shards` list) and alone takes Discord OOC; this world still relays its own game chat.
+     */
+    public string $shardOf = '';
     private ?\Civ13\Local\SystemdUnitControl $systemdUnit = null;
     private ?string $systemdUnavailable = null;
 
@@ -180,6 +191,24 @@ class GameServer
             $gaia = $options['gaia_host'];
             $this->gaiaHost = new \Civ13\Local\GaiaHostControl($gaia['python'] ?? '', $gaia['script'] ?? '', $gaia['config'] ?? '',
                 new \Civ13\Local\AsyncProcess($this->loop, $gaia['temporary_directory'] ?? sys_get_temp_dir()));
+        }
+        if (($options['shard_group']['enabled'] ?? false) === true) {
+            // One region of a shard group driven by Civ13's scripts/shard-group/shard_group.py (docs/shard-group.md).
+            $shard = $options['shard_group'];
+            try {
+                if ($this->gaiaHost !== null) { throw new \InvalidArgumentException('enable either gaia_host or shard_group, not both'); }
+                if (!in_array($shard['kill'] ?? 'stop', ['stop', 'kill'], true)) { throw new \InvalidArgumentException('shard_group kill must be stop or kill'); }
+                $this->shardKillAction = $shard['kill'] ?? 'stop';
+                $this->gaiaHost = new \Civ13\Local\ShardRegionControl($shard['python'] ?? '', $shard['script'] ?? '', $shard['config'] ?? '', (string) ($shard['region'] ?? ''),
+                    new \Civ13\Local\AsyncProcess($this->loop, $shard['temporary_directory'] ?? sys_get_temp_dir()));
+            } catch (\InvalidArgumentException $error) {
+                // Never fall back to launching DreamDaemon beside the group's host: refuse host controls instead.
+                $this->logger->error("GameServer {$options['key']} shard_group control unavailable: {$error->getMessage()}");
+                $this->hostUnavailable = $error->getMessage();
+            }
+        }
+        if (is_string($options['shard_of'] ?? null) && $options['shard_of'] !== '' && $options['shard_of'] !== $options['key']) {
+            $this->shardOf = $options['shard_of'];
         }
         if (($options['systemd']['enabled'] ?? false) === true) {
             // Linux server owned by a systemd unit (Civ13 scripts/README.md, "Supervised hosting").
@@ -778,6 +807,10 @@ class GameServer
     public function playercountChannelUpdate(): PromiseInterface
     {
         $this->refreshLocalServerStatus();
+        // A secondary region is counted by its parent's channel (the parent's `shards`); renaming here would fight it.
+        if ($this->shardOf !== '') {
+            return resolve(null);
+        }
         // Players across the whole shard group, "offline" when no world is running, unchanged while unobserved.
         if (($label = PlayercountChannel::label($this->worlds)) === null) {
             return resolve(null);
@@ -843,6 +876,7 @@ class GameServer
     public function Host(?Message $message = null): PromiseInterface
     {
         if ($this->engine === 'opendream') { return $this->requestEngineControl('start'); }
+        if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost !== null) { return $this->gaiaHostRequest('start', $message); }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('start', $message); }
         if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) { return $this->systemdRequest('start', $message); }
@@ -869,6 +903,11 @@ class GameServer
     public function Kill(?Message $message = null, bool $notify = true): PromiseInterface
     {
         if ($this->engine === 'opendream') { return $this->requestEngineControl('stop'); }
+        if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
+        if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
+            if ($notify) { $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $this->civ13->discord->username ?? 'Server'); }
+            return $this->gaiaHostRequest($this->shardKillAction, $message);
+        }
         if ($this->gaiaHost !== null) {
             if ($notify) { $this->OOCMessage('The server is saving and shutting down. Your character will be here when it comes back.', $this->civ13->discord->username ?? 'Server'); }
             return $this->gaiaHostRequest('stop', $message);
@@ -894,6 +933,11 @@ class GameServer
     public function Restart(?Message $message = null, bool $notify = true): PromiseInterface
     {
         if ($this->engine === 'opendream') { return $this->requestEngineControl('restart'); }
+        if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
+        if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
+            if ($notify) { $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $this->civ13->discord->username ?? 'Server'); }
+            return $this->gaiaHostRequest('restart', $message);
+        }
         if ($this->gaiaHost !== null) {
             if ($notify) { $this->OOCMessage('The server is saving and restarting. Your character will be here when it comes back.', $this->civ13->discord->username ?? 'Server'); }
             return $this->gaiaHostRequest('restart', $message);
@@ -913,10 +957,11 @@ class GameServer
         return resolve(['accepted' => true, 'engine' => 'byond', 'state' => 'legacy operation scheduled']);
     }
 
-    /** Pulls and compiles master while the server is stopped (scheduled-task hosts only). */
+    /** Pulls and compiles master while the server is stopped (gaia_host and shard_group hosts only). */
     public function Update(?Message $message = null): PromiseInterface
     {
-        if ($this->gaiaHost === null) { return reject(new \RuntimeException('Updating is only available for a gaia_host server')); }
+        if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
+        if ($this->gaiaHost === null) { return reject(new \RuntimeException('Updating is only available for a gaia_host or shard_group server')); }
         return $this->gaiaHostRequest('update', $message);
     }
     /** Read-only host status line (scheduled-task hosts only). */
@@ -925,8 +970,10 @@ class GameServer
         if ($this->systemdUnit !== null) {
             return $this->systemdUnit->request('status')->then(static fn (array $status): string => \Civ13\Local\SystemdUnitControl::describe($status));
         }
-        if ($this->gaiaHost === null) { return reject(new \RuntimeException('Host status is only available for a gaia_host server')); }
-        return $this->gaiaHost->request('status')->then(static fn (array $status): string => \Civ13\Local\GaiaHostControl::describe($status));
+        if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
+        if ($this->gaiaHost === null) { return reject(new \RuntimeException('Host status is only available for a gaia_host or shard_group server')); }
+        $control = $this->gaiaHost;
+        return $control->request('status')->then(static fn (array $status): string => $control::describe($status));
     }
     public function hasGaiaHost(): bool { return $this->gaiaHost !== null; }
     public function hasSystemdUnit(): bool { return $this->systemdUnit !== null; }

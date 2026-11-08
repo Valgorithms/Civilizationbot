@@ -247,6 +247,14 @@ namespace {
         file_put_contents($root.'/region/serverdata.txt', record('11', 'b&c'));
         $server->playercountChannelUpdate();
         check($channel->name === 'nomads-2' && $server->players === ['c'], 'Shard players were not added to the group count');
+        // A secondary region (shard_of) is counted by its parent's channel and never renames it itself.
+        $server->shardOf = 'tdm';
+        $saves = $repository->saves;
+        $channel->name = 'nomads-9';
+        $server->playercountChannelUpdate();
+        check($channel->name === 'nomads-9' && $repository->saves === $saves, 'A secondary shard region renamed its parent\'s player-count channel');
+        $server->shardOf = '';
+        $channel->name = 'nomads-2';
         unlink($root.'/region/serverdata.txt');
         rmdir($root.'/region');
         $shards->setValue($server, []);
