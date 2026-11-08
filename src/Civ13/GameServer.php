@@ -662,9 +662,10 @@ class GameServer
             return reject(new PartException($err));
         }
         if (! $builder = $this->createCurrentRoundEmbedMessageBuilder()) {
-            $this->logger->error($err = "Could not create a MessageBuilder for {$this->key}");
+            // No round recorded yet (a new world before its first round_start): nothing to show, not an error.
+            $this->logger->debug("No current round embed for {$this->key} yet");
 
-            return reject(new PartException($err));
+            return resolve(null);
         }
 
         $resend = function (?Message $message, callable $new) {

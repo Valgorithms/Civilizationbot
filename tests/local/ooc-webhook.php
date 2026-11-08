@@ -280,4 +280,16 @@ try {
     if($error->getMessage()!=='synthetic unexpected lookup failure'){throw $error;}
 }
 if(count($manager->discord->channel->builders)!==3){throw new RuntimeException('Unexpected verifier error sent OOC');}
+// A misconfigured game key: its 403s trip the invalid limit, but the 429 replies to its retries must not
+// count again, or the retries escalate a five-minute block into the daily abuse ban (civ13.com, 2026-11-08).
+(new ReflectionProperty($handler,'attributes'))->setValue($handler,array_replace((new ReflectionProperty($handler,'attributes'))->getValue($handler),['ratelimits'=>[]]));
+(new ReflectionMethod($handler,'afterConstruct'))->invoke($handler);
+$wrong=$request($valid,'127.0.0.9')->withQueryParams(['key'=>'wrong','method'=>'round_start','data'=>json_encode(['round'=>'round-x'])]);
+$statuses=[];
+for($i=0;$i<150;$i++){$statuses[]=$handler->handle($wrong)->getStatusCode();}
+$limits=(new ReflectionProperty($handler,'attributes'))->getValue($handler)['ratelimits'];
+$abuse=count(array_filter($limits['abuse']['requests'],fn($r)=>$r['ip']==='127.0.0.9'));
+if($statuses[0]!==403||end($statuses)!==429||$abuse>11||$handler->isInvalidLimited('127.0.0.9')===null||$handler->__getRateLimitExpiration('abuse','127.0.0.9')!==null){
+    throw new RuntimeException('Rate-limited replies fed the abuse ban ('.$abuse.' counted)');
+}
 echo "PASS actual registered chat/transit/runtime/admin/attack routes: independent service authentication, bounded canonical actors/body, rejected requests preserve state, optional parole channel, staff display isolation\n";
