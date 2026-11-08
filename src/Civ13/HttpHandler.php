@@ -129,7 +129,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     {
         $this->last_ip = $request->getServerParams()['REMOTE_ADDR'];
         if ($retry_after = $this->isGlobalRateLimited($this->last_ip) ?? $this->isInvalidLimited($this->last_ip)) {
-            return $this->__throwError("You are being rate limited. Retry after $retry_after seconds.", HttpResponse::STATUS_TOO_MANY_REQUESTS);
+            return $this->rateLimitedResponse("You are being rate limited. Retry after $retry_after seconds.");
         }
         //$scheme = $request->getUri()->getScheme();
         //$host = $request->getUri()->getHost();
@@ -216,7 +216,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
 
         // Check if the endpoint is rate limited
         if ($this->isRateLimited($endpoint, $this->last_ip)) { // This is called before the callback is executed so it will be rate limited even if the callback fails and to save processing time
-            return $this->__throwError('The resource is being rate limited.', HttpResponse::STATUS_TOO_MANY_REQUESTS);
+            return $this->rateLimitedResponse('The resource is being rate limited.');
         }
 
         // Execute the callback and validate the response
@@ -233,6 +233,10 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
             if (in_array($status, [HttpResponse::STATUS_UNAUTHORIZED, HttpResponse::STATUS_FORBIDDEN, HttpResponse::STATUS_NOT_FOUND, HttpResponse::STATUS_TOO_MANY_REQUESTS, HttpResponse::STATUS_INTERNAL_SERVER_ERROR])) {
                 $this->addRequestToRateLimit('invalid', $this->last_ip, $status);
             }
+        }
+        // A refused game webhook is otherwise silent: a key mismatch looks like dropped chat until the IP is banned.
+        if ($response->getStatusCode() === HttpResponse::STATUS_FORBIDDEN && str_starts_with($request->getUri()->getPath(), '/webhook/')) {
+            $this->logger->warning("Webhook refused (403) on `{$request->getUri()->getPath()}` from `{$this->last_ip}`: check the game's WEBHOOK_KEY against the bot's WEBAPI_TOKEN.");
         }
 
         return $response;
@@ -653,6 +657,15 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
      * @param  int          $status The status code of the error response. Defaults to 500 (Internal Server Error).
      * @return HttpResponse The error response.
      */
+    /**
+     * The reply to a caller that is already rate limited. It is not counted as a new invalid
+     * request: counting it let a client's retries extend its own block into the daily abuse ban.
+     */
+    private function rateLimitedResponse(string $error): HttpResponse
+    {
+        return HttpResponse::json(['error' => $error])->withStatus(HttpResponse::STATUS_TOO_MANY_REQUESTS);
+    }
+
     public function __throwError(string $error, int $status = HttpResponse::STATUS_INTERNAL_SERVER_ERROR): HttpResponse
     {
         if ($status === HttpResponse::STATUS_INTERNAL_SERVER_ERROR) {
