@@ -26,6 +26,7 @@ use Monolog\Logger;
 use React\EventLoop\Loop;
 use React\Filesystem\Factory as FilesystemFactory;
 use React\Http\Browser;
+use React\Socket\Connector;
 use WyriHaximus\React\Cache\Redis as RedisCache;
 
 use function React\Async\async;
@@ -149,6 +150,9 @@ set_rejection_handler(function (\Throwable $e) use ($logger) {
     }
 });
 
+// One nameserver for Discord and the shared Browser, so neither runs the
+// blocking system DNS lookup (its WMIC probe fails on current Windows).
+$dns = '8.8.8.8';
 $discord = new Discord([
     'loop' => Loop::get(),
     'logger' => $logger,
@@ -163,7 +167,7 @@ $discord = new Discord([
     ),
     */
     'socket_options' => [
-        'dns' => '8.8.8.8', // can change dns
+        'dns' => $dns, // can change dns
     ],
     'token' => getenv('TOKEN'),
     'loadAllMembers' => true,
@@ -175,7 +179,7 @@ $discord = new Discord([
 ]);
 
 $stats = Stats::new($discord);
-$browser = new Browser(Loop::get());
+$browser = new Browser(new Connector(['dns' => $dns], Loop::get()), Loop::get());
 $filesystem = FilesystemFactory::create();
 include $baseDir.'/variable_functions.php';
 

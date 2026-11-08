@@ -10,7 +10,7 @@ import sys
 import tarfile
 
 MAX_BYTES = 32 * 1024 * 1024
-SOURCE_FILES = {'src/Civ13/ServerDirectory/' + name + '.php' for name in ['Directory', 'Endpoint', 'ByondStatusProbe', 'PublicResolver', 'Standalone']}
+SOURCE_FILES = {'src/Civ13/ServerDirectory/' + name + '.php' for name in ['Directory', 'Endpoint', 'ByondStatusProbe', 'PublicResolver', 'Standalone', 'SystemDns']}
 REQUIRED = SOURCE_FILES | {'scripts/directory/serve.php', 'scripts/directory/inventory.example.json', 'vendor/autoload.php', 'composer.json', 'composer.lock', 'SOURCE.json', 'LICENSE'}
 ALLOWED_ROOT = REQUIRED | {'docs/launcher-directory.md', 'docs/launcher-directory-standalone.md'}
 
