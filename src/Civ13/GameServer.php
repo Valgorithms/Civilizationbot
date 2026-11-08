@@ -69,6 +69,8 @@ class GameServer
     public bool $ready = false;
     private ?NativeLifecycle $nativeLifecycle = null;
     private ?\Civ13\Local\GaiaHostControl $gaiaHost = null;
+    private ?\Civ13\Local\SystemdUnitControl $systemdUnit = null;
+    private ?string $systemdUnavailable = null;
 
     // Resolved paths
     private readonly string $serverdata;
@@ -178,6 +180,18 @@ class GameServer
             $gaia = $options['gaia_host'];
             $this->gaiaHost = new \Civ13\Local\GaiaHostControl($gaia['python'] ?? '', $gaia['script'] ?? '', $gaia['config'] ?? '',
                 new \Civ13\Local\AsyncProcess($this->loop, $gaia['temporary_directory'] ?? sys_get_temp_dir()));
+        }
+        if (($options['systemd']['enabled'] ?? false) === true) {
+            // Linux server owned by a systemd user unit running as the bot's user.
+            $systemd = $options['systemd'];
+            try {
+                $this->systemdUnit = new \Civ13\Local\SystemdUnitControl($systemd['unit'] ?? '', $systemd['runtime_dir'] ?? \Civ13\Local\SystemdUnitControl::defaultRuntimeDir(),
+                    new \Civ13\Local\AsyncProcess($this->loop, $systemd['temporary_directory'] ?? sys_get_temp_dir()), $systemd['systemctl'] ?? '/usr/bin/systemctl');
+            } catch (\InvalidArgumentException $error) {
+                // Never fall back to launching DreamDaemon beside the unit: refuse host controls instead.
+                $this->logger->error("GameServer {$this->key} systemd control unavailable: {$error->getMessage()}");
+                $this->systemdUnavailable = $error->getMessage();
+            }
         }
         if (($options['native_lifecycle']['enabled'] ?? false) === true) {
             if (PHP_OS_FAMILY !== 'Windows' && !getenv('CIVILIZATIONBOT_PROFILE')) {
@@ -830,6 +844,7 @@ class GameServer
         if ($this->engine === 'opendream') { return $this->requestEngineControl('start'); }
         if ($this->gaiaHost !== null) { return $this->gaiaHostRequest('start', $message); }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('start', $message); }
+        if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) { return $this->systemdRequest('start', $message); }
         OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::updateserverabspaths);
         if (file_exists($this->basedir.Civ13::serverdata)) {
             OSFunctions::execInBackground("rm -f {$this->basedir}".Civ13::serverdata);
@@ -858,6 +873,10 @@ class GameServer
             return $this->gaiaHostRequest('stop', $message);
         }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('save-stop', $message); }
+        if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) {
+            if ($notify) { $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $this->civ13->discord->username ?? 'Server'); }
+            return $this->systemdRequest('stop', $message);
+        }
         if ($notify) {
             $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
             $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender);
@@ -879,6 +898,10 @@ class GameServer
             return $this->gaiaHostRequest('restart', $message);
         }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('restart', $message); }
+        if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) {
+            if ($notify) { $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $this->civ13->discord->username ?? 'Server'); }
+            return $this->systemdRequest('restart', $message);
+        }
         $this->Kill(null, false);
         $this->civ13->loop->addTimer(20, function () use ($message): void {
             $this->Host($message);
@@ -898,10 +921,23 @@ class GameServer
     /** Read-only host status line (scheduled-task hosts only). */
     public function HostStatus(): PromiseInterface
     {
+        if ($this->systemdUnit !== null) {
+            return $this->systemdUnit->request('status')->then(static fn (array $status): string => \Civ13\Local\SystemdUnitControl::describe($status));
+        }
         if ($this->gaiaHost === null) { return reject(new \RuntimeException('Host status is only available for a gaia_host server')); }
         return $this->gaiaHost->request('status')->then(static fn (array $status): string => \Civ13\Local\GaiaHostControl::describe($status));
     }
     public function hasGaiaHost(): bool { return $this->gaiaHost !== null; }
+    public function hasSystemdUnit(): bool { return $this->systemdUnit !== null; }
+    /** Accepted means systemd queued the job; hoststatus shows the unit's state. */
+    private function systemdRequest(string $action, ?Message $message): PromiseInterface
+    {
+        if ($this->systemdUnit === null) { return reject(new \RuntimeException('systemd control unavailable: '.$this->systemdUnavailable)); }
+        return $this->systemdUnit->request($action)->then(static function (array $result) use ($message): array {
+            $message?->react('👍')->then(null, static fn (): null => null);
+            return $result;
+        });
+    }
     /** Accepted means the host script took the action; it finishes in the background. */
     private function gaiaHostRequest(string $action, ?Message $message): PromiseInterface
     {

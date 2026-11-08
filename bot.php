@@ -351,6 +351,8 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         'moderate' => true,
         'legacy_relay' => false,
         'basedir' => '/home/civ13/civ13-tdm',
+        // DreamDaemon runs under this systemd user unit (Civ13 scripts/README.md, "Supervised hosting"); the bot must run as the same user.
+        'systemd' => ['enabled' => true, 'unit' => 'civ13-tdm.service'],
         // Primary channels
         'discussion' => '799952134426591273',
         'playercount' => '1048777462898761789',
