@@ -19,8 +19,10 @@ final class DefaultBranchGuard
         $require($command(['symbolic-ref','--quiet','refs/remotes/origin/HEAD']) === 'refs/remotes/origin/main', 'local origin default main required');
         $sourceStatus = $command(['status','--porcelain=v1','--untracked-files=all']);
         // composer.lock is not loaded at runtime. A local dependency lock may be
-        // retained for start on a current main, but update must still be clean.
-        $localLockEdit = !$update && in_array($sourceStatus, ['M composer.lock','M  composer.lock','MM composer.lock'], true);
+        // retained for start on a current main. Update also keeps it when the
+        // only unstaged difference is packages installed from path repositories.
+        $lockOnly = in_array($sourceStatus, ['M composer.lock','M  composer.lock','MM composer.lock'], true);
+        $localLockEdit = $lockOnly && (!$update || self::pathOnlyLockEdit($git, $root));
         $require($sourceStatus === '' || $localLockEdit, 'local source edits retained');
         $lockState = $localLockEdit ? self::lockState($git, $root) : null;
         $require($command(['remote','get-url','--all','origin']) === $origin, 'unexpected origin retained');
@@ -45,7 +47,8 @@ final class DefaultBranchGuard
             self::command($git,$root,['merge-base','--is-ancestor',$before,$target],[0,1],$code);
             $require($code === 0, 'local main ahead or diverged; unmerged commits retained');
             $require($update, 'main behind; explicit safe update required');
-            $require($command(['symbolic-ref','--quiet','--short','HEAD']) === 'main' && $command(['status','--porcelain=v1','--untracked-files=all']) === '', 'source changed during verification');
+            $require($command(['symbolic-ref','--quiet','--short','HEAD']) === 'main' && $command(['status','--porcelain=v1','--untracked-files=all']) === $sourceStatus
+                && (!$localLockEdit || self::lockState($git, $root) === $lockState), 'source changed during verification');
             $command(['merge','--ff-only',$target]);
         }
         $require($command(['symbolic-ref','--quiet','--short','HEAD']) === 'main'
@@ -78,11 +81,58 @@ final class DefaultBranchGuard
         if ($reason === '') { $reason = 'already up to date'; }
         elseif ($behindOnly) {
             $dirty = self::command($git, $root, ['status','--porcelain=v1','--untracked-files=all']);
-            $canUpdate = $dirty === '';
+            $canUpdate = $dirty === '' || ($dirty === 'M composer.lock' && self::pathOnlyLockEdit($git, $root));
             $reason = $canUpdate ? '' : 'local edits retained (update needs a clean checkout): '.str_replace("\n", ', ', $dirty);
         }
         return ['component'=>'bot','current'=>$current,'available'=>$available,'behind'=>$behind,
                 'can_update'=>$canUpdate,'reason'=>$reason,'fresh'=>$fresh];
+    }
+
+    /**
+     * True when the unstaged composer.lock differs from HEAD only in packages the
+     * working lock installs from a path repository (dist type "path") and in
+     * plugin-api-version. Every other package, the package names and every other
+     * key must match HEAD exactly. A staged lock edit is never accepted here.
+     */
+    public static function pathOnlyLockEdit(string $git, string $root): bool
+    {
+        try {
+            $head = self::command($git, $root, ['rev-parse','--verify','HEAD:composer.lock']);
+            $staged = self::command($git, $root, ['ls-files','--stage','--','composer.lock']);
+            if (!preg_match('/^100644 ([0-9a-f]{40}) 0\tcomposer\.lock$/D', $staged, $match) || $match[1] !== $head) { return false; }
+            $committed = json_decode(self::command($git, $root, ['cat-file','blob',$head]), true, 64);
+        } catch (\RuntimeException) { return false; }
+        $bytes = @file_get_contents($root.'/composer.lock');
+        $working = is_string($bytes) ? json_decode($bytes, true, 64) : null;
+        return is_array($committed) && is_array($working) && self::pathOnlyDifference($committed, $working);
+    }
+
+    /** Pure comparison used by pathOnlyLockEdit(). */
+    public static function pathOnlyDifference(array $committed, array $working): bool
+    {
+        $sections = ['packages', 'packages-dev'];
+        $rest = static fn (array $lock): array => array_diff_key($lock, array_flip([...$sections, 'plugin-api-version']));
+        if ($rest($committed) !== $rest($working)) { return false; }
+        $path = false;
+        foreach ($sections as $section) {
+            $index = static function ($packages): ?array {
+                if (!is_array($packages) || !array_is_list($packages)) { return null; }
+                $byName = [];
+                foreach ($packages as $package) {
+                    if (!is_array($package) || !is_string($package['name'] ?? null) || isset($byName[$package['name']])) { return null; }
+                    $byName[$package['name']] = $package;
+                }
+                return $byName;
+            };
+            $old = $index($committed[$section] ?? []); $new = $index($working[$section] ?? []);
+            if ($old === null || $new === null || array_diff_key($old, $new) !== [] || array_diff_key($new, $old) !== []) { return false; }
+            foreach ($new as $name => $package) {
+                if ($package === $old[$name]) { continue; }
+                if (($package['dist']['type'] ?? null) !== 'path') { return false; }
+                $path = true;
+            }
+        }
+        return $path;
     }
 
     /** Bind working bytes and the staged index mode/blob; porcelain alone is insufficient. */

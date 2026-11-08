@@ -24,6 +24,7 @@ jobs:
       - run: php tests/local/access-list-sync.php
         timeout-minutes: 2
       - run: php tests/windows/default-branch.php
+      - run: php tests/windows/lock-path-guard.php
       - run: php tests/windows/hosted-verifier.php
       - name: Synthetic authenticated mapping TLS
         if: runner.os == 'Linux'
