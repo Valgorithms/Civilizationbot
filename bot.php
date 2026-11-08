@@ -436,10 +436,13 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
 // config exists the single civ13-tdm.service server above stays in use, so this file can ship before the move.
 $tdm_group = '/home/civ13/tdm.json';
 if (is_file($tdm_group)) {
+    // The script lives in the group's own Civ13 checkout ("repository" in tdm.json), which the host keeps current.
+    $tdm_repository = json_decode((string) file_get_contents($tdm_group), true)['repository'] ?? null;
+    $tdm_script = is_string($tdm_repository) && $tdm_repository !== '' ? rtrim($tdm_repository, '/').'/scripts/shard-group/shard_group.py' : '';
     $tdm_shard_group = static fn (string $region): array => [
         'enabled' => true,
         'python' => '/usr/bin/python3',
-        'script' => '/home/civ13/civ13-git/scripts/shard-group/shard_group.py',
+        'script' => $tdm_script, // empty or missing: host controls refuse with the reason
         'config' => $tdm_group,
         'region' => $region,
         'kill' => 'stop', // save if the world saves, then stop; 'kill' forces it down without saving
