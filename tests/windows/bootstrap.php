@@ -7,6 +7,7 @@ namespace Monolog\Handler { class StreamHandler { public function __construct(..
 namespace Discord { class Discord { public function __construct(array $options) {} } class Stats { public static function new($discord) { return new self(); } } }
 namespace Discord\WebSockets { class Intents { public static function getAllIntents() { return 0; } } }
 namespace React\Http { class Browser { public function __construct(...$args) {} } }
+namespace React\Socket { class Connector { public function __construct(...$args) {} } }
 namespace React\Filesystem { class Factory { public static function create() { return new \stdClass(); } } }
 namespace React\EventLoop { class Loop { public static function get() { return new \stdClass(); } public static function addPeriodicTimer(...$args) { return new \stdClass(); } } }
 namespace React\Promise { function set_rejection_handler($handler): void {} }
