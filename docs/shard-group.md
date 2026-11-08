@@ -17,14 +17,16 @@ to it by itself once `/home/civ13/tdm.json` exists; until then the single
 'shard_group' => [
     'enabled' => true,
     'python' => '/usr/bin/python3',
-    'script' => '/home/civ13/civ13-git/scripts/shard-group/shard_group.py',
+    'script' => '/home/civ13/civ13-tdm-src/scripts/shard-group/shard_group.py',
     'config' => '/home/civ13/tdm.json',
     'region' => 'battle',
     'kill' => 'stop', // or 'kill': forced stop without saving
 ],
 ```
 
-All three paths must be absolute and exist; the script and config must not be
+For civ13.com, `bot.php` takes the script from the group config's
+`repository` (`<repository>/scripts/shard-group/shard_group.py`), so it always
+matches the checkout the group runs from. All three paths must be absolute and exist; the script and config must not be
 links. The bot passes only a fixed action, the config and `--region=<id>`. The
 group config names every path and command. Enable either `gaia_host` or
 `shard_group`, not both. A configured but unusable `shard_group` makes host
