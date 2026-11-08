@@ -12,6 +12,7 @@ on:
       - 'tests/server-directory-startup.php'
       - 'tests/server-directory-remote.php'
       - 'tests/server-directory-standalone.php'
+      - 'tests/system-dns.php'
       - 'scripts/directory/**'
       - 'tests/fixtures/server-directory*.json'
       - 'tests/economy.php'
@@ -28,6 +29,7 @@ on:
       - 'tests/server-directory-startup.php'
       - 'tests/server-directory-remote.php'
       - 'tests/server-directory-standalone.php'
+      - 'tests/system-dns.php'
       - 'scripts/directory/**'
       - 'tests/fixtures/server-directory*.json'
       - 'tests/economy.php'
@@ -63,6 +65,7 @@ jobs:
       - run: php tests/server-directory-startup.php
       - run: php tests/server-directory-remote.php
       - run: php tests/server-directory-addresses.php
+      - run: php tests/system-dns.php
       - run: php -l scripts/directory/serve.php
       - run: php tests/server-directory-standalone.php
       - run: php tests/verifier-integration.php

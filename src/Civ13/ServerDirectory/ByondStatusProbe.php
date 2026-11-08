@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Civ13\ServerDirectory;
 
 use React\EventLoop\LoopInterface;
-use React\Dns\Config\Config as DnsConfig;
 use React\Dns\Resolver\Factory as DnsFactory;
 use React\Dns\Resolver\ResolverInterface;
 use React\Promise\Deferred;
@@ -41,7 +40,7 @@ final class ByondStatusProbe
 
     private static function systemResolver(LoopInterface $loop): ResolverInterface
     {
-        $config = DnsConfig::loadSystemConfigBlocking();
+        $config = SystemDns::load();
         return $config->nameservers ? (new DnsFactory())->create($config, $loop)
             : new class implements ResolverInterface {
                 public function resolve($domain) { return reject(new \RuntimeException('System DNS unavailable')); }

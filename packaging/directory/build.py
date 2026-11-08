@@ -13,7 +13,7 @@ OUTPUT = ROOT / 'build/directory'
 STAGE = OUTPUT / 'civ13-directory'
 SOURCE_FILES = [
     'src/Civ13/ServerDirectory/' + name + '.php'
-    for name in ['Directory', 'Endpoint', 'ByondStatusProbe', 'PublicResolver', 'Standalone']
+    for name in ['Directory', 'Endpoint', 'ByondStatusProbe', 'PublicResolver', 'Standalone', 'SystemDns']
 ] + ['scripts/directory/serve.php', 'scripts/directory/inventory.example.json',
      'docs/launcher-directory.md', 'docs/launcher-directory-standalone.md', 'LICENSE']
 
