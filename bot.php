@@ -352,6 +352,7 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         'legacy_relay' => false,
         'basedir' => '/home/civ13/civ13-tdm',
         // DreamDaemon runs under this systemd unit (Civ13 scripts/README.md, "Supervised hosting"); a non-root bot uses sudo -n for start/stop/restart.
+        // Replaced below by the Barracks region once the sharded TDM group (tdm.json) is set up on the box.
         'systemd' => ['enabled' => true, 'unit' => 'civ13-tdm.service'],
         // Primary channels
         'discussion' => '799952134426591273',
@@ -430,6 +431,36 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         'attack' => '1139614643954921593',
     ],
 ];
+// Sharded TDM (docs/shard-group.md): the always-on Barracks world (region "barracks", port 1714) and the battle
+// world (region "battle", port 1715) of Civ13 shard group "tdm", both driven by shard_group.py. Until the group's
+// config exists the single civ13-tdm.service server above stays in use, so this file can ship before the move.
+$tdm_group = '/home/civ13/tdm.json';
+if (is_file($tdm_group)) {
+    $tdm_shard_group = static fn (string $region): array => [
+        'enabled' => true,
+        'python' => '/usr/bin/python3',
+        'script' => '/home/civ13/civ13-git/scripts/shard-group/shard_group.py',
+        'config' => $tdm_group,
+        'region' => $region,
+        'kill' => 'stop', // save if the world saves, then stop; 'kill' forces it down without saving
+    ];
+    unset($civ13_server_settings['tdm']['systemd']);
+    $civ13_server_settings['tdm']['basedir'] = '/home/civ13/tdm/barracks';
+    $civ13_server_settings['tdm']['shard_group'] = $tdm_shard_group('barracks');
+    $civ13_server_settings['tdm']['shards'] = ['/home/civ13/tdm/battle']; // the player-count channel counts both worlds
+    // Battle posts to /webhook/tdmbattle and shares the TDM channels. It never renames the player-count channel
+    // (the Barracks counts it) but keeps its own round embed there; Discord OOC goes to the Barracks only, which
+    // shares it with the battle world in game (Civ13 region OOC).
+    $civ13_server_settings['tdmbattle'] = array_merge($civ13_server_settings['tdm'], [
+        'supported' => false, // hidden from the hub
+        'name' => 'TDM Battle',
+        'port' => '1715',
+        'basedir' => '/home/civ13/tdm/battle',
+        'shard_group' => $tdm_shard_group('battle'),
+        'shard_of' => 'tdm',
+    ]);
+    unset($civ13_server_settings['tdmbattle']['shards']);
+}
 foreach ($civ13_server_settings as $key => $value) {
     $civ13_server_settings[$key]['key'] = $key;
 } // Key is intended to be a shortname for the full server, so defining both a full name and short key are required. Individual server settings will also get passed around and lose their primary key, so we need to reassign it.

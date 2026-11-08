@@ -378,7 +378,8 @@ class MessageServiceManager
     {
         $gameserver = null;
         foreach ($this->civ13->enabled_gameservers as $candidate) {
-            if ($candidate->ooc !== '' && $candidate->ooc === $message->channel_id) {
+            // A secondary shard region shares its parent's OOC channel; Discord OOC goes to the parent world only.
+            if ($candidate->ooc !== '' && $candidate->ooc === $message->channel_id && $candidate->shardOf === '') {
                 $gameserver = $candidate;
                 break;
             }

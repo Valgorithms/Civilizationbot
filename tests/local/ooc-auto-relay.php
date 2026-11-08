@@ -100,7 +100,9 @@ $civ->ooc_badwords = [['word' => 'badword', 'method' => 'exact', 'category' => '
 $civ->verifier = (new ReflectionClass(RelayVerifier::class))->newInstanceWithoutConstructor();
 $nomads = (new ReflectionClass(RelayServer::class))->newInstanceWithoutConstructor(); $nomads->ooc = 'ooc-nomads';
 $tdm = (new ReflectionClass(RelayServer::class))->newInstanceWithoutConstructor(); $tdm->ooc = 'ooc-tdm';
-$civ->enabled_gameservers = ['nomads' => $nomads, 'tdm' => $tdm];
+// A secondary shard region (the TDM battle world) shares the Barracks' OOC channel and is listed first on purpose.
+$battle = (new ReflectionClass(RelayServer::class))->newInstanceWithoutConstructor(); $battle->ooc = 'ooc-tdm'; $battle->shardOf = 'tdm';
+$civ->enabled_gameservers = ['nomads' => $nomads, 'tdmbattle' => $battle, 'tdm' => $tdm];
 $manager = (new ReflectionClass(\Civ13\MessageServiceManager::class))->newInstanceWithoutConstructor(); $manager->civ13 = $civ;
 $guild = (object) ['owner_id' => 'owner', 'members' => new RelayLookup(['20' => (object) ['nick' => 'Taislin']]), 'channels' => new RelayLookup(['77' => (object) ['name' => 'rules']])];
 $foreign = (object) ['owner_id' => 'someone-else', 'members' => new RelayLookup([]), 'channels' => new RelayLookup([])];
@@ -114,6 +116,7 @@ $manager->relayOocMessage($message(['content' => '0']));
 check(end($nomads->sent) === ['valckey', '0'], 'Listener dropped a message of "0"');
 $manager->relayOocMessage($message(['channel_id' => 'ooc-tdm', 'content' => 'tdm chat']));
 check($tdm->sent === [['valckey', 'tdm chat']], 'Second server channel not routed');
+check($battle->sent === [], 'Discord OOC reached a secondary shard region instead of its parent');
 $nomads->sent = [];
 foreach ([
     'other channel' => ['channel_id' => 'general'],
