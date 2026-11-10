@@ -1289,6 +1289,13 @@ class HttpServiceManager
         foreach ($this->civ13->enabled_gameservers as &$gameserver) {
             // General usage server endpoints
             $server_endpoint = '/'.$gameserver->key;
+            if ($gameserver->playLink !== null) {
+                // Capture this server by value: never bind every route to the last loop entry.
+                $play = $gameserver->playLink;
+                $name = $gameserver->name;
+                $this->httpHandler->offsetSet($server_endpoint.'/play',
+                    static fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $play->handle($request, $name));
+            }
             $this->httpHandler
                 ->offsetSet(
                     $server_endpoint.'/bans',
