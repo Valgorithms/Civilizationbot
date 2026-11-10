@@ -68,9 +68,11 @@ class GameServer
     public StreamSelectLoop $loop;
     public bool $ready = false;
     private ?NativeLifecycle $nativeLifecycle = null;
-    /** Host script control: gaia_host.py for a scheduled-task host, or shard_group.py for one region of a shard group. */
+    /** Opt-in confirmed `<key>manage` controls for a shard_group region (docs/launcher-management.md). */
     public ?\Civ13\Local\LauncherManagement $launcherManagement = null;
+    /** Set whenever management is enabled, even if its configuration is invalid, so legacy lifecycle commands fail closed. */
     private bool $launcherManagementRequired = false;
+    /** Host script control: gaia_host.py for a scheduled-task host, or shard_group.py for one region of a shard group. */
     private \Civ13\Local\GaiaHostControl|\Civ13\Local\ShardRegionControl|null $gaiaHost = null;
     /** Set when shard_group is configured but unusable: host controls then refuse instead of launching DreamDaemon. */
     private ?string $hostUnavailable = null;
@@ -213,9 +215,10 @@ class GameServer
         // Additional launcher actions never inherit legacy role authority or implicit enablement.
         if (($options['shard_group']['management']['enabled'] ?? false) === true && $this->hostUnavailable === null && $this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
             try {
-                $this->launcherManagement = new \Civ13\Local\LauncherManagement($shard['management'], $shard['python'], $shard['script'], $shard['config'], $shard['region'],
-                    new \Civ13\Local\AsyncProcess($this->loop, $shard['temporary_directory'] ?? sys_get_temp_dir()));
-            } catch (\InvalidArgumentException $error) {
+                $this->launcherManagement = new \Civ13\Local\LauncherManagement((array) $shard['management'], (string) ($shard['python'] ?? ''), (string) ($shard['script'] ?? ''),
+                    (string) ($shard['config'] ?? ''), (string) ($shard['region'] ?? ''),
+                    new \Civ13\Local\AsyncProcess($this->loop, $shard['temporary_directory'] ?? sys_get_temp_dir()), null, "{$this->key}manage");
+            } catch (\InvalidArgumentException|\TypeError $error) {
                 $this->logger->error("GameServer {$this->key}: launcher management configuration invalid; new controls remain disabled.");
             }
         }

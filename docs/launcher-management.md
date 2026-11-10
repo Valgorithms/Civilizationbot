@@ -56,6 +56,8 @@ The server key selects the configured region; no command accepts a region overri
 - `<key>manage ACTION`: returns an impact warning and 60-second one-use nonce.
 - `<key>manage confirm ACTION NONCE`: execute exactly that previewed action.
 - `<key>manage cancel`: discard the pending preview, not an already submitted operation.
+- `<key>manage acknowledge`: after an unknown outcome, preview clearing the block; it
+  needs `<key>manage confirm acknowledge NONCE` and never contacts the host.
 
 Confirmation binds to the actor, guild, channel, action and configured region. A new
 preview supersedes that actor's old preview in that channel. Authorization is checked
@@ -75,12 +77,15 @@ again at execution; the nonce is consumed before dispatch. There is no auto-retr
 | force-restart | Force stop then ordinary start from last completed save; receipt action is `start` |
 
 Raw config, logs, paths and error strings are never sent by this facade. Unknown or
-malformed responses cannot become success. Refusals can follow partial effects, so
-refused mutations and transport/protocol errors block subsequent mutations for this
-manager instance. Read-only status remains possible after the in-flight worker ends.
-Inspect the local host operation receipt and actual state before restarting the bot to
-clear this in-memory latch. Restart is **not** evidence that a partial operation was
-reversed. The latch does not survive process restart; confirmations do not either.
+malformed responses cannot become success. Host refusals come from prechecks that run
+before any effect, so an ordinary refusal (already running, busy, players connected)
+is reported without blocking further actions. A `force-restart` refusal can follow a
+kill, and transport/protocol errors leave the outcome unknown: those block subsequent
+mutations for this manager instance. Read-only status remains possible after the
+in-flight worker ends. Inspect the local host operation receipt and actual state, then
+clear the block with a confirmed `<key>manage acknowledge`. Acknowledging is **not**
+evidence that a partial operation was reversed. The latch does not survive a bot
+restart; confirmations do not either.
 
 Controller locks remain the authority for other launcher/host clients. This facade
 serializes only its own calls. Do not configure duplicate server entries for the same
@@ -103,8 +108,8 @@ This phase deliberately does **not** mirror everything as unrestricted commands.
    may start other missing bridges even when a region is selected; do not pretend it
    is region-only. Check-update fetches shared remote refs, so label that effect.
 3. **Fresh world/reset:** preserve PR #4412's recoverable archive, character records,
-   stopped-region and connected-transfer-group guards. Its current shard wrapper
-   emits `accepted` without the normal `ok` envelope; fix/version that contract first.
+   stopped-region and connected-transfer-group guards. The shard wrapper now
+   emits the normal `ok` envelope around `accepted`.
    Require exact named world/reset scope, fresh confirmation and audited restore
    evidence. No delete/reset action is accepted by this phase.
 4. **Group epoch/all-region controls:** separate group authority, explicit affected

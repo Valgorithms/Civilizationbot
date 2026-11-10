@@ -14,7 +14,7 @@ final class LauncherManagement
     private bool $uncertain = false;
 
     public function __construct(private array $policy, private string $python, private string $script,
-        private string $config, private string $region, private $execute, private $clock = null)
+        private string $config, private string $region, private $execute, private $clock = null, private string $command = 'manage')
     {
         if (($policy['enabled'] ?? null) !== true || !is_callable($execute)) { throw new \InvalidArgumentException('Management requires explicit enablement and executor'); }
         foreach (['guild_id'] as $key) { self::identity($policy[$key] ?? null); }
@@ -44,13 +44,15 @@ final class LauncherManagement
         $now = ($this->clock)();
         foreach ($this->pending as $id => $request) { if ($request['expires'] <= $now) { unset($this->pending[$id]); } }
         $key = $actor.':'.$guild.':'.$channel;
-        $parts = preg_split('/\s+/', trim($input));
+        $input = trim($input);
+        $parts = preg_split('/\s+/', $input);
         if ($input === '' || $input === 'help') { return resolve('Enabled region actions: '.implode(', ', $this->policy['actions']).'. Mutations require a one-use confirmation within 60 seconds.'); }
         if ($input === 'cancel') { unset($this->pending[$key]); return resolve('Pending confirmation canceled. This does not cancel a submitted host operation.'); }
         $confirm = ($parts[0] ?? '') === 'confirm';
         $action = $confirm ? ($parts[1] ?? '') : ($parts[0] ?? '');
+        if ($action === 'acknowledge' && count($parts) === ($confirm ? 3 : 1)) { return resolve($this->acknowledge($key, $confirm ? $parts[2] : null, $now)); }
         if (!in_array($action, $this->policy['actions'], true) || count($parts) !== ($confirm ? 3 : 1)) { return resolve('Unsupported or disabled action. Use manage help; arbitrary arguments are not supported.'); }
-        if ($this->busy || ($this->uncertain && $action !== 'status')) { return resolve('Management is busy or an earlier outcome is unknown. Inspect the host receipt locally before retrying; no automatic retry will occur.'); }
+        if ($this->busy || ($this->uncertain && $action !== 'status')) { return resolve('Management is busy or an earlier outcome is unknown. Inspect the host receipt locally, then clear the block with {$this->command} acknowledge; no automatic retry will occur.'); }
         if ($action !== 'status') {
             if (!$confirm) {
                 $token = bin2hex(random_bytes(12));
@@ -64,7 +66,7 @@ final class LauncherManagement
                     'thaw' => 'Resumes the world; a cold world starts from its save and may refresh its build.',
                     default => 'Changes this world.',
                 };
-                return resolve("Region {$this->region}: {$action}. {$warning} Confirm with: manage confirm {$action} {$token} (use this server's command prefix). Expires in 60 seconds.");
+                return resolve("Region {$this->region}: {$action}. {$warning} Confirm with: {$this->command} confirm {$action} {$token} (with the bot's command prefix). Expires in 60 seconds.");
             }
             $pending = $this->pending[$key] ?? null;
             if (!$pending || $pending['action'] !== $action || !hash_equals($pending['token'], $parts[2])) { return resolve('Confirmation is invalid, expired or already used.'); }
@@ -81,11 +83,28 @@ final class LauncherManagement
         } catch (\Throwable $error) { return resolve($this->unknown($action)); }
     }
 
+    /** Clears the uncertain-outcome latch after an operator has inspected the host; a local-only, confirmed step. */
+    private function acknowledge(string $key, ?string $token, int $now): string
+    {
+        if (!$this->uncertain) { return 'No unknown or refused outcome is blocking new actions.'; }
+        if ($this->busy) { return 'A host request is still in flight; wait for it to finish before acknowledging.'; }
+        if ($token === null) {
+            $token = bin2hex(random_bytes(12));
+            $this->pending[$key] = ['action' => 'acknowledge', 'token' => $token, 'expires' => $now + 60];
+            return "Region {$this->region}: new actions are blocked after an unknown or refused outcome. Only clear this after checking status and the local host receipt. Confirm with: {$this->command} confirm acknowledge {$token} (with the bot's command prefix). Expires in 60 seconds.";
+        }
+        $pending = $this->pending[$key] ?? null;
+        if (!$pending || $pending['action'] !== 'acknowledge' || !hash_equals($pending['token'], $token)) { return 'Confirmation is invalid, expired or already used.'; }
+        unset($this->pending[$key]);
+        $this->uncertain = false;
+        return "Region {$this->region}: block cleared. This does not change or verify the host state.";
+    }
+
     private function unknown(string $action): string
     {
         $this->busy = false;
         if ($action !== 'status') { $this->uncertain = true; }
-        return 'No verified host result. Outcome may be unknown; inspect the local host receipt before retrying. New mutations are blocked for this bot instance after an uncertain mutation. No raw logs are disclosed.';
+        return "No verified host result. Outcome may be unknown; inspect the local host receipt before retrying. New mutations are blocked until an operator runs {$this->command} acknowledge. No raw logs are disclosed.";
     }
 
     private function answer(string $action, array $result): string
@@ -93,10 +112,13 @@ final class LauncherManagement
         if (!is_int($result['exit_code'] ?? null) || !is_string($result['stdout'] ?? null)) { throw new \UnexpectedValueException('Invalid transport'); }
         $data = json_decode($result['stdout'], true, 32, JSON_THROW_ON_ERROR);
         if (!is_array($data) || !is_bool($data['ok'] ?? null)) { throw new \UnexpectedValueException('Invalid host envelope'); }
-        // A refusal may follow partial effects (e.g. force-restart killed a process before start failed).
+        // Host prechecks refuse before acting, except force-restart: it can kill the world and then have its start refused.
         if (!$data['ok']) {
-            if ($action !== 'status') { $this->uncertain = true; }
-            return 'Host refused the request. Inspect the local receipt for its reason and any partial effects; do not assume nothing changed. Further mutations are blocked after a refused mutation.';
+            if ($action === 'force-restart') {
+                $this->uncertain = true;
+                return "Host refused the request after it may have stopped the world. Inspect the local receipt and status, then clear the block with {$this->command} acknowledge.";
+            }
+            return 'Host refused the request (for example it is already in that state, busy or players are connected). Check status; the host receipt has the reason.';
         }
         if ($result['exit_code'] !== 0) { throw new \UnexpectedValueException('Inconsistent exit'); }
         if ($action === 'status') {

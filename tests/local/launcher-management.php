@@ -17,7 +17,7 @@ function confirm(LauncherManagement $manager, string $action): string {
 $policy = ['enabled'=>true,'guild_id'=>'22','operator_ids'=>['11','12'],'channel_ids'=>['33','34'],'actions'=>LauncherManagement::ACTIONS];
 $now = 100; $calls = []; $response = ['ok'=>true,'regions'=>['gaia'=>['state'=>'awake','world'=>['clients'=>2], 'operation'=>['phase'=>'done']]]];
 $executor = function ($argv,$timeout) use (&$calls,&$response) { $calls[] = [$argv,$timeout]; return resolve(['exit_code'=>0,'stdout'=>json_encode($response)]); };
-$make = function ($execute = null) use ($policy, $executor, &$now) { return new LauncherManagement($policy, PHP_BINARY, __FILE__, __FILE__, 'gaia', $execute ?? $executor, function () use (&$now) { return $now; }); };
+$make = function ($execute = null) use ($policy, $executor, &$now) { return new LauncherManagement($policy, PHP_BINARY, __FILE__, __FILE__, 'gaia', $execute ?? $executor, function () use (&$now) { return $now; }, 'gaiamanage'); };
 $m = $make();
 foreach ([['99','22','33',false],['11','99','33',false],['11','22','99',false],['11','','33',false],['11','22','33',true]] as [$user,$guild,$channel,$bot]) {
     check(str_contains(line($m->handle($user,$guild,$channel,'status',$bot)), 'not authorized'), 'ACL denial');
@@ -49,11 +49,31 @@ $c=confirm($m,'stop'); line($m->handle('11','22','33','cancel'));
 check(str_contains(line($m->handle('11','22','33',$c)),'invalid'),'cancel');
 $c=confirm($m,'stop'); confirm($m,'restart');
 check(str_contains(line($m->handle('11','22','33',$c)),'invalid'),'new preview supersedes old');
-foreach ([['ok'=>true,'accepted'=>['other'=>['accepted'=>true,'action'=>'start']]], ['ok'=>true,'accepted'=>['gaia'=>['accepted'=>true,'action'=>'stop']]], ['accepted'=>['gaia'=>['accepted'=>true,'action'=>'start']]], ['ok'=>false,'error'=>'SECRET <@123> /private/path']] as $bad) {
+foreach ([['ok'=>true,'accepted'=>['other'=>['accepted'=>true,'action'=>'start']]], ['ok'=>true,'accepted'=>['gaia'=>['accepted'=>true,'action'=>'stop']]], ['accepted'=>['gaia'=>['accepted'=>true,'action'=>'start']]]] as $bad) {
     $m=$make(); $c=confirm($m,'start'); $response=$bad;
     $text=line($m->handle('11','22','33',$c)); check(!str_contains($text,'SECRET')&&!str_contains($text,'/private/path'),'raw output not leaked');
-    check(str_contains(line($m->handle('11','22','33','start')),'unknown'),'uncertain/refused mutation latched');
+    check(str_contains(line($m->handle('11','22','33','start')),'unknown'),'uncertain mutation latched');
 }
+// A host precheck refusal happens before any effect: reported without its raw text, and not latched.
+$m=$make(); $c=confirm($m,'start'); $response=['ok'=>false,'refused'=>['gaia'=>'SECRET <@123> /private/path']];
+$text=line($m->handle('11','22','33',$c));
+check(str_contains($text,'refused') && !str_contains($text,'SECRET') && !str_contains($text,'/private/path'),'refusal redacted');
+check(str_contains(line($m->handle('11','22','33','start')),'Confirm with'),'precheck refusal does not latch');
+// force-restart can kill the world before its start is refused: latched until acknowledged.
+$m=$make(); $c=confirm($m,'force-restart'); $response=['ok'=>false,'refused'=>['gaia'=>'x']];
+check(str_contains(line($m->handle('11','22','33',$c)),'may have stopped'),'force-restart refusal warns of partial effect');
+check(str_contains(line($m->handle('11','22','33','start')),'unknown'),'force-restart refusal latched');
+$response=['ok'=>true,'regions'=>['gaia'=>['state'=>'stopped']]];
+check(str_contains(line($m->handle('11','22','33','status')),'state stopped'),'status allowed while latched');
+$c=confirm($m,'acknowledge');
+check(str_contains(line($m->handle('12','22','33',$c)),'invalid'),'acknowledge is actor-bound');
+check(str_contains(line($m->handle('11','22','33','start')),'unknown'),'still latched before confirmation');
+$before=count($calls);
+check(str_contains(line($m->handle('11','22','33',$c)),'cleared'),'confirmed acknowledge clears latch');
+check(count($calls)===$before,'acknowledge never runs the host');
+check(str_contains(line($m->handle('11','22','33','start')),'Confirm with: gaiamanage confirm start'),'mutations allowed after acknowledge, prompt names the command');
+check(str_contains(line($m->handle('11','22','33','acknowledge')),'No unknown'),'acknowledge without a latch is a no-op');
+check(str_contains(line($m->handle('99','22','33','acknowledge')),'not authorized'),'acknowledge needs the ACL');
 $m=$make(fn()=>reject(new RuntimeException('PRIVATE /path'))); $c=confirm($m,'start');
 check(!str_contains(line($m->handle('11','22','33',$c)), 'PRIVATE'),'transport redacted');
 $d=new Deferred(); $m=$make(fn()=>$d->promise()); $c=confirm($m,'start'); $m->handle('11','22','33',$c);
