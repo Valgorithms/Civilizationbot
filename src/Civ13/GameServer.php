@@ -69,6 +69,8 @@ class GameServer
     public bool $ready = false;
     private ?NativeLifecycle $nativeLifecycle = null;
     /** Host script control: gaia_host.py for a scheduled-task host, or shard_group.py for one region of a shard group. */
+    public ?\Civ13\Local\LauncherManagement $launcherManagement = null;
+    private bool $launcherManagementRequired = false;
     private \Civ13\Local\GaiaHostControl|\Civ13\Local\ShardRegionControl|null $gaiaHost = null;
     /** Set when shard_group is configured but unusable: host controls then refuse instead of launching DreamDaemon. */
     private ?string $hostUnavailable = null;
@@ -205,6 +207,16 @@ class GameServer
                 // Never fall back to launching DreamDaemon beside the group's host: refuse host controls instead.
                 $this->logger->error("GameServer {$options['key']} shard_group control unavailable: {$error->getMessage()}");
                 $this->hostUnavailable = $error->getMessage();
+            }
+        }
+        $this->launcherManagementRequired = ($options['shard_group']['management']['enabled'] ?? false) === true;
+        // Additional launcher actions never inherit legacy role authority or implicit enablement.
+        if (($options['shard_group']['management']['enabled'] ?? false) === true && $this->hostUnavailable === null && $this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
+            try {
+                $this->launcherManagement = new \Civ13\Local\LauncherManagement($shard['management'], $shard['python'], $shard['script'], $shard['config'], $shard['region'],
+                    new \Civ13\Local\AsyncProcess($this->loop, $shard['temporary_directory'] ?? sys_get_temp_dir()));
+            } catch (\InvalidArgumentException $error) {
+                $this->logger->error("GameServer {$this->key}: launcher management configuration invalid; new controls remain disabled.");
             }
         }
         if (is_string($options['shard_of'] ?? null) && $options['shard_of'] !== '' && $options['shard_of'] !== $options['key']) {
@@ -876,6 +888,7 @@ class GameServer
      */
     public function Host(?Message $message = null): PromiseInterface
     {
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('start'); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost !== null) { return $this->gaiaHostRequest('start', $message); }
@@ -903,6 +916,7 @@ class GameServer
     /** Shuts the server down (via `killciv13`), optionally announcing it in OOC first. */
     public function Kill(?Message $message = null, bool $notify = true): PromiseInterface
     {
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('stop'); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
@@ -933,6 +947,7 @@ class GameServer
     /** Kills the server and re-hosts it 20s later, optionally announcing the restart in OOC. */
     public function Restart(?Message $message = null, bool $notify = true): PromiseInterface
     {
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('restart'); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
@@ -961,6 +976,7 @@ class GameServer
     /** Pulls and compiles master while the server is stopped (gaia_host and shard_group hosts only). */
     public function Update(?Message $message = null): PromiseInterface
     {
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost === null) { return reject(new \RuntimeException('Updating is only available for a gaia_host or shard_group server')); }
         return $this->gaiaHostRequest('update', $message);
