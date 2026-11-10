@@ -6,7 +6,6 @@ on:
     paths:
       - 'src/Civ13/GameServer.php'
       - 'src/Civ13/ServerPlayLink.php'
-      - 'src/Civ13/HttpServiceManager.php'
       - 'src/Civ13/Civ13.php'
       - 'tests/local/play-link.php'
       - 'src/Civ13/RoundStartTimestamp.php'

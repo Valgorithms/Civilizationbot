@@ -183,7 +183,7 @@ namespace {
         check($active['Nomads'] === 'Heartbeat advancing' && ! array_key_exists('Connectivity', $active), 'Heartbeat or removed connectivity field is incorrect');
         check($active['Players (1)'] === 'player' && $server->localServerPlayerCount() === 1, 'Optional Approved field corrupted player metadata');
         check($server->players === ['player'], 'Confirmed player cache not populated');
-        $server->playLink = Civ13\ServerPlayLink::fromConfig(['url' => 'https://join.example.org/nomads/play', 'host' => 'game.example.org', 'port' => 1715], 'nomads', 'byond');
+        $server->playLink = Civ13\ServerPlayLink::fromConfig(['url' => 'https://join.example.org/nomads/play'], 'nomads', 'byond');
         $withoutRound = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
         check($withoutRound['components'][0]['components'][0]['url'] === $server->playLink->url, 'Fresh heartbeat without round metadata lost Play');
         $server->current_round = 'fixture';
