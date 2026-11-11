@@ -1262,9 +1262,9 @@ class GameServer
         $temp = [];
         $oldlist = [];
         foreach (explode('|||', $banlog) as $bsplit) {
-            if (! $bsplit) {
+            if (trim($bsplit) === '') {
                 continue;
-            } // Skip empty lines
+            } // Skip empty lines, including the line break after the final row
             $ban = explode(';', trim($bsplit));
             if (isset($ban[8])) {
                 if ($ckey && $ckey != $ban[8]) {
@@ -1272,8 +1272,10 @@ class GameServer
                 }
                 if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') {
                     $oldlist[] = $bsplit;
-                } else {
+                } elseif ($ckey) {
                     $temp[$ban[8]] = $bsplit;
+                } else {
+                    $temp[] = $bsplit; // A full rewrite must keep every incomplete ban, including several for one ckey
                 }
             } elseif (! $ckey) {
                 $oldlist[] = $bsplit;
@@ -1298,8 +1300,8 @@ class GameServer
         }, $logs);
 
         $updated = array_values($temp);
-        if ($ckey && ! $updated) {
-            return resolve(''); // Nothing to backfill for this ckey, so nothing is appended to the bans file
+        if (! $updated && ($ckey || ! $oldlist)) {
+            return resolve(''); // Nothing to backfill or keep, so the bans file is left exactly as it is
         }
         
         /**

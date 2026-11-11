@@ -69,7 +69,8 @@ try {
     $short = 'Server;;uid;reason;admin;date;timestamp;999 years|||';
     $perma = 'Server;;uid;reason;admin;date;timestamp;999 years;permaplayer;cid;ip|||';
     $timed = 'Server;;uid;reason;admin;date;timestamp;3 days;timedplayer|||';
-    file_put_contents($root.'/a'.Civ13::bans, implode(PHP_EOL, [$short, $perma, $timed]).PHP_EOL);
+    $second = 'Server;;uid2;second reason;admin;date;timestamp;9 days;timedplayer|||';
+    file_put_contents($root.'/a'.Civ13::bans, implode(PHP_EOL, [$short, $perma, $timed, $second]).PHP_EOL);
     file_put_contents($root.'/a'.Civ13::playerlogs, 'someone;203.0.113.5;cid1;uid;date|'.PHP_EOL);
     $a = server($root.'/a', 'a');
     $b = server($root.'/b', 'b');
@@ -85,7 +86,7 @@ try {
     // A full rewrite keeps every row, including rows without a ckey column, and fills in what the player log knows.
     $a->banlog_update(null, 'timedplayer;198.51.100.7;cid9;uid;date|');
     $rewritten = (string) file_get_contents($root.'/a'.Civ13::bans);
-    check(substr_count($rewritten, rtrim($short, '|')) === 2 && str_contains($rewritten, 'permaplayer;cid;ip') && str_contains($rewritten, 'timedplayer;cid9;198.51.100.7'), 'Full rewrite lost or failed to backfill a row: '.$rewritten);
+    check(substr_count($rewritten, rtrim($short, '|')) === 2 && str_contains($rewritten, 'permaplayer;cid;ip') && substr_count($rewritten, 'timedplayer;cid9;198.51.100.7') === 2 && str_contains($rewritten, 'second reason') && substr_count($rewritten, '|||') === 4, 'Full rewrite lost or failed to backfill a row: '.$rewritten);
     check($a->legacyBancheck('permaplayer') && $a->legacyBancheck('timedplayer'), 'Rewritten bans file no longer matches');
 
     // A message to every server succeeds when any server accepted it, whatever the order.
