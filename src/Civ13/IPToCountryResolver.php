@@ -59,20 +59,34 @@ class IPToCountryResolver
      */
     public static function Online(string $ip): array
     {
-        // TODO: Add caching and error handling for 429s
+        // TODO: Add error handling for 429s
+        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return [];
+        } // Never place anything but an IP address in the lookup URL
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "http://ip-api.com/php/$ip?fields=21757750");
+        curl_setopt($ch, CURLOPT_URL, 'http://ip-api.com/json/'.rawurlencode($ip).'?fields=21757750');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
-        if (($response = curl_exec($ch)) === false) {
+        $response = curl_exec($ch);
+
+        return self::parseResponse($response);
+    }
+
+    /**
+     * Decodes an ip-api JSON reply. Returns an empty array for a failed request,
+     * a rate-limit or error reply, or anything that is not a successful lookup.
+     *
+     * The reply arrives over plain HTTP, so it is only ever decoded as JSON data
+     * and never passed to unserialize().
+     */
+    public static function parseResponse(string|bool|null $response): array
+    {
+        if (! is_string($response) || $response === '') {
             return [];
-        } // If the request failed, return an empty array
-        if (! $array = @unserialize($response)) {
-            return [];
-        } // If the request timed out or if the service 429'd us
-        assert(is_array($array));
-        if (! isset($array['status']) || $array['status'] !== 'success') {
+        }
+        $array = json_decode($response, true);
+        if (! is_array($array) || ($array['status'] ?? null) !== 'success') {
             return [];
         }
 
@@ -89,8 +103,11 @@ class IPToCountryResolver
     {
         /** @var string[][] */
         $ranges = [];
-        $numbers = explode('.', $ip);
-        if (! include('ip_files/'.$numbers[0].'.php')) {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            return 'unknown';
+        } // The first octet names the file to include, so only a real IPv4 address may reach it
+        $numbers = array_map('intval', explode('.', $ip));
+        if (! @include('ip_files/'.$numbers[0].'.php')) {
             return 'unknown';
         } // $ranges is defined in the included file
         $code = ($numbers[0] << 24) | ($numbers[1] << 16) | ($numbers[2] << 8) | $numbers[3];

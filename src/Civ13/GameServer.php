@@ -68,6 +68,10 @@ class GameServer
     public StreamSelectLoop $loop;
     public bool $ready = false;
     private ?NativeLifecycle $nativeLifecycle = null;
+    /** Opt-in confirmed `<key>manage` controls for a shard_group region (docs/launcher-management.md). */
+    public ?\Civ13\Local\LauncherManagement $launcherManagement = null;
+    /** Set whenever management is enabled, even if its configuration is invalid, so legacy lifecycle commands fail closed. */
+    private bool $launcherManagementRequired = false;
     /** Host script control: gaia_host.py for a scheduled-task host, or shard_group.py for one region of a shard group. */
     private \Civ13\Local\GaiaHostControl|\Civ13\Local\ShardRegionControl|null $gaiaHost = null;
     /** Set when shard_group is configured but unusable: host controls then refuse instead of launching DreamDaemon. */
@@ -211,6 +215,17 @@ class GameServer
                 // Never fall back to launching DreamDaemon beside the group's host: refuse host controls instead.
                 $this->logger->error("GameServer {$options['key']} shard_group control unavailable: {$error->getMessage()}");
                 $this->hostUnavailable = $error->getMessage();
+            }
+        }
+        $this->launcherManagementRequired = ($options['shard_group']['management']['enabled'] ?? false) === true;
+        // Additional launcher actions never inherit legacy role authority or implicit enablement.
+        if (($options['shard_group']['management']['enabled'] ?? false) === true && $this->hostUnavailable === null && $this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
+            try {
+                $this->launcherManagement = new \Civ13\Local\LauncherManagement((array) $shard['management'], (string) ($shard['python'] ?? ''), (string) ($shard['script'] ?? ''),
+                    (string) ($shard['config'] ?? ''), (string) ($shard['region'] ?? ''),
+                    new \Civ13\Local\AsyncProcess($this->loop, $shard['temporary_directory'] ?? sys_get_temp_dir()), null, "{$this->key}manage");
+            } catch (\InvalidArgumentException|\TypeError $error) {
+                $this->logger->error("GameServer {$this->key}: launcher management configuration invalid; new controls remain disabled.");
             }
         }
         if (is_string($options['shard_of'] ?? null) && $options['shard_of'] !== '' && $options['shard_of'] !== $options['key']) {
@@ -446,8 +461,10 @@ class GameServer
     {
         $result = true;
         foreach ($paths as $filepath => $channel) {
-            $this->gameChatFileRelay($this->basedir.$filepath, $channel)
-                ?: (($result = false) && $this->logger->error("Failed to relay chat messages to $filepath"));
+            if (! $this->gameChatFileRelay($this->basedir.$filepath, $channel)) {
+                $result = false;
+                $this->logger->debug("No chat was relayed from $filepath");
+            }
         }
 
         return $result;
@@ -540,15 +557,12 @@ class GameServer
             return reject(new \InvalidArgumentException($err));
         }
         if (isset($this->civ13->moderator) && $this->moderate && $moderate) {
-            $badwords = $ooc ? $this->civ13->ooc_badwords : $this->civ13->ic_badwords;
-            $badword_warnings = $ooc ? $this->civ13->ooc_badwords_warnings : $this->civ13->ic_badwords_warnings;
-            $this->civ13->moderator->moderate(
-                $this,
-                $array['ckey'],
-                $array['message'],
-                $badwords,
-                $badword_warnings
-            );
+            // The counters are passed by reference from the bot itself so repeat violations accumulate and persist.
+            if ($ooc) {
+                $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ooc_badwords, $this->civ13->ooc_badwords_warnings, 'ooc_badwords_warnings.json');
+            } else {
+                $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ic_badwords, $this->civ13->ic_badwords_warnings, 'ic_badwords_warnings.json');
+            }
         }
         try {
             $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']));
@@ -891,6 +905,7 @@ class GameServer
      */
     public function Host(?Message $message = null): PromiseInterface
     {
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('start'); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost !== null) { return $this->gaiaHostRequest('start', $message); }
@@ -918,6 +933,7 @@ class GameServer
     /** Shuts the server down (via `killciv13`), optionally announcing it in OOC first. */
     public function Kill(?Message $message = null, bool $notify = true): PromiseInterface
     {
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('stop'); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
@@ -934,7 +950,7 @@ class GameServer
             return $this->systemdRequest('stop', $message);
         }
         if ($notify) {
-            $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
+            $sender = (string) ((($message && $message->user_id) ? ($this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] ?? null) : null) ?? $this->civ13->discord->username ?? 'Server');
             $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender);
         }
         $this->civ13->loop->addTimer(10, function () use ($message): void {
@@ -948,6 +964,7 @@ class GameServer
     /** Kills the server and re-hosts it 20s later, optionally announcing the restart in OOC. */
     public function Restart(?Message $message = null, bool $notify = true): PromiseInterface
     {
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('restart'); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
@@ -976,6 +993,7 @@ class GameServer
     /** Pulls and compiles master while the server is stopped (gaia_host and shard_group hosts only). */
     public function Update(?Message $message = null): PromiseInterface
     {
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost === null) { return reject(new \RuntimeException('Updating is only available for a gaia_host or shard_group server')); }
         return $this->gaiaHostRequest('update', $message);
@@ -1055,8 +1073,7 @@ class GameServer
 
         $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->username);
         if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
-            if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']);
-            $msg = "<@&$role>, {$this->name} $msg";
+            $msg = (isset($this->civ13->role_ids['mapswap']) ? "<@&{$this->civ13->role_ids['mapswap']}>, " : '')."{$this->name} $msg";
             $channel->sendMessage($msg);
         }
         $this->loop->addTimer(10, fn () => OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::mapswap." $mapto"));
@@ -1077,10 +1094,12 @@ class GameServer
     }
 
     /** Trims the bans and player-log files via {@see __cleanupLog()}. */
-    public function cleanupLogs(): void
+    public function cleanupLogs(): bool
     {
-        $this->__cleanupLog($this->basedir.Civ13::bans);
-        $this->__cleanupLog($this->basedir.Civ13::playerlogs);
+        $bans = $this->__cleanupLog($this->basedir.Civ13::bans);
+        $playerlogs = $this->__cleanupLog($this->basedir.Civ13::playerlogs);
+
+        return $bans && $playerlogs;
     }
     /**
      * Rewrites the log file at `$path`, dropping entries older than the retention window.
@@ -1158,7 +1177,7 @@ class GameServer
         while (($fp = fgets($file, 4096)) !== false) {
             // str_replace(PHP_EOL, '', $fp); // Is this necessary?
             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-            if ((count($linesplit) >= 8) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
+            if (isset($linesplit[8]) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
                 fclose($file);
 
                 return true;
@@ -1190,7 +1209,7 @@ class GameServer
             $this->updateBanCache();
         }
         foreach (explode(PHP_EOL, $this->bancheck_cache) as $line) {
-            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey)) {
+            if (isset(($linesplit = explode(';', trim(str_replace('|||', '', $line))))[8]) && ($linesplit[8] === $ckey)) {
                 return true;
             }
         } // $split_ckey[0] is the ckey
@@ -1258,9 +1277,9 @@ class GameServer
         $temp = [];
         $oldlist = [];
         foreach (explode('|||', $banlog) as $bsplit) {
-            if (! $bsplit) {
+            if (trim($bsplit) === '') {
                 continue;
-            } // Skip empty lines
+            } // Skip empty lines, including the line break after the final row
             $ban = explode(';', trim($bsplit));
             if (isset($ban[8])) {
                 if ($ckey && $ckey != $ban[8]) {
@@ -1268,12 +1287,14 @@ class GameServer
                 }
                 if (isset($ban[9], $ban[10]) && $ban[9] != '0' && $ban[10] != '0') {
                     $oldlist[] = $bsplit;
-                } else {
+                } elseif ($ckey) {
                     $temp[$ban[8]] = $bsplit;
+                } else {
+                    $temp[] = $bsplit; // A full rewrite must keep every incomplete ban, including several for one ckey
                 }
-            } else {
-                $temp[$ckey] = $bsplit;
-            } // This is a ban that doesn't have a ckey, so we'll just add it to the temp array
+            } elseif (! $ckey) {
+                $oldlist[] = $bsplit;
+            } // A row without a ckey column cannot be backfilled: a full rewrite keeps every such row as-is, and a single-ckey update ignores it
         }
         /**
          * This function takes a player log's content as a string and updates the corresponding logs in the game server.
@@ -1293,11 +1314,9 @@ class GameServer
             });
         }, $logs);
 
-        $updated = [];
-        foreach ($temp as $ban) {
-            is_array($ban)
-                ? array_merge($updated, $ban)
-                : $updated[] = $ban;
+        $updated = array_values($temp);
+        if (! $updated && ($ckey || ! $oldlist)) {
+            return resolve(''); // Nothing to backfill or keep, so the bans file is left exactly as it is
         }
         
         /**
@@ -1439,8 +1458,11 @@ class GameServer
             }
         }
 
-        if (! isset($this->timers['ban_cleanup_timer'])) {
-            $this->civ13->timers['ban_cleanup_timer'] = $this->civ13->discord->getLoop()->addTimer(300, fn () => $this->cleanupLogs());
+        if (! isset($this->timers['ban_cleanup_timer'])) { // One pending cleanup per server; cleared when it runs so the next ban schedules another
+            $this->timers['ban_cleanup_timer'] = $this->civ13->discord->getLoop()->addTimer(300, function (): void {
+                unset($this->timers['ban_cleanup_timer']);
+                $this->cleanupLogs();
+            });
         }
 
         return $result;
@@ -1462,8 +1484,17 @@ class GameServer
 
             return "Unable to open `{$this->discord2ban}`".PHP_EOL;
         }
-        if (! isset($this->timers["banlog_update_{$array['ckey']}"])) {
-            $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn () => array_walk($this->civ13->enabled_gameservers, fn (GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir.Civ13::playerlogs))));
+        $timer = "banlog_update_{$array['ckey']}";
+        if (! isset($this->timers[$timer])) { // One pending backfill per ckey; cleared when it runs
+            $this->timers[$timer] = $this->civ13->discord->getLoop()->addTimer(360, function () use ($array, $timer): void {
+                unset($this->timers[$timer]);
+                if (($playerlog = @file_get_contents($this->basedir.Civ13::playerlogs)) === false) {
+                    return;
+                }
+                foreach ($this->civ13->enabled_gameservers as $gameserver) {
+                    $gameserver->banlog_update($array['ckey'], $playerlog);
+                }
+            });
         } // Attempts to fill in any missing data for the ban
 
         return "`$admin` `Server` banned `{$array['ckey']}` from `{$this->name}` for `{$array['duration']}` with the reason `{$array['reason']}`".PHP_EOL;
@@ -2230,8 +2261,13 @@ class GameServer
      */
     public function __destruct()
     {
+        if (! isset($this->loop)) {
+            return;
+        } // Never fully constructed, so there is no loop holding timers
         foreach ($this->timers as $timer) {
-            $this->loop->cancelTimer($timer);
+            if ($timer instanceof TimerInterface) {
+                $this->loop->cancelTimer($timer);
+            }
         }
     }
 }

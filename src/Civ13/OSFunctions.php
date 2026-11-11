@@ -244,7 +244,15 @@ class OSFunctions
 
             return false;
         }
-        if (file_put_contents($filePath = $filecache_path.$filename, json_encode($assoc_array)) === false) {
+        $filePath = $filecache_path.$filename;
+        if (($json = json_encode($assoc_array)) === false) { // Never replace good data with an empty file
+            $logger
+                ? $logger->warning("Unable to encode data for file: $filePath (".json_last_error_msg().')')
+                : error_log("Unable to encode data for file: $filePath (".json_last_error_msg().')');
+
+            return false;
+        }
+        if (! self::writeFileAtomically($filePath, $json)) {
             $logger
                 ? $logger->warning("Unable to save data to file: $filePath")
                 : error_log("Unable to save data to file: $filePath");
@@ -253,6 +261,21 @@ class OSFunctions
         }
 
         return true;
+    }
+    /**
+     * Writes `$contents` to `$filePath` through a temporary file in the same directory, so a crash or
+     * a full disk mid-write leaves the previous file intact instead of a truncated one.
+     * Falls back to a direct write where the replace is refused (for example a file held open on Windows).
+     */
+    public static function writeFileAtomically(string $filePath, string $contents): bool
+    {
+        $temporary = $filePath.'.'.bin2hex(random_bytes(4)).'.tmp';
+        if (@file_put_contents($temporary, $contents, LOCK_EX) === strlen($contents) && @rename($temporary, $filePath)) {
+            return true;
+        }
+        @unlink($temporary);
+
+        return @file_put_contents($filePath, $contents, LOCK_EX) === strlen($contents);
     }
     /**
      * Loads an associative array from a file that was saved in JSON format.

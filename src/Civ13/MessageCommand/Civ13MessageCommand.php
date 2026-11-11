@@ -16,6 +16,7 @@ namespace Civ13\MessageCommand;
 use Civ13\Civ13;
 use Civ14\DynamicPropertyAccessorTrait;
 use Discord\Discord;
+use Discord\Parts\Channel\Message;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
@@ -52,6 +53,18 @@ class Civ13MessageCommand extends MessageCommand
         $new->setCallback($callback);
 
         return $new;
+    }
+
+    /** The verified ckey of the message author, or null when they are not verified (or no verifier is configured). */
+    protected function authorCkey(Message $message): ?string
+    {
+        return isset($this->civ13->verifier) ? $this->civ13->verifier->ckeyOf($message->author) : null;
+    }
+
+    /** The name a game server shows for the message author: their verified ckey, else their Discord username. */
+    protected function authorName(Message $message): string
+    {
+        return $this->authorCkey($message) ?? (string) $message->author->username;
     }
 
     /** Backs the `browser` magic property; falls back to a fresh Browser during PHPUnit runs. */

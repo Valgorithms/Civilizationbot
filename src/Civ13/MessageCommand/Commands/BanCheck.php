@@ -36,7 +36,7 @@ class BanCheck extends Civ13MessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {
-            if (! $ckey = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? null) {
+            if (! $ckey = $this->authorCkey($message)) {
                 return $this->civ13->reply($message, 'Wrong format. Please try `bancheck [ckey]`.');
             }
         }
@@ -93,7 +93,7 @@ class BanCheck extends Civ13MessageCommand
         }
         while (($fp = fgets($file, 4096)) !== false) {
             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-            if ((count($linesplit) >= 8) && ($linesplit[8] === strtolower($ckey))) {
+            if (isset($linesplit[8]) && ($linesplit[8] === strtolower($ckey))) {
                 $found = true;
                 $type = $linesplit[0];
                 $reason = $linesplit[3];
@@ -113,7 +113,7 @@ class BanCheck extends Civ13MessageCommand
      *
      * @return PromiseInterface|null The role-add promise, or null when there is nothing to do.
      */
-    protected function updateBanished(bool $found = true, string $ckey): ?PromiseInterface
+    protected function updateBanished(bool $found, string $ckey): ?PromiseInterface
     {
         if (! isset($this->civ13->role_ids['Banished'])) {
             return null;

@@ -29,7 +29,6 @@ use React\Promise\PromiseInterface;
 use Traversable;
 use VerifierServer\Server as VerifierServer;
 
-use function React\Async\await;
 use function React\Promise\reject;
 use function React\Promise\resolve;
 
@@ -273,7 +272,7 @@ class Verifier
         if (!isset($this->civ13->channel_ids['verifier-status']) || !($channel = $this->civ13->discord->getChannel($this->civ13->channel_ids['verifier-status']))) {
             return null;
         }
-        [$verifier_name, $reported_status] = explode('-', $channel->name);
+        [$verifier_name, $reported_status] = array_pad(explode('-', $channel->name), 2, ''); // A channel renamed without a dash still updates
         if ($reported_status === ($status = $this->civ13->verifier_online ? 'online' : 'offline')) {
             return null;
         }
@@ -437,8 +436,8 @@ class Verifier
 
             return 'You are already verified!';
         }
-        if ($this->get('ckey', $ckey)) {
-            return "`$ckey` is already verified! If this is your account, contact {<@{$this->civ13->technician_id}>} to delete this entry.";
+        if ($this->get('ss13', $ckey)) { // Verified records are keyed `ss13`, never `ckey`
+            return "`$ckey` is already verified! If this is your account, contact <@{$this->civ13->technician_id}> to delete this entry.";
         }
         if (! $this->pending->get('discord', $discord_id)) {
             // Check if the player's account has played on the server before
@@ -647,7 +646,7 @@ class Verifier
                     if ($this->provisionalRegistration($ckey, $discord_id)) {
                         $error = "The website could not be reached. Provisionally registered `$ckey` with Discord ID <@$discord_id>.";
                     } else {
-                        $error .= ' Provisional registration is already pending and a new provisional role will not be provided at this time.'.PHP_EOL.$error;
+                        $error .= PHP_EOL.'Provisional registration is already pending and a new provisional role will not be provided at this time.';
                     }
                 }
                 break;
@@ -694,11 +693,21 @@ class Verifier
             ['response' => $response, 'http_status' => $http_status] = $this->__unverify($id);
             switch ($http_status) {
                 case 200: // Verified
-                    if (! $member = $this->getVerifiedMember($id)) {
+                    // The record is already gone from the verified list, so the member is found from the removed rows.
+                    $guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id);
+                    $members = [];
+                    foreach ($removed as $item) {
+                        if ($guild && isset($item['discord']) && $member = $guild->members->get('id', $item['discord'])) {
+                            $members[] = $member;
+                        }
+                    }
+                    if (! $members) {
                         $message = "`$id` was unverified but the member couldn't be found in the server.";
                     }
-                    if ($member && $member->roles->has($this->civ13->role_ids['Verified'])) {
-                        $member->setRoles([], "unverified ($id)");
+                    foreach ($members as $member) {
+                        if (isset($this->civ13->role_ids['Verified']) && $member->roles->has($this->civ13->role_ids['Verified'])) {
+                            $member->setRoles([], "unverified ($id)");
+                        }
                     }
                     if ($channel = isset($this->civ13->channel_ids['staff_bot']) ? $this->civ13->discord->getChannel($this->civ13->channel_ids['staff_bot']) : null) {
                         $this->civ13->sendMessage($channel, "Unverified `$id`.");
@@ -736,7 +745,7 @@ class Verifier
         
         $removed_items = implode(PHP_EOL, array_map(fn ($item) => json_encode($item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), $removed));
         if ($removed_items) {
-            $message .= PHP_EOL.'Removed from the verified list: ```json'.PHP_EOL.$removed_items.PHP_EOL.'```'.PHP_EOL.$message;
+            $message = ltrim($message.PHP_EOL.'Removed from the verified list: ```json'.PHP_EOL.$removed_items.PHP_EOL.'```');
         }
         if ($message) {
             $this->logger->info($message);
@@ -806,7 +815,7 @@ class Verifier
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $this->verify_url,
-            CURLOPT_HTTPHEADER => ['Content-Type' => 'application/x-www-form-urlencoded'],
+            CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_USERAGENT => 'Civ13',
             CURLOPT_POST => true,
@@ -872,7 +881,7 @@ class Verifier
                             }
                         }
                     }
-                    if (! $member->roles->has($this->civ13->role_ids['Verified'])) {
+                    if ($member && ! $member->roles->has($this->civ13->role_ids['Verified'])) {
                         $member->setRoles([$this->civ13->role_ids['Verified']], "Provisional verification `$ckey`");
                     }
 
@@ -1110,13 +1119,23 @@ class Verifier
         if (! ($id = match (true) {
             $input instanceof Member, $input instanceof User => $input->id,
             is_string($input) => is_numeric($input = Civ13::sanitizeInput($input)) ? $input : ($this->get('ss13', $input)['discord'] ?? null),
-            is_array($input) => isset($input['discord'], $input['ss13d']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord'] ?? '')) ? $discord_id : ($this->get('ss13', Civ13::sanitizeInput($input['ss13'] ?? ''))['discord'] ?? 'null'),
+            is_array($input) => isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput((string) $input['discord'])) ? $discord_id : ($this->get('ss13', Civ13::sanitizeInput((string) ($input['ss13'] ?? '')))['discord'] ?? null),
             default => null,
         }) || ! $this->isVerified($id)) {
             return null;
         }
 
         return $guild->members->get('id', $id);
+    }
+    /** The verified ckey for a Member/User/id/record, or null when they are not verified. */
+    public function ckeyOf(Member|User|array|string|null $input): ?string
+    {
+        if (! $input) {
+            return null;
+        }
+        $ckey = $this->getVerifiedItem($input)['ss13'] ?? null;
+
+        return (is_string($ckey) && $ckey !== '') ? $ckey : null;
     }
     /** Resolves a Member/User/id/verified-record to the Discord {@see User} for a verified member, or null. */
     public function getVerifiedUser(Member|User|array|string|null $input): ?User
@@ -1132,23 +1151,16 @@ class Verifier
         if (! ($id = match (true) {
             $input instanceof Member, $input instanceof User => $input->id,
             is_string($input) => is_numeric($input = Civ13::sanitizeInput($input)) ? $input : ($this->get('ss13', $input)['discord'] ?? null),
-            is_array($input) => isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput($input['discord'])) ? $discord_id : ($this->get('ss13', Civ13::sanitizeInput($input['ss13']))['discord'] ?? null),
+            is_array($input) => isset($input['discord']) && is_numeric($discord_id = Civ13::sanitizeInput((string) $input['discord'])) ? $discord_id : ($this->get('ss13', Civ13::sanitizeInput((string) ($input['ss13'] ?? '')))['discord'] ?? null),
             default => null,
         }) || ! $this->isVerified($id)) {
             return null;
         }
-        if ($user = $this->discord->users->get('id', $id));
-
-        return $user;
-        $this->logger->warning("Unable to find user with ID `$id`.");
-        try {
-            if ($user = await($this->discord->users->fetch('id', $id))) {
-                return $user;
-            }
-        } catch (\Throwable $e) {
-            $this->logger->warning("Unable to fetch user with ID `$id`. Error: {$e->getMessage()}");
+        // Only the cache is consulted: fetching here would block the event loop and spend rate limit.
+        if ($user = $this->discord->users->get('id', $id)) {
+            return $user;
         }
-        $this->logger->warning("Unable to find user with ID `$id`.");
+        $this->logger->debug("Unable to find user with ID `$id` in the cache.");
 
         return null;
     }

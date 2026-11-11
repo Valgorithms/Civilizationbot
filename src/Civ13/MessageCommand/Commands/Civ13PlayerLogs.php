@@ -42,6 +42,6 @@ class Civ13PlayerLogs extends Civ13MessageCommand
             return $message->reply(Civ13::createBuilder()->addFileFromContent('playerlogs.txt', $file_contents));
         }
 
-        return $this->civ13->reply($message, 'Please use the format `logs {server}`. Valid servers: `'.implode(', ', $keys).'`');
+        return $this->civ13->reply($message, 'Please use the format `civ13playerlogs {server}`. Valid servers: `'.implode(', ', $keys).'`');
     }
 }

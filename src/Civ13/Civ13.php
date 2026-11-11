@@ -116,6 +116,19 @@ class Civ13
     public const discord2unban = '/SQL/discord2unban.txt';
     public const admins = '/SQL/admins.txt';
     public const whitelist = '/SQL/whitelist.txt';
+    /** Bot state kept as JSON in the file cache: property name => file name. Loaded by {@see __loadOrInitializeVariables()}. */
+    public const array STATE_FILES = [
+        'tests' => 'tests.json',
+        'paroled' => 'paroled.json',
+        'permitted' => 'permitted.json',
+        'softbanned' => 'softbanned.json',
+        'panic_bans' => 'panic_bans.json',
+        'ooc_badwords_warnings' => 'ooc_badwords_warnings.json',
+        'ic_badwords_warnings' => 'ic_badwords_warnings.json',
+        'ages' => 'ages.json',
+        'ip_data' => 'ip_data.json',
+    ];
+
     public const bans = '/SQL/bans.txt';
     public const playerlogs = '/SQL/playerlogs.txt';
     public const factionlist = '/SQL/factionlist.txt';
@@ -194,7 +207,6 @@ class Civ13
     '77.124', '77.125', '77.126', '77.127', '77.137.', '77.138.', '77.139.', '77.238.175', '77.91.69', '77.91.71', '77.91.74', '77.91.79', '77.91.88', // Region
     '77.75.145.', // Known evaders
     ];
-    public array $blacklisted_countries = ['IL', 'ISR'];
 
     /** @var Timerinterface[] */
     public array $timers = [];
@@ -273,9 +285,6 @@ class Civ13
         array $civ14_server_settings = [],
         public ?VerifierServer $verifier_server = null,
     ) {
-        if (! in_array(php_sapi_name(), ['cli', 'micro'])) {
-            $this->logger->critical('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.');
-        }
 
         // x86 need gmp extension for big integer operation
         if (PHP_INT_SIZE === 4 && ! BigInt::init()) {
@@ -287,7 +296,11 @@ class Civ13
         $this->restartPolicy = new RestartPolicy($options['restart_mode'] ?? 'legacy');
         $this->portable_state_dir = $options['portable_state_dir'] ?? '';
 
-        $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
+        // The logger is needed before the Discord client exists, so it may only come from the options at this point.
+        $this->logger = self::initialLogger($options);
+        if (! in_array(php_sapi_name(), ['cli', 'micro'])) {
+            $this->logger->critical('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.');
+        }
         $options = $this->resolveOptions($options);
         $this->options = &$options;
         if (isset($options['discord']) && ($options['discord'] instanceof Discord)) {
@@ -371,9 +384,6 @@ class Civ13
         }
         if (isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) {
             $this->blacklisted_regions = $options['blacklisted_regions'];
-        }
-        if (isset($options['blacklsited_countries']) && is_array($options['blacklisted_countries'])) {
-            $this->blacklisted_countries = $options['blacklisted_countries'];
         }
         
         if (isset($options['functions'])) {
@@ -530,6 +540,8 @@ class Civ13
                 'game_ready_events',
                 'launcher_directory_status_targets',
                 'ic_badwords',
+                'minimum_age',
+                'blacklisted_regions',
                 'legacy',
                 'moderate',
                 'ooc_badwords',
@@ -766,52 +778,15 @@ class Civ13
      */
     private function __loadOrInitializeVariables(): void
     {
-        if (! $tests = $this->VarLoad('tests.json')) {
-            $tests = [];
-            $this->VarSave('tests.json', $tests);
+        foreach (self::STATE_FILES as $property => $filename) {
+            if (($data = $this->VarLoad($filename)) === null) {
+                $data = [];
+                if (! file_exists($this->filecache_path.$filename)) {
+                    $this->VarSave($filename, $data);
+                } // An unreadable file is left on disk for inspection rather than overwritten with nothing
+            }
+            $this->{$property} = $data;
         }
-        $this->tests = $tests;
-        if (! $paroled = $this->VarLoad('paroled.json')) {
-            $paroled = [];
-            $this->VarSave('paroled.json', $paroled);
-        }
-        $this->paroled = $paroled;
-        if (! $permitted = $this->VarLoad('permitted.json')) {
-            $permitted = [];
-            $this->VarSave('permitted.json', $permitted);
-        }
-        $this->permitted = $permitted;
-        if (! $softbanned = $this->VarLoad('softbanned.json')) {
-            $softbanned = [];
-            $this->VarSave('softbanned.json', $softbanned);
-        }
-        $this->softbanned = $softbanned;
-        if (! $panic_bans = $this->VarLoad('panic_bans.json')) {
-            $panic_bans = [];
-            $this->VarSave('panic_bans.json', $panic_bans);
-        }
-        $this->panic_bans = $panic_bans;
-        if (! $ooc_badwords_warnings = $this->VarLoad('ooc_badwords_warnings.json')) {
-            $ooc_badwords_warnings = [];
-            $this->VarSave('ooc_badwords_warnings.json', $ooc_badwords_warnings);
-        }
-        $this->ooc_badwords_warnings = $ooc_badwords_warnings;
-        if (! $ic_badwords_warnings = $this->VarLoad('ic_badwords_warnings.json')) {
-            $ic_badwords_warnings = [];
-            $this->VarSave('ic_badwords_warnings.json', $ic_badwords_warnings);
-        }
-        $this->ic_badwords_warnings = $ic_badwords_warnings;
-
-        if (! $ages = $this->VarLoad('ages.json')) {
-            $ages = [];
-            $this->VarSave('ages.json', $ages);
-        }
-        $this->ages = $ages;
-        if (! $ip_data = $this->VarLoad('ip_data.json')) {
-            $ip_data = [];
-            $this->VarSave('ip_data.json', $ip_data);
-        }
-        $this->ip_data = $ip_data;
         if (! $this->serverinfo_url) {
             $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json";
         } // Default to VZG unless passed manually in config
@@ -865,14 +840,30 @@ class Civ13
      */
     public function deferUntilReady(callable $callback, ?string $function = null): void
     {
+        if ($this->ready) {
+            $callback();
+
+            return;
+        }
         $this->logger->info(
             $function
             ? "Deferring callback until ready. Event: $function"
-            : 'Deferring callback until ready. Function: '.debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2)[1]['function'] ?? 'unknown'
+            : 'Deferring callback until ready. Function: '.(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'] ?? 'unknown')
         );
-        $this->ready
-            ? $callback()
-            : $this->discord->once('init', $callback);
+        $this->discord->once('init', $callback);
+    }
+
+    /** The logger named in the options, else the supplied Discord client's logger, else a stdout logger. */
+    private static function initialLogger(array $options): LoggerInterface
+    {
+        if (($options['logger'] ?? null) instanceof LoggerInterface) {
+            return $options['logger'];
+        }
+        if (($options['discord'] ?? null) instanceof Discord && ($logger = $options['discord']->getLogger()) instanceof LoggerInterface) {
+            return $logger;
+        }
+
+        return new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
     }
 
     /** The command prefix `$content` starts with (bot mention or `command_symbol`), or null. */
@@ -1087,7 +1078,7 @@ class Civ13
             : array_reduce(
                 $role_ids,
                 fn ($promise, $role_id) => $promise->then(static fn () => $member->removeRole($role_id)),
-                $member->removeRole(array_shift($role_ids))
+                resolve($member) // Each role is removed exactly once, in order
             )
                     ->then(static fn () => $member->guild->members->get('id', $member->id));
     }
@@ -1120,7 +1111,7 @@ class Civ13
             : array_reduce(
                 $role_ids,
                 fn ($promise, $role_id) => $promise->then(static fn () => $member->addRole($role_id)),
-                $member->addRole(array_shift($role_ids))
+                resolve($member) // Each role is added exactly once, in order
             )
                         ->then(static fn () => $member->guild->members->get('id', $member->id));
     }
@@ -1138,31 +1129,17 @@ class Civ13
         Collection|array|Role|string|int $add_roles = [],
         Collection|array|Role|string|int $remove_roles = []
     ): PromiseInterface {
-        if (! $add_roles = self::__rolesToIdArray($add_roles)) {
-            return resolve($member);
+        $add_roles = array_filter(self::__rolesToIdArray($add_roles), static fn ($role_id) => ! $member->roles->has($role_id));
+        $remove_roles = array_filter(self::__rolesToIdArray($remove_roles), static fn ($role_id) => $member->roles->has($role_id));
+        if (! $add_roles && ! $remove_roles) {
+            return resolve($member); // Nothing would change, so no request is sent
         }
-        if (! $remove_roles = self::__rolesToIdArray($remove_roles)) {
-            return resolve($member);
-        }
-
-        foreach ($add_roles    as &$role_id) {
-            if ($member->roles->has($role_id)) {
-                unset($role_id);
-            }
-        }
-        foreach ($remove_roles as &$role_id) {
-            if (! $member->roles->has($role_id)) {
-                unset($role_id);
-            }
+        $current = [];
+        foreach ($member->roles as $role) {
+            $current[] = (string) $role->id;
         }
 
-        return ($updated_roles = $member->roles
-            ->map(static fn ($role) => $role->id)
-            //->values()
-            ->merge($add_roles)
-            ->diff($remove_roles))
-                ? $member->setRoles($updated_roles)
-                : resolve($member);
+        return $member->setRoles(array_values(array_unique(array_diff(array_merge($current, $add_roles), $remove_roles))));
     }
     /**
      * Convert roles to an array of role IDs.
@@ -1175,11 +1152,8 @@ class Civ13
         if ($roles instanceof Collection && $roles->first() instanceof Role) {
             return $roles->map(fn ($role) => $role->id)->toArray();
         }
-        if (! $roles instanceof Collection && is_array($roles) && $roles[0] instanceof Role) {
-            return array_map(fn ($role) => $role->id, $roles);
-        }
         if (is_array($roles)) {
-            return array_map('strval', $roles);
+            return array_values(array_map(static fn ($role) => $role instanceof Role ? (string) $role->id : (string) $role, $roles));
         }
         if ($roles instanceof Role) {
             return [$roles->id];
@@ -1378,7 +1352,7 @@ class Civ13
     public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
         if (is_null($server_key)) {
-            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->OOCMessage($message, $sender), false);
+            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->OOCMessage($message, $sender) || $carry, false); // True when any server accepted it
         }
 
         return isset($this->enabled_gameservers[$server_key])
@@ -1396,7 +1370,7 @@ class Civ13
     public function AdminMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
         if (is_null($server_key)) {
-            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->AdminMessage($message, $sender), false);
+            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->AdminMessage($message, $sender) || $carry, false); // True when any server accepted it
         }
 
         return isset($this->enabled_gameservers[$server_key])
@@ -1415,7 +1389,7 @@ class Civ13
     public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): bool
     {
         if (is_null($server_key)) {
-            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->DirectMessage($message, $sender, $recipient), false);
+            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->DirectMessage($message, $sender, $recipient) || $carry, false); // True when any server accepted it
         }
 
         return isset($this->enabled_gameservers[$server_key])
@@ -1473,12 +1447,14 @@ class Civ13
      */
     public function getHighestRole(ExCollectionInterface $roles): ?Role
     {
-        return $roles->reduce(fn ($prev, $role) => ($prev === null
-                ? $role
-                : ($this->comparePositionTo($role, $prev) > 0
-                    ? $role
-                    : $prev)))
-            ->shift();
+        $highest = null;
+        foreach ($roles as $role) {
+            if ($highest === null || $this->comparePositionTo($role, $highest) > 0) {
+                $highest = $role;
+            }
+        }
+
+        return $highest;
     }
     /**
      * Checks if a member has a specific rank.
@@ -1599,10 +1575,46 @@ class Civ13
      * @param  array  $subdirs An array of subdirectories to navigate
      * @return array  Returns an array with the first element being a boolean indicating if the file was found, and the second element being either an array of files in the directory or the path to the file if it was found
      */
+    /**
+     * Resolves a `{server};{folder};{...}` request against that server's log directory.
+     * Shared by the logs command and the round log button so both answer identically.
+     *
+     * @return array{file?: string, text?: string, error?: string} A log file to attach, text listing the options, or a configuration error.
+     */
+    public function logNavigation(string $request): array
+    {
+        $tokens = explode(';', $request);
+        $keys = [];
+        foreach ($this->enabled_gameservers as $gameserver) {
+            $keys[] = $gameserver->key;
+            if (trim($tokens[0]) !== $gameserver->key) {
+                continue;
+            } // Check if server is valid
+            if (! isset($gameserver->basedir) || ! file_exists($fp = $gameserver->basedir.self::log_basedir)) {
+                return ['error' => 'The log directory `'.self::log_basedir."` is not set or does not exist for `{$gameserver->key}`"];
+            }
+            unset($tokens[0]);
+            $results = $this->FileNav($fp, $tokens);
+            if ($results[0]) {
+                return ['file' => $results[1]];
+            }
+            $options = count($results[1]) > 7 ? array_slice(array_reverse($results[1]), 0, 7) : $results[1]; // Newest seven when there are many
+            $list = PHP_EOL.'`'.implode('`'.PHP_EOL.'`', $options).'`';
+
+            return ['text' => (isset($results[2]) && $results[2]) ? "{$results[2]} is not an available option! Available options: $list" : "Available options: $list"];
+        }
+
+        return ['text' => 'Please use the format `logs {server}`. Valid servers: `'.implode(', ', $keys).'`'];
+    }
+    /**
+     * Walks `$subdirs` down from `$basedir`.
+     *
+     * @return array `[true, $path]` for a file, otherwise `[false, $entries]` plus the rejected segment when one was not found.
+     */
     public function FileNav(string $basedir, array $subdirs): array
     {
-        $scandir = scandir($basedir);
-        unset($scandir[1], $scandir[0]);
+        // Dot entries are removed by name: they are not always the first two, and `..` must never be selectable.
+        $scandir = array_values(array_diff(@scandir($basedir) ?: [], ['.', '..']));
         if (! $subdir = array_shift($subdirs)) {
             return [false, $scandir];
         }
@@ -1693,38 +1705,44 @@ class Civ13
         }, false)) {
             return false;
         }
-        $this->__bancheckTimer();
+        if (! $this->__bancheckTimer()) {
+            return false;
+        } // Periodic checks are switched off for this configuration
         if (! isset($this->timers['bancheck_timer']) || ! $this->timers['bancheck_timer'] instanceof TimerInterface) {
             $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn () => $this->bancheckTimer());
         }
 
         return $this->timers['bancheck_timer'];
     }
-    /** Cancels the ban-check timer when no verifier is configured; otherwise leaves it running. */
-    private function __bancheckTimer(): void
+    /**
+     * Runs one periodic ban check. Returns false, cancelling any running timer, when checks
+     * are switched off: no verifier is configured, or a Redis cache makes them too expensive.
+     */
+    private function __bancheckTimer(): bool
     {
-        if (! isset($this->verifier)) {
+        $cancel = function (): bool {
             if (isset($this->timers['bancheck_timer']) && $this->timers['bancheck_timer'] instanceof TimerInterface) {
                 $this->loop->cancelTimer($this->timers['bancheck_timer']);
-                unset($this->timers['bancheck_timer']);
             }
+            unset($this->timers['bancheck_timer']);
 
-            return;
+            return false;
+        };
+        if (! isset($this->verifier)) {
+            return $cancel();
         }
         if ($cacheconfig = $this->discord->getCacheConfig()) {
             $interface = $cacheconfig->interface;
             $this->logger->info('Cache type: '.get_class($interface));
             if ($interface instanceof CacheInterface) { // It's too expensive to check bans
                 $this->logger->info('Redis cache is being used, cancelling periodic banchecks.');
-                $this->loop->cancelTimer($this->timers['bancheck_timer']);
-                unset($this->timers['bancheck_timer']);
 
-                return;
+                return $cancel();
             }
         }
         $this->logger->debug('Running periodic bancheck...');
         array_walk($this->enabled_gameservers, fn ($gameserver) => $gameserver->cleanupLogs());
-        if (isset($this->verifier, $this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) {
+        if (isset($this->verifier, $this->role_ids['Banished'], $this->role_ids['Permabanished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) {
             foreach ($guild->members as $member) {
                 if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) {
                     continue;
@@ -1748,6 +1766,8 @@ class Civ13
             }
         }
         $this->logger->debug('Periodic bancheck complete.');
+
+        return true;
     }
     /**
      * Determines whether a ckey is currently banned from the server.
@@ -1878,7 +1898,7 @@ class Civ13
         }
         $array['ckey'] = self::sanitizeInput($array['ckey']);
         if (is_numeric($array['ckey'])) {
-            if (isset($this->verifier) && ! $item = $this->verifier->get('discord', $array['ckey'])) {
+            if (! isset($this->verifier) || ! ($item = $this->verifier->get('discord', $array['ckey'])) || ! isset($item['ss13'])) {
                 return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             }
             $array['ckey'] = $item['ss13'];
@@ -1927,6 +1947,9 @@ class Civ13
      */
     public function getIpData(string $ip): array
     {
+        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return [];
+        } // Blank and placeholder log entries are not looked up or cached
         $currentTime = time();
         if (isset($this->ip_data[$ip])) {
             if ((($currentTime) - $this->ip_data[$ip]['timestamp']) <= Civ13::IP_DATA_TTL) {
@@ -1949,11 +1972,12 @@ class Civ13
      */
     public function ckeyinfo(string $ckey, int $max_iterations = 10): array
     {
+        $empty = ['ckeys' => [], 'ips' => [], 'cids' => [], 'banned' => false, 'altbanned' => false, 'discords' => [], 'verified' => false];
         if (! $ckey = self::sanitizeInput($ckey)) {
-            return [null, null, null, false, false];
+            return $empty;
         }
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) {
-            return [null, null, null, false, false];
+            return $empty;
         }
         if ($item = $this->verifier->getVerifiedItem($ckey)) {
             $ckey = $item['ss13'];
@@ -1964,10 +1988,10 @@ class Civ13
         $cids = [];
         foreach (['playerlogs', 'bans'] as $type) {
             foreach ($collectionsArray[$type] as $log) {
-                if (isset($log['ip']) && ! in_array($log['ip'], $ips)) {
+                if (self::isCkeyinfoIp($log['ip'] ?? null) && ! in_array($log['ip'], $ips)) {
                     $ips[] = $log['ip'];
                 }
-                if (isset($log['cid']) && ! in_array($log['cid'], $cids)) {
+                if (isset($log['cid']) && $log['cid'] !== '' && ! in_array($log['cid'], $cids)) {
                     $cids[] = $log['cid'];
                 }
             }
@@ -1986,6 +2010,7 @@ class Civ13
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
         }
+        $discords = array_filter(array_map(fn ($key) => $this->verifier->get('ss13', $key)['discord'] ?? null, $ckeys));
 
         return [
             'ckeys' => $ckeys,
@@ -1993,10 +2018,29 @@ class Civ13
             'cids' => $cids,
             'banned' => $this->bancheck($ckey),
             'altbanned' => array_reduce($ckeys, fn ($carry, $key) => $carry || ($key !== $ckey && $this->bancheck($key)), false),
-            'discords' => array_filter(array_map(fn ($key) => $this->verifier->get('ss13', $key)['discord'] ?? null, $ckeys)),
+            'discords' => $discords,
             'verified' => ! empty($discords),
         ];
     }
+    /** Whether an IP can identify a player rather than a local relay/test connection. */
+    public static function isCkeyinfoIp(?string $ip): bool
+    {
+        if ($ip === null || $ip === '' || ($packed = @inet_pton($ip)) === false) {
+            return false;
+        }
+        if (strlen($packed) === 16) {
+            if ($packed === str_repeat("\0", 15)."\1") {
+                return false; // IPv6 loopback, including expanded notation.
+            }
+            if (substr($packed, 0, 12) !== str_repeat("\0", 10)."\xff\xff") {
+                return true;
+            }
+            $packed = substr($packed, 12); // IPv4-mapped IPv6.
+        }
+
+        return ord($packed[0]) !== 127;
+    }
+
     /**
      * Scans `$logs` for rows matching any known ckey/ip/cid, appending newly discovered identifiers to the `$found_*` arrays.
      *
@@ -2006,21 +2050,23 @@ class Civ13
     {
         $found = false;
         $ckeys_set = array_flip($ckeys);
-        $ips_set = array_flip($ips);
+        $ips_set = array_flip(array_filter($ips, self::isCkeyinfoIp(...)));
         $cids_set = array_flip($cids);
         foreach ($logs as $log) {
-            if (isset($ckeys_set[$log['ckey']]) || isset($ips_set[$log['ip']]) || isset($cids_set[$log['cid']])) {
-                if (! isset($ckeys_set[$log['ckey']])) {
+            if ((! empty($log['ckey']) && isset($ckeys_set[$log['ckey']]))
+                || (self::isCkeyinfoIp($log['ip'] ?? null) && isset($ips_set[$log['ip']]))
+                || (isset($log['cid']) && $log['cid'] !== '' && isset($cids_set[$log['cid']]))) {
+                if (! empty($log['ckey']) && ! isset($ckeys_set[$log['ckey']])) {
                     $found_ckeys[] = $log['ckey'];
                     $ckeys_set[$log['ckey']] = true;
                     $found = true;
                 }
-                if (! isset($ips_set[$log['ip']])) {
+                if (self::isCkeyinfoIp($log['ip'] ?? null) && ! isset($ips_set[$log['ip']])) {
                     $found_ips[] = $log['ip'];
                     $ips_set[$log['ip']] = true;
                     $found = true;
                 }
-                if (! isset($cids_set[$log['cid']])) {
+                if (isset($log['cid']) && $log['cid'] !== '' && ! isset($cids_set[$log['cid']])) {
                     $found_cids[] = $log['cid'];
                     $cids_set[$log['cid']] = true;
                     $found = true;
@@ -2062,20 +2108,24 @@ class Civ13
         int $i = 0,
         bool $found = false // Passed internally within the function, not to be provided by the user
     ): void {
+        $ips = array_filter($ips, self::isCkeyinfoIp(...));
+        $found_ips = array_filter($found_ips, self::isCkeyinfoIp(...));
         // Iterate through logs to find all known ckeys, ips, and cids
         foreach ($logs as $log) {
-            if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
+            if ((! empty($log['ckey']) && in_array($log['ckey'], $ckeys, true))
+                || (self::isCkeyinfoIp($log['ip'] ?? null) && isset($ips[$log['ip']]))
+                || (isset($log['cid']) && $log['cid'] !== '' && isset($cids[$log['cid']]))) {
                 if (isset($log['ckey']) === $update_found_ckeys) {
-                    if (isset($log['ckey']) && ! isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) {
+                    if (! empty($log['ckey']) && ! isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) {
                         $found_ckeys[$log['ckey']] = Civ13::sanitizeInput($log['ckey']);
                         $found = true;
                     }
                 }
-                if (isset($log['ip'  ]) && ! isset($ips  [$log['ip'  ]], $found_ips  [$log['ip'  ]])) {
+                if (self::isCkeyinfoIp($log['ip'] ?? null) && ! isset($ips[$log['ip']], $found_ips[$log['ip']])) {
                     $found_ips  [$log['ip'  ]] = $log['ip'  ];
                     $found = true;
                 }
-                if (isset($log['cid' ]) && ! isset($cids [$log['cid' ]], $found_cids [$log['cid' ]])) {
+                if (isset($log['cid']) && $log['cid'] !== '' && ! isset($cids[$log['cid']], $found_cids[$log['cid']])) {
                     $found_cids [$log['cid' ]] = $log['cid' ];
                     $found = true;
                 }
@@ -2303,17 +2353,19 @@ class Civ13
     {
         return (
             ($playerlog = $this->playerlogsToCollection()->filter(fn (array $item) => $item['ckey'] === $ckey))
-            && ($bans = $this->bansToCollection()->filter(fn (array $item) => $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid'])))
+            && ($bans = $this->bansToCollection()->filter(fn (array $item) => $playerlog->get('ckey', $item['ckey'])
+                || (self::isCkeyinfoIp($item['ip'] ?? null) && $playerlog->get('ip', $item['ip']))
+                || (isset($item['cid']) && $item['cid'] !== '' && $playerlog->get('cid', $item['cid']))))
         ) ? ['playerlogs' => $playerlog, 'bans' => $bans] : [];
     }
 
     /** Renames the `webserver-status` channel to `{name}-online` / `{name}-offline` to match `$status`, announcing the change. */
     public function statusChannelUpdate(string $channel, bool $status): ?PromiseInterface
     {
-        if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) {
+        if (! isset($this->channel_ids['webserver-status']) || ! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) {
             return null;
         }
-        [$webserver_name, $reported_status] = explode('-', $channel->name);
+        [$webserver_name, $reported_status] = array_pad(explode('-', $channel->name), 2, ''); // A channel renamed without a dash still updates
         if ($reported_status === ($status = $status ? 'online' : 'offline')) {
             return null;
         }

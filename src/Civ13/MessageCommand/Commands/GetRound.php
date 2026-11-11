@@ -117,6 +117,7 @@ class GetRound extends Civ13MessageCommand
             //->addFieldValues('Game ID', $game_id);
             ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
             ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
+        $round['players'] = is_array($round['players'] ?? null) ? $round['players'] : []; // A round recorded only as interrupted has no player list
         if (($players = implode(', ', array_keys($round['players']))) && strlen($players) <= 1024) {
             $embed->addFieldValues('Players ('.count($round['players']).')', $players);
         } else {
@@ -129,7 +130,7 @@ class GetRound extends Civ13MessageCommand
                 $embed->addFieldValues('Verified Players ('.count($discord_ids).')', 'Too many to list!');
             }
         }
-        if ($ckey && $player = $round['players'][$ckey]) {
+        if ($ckey && $player = $round['players'][$ckey] ?? null) {
             $player['ip'] ??= [];
             $player['cid'] ??= [];
             $ip = $high_staff ? implode(', ', $player['ip']) : 'Redacted';
@@ -153,8 +154,11 @@ class GetRound extends Civ13MessageCommand
         $log = (isset($round['log']) && ! empty($round['log']))
             ? str_replace('/', ';', "logs {$round['server_key']}{$round['log']}")
             : '';
-        $interrupted = $round['interrupted'] ? 'Yes' : 'No';
-        $embed->addFieldValues('Bot Logging Interrupted', $interrupted, true)->addFieldValues('Log Command', $log ?? 'Unknown', true);
+        $interrupted = ($round['interrupted'] ?? false) ? 'Yes' : 'No';
+        $embed->addFieldValues('Bot Logging Interrupted', $interrupted, true)->addFieldValues('Log Command', $log ?: 'Unknown', true);
+        if ($log === '') {
+            return; // No log file is known, so there is nothing for a button to fetch
+        }
         $builder->addComponent(
             ActionRow::new()->addComponent(
                 Button::new(Button::STYLE_PRIMARY, $log)
@@ -171,37 +175,19 @@ class GetRound extends Civ13MessageCommand
      */
     protected function interaction_log_handler(Interaction $interaction): PromiseInterface
     {
-        if (! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) {
+        if (! isset($this->civ13->role_ids['Admin']) || ! $interaction->member->roles->has($this->civ13->role_ids['Admin'])) {
             return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('You do not have permission to use this command.'), true);
         }
-        $tokens = explode(';', substr($interaction->data['custom_id'], strlen('logs ')));
-        $keys = [];
-        foreach ($this->civ13->enabled_gameservers as &$gameserver) {
-            $keys[] = $gameserver->key;
-            if (trim($tokens[0]) !== $gameserver->key) {
-                continue;
-            } // Check if server is valid
-            if (! isset($gameserver->basedir) || ! file_exists($gameserver->basedir.Civ13::log_basedir)) {
-                $this->logger->warning($error = 'Either basedir or `'.Civ13::log_basedir.'` is not defined or does not exist');
+        $result = $this->civ13->logNavigation(substr($interaction->data['custom_id'], strlen('logs ')));
+        if (isset($result['error'])) {
+            $this->logger->warning($result['error']);
 
-                return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($error));
-            }
-
-            unset($tokens[0]);
-            $results = $this->civ13->FileNav($gameserver->basedir.Civ13::log_basedir, $tokens);
-            if ($results[0]) {
-                return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($results[1], 'log.txt'), true);
-            }
-            if (count($results[1]) > 7) {
-                $results[1] = [array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1]), array_pop($results[1])];
-            }
-            if (! isset($results[2]) || ! $results[2]) {
-                return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('Available options: '.PHP_EOL.'`'.implode('`'.PHP_EOL.'`', $results[1]).'`'));
-            }
-
-            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent("{$results[2]} is not an available option! Available options: ".PHP_EOL.'`'.implode('`'.PHP_EOL.'`', $results[1]).'`'));
+            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($result['error']));
+        }
+        if (isset($result['file'])) {
+            return $interaction->sendFollowUpMessage(Civ13::createBuilder()->addFile($result['file'], 'log.txt'), true);
         }
 
-        return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent('Please use the format `logs {server}`. Valid servers: `'.implode(', ', $keys).'`'));
+        return $interaction->sendFollowUpMessage(Civ13::createBuilder()->setContent($result['text']));
     }
 }

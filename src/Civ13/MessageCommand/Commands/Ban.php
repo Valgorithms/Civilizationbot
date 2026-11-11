@@ -29,7 +29,8 @@ class Ban extends Civ13MessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        $split_message = explode('; ', self::messageWithoutCommand($command, $message_filtered, true));
+        // The reason is relayed to the player as written, so only the ckey is normalised.
+        $split_message = array_map('trim', explode(';', self::messageWithoutCommand($command, $message_filtered), 3));
         if (! $split_message[0] = Civ13::sanitizeInput($split_message[0])) {
             return $this->civ13->reply($message, 'Missing ban ckey! Please use the format `ban ckey; duration; reason`');
         }
@@ -44,6 +45,6 @@ class Ban extends Civ13MessageCommand
         }
         $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2]." Appeal at {$this->civ13->discord_formatted}"];
 
-        return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13']));
+        return $this->civ13->reply($message, $this->civ13->ban($arr, $this->authorCkey($message)));
     }
 }

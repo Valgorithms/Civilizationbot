@@ -32,7 +32,7 @@ class GlobalOOC extends Civ13MessageCommand
         }
 
         return $message->react(
-            $this->civ13->OOCMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
+            $this->civ13->OOCMessage($msg, $this->authorName($message))
             ? '📧'
             : '🔥'
         );

@@ -29,9 +29,9 @@ class Permit extends Civ13MessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! ($ckey = self::messageWithoutCommand($command, $message_filtered, true, true))) {
-            return $this->civ13->reply($message, 'Invalid format! Please use the format `unpermit [ckey]`.');
+            return $this->civ13->reply($message, 'Invalid format! Please use the format `permit [ckey]`.');
         }
-        if (! isset($this->civ13->ages[$ckey]) && Byond::isValidCkey($ckey)) {
+        if (! isset($this->civ13->ages[$ckey]) && ! Byond::isValidCkey($ckey)) {
             return $this->civ13->reply($message, "Byond username `$ckey` does not exist.");
         }
         $this->civ13->permitCkey($ckey);
