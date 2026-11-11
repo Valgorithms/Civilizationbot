@@ -11,12 +11,16 @@ Configure an operator-verified public join page in that server's options:
 'play' => ['url' => 'https://civ13.com/tdm/'],
 ```
 
-For Persistence, use `https://civ13.com/persistence/` **only after the proposed
-website page is deployed and verified**. The expected BYOND target is
+For Persistence, use `https://civ13.github.io/persistence/` (Civ13/civ13.github.io
+#59, live). civ13.com serves only the TDM shortcut, not the GitHub Pages site.
+The expected BYOND target is
 `byond://play.valzargaming.com:1714`, the Gaia gateway, not Rail Yard on 1715.
 Do not map a linked region's Play button to its internal/direct endpoint.
 The launcher gate-down fix ([Civ13 #3869](https://github.com/Civ13/Civ13/pull/3869))
 explains why a reachable region is not a substitute for an unavailable gate.
+The production `bot.php` sets TDM and Persistence; `tdmbattle` drops the inherited
+Play link so the aggregate status shows one TDM button. A portable profile adds
+`play` to its server entry the same way.
 If a region has no supported public entry page, omit its Play configuration.
 
 Absent config disables the button; invalid config logs a warning and disables it.
