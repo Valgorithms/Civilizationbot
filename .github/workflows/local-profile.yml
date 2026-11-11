@@ -24,6 +24,7 @@ on:
       - 'src/Civ13/Slash.php'
       - 'src/Civ13/Panels.php'
       - 'src/Civ13/MessageCommand/Commands/AdminListUpdate.php'
+      - 'src/Civ13/MessageCommand/Commands/CkeyInfo.php'
       - 'src/Civ13/MessageCommand/Commands/Civ13GameServerMapSwap.php'
       - 'src/Civ13/HttpServiceManager.php'
       - 'src/Civ13/MessageServiceManager.php'
@@ -112,6 +113,9 @@ jobs:
         timeout-minutes: 2
       - run: php -d memory_limit=128M tests/local/game-ready-http.php vendor/autoload.php
         timeout-minutes: 2
+      - name: Ckeyinfo loopback identity contracts (offline)
+        timeout-minutes: 2
+        run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/ckeyinfo-loopback.php vendor/autoload.php
       - run: php tests/local/unban-commands.php vendor/autoload.php
       - run: php tests/local/adminlist-consumers.php vendor/autoload.php
       - run: php tests/local/lifecycle-consumers.php vendor/autoload.php
