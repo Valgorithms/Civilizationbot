@@ -1592,8 +1592,8 @@ class Civ13
      */
     public function FileNav(string $basedir, array $subdirs): array
     {
-        $scandir = scandir($basedir);
-        unset($scandir[1], $scandir[0]);
+        // Dot entries are removed by name: they are not always the first two, and `..` must never be selectable.
+        $scandir = array_values(array_diff(@scandir($basedir) ?: [], ['.', '..']));
         if (! $subdir = array_shift($subdirs)) {
             return [false, $scandir];
         }

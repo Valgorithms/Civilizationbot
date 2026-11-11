@@ -117,6 +117,7 @@ class GetRound extends Civ13MessageCommand
             //->addFieldValues('Game ID', $game_id);
             ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
             ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
+        $round['players'] = is_array($round['players'] ?? null) ? $round['players'] : []; // A round recorded only as interrupted has no player list
         if (($players = implode(', ', array_keys($round['players']))) && strlen($players) <= 1024) {
             $embed->addFieldValues('Players ('.count($round['players']).')', $players);
         } else {
@@ -129,7 +130,7 @@ class GetRound extends Civ13MessageCommand
                 $embed->addFieldValues('Verified Players ('.count($discord_ids).')', 'Too many to list!');
             }
         }
-        if ($ckey && $player = $round['players'][$ckey]) {
+        if ($ckey && $player = $round['players'][$ckey] ?? null) {
             $player['ip'] ??= [];
             $player['cid'] ??= [];
             $ip = $high_staff ? implode(', ', $player['ip']) : 'Redacted';
@@ -153,8 +154,11 @@ class GetRound extends Civ13MessageCommand
         $log = (isset($round['log']) && ! empty($round['log']))
             ? str_replace('/', ';', "logs {$round['server_key']}{$round['log']}")
             : '';
-        $interrupted = $round['interrupted'] ? 'Yes' : 'No';
-        $embed->addFieldValues('Bot Logging Interrupted', $interrupted, true)->addFieldValues('Log Command', $log ?? 'Unknown', true);
+        $interrupted = ($round['interrupted'] ?? false) ? 'Yes' : 'No';
+        $embed->addFieldValues('Bot Logging Interrupted', $interrupted, true)->addFieldValues('Log Command', $log ?: 'Unknown', true);
+        if ($log === '') {
+            return; // No log file is known, so there is nothing for a button to fetch
+        }
         $builder->addComponent(
             ActionRow::new()->addComponent(
                 Button::new(Button::STYLE_PRIMARY, $log)

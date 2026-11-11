@@ -54,7 +54,7 @@ class Civ13GameServerBan extends Civ13GameServerMessageCommand
             return $this->civ13->reply($message, "Ban reason is too long! Please limit it to `$maxlen` characters.");
         }
         $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2]." Appeal at {$this->civ13->discord_formatted}"];
-        $result = $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'], $this->gameserver->key);
+        $result = $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? null, $this->gameserver->key);
         if ($member = $this->civ13->verifier->getVerifiedMember($split_message[0])) {
             if (! $member->roles->has($this->civ13->role_ids['Banished'])) {
                 $member->addRole($this->civ13->role_ids['Banished'], $result);
