@@ -207,7 +207,6 @@ class Civ13
     '77.124', '77.125', '77.126', '77.127', '77.137.', '77.138.', '77.139.', '77.238.175', '77.91.69', '77.91.71', '77.91.74', '77.91.79', '77.91.88', // Region
     '77.75.145.', // Known evaders
     ];
-    public array $blacklisted_countries = ['IL', 'ISR'];
 
     /** @var Timerinterface[] */
     public array $timers = [];
@@ -386,9 +385,6 @@ class Civ13
         if (isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) {
             $this->blacklisted_regions = $options['blacklisted_regions'];
         }
-        if (isset($options['blacklisted_countries']) && is_array($options['blacklisted_countries'])) {
-            $this->blacklisted_countries = $options['blacklisted_countries'];
-        }
         
         if (isset($options['functions'])) {
             foreach (array_keys($options['functions']) as $key1) {
@@ -546,7 +542,6 @@ class Civ13
                 'ic_badwords',
                 'minimum_age',
                 'blacklisted_regions',
-                'blacklisted_countries',
                 'legacy',
                 'moderate',
                 'ooc_badwords',

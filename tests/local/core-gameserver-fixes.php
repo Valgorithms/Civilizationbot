@@ -131,11 +131,11 @@ try {
     $initial = new ReflectionMethod(Civ13::class, 'initialLogger');
     $given = new Monolog\Logger('given', [new Monolog\Handler\NullHandler()]);
     check($initial->invoke(null, ['logger' => $given]) === $given && $initial->invoke(null, []) instanceof Psr\Log\LoggerInterface && $initial->invoke(null, ['logger' => null, 'discord' => 'not a client']) instanceof Psr\Log\LoggerInterface, 'Constructor has no logger without a Discord client');
-    $options = ['minimum_age' => '-7 days', 'blacklisted_regions' => ['10.'], 'blacklisted_countries' => ['ZZ']];
+    $options = ['minimum_age' => '-7 days', 'blacklisted_regions' => ['10.']];
     $resolvedOptions = (new ReflectionMethod(Civ13::class, 'resolveOptions'))->invokeArgs($bot, [&$options]);
-    check($resolvedOptions['minimum_age'] === '-7 days' && $resolvedOptions['blacklisted_regions'] === ['10.'] && $resolvedOptions['blacklisted_countries'] === ['ZZ'], 'Moderation options were rejected');
-    $source = (string) file_get_contents(__DIR__.'/../../src/Civ13/Civ13.php');
-    check(! str_contains($source, 'blacklsited') && str_contains($source, "isset(\$options['blacklisted_countries']) && is_array(\$options['blacklisted_countries'])"), 'Blacklisted countries option is still misspelled');
+    check($resolvedOptions['minimum_age'] === '-7 days' && $resolvedOptions['blacklisted_regions'] === ['10.'], 'Moderation options were rejected');
+    // The country auto-ban never matched (it compared country names to codes) and was removed.
+    check(! property_exists(Civ13::class, 'blacklisted_countries') && ! str_contains((string) file_get_contents(__DIR__.'/../../src/Civ13/Moderator.php'), 'Blacklisted Country'), 'Removed country auto-ban is back');
 
     // Periodic ban checks switch off cleanly under a Redis-style cache, with no timer to cancel yet.
     $bot->enabled_gameservers = ['a' => $a];
