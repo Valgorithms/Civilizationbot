@@ -149,6 +149,7 @@ class GameServer
 
     public string $bancheck_cache = '';
     private ?ServerHeartbeat $heartbeat = null;
+    public ?ServerPlayLink $playLink = null;
     /** @var array<string, ServerHeartbeat> Shard region directory => its heartbeat. */
     private array $shardHeartbeats = [];
     /** @var list<array{state:string, reason:string, players:list<string>}> Last local observation of every world in the group. */
@@ -183,6 +184,11 @@ class GameServer
         $this->ip = $options['ip'];
         $this->port = $options['port'];
         $this->host = $options['host'];
+        try {
+            $this->playLink = ServerPlayLink::fromConfig($options['play'] ?? null, $this->key, $this->engine);
+        } catch (\InvalidArgumentException $error) {
+            $this->logger->warning("GameServer {$this->key} Play link disabled: ".$error->getMessage());
+        }
         $this->supported = $options['supported'] ?? false;
         if (($options['enabled'] ?? false) && $this->basedir && ! is_dir($this->basedir)) { // Will cause issues
             $this->logger->error("GameServer {$this->key} has an invalid basedir: {$this->basedir}, disabling server.");
@@ -706,10 +712,10 @@ class GameServer
     {
         $status = $this->refreshLocalServerStatus();
         if ($status['data'] === null) {
-            return Civ13::createBuilder()->addEmbed($this->heartbeatEmbed($status));
+            return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->heartbeatEmbed($status)));
         }
         if (! $round = $this->getRound($this->current_round)) {
-            return null;
+            return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->heartbeatEmbed($status)));
         }
         $round_embed_builder = function (array $round) use ($status): ?MessageBuilder {
             $data = self::heartbeatServerdata($status['data']);
@@ -772,6 +778,15 @@ class GameServer
             );
         }
 
+        return $this->addPlayButton($builder);
+    }
+
+    /** Add the persistent URL component without a listener/custom id (survives bot restarts). */
+    public function addPlayButton(MessageBuilder $builder): MessageBuilder
+    {
+        if ($this->playLink !== null) {
+            $builder->addComponent(ActionRow::new()->addComponent(Button::link($this->playLink->url)->setLabel('Play')));
+        }
         return $builder;
     }
 

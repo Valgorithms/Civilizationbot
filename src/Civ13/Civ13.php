@@ -1325,6 +1325,20 @@ class Civ13
             )
         );
 
+        // At most five rows of five URL buttons; status embeds/content remain unchanged.
+        $row = null;
+        $count = 0;
+        foreach ($this->enabled_gameservers as $gameserver) {
+            if ($gameserver->playLink === null || $count >= 25) { continue; }
+            if ($count % 5 === 0) {
+                $row = \Discord\Builders\Components\ActionRow::new();
+                $builder->addComponent($row);
+            }
+            $row->addComponent(\Discord\Builders\Components\Button::link($gameserver->playLink->url)
+                ->setLabel(mb_substr('Play '.$gameserver->name, 0, 80)));
+            $count++;
+        }
+
         return $builder->setContent($server_list);
     }
     /**

@@ -183,9 +183,20 @@ namespace {
         check($active['Nomads'] === 'Heartbeat advancing' && ! array_key_exists('Connectivity', $active), 'Heartbeat or removed connectivity field is incorrect');
         check($active['Players (1)'] === 'player' && $server->localServerPlayerCount() === 1, 'Optional Approved field corrupted player metadata');
         check($server->players === ['player'], 'Confirmed player cache not populated');
+        $server->playLink = Civ13\ServerPlayLink::fromConfig(['url' => 'https://join.example.org/nomads/play'], 'nomads', 'byond');
+        $withoutRound = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+        check($withoutRound['components'][0]['components'][0]['url'] === $server->playLink->url, 'Fresh heartbeat without round metadata lost Play');
         $server->current_round = 'fixture';
         $server->rounds = ['fixture' => ['start' => 'fixture', 'players' => [], 'log' => '/fixture']];
         check(str_contains(json_encode($server->createCurrentRoundEmbedMessageBuilder()), 'Heartbeat advancing'), 'Current-round renderer bypassed health state');
+        $playWire = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+        check($playWire['components'][0]['components'][0]['label'] === 'Log', 'Existing Log button lost');
+        check($playWire['components'][1]['components'][0]['url'] === 'https://join.example.org/nomads/play', 'Round Play button wrong');
+        $server->civ13->enabled_gameservers = [$server];
+        $server->civ13->civ14_enabled_gameservers = [];
+        $aggregate = json_decode(json_encode($server->civ13->createServerstatusEmbed(), JSON_THROW_ON_ERROR), true);
+        check($aggregate['components'][0]['components'][0]['label'] === 'Play Nomads', 'Aggregate Play button missing');
+
         $originalTimezone = date_default_timezone_get();
         try {
             date_default_timezone_set('UTC');
@@ -263,6 +274,9 @@ namespace {
         unlink($path);
         check(fields($server->generateServerstatusEmbed())['Nomads'] === 'Unknown' && ! file_exists($path), 'Missing data failed closed or was recreated');
         check($server->players === [], 'Missing data retained players');
+        $missingWire = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+        check($missingWire['components'][0]['components'][0]['url'] === $server->playLink->url, 'Unknown heartbeat lost configured join link');
+
         $remote = server($root.'/never-created', $clock, '192.0.2.1');
         (new ReflectionProperty($remote, 'heartbeat'))->setValue($remote, new Civ13\ServerHeartbeat('unused', $clock, static function (): never { throw new RuntimeException('Remote directory was read'); }));
         $GLOBALS['host_read_forbidden'] = $hostPath;

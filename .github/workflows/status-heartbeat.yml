@@ -5,6 +5,9 @@ on:
   pull_request:
     paths:
       - 'src/Civ13/GameServer.php'
+      - 'src/Civ13/ServerPlayLink.php'
+      - 'src/Civ13/Civ13.php'
+      - 'tests/local/play-link.php'
       - 'src/Civ13/RoundStartTimestamp.php'
       - 'src/Civ13/ServerHeartbeat.php'
       - 'src/Civ13/PlayercountChannel.php'
@@ -37,3 +40,5 @@ jobs:
       - run: php tests/local/heartbeat.php
       - run: php tests/local/heartbeat-integration.php
       - run: php tests/local/heartbeat-playercount.php
+      - run: php -l src/Civ13/ServerPlayLink.php
+      - run: php tests/local/play-link.php
