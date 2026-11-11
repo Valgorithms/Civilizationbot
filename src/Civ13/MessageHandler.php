@@ -186,7 +186,7 @@ class MessageHandler extends CivHandler implements MessageHandlerInterface
             }
 
             return $this->__processCallback($array['callback'], $array['message'], $array['endpoint'], $array['message_filtered']);
-        } catch (CallbackHandlerException $e) {
+        } catch (\Throwable $e) { // A failing command must never escape into the Discord event loop
             $this->logger->error("Message Handler error: An endpoint for `$message->content` failed with error `{$e->getMessage()}`. Stack Trace:".PHP_EOL.str_replace('#', PHP_EOL.'#', $e->getTraceAsString()));
 
             return $message->react('🔥');

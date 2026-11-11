@@ -1935,11 +1935,12 @@ class Civ13
      */
     public function ckeyinfo(string $ckey, int $max_iterations = 10): array
     {
+        $empty = ['ckeys' => [], 'ips' => [], 'cids' => [], 'banned' => false, 'altbanned' => false, 'discords' => [], 'verified' => false];
         if (! $ckey = self::sanitizeInput($ckey)) {
-            return [null, null, null, false, false];
+            return $empty;
         }
         if (! $collectionsArray = $this->getCkeyLogCollections($ckey)) {
-            return [null, null, null, false, false];
+            return $empty;
         }
         if ($item = $this->verifier->getVerifiedItem($ckey)) {
             $ckey = $item['ss13'];
@@ -1972,6 +1973,7 @@ class Civ13
             $ips = array_unique(array_merge($ips, $found_ips));
             $cids = array_unique(array_merge($cids, $found_cids));
         }
+        $discords = array_filter(array_map(fn ($key) => $this->verifier->get('ss13', $key)['discord'] ?? null, $ckeys));
 
         return [
             'ckeys' => $ckeys,
@@ -1979,7 +1981,7 @@ class Civ13
             'cids' => $cids,
             'banned' => $this->bancheck($ckey),
             'altbanned' => array_reduce($ckeys, fn ($carry, $key) => $carry || ($key !== $ckey && $this->bancheck($key)), false),
-            'discords' => array_filter(array_map(fn ($key) => $this->verifier->get('ss13', $key)['discord'] ?? null, $ckeys)),
+            'discords' => $discords,
             'verified' => ! empty($discords),
         ];
     }
