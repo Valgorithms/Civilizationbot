@@ -57,10 +57,10 @@ class CkeyInfo extends Civ13MessageCommand
         // Get the ckey's primary identifiers and fill in any blanks
         foreach ($collectionsArray as $item) {
             foreach ($item as $log) {
-                if (isset($log['ip']) && ! isset($ips[$log['ip']])) {
+                if (Civ13::isCkeyinfoIp($log['ip'] ?? null) && ! isset($ips[$log['ip']])) {
                     $ips[$log['ip']] = $log['ip'];
                 }
-                if (isset($log['cid']) && ! isset($cids[$log['cid']])) {
+                if (isset($log['cid']) && $log['cid'] !== '' && ! isset($cids[$log['cid']])) {
                     $cids[$log['cid']] = $log['cid'];
                 }
                 if (isset($log['date']) && ! isset($dates[$log['date']])) {

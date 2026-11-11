@@ -1950,10 +1950,10 @@ class Civ13
         $cids = [];
         foreach (['playerlogs', 'bans'] as $type) {
             foreach ($collectionsArray[$type] as $log) {
-                if (isset($log['ip']) && ! in_array($log['ip'], $ips)) {
+                if (self::isCkeyinfoIp($log['ip'] ?? null) && ! in_array($log['ip'], $ips)) {
                     $ips[] = $log['ip'];
                 }
-                if (isset($log['cid']) && ! in_array($log['cid'], $cids)) {
+                if (isset($log['cid']) && $log['cid'] !== '' && ! in_array($log['cid'], $cids)) {
                     $cids[] = $log['cid'];
                 }
             }
@@ -1983,6 +1983,25 @@ class Civ13
             'verified' => ! empty($discords),
         ];
     }
+    /** Whether an IP can identify a player rather than a local relay/test connection. */
+    public static function isCkeyinfoIp(?string $ip): bool
+    {
+        if ($ip === null || $ip === '' || ($packed = @inet_pton($ip)) === false) {
+            return false;
+        }
+        if (strlen($packed) === 16) {
+            if ($packed === str_repeat("\0", 15)."\1") {
+                return false; // IPv6 loopback, including expanded notation.
+            }
+            if (substr($packed, 0, 12) !== str_repeat("\0", 10)."\xff\xff") {
+                return true;
+            }
+            $packed = substr($packed, 12); // IPv4-mapped IPv6.
+        }
+
+        return ord($packed[0]) !== 127;
+    }
+
     /**
      * Scans `$logs` for rows matching any known ckey/ip/cid, appending newly discovered identifiers to the `$found_*` arrays.
      *
@@ -1992,21 +2011,23 @@ class Civ13
     {
         $found = false;
         $ckeys_set = array_flip($ckeys);
-        $ips_set = array_flip($ips);
+        $ips_set = array_flip(array_filter($ips, self::isCkeyinfoIp(...)));
         $cids_set = array_flip($cids);
         foreach ($logs as $log) {
-            if (isset($ckeys_set[$log['ckey']]) || isset($ips_set[$log['ip']]) || isset($cids_set[$log['cid']])) {
-                if (! isset($ckeys_set[$log['ckey']])) {
+            if ((! empty($log['ckey']) && isset($ckeys_set[$log['ckey']]))
+                || (self::isCkeyinfoIp($log['ip'] ?? null) && isset($ips_set[$log['ip']]))
+                || (isset($log['cid']) && $log['cid'] !== '' && isset($cids_set[$log['cid']]))) {
+                if (! empty($log['ckey']) && ! isset($ckeys_set[$log['ckey']])) {
                     $found_ckeys[] = $log['ckey'];
                     $ckeys_set[$log['ckey']] = true;
                     $found = true;
                 }
-                if (! isset($ips_set[$log['ip']])) {
+                if (self::isCkeyinfoIp($log['ip'] ?? null) && ! isset($ips_set[$log['ip']])) {
                     $found_ips[] = $log['ip'];
                     $ips_set[$log['ip']] = true;
                     $found = true;
                 }
-                if (! isset($cids_set[$log['cid']])) {
+                if (isset($log['cid']) && $log['cid'] !== '' && ! isset($cids_set[$log['cid']])) {
                     $found_cids[] = $log['cid'];
                     $cids_set[$log['cid']] = true;
                     $found = true;
@@ -2048,20 +2069,24 @@ class Civ13
         int $i = 0,
         bool $found = false // Passed internally within the function, not to be provided by the user
     ): void {
+        $ips = array_filter($ips, self::isCkeyinfoIp(...));
+        $found_ips = array_filter($found_ips, self::isCkeyinfoIp(...));
         // Iterate through logs to find all known ckeys, ips, and cids
         foreach ($logs as $log) {
-            if (isset($ckeys[$log['ckey']]) || isset($ips[$log['ip']]) || isset($cids[$log['cid']])) {
+            if ((! empty($log['ckey']) && in_array($log['ckey'], $ckeys, true))
+                || (self::isCkeyinfoIp($log['ip'] ?? null) && isset($ips[$log['ip']]))
+                || (isset($log['cid']) && $log['cid'] !== '' && isset($cids[$log['cid']]))) {
                 if (isset($log['ckey']) === $update_found_ckeys) {
-                    if (isset($log['ckey']) && ! isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) {
+                    if (! empty($log['ckey']) && ! isset($ckeys[$log['ckey']], $found_ckeys[$log['ckey']])) {
                         $found_ckeys[$log['ckey']] = Civ13::sanitizeInput($log['ckey']);
                         $found = true;
                     }
                 }
-                if (isset($log['ip'  ]) && ! isset($ips  [$log['ip'  ]], $found_ips  [$log['ip'  ]])) {
+                if (self::isCkeyinfoIp($log['ip'] ?? null) && ! isset($ips[$log['ip']], $found_ips[$log['ip']])) {
                     $found_ips  [$log['ip'  ]] = $log['ip'  ];
                     $found = true;
                 }
-                if (isset($log['cid' ]) && ! isset($cids [$log['cid' ]], $found_cids [$log['cid' ]])) {
+                if (isset($log['cid']) && $log['cid'] !== '' && ! isset($cids[$log['cid']], $found_cids[$log['cid']])) {
                     $found_cids [$log['cid' ]] = $log['cid' ];
                     $found = true;
                 }
@@ -2289,7 +2314,9 @@ class Civ13
     {
         return (
             ($playerlog = $this->playerlogsToCollection()->filter(fn (array $item) => $item['ckey'] === $ckey))
-            && ($bans = $this->bansToCollection()->filter(fn (array $item) => $playerlog->get('ckey', $item['ckey']) || $playerlog->get('ip', $item['ip']) || $playerlog->get('cid', $item['cid'])))
+            && ($bans = $this->bansToCollection()->filter(fn (array $item) => $playerlog->get('ckey', $item['ckey'])
+                || (self::isCkeyinfoIp($item['ip'] ?? null) && $playerlog->get('ip', $item['ip']))
+                || (isset($item['cid']) && $item['cid'] !== '' && $playerlog->get('cid', $item['cid']))))
         ) ? ['playerlogs' => $playerlog, 'bans' => $bans] : [];
     }
 
