@@ -549,15 +549,12 @@ class GameServer
             return reject(new \InvalidArgumentException($err));
         }
         if (isset($this->civ13->moderator) && $this->moderate && $moderate) {
-            $badwords = $ooc ? $this->civ13->ooc_badwords : $this->civ13->ic_badwords;
-            $badword_warnings = $ooc ? $this->civ13->ooc_badwords_warnings : $this->civ13->ic_badwords_warnings;
-            $this->civ13->moderator->moderate(
-                $this,
-                $array['ckey'],
-                $array['message'],
-                $badwords,
-                $badword_warnings
-            );
+            // The counters are passed by reference from the bot itself so repeat violations accumulate and persist.
+            if ($ooc) {
+                $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ooc_badwords, $this->civ13->ooc_badwords_warnings, 'ooc_badwords_warnings.json');
+            } else {
+                $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ic_badwords, $this->civ13->ic_badwords_warnings, 'ic_badwords_warnings.json');
+            }
         }
         try {
             $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']));
