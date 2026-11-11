@@ -273,9 +273,6 @@ class Civ13
         array $civ14_server_settings = [],
         public ?VerifierServer $verifier_server = null,
     ) {
-        if (! in_array(php_sapi_name(), ['cli', 'micro'])) {
-            $this->logger->critical('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.');
-        }
 
         // x86 need gmp extension for big integer operation
         if (PHP_INT_SIZE === 4 && ! BigInt::init()) {
@@ -287,7 +284,11 @@ class Civ13
         $this->restartPolicy = new RestartPolicy($options['restart_mode'] ?? 'legacy');
         $this->portable_state_dir = $options['portable_state_dir'] ?? '';
 
-        $this->logger = $options['logger'] ?? $this->discord->getLogger() ?? new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
+        // The logger is needed before the Discord client exists, so it may only come from the options at this point.
+        $this->logger = self::initialLogger($options);
+        if (! in_array(php_sapi_name(), ['cli', 'micro'])) {
+            $this->logger->critical('DiscordPHP will not run on a webserver. Please use PHP CLI to run a DiscordPHP bot.');
+        }
         $options = $this->resolveOptions($options);
         $this->options = &$options;
         if (isset($options['discord']) && ($options['discord'] instanceof Discord)) {
@@ -372,7 +373,7 @@ class Civ13
         if (isset($options['blacklisted_regions']) && is_array($options['blacklisted_regions'])) {
             $this->blacklisted_regions = $options['blacklisted_regions'];
         }
-        if (isset($options['blacklsited_countries']) && is_array($options['blacklisted_countries'])) {
+        if (isset($options['blacklisted_countries']) && is_array($options['blacklisted_countries'])) {
             $this->blacklisted_countries = $options['blacklisted_countries'];
         }
         
@@ -530,6 +531,9 @@ class Civ13
                 'game_ready_events',
                 'launcher_directory_status_targets',
                 'ic_badwords',
+                'minimum_age',
+                'blacklisted_regions',
+                'blacklisted_countries',
                 'legacy',
                 'moderate',
                 'ooc_badwords',
@@ -865,14 +869,30 @@ class Civ13
      */
     public function deferUntilReady(callable $callback, ?string $function = null): void
     {
+        if ($this->ready) {
+            $callback();
+
+            return;
+        }
         $this->logger->info(
             $function
             ? "Deferring callback until ready. Event: $function"
-            : 'Deferring callback until ready. Function: '.debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2)[1]['function'] ?? 'unknown'
+            : 'Deferring callback until ready. Function: '.(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'] ?? 'unknown')
         );
-        $this->ready
-            ? $callback()
-            : $this->discord->once('init', $callback);
+        $this->discord->once('init', $callback);
+    }
+
+    /** The logger named in the options, else the supplied Discord client's logger, else a stdout logger. */
+    private static function initialLogger(array $options): LoggerInterface
+    {
+        if (($options['logger'] ?? null) instanceof LoggerInterface) {
+            return $options['logger'];
+        }
+        if (($options['discord'] ?? null) instanceof Discord && ($logger = $options['discord']->getLogger()) instanceof LoggerInterface) {
+            return $logger;
+        }
+
+        return new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
     }
 
     /** The command prefix `$content` starts with (bot mention or `command_symbol`), or null. */
@@ -1087,7 +1107,7 @@ class Civ13
             : array_reduce(
                 $role_ids,
                 fn ($promise, $role_id) => $promise->then(static fn () => $member->removeRole($role_id)),
-                $member->removeRole(array_shift($role_ids))
+                resolve($member) // Each role is removed exactly once, in order
             )
                     ->then(static fn () => $member->guild->members->get('id', $member->id));
     }
@@ -1120,7 +1140,7 @@ class Civ13
             : array_reduce(
                 $role_ids,
                 fn ($promise, $role_id) => $promise->then(static fn () => $member->addRole($role_id)),
-                $member->addRole(array_shift($role_ids))
+                resolve($member) // Each role is added exactly once, in order
             )
                         ->then(static fn () => $member->guild->members->get('id', $member->id));
     }
@@ -1138,31 +1158,17 @@ class Civ13
         Collection|array|Role|string|int $add_roles = [],
         Collection|array|Role|string|int $remove_roles = []
     ): PromiseInterface {
-        if (! $add_roles = self::__rolesToIdArray($add_roles)) {
-            return resolve($member);
+        $add_roles = array_filter(self::__rolesToIdArray($add_roles), static fn ($role_id) => ! $member->roles->has($role_id));
+        $remove_roles = array_filter(self::__rolesToIdArray($remove_roles), static fn ($role_id) => $member->roles->has($role_id));
+        if (! $add_roles && ! $remove_roles) {
+            return resolve($member); // Nothing would change, so no request is sent
         }
-        if (! $remove_roles = self::__rolesToIdArray($remove_roles)) {
-            return resolve($member);
-        }
-
-        foreach ($add_roles    as &$role_id) {
-            if ($member->roles->has($role_id)) {
-                unset($role_id);
-            }
-        }
-        foreach ($remove_roles as &$role_id) {
-            if (! $member->roles->has($role_id)) {
-                unset($role_id);
-            }
+        $current = [];
+        foreach ($member->roles as $role) {
+            $current[] = (string) $role->id;
         }
 
-        return ($updated_roles = $member->roles
-            ->map(static fn ($role) => $role->id)
-            //->values()
-            ->merge($add_roles)
-            ->diff($remove_roles))
-                ? $member->setRoles($updated_roles)
-                : resolve($member);
+        return $member->setRoles(array_values(array_unique(array_diff(array_merge($current, $add_roles), $remove_roles))));
     }
     /**
      * Convert roles to an array of role IDs.
@@ -1175,11 +1181,8 @@ class Civ13
         if ($roles instanceof Collection && $roles->first() instanceof Role) {
             return $roles->map(fn ($role) => $role->id)->toArray();
         }
-        if (! $roles instanceof Collection && is_array($roles) && $roles[0] instanceof Role) {
-            return array_map(fn ($role) => $role->id, $roles);
-        }
         if (is_array($roles)) {
-            return array_map('strval', $roles);
+            return array_values(array_map(static fn ($role) => $role instanceof Role ? (string) $role->id : (string) $role, $roles));
         }
         if ($roles instanceof Role) {
             return [$roles->id];
@@ -1364,7 +1367,7 @@ class Civ13
     public function OOCMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
         if (is_null($server_key)) {
-            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->OOCMessage($message, $sender), false);
+            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->OOCMessage($message, $sender) || $carry, false); // True when any server accepted it
         }
 
         return isset($this->enabled_gameservers[$server_key])
@@ -1382,7 +1385,7 @@ class Civ13
     public function AdminMessage(string $message, string $sender, string|int|null $server_key = null): bool
     {
         if (is_null($server_key)) {
-            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->AdminMessage($message, $sender), false);
+            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->AdminMessage($message, $sender) || $carry, false); // True when any server accepted it
         }
 
         return isset($this->enabled_gameservers[$server_key])
@@ -1401,7 +1404,7 @@ class Civ13
     public function DirectMessage(string $message, string $sender, string $recipient, string|int|null $server_key = null): bool
     {
         if (is_null($server_key)) {
-            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->DirectMessage($message, $sender, $recipient), false);
+            return array_reduce($this->enabled_gameservers, fn ($carry, $server) => $server->DirectMessage($message, $sender, $recipient) || $carry, false); // True when any server accepted it
         }
 
         return isset($this->enabled_gameservers[$server_key])
@@ -1459,12 +1462,14 @@ class Civ13
      */
     public function getHighestRole(ExCollectionInterface $roles): ?Role
     {
-        return $roles->reduce(fn ($prev, $role) => ($prev === null
-                ? $role
-                : ($this->comparePositionTo($role, $prev) > 0
-                    ? $role
-                    : $prev)))
-            ->shift();
+        $highest = null;
+        foreach ($roles as $role) {
+            if ($highest === null || $this->comparePositionTo($role, $highest) > 0) {
+                $highest = $role;
+            }
+        }
+
+        return $highest;
     }
     /**
      * Checks if a member has a specific rank.
@@ -1679,38 +1684,44 @@ class Civ13
         }, false)) {
             return false;
         }
-        $this->__bancheckTimer();
+        if (! $this->__bancheckTimer()) {
+            return false;
+        } // Periodic checks are switched off for this configuration
         if (! isset($this->timers['bancheck_timer']) || ! $this->timers['bancheck_timer'] instanceof TimerInterface) {
             $this->timers['bancheck_timer'] = $this->discord->getLoop()->addPeriodicTimer(43200, fn () => $this->bancheckTimer());
         }
 
         return $this->timers['bancheck_timer'];
     }
-    /** Cancels the ban-check timer when no verifier is configured; otherwise leaves it running. */
-    private function __bancheckTimer(): void
+    /**
+     * Runs one periodic ban check. Returns false, cancelling any running timer, when checks
+     * are switched off: no verifier is configured, or a Redis cache makes them too expensive.
+     */
+    private function __bancheckTimer(): bool
     {
-        if (! isset($this->verifier)) {
+        $cancel = function (): bool {
             if (isset($this->timers['bancheck_timer']) && $this->timers['bancheck_timer'] instanceof TimerInterface) {
                 $this->loop->cancelTimer($this->timers['bancheck_timer']);
-                unset($this->timers['bancheck_timer']);
             }
+            unset($this->timers['bancheck_timer']);
 
-            return;
+            return false;
+        };
+        if (! isset($this->verifier)) {
+            return $cancel();
         }
         if ($cacheconfig = $this->discord->getCacheConfig()) {
             $interface = $cacheconfig->interface;
             $this->logger->info('Cache type: '.get_class($interface));
             if ($interface instanceof CacheInterface) { // It's too expensive to check bans
                 $this->logger->info('Redis cache is being used, cancelling periodic banchecks.');
-                $this->loop->cancelTimer($this->timers['bancheck_timer']);
-                unset($this->timers['bancheck_timer']);
 
-                return;
+                return $cancel();
             }
         }
         $this->logger->debug('Running periodic bancheck...');
         array_walk($this->enabled_gameservers, fn ($gameserver) => $gameserver->cleanupLogs());
-        if (isset($this->verifier, $this->role_ids['Banished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) {
+        if (isset($this->verifier, $this->role_ids['Banished'], $this->role_ids['Permabanished']) && $guild = $this->discord->guilds->get('id', $this->civ13_guild_id)) {
             foreach ($guild->members as $member) {
                 if (! $item = $this->verifier->getVerifiedMemberItems()->get('discord', $member->id)) {
                     continue;
@@ -1734,6 +1745,8 @@ class Civ13
             }
         }
         $this->logger->debug('Periodic bancheck complete.');
+
+        return true;
     }
     /**
      * Determines whether a ckey is currently banned from the server.
@@ -1864,7 +1877,7 @@ class Civ13
         }
         $array['ckey'] = self::sanitizeInput($array['ckey']);
         if (is_numeric($array['ckey'])) {
-            if (isset($this->verifier) && ! $item = $this->verifier->get('discord', $array['ckey'])) {
+            if (! isset($this->verifier) || ! ($item = $this->verifier->get('discord', $array['ckey'])) || ! isset($item['ss13'])) {
                 return "Unable to find a ckey for <@{$array['ckey']}>. Please use the ckey instead of the Discord ID.";
             }
             $array['ckey'] = $item['ss13'];
@@ -2328,10 +2341,10 @@ class Civ13
     /** Renames the `webserver-status` channel to `{name}-online` / `{name}-offline` to match `$status`, announcing the change. */
     public function statusChannelUpdate(string $channel, bool $status): ?PromiseInterface
     {
-        if (! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) {
+        if (! isset($this->channel_ids['webserver-status']) || ! $channel = $this->discord->getChannel($this->channel_ids['webserver-status'])) {
             return null;
         }
-        [$webserver_name, $reported_status] = explode('-', $channel->name);
+        [$webserver_name, $reported_status] = array_pad(explode('-', $channel->name), 2, ''); // A channel renamed without a dash still updates
         if ($reported_status === ($status = $status ? 'online' : 'offline')) {
             return null;
         }
