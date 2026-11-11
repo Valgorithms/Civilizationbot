@@ -93,7 +93,7 @@ class BanCheck extends Civ13MessageCommand
         }
         while (($fp = fgets($file, 4096)) !== false) {
             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-            if ((count($linesplit) >= 8) && ($linesplit[8] === strtolower($ckey))) {
+            if (isset($linesplit[8]) && ($linesplit[8] === strtolower($ckey))) {
                 $found = true;
                 $type = $linesplit[0];
                 $reason = $linesplit[3];

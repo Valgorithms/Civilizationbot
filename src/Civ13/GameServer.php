@@ -455,8 +455,10 @@ class GameServer
     {
         $result = true;
         foreach ($paths as $filepath => $channel) {
-            $this->gameChatFileRelay($this->basedir.$filepath, $channel)
-                ?: (($result = false) && $this->logger->error("Failed to relay chat messages to $filepath"));
+            if (! $this->gameChatFileRelay($this->basedir.$filepath, $channel)) {
+                $result = false;
+                $this->logger->debug("No chat was relayed from $filepath");
+            }
         }
 
         return $result;
@@ -933,7 +935,7 @@ class GameServer
             return $this->systemdRequest('stop', $message);
         }
         if ($notify) {
-            $sender = ($message && $message->user_id) ? $this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] : ($this->civ13->discord->id ?? $this->civ13->discord->username);
+            $sender = (string) ((($message && $message->user_id) ? ($this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] ?? null) : null) ?? $this->civ13->discord->username ?? 'Server');
             $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender);
         }
         $this->civ13->loop->addTimer(10, function () use ($message): void {
@@ -1056,8 +1058,7 @@ class GameServer
 
         $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->username);
         if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
-            if (isset($this->civ13->role_ids['mapswap']) && $role = $this->civ13->role_ids['mapswap']);
-            $msg = "<@&$role>, {$this->name} $msg";
+            $msg = (isset($this->civ13->role_ids['mapswap']) ? "<@&{$this->civ13->role_ids['mapswap']}>, " : '')."{$this->name} $msg";
             $channel->sendMessage($msg);
         }
         $this->loop->addTimer(10, fn () => OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::mapswap." $mapto"));
@@ -1078,10 +1079,12 @@ class GameServer
     }
 
     /** Trims the bans and player-log files via {@see __cleanupLog()}. */
-    public function cleanupLogs(): void
+    public function cleanupLogs(): bool
     {
-        $this->__cleanupLog($this->basedir.Civ13::bans);
-        $this->__cleanupLog($this->basedir.Civ13::playerlogs);
+        $bans = $this->__cleanupLog($this->basedir.Civ13::bans);
+        $playerlogs = $this->__cleanupLog($this->basedir.Civ13::playerlogs);
+
+        return $bans && $playerlogs;
     }
     /**
      * Rewrites the log file at `$path`, dropping entries older than the retention window.
@@ -1159,7 +1162,7 @@ class GameServer
         while (($fp = fgets($file, 4096)) !== false) {
             // str_replace(PHP_EOL, '', $fp); // Is this necessary?
             $linesplit = explode(';', trim(str_replace('|||', '', $fp))); // $split_ckey[0] is the ckey
-            if ((count($linesplit) >= 8) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
+            if (isset($linesplit[8]) && ($linesplit[8] === $ckey) && ($linesplit[0] === 'Server') && (str_ends_with($linesplit[7], '999 years'))) {
                 fclose($file);
 
                 return true;
@@ -1191,7 +1194,7 @@ class GameServer
             $this->updateBanCache();
         }
         foreach (explode(PHP_EOL, $this->bancheck_cache) as $line) {
-            if ((count($linesplit = explode(';', trim(str_replace('|||', '', $line)))) >= 8) && ($linesplit[8] === $ckey)) {
+            if (isset(($linesplit = explode(';', trim(str_replace('|||', '', $line))))[8]) && ($linesplit[8] === $ckey)) {
                 return true;
             }
         } // $split_ckey[0] is the ckey
@@ -1272,9 +1275,9 @@ class GameServer
                 } else {
                     $temp[$ban[8]] = $bsplit;
                 }
-            } else {
-                $temp[$ckey] = $bsplit;
-            } // This is a ban that doesn't have a ckey, so we'll just add it to the temp array
+            } elseif (! $ckey) {
+                $oldlist[] = $bsplit;
+            } // A row without a ckey column cannot be backfilled: a full rewrite keeps every such row as-is, and a single-ckey update ignores it
         }
         /**
          * This function takes a player log's content as a string and updates the corresponding logs in the game server.
@@ -1294,11 +1297,9 @@ class GameServer
             });
         }, $logs);
 
-        $updated = [];
-        foreach ($temp as $ban) {
-            is_array($ban)
-                ? array_merge($updated, $ban)
-                : $updated[] = $ban;
+        $updated = array_values($temp);
+        if ($ckey && ! $updated) {
+            return resolve(''); // Nothing to backfill for this ckey, so nothing is appended to the bans file
         }
         
         /**
@@ -1440,8 +1441,11 @@ class GameServer
             }
         }
 
-        if (! isset($this->timers['ban_cleanup_timer'])) {
-            $this->civ13->timers['ban_cleanup_timer'] = $this->civ13->discord->getLoop()->addTimer(300, fn () => $this->cleanupLogs());
+        if (! isset($this->timers['ban_cleanup_timer'])) { // One pending cleanup per server; cleared when it runs so the next ban schedules another
+            $this->timers['ban_cleanup_timer'] = $this->civ13->discord->getLoop()->addTimer(300, function (): void {
+                unset($this->timers['ban_cleanup_timer']);
+                $this->cleanupLogs();
+            });
         }
 
         return $result;
@@ -1463,8 +1467,17 @@ class GameServer
 
             return "Unable to open `{$this->discord2ban}`".PHP_EOL;
         }
-        if (! isset($this->timers["banlog_update_{$array['ckey']}"])) {
-            $this->civ13->timers["banlog_update_{$array['ckey']}"] = $this->civ13->discord->getLoop()->addTimer(360, fn () => array_walk($this->civ13->enabled_gameservers, fn (GameServer &$gameserver) => $gameserver->banlog_update($array['ckey'], file_get_contents($this->basedir.Civ13::playerlogs))));
+        $timer = "banlog_update_{$array['ckey']}";
+        if (! isset($this->timers[$timer])) { // One pending backfill per ckey; cleared when it runs
+            $this->timers[$timer] = $this->civ13->discord->getLoop()->addTimer(360, function () use ($array, $timer): void {
+                unset($this->timers[$timer]);
+                if (($playerlog = @file_get_contents($this->basedir.Civ13::playerlogs)) === false) {
+                    return;
+                }
+                foreach ($this->civ13->enabled_gameservers as $gameserver) {
+                    $gameserver->banlog_update($array['ckey'], $playerlog);
+                }
+            });
         } // Attempts to fill in any missing data for the ban
 
         return "`$admin` `Server` banned `{$array['ckey']}` from `{$this->name}` for `{$array['duration']}` with the reason `{$array['reason']}`".PHP_EOL;
@@ -2231,8 +2244,13 @@ class GameServer
      */
     public function __destruct()
     {
+        if (! isset($this->loop)) {
+            return;
+        } // Never fully constructed, so there is no loop holding timers
         foreach ($this->timers as $timer) {
-            $this->loop->cancelTimer($timer);
+            if ($timer instanceof TimerInterface) {
+                $this->loop->cancelTimer($timer);
+            }
         }
     }
 }
