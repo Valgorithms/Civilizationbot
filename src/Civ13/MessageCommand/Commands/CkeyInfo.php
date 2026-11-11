@@ -114,7 +114,7 @@ class CkeyInfo extends Civ13MessageCommand
             if ($ckey_age_string = implode(', ', array_map(fn ($c) => "$c (".($ckey_age[$c] ?? ($this->civ13->getByondAge($c) !== false ? $this->civ13->getByondAge($c) : 'N/A')).')', $ckeys))) {
                 if (strlen($ckey_age_string) > 1 && strlen($ckey_age_string) <= 1024) {
                     $embed->addFieldValues('Matched Ckeys', trim($ckey_age_string));
-                } elseif (strlen($ckey_age_string) > 1025) {
+                } elseif (strlen($ckey_age_string) > 1024) {
                     $builder->addFileFromContent('matched_ckeys.txt', $ckey_age_string);
                 }
             }
@@ -128,10 +128,10 @@ class CkeyInfo extends Civ13MessageCommand
                 }
             }
             if ($cids && ($matched_cids_string = implode(', ', $cids)) !== $cids_string) {
-                if (strlen($matched_cids_string) > 1 && strlen($cids_string) <= 1024) {
-                    $embed->addFieldValues('Matched CIDs', $cids_string, true);
+                if (strlen($matched_cids_string) > 1 && strlen($matched_cids_string) <= 1024) {
+                    $embed->addFieldValues('Matched CIDs', $matched_cids_string, true);
                 } elseif (strlen($matched_cids_string) > 1024) {
-                    $builder->addFileFromContent('matched_cids.txt', $cids_string);
+                    $builder->addFileFromContent('matched_cids.txt', $matched_cids_string);
                 }
             }
         } else {

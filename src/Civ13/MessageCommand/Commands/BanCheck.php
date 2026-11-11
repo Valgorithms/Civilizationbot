@@ -113,7 +113,7 @@ class BanCheck extends Civ13MessageCommand
      *
      * @return PromiseInterface|null The role-add promise, or null when there is nothing to do.
      */
-    protected function updateBanished(bool $found = true, string $ckey): ?PromiseInterface
+    protected function updateBanished(bool $found, string $ckey): ?PromiseInterface
     {
         if (! isset($this->civ13->role_ids['Banished'])) {
             return null;

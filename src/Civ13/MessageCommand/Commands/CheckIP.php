@@ -29,13 +29,12 @@ class CheckIP extends Civ13MessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $this->civ13->reply(
-            $message,
-            @file_get_contents(
-                'http://ipecho.net/plain',
-                false,
-                stream_context_create(['http' => ['connect_timeout' => 5]])
-            )
-        );
+        $ip = \Civ13\HttpHandler::parseExternalIp(@file_get_contents(
+            'http://ipecho.net/plain',
+            false,
+            stream_context_create(['http' => ['timeout' => 5]])
+        ));
+
+        return $this->civ13->reply($message, $ip ?? 'Unable to determine the external IP address right now.');
     }
 }

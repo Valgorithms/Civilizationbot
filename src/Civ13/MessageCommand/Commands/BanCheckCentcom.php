@@ -43,7 +43,7 @@ class BanCheckCentcom extends Civ13MessageCommand
             return $this->civ13->reply($message, "Unable to locate bans for `$ckey` on centcom.melonmesa.com.");
         }
         if ($json === '[]') {
-            return $this->civ13->reply($message, 'No bans were found for `ckey` on centcom.melonmesa.com.');
+            return $this->civ13->reply($message, "No bans were found for `$ckey` on centcom.melonmesa.com.");
         }
 
         return $this->civ13->reply($message, $json, $ckey.'_bans.json', true);

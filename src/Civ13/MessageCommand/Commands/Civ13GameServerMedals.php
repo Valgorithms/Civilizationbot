@@ -36,16 +36,16 @@ enum SS13Medal: string
     public function emoji(): string
     {
         return match ($this) {
-            self::CombatMedicalBadge->value => 'combat_medical_badge',
-            self::TankDestroyerSilverBadge->value => 'tank_silver',
-            self::TankDestroyerGoldBadge->value => 'tank_gold',
-            self::AssaultBadge->value => 'assault',
-            self::WoundedBadge->value => 'wounded',
-            self::WoundedSilverBadge->value => 'wounded_silver',
-            self::WoundedGoldBadge->value => 'wounded_gold',
-            self::IronCross1stClass->value => 'iron_cross1',
-            self::IronCross2ndClass->value => 'iron_cross2',
-            self::LongServiceMedal->value => 'long_service',
+            self::CombatMedicalBadge => 'combat_medical_badge',
+            self::TankDestroyerSilverBadge => 'tank_silver',
+            self::TankDestroyerGoldBadge => 'tank_gold',
+            self::AssaultBadge => 'assault',
+            self::WoundedBadge => 'wounded',
+            self::WoundedSilverBadge => 'wounded_silver',
+            self::WoundedGoldBadge => 'wounded_gold',
+            self::IronCross1stClass => 'iron_cross1',
+            self::IronCross2ndClass => 'iron_cross2',
+            self::LongServiceMedal => 'long_service',
         };
     }
 
@@ -88,12 +88,10 @@ class Civ13GameServerMedals extends Civ13GameServerMessageCommand
     {
         if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {
             if (! $ckey = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? null) {
-                return $this->civ13->reply($message, 'Please register your SS13 account using the `/approveme` command.');
-            }
-
-            return $this->civ13->reply($message, 'Wrong format. Please try `civ13medals [ckey]`.');
+                return $this->civ13->reply($message, 'Please register your SS13 account using the `/approveme` command, or try `civ13medals [ckey]`.');
+            } // With no ckey given, a verified member sees their own medals
         }
-        if (! $msg = self::medals($message->guild, $this->civ13->enabled_gameservers['tdm']->basedir.Civ13::awards, $ckey)) {
+        if (! $msg = self::medals($message->guild, $this->gameserver->basedir.Civ13::awards, $ckey)) {
             return $this->civ13->reply($message, 'There was an error trying to get your medals!');
         }
 
@@ -115,16 +113,16 @@ class Civ13GameServerMedals extends Civ13GameServerMessageCommand
             return "Error opening `$fp`.";
         }
         $result = '';
-        while (! feof($search)) {
-            if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
-                if (($duser = explode(';', $line)) && $duser[0] === $ckey) {
-                    $result .= "`{$duser[1]}:` "
-                        .self::getMedalEmoji($guild, $duser[2])
-                        ." **{$duser[2]}, *{$duser[4]}*, {$duser[5]}"
-                        .PHP_EOL;
-                }
+        while (($line = fgets($search)) !== false) {
+            $duser = explode(';', trim($line));
+            if (isset($duser[5]) && $duser[0] === $ckey) {
+                $result .= "`{$duser[1]}:` "
+                    .self::getMedalEmoji($guild, $duser[2])
+                    ." **{$duser[2]}**, *{$duser[4]}*, {$duser[5]}"
+                    .PHP_EOL;
             }
         }
+        fclose($search);
 
         return $result ?: "No medals found for `$ckey`.";
     }
@@ -138,7 +136,7 @@ class Civ13GameServerMedals extends Civ13GameServerMessageCommand
      */
     public static function getMedalEmoji(Guild $guild, string $medal): string
     {
-        if ($enum = SS14MedalEmojis::fromName($medal)) {
+        if ($enum = SS13Medal::fromName(strtolower(trim($medal)))) {
             if ($emoji = $guild->emojis->get('name', $enum->emoji())) {
                 return (string) $emoji;
             }

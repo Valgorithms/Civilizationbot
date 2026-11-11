@@ -35,7 +35,7 @@ class JoinRoles extends Civ13MessageCommand
         if ($guild = $this->civ13->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             foreach ($guild->members as $member) {
                 /** @var Member $member */
-                if (! $member->user->bot && ! $member->roles->has($this->civ13->role_ids['Verified'] && ! $member->roles->has($this->civ13->role_ids['SS14 Verified']))) {
+                if (! $member->user->bot && ! (isset($this->civ13->role_ids['Verified']) && $member->roles->has($this->civ13->role_ids['Verified'])) && ! (isset($this->civ13->role_ids['SS14 Verified']) && $member->roles->has($this->civ13->role_ids['SS14 Verified']))) {
                     $this->civ13->verifier->joinRoles($member, false);
                 }
             }

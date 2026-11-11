@@ -31,7 +31,7 @@ class Civ13GameServerBRMedals extends Civ13GameServerMessageCommand
         if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {
             return $this->civ13->reply($message, 'Wrong format. Please try `civ13brmedals [ckey]`.');
         }
-        if (! $msg = self::brmedals($this->civ13->enabled_gameservers['tdm']->basedir.Civ13::awards_br, $ckey)) {
+        if (! $msg = self::brmedals($this->gameserver->basedir.Civ13::awards_br, $ckey)) {
             return $this->civ13->reply($message, 'There was an error trying to get your medals!');
         }
 
@@ -52,15 +52,13 @@ class Civ13GameServerBRMedals extends Civ13GameServerMessageCommand
             return "Error opening `$fp`.";
         }
         $result = '';
-        while (! feof($search)) {
-            if (str_contains($line = trim(str_replace(PHP_EOL, '', fgets($search))), $ckey)) {
-                if (! $duser = explode(';', $line)) {
-                    if (isset($duser[5]) && $duser[0] === $ckey) {
-                        $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})".PHP_EOL;
-                    }
-                }
+        while (($line = fgets($search)) !== false) {
+            $duser = explode(';', trim($line));
+            if (isset($duser[5]) && $duser[0] === $ckey) {
+                $result .= "**{$duser[1]}:** placed *{$duser[2]} of {$duser[5]},* on {$duser[4]} ({$duser[3]})".PHP_EOL;
             }
         }
+        fclose($search);
 
         return $result ?: "No medals found for `$ckey`.";
     }
