@@ -95,7 +95,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         $this->attributes['ratelimits'] = [];
         //$this->attributes['endpoints'] = [];
 
-        if (($civ13->options['discover_external_ip'] ?? true) && ($external_ip = @file_get_contents('http://ipecho.net/plain'))) {
+        if (($civ13->options['discover_external_ip'] ?? true) && ($external_ip = self::parseExternalIp(@file_get_contents('http://ipecho.net/plain')))) {
             $this->external_ip = $external_ip;
         }
         foreach ($whitelist as $ip) {
@@ -103,6 +103,19 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         }
         $this->key = $key;
         $this->afterConstruct();
+    }
+    /**
+     * The address reported by the external IP lookup, or null when the reply is not a single IP address.
+     * The value is later trusted as "this machine", so anything else (an error page, a proxy notice) is refused.
+     */
+    public static function parseExternalIp(string|false|null $response): ?string
+    {
+        if (! is_string($response)) {
+            return null;
+        }
+        $ip = trim($response);
+
+        return filter_var($ip, FILTER_VALIDATE_IP) === false ? null : $ip;
     }
     /** Applies the default rate limits via {@see __setDefaultRatelimits()}. */
     protected function afterConstruct(): void
@@ -187,10 +200,11 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
             if ($matchMethod === 'exact') {
                 continue;
             } // We've reached the end of the relevant array and there were no exact matches
-            if (is_callable($matchMethod) && call_user_func($matchMethod, $endpoint, $path)) {
+            // The requested path is the haystack and the registered endpoint the needle, as in MessageHandler.
+            if (is_callable($matchMethod) && call_user_func($matchMethod, $path, $endpoint)) {
                 return ['callback' => $callback, 'endpoint' => $endpoint];
             }
-            if (! is_callable($matchMethod) && str_starts_with($endpoint, $path)) { // Default to str_starts_with if no valid match method is provided
+            if (! is_callable($matchMethod) && str_starts_with($path, $endpoint)) { // Default to str_starts_with if no valid match method is provided
                 return ['callback' => $callback, 'endpoint' => $endpoint];
             }
         }
@@ -420,13 +434,9 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
             return null;
         }
 
-        $rateLimit = $this->attributes['ratelimits'][$endpoint];
         $currentTime = time();
-
-        // Remove expired requests from the rate limit tracking
-        $rateLimit['requests'] = array_filter($rateLimit['requests'], function ($request) use ($currentTime, $rateLimit) {
-            return ($currentTime - $request['time']) <= $rateLimit['window'];
-        });
+        $this->pruneRateLimit($endpoint, $currentTime);
+        $rateLimit = $this->attributes['ratelimits'][$endpoint];
 
         // Check if the number of requests exceeds the limit for the given IP address
         $requestsFromIp = array_filter($rateLimit['requests'], function ($request) use ($ip) {
@@ -445,6 +455,22 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     }
 
     /**
+     * Forgets the tracked requests of `$endpoint` that have left its window.
+     * Without this the request log grows for the life of the process and every check rescans all of it.
+     */
+    private function pruneRateLimit(string $endpoint, int $currentTime): void
+    {
+        if (! isset($this->attributes['ratelimits'][$endpoint]['requests'], $this->attributes['ratelimits'][$endpoint]['window'])) {
+            return;
+        }
+        $window = $this->attributes['ratelimits'][$endpoint]['window'];
+        $this->attributes['ratelimits'][$endpoint]['requests'] = array_values(array_filter(
+            $this->attributes['ratelimits'][$endpoint]['requests'],
+            static fn (array $request): bool => ($currentTime - $request['time']) <= $window
+        ));
+    }
+
+    /**
      * Adds a request to the rate limit for a specific endpoint.
      *
      * @param string   $endpoint    The endpoint to add the request to.
@@ -457,6 +483,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
         if (! $currentTime) {
             $currentTime = time();
         }
+        $this->pruneRateLimit($endpoint, $currentTime);
         $rateLimit = $this->attributes['ratelimits'][$endpoint] ?? [];
         $rateLimit['requests'][] = [
             'ip' => $ip,
@@ -582,10 +609,8 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
                     $data = @json_decode(urldecode($params['data']), true);
                 }
             }
-            if (isset($data['key'])) {
-                if ($data['key'] === $this->key) {
-                    return true;
-                }
+            if (is_array($data) && isset($data['key']) && is_string($data['key']) && hash_equals($this->key, $data['key'])) {
+                return true;
             }
         }
 
@@ -645,7 +670,7 @@ class HttpHandler extends CivHandler implements HttpHandlerInterface
     {
         return [
             'external_ip' => $this->external_ip,
-            'key' => $this->key,
+            'key' => $this->key === '' ? '' : '[redacted]', // Never print the shared secret in dumps or logs
             'last_ip' => $this->last_ip,
             'attributes' => $this->attributes,
         ];
