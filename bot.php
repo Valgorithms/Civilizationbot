@@ -620,7 +620,8 @@ $socket = new SocketServer(
  * @param  ServerRequestInterface $request The HTTP request object.
  * @return Response               The HTTP response object.
  */
-$webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $request) use (&$civ13, &$logger): Response {
+$httpErrors = new HttpErrorBoundary($logger, [$hidden_options['http_key']]);
+$webapi = new HttpServer(Loop::get(), $httpErrors, async(function (ServerRequestInterface $request) use (&$civ13, &$logger): Response {
     /** @var ?Civ13 $civ13 */
     if (! $civ13 || ! $civ13 instanceof Civ13) {
         $logger->warning('Civ13 instance not found. Please check the server settings.');
@@ -638,49 +639,8 @@ $webapi = new HttpServer(Loop::get(), async(function (ServerRequestInterface $re
 
     return $civ13->httpServiceManager->handle($request);
 }));
-/**
- * This code snippet handles the error event of the web API.
- * It logs the error message, file, line, and trace, and handles specific error cases.
- * If the error message starts with 'Received request with invalid protocol version', it is ignored.
- * If the error message starts with 'The response callback', it triggers a restart process.
- * The restart process includes sending a message to a specific Discord channel and closing the socket connection.
- * After a delay of 5 seconds, the script is restarted by calling the 'restart' function and closing the Discord connection.
- *
- * @param Exception                               $e       The exception object representing the error.
- * @param \Psr\Http\Message\RequestInterface|null $request The HTTP request object associated with the error, if available.
- * @param object                                  $civ13   The main object of the application.
- * @param object                                  $socket  The socket object.
- * @param bool                                    $testing Flag indicating if the script is running in testing mode.
- */
-$webapi->on('error', async(function (Exception $e, ?\Psr\Http\Message\RequestInterface $request = null) use (&$civ13, &$logger, &$socket) {
-    if (
-        str_starts_with($e->getMessage(), 'Received request with invalid protocol version')
-    ) {
-        return;
-    } // Ignore this error, it's not important
-    $error = "[WEBAPI] {$e->getMessage()} [{$e->getFile()}:{$e->getLine()}] ".str_replace('\n', PHP_EOL, $e->getTraceAsString());
-    $logger->error("[WEBAPI] $error");
-    if ($request) {
-        $logger->error('[WEBAPI] Request: '.preg_replace('/(?<=key=)[^&]+/', '********', $request->getRequestTarget()));
-    }
-    if (str_starts_with($e->getMessage(), 'The response callback')) {
-        $logger->info('[WEBAPI] ERROR - RESTART');
-        /** @var ?Civ13 $civ13 */
-        if (! $civ13) {
-            return;
-        }
-        if (! getenv('testing') && isset($civ13->channel_ids['staff_bot']) && $channel = $civ13->discord->getChannel($civ13->channel_ids['staff_bot'])) {
-            $builder = Civ13::createBuilder()
-                ->setContent('Restarting due to error in HttpServer API...')
-                ->addFileFromContent('httpserver_error.txt', preg_replace('/(?<=key=)[^&]+/', '********', $error));
-            $channel->sendMessage($builder);
-        }
-        $socket->close();
-        if (! isset($civ13->timers['restart'])) {
-            $civ13->timers['restart'] = Loop::addTimer(5, fn () => $civ13->restart());
-        }
-    }
-}));
+// React handles failed requests with an error response; keep the listener and bot alive.
+$webapi->on('error', $httpErrors->report(...));
 
 //$events = ['MESSAGE_UPDATE'];
 //$eventLogger = new \EventLogger\EventLogger($discord, $events);

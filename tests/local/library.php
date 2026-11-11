@@ -41,13 +41,18 @@ class PortableRestartProbe extends Civ13\Civ13 {
     public function stop(bool $closeLoop = true): void { $this->stops++; }
 }
 $portable = (new ReflectionClass(PortableRestartProbe::class))->newInstanceWithoutConstructor();
+$state = sys_get_temp_dir().'/local-restart-'.bin2hex(random_bytes(8));
+mkdir($state);
+$portable->portable_state_dir = $state;
 $oldProfile = getenv('CIVILIZATIONBOT_PROFILE');
 putenv('CIVILIZATIONBOT_PROFILE=synthetic-local-profile');
 try {
     // restartPolicy remains deliberately uninitialized: portable must never reach it or OS spawn.
     $portable->restart()->then(static fn ($result) => assertLocal($result === null));
-    assertLocal($portable->stops === 1);
+    assertLocal($portable->stops === 1 && Civ13\PortableProcess::consumeReload($state));
 } finally {
+    if (is_file($state.'/reload.request')) { unlink($state.'/reload.request'); }
+    rmdir($state);
     $oldProfile === false ? putenv('CIVILIZATIONBOT_PROFILE') : putenv('CIVILIZATIONBOT_PROFILE='.$oldProfile);
 }
-echo "PASS actual merged portable restart stops without legacy/policy spawn\n";
+echo "PASS actual merged portable restart signals supervisor before stopping without legacy/policy spawn\n";
