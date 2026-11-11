@@ -256,6 +256,44 @@ class HttpServiceManager
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
+    /**
+     * World save notices from a persistent world: "started" when a save begins,
+     * then "completed" (with its wall time) or "failed". Posted to the server's
+     * discussion channel without pings; a save is routine, not an alert.
+     */
+    public function handleWorldSaveWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $secret = $this->civ13->options['http_key'] ?? '';
+        $key = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($secret) || $secret === '' || !is_string($key) || !hash_equals($secret, $key) || $gameserver->legacy_relay) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        $data = self::decodeParamData($request);
+        $event = $data['event'] ?? null;
+        if (!in_array($event, ['started', 'completed', 'failed'], true)) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        $seconds = $data['seconds'] ?? null;
+        if ($seconds !== null && (!is_int($seconds) && !is_float($seconds) || $seconds < 0 || $seconds > 86400)) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if (!isset($gameserver->discussion) || !$channel = $this->discord->getChannel($gameserver->discussion)) {
+            return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        $shutdown = in_array($data['shutdown'] ?? false, [true, 1, '1'], true);
+        $name = is_string($gameserver->name ?? null) && $gameserver->name !== '' ? $gameserver->name : $gameserver->key;
+        $time = '['.date('H:i:s').']';
+        $message = match ($event) {
+            'started' => "{$time} **{$name}**: world save started".($shutdown ? ' before a restart' : '').'. The server may pause briefly.',
+            'completed' => "{$time} **{$name}**: world save completed".($seconds !== null ? ' in '.round($seconds, 1).' s' : '').'.',
+            'failed' => "{$time} **{$name}**: world save did not complete. Staff have been notified in game.",
+        };
+        $this->civ13->sendMessage($channel, $message)->then(null, function (\Throwable $error): void {
+            $this->logger->error('Queued world save notification failed', ['exception' => $error]);
+        });
+        return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
     /** Staff messages preserve display text without inferring account authority. */
     public function handleStaffWebhook(ServerRequestInterface $request, GameServer $gameserver, string $kind = 'asay'): HttpResponse
     {
@@ -1491,6 +1529,11 @@ class HttpServiceManager
                 ->offsetSet(
                     $server_endpoint.'/round_start',
                     fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleRoundStartWebhook($request, $gameserver),
+                    true
+                )
+                ->offsetSet(
+                    $server_endpoint.'/world_save',
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleWorldSaveWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(

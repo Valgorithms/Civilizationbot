@@ -121,6 +121,16 @@ $civ->role_ids['round_start']='123456789012345676';
 if($handler->handle($roundRequest(['round'=>'round-1','resumed'=>1]))->getStatusCode()!==202||end($server->events)!==['round','round-1']||!str_contains($resumed=end($civ->staffMessages)[1],'has resumed')||str_contains($resumed,'<@&')){throw new RuntimeException('Resumed round pinged or was not announced');}
 if($handler->handle($roundRequest(['round'=>'round-1','resumed'=>0]))->getStatusCode()!==202||!str_contains($fresh=end($civ->staffMessages)[1],'<@&123456789012345676>')||!str_contains($fresh,'New round')){throw new RuntimeException('Fresh round lost its ping');}
 unset($civ->role_ids['round_start']);
+// World save notices: started, completed with its time, failed; none ping.
+$saveRequest=fn($data,$key='synthetic-ooc-key')=>$request($valid)->withQueryParams(['key'=>$key,'method'=>'world_save','data'=>json_encode($data)]);
+foreach([[],['event'=>'saved'],['event'=>null],['event'=>'completed','seconds'=>-1],['event'=>'completed','seconds'=>'5'],['event'=>'completed','seconds'=>90000]] as $data){
+ $messages=count($civ->staffMessages);
+ if($handler->handle($saveRequest($data))->getStatusCode()!==400||count($civ->staffMessages)!==$messages){throw new RuntimeException('Malformed world save notice accepted');}
+}
+if($handler->handle($saveRequest(['event'=>'started'],'wrong'))->getStatusCode()!==403){throw new RuntimeException('Unauthenticated world save accepted');}
+if($handler->handle($saveRequest(['event'=>'started','round'=>'round-1','shutdown'=>1]))->getStatusCode()!==202||!str_contains($started=end($civ->staffMessages)[1],'world save started before a restart')||str_contains($started,'<@')){throw new RuntimeException('World save start not announced');}
+if($handler->handle($saveRequest(['event'=>'completed','seconds'=>42.36]))->getStatusCode()!==202||!str_contains(end($civ->staffMessages)[1],'world save completed in 42.4 s')){throw new RuntimeException('World save completion not announced');}
+if($handler->handle($saveRequest(['event'=>'failed']))->getStatusCode()!==202||!str_contains(end($civ->staffMessages)[1],'did not complete')){throw new RuntimeException('World save failure not announced');}
 $messages=count($civ->staffMessages);$server->denyRound=true;
 if($handler->handle($roundRequest(['round'=>'round-2']))->getStatusCode()!==503||count($civ->staffMessages)!==$messages){throw new RuntimeException('Failed round storage falsely notified');}
 $server->denyRound=false;$civ->staffMessages=[];
