@@ -1913,6 +1913,9 @@ class Civ13
      */
     public function getIpData(string $ip): array
     {
+        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return [];
+        } // Blank and placeholder log entries are not looked up or cached
         $currentTime = time();
         if (isset($this->ip_data[$ip])) {
             if ((($currentTime) - $this->ip_data[$ip]['timestamp']) <= Civ13::IP_DATA_TTL) {
