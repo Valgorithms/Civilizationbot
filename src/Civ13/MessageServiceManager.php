@@ -183,48 +183,8 @@ class MessageServiceManager
             ->offsetSet('getround', new Commands\GetRound($this->civ13), ['Verified']);
         if (isset($this->civ13->role_ids['Paroled'], $this->civ13->channel_ids['parole_logs'])) {
             $this->messageHandler
-                ->offsetSet(
-                    'parole',
-                    function (Message $message, string $command, array $message_filtered): PromiseInterface {
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) {
-                            return $this->civ13->reply($message, "<@{$id}> is not currently verified with a byond username or it does not exist in the cache yet");
-                        }
-                        $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, true);
-                        $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
-                        if ($member = $this->civ13->verifier->getVerifiedMember($item)) {
-                            if (! $member->roles->has($this->civ13->role_ids['Paroled'])) {
-                                $member->addRole($this->civ13->role_ids['Paroled'], "`$admin` ({$message->member->displayname}) paroled `$ckey`");
-                            }
-                        }
-                        if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) {
-                            $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been placed on parole by `$admin` (<@{$message->user_id}>).");
-                        }
-
-                        return $message->react('👍');
-                    },
-                    ['Admin']
-                )
-                ->offsetSet(
-                    'release',
-                    function (Message $message, string $command, array $message_filtered): PromiseInterface {
-                        if (! $item = $this->civ13->verifier->getVerifiedItem($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) {
-                            return $this->civ13->reply($message, "<`$id` is not currently verified with a byond username or it does not exist in the cache yet");
-                        }
-                        $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, false);
-                        $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'];
-                        if ($member = $this->civ13->verifier->getVerifiedMember($item)) {
-                            if ($member->roles->has($this->civ13->role_ids['Paroled'])) {
-                                $member->removeRole($this->civ13->role_ids['Paroled'], "`$admin` ({$message->member->displayname}) released `$ckey`");
-                            }
-                        }
-                        if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) {
-                            $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been released from parole by `$admin` (<@{$message->user_id}>).");
-                        }
-
-                        return $message->react('👍');
-                    },
-                    ['Admin']
-                );
+                ->offsetSet('parole', $this->paroleCommand(true), ['Admin'])
+                ->offsetSet('release', $this->paroleCommand(false), ['Admin']);
         }
         if ($this->civ13->ss14verifier !== null) {
             $this->messageHandler->offsetSet('civ14register', new Commands\Civ14Register($this->civ13), ['Chief Technical Officer']);
@@ -249,6 +209,32 @@ class MessageServiceManager
         }
 
         $this->__generateServerMessageCommands();
+    }
+
+    /**
+     * Builds the `parole` (true) or `release` (false) command. Both look the target up the same way,
+     * record the change, toggle the Paroled role and report to the parole log channel.
+     */
+    private function paroleCommand(bool $parole): \Closure
+    {
+        return function (Message $message, string $command, array $message_filtered) use ($parole): PromiseInterface {
+            if (! $item = $this->civ13->verifier->getVerifiedItem($id = Civ13::sanitizeInput(substr($message_filtered['message_content_lower'], strlen($command))))) {
+                return $this->civ13->reply($message, "`$id` is not currently verified with a byond username or it does not exist in the cache yet");
+            }
+            $this->civ13->paroleCkey($ckey = $item['ss13'], $message->user_id, $parole);
+            $admin = $this->civ13->verifier->ckeyOf($message->author) ?? $message->author->username;
+            $role = $this->civ13->role_ids['Paroled'];
+            if (($member = $this->civ13->verifier->getVerifiedMember($item)) && $member->roles->has($role) !== $parole) {
+                $parole
+                    ? $member->addRole($role, "`$admin` ({$message->member->displayname}) paroled `$ckey`")
+                    : $member->removeRole($role, "`$admin` ({$message->member->displayname}) released `$ckey`");
+            }
+            if ($channel = $this->discord->getChannel($this->civ13->channel_ids['parole_logs'])) {
+                $this->civ13->sendMessage($channel, "`$ckey` (<@{$item['discord']}>) has been ".($parole ? 'placed on parole' : 'released from parole')." by `$admin` (<@{$message->user_id}>).");
+            }
+
+            return $message->react('👍');
+        };
     }
 
     /**

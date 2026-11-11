@@ -116,6 +116,19 @@ class Civ13
     public const discord2unban = '/SQL/discord2unban.txt';
     public const admins = '/SQL/admins.txt';
     public const whitelist = '/SQL/whitelist.txt';
+    /** Bot state kept as JSON in the file cache: property name => file name. Loaded by {@see __loadOrInitializeVariables()}. */
+    public const array STATE_FILES = [
+        'tests' => 'tests.json',
+        'paroled' => 'paroled.json',
+        'permitted' => 'permitted.json',
+        'softbanned' => 'softbanned.json',
+        'panic_bans' => 'panic_bans.json',
+        'ooc_badwords_warnings' => 'ooc_badwords_warnings.json',
+        'ic_badwords_warnings' => 'ic_badwords_warnings.json',
+        'ages' => 'ages.json',
+        'ip_data' => 'ip_data.json',
+    ];
+
     public const bans = '/SQL/bans.txt';
     public const playerlogs = '/SQL/playerlogs.txt';
     public const factionlist = '/SQL/factionlist.txt';
@@ -770,52 +783,15 @@ class Civ13
      */
     private function __loadOrInitializeVariables(): void
     {
-        if (! $tests = $this->VarLoad('tests.json')) {
-            $tests = [];
-            $this->VarSave('tests.json', $tests);
+        foreach (self::STATE_FILES as $property => $filename) {
+            if (($data = $this->VarLoad($filename)) === null) {
+                $data = [];
+                if (! file_exists($this->filecache_path.$filename)) {
+                    $this->VarSave($filename, $data);
+                } // An unreadable file is left on disk for inspection rather than overwritten with nothing
+            }
+            $this->{$property} = $data;
         }
-        $this->tests = $tests;
-        if (! $paroled = $this->VarLoad('paroled.json')) {
-            $paroled = [];
-            $this->VarSave('paroled.json', $paroled);
-        }
-        $this->paroled = $paroled;
-        if (! $permitted = $this->VarLoad('permitted.json')) {
-            $permitted = [];
-            $this->VarSave('permitted.json', $permitted);
-        }
-        $this->permitted = $permitted;
-        if (! $softbanned = $this->VarLoad('softbanned.json')) {
-            $softbanned = [];
-            $this->VarSave('softbanned.json', $softbanned);
-        }
-        $this->softbanned = $softbanned;
-        if (! $panic_bans = $this->VarLoad('panic_bans.json')) {
-            $panic_bans = [];
-            $this->VarSave('panic_bans.json', $panic_bans);
-        }
-        $this->panic_bans = $panic_bans;
-        if (! $ooc_badwords_warnings = $this->VarLoad('ooc_badwords_warnings.json')) {
-            $ooc_badwords_warnings = [];
-            $this->VarSave('ooc_badwords_warnings.json', $ooc_badwords_warnings);
-        }
-        $this->ooc_badwords_warnings = $ooc_badwords_warnings;
-        if (! $ic_badwords_warnings = $this->VarLoad('ic_badwords_warnings.json')) {
-            $ic_badwords_warnings = [];
-            $this->VarSave('ic_badwords_warnings.json', $ic_badwords_warnings);
-        }
-        $this->ic_badwords_warnings = $ic_badwords_warnings;
-
-        if (! $ages = $this->VarLoad('ages.json')) {
-            $ages = [];
-            $this->VarSave('ages.json', $ages);
-        }
-        $this->ages = $ages;
-        if (! $ip_data = $this->VarLoad('ip_data.json')) {
-            $ip_data = [];
-            $this->VarSave('ip_data.json', $ip_data);
-        }
-        $this->ip_data = $ip_data;
         if (! $this->serverinfo_url) {
             $this->serverinfo_url = "http://{$this->webserver_url}/servers/serverinfo.json";
         } // Default to VZG unless passed manually in config
@@ -1589,6 +1565,42 @@ class Civ13
      * @param  string $basedir The directory to start in
      * @param  array  $subdirs An array of subdirectories to navigate
      * @return array  Returns an array with the first element being a boolean indicating if the file was found, and the second element being either an array of files in the directory or the path to the file if it was found
+     */
+    /**
+     * Resolves a `{server};{folder};{...}` request against that server's log directory.
+     * Shared by the logs command and the round log button so both answer identically.
+     *
+     * @return array{file?: string, text?: string, error?: string} A log file to attach, text listing the options, or a configuration error.
+     */
+    public function logNavigation(string $request): array
+    {
+        $tokens = explode(';', $request);
+        $keys = [];
+        foreach ($this->enabled_gameservers as $gameserver) {
+            $keys[] = $gameserver->key;
+            if (trim($tokens[0]) !== $gameserver->key) {
+                continue;
+            } // Check if server is valid
+            if (! isset($gameserver->basedir) || ! file_exists($fp = $gameserver->basedir.self::log_basedir)) {
+                return ['error' => 'The log directory `'.self::log_basedir."` is not set or does not exist for `{$gameserver->key}`"];
+            }
+            unset($tokens[0]);
+            $results = $this->FileNav($fp, $tokens);
+            if ($results[0]) {
+                return ['file' => $results[1]];
+            }
+            $options = count($results[1]) > 7 ? array_slice(array_reverse($results[1]), 0, 7) : $results[1]; // Newest seven when there are many
+            $list = PHP_EOL.'`'.implode('`'.PHP_EOL.'`', $options).'`';
+
+            return ['text' => (isset($results[2]) && $results[2]) ? "{$results[2]} is not an available option! Available options: $list" : "Available options: $list"];
+        }
+
+        return ['text' => 'Please use the format `logs {server}`. Valid servers: `'.implode(', ', $keys).'`'];
+    }
+    /**
+     * Walks `$subdirs` down from `$basedir`.
+     *
+     * @return array `[true, $path]` for a file, otherwise `[false, $entries]` plus the rejected segment when one was not found.
      */
     public function FileNav(string $basedir, array $subdirs): array
     {

@@ -34,7 +34,7 @@ class Civ13GameServerMapSwap extends Civ13GameServerMessageCommand
             return $message->react('❌')->then(fn () => $this->civ13->reply($message, 'You need to include the name of the map.'));
         }
 
-        return resolve(null)->then(fn () => $this->gameserver->MapSwap($map, (isset($this->civ13->verifier)) ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username))->then(
+        return resolve(null)->then(fn () => $this->gameserver->MapSwap($map, $this->authorCkey($message) ?? $this->civ13->discord->username))->then(
             fn () => $message->react('👍')->then(fn () => $this->civ13->reply($message,
                 $this->gameserver->engine === 'opendream'
                     ? "OpenDream map-swap process control completed for `{$this->gameserver->name}` and `{$map}`. Gameplay readiness has not been observed."

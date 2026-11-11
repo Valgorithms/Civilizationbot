@@ -45,7 +45,7 @@ class DM extends Civ13MessageCommand
                 case "asay-{$server->key}":
                 case "ic-{$server->key}":
                 case "ooc-{$server->key}":
-                    if ($this->civ13->DirectMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $recipient, $server->key)) {
+                    if ($this->civ13->DirectMessage($msg, $this->authorName($message), $recipient, $server->key)) {
                         return $message->react('📧');
                     }
 

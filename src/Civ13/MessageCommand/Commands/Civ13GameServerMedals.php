@@ -87,7 +87,7 @@ class Civ13GameServerMedals extends Civ13GameServerMessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {
-            if (! $ckey = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? null) {
+            if (! $ckey = $this->authorCkey($message)) {
                 return $this->civ13->reply($message, 'Please register your SS13 account using the `/approveme` command, or try `civ13medals [ckey]`.');
             } // With no ckey given, a verified member sees their own medals
         }

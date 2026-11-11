@@ -29,7 +29,7 @@ class BanCheckCentcom extends Civ13MessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {
-            if (! $ckey = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? null) {
+            if (! $ckey = $this->authorCkey($message)) {
                 return $this->civ13->reply($message, 'Wrong format. Please try `bancheck_centcom [ckey]`.');
             }
         }
