@@ -358,6 +358,7 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         // DreamDaemon runs under this systemd unit (Civ13 scripts/README.md, "Supervised hosting"); a non-root bot uses sudo -n for start/stop/restart.
         // Replaced below by the Barracks region once the sharded TDM group (tdm.json) is set up on the box.
         'systemd' => ['enabled' => true, 'unit' => 'civ13-tdm.service'],
+        'play' => ['url' => 'https://civ13.com/tdm/'], // Status Play button (docs/server-play-button.md)
         // Primary channels
         'discussion' => '799952134426591273',
         'playercount' => '1048777462898761789',
@@ -418,6 +419,7 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         'moderate' => true,
         'legacy_relay' => false,
         'basedir' => '/home/valithor/VPS/civ13-rp',
+        'play' => ['url' => 'https://civ13.github.io/persistence/'], // Gaia gateway :1714 (docs/server-play-button.md)
         // Primary channels
         'discussion' => '799951945346711552',
         'playercount' => '1090788345082298369',
@@ -466,7 +468,7 @@ if (is_file($tdm_group)) {
         'shard_group' => $tdm_shard_group('battle'),
         'shard_of' => 'tdm',
     ]);
-    unset($civ13_server_settings['tdmbattle']['shards']);
+    unset($civ13_server_settings['tdmbattle']['shards'], $civ13_server_settings['tdmbattle']['play']); // one TDM Play button, entering through the Barracks
 }
 foreach ($civ13_server_settings as $key => $value) {
     $civ13_server_settings[$key]['key'] = $key;
