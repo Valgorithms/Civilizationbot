@@ -1127,6 +1127,16 @@ class Verifier
 
         return $guild->members->get('id', $id);
     }
+    /** The verified ckey for a Member/User/id/record, or null when they are not verified. */
+    public function ckeyOf(Member|User|array|string|null $input): ?string
+    {
+        if (! $input) {
+            return null;
+        }
+        $ckey = $this->getVerifiedItem($input)['ss13'] ?? null;
+
+        return (is_string($ckey) && $ckey !== '') ? $ckey : null;
+    }
     /** Resolves a Member/User/id/verified-record to the Discord {@see User} for a verified member, or null. */
     public function getVerifiedUser(Member|User|array|string|null $input): ?User
     {

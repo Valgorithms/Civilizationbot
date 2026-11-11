@@ -33,7 +33,7 @@ class ASay extends Civ13MessageCommand
         foreach ($this->civ13->enabled_gameservers as $server) {
             switch (strtolower($message->channel->name)) {
                 case "asay-{$server->key}":
-                    if ($this->civ13->AdminMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username, $server->key)) {
+                    if ($this->civ13->AdminMessage($msg, $this->authorName($message), $server->key)) {
                         return $message->react('📧');
                     }
 

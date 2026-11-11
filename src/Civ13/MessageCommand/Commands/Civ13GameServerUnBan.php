@@ -39,7 +39,7 @@ class Civ13GameServerUnBan extends Civ13GameServerMessageCommand
             }
         }
 
-        $admin = $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username;
+        $admin = $this->authorName($message);
         return $this->civ13->unban($ckey, $admin, $this->gameserver->key)->then(
             fn () => $this->civ13->reply($message, "`$admin` queued an unban for `$ckey` from `{$this->gameserver->name}`."),
             fn (\Throwable $error) => $this->civ13->reply($message, 'Unban failed; inspect the server request before retrying.')

@@ -32,7 +32,7 @@ class GlobalASay extends Civ13MessageCommand
         }
 
         return $message->react(
-            $this->civ13->AdminMessage($msg, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username)
+            $this->civ13->AdminMessage($msg, $this->authorName($message))
             ? '📧'
             : '🔥'
         );

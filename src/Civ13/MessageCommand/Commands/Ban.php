@@ -45,6 +45,6 @@ class Ban extends Civ13MessageCommand
         }
         $arr = ['ckey' => $split_message[0], 'duration' => $split_message[1], 'reason' => $split_message[2]." Appeal at {$this->civ13->discord_formatted}"];
 
-        return $this->civ13->reply($message, $this->civ13->ban($arr, $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? null));
+        return $this->civ13->reply($message, $this->civ13->ban($arr, $this->authorCkey($message)));
     }
 }

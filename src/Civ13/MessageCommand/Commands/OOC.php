@@ -32,7 +32,7 @@ class OOC extends Civ13MessageCommand
                 case "ooc-{$gameserver->key}":
                     if ($gameserver->OOCMessage(
                         $msg,
-                        $this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $message->author->username
+                        $this->authorName($message)
                     )) {
                         return $message->react('📧');
                     }

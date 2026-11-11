@@ -34,6 +34,7 @@ on:
       - 'src/Civ13/MessageHandler.php'
       - 'src/Civ13/HttpHandler.php'
       - 'src/Civ13/IPToCountryResolver.php'
+      - 'src/Civ13/OSFunctions.php'
       - 'src/Civ13/GameReady.php'
       - 'local-bot.php'
       - 'bot.php'
@@ -135,6 +136,9 @@ jobs:
       - name: Message command contracts (offline)
         timeout-minutes: 2
         run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/command-fixes.php vendor/autoload.php
+      - name: Shared helper contracts (offline)
+        timeout-minutes: 2
+        run: php -d allow_url_fopen=0 -d disable_functions=fsockopen,pfsockopen,stream_socket_client,curl_exec,curl_multi_exec,socket_create,exec,shell_exec,system,passthru,proc_open,popen tests/local/shared-helpers.php vendor/autoload.php
       - run: php tests/local/unban-commands.php vendor/autoload.php
       - run: php tests/local/adminlist-consumers.php vendor/autoload.php
       - run: php tests/local/lifecycle-consumers.php vendor/autoload.php
