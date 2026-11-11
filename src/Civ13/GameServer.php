@@ -459,11 +459,11 @@ class GameServer
      */
     private function __gameChatFileRelay(array $paths): bool
     {
+        // Nothing to relay (webhook mode) is not worth a log line every 10 seconds; failures log in gameChatFileRelay().
         $result = true;
         foreach ($paths as $filepath => $channel) {
             if (! $this->gameChatFileRelay($this->basedir.$filepath, $channel)) {
                 $result = false;
-                $this->logger->debug("No chat was relayed from $filepath");
             }
         }
 
