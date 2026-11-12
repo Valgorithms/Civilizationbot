@@ -40,7 +40,7 @@ final class OocRelayCiv extends \Civ13\Civ13 {
 final class OocCiv extends \Civ13\Civ13 {
     public array $staffMessages=[];
     public function sendMessage(\Discord\Parts\Channel\Channel|\Discord\Parts\Thread\Thread|string $channel,\Discord\Builders\MessageBuilder|string $content,string $file_name='message.txt',bool $prevent_mentions=false): PromiseInterface {
-        $this->staffMessages[]=[$channel,$content]; return resolve(null);
+        $this->staffMessages[]=[$channel,$content,$prevent_mentions]; return resolve(null);
     }
 }
 final class OocMember extends \Discord\Parts\User\Member {
@@ -131,6 +131,18 @@ if($handler->handle($saveRequest(['event'=>'started'],'wrong'))->getStatusCode()
 if($handler->handle($saveRequest(['event'=>'started','round'=>'round-1','shutdown'=>1]))->getStatusCode()!==202||!str_contains($started=end($civ->staffMessages)[1],'world save started before a restart')||str_contains($started,'<@')){throw new RuntimeException('World save start not announced');}
 if($handler->handle($saveRequest(['event'=>'completed','seconds'=>42.36]))->getStatusCode()!==202||!str_contains(end($civ->staffMessages)[1],'world save completed in 42.4 s')){throw new RuntimeException('World save completion not announced');}
 if($handler->handle($saveRequest(['event'=>'failed']))->getStatusCode()!==202||!str_contains(end($civ->staffMessages)[1],'did not complete')){throw new RuntimeException('World save failure not announced');}
+// Planned shutdown notices: scheduled with its warning, called off; none ping.
+$shutdownRequest=fn($data,$key='synthetic-ooc-key')=>$request($valid)->withQueryParams(['key'=>$key,'method'=>'shutdown_notice','data'=>json_encode($data)]);
+foreach([[],['event'=>'scheduled'],['event'=>'planned','kind'=>'restart'],['event'=>'scheduled','kind'=>'explode'],['event'=>'scheduled','kind'=>'restart','seconds'=>-1],['event'=>'scheduled','kind'=>'restart','seconds'=>'60'],['event'=>'scheduled','kind'=>'restart','seconds'=>1.5],['event'=>'scheduled','kind'=>'restart','reason'=>[]],['event'=>'scheduled','kind'=>'restart','reason'=>str_repeat('a',401)]] as $data){
+ $messages=count($civ->staffMessages);
+ if($handler->handle($shutdownRequest($data))->getStatusCode()!==400||count($civ->staffMessages)!==$messages){throw new RuntimeException('Malformed shutdown notice accepted '.json_encode($data));}
+}
+if($handler->handle($shutdownRequest(['event'=>'scheduled','kind'=>'restart'],'wrong'))->getStatusCode()!==403){throw new RuntimeException('Unauthenticated shutdown notice accepted');}
+if($handler->handle($shutdownRequest(['event'=>'scheduled','kind'=>'maintenance','seconds'=>120,'round'=>'round-1']))->getStatusCode()!==202||!str_contains($planned=end($civ->staffMessages)[1],'will save and go down for maintenance in 2 minutes.')||str_contains($planned,'<@')){throw new RuntimeException('Planned shutdown not announced: '.($planned??''));}
+if($handler->handle($shutdownRequest(['event'=>'scheduled','kind'=>'update','seconds'=>90]))->getStatusCode()!==202||!str_contains(end($civ->staffMessages)[1],'will move to an updated build in 1 minute 30 seconds.')){throw new RuntimeException('Planned update not announced');}
+if($handler->handle($shutdownRequest(['event'=>'scheduled','kind'=>'reboot','seconds'=>0,'reason'=>'restart by server agent <@&1> @everyone']))->getStatusCode()!==202||!str_contains($now=end($civ->staffMessages)[1],'will restart now. (restart by server agent')||str_contains($now,'@')||str_contains($now,'<')){throw new RuntimeException('Reason pinged or immediate restart not announced: '.$now);}
+if($handler->handle($shutdownRequest(['event'=>'cancelled','kind'=>'shutdown']))->getStatusCode()!==202||!str_contains(end($civ->staffMessages)[1],'the planned shutdown was called off.')){throw new RuntimeException('Called-off shutdown not announced');}
+if(end($civ->staffMessages)[2]!==true){throw new RuntimeException('Shutdown notice can ping through the server name');}
 $messages=count($civ->staffMessages);$server->denyRound=true;
 if($handler->handle($roundRequest(['round'=>'round-2']))->getStatusCode()!==503||count($civ->staffMessages)!==$messages){throw new RuntimeException('Failed round storage falsely notified');}
 $server->denyRound=false;$civ->staffMessages=[];

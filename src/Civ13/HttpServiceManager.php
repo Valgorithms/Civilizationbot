@@ -294,6 +294,73 @@ class HttpServiceManager
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
+    /**
+     * Planned shutdown notices (Civ13 shutdown_notice.dm): "scheduled" when a restart or shutdown
+     * starts counting down (seconds is the players' warning, 0 = at once), "cancelled" when an
+     * admin calls it off. Posted to the server's discussion channel, like world saves; no pings.
+     */
+    public function handleShutdownNoticeWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $secret = $this->civ13->options['http_key'] ?? '';
+        $key = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($secret) || $secret === '' || !is_string($key) || !hash_equals($secret, $key) || $gameserver->legacy_relay) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        $data = self::decodeParamData($request);
+        $event = $data['event'] ?? null;
+        $kind = $data['kind'] ?? null;
+        $seconds = $data['seconds'] ?? 0;
+        $reason = $data['reason'] ?? null;
+        if (!in_array($event, ['scheduled', 'cancelled'], true)
+            || !in_array($kind, ['restart', 'shutdown', 'maintenance', 'update', 'fresh', 'reboot'], true)
+            || !is_int($seconds) || $seconds < 0 || $seconds > 86400
+            || ($reason !== null && (!is_string($reason) || strlen($reason) > 400 || str_contains($reason, "\0")))) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if (!isset($gameserver->discussion) || !$channel = $this->discord->getChannel($gameserver->discussion)) {
+            return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        $name = is_string($gameserver->name ?? null) && $gameserver->name !== '' ? $gameserver->name : $gameserver->key;
+        $time = '['.date('H:i:s').']';
+        $what = match ($kind) {
+            'shutdown' => 'save and shut down',
+            'maintenance' => 'save and go down for maintenance',
+            'update' => 'move to an updated build',
+            'reboot' => 'restart',
+            default => 'save and restart',
+        };
+        $noun = match ($kind) {
+            'shutdown', 'maintenance' => 'shutdown',
+            'update' => 'update',
+            default => 'restart',
+        };
+        if ($event === 'cancelled') {
+            $message = "{$time} **{$name}**: the planned {$noun} was called off.";
+        } else {
+            $when = $seconds === 0 ? 'now' : 'in '.self::shutdownNoticeDuration($seconds);
+            $message = "{$time} **{$name}** will {$what} {$when}.";
+        }
+        if (is_string($reason) && ($reason = trim(preg_replace('/[\x00-\x1F\x7F@<>`*_~|]+/u', ' ', strip_tags(html_entity_decode($reason))) ?? '')) !== '') {
+            $message .= ' ('.mb_substr($reason, 0, 200).')';
+        }
+        $this->civ13->sendMessage($channel, $message, prevent_mentions: true)->then(null, function (\Throwable $error): void {
+            $this->logger->error('Queued shutdown notice failed', ['exception' => $error]);
+        });
+        return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /** "2 minutes", "1 minute 30 seconds", "45 seconds". */
+    public static function shutdownNoticeDuration(int $seconds): string
+    {
+        $minutes = intdiv($seconds, 60);
+        $rest = $seconds % 60;
+        if ($minutes === 0) {
+            return $rest.' second'.($rest === 1 ? '' : 's');
+        }
+        $text = $minutes.' minute'.($minutes === 1 ? '' : 's');
+        return $rest ? $text.' '.$rest.' second'.($rest === 1 ? '' : 's') : $text;
+    }
+
     /** Staff messages preserve display text without inferring account authority. */
     public function handleStaffWebhook(ServerRequestInterface $request, GameServer $gameserver, string $kind = 'asay'): HttpResponse
     {
@@ -1534,6 +1601,11 @@ class HttpServiceManager
                 ->offsetSet(
                     $server_endpoint.'/world_save',
                     fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleWorldSaveWebhook($request, $gameserver),
+                    true
+                )
+                ->offsetSet(
+                    $server_endpoint.'/shutdown_notice',
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleShutdownNoticeWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(
