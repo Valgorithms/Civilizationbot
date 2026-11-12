@@ -40,7 +40,7 @@ final class OocRelayCiv extends \Civ13\Civ13 {
 final class OocCiv extends \Civ13\Civ13 {
     public array $staffMessages=[];
     public function sendMessage(\Discord\Parts\Channel\Channel|\Discord\Parts\Thread\Thread|string $channel,\Discord\Builders\MessageBuilder|string $content,string $file_name='message.txt',bool $prevent_mentions=false): PromiseInterface {
-        $this->staffMessages[]=[$channel,$content]; return resolve(null);
+        $this->staffMessages[]=[$channel,$content,$prevent_mentions]; return resolve(null);
     }
 }
 final class OocMember extends \Discord\Parts\User\Member {
@@ -142,6 +142,7 @@ if($handler->handle($shutdownRequest(['event'=>'scheduled','kind'=>'maintenance'
 if($handler->handle($shutdownRequest(['event'=>'scheduled','kind'=>'update','seconds'=>90]))->getStatusCode()!==202||!str_contains(end($civ->staffMessages)[1],'will move to an updated build in 1 minute 30 seconds.')){throw new RuntimeException('Planned update not announced');}
 if($handler->handle($shutdownRequest(['event'=>'scheduled','kind'=>'reboot','seconds'=>0,'reason'=>'restart by server agent <@&1> @everyone']))->getStatusCode()!==202||!str_contains($now=end($civ->staffMessages)[1],'will restart now. (restart by server agent')||str_contains($now,'@')||str_contains($now,'<')){throw new RuntimeException('Reason pinged or immediate restart not announced: '.$now);}
 if($handler->handle($shutdownRequest(['event'=>'cancelled','kind'=>'shutdown']))->getStatusCode()!==202||!str_contains(end($civ->staffMessages)[1],'the planned shutdown was called off.')){throw new RuntimeException('Called-off shutdown not announced');}
+if(end($civ->staffMessages)[2]!==true){throw new RuntimeException('Shutdown notice can ping through the server name');}
 $messages=count($civ->staffMessages);$server->denyRound=true;
 if($handler->handle($roundRequest(['round'=>'round-2']))->getStatusCode()!==503||count($civ->staffMessages)!==$messages){throw new RuntimeException('Failed round storage falsely notified');}
 $server->denyRound=false;$civ->staffMessages=[];

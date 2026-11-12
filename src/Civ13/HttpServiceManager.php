@@ -343,7 +343,7 @@ class HttpServiceManager
         if (is_string($reason) && ($reason = trim(preg_replace('/[\x00-\x1F\x7F@<>`*_~|]+/u', ' ', strip_tags(html_entity_decode($reason))) ?? '')) !== '') {
             $message .= ' ('.mb_substr($reason, 0, 200).')';
         }
-        $this->civ13->sendMessage($channel, $message)->then(null, function (\Throwable $error): void {
+        $this->civ13->sendMessage($channel, $message, prevent_mentions: true)->then(null, function (\Throwable $error): void {
             $this->logger->error('Queued shutdown notice failed', ['exception' => $error]);
         });
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
