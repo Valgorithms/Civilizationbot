@@ -2,7 +2,11 @@
 declare(strict_types=1);
 namespace Civ13;
 
-/** Fail-closed portable bot source policy. No reset, checkout, stash, force or credential loading. */
+/**
+ * Portable bot source policy. No reset, checkout, force or credential loading. The only stash is a
+ * local composer.lock set aside when an update itself changes composer.lock (kept, never dropped).
+ * control.php start treats a refusal as a warning: these checks must never keep the bot from booting.
+ */
 final class DefaultBranchGuard
 {
     public const ORIGIN = 'https://github.com/Valgorithms/Civilizationbot.git';
@@ -18,11 +22,11 @@ final class DefaultBranchGuard
         $require($command(['rev-parse','--abbrev-ref','--symbolic-full-name','@{upstream}']) === 'origin/main', 'upstream origin/main required');
         $require($command(['symbolic-ref','--quiet','refs/remotes/origin/HEAD']) === 'refs/remotes/origin/main', 'local origin default main required');
         $sourceStatus = $command(['status','--porcelain=v1','--untracked-files=all']);
-        // composer.lock is not loaded at runtime. A local dependency lock may be
-        // retained for start on a current main. Update also keeps it when the
-        // only unstaged difference is packages installed from path repositories.
-        $lockOnly = in_array($sourceStatus, ['M composer.lock','M  composer.lock','MM composer.lock'], true);
-        $localLockEdit = $lockOnly && (!$update || self::pathOnlyLockEdit($git, $root));
+        // composer.lock is not loaded at runtime (vendor/ is), so a local dependency lock
+        // never blocks start or update. If the update changes composer.lock too, the local
+        // lock is stashed first and the upstream one kept (composer install is due anyway).
+        $lockOnly = self::lockOnlyStatus($sourceStatus);
+        $localLockEdit = $lockOnly;
         $require($sourceStatus === '' || $localLockEdit, 'local source edits retained');
         $lockState = $localLockEdit ? self::lockState($git, $root) : null;
         $require($command(['remote','get-url','--all','origin']) === $origin, 'unexpected origin retained');
@@ -49,6 +53,16 @@ final class DefaultBranchGuard
             $require($update, 'main behind; explicit safe update required');
             $require($command(['symbolic-ref','--quiet','--short','HEAD']) === 'main' && $command(['status','--porcelain=v1','--untracked-files=all']) === $sourceStatus
                 && (!$localLockEdit || self::lockState($git, $root) === $lockState), 'source changed during verification');
+            if ($localLockEdit) {
+                self::command($git,$root,['diff','--quiet',$before,$target,'--','composer.lock'],[0,1],$lockChanged);
+                if ($lockChanged === 1) {
+                    $command(['stash','push','-m','civilizationbot update: local composer.lock (upstream changed it)','--','composer.lock']);
+                    $stashedLock = true;
+                    $sourceStatus = $command(['status','--porcelain=v1','--untracked-files=all']);
+                    $require($sourceStatus === '', 'local composer.lock could not be set aside');
+                    $localLockEdit = false;
+                }
+            }
             $command(['merge','--ff-only',$target]);
         }
         $require($command(['symbolic-ref','--quiet','--short','HEAD']) === 'main'
@@ -57,7 +71,8 @@ final class DefaultBranchGuard
             && (!$localLockEdit || self::lockState($git, $root) === $lockState),
             'final source identity changed');
         return ['branch'=>'main','upstream'=>'origin/main','commit'=>$target,'before'=>$before,
-                'fresh_remote_verified'=>true,'local_dependency_lock_edit'=>$localLockEdit];
+                'fresh_remote_verified'=>true,'local_dependency_lock_edit'=>$localLockEdit,
+                'local_dependency_lock_stashed'=>$stashedLock ?? false];
     }
 
     /**
@@ -81,11 +96,78 @@ final class DefaultBranchGuard
         if ($reason === '') { $reason = 'already up to date'; }
         elseif ($behindOnly) {
             $dirty = self::command($git, $root, ['status','--porcelain=v1','--untracked-files=all']);
-            $canUpdate = $dirty === '' || ($dirty === 'M composer.lock' && self::pathOnlyLockEdit($git, $root));
+            $canUpdate = $dirty === '' || self::lockOnlyStatus($dirty);
             $reason = $canUpdate ? '' : 'local edits retained (update needs a clean checkout): '.str_replace("\n", ', ', $dirty);
         }
         return ['component'=>'bot','current'=>$current,'available'=>$available,'behind'=>$behind,
                 'can_update'=>$canUpdate,'reason'=>$reason,'fresh'=>$fresh];
+    }
+
+    /**
+     * Launcher "Repair and update": brings any checkout back to a clean main that tracks and equals
+     * origin/main, whatever the guard refused for, and loses nothing. Local edits and untracked files
+     * go to a labelled stash, local commits not on origin/main stay on a backup branch, and a local
+     * composer.lock is put back when upstream did not change it. Only call with the bot stopped.
+     *
+     * @return array<string,mixed> what was set aside, then verify()'s answer after the repair
+     */
+    public static function repair(string $repository, string $git = 'git', string $origin = self::ORIGIN): array
+    {
+        $root = realpath($repository);
+        if ($root === false || !is_dir($root.'/.git') && !is_file($root.'/.git')) { throw new \RuntimeException('Repair refused: repository unavailable'); }
+        $command = static fn (array $args, array $allowed = [0], ?int &$code = null): string => self::command($git, $root, $args, $allowed, $code);
+        $stamp = gmdate('Ymd-His');
+        $done = ['stash' => null, 'backup_branch' => null, 'origin_was' => null, 'restored_composer_lock' => false];
+        // A merge, rebase or cherry-pick left half way stops every other step.
+        foreach (['merge', 'rebase', 'cherry-pick', 'am'] as $operation) {
+            $command([$operation, '--abort'], [0, 1, 128]);
+        }
+        $currentOrigin = $command(['remote', 'get-url', 'origin'], [0, 2, 128]);
+        if ($currentOrigin !== $origin) {
+            $done['origin_was'] = $currentOrigin === '' ? null : $currentOrigin;
+            $command($currentOrigin === '' ? ['remote', 'add', 'origin', $origin] : ['remote', 'set-url', 'origin', $origin]);
+        }
+        $command(['config', 'core.sparseCheckout', 'false']);
+        foreach (explode("\n", $command(['ls-files', '-v'])) as $line) { // assume-unchanged (lower case) or skip-worktree (S)
+            if (preg_match('/^([a-z]|S) (.+)$/D', $line, $match)) {
+                if ($match[1] !== 'S') { $command(['update-index', '--no-assume-unchanged', '--', $match[2]]); }
+                if (strtoupper($match[1]) === 'S') { $command(['update-index', '--no-skip-worktree', '--', $match[2]]); }
+            }
+        }
+        $command(['fetch', '--no-tags', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+        $target = $command(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}']);
+        $oldHead = $command(['rev-parse', '--verify', 'HEAD^{commit}'], [0, 128]);
+        $lockBytes = is_file($root.'/composer.lock') ? file_get_contents($root.'/composer.lock') : false;
+        $oldLock = $oldHead !== '' ? $command(['rev-parse', '--verify', $oldHead.':composer.lock'], [0, 128]) : '';
+        if ($command(['status', '--porcelain=v1', '--untracked-files=all']) !== '') {
+            $command(['stash', 'push', '--include-untracked', '-m', 'civilizationbot repair '.$stamp]);
+            $done['stash'] = 'civilizationbot repair '.$stamp;
+        }
+        // Commits that exist only locally (on main or a detached/other HEAD) stay reachable.
+        foreach (array_unique(array_filter([$oldHead, $command(['rev-parse', '--verify', 'refs/heads/main^{commit}'], [0, 128])])) as $tip) {
+            $command(['merge-base', '--is-ancestor', $tip, $target], [0, 1], $code);
+            if ($code === 1) {
+                $name = 'civilizationbot-backup-'.$stamp.($done['backup_branch'] ? '-2' : '');
+                $command(['branch', $name, $tip]);
+                $done['backup_branch'] = $done['backup_branch'] ? $done['backup_branch'].', '.$name : $name;
+            }
+        }
+        $command(['checkout', '-f', '-B', 'main', $target]);
+        $command(['branch', '--set-upstream-to=origin/main', 'main']);
+        $command(['symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main']);
+        $newLock = $command(['rev-parse', '--verify', $target.':composer.lock'], [0, 128]);
+        if (is_string($lockBytes) && $oldLock !== '' && $oldLock === $newLock && hash('sha1', 'blob '.strlen($lockBytes)."\0".$lockBytes) !== $newLock) {
+            file_put_contents($root.'/composer.lock', $lockBytes); // a local dependency lock (e.g. a path override) survives
+            $done['restored_composer_lock'] = true;
+        }
+
+        return $done + self::verify($root, true, $git, $origin);
+    }
+
+    /** Git porcelain (trimmed) showing composer.lock as the only change, staged or not. */
+    public static function lockOnlyStatus(string $status): bool
+    {
+        return in_array($status, ['M composer.lock','M  composer.lock','MM composer.lock'], true);
     }
 
     /**

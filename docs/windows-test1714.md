@@ -34,8 +34,12 @@ From PowerShell, with explicit executable and profile paths:
 
 ```powershell
 C:/php/php.exe scripts/windows/control.php check D:/Civilizationbot-local/profile.json
-# While stopped, explicitly fetch and fast-forward clean default-branch source:
+# While stopped, explicitly fetch and fast-forward default-branch source (a local
+# composer.lock is kept; if the update changes composer.lock it is stashed instead):
 C:/php/php.exe scripts/windows/control.php update D:/Civilizationbot-local/profile.json
+# While stopped, whatever update refused for: stash local edits, keep local commits on a
+# civilizationbot-backup-* branch, and fast-forward a clean main (launcher "Repair and update"):
+C:/php/php.exe scripts/windows/control.php repair D:/Civilizationbot-local/profile.json
 # Only after the separate activation gate:
 C:/php/php.exe scripts/windows/control.php start D:/Civilizationbot-local/profile.json
 # From another terminal, requests graceful shutdown of this profile only:
@@ -44,6 +48,10 @@ C:/php/php.exe scripts/windows/control.php stop D:/Civilizationbot-local/profile
 C:/php/php.exe scripts/windows/control.php status D:/Civilizationbot-local/profile.json
 C:/php/php.exe scripts/windows/control.php check-update D:/Civilizationbot-local/profile.json
 ```
+
+start never refuses because of the source check: it prints "Source check warning
+(starting anyway): ..." and boots the current checkout, so a guard problem can always
+be fixed from the launcher with Update or Repair and update.
 
 status reports whether the state lock is held (running), any pending stop or
 reload marker, and the stdout/stderr log paths. check-update fetches origin/main

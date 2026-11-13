@@ -25,7 +25,8 @@ try {
     // Only a retained composer.lock edit may coexist with start on current main.
     file_put_contents($repo.'/composer.lock', '{"fixture":"local path override"}');
     $lockStart=$verify();check($lockStart['local_dependency_lock_edit']===true);
-    refused(fn()=>$verify(true));
+    // Any local composer.lock edit also coexists with update (it is not runtime source).
+    check($verify(true)['local_dependency_lock_edit']===true&&file_get_contents($repo.'/composer.lock')==='{"fixture":"local path override"}');
     git($repo,'add','composer.lock');check($verify()['local_dependency_lock_edit']===true);
     file_put_contents($repo.'/composer.lock', '{"fixture":"working after stage"}');
     check($verify()['local_dependency_lock_edit']===true);
@@ -53,20 +54,38 @@ try {
     git($repo,'remote','set-url','origin',$root.'/unexpected.git');refused(fn()=>$verify());git($repo,'remote','set-url','origin',$origin);
     file_put_contents($seed.'/source.txt','second');git($seed,'add','source.txt');git($seed,'commit','-m','second');git($seed,'push','origin','main');
     file_put_contents($repo.'/composer.lock', '{"fixture":"still local"}');
-    refused(fn()=>$verify());refused(fn()=>$verify(true));
+    refused(fn()=>$verify());
     $second=git($seed,'rev-parse','HEAD');
-    // Behind with a local lock edit: the check reports the new commit but cannot update.
-    $state=$checkUpdate();check($state['current']===$first&&$state['available']===$second&&$state['behind']===1&&$state['can_update']===false&&str_contains($state['reason'],'composer.lock')&&$state['fresh']===true);
+    // Behind with a local lock edit: the check offers the update and the update keeps the local lock.
+    $state=$checkUpdate();check($state['current']===$first&&$state['available']===$second&&$state['behind']===1&&$state['can_update']===true&&$state['reason']===''&&$state['fresh']===true);
     check(git($repo,'rev-parse','HEAD')===$first&&file_get_contents($repo.'/composer.lock')==='{"fixture":"still local"}');
-    file_put_contents($repo.'/composer.lock', '{"fixture":"local dependency"}');
-    refused(fn()=>$verify());check(git($repo,'rev-parse','HEAD')===$first);
-    $state=$checkUpdate();check($state['behind']===1&&$state['can_update']===true&&$state['reason']===''&&git($repo,'rev-parse','HEAD')===$first);
-    check($verify(true)['commit']===$second&&git($repo,'symbolic-ref','--short','HEAD')==='main');
+    $updated=$verify(true);
+    check($updated['commit']===$second&&$updated['local_dependency_lock_edit']===true&&$updated['local_dependency_lock_stashed']===false&&git($repo,'symbolic-ref','--short','HEAD')==='main'&&file_get_contents($repo.'/composer.lock')==='{"fixture":"still local"}');
+    // Upstream changes composer.lock too: the local lock is stashed (kept) and upstream's is used.
+    file_put_contents($seed.'/composer.lock','{"fixture":"upstream dependency"}');git($seed,'add','composer.lock');git($seed,'commit','-m','lock');git($seed,'push','origin','main');
+    $lockCommit=git($seed,'rev-parse','HEAD');
+    $updated=$verify(true);
+    check($updated['commit']===$lockCommit&&$updated['local_dependency_lock_stashed']===true&&file_get_contents($repo.'/composer.lock')==='{"fixture":"upstream dependency"}'&&str_contains(git($repo,'stash','list'),'local composer.lock'));
+    check(git($repo,'status','--porcelain')==='');
+    $second=$lockCommit;
     file_put_contents($repo.'/source.txt','reviewed local code');git($repo,'add','source.txt');git($repo,'commit','-m','preserve local');$ahead=git($repo,'rev-parse','HEAD');
     refused(fn()=>$verify(true));check(git($repo,'rev-parse','HEAD')===$ahead&&file_get_contents($repo.'/source.txt')==='reviewed local code');
     file_put_contents($seed.'/source.txt','remote third');git($seed,'add','source.txt');git($seed,'commit','-m','remote third');git($seed,'push','origin','main');
     refused(fn()=>$verify(true));check(git($repo,'rev-parse','HEAD')===$ahead);
     $state=$checkUpdate();check($state['can_update']===false&&str_contains($state['reason'],'diverged')&&$state['behind']===1&&git($repo,'rev-parse','HEAD')===$ahead);
+    // Repair: diverged + detached + dirty + untracked + hidden index + local lock all come back to a clean,
+    // current main, and nothing is lost (stash, backup branch, lock restored when upstream left it alone).
+    $third=git($seed,'rev-parse','HEAD');
+    git($repo,'switch','--detach','HEAD');file_put_contents($repo.'/source.txt','uncommitted');file_put_contents($repo.'/scratch.txt','untracked');
+    file_put_contents($repo.'/composer.lock','{"fixture":"repair path override"}');git($repo,'update-index','--skip-worktree','composer.lock');
+    $repaired=DefaultBranchGuard::repair($repo,'git',$origin);
+    check($repaired['commit']===$third&&git($repo,'symbolic-ref','--short','HEAD')==='main'&&git($repo,'rev-parse','HEAD')===$third);
+    check(str_starts_with((string)$repaired['stash'],'civilizationbot repair ')&&str_contains(git($repo,'stash','list'),$repaired['stash']));
+    check(str_starts_with((string)$repaired['backup_branch'],'civilizationbot-backup-')&&git($repo,'rev-parse',explode(', ',$repaired['backup_branch'])[0])===$ahead);
+    check(!is_file($repo.'/scratch.txt')&&file_get_contents($repo.'/source.txt')==='remote third');
+    check($repaired['restored_composer_lock']===true&&file_get_contents($repo.'/composer.lock')==='{"fixture":"repair path override"}');
+    check($verify()['local_dependency_lock_edit']===true);
+    git($repo,'checkout','--','composer.lock');$ahead=$third;
     check(str_starts_with(str_replace('\\','/',realpath($origin)),str_replace('\\','/',realpath($root)).'/'));rename($origin,$root.'/offline.git');
     refused(fn()=>$verify());check(git($repo,'rev-parse','HEAD')===$ahead);
 
@@ -78,7 +97,9 @@ try {
     $server=['basedir'=>$app,'ip'=>'127.0.0.1','port'=>1714,'name'=>'fixture','host'=>'fixture','enabled'=>false];foreach(['discussion','playercount','ooc','lobby','asay','ic','transit','adminlog','debug','garbage','runtime','attack']as$key){$server[$key]='';}
     $profile=['schema'=>'civilizationbot.portable.v1','root'=>$app,'state_dir'=>$state,'env_file'=>$root.'/separate.env','gitdir'=>$repo,'http_port'=>25565,'options'=>['channel_ids'=>[],'role_ids'=>[]],'servers'=>['test'=>$server]];
     file_put_contents($root.'/profile.json',json_encode($profile,JSON_THROW_ON_ERROR));git($app,'init','--initial-branch=main');git($app,'add','.');git($app,'commit','-m','fixture application');git($app,'switch','--detach','HEAD');
-    foreach(['start','update']as$action){[$code,$out,$err]=command([PHP_BINARY,$app.'/scripts/windows/control.php',$action,$root.'/profile.json'],false);check($code!==0&&str_contains($err,'Default branch guard refused'));}
+    // update refuses detached source; start only warns (a source check never blocks booting) and then
+    // stops at Composer, which this fixture forbids, so nothing networked runs.
+    [$code,$out,$err]=command([PHP_BINARY,$app.'/scripts/windows/control.php','update',$root.'/profile.json'],false);check($code!==0&&str_contains($err,'Default branch guard refused'));
     require_once __DIR__.'/../../src/Civ13/PortableProcess.php';
     $lock=\Civ13\PortableProcess::lock($state);
     try { [$code,$out,$err]=command([PHP_BINARY,$app.'/scripts/windows/control.php','update',$root.'/profile.json'],false);check($code!==0&&str_contains($err,'Portable instance already running'));
@@ -98,8 +119,8 @@ try {
     $owner=\Civ13\PortableProcess::lock($state);fclose($owner);proc_close($child);unlink($state.'/held');
     check(\Civ13\PortableProcess::status($state)['running']===false);
     try { \Civ13\PortableProcess::status($root.'/no-such-state'); check(false); } catch (RuntimeException $error) { check($error->getMessage()==='Portable state lock unavailable'); }
-    putenv('CIVILIZATIONBOT_PROFILE='.$root.'/profile.json');[$code,$out,$err]=command([PHP_BINARY,$app.'/bot.php'],false);check($code!==0&&str_contains($err,'Default branch guard refused')&&!str_contains($err,'Composer must not load'));
-    echo "PASS real Git default/main/upstream/origin, detached/PR/dirty/hidden/ahead/diverged/offline controls, safe FF, read-only check-update and status JSON, and actual start/update/bootstrap precredential denial\n";
+    putenv('CIVILIZATIONBOT_PROFILE='.$root.'/profile.json');[$code,$out,$err]=command([PHP_BINARY,$app.'/bot.php'],false);check($code!==0&&str_contains($err,'Source check warning (starting anyway): Default branch guard refused'));
+    echo "PASS real Git default/main/upstream/origin, detached/PR/dirty/hidden/ahead/diverged/offline controls, safe FF, read-only check-update and status JSON, actual update denial, and start/bootstrap warning instead of a boot block\n";
 } finally {
     putenv($previousProfile===false?'CIVILIZATIONBOT_PROFILE':'CIVILIZATIONBOT_PROFILE='.$previousProfile);
     $resolved=str_replace('\\','/',realpath($root));

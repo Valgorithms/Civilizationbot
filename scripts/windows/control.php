@@ -7,7 +7,7 @@ use Civ13\PortableProfile;
 use Civ13\PortableProcess;
 try {
     $json=in_array($argv[1] ?? '',['status','check-update'],true);
-    if (count($argv)!==3 || !in_array($argv[1],['check','start','stop','update','status','check-update'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop|update|status|check-update ABSOLUTE_PROFILE'); }
+    if (count($argv)!==3 || !in_array($argv[1],['check','start','stop','update','repair','status','check-update'],true)) { throw new RuntimeException('Usage: php control.php check|start|stop|update|repair|status|check-update ABSOLUTE_PROFILE'); }
     $profile=PortableProfile::load($argv[2]);
     PortableProfile::assertRoot($profile, dirname(__DIR__, 2));
     if ($argv[1]==='stop') { PortableProcess::requestStop($profile['state_dir']); exit(0); }
@@ -21,13 +21,27 @@ try {
     $errors=PortableProfile::preflight($profile,extension_loaded(...));
     if ($errors!==[]) { throw new RuntimeException(implode('; ',$errors)); }
     if ($argv[1]==='check') { echo "Preflight passed; not started\n"; exit(0); }
+    // repair: whatever the source check refused for, set local work aside (stash / backup branch) and
+    // fast-forward a clean main to origin/main. The launcher's "Repair and update" button.
+    if ($argv[1]==='repair') {
+        $lock=PortableProcess::lock($profile['state_dir']);
+        try { echo json_encode(\Civ13\DefaultBranchGuard::repair($profile['root']),JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES)."\n"; }
+        finally { fclose($lock); }
+        exit(0);
+    }
     if ($argv[1]==='update') {
         $lock=PortableProcess::lock($profile['state_dir']);
         try { echo json_encode(\Civ13\DefaultBranchGuard::verify($profile['root'],true),JSON_THROW_ON_ERROR)."\n"; }
         finally { fclose($lock); }
         exit(0);
     }
-    \Civ13\DefaultBranchGuard::verify($profile['root']);
+    // A source check never keeps the bot from booting (Val, 2026-11-13): it warns and starts the
+    // current checkout. Update or "Repair and update" in the launcher fixes what it reports.
+    $sourceWarning=static function(string $root): void {
+        try { \Civ13\DefaultBranchGuard::verify($root); }
+        catch (RuntimeException $error) { fwrite(STDERR,'Source check warning (starting anyway): '.$error->getMessage().PHP_EOL); }
+    };
+    $sourceWarning($profile['root']);
     if (is_file($profile['state_dir'].'/stop.request')) { throw new RuntimeException('Unresolved stop request; inspect previous instance before starting'); }
     // Clear a stale reload request only when no instance holds the lock; a live
     // instance's pending reload must survive a second start attempt.
@@ -54,7 +68,7 @@ try {
             PortableProfile::assertRoot($profile, dirname(__DIR__, 2));
             $errors=PortableProfile::preflight($profile,extension_loaded(...));
             if ($errors!==[]) { throw new RuntimeException('Reload refused: '.implode('; ',$errors)); }
-            \Civ13\DefaultBranchGuard::verify($profile['root']);
+            $sourceWarning($profile['root']);
         }
     } while ($reload);
     exit($exit);

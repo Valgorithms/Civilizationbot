@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
-// DefaultBranchGuard keeps a composer.lock that differs from main only by
-// path-repository packages through an update, and refuses every other lock edit.
+// DefaultBranchGuard keeps a local composer.lock through an update, sets it aside in a stash
+// when the update changes composer.lock itself, and still refuses other source edits.
 // Temporary Git repositories only; no bot, Composer or network.
 require __DIR__.'/../../src/Civ13/DefaultBranchGuard.php';
 use Civ13\DefaultBranchGuard;
@@ -45,40 +45,38 @@ try {
     file_put_contents($seed.'/source.txt', 'second'); lockGit($seed, 'add', 'source.txt'); lockGit($seed, 'commit', '-m', 'second'); lockGit($seed, 'push', 'origin', 'main');
     $second = lockGit($seed, 'rev-parse', 'HEAD');
 
-    // A lock with a version bump besides the path packages still blocks the update.
-    file_put_contents($repo.'/composer.lock', lockJson($bumped));
+    // Any local lock edit (even a version bump) no longer blocks the update: the lock is not runtime source.
+    $bumpedBytes = lockJson($bumped); file_put_contents($repo.'/composer.lock', $bumpedBytes);
     $state = DefaultBranchGuard::check($repo, 'git', $origin);
-    lockCheck($state['behind'] === 1 && $state['can_update'] === false && str_contains($state['reason'], 'composer.lock'), 'bumped lock reported as blocking');
-    lockRefused(fn () => DefaultBranchGuard::verify($repo, true, 'git', $origin));
-    lockCheck(lockGit($repo, 'rev-parse', 'HEAD') === $first, 'refused update kept HEAD');
+    lockCheck($state['behind'] === 1 && $state['can_update'] === true && $state['reason'] === '', 'bumped lock updatable: '.$state['reason']);
+    $result = DefaultBranchGuard::verify($repo, true, 'git', $origin);
+    lockCheck($result['commit'] === $second && $result['local_dependency_lock_edit'] === true && $result['local_dependency_lock_stashed'] === false, 'update applied with lock kept');
+    lockCheck(lockGit($repo, 'rev-parse', 'HEAD') === $second && file_get_contents($repo.'/composer.lock') === $bumpedBytes, 'HEAD advanced and lock bytes kept');
 
-    // A staged path-only edit is refused too.
-    file_put_contents($repo.'/composer.lock', lockJson($pathOnly)); lockGit($repo, 'add', 'composer.lock');
-    lockCheck(DefaultBranchGuard::check($repo, 'git', $origin)['can_update'] === false, 'staged lock edit not updatable');
-    lockRefused(fn () => DefaultBranchGuard::verify($repo, true, 'git', $origin));
+    // A staged lock edit updates too.
+    file_put_contents($seed.'/source.txt', 'third'); lockGit($seed, 'add', 'source.txt'); lockGit($seed, 'commit', '-m', 'third'); lockGit($seed, 'push', 'origin', 'main');
+    $third = lockGit($seed, 'rev-parse', 'HEAD');
+    $bytes = lockJson($pathOnly); file_put_contents($repo.'/composer.lock', $bytes); lockGit($repo, 'add', 'composer.lock');
+    lockCheck(DefaultBranchGuard::check($repo, 'git', $origin)['can_update'] === true, 'staged lock edit updatable');
+    lockCheck(DefaultBranchGuard::verify($repo, true, 'git', $origin)['commit'] === $third && file_get_contents($repo.'/composer.lock') === $bytes, 'staged lock kept through update');
     lockGit($repo, 'reset', '-q', '--', 'composer.lock');
 
-    // A path-only unstaged edit can update and is kept byte for byte.
-    $bytes = lockJson($pathOnly); file_put_contents($repo.'/composer.lock', $bytes);
-    $state = DefaultBranchGuard::check($repo, 'git', $origin);
-    lockCheck($state['can_update'] === true && $state['reason'] === '', 'path-only lock updatable: '.$state['reason']);
-    $result = DefaultBranchGuard::verify($repo, true, 'git', $origin);
-    lockCheck($result['commit'] === $second && $result['local_dependency_lock_edit'] === true, 'update applied with lock kept');
-    lockCheck(lockGit($repo, 'rev-parse', 'HEAD') === $second && file_get_contents($repo.'/composer.lock') === $bytes, 'HEAD advanced and lock bytes kept');
-
-    // Another source edit beside the lock is still refused.
-    file_put_contents($seed.'/source.txt', 'third'); lockGit($seed, 'add', 'source.txt'); lockGit($seed, 'commit', '-m', 'third'); lockGit($seed, 'push', 'origin', 'main');
+    // Another source edit beside the lock is still refused by update (repair handles it).
+    file_put_contents($seed.'/source.txt', 'fourth'); lockGit($seed, 'add', 'source.txt'); lockGit($seed, 'commit', '-m', 'fourth'); lockGit($seed, 'push', 'origin', 'main');
     file_put_contents($repo.'/notes.txt', 'unrelated');
     lockRefused(fn () => DefaultBranchGuard::verify($repo, true, 'git', $origin));
-    lockCheck(lockGit($repo, 'rev-parse', 'HEAD') === $second, 'mixed edits kept HEAD');
+    lockCheck(lockGit($repo, 'rev-parse', 'HEAD') === $third, 'mixed edits kept HEAD');
     unlink($repo.'/notes.txt');
 
-    // Main changing composer.lock itself makes Git refuse the fast-forward; nothing is lost.
+    // Main changing composer.lock itself: the local lock is stashed (kept) and upstream's lock is used.
     $upstream = $committed; $upstream['packages'][1] = $zip('react/http', 'v1.13.0');
     file_put_contents($seed.'/composer.lock', lockJson($upstream)); lockGit($seed, 'add', 'composer.lock'); lockGit($seed, 'commit', '-m', 'lock'); lockGit($seed, 'push', 'origin', 'main');
-    lockRefused(fn () => DefaultBranchGuard::verify($repo, true, 'git', $origin));
-    lockCheck(lockGit($repo, 'rev-parse', 'HEAD') === $second && file_get_contents($repo.'/composer.lock') === $bytes, 'upstream lock change kept local lock and HEAD');
-    echo "PASS lock path guard: path-only update, bumped/added/staged/mixed refusals, upstream lock change\n";
+    $result = DefaultBranchGuard::verify($repo, true, 'git', $origin);
+    lockCheck($result['commit'] === lockGit($seed, 'rev-parse', 'HEAD') && $result['local_dependency_lock_stashed'] === true, 'upstream lock change updates');
+    lockCheck(file_get_contents($repo.'/composer.lock') === lockJson($upstream) && lockGit($repo, 'status', '--porcelain') === '', 'upstream lock checked out cleanly');
+    lockGit($repo, 'checkout', 'stash@{0}', '--', 'composer.lock');
+    lockCheck(file_get_contents($repo.'/composer.lock') === $bytes, 'stashed local lock recoverable');
+    echo "PASS lock guard: any local lock edit updates (unstaged, staged), mixed edits refused, upstream lock change stashes the local lock\n";
 } finally {
     $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
     foreach ($it as $file) { @chmod($file->getPathname(), 0700); $file->isDir() ? @rmdir($file->getPathname()) : @unlink($file->getPathname()); }
