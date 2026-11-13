@@ -533,6 +533,7 @@ class Civ13
                 'gitdir',
                 'github',
                 'http_key',
+                'ingame_verify_key',
                 'http_port',
                 'http_whitelist',
                 'launcher_directory',
@@ -583,6 +584,7 @@ class Civ13
                 'gitdir' => '',
                 'github' => 'https://github.com/VZGCoders/Civilizationbot',
                 'http_key' => '',
+                'ingame_verify_key' => '',
                 'http_port' => 0,
                 'http_whitelist' => [],
                 'launcher_directory' => [],
@@ -637,6 +639,7 @@ class Civ13
             ->setAllowedTypes('gitdir', 'string')
             ->setAllowedTypes('github', 'string')
             ->setAllowedTypes('http_key', 'string')
+            ->setAllowedTypes('ingame_verify_key', 'string')
             ->setAllowedTypes('game_ready_events', 'array')
             ->setAllowedTypes('http_port', 'int')
             ->setAllowedTypes('http_whitelist', 'array')

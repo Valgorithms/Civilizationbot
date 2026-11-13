@@ -557,21 +557,24 @@ class Slash
             // if ($command = $commands->get('name', 'restart_server')) $commands->delete($command);
             
             // if ($command = $commands->get('name', 'approveme')) $commands->delete($command);
-            if (! $commands->get('name', 'approveme')) {
-                $this->save($commands, new Command($this->discord, [
-                    'name' => 'approveme',
-                    'description' => 'Civ13 verification process',
-                    'contexts' => [Interaction::CONTEXT_TYPE_GUILD],
-                    'options' => [
-                        [
-                            'name' => 'ckey',
-                            'description' => 'Byond.com username',
-                            'type' => Option::STRING,
-                            'required' => true,
-                        ],
+            // Reconciled every start so the optional ckey (in-game verification) reaches existing installs.
+            $approveme = [
+                'name' => 'approveme',
+                'description' => 'Civ13 verification: leave ckey empty for an in-game code',
+                'contexts' => [Interaction::CONTEXT_TYPE_GUILD],
+                'options' => [
+                    [
+                        'name' => 'ckey',
+                        'description' => 'Byond.com username (leave empty to verify from inside the game)',
+                        'type' => Option::STRING,
+                        'required' => false,
                     ],
-                ]));
+                ],
+            ];
+            if ($existing = $commands->get('name', 'approveme')) {
+                $approveme['id'] = $existing->id;
             }
+            $this->save($commands, new Command($this->discord, $approveme));
 
             // if ($command = $commands->get('name', 'verifyme')) $commands->delete($command);
             if (! $commands->get('name', 'verifyme')) {
@@ -1076,7 +1079,22 @@ class Slash
             if ($interaction->member->roles->has($this->civ13->role_ids['Verified'])) {
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent('You already have the verification role!'), true);
             }
-            if (! isset($interaction->data->options['ckey']) || ! $ckey = Civ13::sanitizeInput($interaction->data->options['ckey']->value)) {
+            if (! isset($interaction->data->options['ckey'])) { // In-game verification: a private single-use code
+                if ($this->civ13->verifier->readOnly) {
+                    return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent('Run `/approveme` with CivilizationBot for your in-game verification code; that code works on every Civ13 server.'), true);
+                }
+                if (isset($this->civ13->softbanned[$interaction->member->id])) {
+                    return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent('This account is currently under investigation.'), true);
+                }
+                if ($this->civ13->verifier->get('discord', $interaction->member->id)) {
+                    return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent('You are already verified! Your roles are being restored.'), true)->then(
+                        fn (): PromiseInterface => $interaction->member->setRoles([$this->civ13->role_ids['Verified']], 'approveme in-game (already verified)')
+                    );
+                }
+
+                return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent(InGameVerification::codeMessage($this->civ13->verifier->inGame->issue($interaction->member->id))), true);
+            }
+            if (! $ckey = Civ13::sanitizeInput($interaction->data->options['ckey']->value)) {
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent('Invalid ckey.'), true);
             }
             if (isset($this->civ13->softbanned[$interaction->member->id]) || isset($this->civ13->softbanned[$ckey])) {

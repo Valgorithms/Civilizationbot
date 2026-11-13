@@ -315,7 +315,7 @@ $options = [
         //'pers' => '753768492834095235',
     ],
 ];
-$options['welcome_message'] = 'Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `/approveme` slash command (Civ13) or the `/verifyme` slash command (Civ14).'; // . ' Failure to verify in a timely manner will result in an automatic removal from the server.';
+$options['welcome_message'] = 'Welcome to the Civ13 Discord Server! Please read the rules and verify your account using the `/approveme` slash command (Civ13; leave the ckey empty to get a code you can enter in game with the **Verify Discord** verb in the OOC tab) or the `/verifyme` slash command (Civ14).'; // . ' Failure to verify in a timely manner will result in an automatic removal from the server.';
 /*
 foreach (['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я', 'і', 'ї', 'є'] as $char) { // // Ban use of Cyrillic characters
     $arr = ['word' => $char, 'duration' => '999 years', 'reason' => 'только английский.', 'category' => 'language', 'method' => 'str_contains', 'warnings' => 2];
@@ -517,6 +517,7 @@ $hidden_options = [
     'web_address' => getenv('web_address') ?: 'www.civ13.com',
     'http_port' => intval(getenv('http_port')) ?: 55555, // 25565 for testing on Windows
     'http_key' => getenv('WEBAPI_TOKEN') ?: 'CHANGEME',
+    'ingame_verify_key' => getenv('INGAME_VERIFY_TOKEN') ?: '', // Shared with desktop bots that relay in-game verification; empty turns the relay endpoint off
     'http_whitelist' => $http_whitelist,
     'civ_token' => getenv('CIV_TOKEN') ?: 'CHANGEME',
     'civ13_server_settings' => $civ13_server_settings, // Server specific settings, listed in the order in which they appear on the VZG server list.
@@ -536,6 +537,7 @@ if ($portable !== null) {
     $options = PortableProfile::runtimeOptions($portable);
     $hidden_options['http_key'] = PortableProfile::environmentValue('WEBAPI_TOKEN', $loadedNames);
     $hidden_options['civ_token'] = PortableProfile::environmentValue('CIV_TOKEN', $loadedNames);
+    $hidden_options['ingame_verify_key'] = PortableProfile::environmentValue('INGAME_VERIFY_TOKEN', $loadedNames);
     $civ13_server_settings = $portable['servers'];
     $civ14_server_settings = [];
     $hidden_options['civ13_server_settings'] = $civ13_server_settings;
