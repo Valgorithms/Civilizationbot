@@ -85,42 +85,98 @@ check(HttpServiceManager::inGameVerifyRequest(['ckey' => 'alice', 'code' => 'ABC
 foreach ([['ckey' => 'Alice', 'code' => 'x'], ['ckey' => 'alice'], ['ckey' => 'alice', 'code' => ''], ['ckey' => 'alice', 'code' => str_repeat('A', 33)], ['ckey' => 'a b', 'code' => 'x'], ['ckey' => ['alice'], 'code' => 'x']] as $bad) {
     check(HttpServiceManager::inGameVerifyRequest($bad) === null, 'invalid request rejected: '.json_encode($bad));
 }
+final class LogSpy extends Monolog\Handler\AbstractProcessingHandler
+{
+    public string $text = '';
+    protected function write(Monolog\LogRecord $record): void { $this->text .= $record->message.' '.json_encode($record->context).PHP_EOL; }
+}
+$spy = new LogSpy();
 function manager(Verifier $verifier, string $relayKey): HttpServiceManager
 {
+    global $spy;
     $civ13 = inert(Civ13::class);
     $civ13->options = ['http_key' => 'webhook-key', 'ingame_verify_key' => $relayKey];
     $civ13->verifier = $verifier;
     $manager = inert(HttpServiceManager::class);
     setProp($manager, 'civ13', $civ13);
-    $manager->logger = new Logger('test', [new NullHandler()]);
+    $manager->logger = new Logger('test', [$spy]);
     return $manager;
 }
-function relayRequest(string $key, string $body, string $method = 'POST', ?int $time = null): ServerRequest
+function relayRequest(string $body, string $method = 'POST'): ServerRequest
 {
-    $time = (string) ($time ?? time());
-    return new ServerRequest($method, 'http://civ13.com:55555/verified/ingame', $key === '' ? [] : ['X-Ingame-Verify-Time' => $time, 'X-Ingame-Verify-Signature' => HttpServiceManager::inGameRelaySignature($key, $time, $body)], $body);
+    return new ServerRequest($method, 'http://civ13.com:55555/verified/ingame', ['Content-Type' => 'application/json'], $body);
 }
 $v = verifier(false);
 $code = $v->inGame->issue(ALICE);
 $m = manager($v, 'relay-secret');
+$payload = ['ckey' => 'alice', 'code' => $code];
+$sealed = InGameVerification::seal('relay-secret', 'request', $payload);
+check(! str_contains($sealed, $code) && ! str_contains($sealed, str_replace('-', '', $code)) && ! str_contains($sealed, 'alice') && ! str_contains($sealed, 'relay-secret'), 'the sealed relay body shows neither the code, the ckey nor the secret');
+check(InGameVerification::open('relay-secret', 'request', $sealed)['payload'] === $payload, 'seal round trip');
+check(InGameVerification::open('other-secret', 'request', $sealed) === null, 'a wrong secret cannot open it');
+check(InGameVerification::open('relay-secret', 'response', $sealed) === null, 'a request cannot pose as an answer');
+check(InGameVerification::open('relay-secret', 'request', $sealed, null, time() + 120) === null, 'a stale message is refused');
+$outer = json_decode($sealed, true);
+$cipher = base64_decode($outer['c']);
+$cipher[20] = chr(ord($cipher[20]) ^ 1);
+check(InGameVerification::open('relay-secret', 'request', json_encode(['v' => 1, 'n' => $outer['n'], 'c' => base64_encode($cipher)])) === null, 'a changed byte is refused');
+check(InGameVerification::open('relay-secret', 'request', '') === null && InGameVerification::open('', 'request', $sealed) === null && InGameVerification::open('relay-secret', 'request', '{"v":1}') === null, 'malformed or keyless input is refused');
+check($m->handleInGameVerifyRelay(relayRequest(json_encode($payload)))->getStatusCode() === 403, 'an unsealed relay is refused');
+check($m->handleInGameVerifyRelay(relayRequest(InGameVerification::seal('wrong', 'request', $payload)))->getStatusCode() === 403, 'relay rejects a wrong secret');
+check($m->handleInGameVerifyRelay(relayRequest(InGameVerification::seal('relay-secret', 'request', $payload, null, time() - 120)))->getStatusCode() === 403, 'stale relays are refused');
+check(manager($v, '')->handleInGameVerifyRelay(relayRequest($sealed))->getStatusCode() === 403, 'relay off without INGAME_VERIFY_TOKEN');
+check(manager(verifier(true), 'relay-secret')->handleInGameVerifyRelay(relayRequest($sealed))->getStatusCode() === 403, 'a read-only bot never accepts relays');
+check($m->handleInGameVerifyRelay(relayRequest($sealed, 'GET'))->getStatusCode() === 405, 'relay is POST only');
+check($m->handleInGameVerifyRelay(relayRequest(InGameVerification::seal('relay-secret', 'request', ['ckey' => 'alice'])))->getStatusCode() === 400, 'relay validates the payload');
+$response = $m->handleInGameVerifyRelay(relayRequest($sealed));
+$answerBody = (string) $response->getBody();
+check(! str_contains($answerBody, 'linked'), 'the answer is sealed too');
+check(InGameVerification::open('relay-secret', 'response', $answerBody, InGameVerification::nonceOf(InGameVerification::seal('relay-secret', 'request', $payload))) === null, 'an answer only opens for the request it answers');
+$answer = InGameVerification::open('relay-secret', 'response', $answerBody, InGameVerification::nonceOf($sealed));
+check($response->getStatusCode() === 200 && $answer['payload']['ok'] === true && $v->processed === [['alice', ALICE]], 'relay redeems on the primary bot');
+
+// Game webhook: key only in the X-Webhook-Key header, ckey and code only in a POST body.
+$gameserver = inert(\Civ13\GameServer::class);
+setProp($gameserver, 'legacy_relay', false);
+function gameRequest(array $headers, string $body, string $method = 'POST', string $query = ''): ServerRequest
+{
+    return new ServerRequest($method, 'http://127.0.0.1:55555/webhook/nomads/discord_verify'.$query, $headers, $body);
+}
+$v = verifier(false);
+$code = $v->inGame->issue(ALICE);
+$m = manager($v, '');
 $body = json_encode(['ckey' => 'alice', 'code' => $code]);
-check($m->handleInGameVerifyRelay(relayRequest('', $body))->getStatusCode() === 403, 'relay needs the key');
-check($m->handleInGameVerifyRelay(relayRequest('wrong', $body))->getStatusCode() === 403, 'relay rejects a wrong key');
-check($m->handleInGameVerifyRelay(relayRequest('relay-secret', $body, 'POST', time() - 120))->getStatusCode() === 403, 'stale signatures are refused');
-$tampered = relayRequest('relay-secret', $body);
-check($m->handleInGameVerifyRelay(new ServerRequest('POST', 'http://civ13.com:55555/verified/ingame', ['X-Ingame-Verify-Time' => $tampered->getHeaderLine('X-Ingame-Verify-Time'), 'X-Ingame-Verify-Signature' => $tampered->getHeaderLine('X-Ingame-Verify-Signature')], json_encode(['ckey' => 'admin', 'code' => $code])))->getStatusCode() === 403, 'a signature does not cover another ckey');
-check(! str_contains(json_encode($tampered->getHeaders()), 'relay-secret'), 'the secret itself is never sent');
-check(manager($v, '')->handleInGameVerifyRelay(relayRequest('', $body))->getStatusCode() === 403, 'relay off without INGAME_VERIFY_TOKEN');
-check(manager(verifier(true), 'relay-secret')->handleInGameVerifyRelay(relayRequest('relay-secret', $body))->getStatusCode() === 403, 'a read-only bot never accepts relays');
-check($m->handleInGameVerifyRelay(relayRequest('relay-secret', $body, 'GET'))->getStatusCode() === 405, 'relay is POST only');
-check($m->handleInGameVerifyRelay(relayRequest('relay-secret', '{"ckey":"alice"}'))->getStatusCode() === 400, 'relay validates the body');
-$response = $m->handleInGameVerifyRelay(relayRequest('relay-secret', $body));
-$answer = json_decode((string) $response->getBody(), true);
-check($response->getStatusCode() === 200 && $answer['ok'] === true && $v->processed === [['alice', ALICE]], 'relay redeems on the primary bot');
+check($m->handleDiscordVerifyWebhook(gameRequest([], $body), $gameserver)->getStatusCode() === 403, 'game request needs the key header');
+check($m->handleDiscordVerifyWebhook(gameRequest(['X-Webhook-Key' => 'wrong'], $body), $gameserver)->getStatusCode() === 403, 'game request rejects a wrong key');
+check($m->handleDiscordVerifyWebhook(gameRequest([], $body, 'POST', '?key=webhook-key'), $gameserver)->getStatusCode() === 403, 'a key in the URL is not accepted');
+check($m->handleDiscordVerifyWebhook(gameRequest(['X-Webhook-Key' => 'webhook-key'], '', 'GET', '?key=webhook-key&method=discord_verify&data='.urlencode($body)), $gameserver)->getStatusCode() === 405, 'the old query-string request is refused');
+check($m->handleDiscordVerifyWebhook(gameRequest(['X-Webhook-Key' => 'webhook-key'], '{"ckey":"alice"}'), $gameserver)->getStatusCode() === 400, 'game request validates the body');
+check($v->processed === [], 'nothing redeemed by refused requests');
+$response = $m->handleDiscordVerifyWebhook(gameRequest(['X-Webhook-Key' => 'webhook-key'], $body), $gameserver);
+check($response->getStatusCode() === 200 && json_decode((string) $response->getBody(), true)['ok'] === true && $v->processed === [['alice', ALICE]], 'game request redeems with header key and JSON body');
+$handler = inert(\Civ13\HttpHandler::class);
+setProp($handler, 'key', 'webhook-key');
+check($handler->__isWhitelisted(gameRequest(['X-Webhook-Key' => 'webhook-key'], $body), '203.0.113.9'), 'the router accepts the header key on webhook paths');
+check(! $handler->__isWhitelisted(gameRequest(['X-Webhook-Key' => 'nope'], $body), '203.0.113.9'), 'the router refuses a wrong header key');
 
 // A desktop bot without a relay key answers the game without any network call.
 $relayed = null;
 manager(verifier(true), '')->relayInGameVerification('alice', 'ABCD-EFGH')->then(static function (array $r) use (&$relayed): void { $relayed = $r; });
 check(is_array($relayed) && $relayed['ok'] === false && str_contains($relayed['message'], 'not set up'), 'unconfigured relay answers plainly');
+
+// Logs: nothing above wrote a code, a ckey's code, a key or a relay secret.
+foreach (array_merge([$code, str_replace('-', '', $code), 'webhook-key', 'relay-secret'], array_map(static fn (string $c): string => str_replace('-', '', $c), [$first, $second, $late, $good])) as $secret) {
+    check(! str_contains($spy->text, $secret), 'secret kept out of the logs: '.$secret);
+}
+
+// And no log call in the verification paths names the code, the key, the body or the secret.
+$source = file_get_contents(__DIR__.'/../../src/Civ13/HttpServiceManager.php');
+$from = strpos($source, 'public function handleDiscordVerifyWebhook');
+$section = substr($source, $from, strpos($source, 'public static function inGameVerifyRequest') - $from);
+preg_match_all('/logger->\w+\((.*?)\);/s', $section, $calls);
+check(count($calls[1]) >= 2, 'log calls found in the verification paths');
+foreach ($calls[1] as $call) {
+    check(preg_match('/\$(code|key|secret|body|data|payload|request)\b/', $call) !== 1, 'log call carries no secret: '.$call);
+}
 
 echo "ingame-verification: $checks checks passed\n";

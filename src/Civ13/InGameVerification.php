@@ -21,10 +21,11 @@ namespace Civ13;
  * already knows their BYOND key (BYOND signed them in), so the code proves the
  * Discord side and the game proves the ckey; no BYOND profile token is needed.
  *
- * The game sends `ckey` + `code` to its own bot (`/webhook/<server>/discord_verify`).
- * The primary bot redeems it here. A desktop bot with a read-only verifier cannot
- * register anyone, so it forwards the same request to the primary bot's
- * `/verified/ingame` relay endpoint and hands the answer back to the game.
+ * The game POSTs `ckey` + `code` to its own bot (`/webhook/<server>/discord_verify`,
+ * key in a header, nothing secret in the URL). The primary bot redeems it here. A desktop
+ * bot with a read-only verifier cannot register anyone, so it forwards the request, sealed
+ * with INGAME_VERIFY_TOKEN ({@see seal()}), to the primary bot's `/verified/ingame` relay
+ * endpoint and hands the sealed answer back to the game.
  *
  * Codes live only in memory: a bot restart simply asks players for a new code.
  */
@@ -160,6 +161,66 @@ final class InGameVerification
         }
 
         return rtrim($verify_url, '/').'/ingame';
+    }
+
+    public const SEAL_WINDOW = 60; // seconds a sealed relay message stays valid
+    private const NONCE_BYTES = 12;
+    private const TAG_BYTES = 16;
+
+    /**
+     * Relay messages between a desktop bot and the primary bot are sealed with AES-256-GCM
+     * (OpenSSL, already required by the portable profile) under a key derived from INGAME_VERIFY_TOKEN: the code is never readable
+     * on the wire, a changed byte is rejected, and each message carries its direction and time.
+     * An answer also carries the nonce of the request it answers, so it can't be swapped.
+     */
+    public static function seal(string $secret, string $direction, array $payload, ?string $answers = null, ?int $now = null): string
+    {
+        $nonce = random_bytes(self::NONCE_BYTES);
+        $plain = json_encode(['d' => $direction, 't' => $now ?? time(), 'r' => $answers, 'p' => $payload], JSON_THROW_ON_ERROR);
+        $tag = '';
+        $cipher = openssl_encrypt($plain, 'aes-256-gcm', self::sealKey($secret), OPENSSL_RAW_DATA, $nonce, $tag, '', self::TAG_BYTES);
+        if (!is_string($cipher)) {
+            throw new \RuntimeException('Could not seal the relay message');
+        }
+
+        return json_encode(['v' => 1, 'n' => base64_encode($nonce), 'c' => base64_encode($cipher.$tag)], JSON_THROW_ON_ERROR);
+    }
+
+    /** @return array{payload: array, nonce: string}|null null for anything forged, stale, mismatched or malformed */
+    public static function open(string $secret, string $direction, string $body, ?string $answers = null, ?int $now = null): ?array
+    {
+        if ($secret === '' || strlen($body) > 4096) {
+            return null;
+        }
+        $outer = json_decode($body, true, 3);
+        if (!is_array($outer) || ($outer['v'] ?? null) !== 1 || !is_string($outer['n'] ?? null) || !is_string($outer['c'] ?? null)) {
+            return null;
+        }
+        $nonce = base64_decode($outer['n'], true);
+        $cipher = base64_decode($outer['c'], true);
+        if (!is_string($nonce) || strlen($nonce) !== self::NONCE_BYTES || !is_string($cipher) || strlen($cipher) < self::TAG_BYTES) {
+            return null;
+        }
+        $plain = openssl_decrypt(substr($cipher, 0, -self::TAG_BYTES), 'aes-256-gcm', self::sealKey($secret), OPENSSL_RAW_DATA, $nonce, substr($cipher, -self::TAG_BYTES));
+        $inner = is_string($plain) ? json_decode($plain, true, 6) : null;
+        if (!is_array($inner) || ($inner['d'] ?? null) !== $direction || !is_int($inner['t'] ?? null)
+            || abs(($now ?? time()) - $inner['t']) > self::SEAL_WINDOW || !is_array($inner['p'] ?? null)
+            || ($inner['r'] ?? null) !== $answers) {
+            return null;
+        }
+
+        return ['payload' => $inner['p'], 'nonce' => $outer['n']];
+    }
+
+    /** The base64 nonce of a sealed message, which its answer must name. */
+    public static function nonceOf(string $sealed): string
+    {
+        return (string) (json_decode($sealed, true, 3)['n'] ?? '');
+    }
+
+    private static function sealKey(string $secret): string
+    {
+        return hash_hkdf('sha256', $secret, 32, 'civ13 in-game verification relay v1');
     }
 
     /** The player-facing reply to `/approveme` without a ckey. */
