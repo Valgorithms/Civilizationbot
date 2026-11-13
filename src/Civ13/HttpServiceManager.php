@@ -461,6 +461,24 @@ class HttpServiceManager
         return $rest ? $text.' '.$rest.' second'.($rest === 1 ? '' : 's') : $text;
     }
 
+    /**
+     * Whether a staff-channel line from the game should ping @Admin.
+     * false: never (staff wrote it, or the game reports staff online);
+     * true: ping (the game reports no staff online);
+     * null: the game sent no presence fields, so guess from Discord presence.
+     */
+    public static function staffWebhookNeedsPing(array $data): ?bool
+    {
+        $truthy = static fn ($value): bool => $value === true || $value === 1 || $value === '1';
+        if ($truthy($data['from_staff'] ?? null)) { return false; }
+        if (($data['kind'] ?? null) === 'asay') { return false; } // Only staff can asay.
+        // Games before the presence fields still mark asay lines in the text.
+        if (! isset($data['kind']) && is_string($data['message'] ?? null) && preg_match('/^__\*\*\[[^\]]*\] \([^)]*\) ASAY:\*\*__/', $data['message'])) { return false; }
+        if (isset($data['staff_online']) && is_numeric($data['staff_online'])) { return (int) $data['staff_online'] <= 0; }
+
+        return null;
+    }
+
     /** Staff messages preserve display text without inferring account authority. */
     public function handleStaffWebhook(ServerRequestInterface $request, GameServer $gameserver, string $kind = 'asay'): HttpResponse
     {
@@ -496,20 +514,24 @@ class HttpServiceManager
 
         if ($kind === 'urgent') { return new HttpResponse(HttpResponse::STATUS_ACCEPTED); }
 
+        // Staff wrote it, or the game says staff are online: never ping.
+        $presence = self::staffWebhookNeedsPing($data);
+        if ($presence === false) { return new HttpResponse(HttpResponse::STATUS_ACCEPTED); }
+
         // Notify staff based on verified online Discord members only.
         if (isset($this->civ13->role_ids['Admin']) && $guild = $this->discord->guilds->get('id', $this->civ13->civ13_guild_id)) {
             $urgent = true;
-            $admin = false;
+            $admin = $presence === true; // The game reported no online staff; skip the Discord guess.
             if (isset($this->civ13->verifier)) {
                 if (! $admin) {
-                    if ($playerlist = $gameserver->players) {
+                    if ($playerlist = array_map('strtolower', $gameserver->players)) {
                         if ($admins = $guild->members->filter(function (Member $member) {
                             return $member->roles->has($this->civ13->role_ids['Admin']);
                         })) {
                             try {
                                 foreach ($admins as $member) {
                                     if ($item = $this->civ13->verifier->get('discord', $member->id)) {
-                                        if (in_array($item['ss13'], $playerlist)) {
+                                        if (in_array(strtolower((string) $item['ss13']), $playerlist, true)) {
                                             $urgent = false;
                                             break;
                                         }

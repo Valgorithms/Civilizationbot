@@ -208,6 +208,20 @@ $civ->verifier->failure=new \Civ13\Exceptions\VerifierException('Hosted verifica
 $relayed=count($server->calls);
 if($handler->handle($asay)->getStatusCode()!==202||count($server->calls)!==$relayed+1){throw new RuntimeException('Verifier outage failed staff webhook');}
 if(count($civ->staffMessages)!==2||!str_contains($civ->staffMessages[1][1],'<@&admin-role>')){throw new RuntimeException('Verifier outage suppressed staff notification');}
+// Admin's own asay never pings, even when Discord presence cannot see them (game flags, then legacy text marker).
+$civ->verifier->failure=null;$pinged=count($civ->staffMessages);$members->list=[];
+foreach([['kind'=>'asay','from_staff'=>1,'staff_online'=>0,'message'=>'x'],['kind'=>'adminpm','from_staff'=>1,'staff_online'=>0,'message'=>'x'],['message'=>'__**[22:50:01] (gaia) ASAY:**__ **Val** hi']] as $own){
+    if($handler->handle($asay->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['ckey'=>'Val']+$own)]))->getStatusCode()!==202){throw new RuntimeException('Own staff line not relayed');}
+}
+if(count($civ->staffMessages)!==$pinged){throw new RuntimeException('Admin was pinged for their own staff line');}
+$help=fn($online)=>$asay->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['ckey'=>'player','kind'=>'ahelp','from_staff'=>0,'staff_online'=>$online,'message'=>'help'])]);
+$handler->handle($help(2));
+if(count($civ->staffMessages)!==$pinged){throw new RuntimeException('Ahelp pinged while the game reported staff online');}
+$members->list=[(new ReflectionClass(OocMember::class))->newInstanceWithoutConstructor()];$server->players=['onlineadmin'];
+$handler->handle($help(0));
+if(count($civ->staffMessages)!==$pinged+1){throw new RuntimeException('Ahelp did not ping when the game reported no staff online');}
+array_pop($civ->staffMessages);$civ->verifier->failure=new \Civ13\Exceptions\VerifierException('Hosted verification unavailable');
+if(\Civ13\HttpServiceManager::staffWebhookNeedsPing(['message'=>'**AHELP** text'])!==null){throw new RuntimeException('Legacy ahelp lost Discord presence fallback');}
 $long=$asay->withQueryParams(['key'=>'synthetic-ooc-key','method'=>'asaymessage','data'=>json_encode(['message'=>str_repeat('é',4000)])]);
 if($handler->handle($long)->getStatusCode()!==202||!isset($civ->staffMessages[2][1])||strlen($civ->staffMessages[2][1])>2000||!str_contains($civ->staffMessages[2][1],'<@&admin-role>')||!preg_match('//u',$civ->staffMessages[2][1])){throw new RuntimeException('Long asay notification exceeds plain-content limit');}
 $civ->verifier->failure=null;array_pop($civ->staffMessages);array_pop($civ->staffMessages);$civ->verifier->lookups=[['discord','staff-member']];
