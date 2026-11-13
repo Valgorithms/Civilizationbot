@@ -47,7 +47,7 @@ namespace {
         file_put_contents($root.'/profile.json',json_encode($profile,JSON_THROW_ON_ERROR));
         putenv('CIVILIZATIONBOT_PROFILE='.$root.'/profile.json');
         // This fresh CLI uses only a synthetic environment; no real credential file is read.
-        putenv('TOKEN');putenv('CIV_TOKEN');putenv('WEBAPI_TOKEN');
+        putenv('TOKEN');putenv('CIV_TOKEN');putenv('WEBAPI_TOKEN');putenv('INGAME_VERIFY_TOKEN');
         $source=file_get_contents(__DIR__.'/../../bot.php');
         if($negative){
             $source=str_replace('if ($portable === null) { // Production server defaults only.','if (true) { // Original unconditional production defaults.',$source,$count);

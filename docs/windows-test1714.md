@@ -58,7 +58,7 @@ exclusive state lock. A duplicate launch cannot enter the bot bootstrap after
 that lock. stop writes a one-use marker consumed by the owning loop, not a process
 name kill. A stop marker left by an absent/crashed process requires operator
 inspection before restart. A stop request is not evidence that a process exited.
-Only WEBAPI_TOKEN and CIV_TOKEN explicitly present in the separate environment file
+Only WEBAPI_TOKEN, CIV_TOKEN and INGAME_VERIFY_TOKEN explicitly present in the separate environment file
 are used; inherited values are ignored. Cache files are pinned under state/json.
 The check/start/stop tools reject a profile belonging to a different checkout.
 

@@ -22,6 +22,7 @@ use Discord\DiscordWebAuth;
 use Discord\Parts\Channel\Message;
 use Discord\Parts\User\Member;
 use Monolog\Logger;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\TimerInterface;
 use React\Http\HttpServer;
@@ -347,6 +348,112 @@ class HttpServiceManager
             $this->logger->error('Queued shutdown notice failed', ['exception' => $error]);
         });
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /**
+     * In-game verification (Civ13 code/modules/client/discord_verify.dm): the game sends the
+     * player's ckey and the code they typed. The primary bot redeems it; a desktop bot with a
+     * read-only verifier relays it to the primary bot. Once authenticated the answer is always
+     * 200 JSON {ok, message}, which the game shows to the player.
+     */
+    public function handleDiscordVerifyWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $secret = $this->civ13->options['http_key'] ?? '';
+        $key = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($secret) || $secret === '' || !is_string($key) || !hash_equals($secret, $key) || $gameserver->legacy_relay) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        if (!$data = self::inGameVerifyRequest(self::decodeParamData($request))) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if (!$this->civ13->verifier->readOnly) {
+            return HttpResponse::json($this->civ13->verifier->redeemInGame($data['ckey'], $data['code']));
+        }
+
+        // The web API runs each request in a fiber (bot.php), so waiting here does not block the loop.
+        return HttpResponse::json(\React\Async\await($this->relayInGameVerification($data['ckey'], $data['code'])));
+    }
+
+    /** Primary bot: in-game registrations relayed by a desktop bot that shares INGAME_VERIFY_TOKEN (HMAC-signed, see below). */
+    public function handleInGameVerifyRelay(ServerRequestInterface $request): HttpResponse
+    {
+        $secret = $this->civ13->options['ingame_verify_key'] ?? '';
+        if (!is_string($secret) || $secret === '' || $this->civ13->verifier->readOnly) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        if ($request->getMethod() !== 'POST') {
+            return new HttpResponse(HttpResponse::STATUS_METHOD_NOT_ALLOWED);
+        }
+        $body = (string) $request->getBody();
+        if (strlen($body) > 1024 || !self::inGameRelaySignatureValid($secret, $request->getHeaderLine('X-Ingame-Verify-Time'), $body, $request->getHeaderLine('X-Ingame-Verify-Signature'))) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        $data = json_decode($body, true, 4);
+        if (!is_array($data) || !$data = self::inGameVerifyRequest($data)) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+
+        return HttpResponse::json($this->civ13->verifier->redeemInGame($data['ckey'], $data['code']));
+    }
+
+    /** Desktop bot: forwards to the primary bot. Resolves {ok, message}; never rejects. */
+    public function relayInGameVerification(string $ckey, string $code): PromiseInterface
+    {
+        $url = InGameVerification::relayUrl($this->civ13->verifier->verify_url);
+        $key = $this->civ13->options['ingame_verify_key'] ?? '';
+        if ($url === null || !is_string($key) || $key === '') {
+            return \React\Promise\resolve(['ok' => false, 'message' => 'Verifying from this server is not set up yet. Use /approveme in Discord instead.']);
+        }
+
+        $body = json_encode(['ckey' => $ckey, 'code' => $code], JSON_THROW_ON_ERROR);
+        $time = (string) time();
+
+        return $this->civ13->browser->withTimeout(10.0)->withRejectErrorResponse(false)->post(
+            $url,
+            ['Content-Type' => 'application/json', 'X-Ingame-Verify-Time' => $time, 'X-Ingame-Verify-Signature' => self::inGameRelaySignature($key, $time, $body)],
+            $body
+        )->then(function (ResponseInterface $response): array {
+            $body = json_decode((string) $response->getBody(), true, 4);
+            if ($response->getStatusCode() === 200 && is_array($body) && is_bool($body['ok'] ?? null) && is_string($body['message'] ?? null)) {
+                return ['ok' => $body['ok'], 'message' => mb_substr($body['message'], 0, 400)];
+            }
+            $this->logger->warning('In-game verification relay refused', ['status' => $response->getStatusCode()]);
+
+            return ['ok' => false, 'message' => 'The main Civ13 bot refused the request. Try again later, or use /approveme in Discord.'];
+        }, function (\Throwable $error): array {
+            $this->logger->warning('In-game verification relay unreachable', ['error' => $error->getMessage()]);
+
+            return ['ok' => false, 'message' => 'The main Civ13 bot could not be reached. Try again later, or use /approveme in Discord.'];
+        });
+    }
+
+    /**
+     * The relay may cross plain HTTP, so the shared secret never travels: the desktop bot signs
+     * time + body with it. A captured request is useless after a minute, and its code is single use.
+     */
+    public static function inGameRelaySignature(string $secret, string $time, string $body): string
+    {
+        return hash_hmac('sha256', $time."\n".$body, $secret);
+    }
+
+    public static function inGameRelaySignatureValid(string $secret, string $time, string $body, string $signature, ?int $now = null): bool
+    {
+        if ($secret === '' || preg_match('/^[0-9]{1,12}$/D', $time) !== 1 || abs(($now ?? time()) - (int) $time) > 60 || preg_match('/^[0-9a-f]{64}$/D', $signature) !== 1) {
+            return false;
+        }
+
+        return hash_equals(self::inGameRelaySignature($secret, $time, $body), $signature);
+    }
+
+    /** {ckey, code} from the game or a relay, or null. The game sends a BYOND ckey: lower-case letters and digits. */
+    public static function inGameVerifyRequest(array $data): ?array
+    {
+        if (!is_string($data['ckey'] ?? null) || preg_match('/^[a-z0-9]{1,32}$/D', $data['ckey']) !== 1
+            || !is_string($data['code'] ?? null) || $data['code'] === '' || strlen($data['code']) > 32) {
+            return null;
+        }
+
+        return ['ckey' => $data['ckey'], 'code' => $data['code']];
     }
 
     /** "2 minutes", "1 minute 30 seconds", "45 seconds". */
@@ -1251,6 +1358,11 @@ class HttpServiceManager
                 false
             )
             ->offsetSet(
+                '/verified/ingame', // Desktop bots relay in-game verification here (INGAME_VERIFY_TOKEN)
+                fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleInGameVerifyRelay($request),
+                false
+            )
+            ->offsetSet(
                 '/ss14verified',
                 fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => ($this->civ13->ss14verifier === null ? HttpResponse::json(['error' => 'SS14 verification unavailable'])->withStatus(503) : HttpResponse::json($this->civ13->ss14verifier->toArray())),
                 false
@@ -1606,6 +1718,11 @@ class HttpServiceManager
                 ->offsetSet(
                     $server_endpoint.'/shutdown_notice',
                     fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleShutdownNoticeWebhook($request, $gameserver),
+                    true
+                )
+                ->offsetSet(
+                    $server_endpoint.'/discord_verify',
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleDiscordVerifyWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(

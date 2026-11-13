@@ -35,7 +35,7 @@ class ApproveMe extends Civ13MessageCommand
                 ->then(static fn () => $message->react('👍'));
         }
         if (! $ckey = self::messageWithoutCommand($command, $message_filtered, true, true)) {
-            return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`');
+            return $this->civ13->reply($message, 'Invalid format! Please use the format `approveme ckey`, or run the `/approveme` slash command without a ckey to get a private code for verifying from inside the game.');
         }
 
         return $this->civ13->reply($message, $this->civ13->verifier->process($ckey, $message->user_id, $message->member));
