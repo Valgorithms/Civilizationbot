@@ -83,7 +83,8 @@ final class LobbyRoster
             throw new \InvalidArgumentException('Expected a list of Discord ID strings.');
         }
         foreach ($ids as $id) {
-            if (!is_string($id) || !preg_match('/^[1-9][0-9]{0,19}$/D', $id)) {
+            if (!is_string($id) || !preg_match('/^[1-9][0-9]{0,19}$/D', $id)
+                || (strlen($id) === 20 && strcmp($id, '18446744073709551615') > 0)) {
                 throw new \InvalidArgumentException('Invalid Discord ID string.');
             }
         }
