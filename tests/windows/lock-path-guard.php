@@ -37,10 +37,11 @@ lockCheck(!DefaultBranchGuard::pathOnlyDifference($committed, $swapped), 'rename
 $root = sys_get_temp_dir().'/lock-path-guard-'.bin2hex(random_bytes(8)); mkdir($root);
 try {
     $origin = $root.'/origin.git'; $seed = $root.'/seed'; $repo = $root.'/runtime';
-    lockRun(['git','init','--bare','--initial-branch=main',$origin]); lockRun(['git','clone',$origin,$seed]);
+    lockRun(['git','init','--bare','--initial-branch=main',$origin]); lockRun(['git','clone',$origin,$seed]); lockGit($seed, 'config', 'core.autocrlf', 'false');
     file_put_contents($seed.'/source.txt', 'first'); file_put_contents($seed.'/composer.lock', lockJson($committed));
     lockGit($seed, 'add', 'source.txt', 'composer.lock'); lockGit($seed, 'commit', '-m', 'first'); lockGit($seed, 'push', 'origin', 'main');
     lockRun(['git','clone',$origin,$repo]);
+    lockGit($repo, 'config', 'core.autocrlf', 'false'); // Windows runners default to CRLF checkouts; compare exact bytes
     $first = lockGit($repo, 'rev-parse', 'HEAD');
     file_put_contents($seed.'/source.txt', 'second'); lockGit($seed, 'add', 'source.txt'); lockGit($seed, 'commit', '-m', 'second'); lockGit($seed, 'push', 'origin', 'main');
     $second = lockGit($seed, 'rev-parse', 'HEAD');
