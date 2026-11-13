@@ -351,7 +351,7 @@ class HttpServiceManager
     }
 
     /**
-     * In-game verification (Civ13 code/modules/accounts/discord_verify.dm): the game sends the
+     * In-game verification (Civ13 code/modules/client/discord_verify.dm): the game sends the
      * player's ckey and the code they typed. The primary bot redeems it; a desktop bot with a
      * read-only verifier relays it to the primary bot. Once authenticated the answer is always
      * 200 JSON {ok, message}, which the game shows to the player.
