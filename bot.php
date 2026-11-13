@@ -111,7 +111,10 @@ if ($portablePath) {
         $portable = CIVILIZATIONBOT_PACKAGED_PROFILE;
         PortableProfile::assertRoot($portable, CIVILIZATIONBOT_PACKAGED_SOURCE_ROOT);
     } else {
-        \Civ13\DefaultBranchGuard::verify(__DIR__); // Before profile credentials, Composer, sockets or Discord.
+        // Before profile credentials, Composer, sockets or Discord. A failed source check is a warning,
+        // never a boot blocker; the launcher's Update / Repair and update fix what it reports.
+        try { \Civ13\DefaultBranchGuard::verify(__DIR__); }
+        catch (\RuntimeException $sourceCheck) { fwrite(STDERR, 'Source check warning (starting anyway): '.$sourceCheck->getMessage().PHP_EOL); }
         $portable = PortableProfile::load($portablePath);
         PortableProfile::assertRoot($portable, __DIR__);
     }
