@@ -269,6 +269,7 @@ class Civ13
 
     private string $constructed_file;
     private RestartPolicy $restartPolicy;
+    private bool $portableRestartRequested = false;
 
     private PromiseMiddleware $then;
 
@@ -1038,8 +1039,24 @@ class Civ13
     public function restart(?string $file = null): PromiseInterface
     {
         if (getenv('CIVILIZATIONBOT_PROFILE')) {
+            if ($file !== null) { throw new \InvalidArgumentException('Portable restart cannot select an entry point'); }
+            if ($this->portableRestartRequested) { return resolve(null); }
+            $state = $this->portable_state_dir;
+            try {
+                if ($state === '' || !PortableProfile::absolute($state) || !is_dir($state)) {
+                    throw new \RuntimeException('Portable restart state unavailable');
+                }
+                // A launcher stop wins. Its existing timer owns shutdown and marker cleanup.
+                if (is_file($state.'/stop.request')) { return resolve(null); }
+                // Publish intent before shutdown: a failed write must leave the bot running.
+                // An existing reload request already supplies the same one-use intent.
+                if (!is_file($state.'/reload.request')) { PortableProcess::requestReload($state); }
+            } catch (\Throwable $error) {
+                return \React\Promise\reject($error);
+            }
             $this->stop();
-            return \React\Promise\resolve(null); // Portable supervisor owns relaunch.
+            $this->portableRestartRequested = true;
+            return resolve(null); // Only the portable supervisor may spawn the replacement.
         }
         return $this->restartPolicy->restart($file, fn () => $this->stop(), fn (?string $entry) => OSFunctions::restart($entry ?? $this->constructed_file));
     }
