@@ -16,7 +16,8 @@ final class FakeLobbies extends LobbyRepository
 {
     public array $calls = [];
     public array $pending = [];
-    public function __construct() {}
+    public ?Throwable $throwNext = null;
+    public function __construct($discord = null, array $vars = []) {}
     public function removeMember($lobby, $user): PromiseInterface
     {
         return $this->record('remove', $lobby, $user);
@@ -27,6 +28,11 @@ final class FakeLobbies extends LobbyRepository
     }
     private function record(string $operation, string $lobby, string $user): PromiseInterface
     {
+        if ($this->throwNext !== null) {
+            $error = $this->throwNext;
+            $this->throwNext = null;
+            throw $error;
+        }
         $this->calls[] = [$operation, $lobby, $user];
         $deferred = new Deferred();
         $this->pending[] = $deferred;
@@ -47,9 +53,13 @@ function invalid(callable $call): void
     throw new RuntimeException('Expected invalid input rejection.');
 }
 
+check(method_exists(LobbyRepository::class, 'addMember') && method_exists(LobbyRepository::class, 'removeMember'), 'installed dependency supports both operations');
 check(LobbyRoster::plan(['1', '2', '2'], ['2', '3']) === ['remove' => ['1'], 'add' => ['3']], 'diff and deduplication');
 check(LobbyRoster::plan([], []) === ['remove' => [], 'add' => []], 'empty room');
 check(LobbyRoster::plan(['18446744073709551615'], ['18446744073709551615'])['add'] === [], 'no numeric coercion');
+check(LobbyRoster::plan(['18446744073709551614'], ['18446744073709551615']) === ['remove' => ['18446744073709551614'], 'add' => ['18446744073709551615']], 'distinct large IDs');
+invalid(fn () => LobbyRoster::plan([], ["1\n"]));
+invalid(fn () => LobbyRoster::plan([], ['18446744073709551616']));
 foreach ([[''], ['0'], ['01'], [1], ['1e3'], ['-1'], ['1\n'], ['123456789012345678901'], ['x' => '1']] as $bad) {
     invalid(fn () => LobbyRoster::plan([], $bad));
 }
@@ -79,4 +89,23 @@ $service->apply('99', ['3'], ['3'])->then(function ($value) use (&$done) { $done
 check($done === ['remove' => [], 'add' => []], 'failure releases in-flight guard and no-op avoids HTTP');
 invalid(fn () => $service->apply('bad', [], []));
 check(count($repo->calls) === 4, 'invalid lobby avoids effects');
+
+$repo = new FakeLobbies();
+$service = new LobbyRoster($repo);
+$error = null;
+$service->apply('99', ['1', '2'], ['3'])->then(null, function ($e) use (&$error) { $error = $e; });
+$repo->pending[0]->resolve(null);
+$repo->pending[1]->reject($failure);
+check($error === $failure && count($repo->calls) === 2, 'partial revoke failure neither rolls back nor grants');
+$error = null;
+$service->apply('99', [], ['3', '4'])->then(null, function ($e) use (&$error) { $error = $e; });
+$repo->pending[2]->reject($failure);
+check($error === $failure && count($repo->calls) === 3, 'failed addition prevents following addition');
+$repo->throwNext = $failure;
+$error = null;
+$service->apply('99', [], ['5'])->then(null, function ($e) use (&$error) { $error = $e; });
+check($error === $failure && count($repo->calls) === 3, 'synchronous transport exception becomes rejection');
+$done = null;
+$service->apply('99', [], [])->then(function ($value) use (&$done) { $done = $value; });
+check($done === ['remove' => [], 'add' => []], 'synchronous failure releases guard');
 echo "Lobby roster: {$checks} checks passed; no live Discord requests.\n";
