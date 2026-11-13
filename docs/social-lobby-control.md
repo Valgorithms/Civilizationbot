@@ -18,6 +18,9 @@ The in-flight guard is per service instance, not distributed locking. Use one
 owner, refresh remote state before retry, and never treat a cached player-session
 roster as authorization. Roster changes are not atomic and the accepted-operation
 receipt does not prove a native client connected or disconnected.
+The target is a frozen snapshot: if authority changes during pending requests,
+it cannot supersede that snapshot. Production must add generation/expiry checks
+before grants and prioritized revocation; an initial fresh snapshot is insufficient.
 
 Before wiring this into production, implement and test authenticated world/session
 binding, authoritative character state/consent and revocation, expiry, fresh remote
