@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/Civ13/Social/**'
       - 'tests/social/**'
+      - 'docs/social-lobby-control.md'
       - '.github/workflows/social-lobby.yml'
       - 'composer.json'
       - 'composer.lock'
