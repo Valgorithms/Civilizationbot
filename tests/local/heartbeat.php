@@ -107,4 +107,7 @@ try {
     if (is_file($root.'/serverdata.txt')) { unlink($root.'/serverdata.txt'); }
     rmdir($root);
 }
+foreach ([[0, '0s'], [45.9, '45s'], [60, '1m'], [25901, '7h 11m'], [3600, '1h 0m'], [93780, '1d 2h 3m'], [86400, '1d 0h 0m'], [-5, '0s']] as [$seconds, $expected]) {
+    check(ServerHeartbeat::formatAge($seconds) === $expected, "Heartbeat age {$seconds}s must read {$expected}");
+}
 echo "Heartbeat offline contracts passed\n";

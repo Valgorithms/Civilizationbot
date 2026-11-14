@@ -20,6 +20,22 @@ final class ServerHeartbeat
     {
     }
 
+    /** Readable age for staff messages: "45s", "7h 11m", "1d 0h 3m" (seconds only under a minute). */
+    public static function formatAge(int|float $seconds): string
+    {
+        $seconds = max(0, (int) $seconds);
+        if ($seconds < 60) {
+            return $seconds.'s';
+        }
+        $days = intdiv($seconds, 86400);
+        $hours = intdiv($seconds % 86400, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+        if ($days > 0) {
+            return "{$days}d {$hours}h {$minutes}m";
+        }
+        return $hours > 0 ? "{$hours}h {$minutes}m" : "{$minutes}m";
+    }
+
     /** @return array{state:string, reason:string, age:?float, data:?string} */
     public function poll(): array
     {
