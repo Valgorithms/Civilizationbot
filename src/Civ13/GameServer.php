@@ -2131,7 +2131,7 @@ class GameServer
                 'stale' => 'Stale heartbeat',
                 default => 'Unknown',
             })
-            ->addFieldValues('Observation', $status['reason'].($status['age'] === null ? '' : ' ('.(int) $status['age'].'s since last observed progress/baseline)'), false)
+            ->addFieldValues('Observation', $status['reason'].($status['age'] === null ? '' : ' ('.ServerHeartbeat::formatAge($status['age']).' since last observed progress/baseline)'), false)
             ->addFieldValues('Host', $this->displayHost(), true);
     }
 
