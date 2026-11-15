@@ -498,7 +498,7 @@ class Verifier
     public static function plainMessage(string $message): string
     {
         $message = preg_replace('/<@[&!]?[0-9]+>/', 'staff', $message) ?? '';
-        $message = str_replace(['`', '**', PHP_EOL], ['', '', ' '], $message);
+        $message = str_replace(['`', '**', "\r\n", "\r", "\n"], ['', '', ' ', ' ', ' '], $message);
 
         return mb_substr(trim($message), 0, 400);
     }
