@@ -43,6 +43,8 @@ try {
  // Shard group regions: absolute directory strings only, never probed here.
  $valid=$profile;$valid['servers']['test']['shards']=[$dir.'/region-a',$dir.'/region-b'];file_put_contents($file,json_encode($valid));check(PortableProfile::load($file)['servers']['test']['shards']===[$dir.'/region-a',$dir.'/region-b']);
  foreach (['relative/region',[$dir.'/a'=>$dir.'/a'],[17],['relative'],array_fill(0,17,$dir),[PHP_OS_FAMILY==='Windows'?'/region':'C:/region'],null] as $shards) { $bad=$profile;$bad['servers']['test']['shards']=is_array($shards)||$shards===null?$shards:[$shards];file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file)); }
+ $valid=$profile;$valid['servers']['test']['region_group']=$dir.'/separate.env';file_put_contents($file,json_encode($valid));check(PortableProfile::load($file)['servers']['test']['region_group']===$dir.'/separate.env');
+ foreach (['relative/earth.json',$dir.'/missing.json',$dir,[$dir],null] as $group) { $bad=$profile;$bad['servers']['test']['region_group']=$group;file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file)); }
  $bad=$profile;unset($bad['options']['role_ids']);file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file));
  $lock=PortableProcess::lock($dir);rejects(fn()=>PortableProcess::lock($dir));fclose($lock);
  $lock=PortableProcess::lock($dir);fclose($lock);

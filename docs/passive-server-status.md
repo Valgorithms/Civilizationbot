@@ -37,8 +37,25 @@ the other regions' worktree directories in `shards`, for example
 Each region's `serverdata.txt` gets its own heartbeat, sampled on the same
 15-second timer, and the channel shows the distinct ckeys across every advancing
 world, so a traveller seen in two regions counts once. It reads `offline` only
-when every world is stale or missing. The status and round embeds still describe
-the server's own world. The current-round embed retains its existing one-minute update
+when every world is stale or missing.
+
+Instead of listing directories, a server can point `region_group` at the Civ13
+shard group file, for example `"region_group": "D:/Civ13Regions/earth.json"`.
+Every region in it (`<root>/<id>`) other than the server's own world is
+watched under its group name, and the list follows the file: a region added to
+or removed from the group is picked up on the next sample, without a bot
+restart. An unreadable file keeps the last good list.
+
+The status embed and the current-round embed in the player-count channel show
+the same group-wide count in an `Online Players (N)` field, one line per region
+with players (for example `**Gaia** (2): alice, bob`). Each ckey is listed once:
+a traveller still listed by the region it left goes under the region it moved
+to, and one listed by no region (between leaving one world and joining the
+next) stays counted under *Between regions* for up to 30 seconds, so a trip
+never drops the count. A logout shows there for that window too. When every
+world is down nobody is listed. When the names do not fit in one embed field,
+the field shows per-region counts. A server without shards keeps its plain
+player list. The current-round embed retains its existing one-minute update
 cadence. Remote/unobserved servers explicitly show unknown health and label
 cached players unverified. This does not change the separate legacy serverinfo
 web-service or verification-API indicators.
