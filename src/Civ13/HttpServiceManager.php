@@ -421,7 +421,16 @@ class HttpServiceManager
                 'metadata' => $metadata,
                 'idle_timeout_seconds' => VoiceLobbies::IDLE_TIMEOUT,
             ])->then(static fn ($lobby) => (string) $lobby->id),
-            updateMembers: static fn (string $lobby, array $members): PromiseInterface => $discord->lobbies->bulkUpdateMembers($lobby, $members),
+            // Resolves to the user IDs Discord confirmed as added or updated.
+            updateMembers: static fn (string $lobby, array $members): PromiseInterface => $discord->lobbies->bulkUpdateMembers($lobby, $members)
+                ->then(static function ($confirmed): array {
+                    $ids = [];
+                    foreach ($confirmed as $member) {
+                        $ids[] = (string) ($member->id ?? '');
+                    }
+
+                    return $ids;
+                }),
             applicationId: $application,
         );
     }

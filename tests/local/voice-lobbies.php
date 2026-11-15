@@ -98,4 +98,38 @@ check($voice->token(VoiceLobbies::tokenId(str_repeat('c', 40))) === null, 'no us
 check(VoiceLobbies::userIdFromIdToken(idToken('123456789012345678')) === '123456789012345678', 'id_token sub read');
 check(VoiceLobbies::userIdFromIdToken('a.b') === null && VoiceLobbies::userIdFromIdToken(idToken('nope')) === null && VoiceLobbies::userIdFromIdToken(null) === null, 'bad id_tokens rejected');
 
+// Review fixes: numeric ckeys, grace from the first absence, refused
+// additions and lobbies Discord deleted.
+$now = 5000; $mints = []; $creates = []; $updates = [];
+$fresh = new VoiceLobbies(
+    mint: static function (string $ckey) use (&$mints) { $d = new Deferred(); $mints[] = [$ckey, $d]; return $d->promise(); },
+    createLobby: static function (array $metadata) use (&$creates) { $d = new Deferred(); $creates[] = [$metadata, $d]; return $d->promise(); },
+    updateMembers: static function (string $lobby, array $members) use (&$updates) { $d = new Deferred(); $updates[] = [$lobby, $members, $d]; return $d->promise(); },
+    applicationId: '1562126764849897544',
+    clock: static function () use (&$now): int { return $now; },
+);
+$numeric = VoiceLobbies::parseRoster(['v' => 1, 'members' => [['ckey' => '123', 'key' => $keyA, 'team' => '']]]);
+check(is_array($numeric) && $fresh->roster('tdm', $numeric) === [], 'a numeric ckey is a roster, not a TypeError');
+check($mints[0][0] === '123', 'numeric ckeys are minted as strings');
+$mints[0][1]->resolve(['access_token' => 'tok-n', 'expires_in' => 604800, 'id_token' => idToken('100000000000000009')]);
+$creates[0][1]->resolve('900000000000000009');
+$updates[0][2]->resolve([]); // Discord left the addition out
+check($fresh->memberIds('region:tdm') === [], 'an addition Discord did not confirm is not recorded');
+$fresh->roster('tdm', $numeric);
+check(count($updates) === 2 && $updates[1][1] === [['id' => '100000000000000009']], 'and is tried again on the next roster');
+$updates[1][2]->resolve(['100000000000000009']);
+check($fresh->memberIds('region:tdm') === ['100000000000000009'], 'a confirmed addition is recorded');
+$now += 1000; // a long quiet spell, then the player leaves
+$fresh->roster('tdm', []);
+check(count($updates) === 2, 'the grace period starts at the first roster without the player');
+$now += VoiceLobbies::REMOVE_GRACE;
+$fresh->roster('tdm', []);
+check(count($updates) === 3 && ($updates[2][1][0]['remove_member'] ?? false), 'and ends after it');
+$updates[2][2]->resolve(null);
+$fresh->roster('tdm', $numeric);
+$last = end($updates);
+$last[2]->reject(new \Discord\Http\Exceptions\NotFoundException('Unknown Lobby'));
+$fresh->roster('tdm', $numeric);
+check(count($creates) === 2 && $creates[1][0]['civ13_kind'] === 'region', 'a lobby Discord deleted is made again');
+
 echo "voice lobby contracts: {$checks} checks passed\n";

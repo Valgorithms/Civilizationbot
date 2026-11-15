@@ -127,6 +127,8 @@ final class VoiceLobbies
     public function roster(string $server, array $members): array
     {
         $now = ($this->clock)();
+        // PHP turns numeric array keys ("123") into integers; ckeys stay strings.
+        $members = array_combine(array_map('strval', array_keys($members)), array_values($members)) ?: [];
         foreach ($this->keys as $id => $owner) {
             if ($owner['server'] === $server && (!isset($members[$owner['ckey']]) || $members[$owner['ckey']]['key'] !== $owner['key'])) {
                 unset($this->keys[$id]);
@@ -134,13 +136,21 @@ final class VoiceLobbies
         }
         $presence = $this->rosters[$server] ?? [];
         foreach ($members as $ckey => $member) {
+            $ckey = (string) $ckey;
             $this->keys[self::tokenId($member['key'])] = ['server' => $server, 'ckey' => $ckey, 'key' => $member['key']];
             $presence[$ckey] = ['team' => $member['team'], 'seen' => $now];
             $this->ensureToken($ckey);
         }
+        // The grace period runs from the first roster without the player.
         foreach ($presence as $ckey => $seen) {
-            if (!isset($members[$ckey]) && $seen['seen'] <= $now - self::REMOVE_GRACE) {
+            if (isset($members[(string) $ckey])) {
+                continue;
+            }
+            $gone = $seen['gone'] ?? $now;
+            if ($gone <= $now - self::REMOVE_GRACE) {
                 unset($presence[$ckey]);
+            } else {
+                $presence[$ckey]['gone'] = $gone;
             }
         }
         $this->rosters[$server] = $presence;
@@ -148,6 +158,7 @@ final class VoiceLobbies
 
         $ids = [];
         foreach ($members as $ckey => $member) {
+            $ckey = (string) $ckey;
             if (isset($this->tokens[$ckey])) {
                 $ids[$ckey] = $this->tokens[$ckey]['user_id'];
             }
@@ -347,18 +358,30 @@ final class VoiceLobbies
         }
         $batch = array_slice($changes, 0, 25);
         $this->syncing[$name] = true;
-        ($this->updateMembers)($lobby, $batch)->then(function () use ($server, $name, $batch): void {
+        ($this->updateMembers)($lobby, $batch)->then(function ($confirmed = null) use ($server, $name, $batch): void {
             unset($this->syncing[$name]);
+            // Discord can leave out an addition it refused; only confirmed
+            // additions count, so the rest are tried again on the next roster.
+            $added = is_array($confirmed) ? array_flip(array_map('strval', $confirmed)) : null;
+            $progress = false;
             foreach ($batch as $change) {
                 if ($change['remove_member'] ?? false) {
                     unset($this->members[$name][$change['id']]);
-                } else {
+                    $progress = true;
+                } elseif ($added === null || isset($added[$change['id']])) {
                     $this->members[$name][$change['id']] = true;
+                    $progress = true;
                 }
             }
-            $this->syncServer($server); // the next batch, if any
-        }, function () use ($name): void {
+            if ($progress) {
+                $this->syncServer($server); // the next batch, if any
+            }
+        }, function ($error = null) use ($name): void {
             unset($this->syncing[$name]); // the next roster tries again
+            if ($error instanceof \Discord\Http\Exceptions\NotFoundException) {
+                // Discord deleted the lobby (idle timeout); make a new one next time.
+                unset($this->lobbies[$name], $this->members[$name]);
+            }
         });
     }
 }
