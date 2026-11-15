@@ -53,6 +53,10 @@ final class PortableProfile
                     if (!self::absoluteAdminFile($shard)) { throw new \InvalidArgumentException('shards needs absolute region directory paths'); }
                 }
             }
+            if (array_key_exists('region_group', $server)) {
+                // A Civ13 shard group file (scripts/shard-group): every region in it is counted and listed by region.
+                if (!is_string($server['region_group']) || !self::absoluteAdminFile($server['region_group']) || !is_file($server['region_group'])) { throw new \InvalidArgumentException('region_group must be an existing absolute shard group file path'); }
+            }
             foreach (['discussion','playercount','ooc','lobby','asay','ic','transit','adminlog','debug','garbage','runtime','attack'] as $field) {
                 if (!is_string($server[$field] ?? null) || ($server[$field] !== '' && !preg_match('/^[0-9]{17,20}$/D', $server[$field]))) { throw new \InvalidArgumentException('Explicit channel string required'); }
             }

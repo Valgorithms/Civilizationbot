@@ -12,6 +12,7 @@ on:
       - 'src/Civ13/ServerHeartbeat.php'
       - 'src/Civ13/PlayercountChannel.php'
       - 'src/Civ13/PortableProfile.php'
+      - 'src/Civ13/RegionRoster.php'
       - 'tests/local/heartbeat*.php'
       - '.github/workflows/status-heartbeat.yml'
 
@@ -40,5 +41,7 @@ jobs:
       - run: php tests/local/heartbeat.php
       - run: php tests/local/heartbeat-integration.php
       - run: php tests/local/heartbeat-playercount.php
+      - run: php -l src/Civ13/RegionRoster.php
+      - run: php tests/local/heartbeat-roster.php
       - run: php -l src/Civ13/ServerPlayLink.php
       - run: php tests/local/play-link.php

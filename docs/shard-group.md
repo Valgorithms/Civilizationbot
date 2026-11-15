@@ -54,8 +54,9 @@ A region that belongs to another entry's group sets `'shard_of' => '<parent key>
 - keeps its own webhooks (`/webhook/<key>`), rounds, bans, admin and verification
   files, chat relays and round embed;
 - never renames the player-count channel: the parent lists the region's
-  directory in `shards` and counts its players there (a player seen in both
-  worlds counts once);
+  directory in `shards` (or the whole group file in `region_group`, see
+  [passive-server-status.md](passive-server-status.md)) and counts its players
+  there, by region, each player once;
 - never receives Discord OOC. A message in the shared OOC channel goes to the
   parent world only, which shares it in game with the other regions (Civ13
   `region_ooc.dm`, which needs the group's transfer agents).

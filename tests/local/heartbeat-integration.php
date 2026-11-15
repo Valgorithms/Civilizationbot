@@ -269,6 +269,43 @@ namespace {
         unlink($root.'/region/serverdata.txt');
         rmdir($root.'/region');
         $shards->setValue($server, []);
+        // region_group: every other region of the group file is watched under its own name, and the
+        // embed lists the group's players by region. Region ids that are not plain names are ignored.
+        $groupProperty = new ReflectionProperty($server, 'regionGroupFile');
+        (new ReflectionProperty($server, 'roster'))->setValue($server, null);
+        $sibling = $root.'-gaia';
+        mkdir($sibling, 0700);
+        $groupFile = $root.'/group.json';
+        $group = ['root' => dirname($root), 'regions' => [['id' => basename($root), 'name' => 'North America'], ['id' => basename($sibling), 'name' => 'Gaia'], ['id' => '../escape', 'name' => 'Bad']]];
+        file_put_contents($groupFile, json_encode($group));
+        $groupProperty->setValue($server, $groupFile);
+        try {
+            file_put_contents($sibling.'/serverdata.txt', record('20', 'alice&bob'));
+            $now = 180;
+            file_put_contents($path, record('302', 'c'));
+            $server->generateServerstatusEmbed(); // Gaia's first read is only a baseline
+            check(array_keys($shards->getValue($server)) === [dirname($root).'/'.basename($sibling)], 'Group file watched the wrong regions');
+            file_put_contents($sibling.'/serverdata.txt', record('21', 'alice&bob'));
+            $now = 195;
+            file_put_contents($path, record('303', 'c'));
+            $grouped = fields($server->generateServerstatusEmbed());
+            check(($grouped['Online Players (3)'] ?? null) === "**North America** (1): c\n**Gaia** (2): alice, bob", 'Status embed did not list players by region');
+            $round = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+            check(in_array('Online Players (3)', array_column($round['embeds'][0]['fields'], 'name'), true), 'Round embed did not count every region');
+            // A region dropped from the file is no longer watched.
+            $group['regions'] = [$group['regions'][0]];
+            file_put_contents($groupFile, json_encode($group, JSON_PRETTY_PRINT));
+            $server->generateServerstatusEmbed();
+            check($shards->getValue($server) === [], 'A removed region was still watched');
+        } finally {
+            $groupProperty->setValue($server, '');
+            (new ReflectionProperty($server, 'regionName'))->setValue($server, '');
+            (new ReflectionProperty($server, 'roster'))->setValue($server, null);
+            $shards->setValue($server, []);
+            @unlink($sibling.'/serverdata.txt');
+            @rmdir($sibling);
+            @unlink($groupFile);
+        }
         check(! array_key_exists('shardHeartbeats', $server->__toArray()) && ! array_key_exists('worlds', $server->__toArray()), 'Shard observation leaked into serialization');
         check(fields($server->generateServerstatusEmbed())['Nomads'] === 'Heartbeat advancing', 'Recovery not reflected in renderer');
         unlink($path);

@@ -152,8 +152,18 @@ class GameServer
     public ?ServerPlayLink $playLink = null;
     /** @var array<string, ServerHeartbeat> Shard region directory => its heartbeat. */
     private array $shardHeartbeats = [];
-    /** @var list<array{state:string, reason:string, players:list<string>}> Last local observation of every world in the group. */
+    /** @var list<array{name?:string, state:string, reason:string, players:list<string>}> Last local observation of every world in the group. */
     private array $worlds = [];
+    /** @var array<string, string> Shard region directory => its display name. */
+    private array $shardNames = [];
+    /** Display name of this server's own world in its group (the group file's region name). */
+    private string $regionName = '';
+    /** Civ13 shard group file (scripts/shard-group, for example D:/Civ13Regions/earth.json) whose regions are counted. */
+    private string $regionGroupFile = '';
+    /** @var array<string, true> Shard directories that came from the group file (re-read when it changes). */
+    private array $groupShards = [];
+    private ?string $regionGroupStamp = null;
+    private ?RegionRoster $roster = null;
 
     /**
      * @param Civ13                $civ13   The bot instance (held by reference).
@@ -291,6 +301,11 @@ class GameServer
             }
             $this->shardHeartbeats[rtrim($shard, '/\\')] = new ServerHeartbeat(rtrim($shard, '/\\').Civ13::serverdata);
         }
+        // Or every region of a Civ13 shard group file, re-read when the group gains or loses regions.
+        if (is_string($options['region_group'] ?? null) && $options['region_group'] !== '') {
+            $this->regionGroupFile = $options['region_group'];
+            $this->loadRegionGroup();
+        }
         $this->discord2unban = $this->basedir.Civ13::discord2unban;
         $this->discord2ban = $this->basedir.Civ13::discord2ban;
         $this->admins = $options['admin_file'] ?? $this->basedir.Civ13::admins;
@@ -412,16 +427,105 @@ class GameServer
 
             return ['state' => 'unknown', 'reason' => 'No enabled local heartbeat observation', 'age' => null, 'data' => null];
         }
+        $this->loadRegionGroup();
         $status = ($this->heartbeat ??= new ServerHeartbeat($this->serverdata))->poll();
         $this->players = self::heartbeatPlayers($status);
-        $this->worlds = [['state' => $status['state'], 'reason' => $status['reason'], 'players' => $this->players]];
+        $worlds = [['name' => $this->regionName !== '' ? $this->regionName : $this->name, 'state' => $status['state'], 'reason' => $status['reason'], 'players' => $this->players]];
         // Shards share the 15-second poll so each heartbeat keeps its own progress evidence.
-        foreach ($this->shardHeartbeats as $heartbeat) {
+        foreach ($this->shardHeartbeats as $directory => $heartbeat) {
             $shard = $heartbeat->poll();
-            $this->worlds[] = ['state' => $shard['state'], 'reason' => $shard['reason'], 'players' => self::heartbeatPlayers($shard)];
+            $worlds[] = ['name' => $this->shardNames[$directory] ?? self::regionLabel((string) $directory), 'state' => $shard['state'], 'reason' => $shard['reason'], 'players' => self::heartbeatPlayers($shard)];
         }
+        // One roster across the group: each ckey once, and a traveller between regions is not dropped.
+        $this->worlds = ($this->roster ??= new RegionRoster())->observe($worlds, hrtime(true) / 1e9);
 
         return $status;
+    }
+
+    /** "D:/Civ13Regions/earth/northamerica" => "Northamerica", for a `shards` directory without a group name. */
+    private static function regionLabel(string $directory): string
+    {
+        return ucfirst(basename(str_replace('\\', '/', $directory)));
+    }
+
+    private static function samePath(string $a, string $b): bool
+    {
+        $normalize = fn (string $path): string => rtrim(str_replace('\\', '/', $path), '/');
+
+        return strcasecmp($normalize($a), $normalize($b)) === 0;
+    }
+
+    /**
+     * Reads the shard group file (Civ13 scripts/shard-group: `root` plus `regions[].id/name`; each region
+     * runs in <root>/<id>) and watches every region other than this server's own world. Only re-read when
+     * the file changes; an unreadable or malformed file keeps the last good region list.
+     */
+    private function loadRegionGroup(): void
+    {
+        if ($this->regionGroupFile === '') {
+            return;
+        }
+        clearstatcache(true, $this->regionGroupFile);
+        $stamp = @filemtime($this->regionGroupFile).':'.@filesize($this->regionGroupFile);
+        if ($stamp === $this->regionGroupStamp) {
+            return;
+        }
+        $bytes = @is_file($this->regionGroupFile) ? @file_get_contents($this->regionGroupFile, false, null, 0, 1048577) : false;
+        $group = is_string($bytes) && strlen($bytes) <= 1048576 ? json_decode($bytes, true, 32) : null;
+        if (! is_array($group) || ! is_string($group['root'] ?? null) || $group['root'] === '' || ! is_array($group['regions'] ?? null)) {
+            if ($this->regionGroupStamp === null) {
+                $this->logger->warning("GameServer {$this->key}: region_group {$this->regionGroupFile} is unreadable; counting this world only.");
+            }
+            $this->regionGroupStamp = $stamp;
+
+            return;
+        }
+        $this->regionGroupStamp = $stamp;
+        $root = rtrim($group['root'], '/\\');
+        $listed = [];
+        foreach ($group['regions'] as $region) {
+            if (! is_array($region) || ! is_string($region['id'] ?? null) || preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $region['id']) !== 1) {
+                continue;
+            }
+            $directory = $root.'/'.$region['id'];
+            $name = is_string($region['name'] ?? null) && trim($region['name']) !== '' ? trim($region['name']) : ucfirst($region['id']);
+            if (self::samePath($directory, $this->basedir)) {
+                $this->regionName = $name;
+
+                continue;
+            }
+            foreach (array_keys($this->shardHeartbeats) as $known) {
+                if (! isset($this->groupShards[$known]) && self::samePath((string) $known, $directory)) {
+                    $this->shardNames[$known] = $name; // Also listed in `shards`: keep that heartbeat, name it.
+
+                    continue 2;
+                }
+            }
+            $listed[$directory] = true;
+            $this->shardNames[$directory] = $name;
+            $this->shardHeartbeats[$directory] ??= new ServerHeartbeat($directory.Civ13::serverdata);
+        }
+        foreach (array_keys($this->groupShards) as $gone) {
+            if (! isset($listed[$gone])) {
+                unset($this->shardHeartbeats[$gone], $this->shardNames[$gone]);
+            }
+        }
+        $this->groupShards = $listed;
+    }
+
+    /** The group-wide "Online Players" field, grouped by region when this server heads a region group. */
+    private function addRosterField(Embed $embed): Embed
+    {
+        if ($this->roster === null || ! $this->worlds) {
+            return $embed;
+        }
+        $grouped = count($this->shardHeartbeats) > 0;
+        if (! $grouped && $this->roster->total() === 0) {
+            return $embed; // A lone world with nobody on keeps its old, field-less embed.
+        }
+        [$name, $value] = $this->roster->field($grouped);
+
+        return $embed->addFieldValues($name, $value, ! $grouped);
     }
 
     /** @return list<string> */
@@ -712,10 +816,10 @@ class GameServer
     {
         $status = $this->refreshLocalServerStatus();
         if ($status['data'] === null) {
-            return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->heartbeatEmbed($status)));
+            return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->addRosterField($this->heartbeatEmbed($status))));
         }
         if (! $round = $this->getRound($this->current_round)) {
-            return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->heartbeatEmbed($status)));
+            return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->addRosterField($this->heartbeatEmbed($status))));
         }
         $round_embed_builder = function (array $round) use ($status): ?MessageBuilder {
             $data = self::heartbeatServerdata($status['data']);
@@ -736,9 +840,7 @@ class GameServer
             if (isset($data[10])) {
                 $embed->addFieldValues('Season', $data[10], true);
             }
-            if ($this->players) {
-                $embed->addFieldValues('Online Players ('.count($this->players).')', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
-            }
+            $this->addRosterField($embed);
             $embed->addFieldValues(
                 'Participating Players ('.count($players = array_keys($round['players'])).')',
                 $players
@@ -2093,7 +2195,7 @@ class GameServer
         $status = $this->refreshLocalServerStatus();
         $embed = $this->heartbeatEmbed($status);
         if ($status['data'] === null) {
-            return $embed;
+            return $this->addRosterField($embed);
         }
         $data = self::heartbeatServerdata($status['data']);
         if (isset($data['round_timer'])) {
@@ -2106,7 +2208,9 @@ class GameServer
         if (isset($data['epoch'])) {
             $embed->addFieldValues('Epoch', $data['epoch'], true);
         }
-        if (isset($data['ckey_list'])) { // Player list
+        if ($this->shardHeartbeats) { // Every region of the group, grouped by region
+            $this->addRosterField($embed);
+        } elseif (isset($data['ckey_list'])) { // Player list
             $players = explode('&', $data['ckey_list']);
             $players = array_filter(array_map(fn ($player) => Civ13::sanitizeInput($player), $players));
             if (! $players_list = implode(', ', $players)) {
@@ -2238,7 +2342,7 @@ class GameServer
     public function __toArray(): array
     {
         $array = get_object_vars($this);
-        unset($array['civ13'], $array['heartbeat'], $array['shardHeartbeats'], $array['worlds']);
+        unset($array['civ13'], $array['heartbeat'], $array['shardHeartbeats'], $array['worlds'], $array['shardNames'], $array['groupShards'], $array['regionGroupStamp'], $array['roster']);
 
         return $array;
     }
