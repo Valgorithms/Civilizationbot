@@ -51,6 +51,28 @@ script's detached worker; `hoststatus` shows progress. The bot runs as the same
 user as the group (`civ13`), so no sudo is involved. Roles are the same as for
 [gaia_host](gaia-host.md).
 
+## Following the front door (`follow_front_door`)
+
+The host can move the group's front door (the region on the public port, the
+group file's `gate` behind a routing relay, else its `mainland`) to another
+region with Civ13's `shard_group.py set-gate` or the launcher's "Front door and
+ports" dialog. A portable profile server that sets
+
+```json
+"region_group": "D:/Civ13Regions/earth.json",
+"follow_front_door": true
+```
+
+takes its region paths from the group file each time the bot starts
+(`PortableProfile::followFrontDoor`): `basedir` becomes `<root>/<front door>`,
+`admin_file` the group's shared `<root>/front-door/SQL/admins.txt` when the
+group keeps one (else, where the profile names an `admin_file`, the front
+door's own `SQL/admins.txt`), and an enabled `gaia_host`'s `config` that
+region's `data/shard-host/host.json`. The profile is never rewritten, so after a
+move only a bot restart is needed. The values written in the profile remain the
+fallback when the group file cannot be read or the front door is not set up,
+so keep them valid.
+
 ## Secondary regions (`shard_of`)
 
 A region that belongs to another entry's group sets `'shard_of' => '<parent key>'`

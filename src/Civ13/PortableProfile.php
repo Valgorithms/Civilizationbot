@@ -57,6 +57,11 @@ final class PortableProfile
                 // A Civ13 shard group file (scripts/shard-group): every region in it is counted and listed by region.
                 if (!is_string($server['region_group']) || !self::absoluteAdminFile($server['region_group']) || !is_file($server['region_group'])) { throw new \InvalidArgumentException('region_group must be an existing absolute shard group file path'); }
             }
+            if (array_key_exists('follow_front_door', $server)) {
+                // The server's paths follow whichever region is the group's front door (followFrontDoor).
+                if (!is_bool($server['follow_front_door']) || ($server['follow_front_door'] && !array_key_exists('region_group', $server))) { throw new \InvalidArgumentException('follow_front_door must be true or false and needs region_group'); }
+                if ($server['follow_front_door']) { $server = self::followFrontDoor($server); }
+            }
             foreach (['discussion','playercount','ooc','lobby','asay','ic','transit','adminlog','debug','garbage','runtime','attack'] as $field) {
                 if (!is_string($server[$field] ?? null) || ($server[$field] !== '' && !preg_match('/^[0-9]{17,20}$/D', $server[$field]))) { throw new \InvalidArgumentException('Explicit channel string required'); }
             }
@@ -72,6 +77,44 @@ final class PortableProfile
         }
         self::runtimeOptions($profile);
         return $profile;
+    }
+
+    /**
+     * Point a server at the front door of its Civ13 shard group: the region players join first, which is the
+     * group file's `gate` behind a routing relay (`relay_port`), else its `mainland`. The host can move the
+     * front door to another region (Civ13 shard_group.py set-gate); with `follow_front_door` the profile needs
+     * no edit afterwards, only a bot restart. Sets `basedir` to <root>/<front door>, `admin_file` to the
+     * group's shared <root>/front-door/SQL/admins.txt when the group keeps one (else, where the profile names
+     * an admin_file, the front door's own SQL/admins.txt) and an enabled gaia_host's `config` to that region's
+     * host config. A group file that cannot be read, or a front door that is not set up, leaves all of the profile's
+     * own values in place, so a damaged group file never stops the bot from starting.
+     */
+    public static function followFrontDoor(array $server): array
+    {
+        $file = $server['region_group'] ?? null;
+        $bytes = is_string($file) && is_file($file) ? @file_get_contents($file, false, null, 0, 1048577) : false;
+        $group = is_string($bytes) && strlen($bytes) <= 1048576 ? json_decode(preg_replace('/^\xEF\xBB\xBF/', '', $bytes), true, 32) : null;
+        if (!is_array($group) || !is_string($group['root'] ?? null) || !self::absoluteAdminFile($group['root']) || !is_array($group['regions'] ?? null)) { return $server; }
+        $ids = [];
+        foreach ($group['regions'] as $region) {
+            if (is_array($region) && is_string($region['id'] ?? null) && preg_match('/^[a-z0-9_-]{1,32}$/D', $region['id']) === 1) { $ids[] = $region['id']; }
+        }
+        if ($ids === []) { return $server; }
+        $relay = is_int($group['relay_port'] ?? null) && $group['relay_port'] > 0;
+        $front = $relay && is_string($group['gate'] ?? null) ? $group['gate'] : (is_string($group['mainland'] ?? null) ? $group['mainland'] : $ids[0]);
+        $root = rtrim($group['root'], '/\\');
+        if (!in_array($front, $ids, true) || !is_dir($root.'/'.$front)) { return $server; }
+        // All of it or none: host control and the region paths must never name two different regions.
+        $gaia = ($server['gaia_host']['enabled'] ?? false) === true;
+        if ($gaia && !is_file($root.'/'.$front.'/data/shard-host/host.json')) { return $server; }
+        $server['basedir'] = $root.'/'.$front;
+        if (is_file($root.'/front-door/SQL/admins.txt')) {
+            $server['admin_file'] = $root.'/front-door/SQL/admins.txt';
+        } elseif (array_key_exists('admin_file', $server)) {
+            $server['admin_file'] = $server['basedir'].'/SQL/admins.txt';
+        }
+        if ($gaia) { $server['gaia_host']['config'] = $server['basedir'].'/data/shard-host/host.json'; }
+        return $server;
     }
 
     /** Replace privileged production defaults; omitted local identities stay disabled. */

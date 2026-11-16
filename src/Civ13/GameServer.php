@@ -471,7 +471,8 @@ class GameServer
             return;
         }
         $bytes = @is_file($this->regionGroupFile) ? @file_get_contents($this->regionGroupFile, false, null, 0, 1048577) : false;
-        $group = is_string($bytes) && strlen($bytes) <= 1048576 ? json_decode($bytes, true, 32) : null;
+        // The host's editor may save the group file with a byte order mark; Civ13 reads it either way.
+        $group = is_string($bytes) && strlen($bytes) <= 1048576 ? json_decode(str_starts_with($bytes, "\xEF\xBB\xBF") ? substr($bytes, 3) : $bytes, true, 32) : null;
         if (! is_array($group) || ! is_string($group['root'] ?? null) || $group['root'] === '' || ! is_array($group['regions'] ?? null)) {
             if ($this->regionGroupStamp === null) {
                 $this->logger->warning("GameServer {$this->key}: region_group {$this->regionGroupFile} is unreadable; counting this world only.");
