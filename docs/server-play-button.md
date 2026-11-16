@@ -11,9 +11,12 @@ Configure an operator-verified public join page in that server's options:
 'play' => ['url' => 'https://civ13.com/tdm/'],
 ```
 
-For Persistence, use `https://civ13.github.io/persistence/` (Civ13/civ13.github.io
-#59, live). civ13.com serves only the TDM shortcut, not the GitHub Pages site.
-The expected BYOND target is
+For Persistence, use `https://civ13.com/persistence/`, the short link beside
+`https://civ13.com/nomads/` and `https://civ13.com/tdm/` on the civ13.com web
+server. `https://civ13.github.io/persistence/` still works as a fallback.
+Discord link buttons accept only `http(s)` URLs, so a `byond://` address cannot
+be the button itself; each short link opens BYOND on its target. The expected
+BYOND target is
 `byond://play.valzargaming.com:1714`, the Gaia gateway, not Rail Yard on 1715.
 Do not map a linked region's Play button to its internal/direct endpoint.
 The launcher gate-down fix ([Civ13 #3869](https://github.com/Civ13/Civ13/pull/3869))
