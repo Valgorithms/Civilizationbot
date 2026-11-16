@@ -40,6 +40,11 @@ DreamDaemon itself.
 | `<key>restart`, panel Restart, `/restart_server` | `restart --region=<id>`, announced in OOC first |
 | `<key>update` | `update --region=<id>` |
 | `<key>hoststatus` | `status --region=<id>`: region name, port, world ready, players, last action, map |
+| `<key>activity` (Ambassador, Admin) | none: reads `<group root>/player-activity-weekly.json` from the server's `region_group` |
+
+`<key>activity` shows the group's weekly player activity totals (active players,
+new players, sessions, deaths, trips, hours per region). The Civ13 host writes the
+file beside its activity database; it holds no player names, research or recipe ids.
 
 start, stop, restart and update are accepted within seconds and finish in the
 script's detached worker; `hoststatus` shows progress. The bot runs as the same
