@@ -102,7 +102,7 @@ final class PortableProfile
         if ($ids === []) { return $server; }
         $relay = is_int($group['relay_port'] ?? null) && $group['relay_port'] > 0;
         $front = $relay && is_string($group['gate'] ?? null) ? $group['gate'] : (is_string($group['mainland'] ?? null) ? $group['mainland'] : $ids[0]);
-        $root = rtrim(str_replace('\\', '/', $group['root']), '/');
+        $root = rtrim($group['root'], '/\\');
         if (!in_array($front, $ids, true) || !is_dir($root.'/'.$front)) { return $server; }
         $server['basedir'] = $root.'/'.$front;
         if (is_file($root.'/front-door/SQL/admins.txt')) {
