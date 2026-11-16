@@ -1111,6 +1111,8 @@ class GameServer
         $control = $this->gaiaHost;
         return $control->request('status')->then(static fn (array $status): string => $control::describe($status));
     }
+    /** The shard group file (Civ13 scripts/shard-group) this server heads, or '' when it has none. */
+    public function regionGroupFile(): string { return $this->regionGroupFile; }
     public function hasGaiaHost(): bool { return $this->gaiaHost !== null; }
     public function hasSystemdUnit(): bool { return $this->systemdUnit !== null; }
     /** Accepted means systemd queued the job; hoststatus shows the unit's state. */
