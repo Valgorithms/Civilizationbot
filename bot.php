@@ -422,7 +422,7 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         'moderate' => true,
         'legacy_relay' => false,
         'basedir' => '/home/valithor/VPS/civ13-rp',
-        'play' => ['url' => 'https://civ13.github.io/persistence/'], // Gaia gateway :1714 (docs/server-play-button.md)
+        'play' => ['url' => 'https://civ13.com/persistence/'], // Gaia gateway :1714 (docs/server-play-button.md)
         // Primary channels
         'discussion' => '799951945346711552',
         'playercount' => '1090788345082298369',
