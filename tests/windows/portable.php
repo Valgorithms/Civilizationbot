@@ -45,6 +45,26 @@ try {
  foreach (['relative/region',[$dir.'/a'=>$dir.'/a'],[17],['relative'],array_fill(0,17,$dir),[PHP_OS_FAMILY==='Windows'?'/region':'C:/region'],null] as $shards) { $bad=$profile;$bad['servers']['test']['shards']=is_array($shards)||$shards===null?$shards:[$shards];file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file)); }
  $valid=$profile;$valid['servers']['test']['region_group']=$dir.'/separate.env';file_put_contents($file,json_encode($valid));check(PortableProfile::load($file)['servers']['test']['region_group']===$dir.'/separate.env');
  foreach (['relative/earth.json',$dir.'/missing.json',$dir,[$dir],null] as $group) { $bad=$profile;$bad['servers']['test']['region_group']=$group;file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file)); }
+ // follow_front_door: the server's paths follow the group file's front door (gate behind a relay, else mainland).
+ foreach (['gaia','north'] as $region) { mkdir($dir.'/regions/'.$region.'/SQL',0777,true);mkdir($dir.'/regions/'.$region.'/data/shard-host',0777,true);file_put_contents($dir.'/regions/'.$region.'/data/shard-host/host.json','{}'); }
+ $groupFile=$dir.'/earth.json';$group=['root'=>$dir.'/regions','mainland'=>'gaia','gate'=>'north','relay_port'=>1717,'regions'=>[['id'=>'gaia','name'=>'Gaia','port'=>1744],['id'=>'north','name'=>'North','port'=>1714]]];
+ file_put_contents($groupFile,"\xEF\xBB\xBF".json_encode($group));
+ $follow=$profile;$follow['servers']['test']['region_group']=$groupFile;$follow['servers']['test']['follow_front_door']=true;$follow['servers']['test']['admin_file']=$dir.'/old-admins.txt';
+ file_put_contents($file,json_encode($follow));$server=PortableProfile::load($file)['servers']['test'];
+ check($server['basedir']===$dir.'/regions/north');check($server['admin_file']===$dir.'/regions/north/SQL/admins.txt');
+ // The host moved the front door: the same profile follows it, and uses the group's shared admins file once there is one.
+ $group['gate']='gaia';file_put_contents($groupFile,json_encode($group));mkdir($dir.'/regions/front-door/SQL',0777,true);file_put_contents($dir.'/regions/front-door/SQL/admins.txt','');
+ $server=PortableProfile::load($file)['servers']['test'];
+ check($server['basedir']===$dir.'/regions/gaia');check($server['admin_file']===$dir.'/regions/front-door/SQL/admins.txt');
+ $gaia=$server;$gaia['gaia_host']=['enabled'=>true,'config'=>$dir.'/old-host.json'];check(PortableProfile::followFrontDoor($gaia)['gaia_host']['config']===$dir.'/regions/gaia/data/shard-host/host.json');
+ // Without a relay the mainland is the front door; an unreadable group or a missing region folder keeps the profile's own paths.
+ unset($group['relay_port']);$group['mainland']='north';file_put_contents($groupFile,json_encode($group));check(PortableProfile::load($file)['servers']['test']['basedir']===$dir.'/regions/north');
+ $group['mainland']='moon';$group['regions'][]=['id'=>'moon'];file_put_contents($groupFile,json_encode($group));check(PortableProfile::load($file)['servers']['test']['basedir']===$dir);
+ file_put_contents($groupFile,'not json');$server=PortableProfile::load($file)['servers']['test'];check($server['basedir']===$dir);check($server['admin_file']===$dir.'/old-admins.txt');
+ $off=$follow;$off['servers']['test']['follow_front_door']=false;file_put_contents($groupFile,json_encode($group));file_put_contents($file,json_encode($off));check(PortableProfile::load($file)['servers']['test']['basedir']===$dir);
+ foreach (['yes',1,null] as $value) { $bad=$follow;$bad['servers']['test']['follow_front_door']=$value;file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file)); }
+ $bad=$profile;$bad['servers']['test']['follow_front_door']=true;file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file));
+ $remove=function(string $path) use (&$remove): void { foreach (array_diff(scandir($path),['.','..']) as $name) { is_dir($path.'/'.$name) ? $remove($path.'/'.$name) : unlink($path.'/'.$name); } rmdir($path); };$remove($dir.'/regions');
  $bad=$profile;unset($bad['options']['role_ids']);file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file));
  $lock=PortableProcess::lock($dir);rejects(fn()=>PortableProcess::lock($dir));fclose($lock);
  $lock=PortableProcess::lock($dir);fclose($lock);
