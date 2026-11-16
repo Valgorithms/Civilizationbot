@@ -86,7 +86,7 @@ final class PortableProfile
      * no edit afterwards, only a bot restart. Sets `basedir` to <root>/<front door>, `admin_file` to the
      * group's shared <root>/front-door/SQL/admins.txt when the group keeps one (else, where the profile names
      * an admin_file, the front door's own SQL/admins.txt) and an enabled gaia_host's `config` to that region's
-     * host config. A group file that cannot be read, or a front door that is not set up, leaves the profile's
+     * host config. A group file that cannot be read, or a front door that is not set up, leaves all of the profile's
      * own values in place, so a damaged group file never stops the bot from starting.
      */
     public static function followFrontDoor(array $server): array
@@ -94,7 +94,7 @@ final class PortableProfile
         $file = $server['region_group'] ?? null;
         $bytes = is_string($file) && is_file($file) ? @file_get_contents($file, false, null, 0, 1048577) : false;
         $group = is_string($bytes) && strlen($bytes) <= 1048576 ? json_decode(preg_replace('/^\xEF\xBB\xBF/', '', $bytes), true, 32) : null;
-        if (!is_array($group) || !is_string($group['root'] ?? null) || !self::absolute($group['root']) || !is_array($group['regions'] ?? null)) { return $server; }
+        if (!is_array($group) || !is_string($group['root'] ?? null) || !self::absoluteAdminFile($group['root']) || !is_array($group['regions'] ?? null)) { return $server; }
         $ids = [];
         foreach ($group['regions'] as $region) {
             if (is_array($region) && is_string($region['id'] ?? null) && preg_match('/^[a-z0-9_-]{1,32}$/D', $region['id']) === 1) { $ids[] = $region['id']; }
@@ -104,15 +104,16 @@ final class PortableProfile
         $front = $relay && is_string($group['gate'] ?? null) ? $group['gate'] : (is_string($group['mainland'] ?? null) ? $group['mainland'] : $ids[0]);
         $root = rtrim($group['root'], '/\\');
         if (!in_array($front, $ids, true) || !is_dir($root.'/'.$front)) { return $server; }
+        // All of it or none: host control and the region paths must never name two different regions.
+        $gaia = ($server['gaia_host']['enabled'] ?? false) === true;
+        if ($gaia && !is_file($root.'/'.$front.'/data/shard-host/host.json')) { return $server; }
         $server['basedir'] = $root.'/'.$front;
         if (is_file($root.'/front-door/SQL/admins.txt')) {
             $server['admin_file'] = $root.'/front-door/SQL/admins.txt';
         } elseif (array_key_exists('admin_file', $server)) {
             $server['admin_file'] = $server['basedir'].'/SQL/admins.txt';
         }
-        if (($server['gaia_host']['enabled'] ?? false) === true && is_file($server['basedir'].'/data/shard-host/host.json')) {
-            $server['gaia_host']['config'] = $server['basedir'].'/data/shard-host/host.json';
-        }
+        if ($gaia) { $server['gaia_host']['config'] = $server['basedir'].'/data/shard-host/host.json'; }
         return $server;
     }
 

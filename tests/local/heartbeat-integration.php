@@ -277,7 +277,7 @@ namespace {
         mkdir($sibling, 0700);
         $groupFile = $root.'/group.json';
         $group = ['root' => dirname($root), 'regions' => [['id' => basename($root), 'name' => 'North America'], ['id' => basename($sibling), 'name' => 'Gaia'], ['id' => '../escape', 'name' => 'Bad']]];
-        file_put_contents($groupFile, json_encode($group));
+        file_put_contents($groupFile, "\xEF\xBB\xBF".json_encode($group)); // with a byte order mark, as a Windows editor saves it
         $groupProperty->setValue($server, $groupFile);
         try {
             file_put_contents($sibling.'/serverdata.txt', record('20', 'alice&bob'));

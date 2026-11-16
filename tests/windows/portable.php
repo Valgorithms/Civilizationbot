@@ -57,11 +57,13 @@ try {
  $server=PortableProfile::load($file)['servers']['test'];
  check($server['basedir']===$dir.'/regions/gaia');check($server['admin_file']===$dir.'/regions/front-door/SQL/admins.txt');
  $gaia=$server;$gaia['gaia_host']=['enabled'=>true,'config'=>$dir.'/old-host.json'];check(PortableProfile::followFrontDoor($gaia)['gaia_host']['config']===$dir.'/regions/gaia/data/shard-host/host.json');
+ unlink($dir.'/regions/north/data/shard-host/host.json');$group['gate']='north';file_put_contents($groupFile,json_encode($group));$kept=PortableProfile::followFrontDoor($gaia);
+ check($kept['basedir']===$dir.'/regions/gaia');check($kept['gaia_host']['config']===$dir.'/old-host.json'); // host control cannot follow: nothing moves
  // Without a relay the mainland is the front door; an unreadable group or a missing region folder keeps the profile's own paths.
  unset($group['relay_port']);$group['mainland']='north';file_put_contents($groupFile,json_encode($group));check(PortableProfile::load($file)['servers']['test']['basedir']===$dir.'/regions/north');
  $group['mainland']='moon';$group['regions'][]=['id'=>'moon'];file_put_contents($groupFile,json_encode($group));check(PortableProfile::load($file)['servers']['test']['basedir']===$dir);
  file_put_contents($groupFile,'not json');$server=PortableProfile::load($file)['servers']['test'];check($server['basedir']===$dir);check($server['admin_file']===$dir.'/old-admins.txt');
- $off=$follow;$off['servers']['test']['follow_front_door']=false;file_put_contents($groupFile,json_encode($group));file_put_contents($file,json_encode($off));check(PortableProfile::load($file)['servers']['test']['basedir']===$dir);
+ $group['mainland']='north';$off=$follow;$off['servers']['test']['follow_front_door']=false;file_put_contents($groupFile,json_encode($group));file_put_contents($file,json_encode($off));check(PortableProfile::load($file)['servers']['test']['basedir']===$dir);
  foreach (['yes',1,null] as $value) { $bad=$follow;$bad['servers']['test']['follow_front_door']=$value;file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file)); }
  $bad=$profile;$bad['servers']['test']['follow_front_door']=true;file_put_contents($file,json_encode($bad));rejects(fn()=>PortableProfile::load($file));
  $remove=function(string $path) use (&$remove): void { foreach (array_diff(scandir($path),['.','..']) as $name) { is_dir($path.'/'.$name) ? $remove($path.'/'.$name) : unlink($path.'/'.$name); } rmdir($path); };$remove($dir.'/regions');
