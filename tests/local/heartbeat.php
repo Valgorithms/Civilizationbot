@@ -133,8 +133,11 @@ final class VanishingHeartbeatStream
     }
 }
 stream_wrapper_register('vanish', VanishingHeartbeatStream::class);
-set_error_handler(static function (int $severity, string $message): never {
-    throw new RuntimeException('Heartbeat read leaked a warning to the global handler: '.$message);
+$leaked = [];
+set_error_handler(static function (int $severity, string $message) use (&$leaked): bool {
+    $leaked[] = $message; // Record rather than throw: read() catches \Throwable and could hide it.
+
+    return true;
 });
 try {
     $now = 0.0;
@@ -144,6 +147,7 @@ try {
     check($status['state'] === 'unknown' && $status['reason'] === ServerHeartbeat::MALFORMED, 'A file that vanishes mid-read starts the missing window without an error');
     $now = ServerHeartbeat::STALE_SECONDS;
     check($vanishing->poll()['reason'] === ServerHeartbeat::MISSING, 'A file that stays gone reads as missing, never as a fatal error');
+    check($leaked === [], 'Heartbeat read leaked a warning to the global handler: '.implode('; ', $leaked));
 } finally {
     restore_error_handler();
     stream_wrapper_unregister('vanish');
