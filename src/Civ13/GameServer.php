@@ -671,18 +671,22 @@ class GameServer
                 $this->civ13->moderator->moderate($this, $array['ckey'], $array['message'], $this->civ13->ic_badwords, $this->civ13->ic_badwords_warnings, 'ic_badwords_warnings.json');
             }
         }
+        $ckey = Civ13::sanitizeInput($array['ckey']);
         try {
-            $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']));
+            $item = $this->civ13->verifier->get('ss13', $ckey);
             $this->relayIdentityUnavailable = false;
         } catch (VerifierException) {
-            // The hosted list is not a current identity proof. Keep chat visible
-            // as plain text without using retained or stale verification data.
+            // The live hosted list is stale or unreachable. Chat names are display only,
+            // so use the last good list (memory or disk); with no cache, send plain text.
             // Warn once per outage instead of once per chat line.
+            $cached = $this->civ13->verifier->hasDisplayCache();
+            $item = $cached ? $this->civ13->verifier->cachedDisplayItem('ss13', $ckey) : null;
             if (! $this->relayIdentityUnavailable) {
                 $this->relayIdentityUnavailable = true;
-                $this->logger->warning('Chat relay identity lookup unavailable; sending unverified display text until hosted verification refreshes');
+                $this->logger->warning($cached
+                    ? 'Hosted verification unavailable; chat relay is using the cached verified list'
+                    : 'Chat relay identity lookup unavailable and no cached list; sending unverified display text until hosted verification refreshes');
             }
-            $item = null;
         }
         if (! $item) {
             return $this->civ13->sendMessage($channel, $array['message'], 'relay.txt', true);
