@@ -30,8 +30,9 @@ final class ModerationDiscord extends \Discord\Discord {
 }
 final class ModerationVerifier extends \Civ13\Verifier {
     public array $discords = [];
+    public bool $unavailable = false;
     public function getVerifiedItem(Member|User|array|string $input): ?array { return null; }
-    public function get(string $discrim, $key): mixed { return isset($this->discords[$key]) ? ['ss13' => $key, 'discord' => $this->discords[$key]] : null; }
+    public function get(string $discrim, $key): mixed { if ($this->unavailable) { throw new \Civ13\Exceptions\VerifierException('Hosted verification unavailable'); } return isset($this->discords[$key]) ? ['ss13' => $key, 'discord' => $this->discords[$key]] : null; }
 }
 final class ModerationBot extends Civ13 {
     public array $sent = [];
@@ -106,6 +107,22 @@ try {
     // The bot's own relayed text is never counted.
     $say('CivBot', 'badword', true);
     check(! isset($bot->ooc_badwords_warnings['civbot']) && ! isset($bot->ooc_badwords_warnings['CivBot']), 'Bot was moderated');
+    // Hosted verification outage: chat still relays as plain text, and the warning is logged once per outage, not per line.
+    $identityWarnings = static fn (): int => count(array_filter($log->getRecords(), static fn ($r) => str_contains((string) $r['message'], 'Chat relay identity lookup unavailable')));
+    $sentBefore = count($bot->sent);
+    $bot->verifier->unavailable = true;
+    $say('speaker', 'hello one', true);
+    $say('speaker', 'hello two', true);
+    $say('other', 'hello three', true);
+    check(count($bot->sent) === $sentBefore + 3, 'Chat was dropped while hosted verification was unavailable');
+    check($identityWarnings() === 1, 'Identity outage warning was not logged exactly once per outage');
+    $bot->verifier->unavailable = false;
+    $say('speaker', 'hello four', true);
+    $bot->verifier->unavailable = true;
+    $say('speaker', 'hello five', true);
+    check($identityWarnings() === 2, 'A new outage after recovery did not warn again');
+    $bot->verifier->unavailable = false;
+
     // Without a file the counters still update in memory (callers outside the relay).
     $memory = [];
     check($bot->moderator->moderate($server, 'other', 'badword', [$rule], $memory) && $memory === ['other' => ['test' => 1]], 'In-memory counter failed');

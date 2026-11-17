@@ -72,6 +72,7 @@ namespace {
     };
     $owner=(new \ReflectionClass(RefreshObserver::class))->newInstanceWithoutConstructor();
     $owner->browser=(new \ReflectionClass(\React\Http\Browser::class))->newInstanceWithoutConstructor();
+    $owner->loop=new \React\EventLoop\StreamSelectLoop(); // Failed refreshes schedule a retry timer; this loop never runs.
     $verifier=(new \ReflectionClass(Verifier::class))->newInstanceWithoutConstructor();
     $verifier->civ13=$owner; $owner->verifier=$verifier;
     (new \ReflectionProperty($verifier,'verify_url'))->setValue($verifier,'http://civ13.com:55555/verified');
@@ -147,6 +148,24 @@ namespace {
         && count($logger->warnings)===$before[2] && count($logger->infos)===$before[3]+1,
         'Failed source invoked optional synchronization, retried, or lost its ordinary status log');
     $owner->notificationHook=null;
+
+    // A failed refresh (for example the first one at boot) retries on a short backoff instead of waiting a full period.
+    refreshCheck(Verifier::HOSTED_REFRESH_SECONDS < HostedVerificationSnapshot::FRESH_SECONDS,'Periodic hosted refresh lets the list lapse before the next refresh');
+    $retry=(new \ReflectionClass(Verifier::class))->newInstanceWithoutConstructor();
+    $retry->civ13=$owner;$retry->logger=$logger;$retry->verified=new Collection([], 'discord');
+    (new \ReflectionProperty($retry,'verify_url'))->setValue($retry,'http://civ13.com:55555/verified');
+    (new \ReflectionProperty($retry,'readOnly'))->setValue($retry,true);
+    (new \ReflectionProperty(Verifier::class,'hosted'))->setValue($retry,new HostedVerificationSnapshot(static fn()=>$f->now));
+    $f->pending=null;$f->now+=20;$f->reply=['http_status'=>503,'json'=>'[]'];
+    $fire=static function () use ($retry,$f): void { $timer=$retry->timers['hosted_retry']; ($timer->getCallback())(); };
+    refreshCheck(refreshResult($retry->refreshHosted())['available']===false && ($retry->timers['hosted_retry'] ?? null)?->getInterval()===30.0,'Failed refresh did not schedule a 30 s retry');
+    $calls=$f->calls;$f->now+=30;$fire();
+    refreshCheck($f->calls===$calls+1 && $retry->timers['hosted_retry']->getInterval()===60.0,'Second failure did not back off to 60 s');
+    $f->now+=60;$f->reply=['http_status'=>200,'json'=>json_encode($records,JSON_THROW_ON_ERROR)];$fire();
+    refreshCheck($f->calls===$calls+2 && !isset($retry->timers['hosted_retry']) && iterator_to_array($retry->verified,false)===$records,'Recovered retry left a timer or lost the list');
+    $f->now+=20;$f->reply=['http_status'=>503,'json'=>'[]'];refreshResult($retry->refreshHosted());
+    refreshCheck($retry->timers['hosted_retry']->getInterval()===30.0,'Backoff was not reset after recovery');
+    $owner->loop->cancelTimer($retry->timers['hosted_retry']);
 
     // Real owner bridge is inert when default-disabled/unattached and does not autoload the feature.
     $plain=(new \ReflectionClass(Civ13::class))->newInstanceWithoutConstructor();
