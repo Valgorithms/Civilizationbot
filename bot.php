@@ -603,7 +603,17 @@ $global_error_handler = async(function (int $errno, string $errstr, ?string $err
         $civ13->sendMessage($channel, $civ13::createBuilder()->setContent($msg)->addFileFromContent('error.txt', $msg.PHP_EOL.$backtrace));
     }
 });
-set_error_handler($global_error_handler);
+// Honor the @ operator: a silenced warning (for example a file the game deleted between an
+// existence check and the read) is already handled by its caller and is not a staff alert.
+// PHP 8 keeps real errors in error_reporting() under @, so those are still reported. Check it
+// here, not inside the async handler: a fiber does not inherit the caller's @ state.
+set_error_handler(static function (int $errno, string $errstr, ?string $errfile = null, ?int $errline = null) use ($global_error_handler): bool {
+    if (error_reporting() & $errno) {
+        $global_error_handler($errno, $errstr, $errfile, $errline);
+    }
+
+    return true;
+});
 
 use React\Socket\SocketServer;
 use React\Http\HttpServer;

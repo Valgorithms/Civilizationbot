@@ -107,6 +107,52 @@ try {
     if (is_file($root.'/serverdata.txt')) { unlink($root.'/serverdata.txt'); }
     rmdir($root);
 }
+// The game deletes and rewrites serverdata.txt, so the file can vanish between the existence
+// check and the read. The bot's global error handler reports even @-silenced warnings, so the
+// read must neither raise a warning nor throw, and a vanished file must count as missing.
+final class VanishingHeartbeatStream
+{
+    public static bool $present = true;
+    public static int $opens = 0;
+    public mixed $context = null;
+
+    public function url_stat(string $path, int $flags): array|false
+    {
+        return self::$present ? ['mode' => 0100644, 'size' => 10] + array_fill(0, 13, 0) : false;
+    }
+
+    public function stream_open(string $path, string $mode, int $options, ?string &$opened): bool
+    {
+        self::$opens++;
+        self::$present = false; // Deleted by the game's rewrite after the existence checks passed.
+        if ($options & STREAM_REPORT_ERRORS) {
+            trigger_error('Failed to open stream: No such file or directory', E_USER_WARNING);
+        }
+
+        return false;
+    }
+}
+stream_wrapper_register('vanish', VanishingHeartbeatStream::class);
+$leaked = [];
+set_error_handler(static function (int $severity, string $message) use (&$leaked): bool {
+    $leaked[] = $message; // Record rather than throw: read() catches \Throwable and could hide it.
+
+    return true;
+});
+try {
+    $now = 0.0;
+    $vanishing = new ServerHeartbeat('vanish://region/serverdata.txt', $clock);
+    $status = $vanishing->poll();
+    check(VanishingHeartbeatStream::$opens === 1, 'Race fixture must reach the read');
+    check($status['state'] === 'unknown' && $status['reason'] === ServerHeartbeat::MALFORMED, 'A file that vanishes mid-read starts the missing window without an error');
+    $now = ServerHeartbeat::STALE_SECONDS;
+    check($vanishing->poll()['reason'] === ServerHeartbeat::MISSING, 'A file that stays gone reads as missing, never as a fatal error');
+    check($leaked === [], 'Heartbeat read leaked a warning to the global handler: '.implode('; ', $leaked));
+} finally {
+    restore_error_handler();
+    stream_wrapper_unregister('vanish');
+}
+
 foreach ([[0, '0s'], [45.9, '45s'], [60, '1m'], [25901, '7h 11m'], [3600, '1h 0m'], [93780, '1d 2h 3m'], [86400, '1d 0h 0m'], [-5, '0s']] as [$seconds, $expected]) {
     check(ServerHeartbeat::formatAge($seconds) === $expected, "Heartbeat age {$seconds}s must read {$expected}");
 }

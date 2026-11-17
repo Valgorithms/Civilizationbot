@@ -109,6 +109,23 @@ final class ServerHeartbeat
             return false;
         }
 
-        return @file_get_contents($this->path, false, null, 0, 65537);
+        // The game deletes and rewrites the file, so it can vanish or be locked between the checks
+        // above and the read. Keep that warning away from the bot's global error handler (which
+        // reports even @-silenced warnings to staff) and treat a vanished file as a missing one.
+        set_error_handler(static fn (): bool => true);
+        try {
+            $data = file_get_contents($this->path, false, null, 0, 65537);
+        } catch (\Throwable) {
+            $data = false;
+        } finally {
+            restore_error_handler();
+        }
+        if ($data === false) {
+            clearstatcache(true, $this->path);
+
+            return file_exists($this->path) ? false : null;
+        }
+
+        return $data;
     }
 }
