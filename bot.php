@@ -99,6 +99,7 @@ function loadEnv(string $filePath, bool $explicit = false): array
 require_once __DIR__.'/src/Civ13/PortableProfile.php';
 require_once __DIR__.'/src/Civ13/PortableProcess.php';
 require_once __DIR__.'/src/Civ13/DefaultBranchGuard.php';
+require_once __DIR__.'/src/Civ13/LogLevelSetting.php';
 $portable = null;
 $portableLock = null;
 $portablePath = getenv('CIVILIZATIONBOT_PROFILE');
@@ -142,10 +143,15 @@ $loadedNames = loadEnv($portable['env_file'] ?? $baseDir.'/.env', $portable !== 
 if ($portable !== null && (!in_array('TOKEN', $loadedNames, true) || !getenv('TOKEN'))) { throw new \RuntimeException('Separate profile environment must explicitly supply TOKEN'); }
 
 if ($portable === null) { file_put_contents($baseDir.'/output.log', ''); } // Clear the contents of 'output.log'
-$fileHandler = (new StreamHandler(($portable['state_dir'] ?? $baseDir).'/output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
-$stdoutHandler = (new StreamHandler('php://stdout', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
+// Profile log_level (set from the launcher's Civilizationbot tab), else LOG_LEVEL, else info. Never blocks boot.
+[$logLevelName, $logLevelWarning] = \Civ13\LogLevelSetting::resolve($portable['log_level'] ?? null, getenv('LOG_LEVEL'));
+$logLevel = Level::fromName($logLevelName);
+$fileHandler = (new StreamHandler(($portable['state_dir'] ?? $baseDir).'/output.log', $logLevel))->setFormatter(new LineFormatter(null, null, true, true, true));
+$stdoutHandler = (new StreamHandler('php://stdout', $logLevel))->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$fileHandler, $stdoutHandler]);
 Loop::addPeriodicTimer(60 * 10, fn () => $logger->reset()); // Flush all buffers every 10 minutes
+if ($logLevelWarning !== null) { $logger->warning($logLevelWarning); }
+$logger->notice('Log level: '.$logLevelName);
 $logger->info('Loading configurations for the bot...');
 set_rejection_handler(function (\Throwable $e) use ($logger) {
     if ($e->getMessage() !== 'Cannot resume a fiber that is not suspended') {

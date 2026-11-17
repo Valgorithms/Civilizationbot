@@ -670,7 +670,7 @@ class Civ13
         $this->welcome_message = $options['welcome_message'];
 
         if (! $options['logger']) {
-            $streamHandler = new StreamHandler('php://stdout', Level::Debug);
+            $streamHandler = new StreamHandler('php://stdout', Level::Info);
             $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
             $options['logger'] = new Logger(self::class, [$streamHandler]);
         }
@@ -867,7 +867,7 @@ class Civ13
             return $logger;
         }
 
-        return new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
+        return new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
     }
 
     /** The command prefix `$content` starts with (bot mention or `command_symbol`), or null. */
