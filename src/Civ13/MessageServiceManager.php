@@ -358,17 +358,28 @@ class MessageServiceManager
     }
 
     /**
-     * Relays a plain (non-command) message posted in a server's #ooc channel to that server's in-game OOC.
+     * Relays a plain (non-command) message posted in a server's #ooc channel to that server's in-game OOC,
+     * or one posted in its lobby channel to the players on that server's join screen.
      * Only verified, non-banished members are relayed; badword matches and empty messages are dropped.
      * A failed IPC write is marked with a 🔥 reaction; successful relays stay quiet.
      */
     public function relayOocMessage(Message $message): ?PromiseInterface
     {
         $gameserver = null;
+        $lobby = false;
         foreach ($this->civ13->enabled_gameservers as $candidate) {
             // A secondary shard region shares its parent's OOC channel; Discord OOC goes to the parent world only.
-            if ($candidate->ooc !== '' && $candidate->ooc === $message->channel_id && $candidate->shardOf === '') {
+            if ($candidate->shardOf !== '') {
+                continue;
+            }
+            if ($candidate->ooc !== '' && $candidate->ooc === $message->channel_id) {
                 $gameserver = $candidate;
+                break;
+            }
+            // The lobby channel reaches only the players on that world's join screen.
+            if (($candidate->lobby ?? '') !== '' && $candidate->lobby === $message->channel_id) {
+                $gameserver = $candidate;
+                $lobby = true;
                 break;
             }
         }
@@ -415,7 +426,7 @@ class MessageServiceManager
         if (OocAutoRelay::blocked($text, $this->civ13->ooc_badwords)) {
             return null;
         }
-        if ($gameserver->OOCMessage($text, $ckey)) {
+        if ($lobby ? $gameserver->LobbyMessage($text, $ckey) : $gameserver->OOCMessage($text, $ckey)) {
             return null;
         }
 

@@ -111,6 +111,7 @@ class Civ13
     
     public const discord2ooc = '/SQL/discord2ooc.txt';
     public const discord2admin = '/SQL/discord2admin.txt';
+    public const discord2lobby = '/SQL/discord2lobby.txt';
     public const discord2dm = '/SQL/discord2dm.txt';
     public const discord2ban = '/SQL/discord2ban.txt';
     public const discord2unban = '/SQL/discord2unban.txt';
