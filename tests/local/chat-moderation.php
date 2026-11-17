@@ -22,6 +22,7 @@ use function React\Promise\resolve;
 set_error_handler(static function (int $severity, string $message, string $file, int $line): bool { throw new ErrorException($message, 0, $severity, $file, $line); }, E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 function check(bool $ok, string $why): void { if (!$ok) { throw new RuntimeException($why); } }
 function inert(string $class): object { return (new ReflectionClass($class))->newInstanceWithoutConstructor(); }
+final class IdentityEmbedSentinel extends RuntimeException {}
 final class ModerationGuilds { public function get(string $key, mixed $value): mixed { return null; } }
 final class ModerationDiscord extends \Discord\Discord {
     public function __construct() {}
@@ -36,7 +37,10 @@ final class ModerationVerifier extends \Civ13\Verifier {
 }
 final class ModerationBot extends Civ13 {
     public array $sent = [];
+    public int $embeds = 0;
     public array $banned = [];
+    /** Counts the identity-embed path; the inert Discord client cannot build a real Embed. */
+    public function createEmbed(?bool $footer = true, int $color = 0xE1452D): \Discord\Parts\Embed\Embed { ++$this->embeds; throw new IdentityEmbedSentinel(); }
     public array $players = [];
     public function sendMessage(Channel|Thread|string $channel, MessageBuilder|string $content, string $file_name = 'message.txt', bool $prevent_mentions = false): PromiseInterface { $this->sent[] = $content; return resolve(null); }
     public function ban(array $array, ?string $admin = null, string|int|null $server = null, bool $permanent = false): string { $this->banned[] = $array; return 'banned'; }
@@ -121,6 +125,16 @@ try {
     $bot->verifier->unavailable = true;
     $say('speaker', 'hello five', true);
     check($identityWarnings() === 2, 'A new outage after recovery did not warn again');
+    check(count($bot->sent) === $sentBefore + 5, 'Outage without a cache did not send plain text');
+    // With a cached list the relay keeps the author's name instead of plain text.
+    $bot->verifier->unavailable = false;
+    $say('speaker', 'hello six', true);
+    (new ReflectionProperty(\Civ13\Verifier::class, 'displayCache'))->setValue($bot->verifier, new Collection([['ss13' => 'speaker', 'discord' => '990000000000000001']], 'discord'));
+    $bot->verifier->unavailable = true;
+    $plainBefore = count($bot->sent);
+    try { $relay->invoke($server, inert(ModerationChannel::class), ['ckey' => 'speaker', 'message' => 'hello seven', 'server' => 'fixture'], true, true); } catch (IdentityEmbedSentinel) {}
+    check(count($bot->sent) === $plainBefore && $bot->embeds === 1, 'Cached identity was not used for the chat relay');
+    check(count(array_filter($log->getRecords(), static fn ($r) => str_contains((string) $r['message'], 'using the cached verified list'))) === 1, 'Cached outage was not logged once');
     $bot->verifier->unavailable = false;
 
     // Without a file the counters still update in memory (callers outside the relay).

@@ -73,11 +73,14 @@ namespace {
     $owner=(new \ReflectionClass(RefreshObserver::class))->newInstanceWithoutConstructor();
     $owner->browser=(new \ReflectionClass(\React\Http\Browser::class))->newInstanceWithoutConstructor();
     $owner->loop=new \React\EventLoop\StreamSelectLoop(); // Failed refreshes schedule a retry timer; this loop never runs.
+    $owner->filecache_path=$cacheDir=sys_get_temp_dir().DIRECTORY_SEPARATOR.'civbot-hosted-cache-'.bin2hex(random_bytes(6)).DIRECTORY_SEPARATOR;
+    mkdir($cacheDir,0700,true);
     $verifier=(new \ReflectionClass(Verifier::class))->newInstanceWithoutConstructor();
     $verifier->civ13=$owner; $owner->verifier=$verifier;
     (new \ReflectionProperty($verifier,'verify_url'))->setValue($verifier,'http://civ13.com:55555/verified');
     (new \ReflectionProperty($verifier,'readOnly'))->setValue($verifier,true);
     $verifier->logger=$logger=new RefreshLogger('offline-verifier');
+    $owner->logger=$logger; // VarSave for the display cache logs through the owner.
     $verifier->verified=new Collection([], 'discord');
     $snapshot=new HostedVerificationSnapshot(static fn()=>$f->now);
     (new \ReflectionProperty(Verifier::class,'hosted'))->setValue($verifier,$snapshot);
@@ -166,6 +169,34 @@ namespace {
     $f->now+=20;$f->reply=['http_status'=>503,'json'=>'[]'];refreshResult($retry->refreshHosted());
     refreshCheck($retry->timers['hosted_retry']->getInterval()===30.0,'Backoff was not reset after recovery');
     $owner->loop->cancelTimer($retry->timers['hosted_retry']);
+
+    // The last good list is kept on disk and serves display-only lookups while the live list is unavailable.
+    $cacheFile=$cacheDir.Verifier::DISPLAY_CACHE_FILE;
+    $f->now+=20;$f->reply=['http_status'=>200,'json'=>json_encode($records,JSON_THROW_ON_ERROR)];
+    refreshResult($verifier->refreshHosted());
+    refreshCheck(is_file($cacheFile) && json_decode((string)file_get_contents($cacheFile),true)===$records,'Successful refresh did not save the display cache');
+    $mtime=filemtime($cacheFile);clearstatcache();
+    $f->now+=20;$f->reply=['http_status'=>503,'json'=>'[]'];refreshResult($verifier->refreshHosted());
+    $unavailable=false;try{$verifier->get('ss13','fakebeta');}catch(\Civ13\Exceptions\VerifierException){$unavailable=true;}
+    refreshCheck($unavailable,'Stale list still answered authority lookups');
+    refreshCheck(($verifier->getDisplayItem('ss13','fakebeta')['discord']??null)==='990000000000000001','Display lookup did not fall back to the retained list');
+    // A fresh process (boot with the host unreachable) loads the disk cache for display only.
+    $boot=(new \ReflectionClass(Verifier::class))->newInstanceWithoutConstructor();
+    $boot->civ13=$owner;$boot->logger=$logger;$boot->verified=new Collection([], 'discord');
+    (new \ReflectionProperty($boot,'readOnly'))->setValue($boot,true);
+    (new \ReflectionProperty(Verifier::class,'hosted'))->setValue($boot,new HostedVerificationSnapshot(static fn()=>$f->now));
+    (new \ReflectionMethod(Verifier::class,'loadDisplayCache'))->invoke($boot);
+    refreshCheck($boot->hasDisplayCache() && ($boot->getDisplayItem('ss13','fakebeta')['discord']??null)==='990000000000000001'
+        && iterator_to_array($boot->verified,false)===[],'Boot cache missing, or leaked into the authoritative list');
+    file_put_contents($cacheFile,'{"not":"records"');
+    $bad=(new \ReflectionClass(Verifier::class))->newInstanceWithoutConstructor();
+    $bad->civ13=$owner;$bad->logger=$logger;$bad->verified=new Collection([], 'discord');
+    (new \ReflectionProperty($bad,'readOnly'))->setValue($bad,true);
+    (new \ReflectionProperty(Verifier::class,'hosted'))->setValue($bad,new HostedVerificationSnapshot(static fn()=>$f->now));
+    (new \ReflectionMethod(Verifier::class,'loadDisplayCache'))->invoke($bad);
+    $threw=false;try{$bad->getDisplayItem('ss13','fakebeta');}catch(\Civ13\Exceptions\VerifierException){$threw=true;}
+    refreshCheck(!$bad->hasDisplayCache() && $threw,'Corrupt cache file was used or broke startup');
+    @unlink($cacheFile);@rmdir($cacheDir);
 
     // Real owner bridge is inert when default-disabled/unattached and does not autoload the feature.
     $plain=(new \ReflectionClass(Civ13::class))->newInstanceWithoutConstructor();
