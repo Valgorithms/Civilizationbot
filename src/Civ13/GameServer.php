@@ -979,6 +979,17 @@ class GameServer
         return $this->enabled && \Civ13\Server\Ipc::append($this->basedir.Civ13::discord2ooc, [$sender, $message]);
     }
     /**
+     * Sends a Discord lobby-channel message to the players on the join screen.
+     *
+     * @param  string $message The message to be sent.
+     * @param  string $sender  The sender of the message.
+     * @return bool   True when the line was written for the game to pick up.
+     */
+    public function LobbyMessage(string $message, string $sender): bool
+    {
+        return $this->enabled && \Civ13\Server\Ipc::append($this->basedir.Civ13::discord2lobby, [$sender, $message]);
+    }
+    /**
      * Sends an admin message to the server.
      *
      * @param  string $message The message to send.

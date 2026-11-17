@@ -192,6 +192,58 @@ class HttpServiceManager
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
+    /**
+     * Join-screen relay for the server's lobby channel. kind "chat" (default)
+     * is lobby chat and needs a message; "join_screen" and "entered" are short
+     * arrival notices that carry only the player's key.
+     */
+    public function handleLobbyWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $data = self::decodeParamData($request);
+        $key = $this->civ13->options['http_key'] ?? '';
+        $requestKey = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($key) || $key === '' || !is_string($requestKey) || !hash_equals($key, $requestKey)) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        $kind = $data['kind'] ?? 'chat';
+        if (!is_string($kind) || !in_array($kind, ['chat', 'join_screen', 'entered'], true)) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if (!is_string($data['ckey'] ?? null) || !preg_match('/^[A-Za-z0-9_ ]{1,64}$/D', $data['ckey'])) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        $ckey = Civ13::sanitizeInput($data['ckey']);
+        if ($ckey === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        if ($kind === 'chat' && (!is_string($data['message'] ?? null) || $data['message'] === ''
+            || strlen($data['message']) > 16384 || str_contains($data['message'], "\0"))) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if ($gameserver->legacy_relay) { return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); }
+        $channel = $gameserver->lobby ?? '';
+        if (!$channel || !$this->discord->getChannel($channel)) {
+            return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        $time = '['.date('H:i:s').']';
+        if ($kind === 'chat') {
+            $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message'])));
+            if ($message === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+            $relay = $gameserver->gameChatWebhookRelay("**__{$time} LOBBY__ $ckey:** $message", $channel, $ckey, true);
+        } else {
+            $name = self::lobbyMarkdownName($data['ckey']);
+            $line = $kind === 'join_screen' ? "`{$time}` **{$name}** is on the join screen." : "`{$time}` **{$name}** entered the world.";
+            $relay = $gameserver->gameChatWebhookRelay($line, $channel);
+        }
+        $relay->then(null, fn (\Throwable $error) => $this->logger->error('Lobby relay failed: '.$error->getMessage()));
+
+        return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /** A BYOND key as literal Discord text: markdown characters escaped. */
+    public static function lobbyMarkdownName(string $key): string
+    {
+        return preg_replace('/([\\\\_*~`|>])/', '\\\\$1', $key);
+    }
+
     /** Existing keyed bridge only. Observations never upgrade lifecycle/Topic readiness. */
     public function handleGameReadyWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
     {
@@ -1743,27 +1795,7 @@ class HttpServiceManager
 
                 ->offsetSet(
                     $server_endpoint.'/lobbymessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->lobby)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->lobby)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        $time = '['.date('H:i:s', time()).']';
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        $message = "**__{$time} LOBBY__ $ckey:** $message";
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleLobbyWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(
