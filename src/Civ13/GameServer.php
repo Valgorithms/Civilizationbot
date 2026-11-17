@@ -67,6 +67,8 @@ class GameServer
     public Logger $logger;
     public StreamSelectLoop $loop;
     public bool $ready = false;
+    /** True while the chat relay is sending unverified text because hosted verification is unavailable; limits the warning to once per outage. */
+    private bool $relayIdentityUnavailable = false;
     private ?NativeLifecycle $nativeLifecycle = null;
     /** Opt-in confirmed `<key>manage` controls for a shard_group region (docs/launcher-management.md). */
     public ?\Civ13\Local\LauncherManagement $launcherManagement = null;
@@ -671,10 +673,15 @@ class GameServer
         }
         try {
             $item = $this->civ13->verifier->get('ss13', Civ13::sanitizeInput($array['ckey']));
+            $this->relayIdentityUnavailable = false;
         } catch (VerifierException) {
             // The hosted list is not a current identity proof. Keep chat visible
             // as plain text without using retained or stale verification data.
-            $this->logger->warning('Chat relay identity lookup unavailable; sending unverified display text');
+            // Warn once per outage instead of once per chat line.
+            if (! $this->relayIdentityUnavailable) {
+                $this->relayIdentityUnavailable = true;
+                $this->logger->warning('Chat relay identity lookup unavailable; sending unverified display text until hosted verification refreshes');
+            }
             $item = null;
         }
         if (! $item) {

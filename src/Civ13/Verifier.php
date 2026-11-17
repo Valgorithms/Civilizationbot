@@ -42,6 +42,11 @@ class Verifier
     private ?HostedVerificationSnapshot $hosted = null;
     private ?\Closure $hostedTransportFetch = null;
     private ?\React\EventLoop\LoopInterface $hostedTransportLoop = null;
+    /** Hosted refresh period; well inside HostedVerificationSnapshot::FRESH_SECONDS so a normal refresh never lets the list lapse. */
+    public const HOSTED_REFRESH_SECONDS = 900;
+    /** Backoff after a failed hosted refresh, so one failed fetch (often at boot) does not leave the list unavailable until the next period. */
+    public const HOSTED_RETRY_SECONDS = [30, 60, 120, 300];
+    private int $hostedRetryAttempt = 0;
     private const READ_ONLY_MESSAGE = 'Desktop uses the hosted Civilizationbot verification source. Complete verification with the primary bot.';
     public CollectionInterface $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public CollectionInterface $pending;
@@ -1271,11 +1276,11 @@ class Verifier
         return null;
     }
 
-    /** The 30-minute periodic timer that re-checks verifier connectivity and replays provisional registrations when it comes back online. */
+    /** The periodic timer (15 minutes for hosted read-only, otherwise 30) that re-checks verifier connectivity and replays provisional registrations when it comes back online. */
     public function verifierStatusTimer(): TimerInterface
     {
         if (! isset($this->timers['verifier_status_timer'])) {
-            $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
+            $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer($this->readOnly ? self::HOSTED_REFRESH_SECONDS : 1800, function () {
                 if ($this->readOnly) {
                     $this->refreshHosted();
                     return;
@@ -1373,8 +1378,40 @@ class Verifier
                 }
             }
             $this->logger->info('Hosted verification refresh', $status);
+            if (($status['coalesced'] ?? true) === false) {
+                // Retry scheduling is best effort and must not turn a finished refresh into a rejection.
+                try { $status['available'] === true ? $this->hostedRetryReset() : $this->scheduleHostedRetry(); }
+                catch (\Throwable) {
+                    try { $this->logger->warning('Hosted verification retry could not be scheduled'); } catch (\Throwable) {}
+                }
+            }
             return $status;
         });
+    }
+
+    /** Schedules one bounded retry after a failed hosted refresh; never throws into the loop. */
+    private function scheduleHostedRetry(): void
+    {
+        if (isset($this->timers['hosted_retry'])) { return; }
+        $delays = self::HOSTED_RETRY_SECONDS;
+        $delay = $delays[min($this->hostedRetryAttempt, count($delays) - 1)];
+        $this->hostedRetryAttempt++;
+        $this->timers['hosted_retry'] = $this->civ13->loop->addTimer($delay, function (): void {
+            unset($this->timers['hosted_retry']);
+            try { $this->refreshHosted(); }
+            catch (\Throwable) {
+                try { $this->logger->warning('Hosted verification retry failed to start'); } catch (\Throwable) {}
+            }
+        });
+    }
+
+    private function hostedRetryReset(): void
+    {
+        $this->hostedRetryAttempt = 0;
+        if (isset($this->timers['hosted_retry'])) {
+            $this->civ13->loop->cancelTimer($this->timers['hosted_retry']);
+            unset($this->timers['hosted_retry']);
+        }
     }
     // Magic Methods
     /**
