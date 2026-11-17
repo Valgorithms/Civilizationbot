@@ -18,6 +18,7 @@ on:
       - 'src/Civ13/AccessFileSync.php'
       - 'src/Civ13/AccessListProjection.php'
       - 'src/Civ13/PortableProfile.php'
+      - 'src/Civ13/LogLevelSetting.php'
       - 'src/Civ13/HostedVerificationSource.php'
       - 'src/Civ13/HostedVerificationSnapshot.php'
       - 'src/Civ13/Verifier.php'
@@ -65,6 +66,7 @@ jobs:
           extensions: sodium
           coverage: none
       - run: php tests/local/run.php
+      - run: php tests/local/log-level.php
       - run: php tests/local/admin-sync-projection.php
       - run: php tests/local/admin-file-sync-profile.php
       - run: php tests/local/admin-file-writer.php
