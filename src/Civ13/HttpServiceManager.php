@@ -298,16 +298,34 @@ class HttpServiceManager
             return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
         }
         // A round reloaded from a save keeps its identity; announce it without the ping.
+        $name = self::noticeServerName($gameserver, $data);
         if (in_array($data['resumed'] ?? false, [true, 1, '1'], true)) {
-            $message = 'Round `'.$data['round'].'` has resumed from a save.';
+            $message = 'Round `'.$data['round'].'` in **'.$name.'** has resumed from a save.';
         } else {
             $role = $this->civ13->role_ids['round_start'] ?? null;
-            $message = ($role ? "<@&$role>, " : '').'New round `'.$data['round'].'` has started!';
+            $message = ($role ? "<@&$role>, " : '').'New round `'.$data['round'].'` has started in **'.$name.'**!';
         }
         $this->civ13->sendMessage($channel, $message)->then(null, function (\Throwable $error): void {
             $this->logger->error('Queued round notification failed', ['exception' => $error]);
         });
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /**
+     * The server name for round, save and shutdown notices. Every region of a group posts to
+     * the same bot server, so the game sends its region's display name (Civ13 webhook_add_region)
+     * and the notice says "Persistence (North America)". The name is reduced to plain words so
+     * it can neither ping nor break the Markdown around it; a missing or matching name adds nothing.
+     */
+    public static function noticeServerName(GameServer $gameserver, array $data): string
+    {
+        $name = is_string($gameserver->name ?? null) && $gameserver->name !== '' ? $gameserver->name : $gameserver->key;
+        $region = $data['region_name'] ?? null;
+        if (!is_string($region)) return $name;
+        $region = trim(preg_replace('/\s+/u', ' ', preg_replace("/[^\\p{L}\\p{N} .,'()-]+/u", ' ', $region) ?? '') ?? '');
+        $region = mb_substr($region, 0, 80);
+        if ($region === '' || strcasecmp($region, $name) === 0) return $name;
+        return "{$name} ({$region})";
     }
 
     /**
@@ -335,7 +353,7 @@ class HttpServiceManager
             return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
         }
         $shutdown = in_array($data['shutdown'] ?? false, [true, 1, '1'], true);
-        $name = is_string($gameserver->name ?? null) && $gameserver->name !== '' ? $gameserver->name : $gameserver->key;
+        $name = self::noticeServerName($gameserver, $data);
         $time = '['.date('H:i:s').']';
         $message = match ($event) {
             'started' => "{$time} **{$name}**: world save started".($shutdown ? ' before a restart' : '').'. The server may pause briefly.',
@@ -374,7 +392,7 @@ class HttpServiceManager
         if (!isset($gameserver->discussion) || !$channel = $this->discord->getChannel($gameserver->discussion)) {
             return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
         }
-        $name = is_string($gameserver->name ?? null) && $gameserver->name !== '' ? $gameserver->name : $gameserver->key;
+        $name = self::noticeServerName($gameserver, $data);
         $time = '['.date('H:i:s').']';
         $what = match ($kind) {
             'shutdown' => 'save and shut down',
