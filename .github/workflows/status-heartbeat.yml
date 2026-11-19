@@ -17,6 +17,9 @@ on:
       - 'src/Civ13/PlayerActivityTotals.php'
       - 'src/Civ13/MessageCommand/Commands/Civ13GameServerActivity.php'
       - 'tests/local/player-activity-totals.php'
+      - 'src/Civ13/KarmaSnapshot.php'
+      - 'src/Civ13/MessageCommand/Commands/Civ13GameServerKarma.php'
+      - 'tests/local/karma-snapshot.php'
       - '.github/workflows/status-heartbeat.yml'
 
 permissions:
@@ -49,5 +52,8 @@ jobs:
       - run: php -l src/Civ13/PlayerActivityTotals.php
       - run: php -l src/Civ13/MessageCommand/Commands/Civ13GameServerActivity.php
       - run: php tests/local/player-activity-totals.php
+      - run: php -l src/Civ13/KarmaSnapshot.php
+      - run: php -l src/Civ13/MessageCommand/Commands/Civ13GameServerKarma.php
+      - run: php tests/local/karma-snapshot.php
       - run: php -l src/Civ13/ServerPlayLink.php
       - run: php tests/local/play-link.php

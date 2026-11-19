@@ -313,6 +313,7 @@ class MessageServiceManager
                 ->offsetSet("{$gameserver->key}manage", new Commands\Civ13GameServerManage($this->civ13, $gameserver), ['Ambassador'])
                 ->offsetSet("{$gameserver->key}hoststatus", new Commands\Civ13GameServerHostStatus($this->civ13, $gameserver), ['Ambassador'])
                 ->offsetSet("{$gameserver->key}activity", new Commands\Civ13GameServerActivity($this->civ13, $gameserver), ['Ambassador', 'Admin'])
+                ->offsetSet("{$gameserver->key}karma", new Commands\Civ13GameServerKarma($this->civ13, $gameserver), ['Ambassador', 'Admin'])
                 ->offsetSet("{$gameserver->key}mapswap", new Commands\Civ13GameServerMapSwap($this->civ13, $gameserver), ['Ambassador'])
                 ->offsetSet("{$gameserver->key}panic", new Commands\Civ13GameServerPanic($this->civ13, $gameserver), ['Ambassador'])
                 ->offsetSet("{$gameserver->key}ban", new Commands\Civ13GameServerBan($this->civ13, $gameserver), ['Admin'])

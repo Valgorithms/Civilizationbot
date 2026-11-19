@@ -41,10 +41,18 @@ DreamDaemon itself.
 | `<key>update` | `update --region=<id>` |
 | `<key>hoststatus` | `status --region=<id>`: region name, port, world ready, players, last action, map |
 | `<key>activity` (Ambassador, Admin) | none: reads `<group root>/player-activity-weekly.json` from the server's `region_group` |
+| `<key>karma <ckey>` (Ambassador, Admin) | none: reads `<group root>/shared-records/karma/<ckey>.json` from the server's `region_group` |
 
 `<key>activity` shows the group's weekly player activity totals (active players,
 new players, sessions, deaths, trips, hours per region). The Civ13 host writes the
 file beside its activity database; it holds no player names, research or recipe ids.
+
+`<key>karma <ckey>` (or a verified Discord ID) shows a player's hidden karma for
+staff: admin standing, playtime, kindly and poorly counts (raw and weighted), and
+the heaviest givers with their own standing, hours, admin-notes flag and warning
+flags. Karma is never shown to players, so the bot answers only in the `staff_bot`
+channel or a DM and refuses anywhere else. The Civ13 coordinator writes one file
+per ckey whenever that ckey's karma changes; the bot never opens its database.
 
 start, stop, restart and update are accepted within seconds and finish in the
 script's detached worker; `hoststatus` shows progress. The bot runs as the same
