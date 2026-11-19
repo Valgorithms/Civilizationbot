@@ -853,8 +853,9 @@ class GameServer
                 $embed->addFieldValues('Season', $data[10], true);
             }
             $this->addRosterField($embed);
+            $players = PlayerEmbedKeys::withoutGuests(array_keys($round['players'] ?? []));
             $embed->addFieldValues(
-                'Participating Players ('.count($players = array_keys($round['players'])).')',
+                'Participating Players ('.count($players).')',
                 $players
                     ? (strlen($participating_players = implode(', ', $players)) <= 1024
                         ? $participating_players
@@ -2237,7 +2238,7 @@ class GameServer
             $this->addRosterField($embed);
         } elseif (isset($data['ckey_list'])) { // Player list
             $players = explode('&', $data['ckey_list']);
-            $players = array_filter(array_map(fn ($player) => Civ13::sanitizeInput($player), $players));
+            $players = PlayerEmbedKeys::withoutGuests(array_filter(array_map(fn ($player) => Civ13::sanitizeInput($player), $players)));
             if (! $players_list = implode(', ', $players)) {
                 $players_list = 'N/A';
             }
@@ -2342,12 +2343,14 @@ class GameServer
     /** A short embed with this server's URL, host and current player list. */
     public function toEmbed(): Embed
     {
+        $players = PlayerEmbedKeys::withoutGuests($this->players);
+
         return $this->civ13->createEmbed()
             ->setTitle($this->name)
             ->addFieldValues($this->engine === 'opendream' ? 'OpenDream gameplay endpoint' : 'Server URL', $this->engine === 'opendream' ? "{$this->ip}:{$this->port}" : "byond://{$this->ip}:{$this->port}", false)
             ->addFieldValues('Host', $this->displayHost(), true)
             ->addFieldValues('Health', 'Unknown (no local heartbeat evidence)', true)
-            ->addFieldValues('Players (cached, unverified)', empty($this->players) ? 'N/A' : implode(', ', $this->players), true);
+            ->addFieldValues('Players (cached, unverified)', $players ? implode(', ', $players) : 'N/A', true);
     }
     // Magic Methods
     /**

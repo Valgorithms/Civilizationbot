@@ -192,6 +192,31 @@ namespace {
         $playWire = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
         check($playWire['components'][0]['components'][0]['label'] === 'Log', 'Existing Log button lost');
         check($playWire['components'][1]['components'][0]['url'] === 'https://join.example.org/nomads/play', 'Round Play button wrong');
+        $verifier = new class extends Civ13\Verifier {
+            public array $reads = [];
+            public function __construct() {}
+            public function get(string $discrim, $key): mixed {
+                $this->reads[] = $key;
+                return ['discord' => '123'];
+            }
+        };
+        $server->civ13->verifier = $verifier;
+        $server->rounds['fixture']['players'] = ['guest3830181121' => [], 'Guest-W987' => [], 'guestbuilder' => []];
+        $before = $server->rounds;
+        $roundWire = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+        $roundFields = array_column($roundWire['embeds'][0]['fields'], 'value', 'name');
+        check(($roundFields['Participating Players (1)'] ?? null) === 'guestbuilder', 'Round participation displayed or counted guests');
+        check(($roundFields['Verified Players (1)'] ?? null) === '<@123>' && $verifier->reads === ['guestbuilder'], 'Round verified guests or queried the verifier for them');
+        check($server->rounds === $before, 'Filtering changed round records');
+        unset($server->rounds['fixture']['players']['guestbuilder']);
+        $roundWire = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+        $roundFields = array_column($roundWire['embeds'][0]['fields'], 'value', 'name');
+        check(($roundFields['Participating Players (0)'] ?? null) === 'None' && $verifier->reads === ['guestbuilder'], 'Guests-only participation was not empty');
+        $server->rounds['fixture']['players'] = [];
+        file_put_contents($path, record('201', 'player&Guest-7', true));
+        $active = fields($server->generateServerstatusEmbed());
+        check(($active['Players (1)'] ?? null) === 'player' && $server->players === ['player', 'guest7'], 'Standalone embed did not exclude guests without altering cached observations');
+        check(fields($server->toEmbed())['Players (cached, unverified)'] === 'player', 'Cached status embed displayed guests');
         $server->civ13->enabled_gameservers = [$server];
         $server->civ13->civ14_enabled_gameservers = [];
         $aggregate = json_decode(json_encode($server->civ13->createServerstatusEmbed(), JSON_THROW_ON_ERROR), true);
