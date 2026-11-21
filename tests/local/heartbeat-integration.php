@@ -307,6 +307,15 @@ namespace {
             check($server->players === ['alice', 'bob', 'c'] && $server->localServerPlayerCount() === 3, 'Players behind the gateway were not counted');
             $gateRound = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
             check(array_column($gateRound['embeds'][0]['fields'], 'value', 'name')['Map'] === 'Gaia', 'Gateway round embed showed the empty gateway map');
+            // The gateway's own heartbeat is unreadable: the running mainland still fills the fields.
+            file_put_contents($sibling.'/serverdata.txt', record('24', 'alice&bob', false, 'Gaia'));
+            file_put_contents($path, 'torn');
+            $down = fields($server->generateServerstatusEmbed());
+            check(($down['Map'] ?? null) === 'Gaia' && ($down['Nomads'] ?? null) === 'Unknown', 'A gateway that is down hid the mainland');
+            foreach (['306' => 225, '307' => 240] as $realtime => $now) { // the gateway comes back
+                file_put_contents($path, record((string) $realtime, '', false, 'Gateway'));
+                $server->generateServerstatusEmbed();
+            }
             $group['regions'][0] = ['id' => basename($root), 'name' => 'North America'];
             // A region dropped from the file is no longer watched.
             $group['regions'] = [$group['regions'][0]];
@@ -336,7 +345,8 @@ namespace {
         check(fields($remote->toEmbed())['Host'] === 'Unavailable', 'Remote status used a local or configured host');
         check(fields($remote->generateServerstatusEmbed())['Health'] === 'Unknown (no local heartbeat evidence)', 'Remote server inferred health');
         unset($GLOBALS['host_read_forbidden']);
-        check($remote->localServerPlayerCount() === 0, 'Remote server tried local player read');
+        $remote->players = ['cached'];
+        check($remote->localServerPlayerCount() === 0 && $remote->players === ['cached'], 'Remote server counted or dropped its cached players');
         check(! array_key_exists('heartbeat', $server->__toArray()), 'Ephemeral observation leaked into serialization');
         echo "Production heartbeat renderer/cache/timer contracts passed\n";
     } finally {

@@ -421,6 +421,9 @@ class GameServer
     public function localServerPlayerCount(array $players = []): int
     {
         $this->refreshLocalServerStatus();
+        if (! $this->enabled || $this->ip !== ($this->civ13->httpServiceManager->httpHandler->external_ip ?? null)) {
+            return 0; // Not local: never count a cache filled by webhooks or serverinfo.
+        }
 
         // Everyone online in the group: a gateway front door is empty by design, its players are in the lands.
         return count($this->players);
@@ -877,14 +880,14 @@ class GameServer
     public function createCurrentRoundEmbedMessageBuilder(): ?MessageBuilder
     {
         $status = $this->refreshLocalServerStatus();
-        if ($status['data'] === null) {
+        if (($display = $this->displayData($status)) === null) {
             return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->addRosterField($this->heartbeatEmbed($status))));
         }
         if (! $round = $this->getRound($this->current_round)) {
             return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->addRosterField($this->heartbeatEmbed($status))));
         }
-        $round_embed_builder = function (array $round) use ($status): ?MessageBuilder {
-            $data = self::heartbeatServerdata($this->displayData($status));
+        $round_embed_builder = function (array $round) use ($status, $display): ?MessageBuilder {
+            $data = self::heartbeatServerdata($display);
             $embed = $this->heartbeatEmbed($status)
                 ->setTitle($this->name)
                 //->addFieldValues('Game ID', $game_id);
@@ -2269,10 +2272,11 @@ class GameServer
         } // Don't try and access files if the server is not local
         $status = $this->refreshLocalServerStatus();
         $embed = $this->heartbeatEmbed($status);
-        if ($status['data'] === null) {
+        // A gateway that is down still describes a running mainland.
+        if (($display = $this->displayData($status)) === null) {
             return $this->addRosterField($embed);
         }
-        $data = self::heartbeatServerdata($this->displayData($status));
+        $data = self::heartbeatServerdata($display);
         if (isset($data['round_timer'])) {
             $embed->addFieldValues('Round Time', $this->parseRoundTime($data['round_timer']), true);
         }
