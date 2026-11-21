@@ -174,6 +174,11 @@ final class Directory
     private static function metadata(array $status): ?array
     {
         $players = $status['players'] ?? null;
+        // A Civ13 gateway world (region kind GATEWAY) holds the public port with nobody on it; its
+        // status reports everyone playing behind it in the group as group_players (DM sends TRUE as 1).
+        if (in_array($status['gateway'] ?? null, [1, true], true) && is_int($status['group_players'] ?? null)) {
+            $players = $status['group_players'];
+        }
         $ticks = $status['round_duration_in_ticks'] ?? null;
         $id = $status['game_id'] ?? '';
         $id = is_int($id) ? (string) $id : $id;

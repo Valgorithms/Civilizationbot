@@ -25,11 +25,11 @@ namespace {
     function check(bool $ok, string $message): void {
         if (! $ok) { throw new RuntimeException($message); }
     }
-    function record(string $time, string $players = '', bool $approved = false): string {
+    function record(string $time, string $players = '', bool $approved = false, string $map = 'fixture'): string {
         return '<b>Server Status</b>: Online;<b>Address</b>: byond://127.0.0.1:1715;<b>Map</b>: fixture;'
             .'<b>Gamemode</b>: fixture;<b>Players</b>: '.($players === '' ? '0' : '1').';'
             .($approved ? '<b>Approved only</b>: Enabled;' : '')
-            .'realtime='.$time.';world.address=127.0.0.1;round_timer=01:00;map=fixture;epoch=fixture;'
+            .'realtime='.$time.';world.address=127.0.0.1;round_timer=01:00;map='.$map.';epoch=fixture;'
             .'season=fixture;ckey_list='.$players.';allow_vote_restart=0;';
     }
     final class HeartbeatCiv extends Civ13\Civ13 {
@@ -257,7 +257,9 @@ namespace {
         file_put_contents($path, record('301', 'c'));
         file_put_contents($root.'/region/serverdata.txt', record('11', 'b&c'));
         $server->playercountChannelUpdate();
-        check($channel->name === 'nomads-2' && $server->players === ['c'], 'Shard players were not added to the group count');
+        check($channel->name === 'nomads-2', 'Shard players were not added to the group count');
+        // Moderation, staff presence and the player list see every region's players, each once.
+        check($server->players === ['c', 'b'] && $server->localServerPlayerCount() === 2, 'Group player list missed a shard region');
         // A secondary region (shard_of) is counted by its parent's channel and never renames it itself.
         $server->shardOf = 'tdm';
         $saves = $repository->saves;
@@ -292,6 +294,20 @@ namespace {
             check(($grouped['Online Players (3)'] ?? null) === "**North America** (1): c\n**Gaia** (2): alice, bob", 'Status embed did not list players by region');
             $round = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
             check(in_array('Online Players (3)', array_column($round['embeds'][0]['fields'], 'name'), true), 'Round embed did not count every region');
+            check(($grouped['Map'] ?? null) === 'fixture', 'A plain front door borrowed another region\'s map');
+            // A GATEWAY front door is empty: its players and map are the group's, from the mainland.
+            $gatewayGroup = $group + ['mainland' => basename($sibling)];
+            $gatewayGroup['regions'][0]['kind'] = 'GATEWAY';
+            file_put_contents($groupFile, json_encode($gatewayGroup));
+            file_put_contents($sibling.'/serverdata.txt', record('22', 'alice&bob', false, 'Gaia'));
+            $now = 210;
+            file_put_contents($path, record('304', '', false, 'Gateway'));
+            $gate = fields($server->generateServerstatusEmbed());
+            check(($gate['Map'] ?? null) === 'Gaia' && ($gate['Online Players (3)'] ?? null) === "**Gaia** (2): alice, bob\n*Between regions* (1): c", 'Gateway status did not describe the mainland'); // c just left North America: kept between regions
+            check($server->players === ['alice', 'bob', 'c'] && $server->localServerPlayerCount() === 3, 'Players behind the gateway were not counted');
+            $gateRound = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+            check(array_column($gateRound['embeds'][0]['fields'], 'value', 'name')['Map'] === 'Gaia', 'Gateway round embed showed the empty gateway map');
+            $group['regions'][0] = ['id' => basename($root), 'name' => 'North America'];
             // A region dropped from the file is no longer watched.
             $group['regions'] = [$group['regions'][0]];
             file_put_contents($groupFile, json_encode($group, JSON_PRETTY_PRINT));

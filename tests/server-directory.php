@@ -176,6 +176,13 @@ foreach (['players' => [-1, 1.5, '2', true, 10001, []], 'map_name' => ['', "bad\
         directoryCheck($directory->snapshot('civ13.com')['servers'] === [], 'Malformed '.$field.' was published');
     }
 }
+// A Civ13 gateway is empty by design: publish the players behind it (group_players), never a bad count.
+$results[12000] = array_replace($status, ['gateway' => 1, 'group_players' => 9]); $directory->refresh();
+directoryCheck($directory->snapshot('civ13.com')['servers'][0]['players'] === 9, 'Gateway did not publish its group players');
+$results[12000] = array_replace($status, ['gateway' => 1, 'group_players' => '9']); $directory->refresh();
+directoryCheck($directory->snapshot('civ13.com')['servers'][0]['players'] === 0, 'Malformed group_players replaced the world count');
+$results[12000] = array_replace($status, ['group_players' => 9]); $directory->refresh();
+directoryCheck($directory->snapshot('civ13.com')['servers'][0]['players'] === 0, 'A world that is not a gateway published group_players');
 $results[12000] = $status; unset($results[12000]['game_id']); $directory->refresh();
 directoryCheck($directory->snapshot('civ13.com')['servers'][0]['round']['id'] === '', 'Missing round ID should remain explicitly unavailable');
 $results[12000]['game_id'] = 42; $directory->refresh();
