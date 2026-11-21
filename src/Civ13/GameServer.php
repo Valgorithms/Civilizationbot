@@ -166,6 +166,10 @@ class GameServer
     private array $groupShards = [];
     private ?string $regionGroupStamp = null;
     private ?RegionRoster $roster = null;
+    /** Shard directory of the group's mainland while this server's own world is a GATEWAY front door, else ''. */
+    private string $mainlandDirectory = '';
+    /** @var array<string, array{state:string, reason:string, age:?float, data:?string}> Last poll of each shard heartbeat. */
+    private array $shardStatus = [];
 
     /**
      * @param Civ13                $civ13   The bot instance (held by reference).
@@ -416,9 +420,13 @@ class GameServer
      */
     public function localServerPlayerCount(array $players = []): int
     {
-        $status = $this->refreshLocalServerStatus();
+        $this->refreshLocalServerStatus();
+        if (! $this->enabled || $this->ip !== ($this->civ13->httpServiceManager->httpHandler->external_ip ?? null)) {
+            return 0; // Not local: never count a cache filled by webhooks or serverinfo.
+        }
 
-        return $status['data'] === null ? 0 : (int) self::heartbeatServerdata($status['data'])['playercount'];
+        // Everyone online in the group: a gateway front door is empty by design, its players are in the lands.
+        return count($this->players);
     }
 
     /** Local evidence only; another host's configured directory must never be read. */
@@ -431,17 +439,48 @@ class GameServer
         }
         $this->loadRegionGroup();
         $status = ($this->heartbeat ??= new ServerHeartbeat($this->serverdata))->poll();
-        $this->players = self::heartbeatPlayers($status);
-        $worlds = [['name' => $this->regionName !== '' ? $this->regionName : $this->name, 'state' => $status['state'], 'reason' => $status['reason'], 'players' => $this->players]];
+        $worlds = [['name' => $this->regionName !== '' ? $this->regionName : $this->name, 'state' => $status['state'], 'reason' => $status['reason'], 'players' => self::heartbeatPlayers($status)]];
         // Shards share the 15-second poll so each heartbeat keeps its own progress evidence.
+        $this->shardStatus = [];
         foreach ($this->shardHeartbeats as $directory => $heartbeat) {
-            $shard = $heartbeat->poll();
+            $shard = $this->shardStatus[$directory] = $heartbeat->poll();
             $worlds[] = ['name' => $this->shardNames[$directory] ?? self::regionLabel((string) $directory), 'state' => $shard['state'], 'reason' => $shard['reason'], 'players' => self::heartbeatPlayers($shard)];
         }
         // One roster across the group: each ckey once, and a traveller between regions is not dropped.
         $this->worlds = ($this->roster ??= new RegionRoster())->observe($worlds, hrtime(true) / 1e9);
+        // Moderation, staff presence and the player list cover every region, not only the front door,
+        // which is an empty gateway once one holds the public port.
+        $this->players = $this->shardHeartbeats ? self::rosterPlayers($this->worlds) : $worlds[0]['players'];
 
         return $status;
+    }
+
+    /** @return list<string> Distinct ckeys of the advancing worlds (and those between regions), in world order. */
+    private static function rosterPlayers(array $worlds): array
+    {
+        $players = [];
+        foreach ($worlds as $world) {
+            if ($world['state'] === 'advancing') {
+                foreach ($world['players'] as $ckey) {
+                    $players[$ckey] = true;
+                }
+            }
+        }
+
+        return array_map('strval', array_keys($players));
+    }
+
+    /**
+     * Heartbeat data for the Map, Epoch, Season and Round Time fields. A GATEWAY front door hosts no
+     * play, so its fields describe the group's mainland (as its hub entry does) while that is up.
+     */
+    private function displayData(array $status): ?string
+    {
+        if ($this->mainlandDirectory !== '' && ($mainland = $this->shardStatus[$this->mainlandDirectory]['data'] ?? null) !== null) {
+            return $mainland;
+        }
+
+        return $status['data'];
     }
 
     /** "D:/Civ13Regions/earth/northamerica" => "Northamerica", for a `shards` directory without a group name. */
@@ -486,6 +525,10 @@ class GameServer
         $this->regionGroupStamp = $stamp;
         $root = rtrim($group['root'], '/\\');
         $listed = [];
+        $gateway = false;
+        // shard_group.py defaults the mainland to the first region (the TDM group names none).
+        $mainland = is_string($group['mainland'] ?? null) ? $group['mainland'] : (string) ($group['regions'][0]['id'] ?? '');
+        $mainlandDirectory = '';
         foreach ($group['regions'] as $region) {
             if (! is_array($region) || ! is_string($region['id'] ?? null) || preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $region['id']) !== 1) {
                 continue;
@@ -494,8 +537,12 @@ class GameServer
             $name = is_string($region['name'] ?? null) && trim($region['name']) !== '' ? trim($region['name']) : ucfirst($region['id']);
             if (self::samePath($directory, $this->basedir)) {
                 $this->regionName = $name;
+                $gateway = strtoupper((string) ($region['kind'] ?? '')) === 'GATEWAY';
 
                 continue;
+            }
+            if ($region['id'] === $mainland) {
+                $mainlandDirectory = $directory;
             }
             foreach (array_keys($this->shardHeartbeats) as $known) {
                 if (! isset($this->groupShards[$known]) && self::samePath((string) $known, $directory)) {
@@ -514,6 +561,13 @@ class GameServer
             }
         }
         $this->groupShards = $listed;
+        // A `shards` entry may already watch the mainland under its own spelling of the path.
+        foreach (array_keys($this->shardHeartbeats) as $known) {
+            if ($mainlandDirectory !== '' && self::samePath((string) $known, $mainlandDirectory)) {
+                $mainlandDirectory = (string) $known;
+            }
+        }
+        $this->mainlandDirectory = $gateway ? $mainlandDirectory : '';
     }
 
     /** The group-wide "Online Players" field, grouped by region when this server heads a region group. */
@@ -827,14 +881,14 @@ class GameServer
     public function createCurrentRoundEmbedMessageBuilder(): ?MessageBuilder
     {
         $status = $this->refreshLocalServerStatus();
-        if ($status['data'] === null) {
+        if (($display = $this->displayData($status)) === null) {
             return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->addRosterField($this->heartbeatEmbed($status))));
         }
         if (! $round = $this->getRound($this->current_round)) {
             return $this->addPlayButton(Civ13::createBuilder()->addEmbed($this->addRosterField($this->heartbeatEmbed($status))));
         }
-        $round_embed_builder = function (array $round) use ($status): ?MessageBuilder {
-            $data = self::heartbeatServerdata($status['data']);
+        $round_embed_builder = function (array $round) use ($status, $display): ?MessageBuilder {
+            $data = self::heartbeatServerdata($display);
             $embed = $this->heartbeatEmbed($status)
                 ->setTitle($this->name)
                 //->addFieldValues('Game ID', $game_id);
@@ -2219,10 +2273,11 @@ class GameServer
         } // Don't try and access files if the server is not local
         $status = $this->refreshLocalServerStatus();
         $embed = $this->heartbeatEmbed($status);
-        if ($status['data'] === null) {
+        // A gateway that is down still describes a running mainland.
+        if (($display = $this->displayData($status)) === null) {
             return $this->addRosterField($embed);
         }
-        $data = self::heartbeatServerdata($status['data']);
+        $data = self::heartbeatServerdata($display);
         if (isset($data['round_timer'])) {
             $embed->addFieldValues('Round Time', $this->parseRoundTime($data['round_timer']), true);
         }
@@ -2367,7 +2422,7 @@ class GameServer
     public function __toArray(): array
     {
         $array = get_object_vars($this);
-        unset($array['civ13'], $array['heartbeat'], $array['shardHeartbeats'], $array['worlds'], $array['shardNames'], $array['groupShards'], $array['regionGroupStamp'], $array['roster']);
+        unset($array['civ13'], $array['heartbeat'], $array['shardHeartbeats'], $array['worlds'], $array['shardNames'], $array['groupShards'], $array['regionGroupStamp'], $array['roster'], $array['shardStatus'], $array['mainlandDirectory']);
 
         return $array;
     }
