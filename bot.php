@@ -463,12 +463,20 @@ if (is_file($tdm_group)) {
         'kill' => 'stop', // save if the world saves, then stop; 'kill' forces it down without saving
     ];
     unset($civ13_server_settings['tdm']['systemd']);
-    $civ13_server_settings['tdm']['basedir'] = '/home/civ13/tdm/barracks';
-    $civ13_server_settings['tdm']['shard_group'] = $tdm_shard_group('barracks');
-    $civ13_server_settings['tdm']['shards'] = ['/home/civ13/tdm/battle']; // the player-count channel counts both worlds
+    // "tdm" is the group's front door, the world on port 1714 that posts to /webhook/tdm: the Barracks, or the
+    // gateway once `shard_group.py set-gate` puts one in front. Follow it like a portable profile's
+    // follow_front_door (basedir, and the shared front-door/SQL/admins.txt), so a gate move needs only a bot
+    // restart. An unreadable group file or a front door that is not set up keeps the Barracks.
+    $tdm_front = \Civ13\PortableProfile::followFrontDoor(['region_group' => $tdm_group, 'basedir' => '/home/civ13/tdm/barracks']);
+    $civ13_server_settings['tdm']['basedir'] = $tdm_front['basedir'];
+    if (isset($tdm_front['admin_file'])) {
+        $civ13_server_settings['tdm']['admin_file'] = $tdm_front['admin_file'];
+    }
+    $civ13_server_settings['tdm']['shard_group'] = $tdm_shard_group(basename($tdm_front['basedir']));
+    $civ13_server_settings['tdm']['region_group'] = $tdm_group; // the player-count channel counts every region
     // Battle posts to /webhook/tdmbattle and shares the TDM channels. It never renames the player-count channel
-    // (the Barracks counts it) but keeps its own round embed there; Discord OOC goes to the Barracks only, which
-    // shares it with the battle world in game (Civ13 region OOC).
+    // (the front door counts it) but keeps its own round embed there; Discord OOC goes to the front door only,
+    // which shares it with the other worlds in game (Civ13 region OOC).
     $civ13_server_settings['tdmbattle'] = array_merge($civ13_server_settings['tdm'], [
         'supported' => false, // hidden from the hub
         'name' => 'TDM Battle',
@@ -477,7 +485,7 @@ if (is_file($tdm_group)) {
         'shard_group' => $tdm_shard_group('battle'),
         'shard_of' => 'tdm',
     ]);
-    unset($civ13_server_settings['tdmbattle']['shards'], $civ13_server_settings['tdmbattle']['play']); // one TDM Play button, entering through the Barracks
+    unset($civ13_server_settings['tdmbattle']['region_group'], $civ13_server_settings['tdmbattle']['play']); // one TDM Play button, entering through the front door
 }
 foreach ($civ13_server_settings as $key => $value) {
     $civ13_server_settings[$key]['key'] = $key;
