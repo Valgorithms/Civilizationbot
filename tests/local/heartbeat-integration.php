@@ -296,8 +296,9 @@ namespace {
             check(in_array('Online Players (3)', array_column($round['embeds'][0]['fields'], 'name'), true), 'Round embed did not count every region');
             check(($grouped['Map'] ?? null) === 'fixture', 'A plain front door borrowed another region\'s map');
             // A GATEWAY front door is empty: its players and map are the group's, from the mainland.
-            $gatewayGroup = $group + ['mainland' => basename($sibling)];
-            $gatewayGroup['regions'][0]['kind'] = 'GATEWAY';
+            // No `mainland` key: shard_group.py's default is the first region (Gaia here, as in tdm.json).
+            $gatewayGroup = $group;
+            $gatewayGroup['regions'] = [$group['regions'][1], $group['regions'][0] + ['kind' => 'GATEWAY'], $group['regions'][2]];
             file_put_contents($groupFile, json_encode($gatewayGroup));
             file_put_contents($sibling.'/serverdata.txt', record('22', 'alice&bob', false, 'Gaia'));
             $now = 210;

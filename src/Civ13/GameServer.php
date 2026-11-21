@@ -526,7 +526,8 @@ class GameServer
         $root = rtrim($group['root'], '/\\');
         $listed = [];
         $gateway = false;
-        $mainland = is_string($group['mainland'] ?? null) ? $group['mainland'] : '';
+        // shard_group.py defaults the mainland to the first region (the TDM group names none).
+        $mainland = is_string($group['mainland'] ?? null) ? $group['mainland'] : (string) ($group['regions'][0]['id'] ?? '');
         $mainlandDirectory = '';
         foreach ($group['regions'] as $region) {
             if (! is_array($region) || ! is_string($region['id'] ?? null) || preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $region['id']) !== 1) {
