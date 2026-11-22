@@ -56,6 +56,11 @@ namespace {
     final class CommandVerifier extends \Civ13\Verifier {
         public array $items = [];
         public array $joined = [];
+        public array $roundReads = [];
+        public function get(string $discrim, $key): mixed {
+            $this->roundReads[] = $key;
+            return $this->items[$key] ?? null;
+        }
         public function getVerifiedItem(Member|User|array|string $input): ?array { return is_string($input) ? ($this->items[$input] ?? null) : ($input instanceof User ? ($this->items['author'] ?? null) : null); }
         public function getVerified(bool $initialize = true): \Discord\Helpers\CollectionInterface { return $this->verified; }
         public function joinRoles(Member $member, bool $send_welcome_message = true): ?PromiseInterface { $this->joined[] = $member->id; return null; }
@@ -167,6 +172,13 @@ namespace {
         $command = new Commands\GetRound($bot);
         $embed = (new ReflectionMethod($command, 'createEmbed'))->invoke($command, 'Fixture', ['interrupted' => true], true, 'someone');
         check($embed->captured['Players (0)'] === 'Either none or too many to list!' && ! isset($embed->captured['Player Data (someone)']), 'Round without players was not handled');
+        $verifier->items['guestbuilder'] = ['discord' => '123'];
+        $verifier->items['guest3830181121'] = ['discord' => '456'];
+        $verifier->roundReads = [];
+        $round = ['players' => ['guest3830181121' => [], 'Guest-W97' => [], 'guestbuilder' => []]];
+        $embed = (new ReflectionMethod($command, 'createEmbed'))->invoke($command, 'Fixture', $round, false, null);
+        check(($embed->captured['Players (1)'] ?? null) === 'guestbuilder', 'Historical round lists or counts a guest');
+        check(($embed->captured['Verified Players (1)'] ?? null) === '<@123>' && $verifier->roundReads === ['guestbuilder'], 'Historical round resolved a guest to a Discord mention');
         $embed = inert(CommandEmbed::class);
         $builder = Civ13::createBuilder(true);
         (new ReflectionMethod($command, 'addStaffDetails'))->invokeArgs($command, [&$embed, &$builder, ['server_key' => 'fixture']]);

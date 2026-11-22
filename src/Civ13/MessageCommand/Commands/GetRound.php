@@ -15,6 +15,7 @@ namespace Civ13\MessageCommand\Commands;
 
 use Civ13\Civ13;
 use Civ13\MessageCommand\Civ13MessageCommand;
+use Civ13\PlayerEmbedKeys;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
@@ -118,12 +119,13 @@ class GetRound extends Civ13MessageCommand
             ->addFieldValues('Start', $round['start'] ?? 'Unknown', true)
             ->addFieldValues('End', $round['end'] ?? 'Ongoing/Unknown', true);
         $round['players'] = is_array($round['players'] ?? null) ? $round['players'] : []; // A round recorded only as interrupted has no player list
-        if (($players = implode(', ', array_keys($round['players']))) && strlen($players) <= 1024) {
-            $embed->addFieldValues('Players ('.count($round['players']).')', $players);
-        } else {
-            $embed->addFieldValues('Players ('.count($round['players']).')', 'Either none or too many to list!');
-        }
-        if ($discord_ids = array_filter(array_map(fn ($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, array_keys($round['players'])))) {
+        $players = PlayerEmbedKeys::withoutGuests(array_keys($round['players']));
+        $players_list = implode(', ', $players);
+        $embed->addFieldValues(
+            'Players ('.count($players).')',
+            $players_list !== '' && strlen($players_list) <= 1024 ? $players_list : 'Either none or too many to list!'
+        );
+        if ($discord_ids = array_filter(array_map(fn ($c) => ($item = $this->civ13->verifier->get('ss13', $c)) ? "<@{$item['discord']}>" : null, $players))) {
             if (strlen($verified_players = implode(', ', $discord_ids)) <= 1024) {
                 $embed->addFieldValues('Verified Players ('.count($discord_ids).')', $verified_players);
             } else {

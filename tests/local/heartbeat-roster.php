@@ -6,6 +6,7 @@ declare(strict_types=1);
 require __DIR__.'/../../src/Civ13/ServerHeartbeat.php';
 require __DIR__.'/../../src/Civ13/PlayercountChannel.php';
 require __DIR__.'/../../src/Civ13/RegionRoster.php';
+require __DIR__.'/../../src/Civ13/PlayerEmbedKeys.php';
 
 use Civ13\PlayercountChannel;
 use Civ13\RegionRoster;
@@ -65,5 +66,15 @@ $many = new RegionRoster();
 $names = array_map(fn (int $i): string => 'player'.str_pad((string) $i, 20, '0', STR_PAD_LEFT), range(1, 80));
 $many->observe([$up('Gaia', ...array_slice($names, 0, 40)), $up('Europe', ...array_slice($names, 40))], 0.0);
 check($many->field(true) === ['Online Players (80)', "**Gaia** (40)\n**Europe** (40)"], 'Oversized roster was not reduced to counts');
+
+// Guest sessions contribute to operational headcounts but never to an embed field.
+$guests = new RegionRoster();
+$worlds = $guests->observe([$up('Gaia', 'guest3830181121', 'guestbuilder'), $up('Europe', 'Guest-W42')], 0.0);
+check($guests->field(true) === ['Online Players (1)', '**Gaia** (1): guestbuilder'], 'Group guest keys leaked or inflated the embed count');
+check(PlayercountChannel::label($worlds) === '3' && $guests->total() === 3, 'Guest filtering changed operational counts');
+$guests->observe([$up('Gaia', 'Guest-123')], 5.0); // Previous real player still in transit.
+check($guests->field(true) === ['Online Players (1)', '*Between regions* (1): guestbuilder'], 'Guest keys leaked from the transit roster');
+$guests->observe([$up('Gaia', 'Guest-123')], 45.0);
+check($guests->field(false) === ['Online Players (0)', 'None'], 'A guests-only field was not empty');
 
 echo "Region roster contracts passed\n";

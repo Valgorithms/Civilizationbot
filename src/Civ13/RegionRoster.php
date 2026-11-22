@@ -114,15 +114,17 @@ final class RegionRoster
      */
     public function field(bool $grouped): array
     {
-        $title = 'Online Players ('.$this->total().')';
-        if (! $this->regions) {
+        // Leave observations and operational headcounts alone; hide only from the embed.
+        $regions = array_filter(array_map(PlayerEmbedKeys::withoutGuests(...), $this->regions));
+        $title = 'Online Players ('.array_sum(array_map('count', $regions)).')';
+        if (! $regions) {
             return [$title, 'None'];
         }
-        if (! $grouped && count($this->regions) === 1) {
-            return [$title, self::fit(implode(', ', reset($this->regions)))];
+        if (! $grouped && count($regions) === 1) {
+            return [$title, self::fit(implode(', ', reset($regions)))];
         }
         $lines = $counts = [];
-        foreach ($this->regions as $region => $ckeys) {
+        foreach ($regions as $region => $ckeys) {
             $label = $region === self::TRANSIT ? '*'.self::TRANSIT.'*' : '**'.self::escape($region).'**';
             $lines[] = $label.' ('.count($ckeys).'): '.implode(', ', $ckeys);
             $counts[] = $label.' ('.count($ckeys).')';
