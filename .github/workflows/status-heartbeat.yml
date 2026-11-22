@@ -14,6 +14,9 @@ on:
       - 'src/Civ13/PortableProfile.php'
       - 'src/Civ13/RegionRoster.php'
       - 'tests/local/heartbeat*.php'
+      - 'src/Civ13/RegionApprovedList.php'
+      - 'src/Civ13/Verifier.php'
+      - 'tests/local/region-approved-list.php'
       - 'src/Civ13/PlayerActivityTotals.php'
       - 'src/Civ13/MessageCommand/Commands/Civ13GameServerActivity.php'
       - 'tests/local/player-activity-totals.php'
@@ -49,6 +52,8 @@ jobs:
       - run: php tests/local/heartbeat-playercount.php
       - run: php -l src/Civ13/RegionRoster.php
       - run: php tests/local/heartbeat-roster.php
+      - run: php -l src/Civ13/RegionApprovedList.php
+      - run: php tests/local/region-approved-list.php
       - run: php -l src/Civ13/PlayerActivityTotals.php
       - run: php -l src/Civ13/MessageCommand/Commands/Civ13GameServerActivity.php
       - run: php tests/local/player-activity-totals.php
