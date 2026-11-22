@@ -1396,6 +1396,12 @@ class Verifier
         });
     }
 
+    /** The current hosted list rows (read-only desktop bots); empty when none has loaded. */
+    public function hostedRecords(): array
+    {
+        return $this->hosted?->records() ?? [];
+    }
+
     /**
      * Identity lookup for display only (chat relay names, mentions). Uses the live list when it is
      * fresh, otherwise the last good hosted list kept in memory and on disk. Never use it to grant access.

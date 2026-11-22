@@ -171,6 +171,7 @@ class Civ13
     public Verifier $verifier;
     private ?AdminFileSync $adminFileSync = null;
     private ?AccessFileSync $accessFileSync = null;
+    private ?RegionApprovedList $regionApprovedList = null; // desktop bot: verified list -> each region's SQL/approved.txt
     public ?SS14Verifier $ss14verifier = null;
 
     public string $welcome_message = '';
@@ -991,6 +992,42 @@ class Civ13
         if (!isset($this->verifier) || $this->verifier !== $verifier) { return; }
         $this->adminFileSync?->verificationChanged();
         $this->accessFileSync?->verificationChanged();
+        $this->publishRegionApprovedLists($verifier);
+    }
+
+    /**
+     * Desktop bot with a region group: copies the hosted verified list into every
+     * region's SQL/approved.txt, writing only files whose text changed (Val, 2026-11-22).
+     * Failure is logged and retried on the next refresh; it never affects the refresh itself.
+     */
+    private function publishRegionApprovedLists(Verifier $verifier): void
+    {
+        try {
+            if (! isset($verifier->readOnly) || ! $verifier->readOnly || ! isset($this->enabled_gameservers)) {
+                return;
+            }
+            $directories = [];
+            foreach ($this->enabled_gameservers as $gameserver) {
+                $group = $gameserver->regionGroupFile();
+                if ($group === '') {
+                    continue;
+                }
+                $directories[] = rtrim(str_replace('\\', '/', $gameserver->basedir), '/');
+                foreach (RegionApprovedList::directories($group) as $directory) {
+                    $directories[] = rtrim(str_replace('\\', '/', $directory), '/');
+                }
+            }
+            if (! $directories = array_values(array_unique($directories))) {
+                return;
+            }
+            $this->regionApprovedList ??= new RegionApprovedList();
+            $result = $this->regionApprovedList->publish($directories, RegionApprovedList::render($verifier->hostedRecords()));
+            if ($result['written'] || $result['failed']) {
+                $this->logger->info('Region verified lists updated', ['written' => count($result['written']), 'unchanged' => $result['unchanged'], 'skipped' => $result['skipped'], 'failed' => $result['failed']]);
+            }
+        } catch (\Throwable $e) {
+            try { $this->logger->warning('Region verified list update failed: '.$e->getMessage()); } catch (\Throwable) {}
+        }
     }
 
     /** Cleanup failure must not prevent the existing bot shutdown or escape our destructor. */
